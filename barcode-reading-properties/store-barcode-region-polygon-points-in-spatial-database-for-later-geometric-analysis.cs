@@ -1,67 +1,77 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
+using System.Collections.Generic;
+using System.Text.Json;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
-class SpatialDatabase
+namespace BarcodeRegionCapture
 {
-    private readonly string _filePath;
-
-    public SpatialDatabase(string filePath)
+    class Program
     {
-        _filePath = filePath;
-        // Ensure the file exists
-        if (!File.Exists(_filePath))
+        // Simple DTO for point coordinates
+        public class PointDto
         {
-            using (var fs = File.Create(_filePath)) { }
+            public int X { get; set; }
+            public int Y { get; set; }
         }
-    }
 
-    public void SavePolygon(int barcodeIndex, Point[] points)
-    {
-        // Store as: Index|x1,y1;x2,y2;...
-        var line = $"{barcodeIndex}|{string.Join(";", Array.ConvertAll(points, p => $"{p.X},{p.Y}"))}";
-        File.AppendAllLines(_filePath, new[] { line });
-    }
-}
-
-class Program
-{
-    static void Main()
-    {
-        // Create a simple Code128 barcode in memory
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
+        // DTO for storing barcode text and its polygon points
+        public class BarcodeRegionRecord
         {
-            // Generate bitmap without saving to disk
-            using (Bitmap barcodeImage = generator.GenerateBarCodeImage())
+            public string CodeText { get; set; }
+            public List<PointDto> Points { get; set; }
+        }
+
+        static void Main()
+        {
+            const string imagePath = "sample_barcode.png";
+            const string jsonPath = "barcode_regions.json";
+
+            // Step 1: Generate a sample barcode image
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
             {
-                // Initialize reader for all supported types
-                using (var reader = new BarCodeReader(barcodeImage, DecodeType.AllSupportedTypes))
+                // Optional: set image size or other parameters here
+                generator.Save(imagePath);
+            }
+
+            // Verify that the image was created
+            if (!File.Exists(imagePath))
+            {
+                Console.WriteLine($"Failed to create barcode image at '{imagePath}'.");
+                return;
+            }
+
+            // Step 2: Load the image and recognize barcodes
+            var records = new List<BarcodeRegionRecord>();
+
+            using (var bitmap = new Bitmap(imagePath))
+            using (var reader = new BarCodeReader(bitmap, DecodeType.AllSupportedTypes))
+            {
+                foreach (BarCodeResult result in reader.ReadBarCodes())
                 {
-                    // Read barcodes from the image
-                    BarCodeResult[] results = reader.ReadBarCodes();
-
-                    // Prepare a simple spatial storage (text file)
-                    var db = new SpatialDatabase("barcode_regions.txt");
-
-                    int index = 0;
-                    foreach (BarCodeResult result in results)
+                    var points = new List<PointDto>();
+                    foreach (var pt in result.Region.Points)
                     {
-                        // Extract polygon points of the barcode region
-                        Point[] points = result.Region.Points;
-
-                        // Store points in the spatial database
-                        db.SavePolygon(index, points);
-
-                        // Optional: output to console for verification
-                        Console.WriteLine($"Barcode {index}: CodeText={result.CodeText}, Points={points.Length}");
-                        index++;
+                        points.Add(new PointDto { X = pt.X, Y = pt.Y });
                     }
+
+                    records.Add(new BarcodeRegionRecord
+                    {
+                        CodeText = result.CodeText,
+                        Points = points
+                    });
                 }
             }
+
+            // Step 3: Serialize the results to JSON (acts as a stand‑in for a spatial DB)
+            var jsonOptions = new JsonSerializerOptions { WriteIndented = true };
+            string json = JsonSerializer.Serialize(records, jsonOptions);
+            File.WriteAllText(jsonPath, json);
+
+            Console.WriteLine($"Barcode region data written to '{jsonPath}'.");
         }
     }
 }
