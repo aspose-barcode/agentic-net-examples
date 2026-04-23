@@ -1,48 +1,51 @@
 using System;
+using System.Linq;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
-namespace BarcodeNumericValidation
+namespace NumericBarcodeExample
 {
     class Program
     {
         static void Main()
         {
-            // Valid numeric input
-            string validCode = "1234567890";
-            ValidateNumeric(validCode);
+            // Sample inputs: one valid numeric string and one invalid containing a letter.
+            string[] inputs = { "123456", "12A456" };
 
-            // Generate barcode for valid input
-            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, validCode))
+            foreach (string text in inputs)
             {
-                generator.Save("valid_barcode.png");
-            }
-
-            // Demonstrate handling of invalid (non‑numeric) input
-            try
-            {
-                string invalidCode = "12AB34";
-                ValidateNumeric(invalidCode); // This will throw
-                using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, invalidCode))
+                try
                 {
-                    generator.Save("invalid_barcode.png");
+                    // Validate that the input contains only digits.
+                    ValidateNumeric(text);
+
+                    // Create the barcode generator for a 2‑state barcode (Code128 used as example).
+                    using (var generator = new BarcodeGenerator(EncodeTypes.Code128))
+                    {
+                        // Enable exception throwing for incorrect code text.
+                        generator.Parameters.Barcode.ThrowExceptionWhenCodeTextIncorrect = true;
+
+                        // Set the code text and save the barcode image.
+                        generator.CodeText = text;
+                        string fileName = $"{text}.png";
+                        generator.Save(fileName);
+                        Console.WriteLine($"Barcode generated and saved to '{fileName}'.");
+                    }
                 }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Error: " + ex.Message);
+                catch (Exception ex)
+                {
+                    // Output the error for non‑numeric inputs.
+                    Console.WriteLine($"Error for input '{text}': {ex.Message}");
+                }
             }
         }
 
-        // Ensures the code text contains only digits; otherwise throws an exception
-        static void ValidateNumeric(string text)
+        // Throws an exception if the provided string contains any non‑digit characters.
+        static void ValidateNumeric(string code)
         {
-            foreach (char ch in text)
+            if (string.IsNullOrEmpty(code) || !code.All(char.IsDigit))
             {
-                if (!char.IsDigit(ch))
-                {
-                    throw new ArgumentException("CodeText must contain only numeric characters.");
-                }
+                throw new ArgumentException("Code text must be numeric.");
             }
         }
     }
