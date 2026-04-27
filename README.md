@@ -76,7 +76,7 @@ dotnet run <example-file.cs>
 ## Prerequisites
 
 - .NET SDK (net9.0)
-- Aspose.BarCode for .NET 26.3 (via NuGet)
+- Aspose.BarCode for .NET 26.4 (via NuGet)
 
 ---
 
