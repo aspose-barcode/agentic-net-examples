@@ -1,6 +1,33 @@
-# Aspose.BarCode for .NET - Agentic Examples
+# Aspose.BarCode for .NET — Agentic Examples
 
-> AI-generated, compiler-validated C# examples for the [Aspose.BarCode for .NET](https://products.aspose.com/barcode/net/) API.
+> Agentic, AI-generated, compiler-validated C# examples for the [Aspose.BarCode for .NET](https://products.aspose.com/barcode/net/) API. Every example in this repository compiles and runs successfully against the Aspose.BarCode NuGet package on .NET 9.
+
+## About Aspose.BarCode for .NET
+
+[Aspose.BarCode for .NET](https://products.aspose.com/barcode/net/) is a powerful barcode generation and recognition library for .NET applications. It enables developers to generate, read, and process barcodes programmatically without any third-party dependencies.
+
+**Key capabilities:**
+- Generate barcodes for 60+ symbologies including Code128, QR Code, DataMatrix, PDF417, Aztec, EAN, UPC, Code39, ITF14, and more
+- Read and recognize barcodes from images, PDFs, and memory streams
+- Control barcode appearance — size, resolution, colors, padding, rotation, and XDimension
+- Configure checksum settings per symbology
+- Export barcode images as PNG, JPEG, SVG, EMF, TIFF, and BMP
+- Embed barcodes into PDF documents, Word files, and PowerPoint presentations
+- Work with complex barcode types — Swiss QR Bill, Mailmark, HIBC LIC, GS1 Composite, MaxiCode
+- Serialize and deserialize barcode generator and reader configurations to XML
+
+## Install
+
+```bash
+dotnet add package Aspose.BarCode
+```
+
+Or via NuGet Package Manager:
+```
+Install-Package Aspose.BarCode
+```
+
+Requires .NET SDK 9.0 or later.
 
 ## Statistics
 
@@ -67,17 +94,111 @@ README.md
 
 ## How to Use
 
+Each example is a self-contained C# file. Clone the repository and run any example directly:
+
 ```bash
 git clone https://github.com/aspose-barcode/agentic-net-examples.git
-cd <category>
-dotnet run <example-file.cs>
+cd agentic-net-examples
+
+# Navigate to a category
+cd barcode-recognition-basics
+
+# Create a console project, add the package, and run an example
+dotnet new console -o ExampleRunner
+cd ExampleRunner
+dotnet add package Aspose.BarCode
+
+# Copy any .cs file from the category as Program.cs and run
+cp ../generate-code128-barcode-and-save-as-png.cs Program.cs
+dotnet run
 ```
+
+## Example
+
+Generate a Code128 barcode and save it as a PNG file:
+
+```csharp
+using System;
+using Aspose.BarCode.Generation;
+
+class Program
+{
+    static void Main()
+    {
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+        {
+            generator.Parameters.Barcode.XDimension.Point = 2f;
+            generator.Parameters.Barcode.BarHeight.Point = 50f;
+            generator.Save("code128.png");
+            Console.WriteLine("Barcode saved as code128.png");
+        }
+    }
+}
+```
+
+Read a barcode from an image file:
+
+```csharp
+using System;
+using Aspose.BarCode.BarCodeRecognition;
+
+class Program
+{
+    static void Main()
+    {
+        using (var reader = new BarCodeReader("barcode.png", DecodeType.AllSupportedTypes))
+        {
+            foreach (var result in reader.ReadBarCodes())
+            {
+                Console.WriteLine($"Type: {result.CodeTypeName}");
+                Console.WriteLine($"Text: {result.CodeText}");
+            }
+        }
+    }
+}
+```
+
+## For AI Coding Agents
+
+This repository includes an [`agents.md`](./agents.md) file at the root and in each category folder. These files provide AI coding agents with:
+
+- Required namespaces and using directives for each category
+- Correct API property paths and patterns
+- Common pitfalls and prohibited patterns
+- Example code fragments for key operations
+
+If you are an AI coding agent generating Aspose.BarCode for .NET code, read the relevant `agents.md` before generating examples to avoid common API mistakes.
 
 ## Prerequisites
 
-- .NET SDK (net9.0)
-- Aspose.BarCode for .NET 26.4 (via NuGet)
+- .NET SDK 9.0 or later
+- Aspose.BarCode for .NET 26.4.0 (via NuGet)
+
+A valid [Aspose license](https://purchase.aspose.com/buy) is required for production use. For evaluation, examples run without a license but output may include watermarks on generated barcode images.
+
+## Agentic .NET Ecosystem
+
+Other Aspose products with agentic, build-validated example repositories:
+
+| Product | Repository | Focus |
+|---|---|---|
+| Aspose.Words for .NET | [aspose-words/agentic-net-examples](https://github.com/aspose-words/agentic-net-examples) | Word processing, DOCX, mail merge |
+| Aspose.Cells for .NET | [aspose-cells/agentic-net-examples](https://github.com/aspose-cells/agentic-net-examples) | Spreadsheets, Excel, charts |
+| Aspose.HTML for .NET | [aspose-html/agentic-net-examples](https://github.com/aspose-html/agentic-net-examples) | HTML conversion, DOM editing |
+| Aspose.Imaging for .NET | [aspose-imaging/agentic-net-examples](https://github.com/aspose-imaging/agentic-net-examples) | Image conversion, manipulation |
+| Aspose.Slides for .NET | [aspose-slides/agentic-net-examples](https://github.com/aspose-slides/agentic-net-examples) | Presentations, PowerPoint |
+| Aspose.Email for .NET | [aspose-email/agentic-net-examples](https://github.com/aspose-email/agentic-net-examples) | Email, calendars, messaging |
+| Aspose.PDF for .NET | [aspose-pdf/agentic-net-examples](https://github.com/aspose-pdf/agentic-net-examples) | PDF creation, conversion and manipulation |
+
+## Resources
+
+- [Aspose.BarCode for .NET Product Page](https://products.aspose.com/barcode/net/)
+- [API Reference Documentation](https://reference.aspose.com/barcode/net/)
+- [Developer Guide](https://docs.aspose.com/barcode/net/)
+- [Release Notes](https://releases.aspose.com/barcode/net/release-notes/)
+- [Free Support Forum](https://forum.aspose.com/c/barcode/13)
+- [NuGet Package](https://www.nuget.org/packages/Aspose.BarCode/)
 
 ---
 
-*Maintained by [agent-aspose-barcode-examples](https://github.com/aspose-barcode/agentic-net-examples) | Last Updated: 2026-04-27*
+*Maintained by [agent-aspose-barcode-examples](https://github.com/aspose-barcode/agentic-net-examples) · Generated and validated by the Aspose.BarCode Examples Generator Agent*
