@@ -1,52 +1,61 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates generating Code128 barcodes with alternating bar colors
+/// and saving them as PNG files using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a set of barcodes from a predefined string array,
+    /// applies alternating colors, and writes the images to disk.
+    /// </summary>
     static void Main()
     {
-        // Sample list of strings to encode
-        List<string> codes = new List<string>
-        {
-            "ABC123",
-            "DEF456",
-            "GHI789",
-            "JKL012",
-            "MNO345"
-        };
+        // Sample list of strings to encode into barcodes
+        string[] data = new string[] { "ABC123", "DEF456", "GHI789", "JKL012", "MNO345" };
 
-        // Output directory
-        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
+        // Define the output directory for barcode images
+        string outputDir = "Barcodes";
+
+        // Ensure the output directory exists; create it if it does not
         if (!Directory.Exists(outputDir))
         {
             Directory.CreateDirectory(outputDir);
         }
 
-        // Colors to alternate between
-        Color[] colors = new Color[] { Color.Blue, Color.Red };
-
-        for (int i = 0; i < codes.Count; i++)
+        // Iterate over each string and generate a barcode with alternating bar colors
+        for (int i = 0; i < data.Length; i++)
         {
-            string codeText = codes[i];
-            Color barColor = colors[i % colors.Length];
+            // Current text to encode
+            string text = data[i];
 
-            // Create a barcode generator for Code128 (you can change the symbology if needed)
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+            // Choose bar color: black for even indices, red for odd indices
+            Aspose.Drawing.Color barColor = (i % 2 == 0) ? Aspose.Drawing.Color.Black : Aspose.Drawing.Color.Red;
+
+            // Initialize the barcode generator with Code128 symbology and the text
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, text))
             {
-                // Set alternating bar color
+                // Apply the selected bar color
                 generator.Parameters.Barcode.BarColor = barColor;
 
-                // Save as PNG
+                // Set the background color to white
+                generator.Parameters.BackColor = Aspose.Drawing.Color.White;
+
+                // Construct the file path for the PNG image
                 string filePath = Path.Combine(outputDir, $"barcode_{i + 1}.png");
-                generator.Save(filePath, BarCodeImageFormat.Png);
+
+                // Save the generated barcode image to the specified path
+                generator.Save(filePath);
+
+                // Output a confirmation message to the console
+                Console.WriteLine($"Saved barcode for \"{text}\" to {filePath}");
             }
         }
-
-        Console.WriteLine($"Generated {codes.Count} barcode images in '{outputDir}'.");
     }
 }

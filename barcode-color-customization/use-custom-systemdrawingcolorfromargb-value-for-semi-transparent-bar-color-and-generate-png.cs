@@ -4,26 +4,31 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
+/// <summary>
+/// Demonstrates generating a semi‑transparent barcode image using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Generates a Code128 barcode with a semi‑transparent red color
+    /// and saves it as a PNG file.
+    /// </summary>
     static void Main()
     {
-        // Create a barcode generator for Code128 symbology
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128))
-        {
-            // Set the text to encode
-            generator.CodeText = "123ABC";
+        // Define the output file name (saved in the current working directory)
+        string outputPath = "semiTransparentBarcode.png";
 
-            // Apply a semi‑transparent red color to the bars (alpha = 128)
+        // Initialize the barcode generator with Code128 symbology and the data to encode
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
+        {
+            // Configure the barcode bar color to be semi‑transparent red (alpha = 128)
             generator.Parameters.Barcode.BarColor = Color.FromArgb(128, 255, 0, 0);
 
-            // Define output file path
-            string outputFile = "semiTransparentBarcode.png";
-
-            // Save the barcode as a PNG image
-            generator.Save(outputFile, BarCodeImageFormat.Png);
-
-            Console.WriteLine($"Barcode image saved to: {Path.GetFullPath(outputFile)}");
+            // Render and save the barcode image in PNG format
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
+
+        // Output the full path of the saved barcode image to the console
+        Console.WriteLine($"Barcode saved to: {Path.GetFullPath(outputPath)}");
     }
 }

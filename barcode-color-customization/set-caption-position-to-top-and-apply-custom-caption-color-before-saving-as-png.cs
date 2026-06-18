@@ -3,23 +3,38 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
+/// <summary>
+/// Demonstrates generating a Code128 barcode with a caption placed above it
+/// and saving the result as a PNG file.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Creates a barcode, configures its caption,
+    /// saves the image, and writes a confirmation to the console.
+    /// </summary>
     static void Main()
     {
-        // Create a barcode generator for Code128 symbology
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128))
+        // Initialize a barcode generator for Code128 using the sample text "123456"
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
         {
-            // Set the data to encode
-            generator.CodeText = "123ABC";
+            // Enable the caption that appears above the barcode
+            generator.Parameters.CaptionAbove.Visible = true;
 
-            // Configure caption to appear above (top) the barcode
-            generator.Parameters.CaptionAbove.Visible = true;               // Ensure caption is visible
-            generator.Parameters.CaptionAbove.Text = "Top Caption";        // Caption text
-            generator.Parameters.CaptionAbove.TextColor = Color.Blue;      // Custom caption color
+            // Set the caption text and its color
+            generator.Parameters.CaptionAbove.Text = "Top Caption";
+            generator.Parameters.CaptionAbove.TextColor = Color.Red;
 
-            // Save the barcode as PNG
-            generator.Save("barcode_with_caption.png");
+            // Optional: configure the caption's font family, size, and alignment
+            generator.Parameters.CaptionAbove.Font.FamilyName = "Arial";
+            generator.Parameters.CaptionAbove.Font.Size.Point = 12f;
+            generator.Parameters.CaptionAbove.Alignment = TextAlignment.Center;
+
+            // Save the generated barcode image as a PNG file named "barcode.png"
+            generator.Save("barcode.png");
         }
+
+        // Inform the user that the barcode has been saved
+        Console.WriteLine("Barcode saved as barcode.png");
     }
 }
