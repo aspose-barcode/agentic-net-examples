@@ -4,47 +4,50 @@ using System.Text;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
-namespace BarcodeFromXmlDemo
+/// <summary>
+/// Demonstrates creating a barcode generator from an XML definition
+/// and saving the resulting barcode image to a file.
+/// </summary>
+class Program
 {
-    class Program
+    // Reads XML from a string and creates a BarcodeGenerator using ImportFromXml(Stream)
+    static BarcodeGenerator CreateGeneratorFromXml(string xmlContent)
     {
-        /// <summary>
-        /// Creates a BarcodeGenerator instance from an XML string.
-        /// </summary>
-        /// <param name="xmlContent">The XML that defines barcode settings.</param>
-        /// <returns>A configured BarcodeGenerator.</returns>
-        static BarcodeGenerator InitializeFromXml(string xmlContent)
-        {
-            // Convert the XML string to a UTF‑8 encoded memory stream.
-            using (var xmlStream = new MemoryStream(Encoding.UTF8.GetBytes(xmlContent)))
-            {
-                // Import the settings from the stream and obtain a generator.
-                return BarcodeGenerator.ImportFromXml(xmlStream);
-            }
-        }
+        // Convert the XML string to a UTF‑8 byte array
+        byte[] xmlBytes = Encoding.UTF8.GetBytes(xmlContent);
 
-        static void Main(string[] args)
+        // Wrap the byte array in a memory stream for ImportFromXml
+        using (var xmlStream = new MemoryStream(xmlBytes))
         {
-            // Sample XML defining a simple Code128 barcode with the text "12345".
-            string barcodeXml = @"
+            // ImportFromXml creates a new BarcodeGenerator instance based on the XML definition
+            return BarcodeGenerator.ImportFromXml(xmlStream);
+        }
+    }
+
+    /// <summary>
+    /// Entry point of the application. Generates a barcode from XML and saves it as an image file.
+    /// </summary>
+    static void Main()
+    {
+        // Sample XML defining a Code128 barcode with some text.
+        // The exact schema must match Aspose.BarCode's expected format.
+        string barcodeXml = @"
 <BarcodeGenerator>
-    <CodeText>12345</CodeText>
-    <BarcodeType>Code128</BarcodeType>
+    <EncodeType>Code128</EncodeType>
+    <CodeText>12345ABC</CodeText>
 </BarcodeGenerator>";
 
-            // Initialize the generator from the XML.
-            using (var generator = InitializeFromXml(barcodeXml))
-            {
-                // Optional: adjust additional parameters if needed.
-                // Example: set image size.
-                generator.Parameters.ImageWidth.Point = 300f;
-                generator.Parameters.ImageHeight.Point = 150f;
+        // Initialize the generator from the XML string
+        using (var generator = CreateGeneratorFromXml(barcodeXml))
+        {
+            // Define the output file path for the barcode image
+            string outputPath = "barcode_from_xml.png";
 
-                // Save the generated barcode image to a file.
-                string outputPath = "barcode_from_xml.png";
-                generator.Save(outputPath);
-                Console.WriteLine($"Barcode image saved to: {Path.GetFullPath(outputPath)}");
-            }
+            // Save the generated barcode image to the specified file
+            generator.Save(outputPath);
+
+            // Inform the user where the image was saved
+            Console.WriteLine($"Barcode image saved to: {outputPath}");
         }
     }
 }

@@ -2,69 +2,51 @@ using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 
+/// <summary>
+/// Demonstrates creating a sample barcode configuration XML and generating a barcode image using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// </summary>
     static void Main()
     {
-        const string configPath = "barcodeConfig.xml";
-        const string outputPath = "generatedBarcode.png";
+        // Define file paths for the XML configuration and the output barcode image.
+        string xmlConfigPath = "barcodeConfig.xml";
+        string outputImagePath = "barcode.png";
 
-        // If the XML configuration does not exist, create a sample configuration.
-        if (!File.Exists(configPath))
+        // If the XML configuration file does not exist, create a sample configuration.
+        if (!File.Exists(xmlConfigPath))
         {
-            // Create a barcode generator with initial settings.
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
+            // Initialize a barcode generator with QR encoding and sample text.
+            using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Hello Aspose"))
             {
-                // Example of setting some properties.
-                generator.Parameters.Barcode.BarColor = Color.Blue;
-                generator.Parameters.BackColor = Color.White;
-                generator.Parameters.Barcode.XDimension.Pixels = 2f;
-                generator.Parameters.Barcode.BarHeight.Pixels = 100f;
+                // Set generation parameters: auto-size mode, image dimensions, error correction level, resolution, and font.
+                generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
+                generator.Parameters.ImageWidth.Point = 300f;
+                generator.Parameters.ImageHeight.Point = 300f;
+                generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
+                generator.Parameters.Resolution = 300f;
                 generator.Parameters.Barcode.CodeTextParameters.Font.FamilyName = "Arial";
                 generator.Parameters.Barcode.CodeTextParameters.Font.Size.Point = 12f;
-                generator.Parameters.Barcode.CodeTextParameters.Alignment = TextAlignment.Center;
-                generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.Below;
 
-                // Export the configuration to XML for later reuse.
-                bool exported = generator.ExportToXml(configPath);
-                Console.WriteLine(exported
-                    ? $"Configuration exported to '{configPath}'."
-                    : $"Failed to export configuration to '{configPath}'.");
+                // Export the current configuration to an XML file for later reuse.
+                generator.ExportToXml(xmlConfigPath);
+                Console.WriteLine($"Sample XML configuration created at '{xmlConfigPath}'.");
             }
         }
 
         // Load the barcode generator from the saved XML configuration.
-        if (!File.Exists(configPath))
+        using (var generator = BarcodeGenerator.ImportFromXml(xmlConfigPath))
         {
-            Console.WriteLine($"Configuration file '{configPath}' not found. Cannot generate barcode.");
-            return;
-        }
+            // Optionally override the CodeText after loading.
+            // generator.CodeText = "New Text";
 
-        BarcodeGenerator loadedGenerator;
-        try
-        {
-            loadedGenerator = BarcodeGenerator.ImportFromXml(configPath);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error importing XML configuration: {ex.Message}");
-            return;
-        }
-
-        // Use the loaded generator to create and save the barcode image.
-        using (loadedGenerator)
-        {
-            try
-            {
-                loadedGenerator.Save(outputPath);
-                Console.WriteLine($"Barcode image generated and saved to '{outputPath}'.");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error saving barcode image: {ex.Message}");
-            }
+            // Save the generated barcode image to the specified path.
+            generator.Save(outputImagePath);
+            Console.WriteLine($"Barcode image generated and saved to '{outputImagePath}'.");
         }
     }
 }

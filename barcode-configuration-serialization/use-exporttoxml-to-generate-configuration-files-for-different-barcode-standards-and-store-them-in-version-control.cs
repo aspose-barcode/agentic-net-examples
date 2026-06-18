@@ -2,69 +2,80 @@ using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
 
-namespace BarcodeConfigExport
+/// <summary>
+/// Demonstrates exporting various barcode configurations to XML files using Aspose.BarCode.
+/// </summary>
+class Program
 {
-    class Program
+    /// <summary>
+    /// Entry point of the application. Generates barcode configurations and saves them as XML files.
+    /// </summary>
+    /// <param name="args">Command‑line arguments (not used).</param>
+    static void Main(string[] args)
     {
-        static void Main()
+        // Determine the output directory for the generated XML configuration files.
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "BarcodeConfigs");
+        // Ensure the directory exists.
+        Directory.CreateDirectory(outputDir);
+
+        // Define a collection of barcode configurations to export.
+        // Each tuple contains:
+        //   - The barcode type (BaseEncodeType)
+        //   - The code text to encode
+        //   - An optional configuration action to customize generator parameters.
+        var barcodeConfigs = new (BaseEncodeType Type, string CodeText, Action<BarcodeGenerator> Configure)[]
         {
-            // Directory to store generated XML configuration files
-            string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "BarcodesConfig");
-            Directory.CreateDirectory(outputDir);
-
-            // 1. Code128 barcode configuration
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "ABC123456"))
+            // Code128 with checksum enabled.
+            (EncodeTypes.Code128, "ABC123456", gen =>
             {
-                // Example: set Code128 encoding mode
-                generator.Parameters.Barcode.Code128.Code128EncodeMode = Code128EncodeMode.Auto;
-                string xmlPath = Path.Combine(outputDir, "Code128.xml");
-                generator.ExportToXml(xmlPath);
-            }
+                gen.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
+            }),
 
-            // 2. QR code configuration with high error correction
-            using (var generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
+            // QR code with high error correction level.
+            (EncodeTypes.QR, "https://example.com", gen =>
             {
-                generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
-                // Optional: set QR version (auto by default)
-                string xmlPath = Path.Combine(outputDir, "QR_HighErrorCorrection.xml");
-                generator.ExportToXml(xmlPath);
-            }
+                gen.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
+            }),
 
-            // 3. DataMatrix configuration with specific version
-            using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, "DataMatrixSample"))
+            // DataMatrix with a specific version.
+            (EncodeTypes.DataMatrix, "DataMatrixSample", gen =>
             {
-                // Set a specific DataMatrix version (e.g., 12x12)
-                generator.Parameters.Barcode.DataMatrix.DataMatrixVersion = DataMatrixVersion.ECC200_12x12;
-                string xmlPath = Path.Combine(outputDir, "DataMatrix_12x12.xml");
-                generator.ExportToXml(xmlPath);
-            }
+                gen.Parameters.Barcode.DataMatrix.DataMatrixVersion = DataMatrixVersion.ECC200_20x20;
+            }),
 
-            // 4. Australia Post barcode configuration with CTable interpreting type
-            using (var generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, "5912345678ABCde"))
+            // PDF417 using default settings.
+            (EncodeTypes.Pdf417, "PDF417 Sample Text", gen => { }),
+
+            // AustraliaPost with CTable interpreting type.
+            (EncodeTypes.AustraliaPost, "5912345678ABCde", gen =>
             {
-                generator.Parameters.Barcode.AustralianPost.AustralianPostEncodingTable = CustomerInformationInterpretingType.CTable;
-                string xmlPath = Path.Combine(outputDir, "AustraliaPost_CTable.xml");
-                generator.ExportToXml(xmlPath);
-            }
+                gen.Parameters.Barcode.AustralianPost.AustralianPostEncodingTable = CustomerInformationInterpretingType.CTable;
+            })
+        };
 
-            // 5. GS1 Composite barcode configuration (linear + 2D components)
-            using (var generator = new BarcodeGenerator(EncodeTypes.GS1CompositeBar, "(01)03212345678906|(21)A1B2C3D4E5F6G7H8"))
+        // Iterate over each configuration, generate the barcode, and export its settings to XML.
+        foreach (var cfg in barcodeConfigs)
+        {
+            // Create a new BarcodeGenerator for the specified type and code text.
+            using (var generator = new BarcodeGenerator(cfg.Type, cfg.CodeText))
             {
-                // Linear component type
-                generator.Parameters.Barcode.GS1CompositeBar.LinearComponentType = EncodeTypes.GS1Code128;
-                // 2D component type
-                generator.Parameters.Barcode.GS1CompositeBar.TwoDComponentType = TwoDComponentType.CC_A;
-                // Example: adjust X-Dimension and BarHeight
-                generator.Parameters.Barcode.XDimension.Point = 2f;
-                generator.Parameters.Barcode.BarHeight.Point = 100f;
-                string xmlPath = Path.Combine(outputDir, "GS1CompositeBar.xml");
-                generator.ExportToXml(xmlPath);
-            }
+                // Apply any custom configuration actions, if provided.
+                cfg.Configure?.Invoke(generator);
 
-            // Indicate completion
-            Console.WriteLine("Barcode configuration XML files have been generated in: " + outputDir);
+                // Build the output file name and path.
+                string fileName = $"{cfg.Type.TypeName}_config.xml";
+                string filePath = Path.Combine(outputDir, fileName);
+
+                // Export the generator's configuration to an XML file.
+                generator.ExportToXml(filePath);
+
+                // Inform the user about the successful export.
+                Console.WriteLine($"Exported {cfg.Type.TypeName} configuration to: {filePath}");
+            }
         }
+
+        // Final status message.
+        Console.WriteLine("All barcode configuration files have been generated.");
     }
 }

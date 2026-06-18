@@ -3,93 +3,97 @@ using System.IO;
 using System.Text.Json;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 
-namespace BarcodeXmlApiSimulation
+/// <summary>
+/// Represents the configuration for generating a barcode.
+/// </summary>
+class BarcodeConfig
 {
-    // Simple configuration model matching expected JSON payload
-    public class BarcodeConfig
-    {
-        public string Symbology { get; set; }
-        public string CodeText { get; set; }
-        public float? XDimension { get; set; }          // in points
-        public float? BarHeight { get; set; }           // in points
-        public string BarColor { get; set; }            // hex, e.g. "#FF0000"
-        public string BackColor { get; set; }           // hex, e.g. "#FFFFFF"
-    }
+    /// <summary>
+    /// Gets or sets the symbology name (e.g., "Code128").
+    /// </summary>
+    public string Symbology { get; set; }
 
-    class Program
+    /// <summary>
+    /// Gets or sets the text to encode in the barcode.
+    /// </summary>
+    public string CodeText { get; set; }
+
+    /// <summary>
+    /// Gets or sets the optional bar height (in points).
+    /// </summary>
+    public float? BarHeight { get; set; }
+
+    /// <summary>
+    /// Gets or sets the optional X-dimension (module width) (in points).
+    /// </summary>
+    public float? XDimension { get; set; }
+}
+
+/// <summary>
+/// Demonstrates creating a barcode from a JSON configuration and exporting its settings to XML.
+/// </summary>
+class Program
+{
+    /// <summary>
+    /// Application entry point.
+    /// </summary>
+    static void Main()
     {
-        static void Main()
+        // Sample JSON configuration (in a real scenario this would come from an HTTP request)
+        string jsonConfig = @"{
+            ""Symbology"": ""Code128"",
+            ""CodeText"": ""123ABC"",
+            ""BarHeight"": 40.0,
+            ""XDimension"": 2.5
+        }";
+
+        // Deserialize JSON to a BarcodeConfig instance
+        BarcodeConfig config;
+        try
         {
-            // Simulated incoming JSON request payload
-            string jsonPayload = @"{
-                ""Symbology"": ""Code128"",
-                ""CodeText"": ""123ABC"",
-                ""XDimension"": 2.5,
-                ""BarHeight"": 50,
-                ""BarColor"": ""#0000FF"",
-                ""BackColor"": ""#FFFFFF""
-            }";
-
-            // Deserialize JSON to configuration object
-            BarcodeConfig config = JsonSerializer.Deserialize<BarcodeConfig>(jsonPayload);
-
-            // Resolve symbology string to EncodeTypes static field via reflection
-            Type encodeTypes = typeof(EncodeTypes);
-            var fieldInfo = encodeTypes.GetField(config.Symbology);
-            if (fieldInfo == null)
-                throw new ArgumentException($"Unsupported symbology: {config.Symbology}");
-
-            BaseEncodeType encodeType = (BaseEncodeType)fieldInfo.GetValue(null);
-
-            // Create barcode generator with provided type and codetext
-            using (var generator = new BarcodeGenerator(encodeType, config.CodeText))
-            {
-                // Apply optional parameters if they are present
-                if (config.XDimension.HasValue)
-                    generator.Parameters.Barcode.XDimension.Point = config.XDimension.Value;
-
-                if (config.BarHeight.HasValue)
-                    generator.Parameters.Barcode.BarHeight.Point = config.BarHeight.Value;
-
-                if (!string.IsNullOrWhiteSpace(config.BarColor))
-                    generator.Parameters.Barcode.BarColor = ParseHexColor(config.BarColor);
-
-                if (!string.IsNullOrWhiteSpace(config.BackColor))
-                    generator.Parameters.BackColor = ParseHexColor(config.BackColor);
-
-                // Export current barcode settings to XML in a memory stream
-                using (var xmlStream = new MemoryStream())
-                {
-                    bool exported = generator.ExportToXml(xmlStream);
-                    if (!exported)
-                        throw new InvalidOperationException("Failed to export barcode settings to XML.");
-
-                    xmlStream.Position = 0;
-                    using (var reader = new StreamReader(xmlStream))
-                    {
-                        string xmlResult = reader.ReadToEnd();
-                        // Simulated API response: XML string
-                        Console.WriteLine(xmlResult);
-                    }
-                }
-            }
+            config = JsonSerializer.Deserialize<BarcodeConfig>(jsonConfig);
+            if (config == null)
+                throw new ArgumentException("Configuration deserialization resulted in null.");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error parsing JSON configuration: {ex.Message}");
+            return;
         }
 
-        // Helper to convert a hex color string to Aspose.Drawing.Color
-        private static Color ParseHexColor(string hex)
+        // Resolve the symbology name to the corresponding BaseEncodeType using reflection
+        var field = typeof(EncodeTypes).GetField(config.Symbology);
+        if (field == null)
         {
-            // Remove leading '#', support 6 or 8 digit hex (RRGGBB or AARRGGBB)
-            string clean = hex.TrimStart('#');
-            if (clean.Length == 6)
-                clean = "FF" + clean; // assume fully opaque
+            Console.WriteLine($"Unknown symbology: {config.Symbology}");
+            return;
+        }
 
-            if (clean.Length != 8)
-                throw new ArgumentException($"Invalid color format: {hex}");
+        BaseEncodeType encodeType = (BaseEncodeType)field.GetValue(null);
 
-            int argb = Convert.ToInt32(clean, 16);
-            return Color.FromArgb(argb);
+        // Create a barcode generator with the resolved encode type and provided code text
+        using (var generator = new BarcodeGenerator(encodeType, config.CodeText ?? string.Empty))
+        {
+            // Apply optional numeric settings if they are present and valid
+            if (config.BarHeight.HasValue && config.BarHeight.Value > 0f)
+                generator.Parameters.Barcode.BarHeight.Point = config.BarHeight.Value;
+
+            if (config.XDimension.HasValue && config.XDimension.Value > 0f)
+                generator.Parameters.Barcode.XDimension.Point = config.XDimension.Value;
+
+            // Export the generator's settings to XML and display the result
+            using (var ms = new MemoryStream())
+            {
+                generator.ExportToXml(ms);
+                ms.Position = 0;
+                using (var reader = new StreamReader(ms))
+                {
+                    string xmlOutput = reader.ReadToEnd();
+                    Console.WriteLine("=== Barcode Settings XML ===");
+                    Console.WriteLine(xmlOutput);
+                }
+            }
         }
     }
 }

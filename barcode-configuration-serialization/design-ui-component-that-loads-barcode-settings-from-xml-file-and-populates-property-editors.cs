@@ -3,59 +3,73 @@ using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
+/// <summary>
+/// Demonstrates creating a sample barcode settings XML, loading it,
+/// modifying some parameters, and generating a barcode image.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// </summary>
     static void Main()
     {
-        // Define the XML file that contains barcode settings.
-        const string xmlFile = "barcodeSettings.xml";
+        const string xmlPath = "barcodeSettings.xml";
+        const string outputImage = "generatedBarcode.png";
 
-        // Verify that the XML file exists; if not, exit gracefully.
-        if (!File.Exists(xmlFile))
+        // --------------------------------------------------------------------
+        // Ensure a sample XML file exists. If it does not, create one with
+        // default barcode settings and export it to XML.
+        // --------------------------------------------------------------------
+        if (!File.Exists(xmlPath))
         {
-            Console.WriteLine($"XML file '{xmlFile}' not found. Skipping barcode loading.");
+            // Create a generator with a default symbology and code text.
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
+            {
+                // Configure sample barcode parameters.
+                generator.Parameters.Barcode.XDimension.Point = 2f;               // Width of the smallest bar (in points).
+                generator.Parameters.Barcode.BarHeight.Point = 40f;              // Height of the barcode (in points).
+                generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes; // Enable checksum calculation.
+                generator.Parameters.Barcode.ChecksumAlwaysShow = true;          // Show checksum in the human‑readable text.
+
+                // Export the configured settings to an XML file.
+                generator.ExportToXml(xmlPath);
+                Console.WriteLine($"Sample XML created at '{xmlPath}'.");
+            }
+        }
+
+        // --------------------------------------------------------------------
+        // Verify that the XML file now exists before attempting to load it.
+        // --------------------------------------------------------------------
+        if (!File.Exists(xmlPath))
+        {
+            Console.WriteLine($"Error: XML file '{xmlPath}' not found.");
             return;
         }
 
-        // Load barcode settings from the XML file using the provided ImportFromXml method.
-        using (BarcodeGenerator generator = BarcodeGenerator.ImportFromXml(xmlFile))
+        // --------------------------------------------------------------------
+        // Import barcode settings from the XML file.
+        // --------------------------------------------------------------------
+        using (var generator = BarcodeGenerator.ImportFromXml(xmlPath))
         {
-            // Display a few key properties as if they were populated in UI editors.
-            Console.WriteLine("=== Loaded Barcode Settings ===");
-            Console.WriteLine($"Barcode Type   : {generator.BarcodeType}");
-            Console.WriteLine($"Code Text      : {generator.CodeText}");
+            // Display loaded properties (simulating a property editor view).
+            Console.WriteLine("Loaded Barcode Settings:");
+            Console.WriteLine($"  Symbology: {generator.BarcodeType.TypeName}");
+            Console.WriteLine($"  CodeText : {generator.CodeText}");
+            Console.WriteLine($"  XDimension (pt): {generator.Parameters.Barcode.XDimension.Point}");
+            Console.WriteLine($"  BarHeight (pt) : {generator.Parameters.Barcode.BarHeight.Point}");
+            Console.WriteLine($"  Checksum Enabled: {generator.Parameters.Barcode.IsChecksumEnabled}");
+            Console.WriteLine($"  Show Checksum: {generator.Parameters.Barcode.ChecksumAlwaysShow}");
 
-            // Bar color (foreground)
-            Console.WriteLine($"Bar Color      : {generator.Parameters.Barcode.BarColor}");
+            // ----------------------------------------------------------------
+            // Modify a couple of properties to demonstrate editing capabilities.
+            // ----------------------------------------------------------------
+            generator.Parameters.Barcode.XDimension.Point = 3f;   // Increase bar width.
+            generator.Parameters.Barcode.BarHeight.Point = 50f;  // Increase barcode height.
 
-            // Background color
-            Console.WriteLine($"Back Color     : {generator.Parameters.BackColor}");
-
-            // X-Dimension (smallest bar width) in pixels
-            Console.WriteLine($"X-Dimension    : {generator.Parameters.Barcode.XDimension.Pixels} px");
-
-            // Bar height for 1D barcodes (if applicable) in pixels
-            Console.WriteLine($"Bar Height     : {generator.Parameters.Barcode.BarHeight.Pixels} px");
-
-            // Image size when AutoSizeMode is set to Interpolation or Nearest
-            Console.WriteLine($"Image Width    : {generator.Parameters.ImageWidth.Pixels} px");
-            Console.WriteLine($"Image Height   : {generator.Parameters.ImageHeight.Pixels} px");
-
-            // Padding values (left, top, right, bottom) in points
-            Console.WriteLine("Padding (pt):");
-            Console.WriteLine($"  Left   : {generator.Parameters.Barcode.Padding.Left.Point} pt");
-            Console.WriteLine($"  Top    : {generator.Parameters.Barcode.Padding.Top.Point} pt");
-            Console.WriteLine($"  Right  : {generator.Parameters.Barcode.Padding.Right.Point} pt");
-            Console.WriteLine($"  Bottom : {generator.Parameters.Barcode.Padding.Bottom.Point} pt");
-
-            // Example of a caption property
-            Console.WriteLine($"Caption Above Visible : {generator.Parameters.CaptionAbove.Visible}");
-            Console.WriteLine($"Caption Below Visible : {generator.Parameters.CaptionBelow.Visible}");
-
-            // Save a preview image to verify that settings are applied.
-            const string previewFile = "preview.png";
-            generator.Save(previewFile);
-            Console.WriteLine($"Preview image saved to '{previewFile}'.");
+            // Save the barcode image using the updated settings.
+            generator.Save(outputImage);
+            Console.WriteLine($"Barcode image saved to '{outputImage}'.");
         }
     }
 }

@@ -2,51 +2,45 @@ using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
+using Aspose.BarCode.BarCodeRecognition;
 
+/// <summary>
+/// Demonstrates exporting and importing barcode generator settings using XML and memory streams.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// </summary>
     static void Main()
     {
-        // Sample XML representing barcode settings.
-        // In a real scenario this XML would be read from a database BLOB field.
-        string xmlContent = @"<?xml version=""1.0"" encoding=""utf-8""?>
-<BarcodeGenerator>
-  <Parameters>
-    <Barcode>
-      <CodeText>1234567890</CodeText>
-      <EncodeType>Code128</EncodeType>
-      <BarColor>#0000FF</BarColor>
-    </Barcode>
-    <ImageWidth>
-      <Pixels>300</Pixels>
-    </ImageWidth>
-    <ImageHeight>
-      <Pixels>150</Pixels>
-    </ImageHeight>
-    <Resolution>96</Resolution>
-  </Parameters>
-</BarcodeGenerator>";
-
-        // Convert the XML string to a byte array as it would be stored in a BLOB.
-        byte[] xmlBytes = System.Text.Encoding.UTF8.GetBytes(xmlContent);
-
-        // Load the XML from the byte array using a MemoryStream.
-        using (var memoryStream = new MemoryStream(xmlBytes))
+        // Step 1: Create a barcode generator with sample settings.
+        using (var originalGenerator = new BarcodeGenerator(EncodeTypes.Code128, "12345"))
         {
-            // Import barcode settings from the XML stream.
-            using (var generator = BarcodeGenerator.ImportFromXml(memoryStream))
+            // Enable checksum and set barcode color to blue.
+            originalGenerator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
+            originalGenerator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Blue;
+
+            // Step 2: Export the generator settings to XML stored in a MemoryStream.
+            using (var exportStream = new MemoryStream())
             {
-                // Generate the barcode image with the imported settings.
-                using (Bitmap barcodeImage = generator.GenerateBarCodeImage())
+                originalGenerator.ExportToXml(exportStream);
+                // Retrieve the XML bytes as they would be stored in a DB BLOB field.
+                byte[] xmlBlob = exportStream.ToArray();
+
+                // Step 3: Simulate reading the XML BLOB from the database.
+                using (var importStream = new MemoryStream(xmlBlob))
                 {
-                    // Save the generated image to a file.
-                    barcodeImage.Save("output.png", ImageFormat.Png);
+                    // Step 4: Deserialize the barcode settings from the XML.
+                    using (var deserializedGenerator = BarcodeGenerator.ImportFromXml(importStream))
+                    {
+                        // Verify that deserialization succeeded by generating the barcode image.
+                        string outputPath = "deserialized_barcode.png";
+                        deserializedGenerator.Save(outputPath, BarCodeImageFormat.Png);
+                        Console.WriteLine($"Barcode image saved to: {Path.GetFullPath(outputPath)}");
+                    }
                 }
             }
         }
-
-        Console.WriteLine("Barcode generated and saved as output.png");
     }
 }
