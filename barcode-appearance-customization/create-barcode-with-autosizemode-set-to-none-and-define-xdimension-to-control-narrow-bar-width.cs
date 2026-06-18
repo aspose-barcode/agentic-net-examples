@@ -2,23 +2,36 @@ using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
+/// <summary>
+/// Demonstrates generating a Code128 barcode and saving it as an image file.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Generates a barcode and writes it to disk.
+    /// </summary>
     static void Main()
     {
-        // Create a Code128 barcode generator with sample code text
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
+        // Define the output file path for the generated barcode image.
+        string outputPath = "barcode.png";
+
+        // Create a BarcodeGenerator for Code128 with the specified data.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            // Disable automatic sizing
+            // Disable automatic sizing so we can set dimensions manually.
             generator.Parameters.AutoSizeMode = AutoSizeMode.None;
 
-            // Set the narrow bar width (XDimension) to 2 points
+            // Set the narrow bar width (XDimension) to 2 points.
             generator.Parameters.Barcode.XDimension.Point = 2f;
 
-            // Save the barcode image to a PNG file
-            generator.Save("barcode.png");
+            // Set the bar height for the 1D barcode (since AutoSizeMode is None).
+            generator.Parameters.Barcode.BarHeight.Point = 40f;
+
+            // Save the generated barcode image to the specified path.
+            generator.Save(outputPath);
         }
 
-        Console.WriteLine("Barcode generated and saved as barcode.png");
+        // Inform the user that the barcode has been saved.
+        Console.WriteLine($"Barcode saved to {outputPath}");
     }
 }

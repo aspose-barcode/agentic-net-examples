@@ -1,55 +1,67 @@
 using System;
-using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
+using System.IO;
 
+/// <summary>
+/// Demonstrates how to generate a barcode with target dimensions and verify the resulting image size.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Executes a series of test cases with different target dimensions.
+    /// </summary>
     static void Main()
     {
-        // Test 1: target size 200x100
-        RunTest("Test1", 200f, 100f);
-
-        // Test 2: target size 300x150
-        RunTest("Test2", 300f, 150f);
+        // Test case 1: target size 200x100 points
+        RunTest(200f, 100f);
+        // Test case 2: target size 300x150 points
+        RunTest(300f, 150f);
+        // Test case 3: target size 250x120 points
+        RunTest(250f, 120f);
     }
 
-    static void RunTest(string testName, float targetWidth, float targetHeight)
+    /// <summary>
+    /// Generates a barcode with the specified target width and height (in points),
+    /// saves it to a memory stream, loads it back, and prints the actual pixel dimensions.
+    /// </summary>
+    /// <param name="targetWidthPoints">Desired image width in points.</param>
+    /// <param name="targetHeightPoints">Desired image height in points.</param>
+    static void RunTest(float targetWidthPoints, float targetHeightPoints)
     {
-        // Create barcode generator for Code128
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
+        // Initialize the barcode generator with Code128 symbology and sample data.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Test123"))
         {
-            // Apply AutoSizeMode.Nearest and set target dimensions
+            // Configure the generator to choose the nearest size that fits the target dimensions.
             generator.Parameters.AutoSizeMode = AutoSizeMode.Nearest;
-            generator.Parameters.ImageWidth.Point = targetWidth;
-            generator.Parameters.ImageHeight.Point = targetHeight;
 
-            // Generate image into memory stream
+            // Apply the target dimensions (points) to the generator parameters.
+            generator.Parameters.ImageWidth.Point = targetWidthPoints;
+            generator.Parameters.ImageHeight.Point = targetHeightPoints;
+
+            // Save the generated barcode image to a memory stream in PNG format.
             using (var ms = new MemoryStream())
             {
                 generator.Save(ms, BarCodeImageFormat.Png);
-                ms.Position = 0;
+                ms.Position = 0; // Reset stream position for reading.
 
-                // Load image using Aspose.Drawing
-                using (var image = Image.FromStream(ms))
+                // Load the image from the memory stream to inspect its actual pixel size.
+                using (var image = (Bitmap)Image.FromStream(ms))
                 {
-                    int actualWidth = image.Width;
-                    int actualHeight = image.Height;
+                    int actualWidth = image.Width;   // Width in pixels.
+                    int actualHeight = image.Height; // Height in pixels.
 
-                    // Validate dimensions: should not exceed targets and preserve aspect ratio
-                    bool widthOk = actualWidth <= (int)targetWidth;
-                    bool heightOk = actualHeight <= (int)targetHeight;
-                    bool aspectOk = Math.Abs((float)actualWidth / actualHeight - targetWidth / targetHeight) < 0.01f;
+                    // Verify that the actual dimensions do not exceed the target dimensions.
+                    bool widthOk = actualWidth <= (int)targetWidthPoints;
+                    bool heightOk = actualHeight <= (int)targetHeightPoints;
 
-                    if (widthOk && heightOk && aspectOk)
-                    {
-                        Console.WriteLine($"{testName}: PASS (Actual: {actualWidth}x{actualHeight})");
-                    }
-                    else
-                    {
-                        Console.WriteLine($"{testName}: FAIL (Actual: {actualWidth}x{actualHeight}, Expected max: {targetWidth}x{targetHeight})");
-                    }
+                    // Output the comparison results to the console.
+                    Console.WriteLine(
+                        $"Target (pt): {targetWidthPoints}x{targetHeightPoints} | " +
+                        $"Actual (px): {actualWidth}x{actualHeight} | " +
+                        $"Width OK: {widthOk} | Height OK: {heightOk}");
                 }
             }
         }

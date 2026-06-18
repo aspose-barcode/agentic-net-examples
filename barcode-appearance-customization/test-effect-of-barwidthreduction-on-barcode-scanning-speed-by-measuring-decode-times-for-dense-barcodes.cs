@@ -1,70 +1,74 @@
 using System;
 using System.Diagnostics;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
+/// <summary>
+/// Demonstrates how different BarWidthReduction values affect barcode generation and recognition performance.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Generates a Code128 barcode with varying BarWidthReduction values,
+    /// saves it to a memory stream, and measures the time required to decode it.
+    /// </summary>
     static void Main()
     {
-        // Prepare a dense Code128 barcode text (100 characters)
-        string denseText = new string('A', 100);
+        // Dense barcode text (50 numeric characters) to test decoding performance.
+        string codeText = "12345678901234567890123456789012345678901234567890";
 
-        // File names for the two test images
-        const string fileNoReduction = "barcode_no_reduction.png";
-        const string fileWithReduction = "barcode_with_reduction.png";
+        // Array of BarWidthReduction values (in points) to evaluate.
+        float[] reductions = new float[] { 0f, 0.1f, 0.2f };
 
-        // Generate barcode without BarWidthReduction
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, denseText))
+        // Iterate over each reduction value and perform generation + decoding.
+        foreach (float reduction in reductions)
         {
-            // Ensure the image size is sufficient for the long text
-            generator.Parameters.ImageWidth.Point = 600f;
-            generator.Parameters.ImageHeight.Point = 150f;
-
-            // No bar width reduction
-            generator.Parameters.Barcode.BarWidthReduction.Point = 0f;
-
-            generator.Save(fileNoReduction);
-        }
-
-        // Generate barcode with BarWidthReduction
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, denseText))
-        {
-            generator.Parameters.ImageWidth.Point = 600f;
-            generator.Parameters.ImageHeight.Point = 150f;
-
-            // Apply a small reduction (e.g., 0.5 points)
-            generator.Parameters.Barcode.BarWidthReduction.Point = 0.5f;
-
-            generator.Save(fileWithReduction);
-        }
-
-        // Measure decoding time for barcode without reduction
-        long timeNoReduction = MeasureDecodeTime(fileNoReduction);
-        // Measure decoding time for barcode with reduction
-        long timeWithReduction = MeasureDecodeTime(fileWithReduction);
-
-        Console.WriteLine($"Decoding time without BarWidthReduction: {timeNoReduction} ms");
-        Console.WriteLine($"Decoding time with BarWidthReduction (0.5pt): {timeWithReduction} ms");
-    }
-
-    static long MeasureDecodeTime(string imagePath)
-    {
-        var stopwatch = new Stopwatch();
-        stopwatch.Start();
-
-        using (var reader = new BarCodeReader(imagePath, DecodeType.Code128))
-        {
-            // Read all barcodes in the image (there should be only one)
-            foreach (BarCodeResult result in reader.ReadBarCodes())
+            // Create a barcode generator for Code128 with the specified text.
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
             {
-                // Output the decoded text to ensure correctness
-                Console.WriteLine($"Decoded from {imagePath}: {result.CodeText}");
+                // Apply the current BarWidthReduction setting.
+                generator.Parameters.Barcode.BarWidthReduction.Point = reduction;
+
+                // Use a memory stream to hold the generated PNG image.
+                using (var ms = new MemoryStream())
+                {
+                    // Save the barcode image into the memory stream.
+                    generator.Save(ms, BarCodeImageFormat.Png);
+                    ms.Position = 0; // Reset stream position for reading.
+
+                    // Load the image from the stream into a Bitmap for decoding.
+                    using (var bitmap = new Bitmap(ms))
+                    {
+                        // Initialize a barcode reader configured for Code128.
+                        using (var reader = new BarCodeReader(bitmap, DecodeType.Code128))
+                        {
+                            // Start timing the decode operation.
+                            var stopwatch = Stopwatch.StartNew();
+
+                            // Perform the barcode reading.
+                            var results = reader.ReadBarCodes();
+
+                            // Stop timing after reading completes.
+                            stopwatch.Stop();
+
+                            // Output the decode results and elapsed time.
+                            if (results.Length > 0)
+                            {
+                                Console.WriteLine(
+                                    $"BarWidthReduction: {reduction}, DecodeTime: {stopwatch.ElapsedMilliseconds} ms, DetectedText: {results[0].CodeText}");
+                            }
+                            else
+                            {
+                                Console.WriteLine(
+                                    $"BarWidthReduction: {reduction}, DecodeTime: {stopwatch.ElapsedMilliseconds} ms, No barcode detected.");
+                            }
+                        }
+                    }
+                }
             }
         }
-
-        stopwatch.Stop();
-        return stopwatch.ElapsedMilliseconds;
     }
 }

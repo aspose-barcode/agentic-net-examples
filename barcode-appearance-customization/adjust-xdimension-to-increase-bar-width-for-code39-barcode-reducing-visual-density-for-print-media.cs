@@ -2,23 +2,30 @@ using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
+/// <summary>
+/// Demonstrates generating a Code39 barcode using Aspose.BarCode library.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Generates a Code39 barcode image and saves it to a file.
+    /// </summary>
     static void Main()
     {
-        // Create a Code39 barcode generator with sample text
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code39, "CODE39"))
+        // Initialize a barcode generator for Code39FullASCII with the desired text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code39FullASCII, "CODE39"))
         {
-            // Increase XDimension to make bars wider (e.g., 2 points)
-            generator.Parameters.Barcode.XDimension.Point = 2f;
+            // Set the X-dimension (module width) to 2 points, making bars and spaces wider.
+            generator.Parameters.Barcode.XDimension.Point = 2f; // 2 points per module
 
-            // Optionally, set a higher resolution for better print quality
-            generator.Parameters.Resolution = 300;
+            // Define a bar height of 50 points for improved readability.
+            generator.Parameters.Barcode.BarHeight.Point = 50f;
 
-            // Save the barcode image to a PNG file
-            generator.Save("code39_wide.png");
+            // Save the generated barcode as a PNG image file.
+            generator.Save("code39.png");
         }
 
-        Console.WriteLine("Barcode generated: code39_wide.png");
+        // Inform the user that the barcode has been created.
+        Console.WriteLine("Barcode generated: code39.png");
     }
 }

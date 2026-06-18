@@ -1,19 +1,19 @@
 using System;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.ComplexBarcode;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates generation of a MaxiCode barcode (Mode 2) using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Generates a MaxiCode barcode, applies rotation,
+    /// padding, and canvas size, then saves the image to disk.
+    /// </summary>
     static void Main()
     {
-        // Define canvas size (points)
-        const float canvasWidth = 300f;
-        const float canvasHeight = 300f;
-
-        // Create MaxiCode codetext (Mode 2 example)
+        // Prepare MaxiCode codetext (Mode 2) with sample data
         var maxiCodeCodetext = new MaxiCodeCodetextMode2
         {
             PostalCode = "524032140",
@@ -22,31 +22,29 @@ class Program
             SecondMessage = new MaxiCodeStandardSecondMessage { Message = "Sample MaxiCode" }
         };
 
-        // Initialize ComplexBarcodeGenerator with the codetext
+        // Create the ComplexBarcodeGenerator using the codetext
         using (var generator = new ComplexBarcodeGenerator(maxiCodeCodetext))
         {
-            // Use interpolation auto-size to fit the canvas
-            generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
-            generator.Parameters.ImageWidth.Point = canvasWidth;
-            generator.Parameters.ImageHeight.Point = canvasHeight;
+            // Apply a 45-degree rotation to the barcode
+            generator.Parameters.RotationAngle = 45f;
 
-            // Set custom padding (points)
-            generator.Parameters.Barcode.Padding.Left.Point = 10f;
-            generator.Parameters.Barcode.Padding.Top.Point = 10f;
-            generator.Parameters.Barcode.Padding.Right.Point = 10f;
-            generator.Parameters.Barcode.Padding.Bottom.Point = 10f;
+            // Apply uniform padding of 30 points on each side
+            generator.Parameters.Barcode.Padding.Left.Point   = 30f;
+            generator.Parameters.Barcode.Padding.Top.Point    = 30f;
+            generator.Parameters.Barcode.Padding.Right.Point  = 30f;
+            generator.Parameters.Barcode.Padding.Bottom.Point = 30f;
 
-            // Generate the barcode image
-            using (Bitmap bitmap = generator.GenerateBarCodeImage())
-            {
-                // Rotate the image by 90 degrees
-                bitmap.RotateFlip(RotateFlipType.Rotate90FlipNone);
+            // Define the target canvas size (in points)
+            generator.Parameters.ImageWidth.Point  = 300f;
+            generator.Parameters.ImageHeight.Point = 150f;
 
-                // Save the final image
-                bitmap.Save("MaxiCode.png", ImageFormat.Png);
-            }
+            // Ensure the MaxiCode mode is set to Mode2 (optional, default is Mode2)
+            generator.Parameters.Barcode.MaxiCode.MaxiCodeMode = MaxiCodeMode.Mode2;
+
+            // Save the generated barcode image to a file
+            const string outputPath = "maxicode.png";
+            generator.Save(outputPath);
+            Console.WriteLine($"MaxiCode barcode saved to {outputPath}");
         }
-
-        Console.WriteLine("MaxiCode barcode generated and saved as MaxiCode.png");
     }
 }
