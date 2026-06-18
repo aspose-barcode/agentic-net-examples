@@ -5,65 +5,108 @@ using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates generating a Code128 barcode with custom colors,
+/// saving it as a PNG, and verifying that only the expected colors are present.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a barcode image, saves it, and validates its pixel colors.
+    /// </summary>
     static void Main()
     {
-        // Define file path
-        string filePath = "barcode.png";
+        // --------------------------------------------------------------------
+        // Define output file path and expected colors for the barcode and background.
+        // --------------------------------------------------------------------
+        string outputPath = "barcode.png";
 
-        // Define expected colors
-        Color expectedBarColor = Color.FromArgb(255, 255, 0, 0); // Red
-        Color expectedBackColor = Color.FromArgb(255, 255, 255, 255); // White
+        // Expected bar (foreground) color: solid red.
+        Color expectedBarColor = Color.FromArgb(255, 0, 0);
+        // Expected background color: solid white.
+        Color expectedBackColor = Color.FromArgb(255, 255, 255);
 
-        // Create barcode generator with Code128 symbology
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+        // --------------------------------------------------------------------
+        // Generate the barcode with the specified colors and save it as PNG.
+        // --------------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
         {
-            // Set colors
+            // Apply the custom colors to the generator parameters.
             generator.Parameters.Barcode.BarColor = expectedBarColor;
             generator.Parameters.BackColor = expectedBackColor;
 
-            // Save barcode image as PNG
-            generator.Save(filePath, BarCodeImageFormat.Png);
+            // Save the generated barcode image to the defined path.
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Verify that the saved PNG contains the exact RGB values
-        if (!File.Exists(filePath))
+        // --------------------------------------------------------------------
+        // Verify that the image file was created successfully.
+        // --------------------------------------------------------------------
+        if (!File.Exists(outputPath))
         {
-            Console.WriteLine("Error: Barcode file was not created.");
+            Console.WriteLine($"Failed to create barcode image at '{outputPath}'.");
             return;
         }
 
-        using (var image = (Bitmap)Image.FromFile(filePath))
+        // --------------------------------------------------------------------
+        // Load the image and inspect each pixel to ensure only the expected colors appear.
+        // --------------------------------------------------------------------
+        bool barColorFound = false;      // Tracks if at least one bar pixel is found.
+        bool backColorFound = false;     // Tracks if at least one background pixel is found.
+        bool mismatchFound = false;      // Tracks if any unexpected color is encountered.
+
+        using (var bitmap = new Bitmap(outputPath))
         {
-            bool barColorFound = false;
-            bool backColorFound = false;
-
-            // Scan all pixels (small image, acceptable for verification)
-            for (int y = 0; y < image.Height; y++)
+            // Iterate over every pixel in the bitmap.
+            for (int y = 0; y < bitmap.Height; y++)
             {
-                for (int x = 0; x < image.Width; x++)
+                for (int x = 0; x < bitmap.Width; x++)
                 {
-                    Color pixel = image.GetPixel(x, y);
+                    // Retrieve the color of the current pixel.
+                    Color pixel = bitmap.GetPixel(x, y);
+
+                    // Compare the pixel's ARGB value with the expected colors.
                     if (pixel.ToArgb() == expectedBarColor.ToArgb())
+                    {
                         barColorFound = true;
-                    if (pixel.ToArgb() == expectedBackColor.ToArgb())
+                    }
+                    else if (pixel.ToArgb() == expectedBackColor.ToArgb())
+                    {
                         backColorFound = true;
-
-                    // Early exit if both found
-                    if (barColorFound && backColorFound)
+                    }
+                    else
+                    {
+                        // An unexpected color was found; record the mismatch and exit loops.
+                        mismatchFound = true;
+                        Console.WriteLine($"Pixel at ({x},{y}) has unexpected color ARGB={pixel.ToArgb():X8}.");
                         break;
+                    }
                 }
-                if (barColorFound && backColorFound)
-                    break;
-            }
 
-            if (!barColorFound)
-                Console.WriteLine("Verification failed: Bar color not found in the image.");
-            else if (!backColorFound)
-                Console.WriteLine("Verification failed: Background color not found in the image.");
-            else
-                Console.WriteLine("Verification succeeded: Both bar and background colors match the expected RGB values.");
+                // Break outer loop if a mismatch was already detected.
+                if (mismatchFound) break;
+            }
+        }
+
+        // --------------------------------------------------------------------
+        // Output verification results based on the flags set during pixel inspection.
+        // --------------------------------------------------------------------
+        if (mismatchFound)
+        {
+            Console.WriteLine("Verification failed: unexpected colors detected.");
+        }
+        else if (!barColorFound)
+        {
+            Console.WriteLine("Verification failed: bar color not found in the image.");
+        }
+        else if (!backColorFound)
+        {
+            Console.WriteLine("Verification failed: background color not found in the image.");
+        }
+        else
+        {
+            Console.WriteLine("Verification passed: image contains only the specified bar and background colors.");
         }
     }
 }

@@ -1,37 +1,38 @@
 using System;
-using System.Collections.Generic;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
-namespace BarcodeColorSchemes
+/// <summary>
+/// Demonstrates generating Code128 barcodes with different color schemes using Aspose.BarCode.
+/// </summary>
+class Program
 {
-    class Program
+    /// <summary>
+    /// Entry point of the application. Generates barcode images with various bar and background colors.
+    /// </summary>
+    static void Main()
     {
-        static void Main()
+        // Initialize a BarcodeGenerator for Code128 with the sample text "Sample123".
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
         {
-            // Define a set of color schemes (bar color, background color, file suffix)
-            var colorSchemes = new List<(Color BarColor, Color BackColor, string Suffix)>
+            // Define an array of color schemes: bar color, background color, and output file name.
+            var colorSchemes = new (Color BarColor, Color BackColor, string FileName)[]
             {
-                (Color.Black, Color.White, "black_on_white"),
-                (Color.White, Color.Black, "white_on_black"),
-                (Color.Blue, Color.LightGray, "blue_on_lightgray"),
-                (Color.Green, Color.Yellow, "green_on_yellow")
+                (Color.Black, Color.White, "barcode_black_on_white.png"),
+                (Color.White, Color.Black, "barcode_white_on_black.png"),
+                (Color.Blue, Color.Yellow, "barcode_blue_on_yellow.png")
             };
 
-            // Create a single BarcodeGenerator instance for Code128 with sample text
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
+            // Iterate over each scheme, apply colors, and save the barcode image.
+            foreach (var scheme in colorSchemes)
             {
-                // Iterate over each color scheme, apply colors, and save the image
-                foreach (var scheme in colorSchemes)
-                {
-                    generator.Parameters.Barcode.BarColor = scheme.BarColor;
-                    generator.Parameters.BackColor = scheme.BackColor;
-
-                    string fileName = $"barcode_{scheme.Suffix}.png";
-                    generator.Save(fileName);
-                    Console.WriteLine($"Saved barcode image: {fileName}");
-                }
+                // Set the bar (foreground) color.
+                generator.Parameters.Barcode.BarColor = scheme.BarColor;
+                // Set the background color.
+                generator.Parameters.BackColor = scheme.BackColor;
+                // Save the generated barcode to a PNG file.
+                generator.Save(scheme.FileName, BarCodeImageFormat.Png);
             }
         }
     }
