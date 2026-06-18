@@ -1,49 +1,95 @@
 using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing;
 
+/// <summary>
+/// Demonstrates how to calculate the optimal XDimension for a barcode
+/// so that the generated image meets a desired pixel width, and then
+/// creates and saves the barcode using that XDimension.
+/// </summary>
 class Program
 {
-    // Calculates an approximate optimal XDimension (in points) for a 1D barcode.
-    // The calculation assumes ~11 modules per character for Code128 (common for many 1D symbologies).
-    // desiredWidthPoints: target image width in points (1 point = 1/72 inch).
-    static float CalculateOptimalXDimension(string codeText, BaseEncodeType encodeType, float desiredWidthPoints)
+    /// <summary>
+    /// Calculates the smallest XDimension (in points) that yields an image width
+    /// greater than or equal to the desired pixel width for the given symbology.
+    /// </summary>
+    /// <param name="symbology">The barcode symbology to use.</param>
+    /// <param name="codeText">The text to encode in the barcode.</param>
+    /// <param name="targetPixelWidth">The minimum width (in pixels) required for the generated image.</param>
+    /// <returns>The optimal XDimension value (in points).</returns>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="targetPixelWidth"/> is not positive.</exception>
+    static float CalculateOptimalXDimension(BaseEncodeType symbology, string codeText, int targetPixelWidth)
     {
-        // Simple estimation of total modules based on code length.
-        // For more accurate results, you would need to query the symbology's exact module count.
-        const int modulesPerCharacter = 11;
-        int totalModules = codeText.Length * modulesPerCharacter;
+        // Validate input.
+        if (targetPixelWidth <= 0)
+            throw new ArgumentOutOfRangeException(nameof(targetPixelWidth), "Target width must be positive.");
 
-        if (totalModules == 0)
-            throw new ArgumentException("Code text must contain at least one character.", nameof(codeText));
+        // Start with a small XDimension and increase until the generated image meets the width.
+        float xDimension = 0.5f; // points
+        const float maxXDimension = 10f; // safety upper bound
+        const float step = 0.5f;        // increment step
 
-        // XDimension = desired width / total modules
-        return desiredWidthPoints / totalModules;
+        while (xDimension <= maxXDimension)
+        {
+            // Create a barcode generator for the current XDimension.
+            using (var generator = new BarcodeGenerator(symbology, codeText))
+            {
+                // Disable automatic sizing so XDimension directly controls bar width.
+                generator.Parameters.AutoSizeMode = AutoSizeMode.None;
+
+                // Set a reasonable bar height (points) for 1D barcodes.
+                generator.Parameters.Barcode.BarHeight.Point = 30f;
+
+                // Keep the default resolution (96 dpi) unchanged.
+                generator.Parameters.Resolution = 96f;
+
+                // Apply the current XDimension.
+                generator.Parameters.Barcode.XDimension.Point = xDimension;
+
+                // Generate the barcode image and check its width.
+                using (var bitmap = generator.GenerateBarCodeImage())
+                {
+                    int actualWidth = bitmap.Width; // pixels
+                    if (actualWidth >= targetPixelWidth)
+                        return xDimension; // Desired width reached.
+                }
+            }
+
+            // Increase XDimension and try again.
+            xDimension += step;
+        }
+
+        // If no XDimension satisfied the requirement, return the maximum tried value.
+        return maxXDimension;
     }
 
+    /// <summary>
+    /// Entry point of the program. Calculates the optimal XDimension for a Code128 barcode,
+    /// generates the barcode using that XDimension, and saves it to a PNG file.
+    /// </summary>
     static void Main()
     {
-        // Desired image width: 300 points (~4.17 inches at 72 DPI)
-        float desiredWidthPoints = 300f;
+        // Example: Code128 barcode, desired image width 300 pixels.
+        BaseEncodeType symbology = EncodeTypes.Code128;
         string codeText = "1234567890";
-        BaseEncodeType encodeType = EncodeTypes.Code128;
+        int desiredWidthPixels = 300;
 
-        // Calculate optimal XDimension
-        float optimalXDim = CalculateOptimalXDimension(codeText, encodeType, desiredWidthPoints);
-        Console.WriteLine($"Calculated optimal XDimension: {optimalXDim:F3} points");
+        // Determine the optimal XDimension for the desired width.
+        float optimalXDim = CalculateOptimalXDimension(symbology, codeText, desiredWidthPixels);
+        Console.WriteLine($"Optimal XDimension (points): {optimalXDim}");
 
-        // Create barcode generator and apply the calculated XDimension
-        using (var generator = new BarcodeGenerator(encodeType, codeText))
+        // Generate the barcode using the calculated XDimension and save it.
+        using (var generator = new BarcodeGenerator(symbology, codeText))
         {
-            // Set the XDimension using the .Point member as required by the API
+            generator.Parameters.AutoSizeMode = AutoSizeMode.None;
+            generator.Parameters.Barcode.BarHeight.Point = 30f;
+            generator.Parameters.Resolution = 96f;
             generator.Parameters.Barcode.XDimension.Point = optimalXDim;
 
-            // Optionally set the image width to the desired value for consistency
-            generator.Parameters.ImageWidth.Point = desiredWidthPoints;
-
-            // Save the barcode image
-            generator.Save("barcode.png");
-            Console.WriteLine("Barcode image saved as 'barcode.png'.");
+            string outputPath = "optimal_code128.png";
+            generator.Save(outputPath);
+            Console.WriteLine($"Barcode saved to: {outputPath}");
         }
     }
 }

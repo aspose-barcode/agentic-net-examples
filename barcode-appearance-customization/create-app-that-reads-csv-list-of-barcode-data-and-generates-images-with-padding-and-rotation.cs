@@ -2,100 +2,131 @@ using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Reads barcode specifications from a CSV file and generates corresponding PNG images.
+/// </summary>
 class Program
 {
-    static void Main(string[] args)
+    /// <summary>
+    /// Application entry point. Processes each line of the CSV and creates barcode images.
+    /// </summary>
+    static void Main()
     {
-        // Determine CSV file path: first argument or default sample file.
-        string csvPath = args.Length > 0 ? args[0] : "barcodes.csv";
+        const string csvPath = "barcodes.csv";
+        const string outputDir = "output";
 
+        // Verify that the CSV file exists before proceeding.
         if (!File.Exists(csvPath))
         {
             Console.WriteLine($"CSV file not found: {csvPath}");
-            // Create a small sample CSV so the program can still run.
-            File.WriteAllText(csvPath, "1234567890,code1.png,0\n9876543210,code2.png,90");
-            Console.WriteLine("Sample CSV created. Re-run the program to generate images.");
             return;
         }
 
-        // Read all non‑empty lines.
-        string[] lines = File.ReadAllLines(csvPath);
-        foreach (string rawLine in lines)
+        // Ensure the output directory exists; create it if necessary.
+        if (!Directory.Exists(outputDir))
         {
-            if (string.IsNullOrWhiteSpace(rawLine))
+            Directory.CreateDirectory(outputDir);
+        }
+
+        // Expected CSV format per line: Symbology,CodeText,RotationAngle,Padding
+        // Example: Code128,123ABC,45,20
+        foreach (var line in File.ReadAllLines(csvPath))
+        {
+            // Skip empty or whitespace-only lines.
+            if (string.IsNullOrWhiteSpace(line))
                 continue;
 
-            // Expected format: CodeText,OutputFileName,RotationDegrees
-            string[] parts = rawLine.Split(',');
-            if (parts.Length < 2)
+            // Split the line into its constituent parts.
+            var parts = line.Split(',');
+
+            // Validate that we have at least four columns.
+            if (parts.Length < 4)
             {
-                Console.WriteLine($"Invalid line (needs at least CodeText and OutputFileName): {rawLine}");
+                Console.WriteLine($"Invalid line (expected 4 columns): {line}");
                 continue;
             }
 
-            string codeText = parts[0].Trim();
-            string outputFile = parts[1].Trim();
-            int rotation = 0;
-            if (parts.Length >= 3 && int.TryParse(parts[2].Trim(), out int rot))
-                rotation = rot % 360; // normalize
+            // Trim whitespace from each part.
+            string symbologyName = parts[0].Trim();
+            string codeText = parts[1].Trim();
 
-            // Create barcode generator (using Code128 as a generic symbology)
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128))
+            // Parse rotation angle; report and skip on failure.
+            if (!float.TryParse(parts[2].Trim(), out float rotationAngle))
             {
-                generator.CodeText = codeText;
+                Console.WriteLine($"Invalid rotation angle in line: {line}");
+                continue;
+            }
 
-                // Set uniform padding of 10 points on each side
-                generator.Parameters.Barcode.Padding.Left.Point = 10f;
-                generator.Parameters.Barcode.Padding.Top.Point = 10f;
-                generator.Parameters.Barcode.Padding.Right.Point = 10f;
-                generator.Parameters.Barcode.Padding.Bottom.Point = 10f;
+            // Parse padding value; report and skip on failure.
+            if (!float.TryParse(parts[3].Trim(), out float padding))
+            {
+                Console.WriteLine($"Invalid padding value in line: {line}");
+                continue;
+            }
 
-                // Generate the barcode image
-                using (Bitmap bmp = generator.GenerateBarCodeImage())
+            // Resolve the symbology name to an EncodeTypes field.
+            var field = typeof(EncodeTypes).GetField(symbologyName);
+            if (field == null)
+            {
+                Console.WriteLine($"Unknown symbology: {symbologyName}");
+                continue;
+            }
+
+            // Cast the field value to BaseEncodeType.
+            BaseEncodeType encodeType = (BaseEncodeType)field.GetValue(null);
+
+            // Create a barcode generator with the specified type and text.
+            using (var generator = new BarcodeGenerator(encodeType, codeText))
+            {
+                // Apply rotation.
+                generator.Parameters.RotationAngle = rotationAngle;
+
+                // Apply uniform padding on all sides.
+                generator.Parameters.Barcode.Padding.Left.Point = padding;
+                generator.Parameters.Barcode.Padding.Top.Point = padding;
+                generator.Parameters.Barcode.Padding.Right.Point = padding;
+                generator.Parameters.Barcode.Padding.Bottom.Point = padding;
+
+                // Build a safe file name by replacing invalid characters.
+                string safeCodeText = codeText.Replace(Path.GetInvalidFileNameChars(), '_');
+                string fileName = $"{symbologyName}_{safeCodeText}.png";
+                string outputPath = Path.Combine(outputDir, fileName);
+
+                // Attempt to save the generated barcode image.
+                try
                 {
-                    Bitmap finalBmp = bmp;
-
-                    // Apply rotation if needed (supports only multiples of 90 degrees)
-                    if (rotation != 0)
-                    {
-                        RotateFlipType rotateType = RotateFlipType.RotateNoneFlipNone;
-                        switch (rotation)
-                        {
-                            case 90:
-                                rotateType = RotateFlipType.Rotate90FlipNone;
-                                break;
-                            case 180:
-                                rotateType = RotateFlipType.Rotate180FlipNone;
-                                break;
-                            case 270:
-                                rotateType = RotateFlipType.Rotate270FlipNone;
-                                break;
-                            default:
-                                Console.WriteLine($"Unsupported rotation {rotation}° for {outputFile}. Skipping rotation.");
-                                break;
-                        }
-
-                        if (rotateType != RotateFlipType.RotateNoneFlipNone)
-                        {
-                            // Clone to avoid modifying the original bitmap used by the generator
-                            finalBmp = (Bitmap)bmp.Clone();
-                            finalBmp.RotateFlip(rotateType);
-                        }
-                    }
-
-                    // Save the final image as PNG
-                    finalBmp.Save(outputFile, ImageFormat.Png);
-
-                    if (!ReferenceEquals(finalBmp, bmp))
-                        finalBmp.Dispose();
-
-                    Console.WriteLine($"Generated: {outputFile}");
+                    generator.Save(outputPath);
+                    Console.WriteLine($"Generated: {outputPath}");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Failed to generate barcode for line: {line}");
+                    Console.WriteLine($"Error: {ex.Message}");
                 }
             }
         }
+    }
+}
+
+/// <summary>
+/// Extension methods for string manipulation.
+/// </summary>
+static class StringExtensions
+{
+    /// <summary>
+    /// Replaces each character in <paramref name="chars"/> with the specified <paramref name="replacement"/>.
+    /// </summary>
+    /// <param name="str">The original string.</param>
+    /// <param name="chars">Array of characters to replace.</param>
+    /// <param name="replacement">The character to insert in place of each found character.</param>
+    /// <returns>A new string with the specified characters replaced.</returns>
+    public static string Replace(this string str, char[] chars, char replacement)
+    {
+        foreach (var c in chars)
+        {
+            str = str.Replace(c, replacement);
+        }
+        return str;
     }
 }
