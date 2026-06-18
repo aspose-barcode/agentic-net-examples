@@ -1,63 +1,57 @@
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
+/// <summary>
+/// Demonstrates generating a QR code, reading it, and cleaning up the temporary file.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a QR code image, reads it back, displays the decoded information,
+    /// and then deletes the temporary file.
+    /// </summary>
     static void Main()
     {
-        // Prepare sample barcode images
-        string qrPath = "qr.png";
-        string code128Path = "code128.png";
+        // Define the path for a temporary PNG file that will hold the sample QR code.
+        string tempFile = Path.Combine(Path.GetTempPath(), "sample_qr.png");
 
-        // Generate a QR code (2D)
-        using (var qrGenerator = new BarcodeGenerator(EncodeTypes.QR, "Hello 2D"))
+        // Generate a QR code image with the text "Hello Aspose" and save it to the temporary file.
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Hello Aspose"))
         {
-            qrGenerator.Save(qrPath);
+            generator.Save(tempFile);
         }
 
-        // Generate a Code128 barcode (1D)
-        using (var code128Generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
+        // Verify that the file was successfully created before attempting to read it.
+        if (!File.Exists(tempFile))
         {
-            code128Generator.Save(code128Path);
-        }
-
-        // Read only 2D barcodes from the QR image (should detect)
-        Console.WriteLine("Reading QR image (2D barcode):");
-        ReadOnly2DBarcodes(qrPath);
-
-        // Read only 2D barcodes from the Code128 image (should ignore)
-        Console.WriteLine("\nReading Code128 image (1D barcode, should be ignored):");
-        ReadOnly2DBarcodes(code128Path);
-    }
-
-    static void ReadOnly2DBarcodes(string imagePath)
-    {
-        if (!File.Exists(imagePath))
-        {
-            Console.WriteLine($"File not found: {imagePath}");
+            Console.WriteLine("Failed to create the sample barcode image.");
             return;
         }
 
-        // Initialize reader to process only 2D symbologies
-        using (var reader = new BarCodeReader(imagePath, DecodeType.Types2D))
+        // Open the generated image and create a reader that only looks for 2D barcodes.
+        using (var bitmap = new Bitmap(tempFile))
+        using (var reader = new BarCodeReader(bitmap, DecodeType.Types2D))
         {
-            // Perform recognition
-            var results = reader.ReadBarCodes();
-
-            if (results.Length == 0)
+            // Iterate through all detected barcodes and output their type and decoded text.
+            foreach (var result in reader.ReadBarCodes())
             {
-                Console.WriteLine("No 2D barcodes detected.");
-                return;
+                Console.WriteLine($"Detected Type: {result.CodeTypeName}");
+                Console.WriteLine($"Decoded Text : {result.CodeText}");
             }
+        }
 
-            foreach (var result in results)
-            {
-                Console.WriteLine($"Type: {result.CodeTypeName}");
-                Console.WriteLine($"Text: {result.CodeText}");
-            }
+        // Attempt to delete the temporary file; ignore any exceptions as the OS will clean up later.
+        try
+        {
+            File.Delete(tempFile);
+        }
+        catch
+        {
+            // No action needed – the file will be removed by the operating system eventually.
         }
     }
 }

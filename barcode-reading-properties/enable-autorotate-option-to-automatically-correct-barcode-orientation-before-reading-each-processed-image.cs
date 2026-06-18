@@ -1,44 +1,57 @@
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
+/// <summary>
+/// Demonstrates generating a rotated Code128 barcode, saving it to a temporary file,
+/// and then reading it back to verify detection and orientation.
+/// </summary>
 class Program
 {
-    static void Main()
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a rotated barcode image, verifies its creation, reads the barcode,
+    /// and outputs detection details to the console.
+    /// </summary>
+    /// <param name="args">Command‑line arguments (not used).</param>
+    static void Main(string[] args)
     {
-        const string imagePath = "sample_barcode.png";
+        // Define a temporary file path for the barcode image.
+        string tempDir = Path.GetTempPath();
+        string barcodePath = Path.Combine(tempDir, "rotated_barcode.png");
 
-        // Generate a barcode image with a known rotation (e.g., 90 degrees)
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "AutoRotateDemo"))
+        // Generate a Code128 barcode and rotate it by 90 degrees.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456789"))
         {
-            // Rotate the generated image; this simulates a mis‑oriented barcode
+            // RotationAngle is a root Parameters property.
             generator.Parameters.RotationAngle = 90f;
-            generator.Save(imagePath);
+            // Save the rotated barcode image to the specified path.
+            generator.Save(barcodePath);
         }
 
-        // Verify that the image was created
-        if (!File.Exists(imagePath))
+        // Verify that the image was successfully created.
+        if (!File.Exists(barcodePath))
         {
-            Console.WriteLine($"Error: The barcode image '{imagePath}' was not found.");
+            Console.WriteLine("Failed to create the barcode image.");
             return;
         }
 
-        // Read the barcode (auto‑rotation is enabled by default in recent versions)
-        using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.Code128))
+        // Read the rotated barcode; Aspose.BarCode automatically corrects orientation.
+        using (var reader = new BarCodeReader(barcodePath, DecodeType.AllSupportedTypes))
         {
-            // Optionally, use a quality preset (NormalQuality is sufficient here)
-            reader.QualitySettings = QualitySettings.NormalQuality;
-
-            // Perform recognition
-            foreach (BarCodeResult result in reader.ReadBarCodes())
+            // Iterate through all detected barcodes in the image.
+            foreach (var result in reader.ReadBarCodes())
             {
-                Console.WriteLine($"Detected Type : {result.CodeTypeName}");
-                Console.WriteLine($"Detected Text : {result.CodeText}");
-                Console.WriteLine($"Detected Angle: {result.Region.Angle}°");
+                Console.WriteLine($"Detected Type: {result.CodeTypeName}");
+                Console.WriteLine($"Code Text: {result.CodeText}");
+                // Orientation angle is provided via result.Region.Angle.
+                Console.WriteLine($"Detected Orientation Angle: {result.Region.Angle}");
             }
         }
+
+        // Optional cleanup: delete the temporary barcode image file.
+        // File.Delete(barcodePath);
     }
 }

@@ -3,57 +3,68 @@ using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.BarCode.ComplexBarcode;
-using Aspose.BarCode.Generation;
 
+/// <summary>
+/// Demonstrates reading MaxiCode barcodes from a PDF file using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the program. Reads a PDF, extracts MaxiCode barcodes,
+    /// decodes them, and prints postal codes.
+    /// </summary>
     static void Main()
     {
         // Path to the PDF file containing MaxiCode symbols
         string pdfPath = "sample.pdf";
 
+        // Verify that the specified PDF file exists before proceeding
         if (!File.Exists(pdfPath))
         {
             Console.WriteLine($"File not found: {pdfPath}");
             return;
         }
 
-        // Initialize the barcode reader for MaxiCode type
-        using (BarCodeReader reader = new BarCodeReader(pdfPath, DecodeType.MaxiCode))
+        // Initialize a barcode reader configured for MaxiCode symbology
+        using (var reader = new BarCodeReader(pdfPath, DecodeType.MaxiCode))
         {
-            // Read all barcodes from the document
+            // Iterate over all detected barcodes across all pages of the PDF
             foreach (BarCodeResult result in reader.ReadBarCodes())
             {
-                // Retrieve the MaxiCode mode from extended information
-                var extended = result.Extended;
-                if (extended?.MaxiCode == null)
-                {
-                    Console.WriteLine("Extended MaxiCode information not available.");
-                    continue;
-                }
-
-                MaxiCodeMode mode = extended.MaxiCode.MaxiCodeMode;
+                // Extract the MaxiCode mode from the extended result information
+                var mode = result.Extended.MaxiCode.MaxiCodeMode;
                 Console.WriteLine($"Detected MaxiCode mode: {mode}");
 
-                // Decode the raw codetext using the appropriate mode
-                MaxiCodeCodetext decoded = ComplexCodetextReader.TryDecodeMaxiCode(mode, result.CodeText);
+                // Attempt to decode the raw codetext into a structured MaxiCode object
+                var decoded = ComplexCodetextReader.TryDecodeMaxiCode(mode, result.CodeText);
                 if (decoded == null)
                 {
                     Console.WriteLine("Failed to decode MaxiCode codetext.");
                     continue;
                 }
 
-                // For modes 2 and 3 the decoded object is a structured codetext that contains the postal code
-                if (decoded is MaxiCodeStructuredCodetext structured)
+                // Retrieve the postal code based on the specific MaxiCode mode
+                string postalCode = null;
+                if (decoded is MaxiCodeCodetextMode2 mode2)
                 {
-                    Console.WriteLine($"Postal Code: {structured.PostalCode}");
+                    postalCode = mode2.PostalCode;
+                }
+                else if (decoded is MaxiCodeCodetextMode3 mode3)
+                {
+                    postalCode = mode3.PostalCode;
+                }
+
+                // Output the postal code if it is available; otherwise indicate its absence
+                if (!string.IsNullOrEmpty(postalCode))
+                {
+                    Console.WriteLine($"Postal Code: {postalCode}");
                 }
                 else
                 {
-                    Console.WriteLine("Decoded MaxiCode does not contain postal code information.");
+                    Console.WriteLine("Postal Code not available for this MaxiCode mode.");
                 }
 
-                Console.WriteLine(); // Blank line between results
+                Console.WriteLine(); // Insert a blank line to separate results
             }
         }
     }

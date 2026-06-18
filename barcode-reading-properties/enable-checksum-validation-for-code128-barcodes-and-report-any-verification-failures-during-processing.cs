@@ -3,66 +3,84 @@ using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates generating a Code128 barcode with checksum, saving it to a temporary file,
+/// reading it back with checksum validation, and cleaning up the temporary file.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// </summary>
     static void Main()
     {
-        // Define file path for the generated barcode image
-        string imagePath = Path.Combine(Directory.GetCurrentDirectory(), "code128.png");
+        // Define a temporary file path for the barcode image.
+        string imagePath = Path.Combine(Path.GetTempPath(), "code128.png");
 
-        // Generate a Code128 barcode with sample text
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "12345"))
+        // ------------------------------------------------------------
+        // Generate a Code128 barcode with checksum enabled and save it.
+        // ------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            // Save the barcode image
-            generator.Save(imagePath);
+            // Enable checksum (required for Code128).
+            generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
+
+            // Save the barcode image as PNG to the temporary path.
+            generator.Save(imagePath, BarCodeImageFormat.Png);
         }
 
-        // Verify that the image was created
+        // Verify that the image file was successfully created.
         if (!File.Exists(imagePath))
         {
             Console.WriteLine("Failed to create barcode image.");
             return;
         }
 
-        // Read the barcode with checksum validation enabled
+        // ------------------------------------------------------------
+        // Read the barcode from the image and validate its checksum.
+        // ------------------------------------------------------------
         using (var reader = new BarCodeReader(imagePath, DecodeType.Code128))
         {
-            // Enable checksum validation during recognition
+            // Turn on checksum validation during recognition.
             reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
 
-            bool anyResult = false;
-            foreach (BarCodeResult result in reader.ReadBarCodes())
-            {
-                anyResult = true;
-                Console.WriteLine("[Checksum ON] BarCode Type: " + result.CodeTypeName);
-                Console.WriteLine("[Checksum ON] BarCode CodeText: " + result.CodeText);
-            }
+            // Attempt to read barcodes from the image.
+            BarCodeResult[] results = reader.ReadBarCodes();
 
-            if (!anyResult)
+            // Check if any barcodes were detected.
+            if (results == null || results.Length == 0)
             {
-                Console.WriteLine("[Checksum ON] No barcode detected or checksum validation failed.");
+                Console.WriteLine("No barcode detected or checksum validation failed.");
+            }
+            else
+            {
+                // Iterate through each detected barcode and display details.
+                foreach (var result in results)
+                {
+                    Console.WriteLine($"Detected Code128 barcode:");
+                    Console.WriteLine($"  CodeText: {result.CodeText}");
+
+                    // For 1D barcodes, checksum information is available in Extended.OneD.
+                    if (result.Extended?.OneD != null)
+                    {
+                        Console.WriteLine($"  CheckSum: {result.Extended.OneD.CheckSum}");
+                    }
+                }
             }
         }
 
-        // Read the barcode with checksum validation disabled for comparison
-        using (var reader = new BarCodeReader(imagePath, DecodeType.Code128))
+        // ------------------------------------------------------------
+        // Clean up the temporary image file.
+        // ------------------------------------------------------------
+        try
         {
-            // Disable checksum validation during recognition
-            reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.Off;
-
-            bool anyResult = false;
-            foreach (BarCodeResult result in reader.ReadBarCodes())
-            {
-                anyResult = true;
-                Console.WriteLine("[Checksum OFF] BarCode Type: " + result.CodeTypeName);
-                Console.WriteLine("[Checksum OFF] BarCode CodeText: " + result.CodeText);
-            }
-
-            if (!anyResult)
-            {
-                Console.WriteLine("[Checksum OFF] No barcode detected.");
-            }
+            File.Delete(imagePath);
+        }
+        catch
+        {
+            // Ignore any errors during cleanup.
         }
     }
 }

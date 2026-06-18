@@ -4,65 +4,72 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
+/// <summary>
+/// Demonstrates generating QR and PDF417 barcodes and reading them using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates sample barcode images if they are missing and then reads them.
+    /// </summary>
     static void Main()
     {
-        // Prepare temporary file paths
-        string tempDir = Path.GetTempPath();
-        string qrPath = Path.Combine(tempDir, "sample_qr.png");
-        string pdf417Path = Path.Combine(tempDir, "sample_pdf417.png");
+        // Define file paths for the sample barcode images
+        string qrPath = "qr.png";
+        string pdfPath = "pdf417.png";
 
-        // Generate QR Code image
-        using (var qrGenerator = new BarcodeGenerator(EncodeTypes.QR, "Sample QR"))
+        // ------------------------------------------------------------
+        // Generate a QR Code image if it does not already exist
+        // ------------------------------------------------------------
+        if (!File.Exists(qrPath))
         {
-            qrGenerator.Save(qrPath);
-        }
-
-        // Generate PDF417 image
-        using (var pdfGenerator = new BarcodeGenerator(EncodeTypes.Pdf417, "Sample PDF417"))
-        {
-            pdfGenerator.Save(pdf417Path);
-        }
-
-        // Verify files exist before reading
-        if (!File.Exists(qrPath) || !File.Exists(pdf417Path))
-        {
-            Console.WriteLine("Failed to create sample barcode images.");
-            return;
-        }
-
-        // Read barcodes, limiting to QR and PDF417 symbologies for performance
-        using (var reader = new BarCodeReader(qrPath, DecodeType.QR, DecodeType.Pdf417))
-        {
-            // Use high‑performance mode
-            reader.QualitySettings = QualitySettings.HighPerformance;
-
-            foreach (var result in reader.ReadBarCodes())
+            // Create a QR code generator with the desired content
+            using (var generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
             {
-                Console.WriteLine($"Detected Type: {result.CodeTypeName}, Text: {result.CodeText}");
+                // Save the generated QR code to the specified file
+                generator.Save(qrPath);
             }
         }
 
-        using (var reader = new BarCodeReader(pdf417Path, DecodeType.QR, DecodeType.Pdf417))
+        // ------------------------------------------------------------
+        // Generate a PDF417 image if it does not already exist
+        // ------------------------------------------------------------
+        if (!File.Exists(pdfPath))
         {
-            reader.QualitySettings = QualitySettings.HighPerformance;
-
-            foreach (var result in reader.ReadBarCodes())
+            // Create a PDF417 generator with the desired content
+            using (var generator = new BarcodeGenerator(EncodeTypes.Pdf417, "Sample PDF417 Text"))
             {
-                Console.WriteLine($"Detected Type: {result.CodeTypeName}, Text: {result.CodeText}");
+                // Save the generated PDF417 barcode to the specified file
+                generator.Save(pdfPath);
             }
         }
 
-        // Clean up temporary files (optional)
-        try
+        // List of barcode image files to be processed
+        string[] files = new[] { qrPath, pdfPath };
+
+        // ------------------------------------------------------------
+        // Iterate over each file and attempt to read barcodes
+        // ------------------------------------------------------------
+        foreach (string file in files)
         {
-            File.Delete(qrPath);
-            File.Delete(pdf417Path);
-        }
-        catch
-        {
-            // Ignore any cleanup errors
+            // Verify that the file exists before attempting to read it
+            if (!File.Exists(file))
+            {
+                Console.WriteLine($"File not found: {file}");
+                continue;
+            }
+
+            // Use BarCodeReader limited to QR and PDF417 symbologies for better performance
+            using (var reader = new BarCodeReader(file, DecodeType.QR, DecodeType.Pdf417))
+            {
+                // Read all barcodes found in the image
+                foreach (var result in reader.ReadBarCodes())
+                {
+                    // Output the file name, detected barcode type, and decoded text
+                    Console.WriteLine($"File: {Path.GetFileName(file)} | Detected Type: {result.CodeTypeName} | CodeText: {result.CodeText}");
+                }
+            }
         }
     }
 }

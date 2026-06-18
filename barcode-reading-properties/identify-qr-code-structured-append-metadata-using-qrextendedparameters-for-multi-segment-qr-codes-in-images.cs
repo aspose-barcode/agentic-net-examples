@@ -1,49 +1,66 @@
 using System;
 using System.IO;
 using Aspose.BarCode;
+using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
+/// <summary>
+/// Demonstrates how to read multi‑segment QR codes from an image using Aspose.BarCode.
+/// </summary>
 class Program
 {
-    static void Main(string[] args)
+    /// <summary>
+    /// Entry point of the application.
+    /// Loads an image, scans for QR codes, and prints their data and extended QR parameters.
+    /// </summary>
+    static void Main()
     {
-        // Determine image path: use first argument or default sample file.
-        string imagePath = args.Length > 0 ? args[0] : "sample_qr.png";
+        // Path to the image containing multi‑segment QR codes.
+        string imagePath = "qr_multi.png";
 
-        // Verify that the file exists.
+        // Verify that the image file exists before attempting to load it.
         if (!File.Exists(imagePath))
         {
-            Console.WriteLine($"File not found: {imagePath}");
+            Console.WriteLine($"Image file not found: {imagePath}");
             return;
         }
 
-        // Create a BarCodeReader for QR codes.
-        using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.QR))
+        // Load the image into a Bitmap object (wrapped in a using statement for proper disposal).
+        using (Bitmap bitmap = (Bitmap)Image.FromFile(imagePath))
         {
-            // Read all barcodes in the image.
-            foreach (BarCodeResult result in reader.ReadBarCodes())
+            // Initialize a BarCodeReader that is configured to decode QR codes only.
+            using (BarCodeReader reader = new BarCodeReader(bitmap, DecodeType.QR))
             {
-                Console.WriteLine($"BarCode Type: {result.CodeTypeName}");
-                Console.WriteLine($"BarCode CodeText: {result.CodeText}");
+                bool anyFound = false; // Tracks whether any QR codes were detected.
 
-                // Access QR extended parameters.
-                var qrExt = result.Extended?.QR;
-                if (qrExt == null || qrExt.IsEmpty)
+                // Iterate through all detected QR code results.
+                foreach (BarCodeResult result in reader.ReadBarCodes())
                 {
-                    Console.WriteLine("No QR Structured Append metadata found.");
-                    continue;
+                    anyFound = true;
+                    Console.WriteLine($"CodeText: {result.CodeText}");
+
+                    // Retrieve QR-specific extended parameters, if available.
+                    var qrExt = result.Extended?.QR;
+                    if (qrExt != null)
+                    {
+                        // Output structured append information for multi‑segment QR codes.
+                        Console.WriteLine($"  Structured Append Total Segments: {qrExt.StructuredAppendModeBarCodesQuantity}");
+                        Console.WriteLine($"  Segment Index: {qrExt.StructuredAppendModeBarCodeIndex}");
+                        Console.WriteLine($"  Parity Data: {qrExt.StructuredAppendModeParityData}");
+                    }
+                    else
+                    {
+                        // Indicate that no extended QR parameters were present for this result.
+                        Console.WriteLine("  No QR extended parameters available.");
+                    }
                 }
 
-                // Output Structured Append information.
-                Console.WriteLine($"QR Structured Append Quantity (QRStructuredAppendModeBarCodesQuantity): {qrExt.QRStructuredAppendModeBarCodesQuantity}");
-                Console.WriteLine($"QR Structured Append Index (QRStructuredAppendModeBarCodeIndex): {qrExt.QRStructuredAppendModeBarCodeIndex}");
-                Console.WriteLine($"QR Structured Append Parity Data (QRStructuredAppendModeParityData): {qrExt.QRStructuredAppendModeParityData}");
-
-                // Also display the generic Structured Append properties (they map to the same values).
-                Console.WriteLine($"Structured Append Quantity (StructuredAppendModeBarCodesQuantity): {qrExt.StructuredAppendModeBarCodesQuantity}");
-                Console.WriteLine($"Structured Append Index (StructuredAppendModeBarCodeIndex): {qrExt.StructuredAppendModeBarCodeIndex}");
-                Console.WriteLine($"Structured Append Parity Data (StructuredAppendModeParityData): {qrExt.StructuredAppendModeParityData}");
-                Console.WriteLine();
+                // If no QR codes were found, inform the user.
+                if (!anyFound)
+                {
+                    Console.WriteLine("No QR codes were detected in the image.");
+                }
             }
         }
     }

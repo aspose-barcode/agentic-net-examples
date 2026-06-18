@@ -2,85 +2,86 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Text.Json;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.BarCode;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
-namespace BarcodeReaderSample
+/// <summary>
+/// Demonstrates generating a barcode, reading its metadata, and outputting the information as JSON.
+/// </summary>
+class Program
 {
-    class Program
+    /// <summary>
+    /// Simple DTO for JSON output representing barcode metadata.
+    /// </summary>
+    private class BarcodeInfo
     {
-        static void Main()
+        public string CodeTypeName { get; set; }
+        public string CodeText { get; set; }
+        public string Confidence { get; set; }
+        public double ReadingQuality { get; set; }
+        public double Angle { get; set; }
+        public double X { get; set; }
+        public double Y { get; set; }
+        public double Width { get; set; }
+        public double Height { get; set; }
+    }
+
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a barcode, reads its properties, and prints them as formatted JSON.
+    /// </summary>
+    static void Main()
+    {
+        // Step 1: Generate a sample barcode and obtain its image bytes.
+        byte[] imageBytes;
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "12345"))
         {
-            // Generate a sample barcode image and obtain its byte array
-            byte[] imageBytes = GenerateSampleBarcode();
-
-            // Read barcodes from the byte array
-            List<object> barcodeData = ReadBarcodesFromBytes(imageBytes);
-
-            // Serialize the metadata to JSON and output
-            string json = JsonSerializer.Serialize(barcodeData, new JsonSerializerOptions { WriteIndented = true });
-            Console.WriteLine(json);
+            using (var ms = new MemoryStream())
+            {
+                // Save the generated barcode as PNG into the memory stream.
+                generator.Save(ms, BarCodeImageFormat.Png);
+                // Convert the stream contents to a byte array.
+                imageBytes = ms.ToArray();
+            }
         }
 
-        private static byte[] GenerateSampleBarcode()
+        // Step 2: Read barcode information from the byte array.
+        var barcodeInfos = new List<BarcodeInfo>();
+        using (var imageStream = new MemoryStream(imageBytes))
         {
-            // Sample text to encode
-            const string sampleText = "1234567890";
-
-            // Create a barcode generator for Code128
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, sampleText))
+            using (var reader = new BarCodeReader(imageStream, DecodeType.AllSupportedTypes))
             {
-                // Generate the bitmap image
-                using (Bitmap bitmap = generator.GenerateBarCodeImage())
+                // Iterate over each detected barcode in the image.
+                foreach (var result in reader.ReadBarCodes())
                 {
-                    // Save bitmap to a memory stream in PNG format
-                    using (var ms = new MemoryStream())
+                    // Extract the bounding rectangle of the barcode region.
+                    var region = result.Region.Rectangle;
+
+                    // Populate a DTO with the relevant metadata.
+                    var info = new BarcodeInfo
                     {
-                        bitmap.Save(ms, ImageFormat.Png);
-                        return ms.ToArray();
-                    }
+                        CodeTypeName = result.CodeTypeName,
+                        CodeText = result.CodeText,
+                        Confidence = result.Confidence.ToString(),
+                        ReadingQuality = result.ReadingQuality,
+                        Angle = result.Region.Angle,
+                        X = region.X,
+                        Y = region.Y,
+                        Width = region.Width,
+                        Height = region.Height
+                    };
+
+                    // Add the DTO to the collection.
+                    barcodeInfos.Add(info);
                 }
             }
         }
 
-        private static List<object> ReadBarcodesFromBytes(byte[] imageBytes)
-        {
-            var results = new List<object>();
-
-            // Load the image bytes into a memory stream
-            using (var ms = new MemoryStream(imageBytes))
-            {
-                // Initialize the reader for all supported barcode types
-                using (var reader = new BarCodeReader(ms, DecodeType.AllSupportedTypes))
-                {
-                    // Perform recognition
-                    foreach (var result in reader.ReadBarCodes())
-                    {
-                        // Build a simple metadata object
-                        var metadata = new
-                        {
-                            TypeName = result.CodeTypeName,
-                            CodeText = result.CodeText,
-                            Confidence = result.Confidence.ToString(),
-                            ReadingQuality = result.ReadingQuality,
-                            Angle = result.Region.Angle,
-                            Rectangle = new
-                            {
-                                X = result.Region.Rectangle.X,
-                                Y = result.Region.Rectangle.Y,
-                                Width = result.Region.Rectangle.Width,
-                                Height = result.Region.Rectangle.Height
-                            }
-                        };
-                        results.Add(metadata);
-                    }
-                }
-            }
-
-            return results;
-        }
+        // Step 3: Serialize the collected metadata to formatted JSON and output it.
+        var jsonOptions = new JsonSerializerOptions { WriteIndented = true };
+        string json = JsonSerializer.Serialize(barcodeInfos, jsonOptions);
+        Console.WriteLine(json);
     }
 }

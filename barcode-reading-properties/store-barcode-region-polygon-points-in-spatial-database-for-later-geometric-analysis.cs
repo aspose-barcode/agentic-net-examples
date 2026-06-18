@@ -1,77 +1,80 @@
 using System;
 using System.IO;
-using System.Collections.Generic;
-using System.Text.Json;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
-namespace BarcodeRegionCapture
+/// <summary>
+/// Demonstrates generating a barcode, reading it, and exporting the barcode region's polygon points to a CSV file.
+/// </summary>
+class Program
 {
-    class Program
+    /// <summary>
+    /// Entry point of the program.
+    /// Generates a Code128 barcode, reads the barcode to obtain its region polygon points,
+    /// writes those points to a CSV file, and outputs them to the console.
+    /// </summary>
+    static void Main()
     {
-        // Simple DTO for point coordinates
-        public class PointDto
+        // Define file paths for the temporary barcode image and the output CSV file.
+        string barcodePath = "barcode.png";
+        string csvPath = "barcode_points.csv";
+
+        // --------------------------------------------------------------------
+        // Generate a simple Code128 barcode and save it to a file.
+        // --------------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            public int X { get; set; }
-            public int Y { get; set; }
+            // Save the generated barcode image to the specified path.
+            generator.Save(barcodePath);
         }
 
-        // DTO for storing barcode text and its polygon points
-        public class BarcodeRegionRecord
+        // Verify that the barcode image was successfully created.
+        if (!File.Exists(barcodePath))
         {
-            public string CodeText { get; set; }
-            public List<PointDto> Points { get; set; }
+            Console.WriteLine("Failed to create barcode image.");
+            return;
         }
 
-        static void Main()
+        // --------------------------------------------------------------------
+        // Read the barcode image and extract the region polygon points.
+        // --------------------------------------------------------------------
+        using (var reader = new BarCodeReader(barcodePath, DecodeType.AllSupportedTypes))
         {
-            const string imagePath = "sample_barcode.png";
-            const string jsonPath = "barcode_regions.json";
-
-            // Step 1: Generate a sample barcode image
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
+            // Open a StreamWriter to create (or overwrite) the CSV file.
+            using (var writer = new StreamWriter(csvPath, false))
             {
-                // Optional: set image size or other parameters here
-                generator.Save(imagePath);
-            }
+                // Write the CSV header line.
+                writer.WriteLine("X,Y");
 
-            // Verify that the image was created
-            if (!File.Exists(imagePath))
-            {
-                Console.WriteLine($"Failed to create barcode image at '{imagePath}'.");
-                return;
-            }
-
-            // Step 2: Load the image and recognize barcodes
-            var records = new List<BarcodeRegionRecord>();
-
-            using (var bitmap = new Bitmap(imagePath))
-            using (var reader = new BarCodeReader(bitmap, DecodeType.AllSupportedTypes))
-            {
-                foreach (BarCodeResult result in reader.ReadBarCodes())
+                // Iterate over each detected barcode (only one expected in this example).
+                foreach (var result in reader.ReadBarCodes())
                 {
-                    var points = new List<PointDto>();
-                    foreach (var pt in result.Region.Points)
+                    // Retrieve the polygon corner points of the barcode region.
+                    var points = result.Region.Points;
+
+                    // Write each point as a separate line in the CSV file.
+                    foreach (var pt in points)
                     {
-                        points.Add(new PointDto { X = pt.X, Y = pt.Y });
+                        writer.WriteLine($"{pt.X},{pt.Y}");
                     }
 
-                    records.Add(new BarcodeRegionRecord
+                    // Output the points to the console for demonstration purposes.
+                    Console.WriteLine("Barcode region polygon points:");
+                    foreach (var pt in points)
                     {
-                        CodeText = result.CodeText,
-                        Points = points
-                    });
+                        Console.WriteLine($"({pt.X}, {pt.Y})");
+                    }
                 }
             }
-
-            // Step 3: Serialize the results to JSON (acts as a stand‑in for a spatial DB)
-            var jsonOptions = new JsonSerializerOptions { WriteIndented = true };
-            string json = JsonSerializer.Serialize(records, jsonOptions);
-            File.WriteAllText(jsonPath, json);
-
-            Console.WriteLine($"Barcode region data written to '{jsonPath}'.");
         }
+
+        // NOTE: In a real application, the points would be inserted into a spatial database
+        // (e.g., SQL Server with spatial types, PostGIS, etc.) using appropriate ADO.NET or ORM code.
+        // The CSV file serves as a placeholder for that persistence layer.
+
+        // Inform the user that the CSV file has been created.
+        Console.WriteLine($"Polygon points have been saved to '{csvPath}'.");
     }
 }

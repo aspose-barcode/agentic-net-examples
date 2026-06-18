@@ -3,25 +3,45 @@ using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
+/// <summary>
+/// Demonstrates generating and reading a Code39 full ASCII barcode using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point. Generates a sample barcode if missing and reads it.
+    /// </summary>
     static void Main()
     {
-        // Generate a Code39 barcode image with spaces in the code text
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code39, "A B C 1 2 3"))
+        const string imagePath = "code39.png";
+
+        // Verify that the sample barcode image exists; create it if it does not.
+        if (!File.Exists(imagePath))
         {
-            generator.Save("barcode.png");
+            // Initialize a barcode generator for Code39 full ASCII with sample data.
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code39FullASCII, "A B C 123"))
+            {
+                // Save the generated barcode image to the specified path.
+                generator.Save(imagePath);
+                Console.WriteLine($"Generated sample barcode image: {imagePath}");
+            }
         }
 
-        using (FileStream fs = new FileStream("barcode.png", FileMode.Open, FileAccess.Read))
+        // Initialize a barcode reader configured for Code39 full ASCII decoding.
+        using (var reader = new BarCodeReader(imagePath, DecodeType.Code39FullASCII))
         {
-            using (BarCodeReader reader = new BarCodeReader(fs, DecodeType.Code39))
+            // Aspose.BarCode automatically trims quiet zones; no extra setting needed.
+            // Adjust quality settings if detection issues arise.
+            reader.QualitySettings.Deconvolution = DeconvolutionMode.Fast;
+
+            // Iterate through all detected barcodes in the image.
+            foreach (var result in reader.ReadBarCodes())
             {
-                foreach (BarCodeResult result in reader.ReadBarCodes())
-                {
-                    Console.WriteLine($"Type: {result.CodeTypeName}, Text: {result.CodeText}");
-                }
+                // Output the type and decoded text of each barcode.
+                Console.WriteLine($"Detected Type: {result.CodeTypeName}");
+                Console.WriteLine($"Decoded Text : {result.CodeText}");
             }
         }
     }

@@ -2,38 +2,37 @@ using System;
 using System.IO;
 using Aspose.BarCode.BarCodeRecognition;
 
+/// <summary>
+/// Demonstrates reading all supported barcode types from an image file using Aspose.BarCode.
+/// </summary>
 class Program
 {
-    static void Main(string[] args)
+    /// <summary>
+    /// Entry point of the application.
+    /// </summary>
+    static void Main()
     {
-        // Use a default image path if none is provided via command‑line arguments
-        string imagePath = args.Length > 0 ? args[0] : "sample.png";
+        // Path to the image that contains barcodes.
+        string imagePath = "sample.png";
 
-        // Verify that the image file exists before attempting to read barcodes
+        // Verify that the file exists before attempting to read.
         if (!File.Exists(imagePath))
         {
-            Console.WriteLine($"Image file not found: {imagePath}");
+            // Inform the user and exit if the file cannot be found.
+            Console.WriteLine($"File not found: {imagePath}");
             return;
         }
 
-        // Create a BarCodeReader that scans the image for all supported barcode types
-        using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
+        // Create a BarCodeReader that will attempt to decode all supported barcode types.
+        using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
         {
-            // Read all barcodes found in the image
-            BarCodeResult[] results = reader.ReadBarCodes();
-
-            if (results.Length == 0)
+            // Iterate through each detected barcode in the image.
+            foreach (var result in reader.ReadBarCodes())
             {
-                Console.WriteLine("No barcodes were detected.");
-            }
-            else
-            {
-                foreach (BarCodeResult result in results)
-                {
-                    Console.WriteLine($"BarCode Type: {result.CodeTypeName}");
-                    Console.WriteLine($"BarCode Text: {result.CodeText}");
-                    Console.WriteLine();
-                }
+                // Output the type of the barcode (e.g., QR, Code128).
+                Console.WriteLine($"BarCode Type: {result.CodeTypeName}");
+                // Output the decoded text/value of the barcode.
+                Console.WriteLine($"BarCode CodeText: {result.CodeText}");
             }
         }
     }

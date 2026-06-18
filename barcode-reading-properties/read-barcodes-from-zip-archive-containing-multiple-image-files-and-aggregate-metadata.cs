@@ -1,83 +1,104 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
-using System.Collections.Generic;
+using System.Text.Json;
 using Aspose.BarCode;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
+/// <summary>
+/// Entry point for the barcode processing application.
+/// Reads barcode images from a zip archive, extracts metadata, and outputs JSON.
+/// </summary>
 class Program
 {
-    // Simple container for aggregated barcode metadata
-    private class BarcodeInfo
+    /// <summary>
+    /// Simple DTO to hold barcode metadata extracted from each image.
+    /// </summary>
+    class BarcodeInfo
     {
-        public string FileName { get; set; }
-        public string CodeType { get; set; }
+        public string ImageFile { get; set; }
+        public string BarcodeType { get; set; }
         public string CodeText { get; set; }
-        public BarCodeConfidence Confidence { get; set; }
-        public string Bounds { get; set; }
+        public string Confidence { get; set; }
+        public double ReadingQuality { get; set; }
+        public float X { get; set; }
+        public float Y { get; set; }
+        public float Width { get; set; }
+        public float Height { get; set; }
+        public double Angle { get; set; }
     }
 
-    static void Main(string[] args)
+    /// <summary>
+    /// Main method that orchestrates reading the zip file, processing each image,
+    /// extracting barcode information, and printing the results as JSON.
+    /// </summary>
+    static void Main()
     {
-        // Path to the zip archive – use argument if supplied, otherwise a default name
-        string zipPath = args.Length > 0 ? args[0] : "sample_barcodes.zip";
+        // Path to the zip archive containing barcode images
+        string zipPath = "barcodes.zip";
 
+        // Verify that the zip file exists before proceeding
         if (!File.Exists(zipPath))
         {
             Console.WriteLine($"Zip file not found: {zipPath}");
             return;
         }
 
-        var aggregatedResults = new List<BarcodeInfo>();
+        // Collection to hold all extracted barcode information
+        var results = new List<BarcodeInfo>();
 
         // Open the zip archive for reading
-        using (FileStream zipStream = new FileStream(zipPath, FileMode.Open, FileAccess.Read))
-        using (ZipArchive archive = new ZipArchive(zipStream, ZipArchiveMode.Read))
+        using (var zip = ZipFile.OpenRead(zipPath))
         {
-            foreach (ZipArchiveEntry entry in archive.Entries)
+            // Iterate over each entry (file) in the archive
+            foreach (var entry in zip.Entries)
             {
-                // Process only common image files
+                // Determine the file extension and process only supported image types
                 string ext = Path.GetExtension(entry.Name).ToLowerInvariant();
                 if (ext != ".png" && ext != ".jpg" && ext != ".jpeg" && ext != ".bmp" && ext != ".gif")
-                    continue;
+                    continue; // Skip non-image files
 
-                // Open the entry stream and feed it to BarCodeReader
-                using (Stream entryStream = entry.Open())
-                using (BarCodeReader reader = new BarCodeReader(entryStream, DecodeType.AllSupportedTypes))
+                // Open a stream to read the image data from the zip entry
+                using (var stream = entry.Open())
                 {
-                    foreach (BarCodeResult result in reader.ReadBarCodes())
+                    // Initialize the barcode reader with support for all barcode types
+                    using (var reader = new BarCodeReader(stream, DecodeType.AllSupportedTypes))
                     {
-                        var info = new BarcodeInfo
+                        // Read all barcodes found in the current image
+                        foreach (var result in reader.ReadBarCodes())
                         {
-                            FileName = entry.Name,
-                            CodeType = result.CodeTypeName,
-                            CodeText = result.CodeText,
-                            Confidence = result.Confidence,
-                            Bounds = result.Region.Rectangle.ToString()
-                        };
-                        aggregatedResults.Add(info);
+                            // Extract the bounding rectangle of the detected barcode region
+                            var region = result.Region.Rectangle;
+
+                            // Populate the DTO with relevant metadata
+                            var info = new BarcodeInfo
+                            {
+                                ImageFile = entry.Name,
+                                BarcodeType = result.CodeTypeName,
+                                CodeText = result.CodeText,
+                                Confidence = result.Confidence.ToString(),
+                                ReadingQuality = result.ReadingQuality,
+                                X = (float)Math.Round((double)region.X),
+                                Y = (float)Math.Round((double)region.Y),
+                                Width = (float)Math.Round((double)region.Width),
+                                Height = (float)Math.Round((double)region.Height),
+                                Angle = result.Region.Angle
+                            };
+
+                            // Add the populated DTO to the results list
+                            results.Add(info);
+                        }
                     }
                 }
             }
         }
 
-        // Output aggregated metadata
-        if (aggregatedResults.Count == 0)
-        {
-            Console.WriteLine("No barcodes were detected in the provided zip archive.");
-        }
-        else
-        {
-            Console.WriteLine("Detected barcodes:");
-            foreach (var info in aggregatedResults)
-            {
-                Console.WriteLine($"File: {info.FileName}");
-                Console.WriteLine($"  Type      : {info.CodeType}");
-                Console.WriteLine($"  Text      : {info.CodeText}");
-                Console.WriteLine($"  Confidence: {info.Confidence}");
-                Console.WriteLine($"  Bounds    : {info.Bounds}");
-                Console.WriteLine();
-            }
-        }
+        // Serialize the aggregated metadata to formatted JSON
+        string json = JsonSerializer.Serialize(results, new JsonSerializerOptions { WriteIndented = true });
+
+        // Output the JSON to the console
+        Console.WriteLine(json);
     }
 }

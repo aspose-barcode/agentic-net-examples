@@ -1,70 +1,114 @@
 using System;
 using System.IO;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.BarCode.Common;
+using Aspose.Drawing;
 
+/// <summary>
+/// Demonstrates generating sample barcodes, reading them concurrently,
+/// and aggregating the detection results using Aspose.BarCode.
+/// </summary>
 class Program
 {
-    static void Main()
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates sample barcode images, reads them in parallel,
+    /// and prints aggregated detection results.
+    /// </summary>
+    /// <param name="args">Command‑line arguments (not used).</param>
+    static void Main(string[] args)
     {
-        // Directory to store sample barcode images
-        string tempDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodesSample");
-        if (!Directory.Exists(tempDir))
-        {
-            Directory.CreateDirectory(tempDir);
-        }
+        // --------------------------------------------------------------------
+        // 1. Create a temporary directory for storing generated barcode images.
+        // --------------------------------------------------------------------
+        string tempDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeSample");
+        Directory.CreateDirectory(tempDir);
 
-        // Prepare a list of sample image file paths
-        var imagePaths = new string[5];
-        for (int i = 0; i < imagePaths.Length; i++)
+        // ---------------------------------------------------------------
+        // 2. Define sample barcodes to generate (type, text, output file).
+        // ---------------------------------------------------------------
+        var samples = new List<(BaseEncodeType type, string text, string fileName)>
         {
-            string filePath = Path.Combine(tempDir, $"barcode_{i + 1}.png");
-            imagePaths[i] = filePath;
+            (EncodeTypes.Code128, "Sample128", "code128.png"),
+            (EncodeTypes.QR, "https://example.com", "qr.png"),
+            (EncodeTypes.DataMatrix, "DM12345", "datamatrix.png")
+        };
 
-            // Generate a barcode image if it does not exist
-            if (!File.Exists(filePath))
+        // ---------------------------------------------------------------
+        // 3. Generate each sample barcode image and save to the temp folder.
+        // ---------------------------------------------------------------
+        foreach (var sample in samples)
+        {
+            string filePath = Path.Combine(tempDir, sample.fileName);
+            using (var generator = new BarcodeGenerator(sample.type, sample.text))
             {
-                using (var generator = new BarcodeGenerator(EncodeTypes.Code128, $"CODE{i + 1}"))
-                {
-                    generator.Save(filePath);
-                }
+                generator.Save(filePath);
             }
         }
 
-        // Enable multi‑core processing for barcode reading
-        BarCodeReader.ProcessorSettings.UseAllCores = true;
+        // ---------------------------------------------------------------
+        // 4. Retrieve all generated PNG files for processing.
+        // ---------------------------------------------------------------
+        string[] imageFiles = Directory.GetFiles(tempDir, "*.png");
 
-        // Thread‑safe collection to aggregate results
-        var aggregatedResults = new ConcurrentBag<string>();
+        // ---------------------------------------------------------------
+        // 5. Configure Aspose.BarCode to utilize all available CPU cores.
+        // ---------------------------------------------------------------
+        BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount = Environment.ProcessorCount;
 
-        // Read barcodes from all images in parallel
-        Parallel.ForEach(imagePaths, imagePath =>
+        // ---------------------------------------------------------------
+        // 6. Prepare a thread‑safe collection to hold aggregated results.
+        // ---------------------------------------------------------------
+        var aggregatedResults = new ConcurrentBag<(string file, string type, string text)>();
+
+        // ---------------------------------------------------------------
+        // 7. Set parallel execution options (max degree of parallelism).
+        // ---------------------------------------------------------------
+        var parallelOptions = new ParallelOptions
         {
-            if (!File.Exists(imagePath))
+            MaxDegreeOfParallelism = Environment.ProcessorCount
+        };
+
+        // ---------------------------------------------------------------
+        // 8. Process each image file concurrently:
+        //    - Load the image.
+        //    - Read all supported barcode types.
+        //    - Store each detection result in the concurrent bag.
+        // ---------------------------------------------------------------
+        Parallel.ForEach(imageFiles, parallelOptions, filePath =>
+        {
+            if (!File.Exists(filePath))
             {
-                // Skip missing files gracefully
+                Console.WriteLine($"File not found: {filePath}");
                 return;
             }
 
-            using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
+            using (var bitmap = new Bitmap(filePath))
+            using (var reader = new BarCodeReader(bitmap, DecodeType.AllSupportedTypes))
             {
                 foreach (var result in reader.ReadBarCodes())
                 {
-                    string entry = $"{Path.GetFileName(imagePath)}: {result.CodeTypeName} - {result.CodeText}";
-                    aggregatedResults.Add(entry);
+                    aggregatedResults.Add((filePath, result.CodeTypeName, result.CodeText));
                 }
             }
         });
 
-        // Output aggregated results
-        Console.WriteLine("Aggregated barcode reading results:");
-        foreach (var line in aggregatedResults)
+        // ---------------------------------------------------------------
+        // 9. Output the aggregated barcode detection results to the console.
+        // ---------------------------------------------------------------
+        Console.WriteLine("Aggregated barcode detection results:");
+        foreach (var entry in aggregatedResults)
         {
-            Console.WriteLine(line);
+            Console.WriteLine($"File: {Path.GetFileName(entry.file)} | Type: {entry.type} | Text: {entry.text}");
         }
+
+        // ---------------------------------------------------------------
+        // 10. Optional: clean up temporary files and directory.
+        // ---------------------------------------------------------------
+        // Directory.Delete(tempDir, true);
     }
 }

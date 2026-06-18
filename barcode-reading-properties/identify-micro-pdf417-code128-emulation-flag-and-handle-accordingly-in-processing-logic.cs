@@ -3,62 +3,53 @@ using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
+/// <summary>
+/// Demonstrates creation and reading of a MicroPdf417 barcode with Code128 emulation enabled.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a MicroPdf417 barcode, saves it to a file, and then reads it back to verify the Code128 emulation flag.
+    /// </summary>
     static void Main()
     {
-        // Path for the barcode image with Code128 emulation enabled
-        string imagePathEmulated = "micropdf417_emulated.png";
+        // Define the output file path for the generated barcode image.
+        string outputPath = "micropdf417.png";
 
-        // Create a MicroPdf417 barcode with FNC1 in second position (mode 908) and enable Code128 emulation
-        using (var generator = new BarcodeGenerator(EncodeTypes.MicroPdf417, "a\u001d1222322323"))
+        // Create a MicroPdf417 barcode generator with the specified data.
+        // The data includes a group separator (ASCII 29) between "a" and "1234567890".
+        using (var generator = new BarcodeGenerator(EncodeTypes.MicroPdf417, "a\u001d1234567890"))
         {
+            // Enable Code128 emulation mode for the PDF417 barcode.
             generator.Parameters.Barcode.Pdf417.IsCode128Emulation = true;
-            generator.Save(imagePathEmulated, BarCodeImageFormat.Png);
+
+            // Save the generated barcode image to the specified file.
+            generator.Save(outputPath);
         }
 
-        // Verify that the image was created
-        if (!File.Exists(imagePathEmulated))
+        // Verify that the barcode image file was successfully created.
+        if (!File.Exists(outputPath))
         {
-            Console.WriteLine("Failed to generate the barcode image with Code128 emulation.");
+            Console.WriteLine($"Failed to create barcode image at '{outputPath}'.");
             return;
         }
 
-        // Read the barcode and output the Code128 emulation flag
-        using (var reader = new BarCodeReader(imagePathEmulated, DecodeType.MicroPdf417))
+        // Load the saved barcode image and create a reader for MicroPdf417 decoding.
+        using (var image = (Bitmap)Image.FromFile(outputPath))
+        using (var reader = new BarCodeReader(image, DecodeType.MicroPdf417))
         {
-            foreach (var result in reader.ReadBarCodes())
+            // Iterate through all detected barcodes in the image.
+            foreach (BarCodeResult result in reader.ReadBarCodes())
             {
-                Console.WriteLine($"[Emulated] CodeText: {result.CodeText}");
-                Console.WriteLine($"[Emulated] IsCode128Emulation: {result.Extended.Pdf417.IsCode128Emulation}");
-            }
-        }
+                // Output the decoded text of the barcode.
+                Console.WriteLine($"CodeText: {result.CodeText}");
 
-        // Path for the barcode image without Code128 emulation
-        string imagePathNormal = "micropdf417_normal.png";
-
-        // Create a MicroPdf417 barcode with the same data but without enabling Code128 emulation
-        using (var generator = new BarcodeGenerator(EncodeTypes.MicroPdf417, "a\u001d1222322323"))
-        {
-            // IsCode128Emulation remains false by default
-            generator.Save(imagePathNormal, BarCodeImageFormat.Png);
-        }
-
-        // Verify that the second image was created
-        if (!File.Exists(imagePathNormal))
-        {
-            Console.WriteLine("Failed to generate the barcode image without Code128 emulation.");
-            return;
-        }
-
-        // Read the barcode and output the Code128 emulation flag (expected to be false)
-        using (var reader = new BarCodeReader(imagePathNormal, DecodeType.MicroPdf417))
-        {
-            foreach (var result in reader.ReadBarCodes())
-            {
-                Console.WriteLine($"[Normal] CodeText: {result.CodeText}");
-                Console.WriteLine($"[Normal] IsCode128Emulation: {result.Extended.Pdf417.IsCode128Emulation}");
+                // Access extended PDF417 properties to check if Code128 emulation is enabled.
+                bool isEmulation = result.Extended.Pdf417.IsCode128Emulation;
+                Console.WriteLine($"IsCode128Emulation: {isEmulation}");
             }
         }
     }
