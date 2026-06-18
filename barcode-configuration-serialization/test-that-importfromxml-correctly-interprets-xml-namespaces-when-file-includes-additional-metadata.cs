@@ -2,66 +2,85 @@ using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
 
+/// <summary>
+/// Demonstrates exporting a barcode configuration to XML,
+/// importing it back, and verifying that the settings are preserved.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// </summary>
     static void Main()
     {
-        // Define file paths
-        string imagePath = "sample_barcode.png";
+        // Define the temporary XML file path that will hold the barcode configuration.
         string xmlPath = "barcode_config.xml";
 
-        // Generate a barcode image and export its settings to XML
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "12345"))
+        // --------------------------------------------------------------------
+        // Create a barcode generator, configure its properties, and export to XML.
+        // --------------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Test123"))
         {
-            // Save the barcode image
-            generator.Save(imagePath);
-            // Export generator settings to XML
+            // Enable checksum calculation for the barcode.
+            generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
+
+            // Set visual dimensions: bar height and X dimension (module width).
+            generator.Parameters.Barcode.BarHeight.Point = 50f;
+            generator.Parameters.Barcode.XDimension.Point = 2f;
+
+            // Configure the human‑readable text font.
+            generator.Parameters.Barcode.CodeTextParameters.Font.FamilyName = "Arial";
+            generator.Parameters.Barcode.CodeTextParameters.Font.Size.Point = 12f;
+
+            // Export the complete configuration (including namespaces and metadata) to an XML file.
             generator.ExportToXml(xmlPath);
+            Console.WriteLine($"Exported barcode configuration to '{xmlPath}'.");
         }
 
-        // Verify that the generated files exist
-        if (!File.Exists(imagePath))
-        {
-            Console.WriteLine($"Error: Barcode image not found at '{imagePath}'.");
-            return;
-        }
+        // --------------------------------------------------------------------
+        // Verify that the XML file was successfully created.
+        // --------------------------------------------------------------------
         if (!File.Exists(xmlPath))
         {
-            Console.WriteLine($"Error: XML configuration not found at '{xmlPath}'.");
+            Console.WriteLine("Error: XML file was not created.");
             return;
         }
 
-        // Load the XML, add extra metadata with a different namespace
-        string originalXml = File.ReadAllText(xmlPath);
-        // Insert extra metadata element just before the closing root tag
-        string extraMetadata = @"<extra:Metadata xmlns:extra=""http://example.com/extra"">AdditionalInfo</extra:Metadata>";
-        string modifiedXml = originalXml.Replace("</BarCodeGenerator>", extraMetadata + Environment.NewLine + "</BarCodeGenerator>");
-        File.WriteAllText(xmlPath, modifiedXml);
-
-        // Import the XML configuration into a BarCodeReader instance
-        using (var reader = BarCodeReader.ImportFromXml(xmlPath))
+        // --------------------------------------------------------------------
+        // Import the barcode configuration from the XML file and compare key properties.
+        // --------------------------------------------------------------------
+        using (var importedGenerator = BarcodeGenerator.ImportFromXml(xmlPath))
         {
-            // Assign the barcode image to the reader
-            reader.SetBarCodeImage(imagePath);
+            // Compare each relevant property with the original settings.
+            bool codeTextMatch = importedGenerator.CodeText == "Test123";
+            bool checksumMatch = importedGenerator.Parameters.Barcode.IsChecksumEnabled == EnableChecksum.Yes;
+            bool barHeightMatch = Math.Abs(importedGenerator.Parameters.Barcode.BarHeight.Point - 50f) < 0.001f;
+            bool xDimMatch = Math.Abs(importedGenerator.Parameters.Barcode.XDimension.Point - 2f) < 0.001f;
+            bool fontFamilyMatch = importedGenerator.Parameters.Barcode.CodeTextParameters.Font.FamilyName == "Arial";
+            bool fontSizeMatch = Math.Abs(importedGenerator.Parameters.Barcode.CodeTextParameters.Font.Size.Point - 12f) < 0.001f;
 
-            // Perform barcode recognition
-            var results = reader.ReadBarCodes();
+            // Output verification results.
+            Console.WriteLine("Import verification results:");
+            Console.WriteLine($"CodeText matches: {codeTextMatch}");
+            Console.WriteLine($"Checksum enabled matches: {checksumMatch}");
+            Console.WriteLine($"BarHeight matches: {barHeightMatch}");
+            Console.WriteLine($"XDimension matches: {xDimMatch}");
+            Console.WriteLine($"Font family matches: {fontFamilyMatch}");
+            Console.WriteLine($"Font size matches: {fontSizeMatch}");
+        }
 
-            // Output recognition results
-            if (results.Length == 0)
-            {
-                Console.WriteLine("No barcodes were detected.");
-            }
-            else
-            {
-                foreach (var result in results)
-                {
-                    Console.WriteLine($"Detected Barcode Type: {result.CodeTypeName}");
-                    Console.WriteLine($"Detected Barcode Text: {result.CodeText}");
-                }
-            }
+        // --------------------------------------------------------------------
+        // Clean up the temporary XML file (optional).
+        // --------------------------------------------------------------------
+        try
+        {
+            File.Delete(xmlPath);
+            Console.WriteLine($"Deleted temporary file '{xmlPath}'.");
+        }
+        catch
+        {
+            // Suppress any exceptions that occur during cleanup.
         }
     }
 }

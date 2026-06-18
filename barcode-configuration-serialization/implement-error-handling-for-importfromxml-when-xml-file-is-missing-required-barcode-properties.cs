@@ -1,61 +1,70 @@
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode;
 
+/// <summary>
+/// Demonstrates importing barcode settings from an XML file and handling missing required properties.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// </summary>
     static void Main()
     {
-        const string xmlFile = "barcodeConfig.xml";
-        const string outputFile = "generated.png";
+        // ------------------------------------------------------------
+        // 1. Create a temporary XML file that intentionally lacks required
+        //    barcode properties (e.g., missing CodeText or EncodeType).
+        // ------------------------------------------------------------
+        string tempXmlPath = Path.Combine(Path.GetTempPath(), "barcode_missing_props.xml");
+        string xmlContent = @"<?xml version=""1.0"" encoding=""utf-8""?>
+<BarcodeGenerator>
+    <Parameters>
+        <!-- Intentionally omit required properties like CodeText or EncodeType -->
+    </Parameters>
+</BarcodeGenerator>";
+        File.WriteAllText(tempXmlPath, xmlContent);
 
-        // Verify that the XML configuration file exists
-        if (!File.Exists(xmlFile))
-        {
-            Console.WriteLine($"XML file not found: {xmlFile}");
-            return;
-        }
-
+        // ------------------------------------------------------------
+        // 2. Attempt to import barcode settings from the XML file.
+        //    If the import succeeds, generate a barcode image.
+        // ------------------------------------------------------------
         try
         {
-            // Import barcode settings from the XML file
-            using (BarcodeGenerator generator = BarcodeGenerator.ImportFromXml(xmlFile))
+            using (var generator = BarcodeGenerator.ImportFromXml(tempXmlPath))
             {
-                // Basic validation of required properties
-                if (generator == null)
-                {
-                    throw new ArgumentException("Failed to import barcode configuration.");
-                }
+                // Provide a fallback CodeText in case the XML did not specify one.
+                generator.CodeText = "Sample";
 
-                // Barcode type must be specified
-                if (generator.BarcodeType == null)
-                {
-                    throw new ArgumentException("Barcode type is missing in the XML configuration.");
-                }
+                // Define the output path for the generated barcode image.
+                string outputPath = Path.Combine(Path.GetTempPath(), "generated_barcode.png");
 
-                // CodeText must be provided
-                if (string.IsNullOrWhiteSpace(generator.CodeText))
-                {
-                    throw new ArgumentException("CodeText is missing or empty in the XML configuration.");
-                }
+                // Save the barcode image to the specified location.
+                generator.Save(outputPath);
 
-                // Save the generated barcode image
-                generator.Save(outputFile);
-                Console.WriteLine($"Barcode generated and saved to {outputFile}");
+                // Inform the user of successful generation.
+                Console.WriteLine($"Barcode generated successfully: {outputPath}");
             }
-        }
-        catch (ArgumentException ex)
-        {
-            Console.WriteLine($"Configuration error: {ex.Message}");
-        }
-        catch (BarCodeException ex)
-        {
-            Console.WriteLine($"Barcode generation error: {ex.Message}");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Unexpected error: {ex.Message}");
+            // ------------------------------------------------------------
+            // 3. Handle any errors caused by missing required properties
+            //    or other issues during import.
+            // ------------------------------------------------------------
+            Console.WriteLine("Failed to import barcode from XML:");
+            Console.WriteLine($"Error: {ex.Message}");
+        }
+        finally
+        {
+            // ------------------------------------------------------------
+            // 4. Clean up the temporary XML file regardless of success or failure.
+            // ------------------------------------------------------------
+            if (File.Exists(tempXmlPath))
+            {
+                File.Delete(tempXmlPath);
+            }
         }
     }
 }

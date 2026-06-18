@@ -2,51 +2,44 @@ using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates exporting a barcode generator's settings to XML,
+/// importing them back, and saving the resulting barcode image.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// </summary>
     static void Main()
     {
-        // Create a barcode generator with Code128 symbology and sample text
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "12345"))
+        // Create a barcode generator with Code128 symbology and sample data.
+        using (var originalGenerator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
         {
-            // Set a custom bar color
-            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Blue;
+            // Set a custom bar color (blue) for the generated barcode.
+            originalGenerator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Blue;
 
-            // Export the generator settings to an XML stream
+            // Export the generator's configuration to an in‑memory XML stream.
             using (var xmlStream = new MemoryStream())
             {
-                bool exportSuccess = generator.ExportToXml(xmlStream);
-                if (!exportSuccess)
-                {
-                    Console.WriteLine("Failed to export barcode settings to XML.");
-                    return;
-                }
+                originalGenerator.ExportToXml(xmlStream);
 
-                // Reset stream position before reading
+                // Rewind the stream to the beginning so it can be read.
                 xmlStream.Position = 0;
 
-                // Import a new generator instance from the XML stream
-                BarcodeGenerator importedGenerator = BarcodeGenerator.ImportFromXml(xmlStream);
-                if (importedGenerator == null)
+                // Import a new BarcodeGenerator instance from the XML configuration.
+                using (var importedGenerator = BarcodeGenerator.ImportFromXml(xmlStream))
                 {
-                    Console.WriteLine("Failed to import barcode settings from XML.");
-                    return;
-                }
+                    // Define the output file path for the barcode image.
+                    string outputPath = "imported_barcode.png";
 
-                // Generate the barcode image from the imported generator
-                using (Bitmap barcodeImage = importedGenerator.GenerateBarCodeImage())
-                {
-                    // Save the image to a file
-                    barcodeImage.Save("imported_barcode.png", ImageFormat.Png);
-                    Console.WriteLine("Barcode image saved as 'imported_barcode.png'.");
-                }
+                    // Save the barcode image using the imported settings.
+                    importedGenerator.Save(outputPath);
 
-                // Dispose the imported generator (it implements IDisposable via Component)
-                importedGenerator.Dispose();
+                    // Inform the user where the image was saved.
+                    Console.WriteLine($"Barcode image saved to: {outputPath}");
+                }
             }
         }
     }

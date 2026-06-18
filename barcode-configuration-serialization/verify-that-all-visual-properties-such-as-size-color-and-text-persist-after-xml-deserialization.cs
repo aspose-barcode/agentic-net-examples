@@ -2,117 +2,101 @@ using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
+/// <summary>
+/// Demonstrates creating a barcode, customizing its visual appearance,
+/// exporting its configuration to XML, importing it back, and verifying that
+/// all visual properties are preserved.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// </summary>
     static void Main()
     {
-        // Prepare file paths
-        string xmlPath = Path.Combine(Path.GetTempPath(), "barcode_settings.xml");
-        string imgPath = Path.Combine(Path.GetTempPath(), "barcode.png");
-
-        // Create original barcode generator and set visual properties
-        using (var original = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
+        // Create a barcode generator with Code128 symbology and initial text.
+        using (var originalGenerator = new BarcodeGenerator(EncodeTypes.Code128, "Test123"))
         {
-            // Image size
-            original.Parameters.ImageWidth.Point = 300f;
-            original.Parameters.ImageHeight.Point = 150f;
+            // -------------------------------------------------
+            // Configure visual appearance of the barcode.
+            // -------------------------------------------------
 
-            // Colors
-            original.Parameters.Barcode.BarColor = Color.Blue;
-            original.Parameters.BackColor = Color.Yellow;
+            // Set barcode and background colors.
+            originalGenerator.Parameters.Barcode.BarColor = Color.Blue;
+            originalGenerator.Parameters.BackColor = Color.Yellow;
 
-            // Bar dimensions
-            original.Parameters.Barcode.BarHeight.Point = 50f;
-            original.Parameters.Barcode.XDimension.Point = 2f;
+            // Set image dimensions and X-dimension (module width).
+            originalGenerator.Parameters.ImageWidth.Point = 300f;
+            originalGenerator.Parameters.ImageHeight.Point = 150f;
+            originalGenerator.Parameters.Barcode.XDimension.Point = 2f;
 
-            // Padding
-            original.Parameters.Barcode.Padding.Left.Point = 5f;
-            original.Parameters.Barcode.Padding.Top.Point = 5f;
-            original.Parameters.Barcode.Padding.Right.Point = 5f;
-            original.Parameters.Barcode.Padding.Bottom.Point = 5f;
+            // Apply a rotation to the entire image.
+            originalGenerator.Parameters.RotationAngle = 45f;
 
-            // Caption above
-            original.Parameters.CaptionAbove.Text = "Above Caption";
-            original.Parameters.CaptionAbove.Font.FamilyName = "Arial";
-            original.Parameters.CaptionAbove.Font.Size.Point = 12f;
-            original.Parameters.CaptionAbove.Alignment = TextAlignment.Center;
+            // Configure a caption displayed above the barcode.
+            originalGenerator.Parameters.CaptionAbove.Visible = true;
+            originalGenerator.Parameters.CaptionAbove.Text = "Above Caption";
+            originalGenerator.Parameters.CaptionAbove.Font.FamilyName = "Arial";
+            originalGenerator.Parameters.CaptionAbove.Font.Size.Point = 12f;
+            originalGenerator.Parameters.CaptionAbove.TextColor = Color.Red;
 
-            // Human‑readable text (CodeTextParameters)
-            original.Parameters.Barcode.CodeTextParameters.Font.FamilyName = "Times New Roman";
-            original.Parameters.Barcode.CodeTextParameters.Font.Size.Point = 10f;
-            original.Parameters.Barcode.CodeTextParameters.Color = Color.Green;
-            original.Parameters.Barcode.CodeTextParameters.Alignment = TextAlignment.Right;
-            original.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.Above;
+            // -------------------------------------------------
+            // Export the generator's configuration to an XML stream.
+            // -------------------------------------------------
+            using (var xmlStream = new MemoryStream())
+            {
+                originalGenerator.ExportToXml(xmlStream);
+                xmlStream.Position = 0; // Reset stream position for reading.
 
-            // Save image (optional, just to have a file)
-            original.Save(imgPath);
-
-            // Export settings to XML
-            bool exported = original.ExportToXml(xmlPath);
-            Console.WriteLine($"Exported to XML: {exported}");
+                // -------------------------------------------------
+                // Import a new generator instance from the XML data.
+                // -------------------------------------------------
+                using (var importedGenerator = BarcodeGenerator.ImportFromXml(xmlStream))
+                {
+                    // Verify that all visual properties persisted after deserialization.
+                    bool allMatch = CompareGenerators(originalGenerator, importedGenerator);
+                    Console.WriteLine("All visual properties persisted after XML deserialization: " + allMatch);
+                }
+            }
         }
-
-        // Verify XML file exists
-        if (!File.Exists(xmlPath))
-        {
-            Console.WriteLine("XML file was not created.");
-            return;
-        }
-
-        // Import settings from XML into a new generator
-        using (var imported = BarcodeGenerator.ImportFromXml(xmlPath))
-        {
-            // Compare properties
-            Compare("ImageWidth", imported.Parameters.ImageWidth.Point, 300f);
-            Compare("ImageHeight", imported.Parameters.ImageHeight.Point, 150f);
-            CompareColor("BarColor", imported.Parameters.Barcode.BarColor, Color.Blue);
-            CompareColor("BackColor", imported.Parameters.BackColor, Color.Yellow);
-            Compare("BarHeight", imported.Parameters.Barcode.BarHeight.Point, 50f);
-            Compare("XDimension", imported.Parameters.Barcode.XDimension.Point, 2f);
-            Compare("PaddingLeft", imported.Parameters.Barcode.Padding.Left.Point, 5f);
-            Compare("PaddingTop", imported.Parameters.Barcode.Padding.Top.Point, 5f);
-            Compare("PaddingRight", imported.Parameters.Barcode.Padding.Right.Point, 5f);
-            Compare("PaddingBottom", imported.Parameters.Barcode.Padding.Bottom.Point, 5f);
-            CompareString("CaptionAbove.Text", imported.Parameters.CaptionAbove.Text, "Above Caption");
-            CompareString("CaptionAbove.FontFamily", imported.Parameters.CaptionAbove.Font.FamilyName, "Arial");
-            Compare("CaptionAbove.FontSize", imported.Parameters.CaptionAbove.Font.Size.Point, 12f);
-            CompareEnum("CaptionAbove.Alignment", imported.Parameters.CaptionAbove.Alignment, TextAlignment.Center);
-            CompareString("CodeTextParameters.FontFamily", imported.Parameters.Barcode.CodeTextParameters.Font.FamilyName, "Times New Roman");
-            Compare("CodeTextParameters.FontSize", imported.Parameters.Barcode.CodeTextParameters.Font.Size.Point, 10f);
-            CompareColor("CodeTextParameters.Color", imported.Parameters.Barcode.CodeTextParameters.Color, Color.Green);
-            CompareEnum("CodeTextParameters.Alignment", imported.Parameters.Barcode.CodeTextParameters.Alignment, TextAlignment.Right);
-            CompareEnum("CodeTextParameters.Location", imported.Parameters.Barcode.CodeTextParameters.Location, CodeLocation.Above);
-        }
-
-        // Clean up temporary files
-        try { File.Delete(xmlPath); } catch { }
-        try { File.Delete(imgPath); } catch { }
     }
 
-    static void Compare(string name, float actual, float expected)
+    /// <summary>
+    /// Compares two <see cref="BarcodeGenerator"/> instances to ensure that
+    /// their visual properties and code text are identical.
+    /// </summary>
+    /// <param name="original">The original generator.</param>
+    /// <param name="imported">The generator imported from XML.</param>
+    /// <returns>True if all compared properties match; otherwise, false.</returns>
+    static bool CompareGenerators(BarcodeGenerator original, BarcodeGenerator imported)
     {
+        // Compare barcode and background colors.
+        if (!original.Parameters.Barcode.BarColor.Equals(imported.Parameters.Barcode.BarColor)) return false;
+        if (!original.Parameters.BackColor.Equals(imported.Parameters.BackColor)) return false;
+
+        // Compare image dimensions and X-dimension using a tolerance for floating‑point values.
         const float tolerance = 0.001f;
-        bool match = Math.Abs(actual - expected) <= tolerance;
-        Console.WriteLine($"{name}: {(match ? "Match" : $"Mismatch (actual={actual}, expected={expected})")}");
-    }
+        if (Math.Abs(original.Parameters.ImageWidth.Point - imported.Parameters.ImageWidth.Point) > tolerance) return false;
+        if (Math.Abs(original.Parameters.ImageHeight.Point - imported.Parameters.ImageHeight.Point) > tolerance) return false;
+        if (Math.Abs(original.Parameters.Barcode.XDimension.Point - imported.Parameters.Barcode.XDimension.Point) > tolerance) return false;
 
-    static void CompareString(string name, string actual, string expected)
-    {
-        bool match = string.Equals(actual, expected, StringComparison.Ordinal);
-        Console.WriteLine($"{name}: {(match ? "Match" : $"Mismatch (actual=\"{actual}\", expected=\"{expected}\")")}");
-    }
+        // Compare rotation angle.
+        if (Math.Abs(original.Parameters.RotationAngle - imported.Parameters.RotationAngle) > tolerance) return false;
 
-    static void CompareEnum<T>(string name, T actual, T expected) where T : Enum
-    {
-        bool match = actual.Equals(expected);
-        Console.WriteLine($"{name}: {(match ? "Match" : $"Mismatch (actual={actual}, expected={expected})")}");
-    }
+        // Compare caption properties.
+        if (original.Parameters.CaptionAbove.Visible != imported.Parameters.CaptionAbove.Visible) return false;
+        if (original.Parameters.CaptionAbove.Text != imported.Parameters.CaptionAbove.Text) return false;
+        if (original.Parameters.CaptionAbove.Font.FamilyName != imported.Parameters.CaptionAbove.Font.FamilyName) return false;
+        if (Math.Abs(original.Parameters.CaptionAbove.Font.Size.Point - imported.Parameters.CaptionAbove.Font.Size.Point) > tolerance) return false;
+        if (!original.Parameters.CaptionAbove.TextColor.Equals(imported.Parameters.CaptionAbove.TextColor)) return false;
 
-    static void CompareColor(string name, Color actual, Color expected)
-    {
-        bool match = actual.ToArgb() == expected.ToArgb();
-        Console.WriteLine($"{name}: {(match ? "Match" : $"Mismatch (actual={actual}, expected={expected})")}");
+        // Compare the encoded text.
+        if (original.CodeText != imported.CodeText) return false;
+
+        // All checks passed.
+        return true;
     }
 }

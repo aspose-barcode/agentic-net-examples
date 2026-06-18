@@ -2,52 +2,72 @@ using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 
+/// <summary>
+/// Demonstrates loading a barcode configuration from an XML file,
+/// falling back to a default configuration, and saving the generated
+/// barcode image to disk.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// </summary>
     static void Main()
     {
-        const string xmlFile = "barcodeConfig.xml";
-        const string outputFile = "fallback.png";
+        // Paths for the configuration XML and the output image.
+        string xmlPath = "barcodeConfig.xml";
+        string outputPath = "barcode.png";
 
+        // Holds the barcode generator instance (may be null if loading fails).
         BarcodeGenerator generator = null;
 
-        // Try to import configuration from XML
-        if (File.Exists(xmlFile))
+        // ------------------------------------------------------------
+        // Attempt to load barcode configuration from the XML file.
+        // ------------------------------------------------------------
+        try
         {
-            try
+            if (File.Exists(xmlPath))
             {
-                generator = BarcodeGenerator.ImportFromXml(xmlFile);
+                // Import settings from the XML configuration.
+                generator = BarcodeGenerator.ImportFromXml(xmlPath);
+                Console.WriteLine($"Loaded barcode configuration from '{xmlPath}'.");
             }
-            catch (Exception ex)
+            else
             {
-                Console.WriteLine($"ImportFromXml failed: {ex.Message}");
+                // Inform the user that the XML file does not exist.
+                Console.WriteLine($"XML configuration file not found: '{xmlPath}'.");
             }
         }
-        else
+        catch (Exception ex)
         {
-            Console.WriteLine($"XML file '{xmlFile}' not found.");
+            // Report any errors that occurred during import.
+            Console.WriteLine($"ImportFromXml failed: {ex.Message}");
         }
 
-        // If import failed, create a default barcode generator
+        // ------------------------------------------------------------
+        // If loading failed, create a default barcode configuration.
+        // ------------------------------------------------------------
         if (generator == null)
         {
             Console.WriteLine("Creating default barcode configuration.");
             generator = new BarcodeGenerator(EncodeTypes.Code128, "Default123");
-            // Example of setting some default parameters
-            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-            generator.Parameters.BackColor = Aspose.Drawing.Color.White;
-            generator.Parameters.ImageWidth.Point = 300f;
-            generator.Parameters.ImageHeight.Point = 150f;
+
+            // Example default settings:
+            // Enable checksum calculation.
+            generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
+            // Place the code text below the barcode.
+            generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.Below;
         }
 
-        // Save the barcode image
+        // ------------------------------------------------------------
+        // Save the generated barcode image to the specified file.
+        // ------------------------------------------------------------
         using (generator)
         {
-            generator.Save(outputFile);
+            generator.Save(outputPath);
         }
 
-        Console.WriteLine($"Barcode image saved to '{outputFile}'.");
+        Console.WriteLine($"Barcode image saved to '{outputPath}'.");
     }
 }

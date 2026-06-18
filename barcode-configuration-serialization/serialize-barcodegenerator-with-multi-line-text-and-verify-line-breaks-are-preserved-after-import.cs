@@ -3,34 +3,54 @@ using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
+/// <summary>
+/// Demonstrates exporting a barcode generator to XML and importing it back,
+/// preserving multi‑line text with Windows line breaks.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// </summary>
     static void Main()
     {
-        // Multi‑line text to be encoded
-        string originalText = "First line\r\nSecond line\r\nThird line";
+        // Define multi‑line text containing Windows style line breaks (\r\n)
+        string multiLineText = "Line1\r\nLine2\r\nLine3";
 
-        // Path for the temporary XML file
-        string xmlPath = Path.Combine(Directory.GetCurrentDirectory(), "barcode.xml");
+        // Build a temporary file path for the XML serialization output
+        string xmlPath = Path.Combine(Path.GetTempPath(), "barcode.xml");
 
-        // Create a barcode generator, set the code text and export to XML
+        // Create a barcode generator for Code128, assign the multi‑line text,
+        // and export its configuration to an XML file.
         using (var generator = new BarcodeGenerator(EncodeTypes.Code128))
         {
-            generator.CodeText = originalText;
+            generator.CodeText = multiLineText;
             generator.ExportToXml(xmlPath);
         }
 
-        // Import the barcode generator from the XML file
+        // Verify that the XML file was successfully created.
+        if (!File.Exists(xmlPath))
+        {
+            Console.WriteLine("Failed to create XML file.");
+            return;
+        }
+
+        // Import a new barcode generator instance from the previously saved XML file.
         using (var importedGenerator = BarcodeGenerator.ImportFromXml(xmlPath))
         {
-            string importedText = importedGenerator.CodeText;
-            bool lineBreaksPreserved = originalText == importedText;
-
+            // Check whether the imported CodeText matches the original multi‑line text.
+            bool lineBreaksPreserved = importedGenerator.CodeText == multiLineText;
             Console.WriteLine("Line breaks preserved: " + lineBreaksPreserved);
-            Console.WriteLine("Original text:");
-            Console.WriteLine(originalText);
-            Console.WriteLine("Imported text:");
-            Console.WriteLine(importedText);
+        }
+
+        // Attempt to delete the temporary XML file; ignore any exceptions that may occur.
+        try
+        {
+            File.Delete(xmlPath);
+        }
+        catch
+        {
+            // Cleanup errors are intentionally ignored.
         }
     }
 }

@@ -3,59 +3,82 @@ using System.Diagnostics;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 
+/// <summary>
+/// Demonstrates exporting and importing barcode configuration to/from XML using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Generates a barcode, exports its configuration to XML,
+    /// measures export performance, and verifies import from both file and stream.
+    /// </summary>
     static void Main()
     {
-        // Prepare a barcode generator with a relatively complex configuration
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+        // Define barcode type and content
+        BaseEncodeType type = EncodeTypes.Code128;
+        string codeText = "Sample1234567890";
+
+        // Create a barcode generator with the specified type and text
+        using (var generator = new BarcodeGenerator(type, codeText))
         {
-            // Set various barcode parameters to increase configuration size
-            generator.Parameters.Barcode.XDimension.Point = 2f;
-            generator.Parameters.Barcode.BarHeight.Point = 50f;
-            generator.Parameters.ImageWidth.Point = 300f;
-            generator.Parameters.ImageHeight.Point = 150f;
-            generator.Parameters.Barcode.Padding.Left.Point = 5f;
-            generator.Parameters.Barcode.Padding.Top.Point = 5f;
-            generator.Parameters.Barcode.Padding.Right.Point = 5f;
-            generator.Parameters.Barcode.Padding.Bottom.Point = 5f;
-            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Blue;
-            generator.Parameters.BackColor = Aspose.Drawing.Color.LightYellow;
-            generator.Parameters.Resolution = 300;
-            generator.Parameters.AutoSizeMode = AutoSizeMode.None;
-            generator.Parameters.Barcode.CodeTextParameters.Font.FamilyName = "Arial";
-            generator.Parameters.Barcode.CodeTextParameters.Font.Size.Point = 10f;
-            generator.Parameters.Barcode.CodeTextParameters.Alignment = TextAlignment.Center;
-            generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.Below;
+            // Configure barcode appearance and generator settings to produce a sizable XML
+            generator.Parameters.Barcode.BarHeight.Point = 50f;               // Height of the barcode
+            generator.Parameters.Barcode.XDimension.Point = 2f;              // Width of the smallest bar
+            generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes; // Enable checksum
+            generator.Parameters.Barcode.Padding.Left.Point = 5f;            // Left padding
+            generator.Parameters.Barcode.Padding.Top.Point = 5f;             // Top padding
+            generator.Parameters.Barcode.Padding.Right.Point = 5f;           // Right padding
+            generator.Parameters.Barcode.Padding.Bottom.Point = 5f;          // Bottom padding
+            generator.Parameters.Resolution = 300f;                           // Image resolution (dpi)
+            generator.Parameters.AutoSizeMode = AutoSizeMode.None;           // Disable auto‑sizing
 
-            // Measure file‑based XML export
-            string xmlFilePath = Path.Combine(Path.GetTempPath(), "barcode_config_file.xml");
-            var swFile = Stopwatch.StartNew();
-            bool fileExportSuccess = generator.ExportToXml(xmlFilePath);
-            swFile.Stop();
+            string xmlFilePath = "barcodeConfig.xml";
 
-            // Measure stream‑based XML export
-            bool streamExportSuccess;
-            long streamLength;
-            var swStream = Stopwatch.StartNew();
-            using (var memoryStream = new MemoryStream())
+            // -------------------- Export to XML file --------------------
+            var swFile = Stopwatch.StartNew();               // Start timing file export
+            generator.ExportToXml(xmlFilePath);               // Export configuration to file
+            swFile.Stop();                                    // Stop timing
+
+            // -------------------- Export to XML stream --------------------
+            long streamLength;                                // Will hold the size of the exported stream
+            var swStream = Stopwatch.StartNew();              // Start timing stream export
+            using (var ms = new MemoryStream())
             {
-                streamExportSuccess = generator.ExportToXml(memoryStream);
-                streamLength = memoryStream.Length;
+                generator.ExportToXml(ms);                    // Export configuration to memory stream
+                ms.Position = 0;                              // Reset position for reading
+                streamLength = ms.Length;                     // Capture stream length in bytes
             }
-            swStream.Stop();
+            swStream.Stop();                                  // Stop timing
 
-            // Output results
-            Console.WriteLine("File export success: {0}", fileExportSuccess);
-            Console.WriteLine("File export time (ms): {0}", swFile.ElapsedMilliseconds);
-            Console.WriteLine("File path: {0}", xmlFilePath);
-            Console.WriteLine();
+            // Output performance metrics
+            Console.WriteLine($"File export time: {swFile.ElapsedMilliseconds} ms");
+            Console.WriteLine($"Stream export time: {swStream.ElapsedMilliseconds} ms");
+            Console.WriteLine($"Exported stream size: {streamLength} bytes");
 
-            Console.WriteLine("Stream export success: {0}", streamExportSuccess);
-            Console.WriteLine("Stream export time (ms): {0}", swStream.ElapsedMilliseconds);
-            Console.WriteLine("Stream length (bytes): {0}", streamLength);
+            // -------------------- Import from XML file --------------------
+            using (var genFromFile = BarcodeGenerator.ImportFromXml(xmlFilePath))
+            {
+                // Import succeeded; no further action required for this demo
+            }
+
+            // -------------------- Import from XML stream --------------------
+            using (var msLoad = new MemoryStream())
+            {
+                // Re‑export to a new stream to simulate loading from stream
+                generator.ExportToXml(msLoad);
+                msLoad.Position = 0;                          // Reset for reading
+                using (var genFromStream = BarcodeGenerator.ImportFromXml(msLoad))
+                {
+                    // Import succeeded; no further action required for this demo
+                }
+            }
+        }
+
+        // Remove the temporary XML file created during the demo
+        if (File.Exists("barcodeConfig.xml"))
+        {
+            File.Delete("barcodeConfig.xml");
         }
     }
 }

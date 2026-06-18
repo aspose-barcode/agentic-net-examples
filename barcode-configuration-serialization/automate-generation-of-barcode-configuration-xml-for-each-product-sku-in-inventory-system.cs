@@ -3,50 +3,55 @@ using System.Collections.Generic;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 
-namespace BarcodeXmlGenerator
+/// <summary>
+/// Demonstrates generating barcode configuration XML files for a list of product SKUs.
+/// </summary>
+class Program
 {
-    class Program
+    /// <summary>
+    /// Entry point of the application. Generates XML configuration files for each SKU in the sample inventory.
+    /// </summary>
+    static void Main()
     {
-        static void Main()
+        // Define a sample inventory containing product SKUs.
+        var products = new List<string>
         {
-            // Sample list of product SKUs
-            var skus = new List<string> { "SKU001", "SKU002", "SKU003", "SKU004", "SKU005" };
+            "SKU00123",
+            "SKU00456",
+            "SKU00789",
+            "SKU01011",
+            "SKU01314"
+        };
 
-            // Directory to store generated XML files
-            string outputDir = "BarcodesXml";
-            if (!Directory.Exists(outputDir))
+        // Determine the output directory for the generated XML configuration files.
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "BarcodeConfigs");
+        // Ensure the output directory exists.
+        Directory.CreateDirectory(outputDir);
+
+        // Iterate over each SKU and generate its barcode configuration.
+        foreach (var sku in products)
+        {
+            // Initialize a barcode generator for Code128 using the current SKU as the code text.
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, sku))
             {
-                Directory.CreateDirectory(outputDir);
+                // Configure barcode appearance and settings.
+                generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes; // Enable checksum.
+                generator.Parameters.Barcode.BarHeight.Point = 40f;                  // Set bar height.
+                generator.Parameters.Barcode.XDimension.Point = 2f;                 // Set X dimension (module width).
+                generator.Parameters.Resolution = 300f;                              // Set image resolution.
+
+                // Build the full path for the XML file corresponding to the current SKU.
+                string xmlPath = Path.Combine(outputDir, $"{sku}.xml");
+                // Export the generator's configuration to an XML file.
+                generator.ExportToXml(xmlPath);
+
+                // Inform the user that the XML file has been created.
+                Console.WriteLine($"Generated XML configuration for SKU '{sku}' at: {xmlPath}");
             }
-
-            foreach (var sku in skus)
-            {
-                // Create a barcode generator for Code128 symbology with the SKU as the code text
-                using (var generator = new BarcodeGenerator(EncodeTypes.Code128, sku))
-                {
-                    // Set image dimensions
-                    generator.Parameters.ImageWidth.Pixels = 300f;
-                    generator.Parameters.ImageHeight.Pixels = 150f;
-
-                    // Set barcode-specific properties
-                    generator.Parameters.Barcode.BarHeight.Pixels = 100f;
-                    generator.Parameters.Barcode.XDimension.Pixels = 2f;
-                    generator.Parameters.Barcode.BarColor = Color.Black;
-                    generator.Parameters.BackColor = Color.White;
-
-                    // Export the barcode configuration to an XML file
-                    string xmlPath = Path.Combine(outputDir, $"{sku}.xml");
-                    bool exported = generator.ExportToXml(xmlPath);
-                    if (!exported)
-                    {
-                        Console.WriteLine($"Failed to export XML for SKU: {sku}");
-                    }
-                }
-            }
-
-            Console.WriteLine("Barcode XML generation completed.");
         }
+
+        // Indicate that the process has completed.
+        Console.WriteLine("Barcode configuration XML generation completed.");
     }
 }

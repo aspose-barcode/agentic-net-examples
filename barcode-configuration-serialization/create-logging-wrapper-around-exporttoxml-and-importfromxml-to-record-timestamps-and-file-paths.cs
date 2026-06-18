@@ -2,90 +2,72 @@ using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
 
+/// <summary>
+/// Provides helper methods to export and import barcode generator settings with console logging.
+/// </summary>
+class BarcodeXmlLogger
+{
+    /// <summary>
+    /// Exports the settings of the specified <see cref="BarcodeGenerator"/> to an XML file and logs the operation.
+    /// </summary>
+    /// <param name="generator">The barcode generator whose settings will be exported.</param>
+    /// <param name="filePath">The file path where the XML will be saved.</param>
+    public static void ExportToXmlWithLog(BarcodeGenerator generator, string filePath)
+    {
+        // Log the export action with a timestamp.
+        Console.WriteLine($"{DateTime.Now:O}: Exporting barcode settings to \"{filePath}\"");
+        // Perform the actual export.
+        generator.ExportToXml(filePath);
+    }
+
+    /// <summary>
+    /// Imports barcode generator settings from an XML file and logs the operation.
+    /// </summary>
+    /// <param name="filePath">The XML file containing the barcode settings.</param>
+    /// <returns>A new <see cref="BarcodeGenerator"/> instance initialized with the imported settings.</returns>
+    public static BarcodeGenerator ImportFromXmlWithLog(string filePath)
+    {
+        // Log the import action with a timestamp.
+        Console.WriteLine($"{DateTime.Now:O}: Importing barcode settings from \"{filePath}\"");
+        // Perform the actual import.
+        return BarcodeGenerator.ImportFromXml(filePath);
+    }
+}
+
+/// <summary>
+/// Demonstrates exporting barcode settings to XML, importing them back, and generating a barcode image.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// </summary>
     static void Main()
     {
-        // Define file paths
-        string barcodeImagePath = "barcode.png";
-        string generatorXmlPath = "generator.xml";
-        string importedBarcodeImagePath = "imported.png";
-        string readerXmlPath = "reader.xml";
+        // Define file paths for the XML settings and the resulting barcode image.
+        string xmlPath = "barcodeSettings.xml";
+        string imagePath = "importedBarcode.png";
 
-        // Ensure clean start
-        DeleteIfExists(barcodeImagePath);
-        DeleteIfExists(generatorXmlPath);
-        DeleteIfExists(importedBarcodeImagePath);
-        DeleteIfExists(readerXmlPath);
-
-        // Create a barcode generator, save image and export its settings to XML with logging
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "12345"))
+        // Create a barcode generator, configure it, and export its settings to XML.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
         {
-            generator.Save(barcodeImagePath);
-            ExportGeneratorToXml(generator, generatorXmlPath);
+            // Example configuration (optional): set barcode height and enable checksum.
+            generator.Parameters.Barcode.BarHeight.Point = 40f;
+            generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
+
+            // Log the creation and export process.
+            Console.WriteLine($"{DateTime.Now:O}: Creating barcode and exporting settings.");
+            BarcodeXmlLogger.ExportToXmlWithLog(generator, xmlPath);
         }
 
-        // Import generator settings from XML with logging and save a new image
-        var importedGenerator = ImportGeneratorFromXml(generatorXmlPath);
-        importedGenerator.Save(importedBarcodeImagePath);
-        importedGenerator.Dispose();
-
-        // Create a barcode reader for the original image, export its settings to XML with logging
-        using (var reader = new BarCodeReader(barcodeImagePath, DecodeType.Code128))
+        // Import the barcode settings from XML and generate an image.
+        using (var importedGenerator = BarcodeXmlLogger.ImportFromXmlWithLog(xmlPath))
         {
-            ExportReaderToXml(reader, readerXmlPath);
+            // Save the generated barcode image to the specified path.
+            importedGenerator.Save(imagePath);
+            // Log the successful save operation.
+            Console.WriteLine($"{DateTime.Now:O}: Saved imported barcode image to \"{imagePath}\"");
         }
-
-        // Import reader settings from XML with logging, set the image, and read barcodes
-        var importedReader = ImportReaderFromXml(readerXmlPath);
-        importedReader.SetBarCodeImage(barcodeImagePath);
-        foreach (var result in importedReader.ReadBarCodes())
-        {
-            Log($"Read barcode: Type={result.CodeTypeName}, Text={result.CodeText}");
-        }
-        importedReader.Dispose();
-    }
-
-    static void DeleteIfExists(string path)
-    {
-        if (File.Exists(path))
-        {
-            File.Delete(path);
-        }
-    }
-
-    static bool ExportGeneratorToXml(BarcodeGenerator generator, string xmlPath)
-    {
-        bool success = generator.ExportToXml(xmlPath);
-        Log($"ExportGeneratorToXml - Path: {xmlPath}, Success: {success}, Time: {DateTime.Now}");
-        return success;
-    }
-
-    static BarcodeGenerator ImportGeneratorFromXml(string xmlPath)
-    {
-        var generator = BarcodeGenerator.ImportFromXml(xmlPath);
-        Log($"ImportGeneratorFromXml - Path: {xmlPath}, Time: {DateTime.Now}");
-        return generator;
-    }
-
-    static bool ExportReaderToXml(BarCodeReader reader, string xmlPath)
-    {
-        bool success = reader.ExportToXml(xmlPath);
-        Log($"ExportReaderToXml - Path: {xmlPath}, Success: {success}, Time: {DateTime.Now}");
-        return success;
-    }
-
-    static BarCodeReader ImportReaderFromXml(string xmlPath)
-    {
-        var reader = BarCodeReader.ImportFromXml(xmlPath);
-        Log($"ImportReaderFromXml - Path: {xmlPath}, Time: {DateTime.Now}");
-        return reader;
-    }
-
-    static void Log(string message)
-    {
-        Console.WriteLine(message);
     }
 }

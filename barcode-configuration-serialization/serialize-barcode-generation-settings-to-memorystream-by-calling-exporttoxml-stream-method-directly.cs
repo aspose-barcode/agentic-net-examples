@@ -1,37 +1,41 @@
 using System;
 using System.IO;
-using System.Text;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
+using Aspose.BarCode;
 
-namespace BarcodeExportExample
+/// <summary>
+/// Demonstrates exporting barcode generator settings to XML using Aspose.BarCode.
+/// </summary>
+class Program
 {
-    class Program
+    /// <summary>
+    /// Entry point of the application.
+    /// Creates a Code128 barcode generator, enables checksum, and exports its settings to XML.
+    /// </summary>
+    static void Main()
     {
-        static void Main()
+        // Initialize a barcode generator for Code128 with the sample text "12345"
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "12345"))
         {
-            // Create a barcode generator for Code128 with sample text
-            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "123ABC"))
+            // Enable checksum (required for Code128)
+            generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
+
+            // Export the generator's configuration to a memory stream in XML format
+            using (var memoryStream = new MemoryStream())
             {
-                // Set some visual parameters
-                generator.Parameters.Barcode.BarColor = Color.Blue;
-                generator.Parameters.BackColor = Color.Yellow;
+                generator.ExportToXml(memoryStream);
 
-                // Serialize settings to a memory stream
-                using (MemoryStream xmlStream = new MemoryStream())
+                // Rewind the stream to the beginning so it can be read
+                memoryStream.Position = 0;
+
+                // Read the XML content from the memory stream
+                using (var reader = new StreamReader(memoryStream))
                 {
-                    bool exported = generator.ExportToXml(xmlStream);
-                    Console.WriteLine("Export to XML succeeded: " + exported);
+                    string xml = reader.ReadToEnd();
 
-                    // Reset stream position to read the XML content
-                    xmlStream.Position = 0;
-                    using (StreamReader sr = new StreamReader(xmlStream, Encoding.UTF8, true, 1024, leaveOpen: true))
-                    {
-                        string xmlContent = sr.ReadToEnd();
-                        Console.WriteLine("Exported XML:");
-                        Console.WriteLine(xmlContent);
-                    }
+                    // Output the exported XML to the console
+                    Console.WriteLine("Exported Barcode Settings XML:");
+                    Console.WriteLine(xml);
                 }
             }
         }
