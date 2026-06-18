@@ -21,19 +21,15 @@ When working in this repository:
 
 ## Repository Overview
 
-This repository contains **61** working code examples demonstrating Aspose.BarCode for .NET capabilities.
+This repository contains **911** working code examples demonstrating Aspose.BarCode for .NET capabilities.
 
 **Statistics** (as of 2026-06-18):
-- Total Examples: 61
-- Categories: 3
+- Total Examples: 911
+- Categories: 21
 - Overall Pass Rate: 100.0%
 - Package Version: Aspose.BarCode 26.5.0
 
 ## Category Details
-
-### two-dimensional-barcode-types
-- Examples: 1
-- Guide: [agents.md](./two-dimensional-barcode-types/agents.md)
 
 ### barcode-appearance-customization
 - Examples: 30
@@ -42,6 +38,82 @@ This repository contains **61** working code examples demonstrating Aspose.BarCo
 ### barcode-checksum-control
 - Examples: 30
 - Guide: [agents.md](./barcode-checksum-control/agents.md)
+
+### barcode-color-customization
+- Examples: 28
+- Guide: [agents.md](./barcode-color-customization/agents.md)
+
+### barcode-configuration-serialization
+- Examples: 30
+- Guide: [agents.md](./barcode-configuration-serialization/agents.md)
+
+### barcode-reading-properties
+- Examples: 50
+- Guide: [agents.md](./barcode-reading-properties/agents.md)
+
+### barcode-recognition-basics
+- Examples: 75
+- Guide: [agents.md](./barcode-recognition-basics/agents.md)
+
+### barcode-recognition-performance
+- Examples: 81
+- Guide: [agents.md](./barcode-recognition-performance/agents.md)
+
+### barcode-recognition-xml-serialization
+- Examples: 35
+- Guide: [agents.md](./barcode-recognition-xml-serialization/agents.md)
+
+### barcode-saving-and-export
+- Examples: 30
+- Guide: [agents.md](./barcode-saving-and-export/agents.md)
+
+### barcode-size-and-resolution
+- Examples: 34
+- Guide: [agents.md](./barcode-size-and-resolution/agents.md)
+
+### barcode-text-customization
+- Examples: 29
+- Guide: [agents.md](./barcode-text-customization/agents.md)
+
+### gs1-barcode-types
+- Examples: 34
+- Guide: [agents.md](./gs1-barcode-types/agents.md)
+
+### hibc-lic-barcode
+- Examples: 35
+- Guide: [agents.md](./hibc-lic-barcode/agents.md)
+
+### mailmark-four-state-barcode
+- Examples: 29
+- Guide: [agents.md](./mailmark-four-state-barcode/agents.md)
+
+### mailmark-two-dimensional-barcode
+- Examples: 34
+- Guide: [agents.md](./mailmark-two-dimensional-barcode/agents.md)
+
+### maxicode-barcode
+- Examples: 34
+- Guide: [agents.md](./maxicode-barcode/agents.md)
+
+### one-dimensional-barcode-types
+- Examples: 126
+- Guide: [agents.md](./one-dimensional-barcode-types/agents.md)
+
+### postal-barcode-types
+- Examples: 90
+- Guide: [agents.md](./postal-barcode-types/agents.md)
+
+### special-barcode-recognition-settings
+- Examples: 48
+- Guide: [agents.md](./special-barcode-recognition-settings/agents.md)
+
+### swiss-qr-code
+- Examples: 28
+- Guide: [agents.md](./swiss-qr-code/agents.md)
+
+### two-dimensional-barcode-types
+- Examples: 1
+- Guide: [agents.md](./two-dimensional-barcode-types/agents.md)
 
 ## Boundaries
 
@@ -100,18 +172,54 @@ generator.Parameters.Border.Width.Pixels = 2f;
 ```
 agents.md
 index.json
-+-- two-dimensional-barcode-types/
 +-- barcode-appearance-customization/
 +-- barcode-checksum-control/
++-- barcode-color-customization/
++-- barcode-configuration-serialization/
++-- barcode-reading-properties/
++-- barcode-recognition-basics/
++-- barcode-recognition-performance/
++-- barcode-recognition-xml-serialization/
++-- barcode-saving-and-export/
++-- barcode-size-and-resolution/
++-- barcode-text-customization/
++-- gs1-barcode-types/
++-- hibc-lic-barcode/
++-- mailmark-four-state-barcode/
++-- mailmark-two-dimensional-barcode/
++-- maxicode-barcode/
++-- one-dimensional-barcode-types/
++-- postal-barcode-types/
++-- special-barcode-recognition-settings/
++-- swiss-qr-code/
++-- two-dimensional-barcode-types/
 ```
 
 ## Category Index
 
 | Category | Examples | Pass Rate | Details |
 |----------|----------|-----------|---------|
-| [Two Dimensional Barcode Types](./two-dimensional-barcode-types/) | 1 | 100.0% | [agents.md](./two-dimensional-barcode-types/agents.md) |
 | [Barcode Appearance Customization](./barcode-appearance-customization/) | 30 | 100.0% | [agents.md](./barcode-appearance-customization/agents.md) |
 | [Barcode Checksum Control](./barcode-checksum-control/) | 30 | 100.0% | [agents.md](./barcode-checksum-control/agents.md) |
+| [Barcode Color Customization](./barcode-color-customization/) | 28 | 100.0% | [agents.md](./barcode-color-customization/agents.md) |
+| [Barcode Configuration Serialization](./barcode-configuration-serialization/) | 30 | 100.0% | [agents.md](./barcode-configuration-serialization/agents.md) |
+| [Barcode Reading Properties](./barcode-reading-properties/) | 50 | 100.0% | [agents.md](./barcode-reading-properties/agents.md) |
+| [Barcode Recognition Basics](./barcode-recognition-basics/) | 75 | 100.0% | [agents.md](./barcode-recognition-basics/agents.md) |
+| [Barcode Recognition Performance](./barcode-recognition-performance/) | 81 | 100.0% | [agents.md](./barcode-recognition-performance/agents.md) |
+| [Barcode Recognition XML Serialization](./barcode-recognition-xml-serialization/) | 35 | 100.0% | [agents.md](./barcode-recognition-xml-serialization/agents.md) |
+| [Barcode Saving and Export](./barcode-saving-and-export/) | 30 | 100.0% | [agents.md](./barcode-saving-and-export/agents.md) |
+| [Barcode Size and Resolution](./barcode-size-and-resolution/) | 34 | 100.0% | [agents.md](./barcode-size-and-resolution/agents.md) |
+| [Barcode Text Customization](./barcode-text-customization/) | 29 | 100.0% | [agents.md](./barcode-text-customization/agents.md) |
+| [GS1 Barcode Types](./gs1-barcode-types/) | 34 | 100.0% | [agents.md](./gs1-barcode-types/agents.md) |
+| [HIBC LIC Barcode](./hibc-lic-barcode/) | 35 | 100.0% | [agents.md](./hibc-lic-barcode/agents.md) |
+| [Mailmark Four State Barcode](./mailmark-four-state-barcode/) | 29 | 100.0% | [agents.md](./mailmark-four-state-barcode/agents.md) |
+| [Mailmark Two Dimensional Barcode](./mailmark-two-dimensional-barcode/) | 34 | 100.0% | [agents.md](./mailmark-two-dimensional-barcode/agents.md) |
+| [MaxiCode Barcode](./maxicode-barcode/) | 34 | 100.0% | [agents.md](./maxicode-barcode/agents.md) |
+| [One Dimensional Barcode Types](./one-dimensional-barcode-types/) | 126 | 100.0% | [agents.md](./one-dimensional-barcode-types/agents.md) |
+| [Postal Barcode Types](./postal-barcode-types/) | 90 | 100.0% | [agents.md](./postal-barcode-types/agents.md) |
+| [Special Barcode Recognition Settings](./special-barcode-recognition-settings/) | 48 | 100.0% | [agents.md](./special-barcode-recognition-settings/agents.md) |
+| [Swiss QR Code](./swiss-qr-code/) | 28 | 100.0% | [agents.md](./swiss-qr-code/agents.md) |
+| [Two Dimensional Barcode Types](./two-dimensional-barcode-types/) | 1 | 100.0% | [agents.md](./two-dimensional-barcode-types/agents.md) |
 
 ## Command Reference
 
@@ -145,8 +253,8 @@ dotnet run
 | `CS1674` | Type not IDisposable | Remove `using` from non-disposable types |
 
 <!-- AUTOGENERATED:START -->
-Updated: 2026-06-18 | Examples: 61 | Categories: 3 | Package: Aspose.BarCode 26.5.0
+Updated: 2026-06-18 | Examples: 911 | Categories: 21 | Package: Aspose.BarCode 26.5.0
 <!-- AUTOGENERATED:END -->
 
 ---
-*This repository is maintained by automated code generation. Last updated: 2026-06-18 | Total examples: 61*
+*This repository is maintained by automated code generation. Last updated: 2026-06-18 | Total examples: 911*
