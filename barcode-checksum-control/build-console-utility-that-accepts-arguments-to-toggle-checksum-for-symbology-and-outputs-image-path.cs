@@ -4,41 +4,85 @@ using System.Reflection;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
+/// <summary>
+/// Demonstrates generating a barcode image using Aspose.BarCode with optional command‑line parameters.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Accepts optional arguments to customize the barcode generation:
+    /// <list type="number">
+    ///   <item>symbologyName – the barcode symbology (e.g., Code39FullASCII)</item>
+    ///   <item>codeText – the text to encode</item>
+    ///   <item>checksumFlag – \"yes\" or \"no\" to enable checksum</item>
+    ///   <item>outputPath – file path for the generated image</item>
+    /// </list>
+    /// </summary>
+    /// <param name="args">Command‑line arguments.</param>
     static void Main(string[] args)
     {
-        // Resolve symbology name
-        string symbologyName = args.Length > 0 ? args[0] : "Code128";
-        var symProp = typeof(EncodeTypes).GetProperty(
+        // --------------------------------------------------------------------
+        // Default values for barcode generation
+        // --------------------------------------------------------------------
+        string symbologyName = "Code39FullASCII";
+        string codeText = "12345";
+        string checksumArg = "yes";
+        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "barcode.png");
+
+        // --------------------------------------------------------------------
+        // Override defaults with command‑line arguments, if supplied
+        // Expected order: symbologyName codeText checksumFlag outputPath
+        // --------------------------------------------------------------------
+        if (args.Length > 0) symbologyName = args[0];
+        if (args.Length > 1) codeText = args[1];
+        if (args.Length > 2) checksumArg = args[2];
+        if (args.Length > 3) outputPath = args[3];
+
+        // --------------------------------------------------------------------
+        // Resolve the symbology name to the corresponding EncodeTypes value
+        // using reflection on the EncodeTypes class
+        // --------------------------------------------------------------------
+        FieldInfo field = typeof(EncodeTypes).GetField(
             symbologyName,
-            BindingFlags.Public | BindingFlags.Static | BindingFlags.IgnoreCase);
-        if (symProp == null)
+            BindingFlags.Public | BindingFlags.Static);
+
+        if (field == null)
         {
-            Console.WriteLine($"Invalid symbology '{symbologyName}'.");
+            Console.WriteLine($"Unknown symbology: {symbologyName}");
             return;
         }
-        BaseEncodeType encodeType = (BaseEncodeType)symProp.GetValue(null);
 
-        // Resolve code text
-        string codeText = args.Length > 1 ? args[1] : "123456";
+        BaseEncodeType encodeType = (BaseEncodeType)field.GetValue(null);
 
-        // Resolve checksum flag
-        string checksumArg = args.Length > 2 ? args[2] : "enable";
-        Aspose.BarCode.Generation.EnableChecksum checksumSetting =
-            string.Equals(checksumArg, "disable", StringComparison.OrdinalIgnoreCase)
-                ? Aspose.BarCode.Generation.EnableChecksum.No
-                : Aspose.BarCode.Generation.EnableChecksum.Yes;
+        // --------------------------------------------------------------------
+        // Determine whether checksum should be enabled based on the argument
+        // --------------------------------------------------------------------
+        EnableChecksum checksumSetting = string.Equals(
+            checksumArg,
+            "no",
+            StringComparison.OrdinalIgnoreCase)
+            ? EnableChecksum.No
+            : EnableChecksum.Yes;
 
-        // Generate barcode
+        // --------------------------------------------------------------------
+        // Ensure the directory for the output file exists
+        // --------------------------------------------------------------------
+        string outputDir = Path.GetDirectoryName(outputPath);
+        if (!string.IsNullOrEmpty(outputDir) && !Directory.Exists(outputDir))
+        {
+            Directory.CreateDirectory(outputDir);
+        }
+
+        // --------------------------------------------------------------------
+        // Generate the barcode and save it to the specified path
+        // --------------------------------------------------------------------
         using (var generator = new BarcodeGenerator(encodeType, codeText))
         {
             generator.Parameters.Barcode.IsChecksumEnabled = checksumSetting;
-
-            string fileName = $"{symbologyName}_{DateTime.Now:yyyyMMddHHmmss}.png";
-            string outputPath = Path.Combine(Directory.GetCurrentDirectory(), fileName);
             generator.Save(outputPath);
-            Console.WriteLine($"Barcode saved to: {outputPath}");
         }
+
+        Console.WriteLine($"Barcode saved to: {outputPath}");
     }
 }

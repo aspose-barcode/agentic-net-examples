@@ -3,47 +3,57 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
+/// <summary>
+/// Demonstrates generating a Code39 barcode without a checksum and verifying it.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a Code39 barcode with checksum disabled, saves it to a file,
+    /// then reads the barcode back to verify that the checksum digit is absent.
+    /// </summary>
     static void Main()
     {
-        // Sample code text without checksum
-        string originalCodeText = "ABC123";
+        // Sample Code39 data without checksum
+        const string originalCodeText = "ABC123";
 
-        // Generate Code39 barcode, disable checksum generation and hide human‑readable text
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code39, originalCodeText))
+        // Path for the generated barcode image
+        const string imagePath = "code39.png";
+
+        // Generate Code39 barcode with checksum disabled and hidden
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code39FullASCII, originalCodeText))
         {
-            // Do not generate checksum
+            // Disable checksum generation
             generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.No;
+            // Ensure checksum digit is not shown in human‑readable text
+            generator.Parameters.Barcode.ChecksumAlwaysShow = false;
 
-            // Hide the human‑readable text (including any checksum)
-            generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.None;
-
-            // Save the barcode image
-            generator.Save("code39.png");
+            // Save the barcode image to the specified path
+            generator.Save(imagePath);
         }
 
-        // Read the generated barcode and verify that no checksum is present
-        using (var reader = new BarCodeReader("code39.png", DecodeType.Code39))
+        // Verify the barcode by reading it back from the saved image
+        using (var reader = new BarCodeReader(imagePath, DecodeType.Code39))
         {
             // Disable checksum validation to avoid false failures
             reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.Off;
 
+            // Iterate through all recognized barcodes (should be only one)
             foreach (var result in reader.ReadBarCodes())
             {
-                Console.WriteLine("Detected CodeText: " + result.CodeText);
-                Console.WriteLine("Value without checksum: " + result.Extended.OneD.Value);
+                // Output the recognized text
+                Console.WriteLine($"Recognized CodeText: {result.CodeText}");
 
-                // Verify that the detected text matches the original input (no checksum)
+                // Compare with the original text to confirm checksum absence
                 if (result.CodeText == originalCodeText)
-                    Console.WriteLine("CodeText matches original (no checksum).");
+                {
+                    Console.WriteLine("Verification succeeded: checksum digit is absent.");
+                }
                 else
-                    Console.WriteLine("CodeText does NOT match original.");
-
-                if (result.Extended.OneD.Value == originalCodeText)
-                    Console.WriteLine("Extended Value matches original (no checksum).");
-                else
-                    Console.WriteLine("Extended Value does NOT match original.");
+                {
+                    Console.WriteLine("Verification failed: unexpected CodeText.");
+                }
             }
         }
     }

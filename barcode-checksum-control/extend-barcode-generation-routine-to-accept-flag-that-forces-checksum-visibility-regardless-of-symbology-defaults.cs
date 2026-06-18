@@ -1,47 +1,58 @@
 using System;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
+/// <summary>
+/// Demonstrates generating a barcode image using Aspose.BarCode based on command‑line arguments.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Accepts optional arguments: code text, symbology name, and a flag to force checksum visibility.
+    /// </summary>
+    /// <param name="args">Command‑line arguments.</param>
     static void Main(string[] args)
     {
-        // Default values
-        string symbologyName = "Code128";
-        string codeText = "1234567890";
-        bool forceChecksumVisibility = false;
+        // Determine the text to encode; default to "1234567890" if not provided.
+        string codeText = args.Length > 0 ? args[0] : "1234567890";
 
-        // Parse command‑line arguments if provided
-        if (args.Length > 0)
-            symbologyName = args[0];
-        if (args.Length > 1)
-            codeText = args[1];
-        if (args.Length > 2)
-            bool.TryParse(args[2], out forceChecksumVisibility);
+        // Determine the symbology (barcode type); default to "Code128" if not provided.
+        string symbologyName = args.Length > 1 ? args[1] : "Code128";
 
-        // Resolve symbology name to a BaseEncodeType
-        if (!EncodeTypes.TryParse(symbologyName, out BaseEncodeType encodeType))
+        // Determine whether to force the checksum digit to appear in the human‑readable text.
+        // Accepts "true" (case‑insensitive) or "1" as true values.
+        bool forceChecksumVisibility = args.Length > 2 &&
+            (args[2].Equals("true", StringComparison.OrdinalIgnoreCase) || args[2] == "1");
+
+        // Resolve the symbology name to the corresponding BaseEncodeType enum value using reflection.
+        var field = typeof(EncodeTypes).GetField(symbologyName);
+        if (field == null)
         {
-            Console.WriteLine($"Unsupported symbology '{symbologyName}'. Using default Code128.");
-            encodeType = EncodeTypes.Code128;
+            // Inform the user if the provided symbology name is not recognized and exit.
+            Console.WriteLine($"Unknown symbology: {symbologyName}");
+            return;
         }
 
-        // Create the barcode generator
+        // Cast the reflected field value to BaseEncodeType.
+        BaseEncodeType encodeType = (BaseEncodeType)field.GetValue(null);
+
+        // Create a BarcodeGenerator with the selected encode type and code text.
         using (var generator = new BarcodeGenerator(encodeType, codeText))
         {
-            // Enable checksum generation for symbologies where it is optional
-            generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
-
-            // Force checksum text to be shown regardless of defaults
+            // If requested, configure the generator to always show the checksum digit.
             if (forceChecksumVisibility)
+            {
                 generator.Parameters.Barcode.ChecksumAlwaysShow = true;
+            }
 
-            // Save the barcode image
-            string outputFile = "output.png";
-            generator.Save(outputFile);
-            Console.WriteLine($"Barcode saved to '{outputFile}'.");
-            Console.WriteLine($"Symbology: {encodeType.GetType().Name}, CodeText: {codeText}");
-            Console.WriteLine($"Checksum visibility forced: {forceChecksumVisibility}");
+            // Define the output file name and save the generated barcode as a PNG image.
+            string outputPath = "barcode.png";
+            generator.Save(outputPath);
+
+            // Output the full path of the saved barcode image for user reference.
+            Console.WriteLine($"Barcode saved to: {Path.GetFullPath(outputPath)}");
         }
     }
 }

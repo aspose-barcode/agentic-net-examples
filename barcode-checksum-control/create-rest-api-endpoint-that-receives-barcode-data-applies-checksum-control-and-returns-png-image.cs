@@ -1,70 +1,64 @@
 using System;
 using System.IO;
 using System.Text;
-using System.Text.Json;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates generating a Code39FullASCII barcode with checksum enabled,
+/// saving it to a PNG file, and outputting a Base64 representation.
+/// </summary>
 class Program
 {
-    // Simple request model
-    class BarcodeRequest
+    /// <summary>
+    /// Generates a barcode image as a PNG byte array.
+    /// </summary>
+    /// <param name="codeText">The text to encode in the barcode.</param>
+    /// <returns>Byte array containing the PNG image.</returns>
+    static byte[] GenerateBarcodeImage(string codeText)
     {
-        public string Symbology { get; set; }
-        public string CodeText { get; set; }
-    }
+        // Choose Code39FullASCII which supports optional checksum.
+        BaseEncodeType encodeType = EncodeTypes.Code39FullASCII;
 
-    static void Main()
-    {
-        // Simulated JSON payload
-        string jsonPayload = @"{ ""Symbology"": ""Code128"", ""CodeText"": ""123ABC"" }";
-
-        // Deserialize request
-        BarcodeRequest request;
-        try
+        // Create a barcode generator with the specified type and text.
+        using (var generator = new BarcodeGenerator(encodeType, codeText))
         {
-            request = JsonSerializer.Deserialize<BarcodeRequest>(jsonPayload);
-            if (request == null || string.IsNullOrWhiteSpace(request.Symbology) || string.IsNullOrWhiteSpace(request.CodeText))
-                throw new ArgumentException("Invalid request payload.");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error parsing request: {ex.Message}");
-            return;
-        }
-
-        // Resolve symbology to EncodeTypes
-        BaseEncodeType encodeType = ResolveEncodeType(request.Symbology);
-
-        // Generate barcode with checksum enabled
-        using (var generator = new BarcodeGenerator(encodeType, request.CodeText))
-        {
-            // Enable checksum generation where applicable
+            // Enable checksum calculation and ensure the checksum digit is displayed.
             generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
+            generator.Parameters.Barcode.ChecksumAlwaysShow = true;
 
-            // Save to memory stream as PNG
+            // Save the generated barcode to a memory stream in PNG format.
             using (var ms = new MemoryStream())
             {
                 generator.Save(ms, BarCodeImageFormat.Png);
-                byte[] pngBytes = ms.ToArray();
-                string base64 = Convert.ToBase64String(pngBytes);
-                Console.WriteLine("Base64 PNG Image:");
-                Console.WriteLine(base64);
+                // Return the PNG data as a byte array.
+                return ms.ToArray();
             }
         }
     }
 
-    // Maps a string symbology name to an EncodeTypes value.
-    static BaseEncodeType ResolveEncodeType(string name)
+    /// <summary>
+    /// Entry point of the application. Generates a barcode, writes it to disk,
+    /// and prints a Base64-encoded representation to the console.
+    /// </summary>
+    static void Main()
     {
-        if (string.Equals(name, "Code128", StringComparison.OrdinalIgnoreCase))
-            return EncodeTypes.Code128;
-        if (string.Equals(name, "EAN13", StringComparison.OrdinalIgnoreCase))
-            return EncodeTypes.EAN13;
-        if (string.Equals(name, "Code39", StringComparison.OrdinalIgnoreCase))
-            return EncodeTypes.Code39;
-        // Add more mappings as needed.
+        // Sample input that would typically come from a REST request.
+        string inputCodeText = "ABC123";
 
-        throw new ArgumentException($"Unsupported symbology: {name}");
+        // Generate the barcode image bytes.
+        byte[] pngBytes = GenerateBarcodeImage(inputCodeText);
+
+        // Write the image to a file for verification.
+        string outputPath = "barcode.png";
+        File.WriteAllBytes(outputPath, pngBytes);
+        Console.WriteLine($"Barcode image saved to: {Path.GetFullPath(outputPath)}");
+
+        // Simulate an HTTP response by outputting a Base64-encoded PNG.
+        string base64Image = Convert.ToBase64String(pngBytes);
+        Console.WriteLine("Base64 PNG response:");
+        Console.WriteLine(base64Image);
     }
 }

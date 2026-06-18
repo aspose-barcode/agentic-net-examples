@@ -3,37 +3,49 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
+/// <summary>
+/// Demonstrates generating a Code128 barcode with checksum enabled,
+/// saving it to a file, and then reading it back while validating the checksum.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a barcode image, then reads and validates it.
+    /// </summary>
     static void Main()
     {
-        const string filePath = "code128.png";
-        const string codeText = "1234567890";
+        // Define the output file path for the generated barcode image.
+        string imagePath = "code128.png";
 
-        // Generate Code128 barcode with checksum enabled
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128))
+        // ------------------------------------------------------------
+        // Generate a Code128 barcode with checksum enabled.
+        // ------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            generator.CodeText = codeText;
-            // Enable checksum generation
+            // Enable checksum (required for Code128) and display it in the human‑readable text.
             generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
-            // Optional: show checksum in human‑readable text
             generator.Parameters.Barcode.ChecksumAlwaysShow = true;
 
-            generator.Save(filePath);
-            Console.WriteLine($"Barcode saved to {filePath}");
+            // Save the generated barcode image to the specified file.
+            generator.Save(imagePath);
         }
 
-        // Decode the barcode and validate checksum
-        using (var reader = new BarCodeReader(filePath, DecodeType.Code128))
+        // ------------------------------------------------------------
+        // Decode the generated barcode and validate its checksum.
+        // ------------------------------------------------------------
+        using (var reader = new BarCodeReader(imagePath, DecodeType.Code128))
         {
-            // Enable checksum validation during recognition
+            // Instruct the reader to perform checksum validation during recognition.
             reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
 
+            // Iterate through all detected barcodes (there should be only one in this case).
             foreach (var result in reader.ReadBarCodes())
             {
-                Console.WriteLine($"Detected CodeText : {result.CodeText}");
-                Console.WriteLine($"Value (without checksum) : {result.Extended.OneD.Value}");
-                Console.WriteLine($"Checksum from barcode : {result.Extended.OneD.CheckSum}");
+                // Output the decoded text to the console.
+                Console.WriteLine($"Decoded Text: {result.CodeText}");
+
+                // For Code128 the checksum is always validated; additional parameters can be inspected if needed.
             }
         }
     }

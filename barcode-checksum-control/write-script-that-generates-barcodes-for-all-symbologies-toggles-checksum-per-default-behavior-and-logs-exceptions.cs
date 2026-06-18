@@ -1,50 +1,62 @@
 using System;
 using System.IO;
-using System.Reflection;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
+/// <summary>
+/// Demonstrates generation of barcode images for all supported symbologies using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Generates a PNG barcode for each symbology defined in <see cref="EncodeTypes"/>.
+    /// </summary>
     static void Main()
     {
-        // Create output directory for barcode images
+        // Define the output directory for generated barcode images.
         string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
-        if (!Directory.Exists(outputDir))
-            Directory.CreateDirectory(outputDir);
+        // Ensure the directory exists.
+        Directory.CreateDirectory(outputDir);
 
-        // Retrieve all symbology definitions from EncodeTypes
-        FieldInfo[] fields = typeof(EncodeTypes).GetFields(BindingFlags.Public | BindingFlags.Static);
-        foreach (FieldInfo field in fields)
+        // Retrieve all symbology names defined in EncodeTypes.
+        string[] symbologyNames = EncodeTypes.GetNames();
+
+        // Iterate over each symbology name.
+        foreach (string name in symbologyNames)
         {
-            // Each field holds a BaseEncodeType instance
-            BaseEncodeType encodeType = field.GetValue(null) as BaseEncodeType;
-            if (encodeType == null)
-                continue;
-
-            string symName = field.Name;
-            // Generic sample code text; may be invalid for some symbologies and will be caught
-            string codeText = "1234567890";
-
             try
             {
-                // Create generator with default checksum behavior
-                using (var generator = new BarcodeGenerator(encodeType, codeText))
+                // Attempt to parse the symbology name into a BaseEncodeType instance.
+                if (!EncodeTypes.TryParse(name, out BaseEncodeType encodeType))
                 {
+                    Console.WriteLine($"Unable to parse symbology name: {name}");
+                    continue; // Skip to the next symbology if parsing fails.
+                }
+
+                // Sample code text to encode; invalid formats will trigger an exception.
+                string sampleCodeText = "1234567890";
+
+                // Create a barcode generator for the current symbology and sample text.
+                using (var generator = new BarcodeGenerator(encodeType, sampleCodeText))
+                {
+                    // Set checksum behavior to the default for the symbology.
                     generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Default;
 
-                    string filePath = Path.Combine(outputDir, $"{symName}.png");
-                    generator.Save(filePath);
-                    Console.WriteLine($"Generated {symName} barcode saved to {filePath}");
+                    // Build the full file path for the PNG image.
+                    string filePath = Path.Combine(outputDir, $"{name}.png");
+                    // Save the generated barcode as a PNG file.
+                    generator.Save(filePath, BarCodeImageFormat.Png);
+                    Console.WriteLine($"Generated barcode for {name} at {filePath}");
                 }
             }
             catch (Exception ex)
             {
-                // Log any generation errors and continue
-                Console.WriteLine($"Failed to generate {symName}: {ex.Message}");
+                // Log any errors that occur during barcode generation.
+                Console.WriteLine($"Error generating barcode for {name}: {ex.Message}");
             }
         }
 
+        // Indicate that the process has finished.
         Console.WriteLine("Barcode generation completed.");
     }
 }
