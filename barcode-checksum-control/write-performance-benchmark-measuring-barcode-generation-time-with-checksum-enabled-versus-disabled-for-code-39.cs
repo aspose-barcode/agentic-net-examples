@@ -3,49 +3,70 @@ using System.Diagnostics;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
 
+/// <summary>
+/// Demonstrates benchmarking of Code39 barcode generation with checksum enabled and disabled using Aspose.BarCode.
+/// </summary>
 class Program
 {
-    // Number of barcodes to generate for each test (kept small for quick execution)
-    const int Iterations = 20;
-    // Sample Code39 text (valid for both checksum modes)
-    const string SampleText = "CODE39TEST";
-
+    /// <summary>
+    /// Entry point of the application. Generates sample Code39 barcodes and measures the time taken with checksum enabled and disabled.
+    /// </summary>
     static void Main()
     {
-        // Benchmark with checksum enabled
-        long enabledTicks = BenchmarkGeneration(EnableChecksum.Yes);
-        // Benchmark with checksum disabled
-        long disabledTicks = BenchmarkGeneration(EnableChecksum.No);
-
-        Console.WriteLine($"Code39 generation with checksum ENABLED:  {enabledTicks} ms");
-        Console.WriteLine($"Code39 generation with checksum DISABLED: {disabledTicks} ms");
-    }
-
-    // Measures the time required to generate a set of barcodes with the specified checksum setting
-    static long BenchmarkGeneration(EnableChecksum checksumSetting)
-    {
-        var stopwatch = Stopwatch.StartNew();
-
-        for (int i = 0; i < Iterations; i++)
+        // Define sample texts to encode as Code39 barcodes
+        string[] samples = new string[]
         {
-            // Create a new generator for Code39
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code39, SampleText))
-            {
-                // Apply checksum setting
-                generator.Parameters.Barcode.IsChecksumEnabled = checksumSetting;
+            "ABC123",
+            "CODE39",
+            "1234567890",
+            "HELLO",
+            "TEST"
+        };
 
-                // Save to a memory stream to avoid file I/O overhead
+        // Use the full ASCII Code39 symbology for encoding
+        BaseEncodeType encodeType = EncodeTypes.Code39FullASCII;
+
+        // Benchmark generation with checksum enabled
+        Stopwatch swEnabled = Stopwatch.StartNew();
+        foreach (string text in samples)
+        {
+            // Create a barcode generator for the current text
+            using (var generator = new BarcodeGenerator(encodeType, text))
+            {
+                // Enable checksum calculation
+                generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
+
+                // Save the generated barcode to a memory stream (PNG format)
                 using (var ms = new MemoryStream())
                 {
                     generator.Save(ms, BarCodeImageFormat.Png);
-                    // Optionally, the stream could be used further; here we just discard it
                 }
             }
         }
+        swEnabled.Stop();
 
-        stopwatch.Stop();
-        return stopwatch.ElapsedMilliseconds;
+        // Benchmark generation with checksum disabled
+        Stopwatch swDisabled = Stopwatch.StartNew();
+        foreach (string text in samples)
+        {
+            // Create a barcode generator for the current text
+            using (var generator = new BarcodeGenerator(encodeType, text))
+            {
+                // Disable checksum calculation
+                generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.No;
+
+                // Save the generated barcode to a memory stream (PNG format)
+                using (var ms = new MemoryStream())
+                {
+                    generator.Save(ms, BarCodeImageFormat.Png);
+                }
+            }
+        }
+        swDisabled.Stop();
+
+        // Output the elapsed time for both scenarios
+        Console.WriteLine($"Code39 generation with checksum ENABLED:  {swEnabled.Elapsed.TotalMilliseconds} ms");
+        Console.WriteLine($"Code39 generation with checksum DISABLED: {swDisabled.Elapsed.TotalMilliseconds} ms");
     }
 }

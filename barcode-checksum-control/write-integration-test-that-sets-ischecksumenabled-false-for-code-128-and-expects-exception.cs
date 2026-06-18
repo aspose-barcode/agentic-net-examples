@@ -1,37 +1,40 @@
 using System;
-using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
+/// <summary>
+/// Demonstrates disabling checksum for Code128 barcode generation, which should raise an exception.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Attempts to generate a Code128 barcode with checksum disabled,
+    /// expecting an exception, and reports the result.
+    /// </summary>
     static void Main()
     {
-        // Prepare a Code128 barcode generator with sample text.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "ABCD1234"))
+        try
         {
-            // Disable checksum generation for Code128.
-            generator.Parameters.Barcode.IsChecksumEnabled = Aspose.BarCode.Generation.EnableChecksum.No;
-
-            try
+            // Create a barcode generator for Code128 symbology
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128))
             {
-                // Attempt to generate the barcode. Expect an exception because
-                // Code128 requires a checksum and disabling it is invalid.
-                using (var ms = new MemoryStream())
-                {
-                    generator.Save(ms, BarCodeImageFormat.Png);
-                }
+                // Disable checksum for Code128 (this operation is expected to cause an exception)
+                generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.No;
 
-                // If no exception was thrown, the test failed.
-                Console.WriteLine("Test Failed: No exception was thrown.");
+                // Set the text to be encoded in the barcode
+                generator.CodeText = "123456";
+
+                // Attempt to generate and save the barcode image to a file
+                generator.Save("code128_invalid.png");
             }
-            catch (Exception ex)
-            {
-                // Expected path: an exception should be thrown.
-                Console.WriteLine("Test Passed: Caught expected exception.");
-                Console.WriteLine("Exception Type: " + ex.GetType().FullName);
-                Console.WriteLine("Message: " + ex.Message);
-            }
+
+            // If execution reaches here, no exception was thrown, which means the test failed
+            Console.WriteLine("No exception thrown, test failed.");
+        }
+        catch (Exception ex)
+        {
+            // Expected path: an exception should be caught when checksum is disabled for Code128
+            Console.WriteLine("Expected exception caught: " + ex.Message);
         }
     }
 }

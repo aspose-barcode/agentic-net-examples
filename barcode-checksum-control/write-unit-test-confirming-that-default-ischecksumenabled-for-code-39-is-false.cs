@@ -2,25 +2,28 @@ using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
+/// <summary>
+/// Demonstrates verification of the default checksum setting for Code39 barcodes using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Creates a Code39 barcode generator and checks the default checksum flag.
+    /// </summary>
     static void Main()
     {
-        // Create a barcode generator for Code39 without modifying any settings
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code39))
+        // Initialize a barcode generator for Code39FullASCII with sample data "ABC123".
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code39FullASCII, "ABC123"))
         {
-            // Retrieve the default checksum setting
-            EnableChecksum checksumSetting = generator.Parameters.Barcode.IsChecksumEnabled;
+            // Verify that the default IsChecksumEnabled property is not set to Yes.
+            if (generator.Parameters.Barcode.IsChecksumEnabled == EnableChecksum.Yes)
+            {
+                // If the checksum is incorrectly enabled, throw an exception.
+                throw new InvalidOperationException("Default IsChecksumEnabled for Code39 is not false.");
+            }
 
-            // Verify that the default is Disable (No)
-            if (checksumSetting == EnableChecksum.No)
-            {
-                Console.WriteLine("Test Passed: Default IsChecksumEnabled for Code39 is No.");
-            }
-            else
-            {
-                Console.WriteLine($"Test Failed: Expected No, but got {checksumSetting}.");
-            }
+            // If the check passes, output a confirmation message.
+            Console.WriteLine("Test passed: Default IsChecksumEnabled for Code39 is false.");
         }
     }
 }

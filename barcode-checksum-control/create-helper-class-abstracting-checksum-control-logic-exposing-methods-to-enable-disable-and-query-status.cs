@@ -1,74 +1,74 @@
 using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
 
-namespace ChecksumControlDemo
+/// <summary>
+/// Helper class to manage checksum settings for a <see cref="BarcodeGenerator"/>.
+/// </summary>
+class ChecksumHelper
 {
-    public static class ChecksumHelper
+    /// <summary>
+    /// Enables checksum for the given barcode generator.
+    /// </summary>
+    /// <param name="generator">The <see cref="BarcodeGenerator"/> instance.</param>
+    public static void Enable(BarcodeGenerator generator)
     {
-        public static void SetChecksumEnabled(BarcodeGenerator generator)
-        {
-            if (generator == null) throw new ArgumentNullException(nameof(generator));
-            generator.Parameters.Barcode.IsChecksumEnabled = Aspose.BarCode.Generation.EnableChecksum.Yes;
-        }
-
-        public static void SetChecksumDisabled(BarcodeGenerator generator)
-        {
-            if (generator == null) throw new ArgumentNullException(nameof(generator));
-            generator.Parameters.Barcode.IsChecksumEnabled = Aspose.BarCode.Generation.EnableChecksum.No;
-        }
-
-        public static bool IsChecksumEnabled(BarcodeGenerator generator)
-        {
-            if (generator == null) throw new ArgumentNullException(nameof(generator));
-            return generator.Parameters.Barcode.IsChecksumEnabled == Aspose.BarCode.Generation.EnableChecksum.Yes;
-        }
-
-        public static void EnableChecksumValidation(BarCodeReader reader)
-        {
-            if (reader == null) throw new ArgumentNullException(nameof(reader));
-            reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
-        }
-
-        public static void DisableChecksumValidation(BarCodeReader reader)
-        {
-            if (reader == null) throw new ArgumentNullException(nameof(reader));
-            reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.Off;
-        }
-
-        public static bool IsChecksumValidationEnabled(BarCodeReader reader)
-        {
-            if (reader == null) throw new ArgumentNullException(nameof(reader));
-            return reader.BarcodeSettings.ChecksumValidation == ChecksumValidation.On;
-        }
+        // Validate argument
+        if (generator == null) throw new ArgumentNullException(nameof(generator));
+        // Set checksum flag to Yes
+        generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
     }
 
-    class Program
+    /// <summary>
+    /// Disables checksum for the given barcode generator.
+    /// </summary>
+    /// <param name="generator">The <see cref="BarcodeGenerator"/> instance.</param>
+    public static void Disable(BarcodeGenerator generator)
     {
-        static void Main()
+        // Validate argument
+        if (generator == null) throw new ArgumentNullException(nameof(generator));
+        // Set checksum flag to No
+        generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.No;
+    }
+
+    /// <summary>
+    /// Returns <c>true</c> if checksum is enabled; otherwise, <c>false</c>.
+    /// </summary>
+    /// <param name="generator">The <see cref="BarcodeGenerator"/> instance.</param>
+    /// <returns>Boolean indicating checksum status.</returns>
+    public static bool GetStatus(BarcodeGenerator generator)
+    {
+        // Validate argument
+        if (generator == null) throw new ArgumentNullException(nameof(generator));
+        // Compare current setting with Yes
+        return generator.Parameters.Barcode.IsChecksumEnabled == EnableChecksum.Yes;
+    }
+}
+
+/// <summary>
+/// Demonstrates enabling and disabling checksum on a barcode generator and saving the image.
+/// </summary>
+class Program
+{
+    /// <summary>
+    /// Application entry point.
+    /// </summary>
+    static void Main()
+    {
+        // Create a Code39FullASCII barcode generator with sample text
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code39FullASCII, "ABC123"))
         {
-            const string filePath = "barcode.png";
-            const string codeText = "123456";
+            // Initially disable checksum
+            ChecksumHelper.Disable(generator);
+            Console.WriteLine("Checksum enabled? " + ChecksumHelper.GetStatus(generator));
 
-            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
-            {
-                ChecksumHelper.SetChecksumEnabled(generator);
-                Console.WriteLine($"Checksum enabled for generation: {ChecksumHelper.IsChecksumEnabled(generator)}");
-                generator.Save(filePath);
-            }
+            // Enable checksum
+            ChecksumHelper.Enable(generator);
+            Console.WriteLine("Checksum enabled? " + ChecksumHelper.GetStatus(generator));
 
-            using (BarCodeReader reader = new BarCodeReader(filePath, DecodeType.Code128))
-            {
-                ChecksumHelper.EnableChecksumValidation(reader);
-                Console.WriteLine($"Checksum validation enabled for recognition: {ChecksumHelper.IsChecksumValidationEnabled(reader)}");
-
-                foreach (BarCodeResult result in reader.ReadBarCodes())
-                {
-                    Console.WriteLine($"Recognized CodeText: {result.CodeText}");
-                    Console.WriteLine($"Extracted Checksum: {result.Extended.OneD.CheckSum}");
-                }
-            }
+            // Save the barcode image to a file
+            generator.Save("barcode.png");
+            Console.WriteLine("Barcode saved as barcode.png");
         }
     }
 }

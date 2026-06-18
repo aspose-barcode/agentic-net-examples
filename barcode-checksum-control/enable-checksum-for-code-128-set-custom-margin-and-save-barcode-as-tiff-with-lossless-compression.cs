@@ -1,58 +1,40 @@
 using System;
-using System.IO;
-using System.Linq;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates generating a Code128 barcode using Aspose.BarCode and saving it as a TIFF file.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a Code128 barcode with custom padding and saves it to disk.
+    /// </summary>
     static void Main()
     {
-        const string outputTiff = "code128.tiff";
+        // Sample code text for the Code128 barcode.
+        string codeText = "1234567890";
 
-        // Create Code128 barcode generator with sample text
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456789"))
+        // Create a barcode generator for Code128 with the specified text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
         {
-            // Enable checksum
+            // Enable checksum (mandatory for Code128, but set explicitly for clarity).
             generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
 
-            // Set custom margins (padding) – 10 points on each side
-            generator.Parameters.Barcode.Padding.Top.Point = 10f;
+            // Configure custom margins (padding) in points for each side of the barcode.
+            generator.Parameters.Barcode.Padding.Left.Point   = 10f;
+            generator.Parameters.Barcode.Padding.Top.Point    = 10f;
+            generator.Parameters.Barcode.Padding.Right.Point  = 10f;
             generator.Parameters.Barcode.Padding.Bottom.Point = 10f;
-            generator.Parameters.Barcode.Padding.Left.Point = 10f;
-            generator.Parameters.Barcode.Padding.Right.Point = 10f;
 
-            // Render barcode to PNG in memory
-            using (var pngStream = new MemoryStream())
-            {
-                generator.Save(pngStream, BarCodeImageFormat.Png);
-                pngStream.Position = 0;
+            // Define the output file path and save the barcode as a TIFF image.
+            // TIFF uses lossless compression by default.
+            string outputPath = "code128.tiff";
+            generator.Save(outputPath, BarCodeImageFormat.Tiff);
 
-                // Load PNG into Aspose.Drawing bitmap
-                using (var bitmap = new Bitmap(pngStream))
-                {
-                    // Locate TIFF encoder
-                    var tiffCodec = ImageCodecInfo.GetImageEncoders()
-                        .FirstOrDefault(c => c.FormatID == ImageFormat.Tiff.Guid);
-                    if (tiffCodec == null)
-                    {
-                        Console.WriteLine("TIFF encoder not found.");
-                        return;
-                    }
-
-                    // Set LZW compression
-                    using (var encoderParams = new EncoderParameters(1))
-                    {
-                        encoderParams.Param[0] = new EncoderParameter(Encoder.Compression, (long)EncoderValue.CompressionLZW);
-                        // Save as TIFF with lossless LZW compression
-                        bitmap.Save(outputTiff, tiffCodec, encoderParams);
-                    }
-                }
-            }
+            // Inform the user that the barcode has been saved.
+            Console.WriteLine($"Barcode saved to {outputPath}");
         }
-
-        Console.WriteLine($"Barcode saved to {outputTiff}");
     }
 }

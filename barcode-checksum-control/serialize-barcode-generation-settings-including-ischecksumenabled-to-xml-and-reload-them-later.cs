@@ -1,38 +1,55 @@
 using System;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
+/// <summary>
+/// Demonstrates how to generate a barcode, export its settings to XML,
+/// import those settings, and save the resulting images.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a barcode, saves its image, exports settings to XML,
+    /// imports the settings, and saves the imported barcode image.
+    /// </summary>
     static void Main()
     {
-        // Create a barcode generator for Code128 with sample text
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456789"))
+        // Define file paths for the generated barcode images and the XML settings file.
+        string xmlPath = "barcodeSettings.xml";
+        string originalImagePath = "barcode_original.png";
+        string importedImagePath = "barcode_imported.png";
+
+        // --------------------------------------------------------------------
+        // Create a barcode generator, enable checksum, save the image,
+        // and export the generator's configuration to an XML file.
+        // --------------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code39FullASCII, "12345"))
         {
-            // Enable checksum generation
+            // Enable checksum for the barcode.
             generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
 
-            // Export the current settings (including checksum option) to XML
-            string xmlPath = "barcodeSettings.xml";
+            // Save the generated barcode image to the specified path.
+            generator.Save(originalImagePath);
+
+            // Export the current generator settings (including checksum) to XML.
             generator.ExportToXml(xmlPath);
-            Console.WriteLine($"Settings exported to {xmlPath}");
-
-            // Save a barcode image using the original settings
-            string imagePath = "originalBarcode.png";
-            generator.Save(imagePath);
-            Console.WriteLine($"Original barcode saved to {imagePath}");
         }
 
-        // Import the settings from the XML file into a new generator instance
-        using (var loadedGenerator = BarcodeGenerator.ImportFromXml("barcodeSettings.xml"))
+        // --------------------------------------------------------------------
+        // Import the previously saved XML settings into a new generator instance
+        // and save the barcode image generated from those imported settings.
+        // --------------------------------------------------------------------
+        using (var importedGenerator = BarcodeGenerator.ImportFromXml(xmlPath))
         {
-            // Verify that the checksum setting was restored (optional)
-            Console.WriteLine($"IsChecksumEnabled after import: {loadedGenerator.Parameters.Barcode.IsChecksumEnabled}");
-
-            // Save a barcode image using the imported settings
-            string loadedImagePath = "loadedBarcode.png";
-            loadedGenerator.Save(loadedImagePath);
-            Console.WriteLine($"Barcode with imported settings saved to {loadedImagePath}");
+            // Save the barcode image created from the imported settings.
+            importedGenerator.Save(importedImagePath);
         }
+
+        // Output the full paths of the generated files for verification.
+        Console.WriteLine($"Original barcode saved to: {Path.GetFullPath(originalImagePath)}");
+        Console.WriteLine($"XML settings saved to: {Path.GetFullPath(xmlPath)}");
+        Console.WriteLine($"Imported barcode saved to: {Path.GetFullPath(importedImagePath)}");
     }
 }
