@@ -3,69 +3,50 @@ using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.BarCodeRecognition;
 
+/// <summary>
+/// Demonstrates how to read Aztec barcodes from an image using Aspose.BarCode.
+/// </summary>
 class Program
 {
-    static void Main()
+    /// <summary>
+    /// Entry point of the application.
+    /// Accepts an optional command‑line argument specifying the image file path.
+    /// </summary>
+    /// <param name="args">Command‑line arguments.</param>
+    static void Main(string[] args)
     {
-        string imagePath = "aztec.png";
+        // Determine the image path: use the first argument if provided, otherwise default to "aztec.png".
+        string imagePath = args.Length > 0 ? args[0] : "aztec.png";
 
+        // Verify that the specified file exists before attempting to read it.
         if (!File.Exists(imagePath))
         {
             Console.WriteLine($"File not found: {imagePath}");
             return;
         }
 
-        using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.Aztec))
+        // Initialize a BarCodeReader configured to decode only Aztec barcodes.
+        using (var reader = new BarCodeReader(imagePath, DecodeType.Aztec))
         {
-            bool anyFound = false;
+            // Read all barcodes found in the image.
+            var results = reader.ReadBarCodes();
 
-            foreach (BarCodeResult result in reader.ReadBarCodes())
+            // If no barcodes were detected, inform the user and exit.
+            if (results.Length == 0)
             {
-                anyFound = true;
-                Console.WriteLine($"Code Text: {result.CodeText}");
-
-                var aztecExt = result.Extended?.Aztec;
-                if (aztecExt != null)
-                {
-                    var type = aztecExt.GetType();
-
-                    // Layers count (if available)
-                    int layersCount = -1;
-                    var layersProp = type.GetProperty("LayersCount");
-                    if (layersProp != null && layersProp.PropertyType == typeof(int))
-                    {
-                        layersCount = (int)layersProp.GetValue(aztecExt);
-                    }
-                    Console.WriteLine($"Layers Count: {(layersCount >= 0 ? layersCount.ToString() : "N/A")}");
-
-                    // Symbol mode (if available)
-                    string modeName = "Unknown";
-                    bool isCompact = false;
-                    var modeProp = type.GetProperty("SymbolMode");
-                    if (modeProp != null)
-                    {
-                        object modeValue = modeProp.GetValue(aztecExt);
-                        if (modeValue != null)
-                        {
-                            modeName = modeValue.ToString();
-                            isCompact = modeName.Equals("Compact", StringComparison.OrdinalIgnoreCase);
-                        }
-                    }
-
-                    Console.WriteLine($"Symbol Mode: {modeName}");
-                    Console.WriteLine($"Is Compact Mode: {isCompact}");
-                }
-                else
-                {
-                    Console.WriteLine("No Aztec extended parameters available.");
-                }
-
-                Console.WriteLine(new string('-', 40));
+                Console.WriteLine("No Aztec barcode detected in the image.");
+                return;
             }
 
-            if (!anyFound)
+            // Iterate through each detected barcode and display its details.
+            foreach (var result in results)
             {
-                Console.WriteLine("No Aztec barcodes were detected in the image.");
+                Console.WriteLine($"Barcode type: {result.CodeTypeName}");
+                Console.WriteLine($"Codetext   : {result.CodeText}");
+
+                // Note: The Aspose.BarCode API does not expose layer count or compact mode for Aztec barcodes.
+                // Inform the user that this information is unavailable.
+                Console.WriteLine("Layer count and compact mode information are not accessible through the current Aspose.BarCode API.");
             }
         }
     }

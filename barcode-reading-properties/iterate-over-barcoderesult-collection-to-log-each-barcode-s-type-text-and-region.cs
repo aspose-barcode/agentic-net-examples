@@ -1,41 +1,58 @@
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.BarCode;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates generating a Code128 barcode, saving it to a temporary file,
+/// reading it back, and cleaning up the temporary file.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a barcode, reads it, outputs details, and deletes the temporary file.
+    /// </summary>
     static void Main()
     {
-        // Generate a sample barcode image in memory
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "12345"))
-        {
-            using (Bitmap bitmap = generator.GenerateBarCodeImage())
-            {
-                using (var imageStream = new MemoryStream())
-                {
-                    // Save the bitmap to a PNG stream
-                    bitmap.Save(imageStream, ImageFormat.Png);
-                    imageStream.Position = 0;
+        // Define a temporary file path for the barcode image.
+        string tempPath = Path.Combine(Path.GetTempPath(), "sample_barcode.png");
 
-                    // Read barcodes from the generated image
-                    using (var reader = new BarCodeReader(imageStream, DecodeType.AllSupportedTypes))
-                    {
-                        foreach (BarCodeResult result in reader.ReadBarCodes())
-                        {
-                            // Log barcode type, text, and region rectangle
-                            Console.WriteLine("BarCode Type: " + result.CodeTypeName);
-                            Console.WriteLine("BarCode Text: " + result.CodeText);
-                            var rect = result.Region.Rectangle;
-                            Console.WriteLine($"BarCode Region: X={rect.X}, Y={rect.Y}, Width={rect.Width}, Height={rect.Height}");
-                            Console.WriteLine(); // blank line for readability
-                        }
-                    }
-                }
+        // Generate a simple Code128 barcode with the value "123456" and save it to the temporary file.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
+        {
+            generator.Save(tempPath);
+        }
+
+        // Initialize a barcode reader to decode all supported barcode types from the saved image.
+        using (var reader = new BarCodeReader(tempPath, DecodeType.AllSupportedTypes))
+        {
+            // Read all barcodes found in the image.
+            BarCodeResult[] results = reader.ReadBarCodes();
+
+            // Iterate over each detected barcode and output its type, text, and bounding region.
+            foreach (var result in results)
+            {
+                // result.CodeTypeName provides the barcode type name.
+                // result.CodeText contains the decoded text.
+                // result.Region.Rectangle gives the bounding rectangle of the barcode.
+                Console.WriteLine($"Type: {result.CodeTypeName}, Text: {result.CodeText}, Region: {result.Region.Rectangle}");
             }
+        }
+
+        // Attempt to delete the temporary file to clean up resources.
+        try
+        {
+            if (File.Exists(tempPath))
+            {
+                File.Delete(tempPath);
+            }
+        }
+        catch (Exception ex)
+        {
+            // Log any errors that occur during file deletion.
+            Console.WriteLine($"Failed to delete temporary file: {ex.Message}");
         }
     }
 }

@@ -1,50 +1,48 @@
 using System;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates generating a barcode, defining a region of interest,
+/// and reading barcodes within that region using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a barcode image, defines a central ROI, and reads barcodes within that ROI.
+    /// </summary>
     static void Main()
     {
-        // Generate a sample barcode image in memory
+        // Create a barcode generator for Code128 with sample text
         using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
         {
-            // Optional: set image size
-            generator.Parameters.ImageWidth.Point = 300f;
-            generator.Parameters.ImageHeight.Point = 150f;
-
+            // Generate the barcode image in memory
             using (Bitmap barcodeImage = generator.GenerateBarCodeImage())
             {
-                // Define a custom region of interest (ROI) – a rectangle slightly inset from the image borders
-                Rectangle roi = new Rectangle(10, 10, barcodeImage.Width - 20, barcodeImage.Height - 20);
+                // Calculate coordinates for a central region of interest (ROI)
+                int roiX = barcodeImage.Width / 4;          // X offset (quarter width)
+                int roiY = barcodeImage.Height / 4;         // Y offset (quarter height)
+                int roiWidth = barcodeImage.Width / 2;      // Width (half of image)
+                int roiHeight = barcodeImage.Height / 2;    // Height (half of image)
 
-                // Initialize the reader and assign the image with the ROI
-                using (var reader = new BarCodeReader())
+                // Define the ROI rectangle
+                var region = new Rectangle(roiX, roiY, roiWidth, roiHeight);
+
+                // Initialize a barcode reader that scans only within the ROI
+                using (var reader = new BarCodeReader(barcodeImage, region, DecodeType.AllSupportedTypes))
                 {
-                    reader.SetBarCodeImage(barcodeImage, roi);
-                    // Optionally limit decode types; here we allow all supported types
-                    reader.BarCodeReadType = DecodeType.AllSupportedTypes;
-
-                    // Perform recognition
-                    BarCodeResult[] results = reader.ReadBarCodes();
-
-                    if (results.Length == 0)
+                    // Iterate through all detected barcodes in the ROI
+                    foreach (var result in reader.ReadBarCodes())
                     {
-                        Console.WriteLine("No barcodes detected within the specified region.");
-                    }
-                    else
-                    {
-                        foreach (BarCodeResult result in results)
-                        {
-                            Console.WriteLine($"Detected Type: {result.CodeTypeName}");
-                            Console.WriteLine($"Code Text: {result.CodeText}");
-                            // Output the bounding rectangle of the detected barcode
-                            var rect = result.Region.Rectangle;
-                            Console.WriteLine($"Region - X:{rect.X}, Y:{rect.Y}, Width:{rect.Width}, Height:{rect.Height}");
-                        }
+                        // Output barcode type and decoded text
+                        Console.WriteLine($"Detected Type: {result.CodeTypeName}");
+                        Console.WriteLine($"Code Text: {result.CodeText}");
+
+                        // Retrieve and display the bounding rectangle of the detected barcode
+                        var bounds = result.Region.Rectangle;
+                        Console.WriteLine($"Barcode Region - X: {bounds.X}, Y: {bounds.Y}, Width: {bounds.Width}, Height: {bounds.Height}");
                     }
                 }
             }

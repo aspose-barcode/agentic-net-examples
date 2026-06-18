@@ -1,16 +1,25 @@
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 using Aspose.Pdf;
-using Aspose.Pdf.Facades;
+using Aspose.Pdf.Devices;
 
+/// <summary>
+/// Demonstrates reading barcodes from an encrypted PDF using Aspose libraries.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Opens an encrypted PDF, converts each page to an image,
+    /// and extracts any barcodes found on the pages.
+    /// </summary>
     static void Main()
     {
-        // Path to the encrypted PDF and its password.
-        const string pdfPath = "sample_encrypted.pdf";
-        const string pdfPassword = "password";
+        // Sample encrypted PDF path and password.
+        string pdfPath = "encrypted.pdf";
+        string password = "myPassword";
 
         // Verify that the PDF file exists.
         if (!File.Exists(pdfPath))
@@ -19,34 +28,31 @@ class Program
             return;
         }
 
-        // Open the encrypted PDF document using the provided password.
-        using (var pdfDoc = new Document(pdfPath, pdfPassword))
+        // Open the encrypted PDF using the password.
+        using (var pdfDocument = new Document(pdfPath, password))
         {
-            // Initialize the PDF converter.
-            using (var pdfConverter = new PdfConverter(pdfDoc))
+            // Iterate through each page of the PDF.
+            for (int pageIndex = 1; pageIndex <= pdfDocument.Pages.Count; pageIndex++)
             {
-                // Enable barcode optimization for faster rendering.
-                pdfConverter.RenderingOptions.BarcodeOptimization = true;
+                var page = pdfDocument.Pages[pageIndex];
 
-                // Iterate through each page of the PDF.
-                for (int pageNumber = 1; pageNumber <= pdfDoc.Pages.Count; pageNumber++)
+                // Convert the page to a PNG image stored in a memory stream.
+                using (var imageStream = new MemoryStream())
                 {
-                    pdfConverter.StartPage = pageNumber;
-                    pdfConverter.EndPage = pageNumber;
-                    pdfConverter.DoConvert();
+                    var pngDevice = new PngDevice();
+                    pngDevice.Process(page, imageStream);
+                    imageStream.Position = 0; // Reset stream position for reading.
 
-                    // Render the current page to an image stream.
-                    using (var pageImageStream = new MemoryStream())
+                    // Load the image into a Bitmap for barcode recognition.
+                    using (var bitmap = new Bitmap(imageStream))
                     {
-                        pdfConverter.GetNextImage(pageImageStream);
-                        pageImageStream.Position = 0;
-
-                        // Read barcodes from the rendered image.
-                        using (var reader = new BarCodeReader(pageImageStream, DecodeType.AllSupportedTypes))
+                        // Create a BarCodeReader that scans for all supported barcode types.
+                        using (var reader = new BarCodeReader(bitmap, DecodeType.AllSupportedTypes))
                         {
+                            // Enumerate all detected barcodes on the current page.
                             foreach (var result in reader.ReadBarCodes())
                             {
-                                Console.WriteLine($"Page {pageNumber}: Type = {result.CodeTypeName}, Text = {result.CodeText}");
+                                Console.WriteLine($"Page {pageIndex}: Type = {result.CodeTypeName}, Text = {result.CodeText}");
                             }
                         }
                     }

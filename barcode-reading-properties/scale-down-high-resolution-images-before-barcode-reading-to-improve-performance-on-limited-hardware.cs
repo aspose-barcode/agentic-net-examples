@@ -6,81 +6,67 @@ using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 using Aspose.Drawing.Drawing2D;
 
+/// <summary>
+/// Demonstrates loading a high‑resolution image, scaling it down,
+/// and reading any barcodes present using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Scales an input image to a maximum dimension and extracts barcodes.
+    /// </summary>
     static void Main()
     {
-        // Input high‑resolution image path (replace with an existing file for real test)
+        // Path to the high‑resolution image (replace with an actual file if available)
         string inputPath = "highres.png";
 
+        // Verify that the file exists before proceeding
         if (!File.Exists(inputPath))
         {
             Console.WriteLine($"File not found: {inputPath}");
             return;
         }
 
-        // Desired maximum dimension after scaling (e.g., 800 pixels)
-        const int maxDimension = 800;
-
-        // Load the original high‑resolution bitmap
-        using (Bitmap original = new Bitmap(inputPath))
+        // Load the original image from file
+        using (var original = new Bitmap(inputPath))
         {
-            // Determine scaling factor while preserving aspect ratio
-            float scale = 1f;
-            if (original.Width > maxDimension || original.Height > maxDimension)
-            {
-                scale = Math.Min((float)maxDimension / original.Width, (float)maxDimension / original.Height);
-            }
+            // Determine scaling factor to fit within maxDimension while preserving aspect ratio
+            float maxDimension = 1000f;
+            float scale = Math.Min(maxDimension / original.Width, maxDimension / original.Height);
+            if (scale > 1f) scale = 1f; // Prevent up‑scaling if image is already smaller
 
-            int newWidth = (int)(original.Width * scale);
-            int newHeight = (int)(original.Height * scale);
+            // Calculate new dimensions based on scaling factor
+            int newWidth = (int)Math.Round(original.Width * scale);
+            int newHeight = (int)Math.Round(original.Height * scale);
 
-            // If scaling is not needed, reuse the original bitmap
-            if (scale >= 1f)
+            // Create a new bitmap with the calculated dimensions
+            using (var scaled = new Bitmap(newWidth, newHeight))
             {
-                ProcessBitmap(original);
-                return;
-            }
-
-            // Create a new bitmap with the scaled size
-            using (Bitmap scaled = new Bitmap(newWidth, newHeight, PixelFormat.Format32bppArgb))
-            {
-                // Draw the original image onto the scaled bitmap with high‑quality interpolation
-                using (Graphics graphics = Graphics.FromImage(scaled))
+                // Draw the original image onto the scaled bitmap using high‑quality interpolation
+                using (var graphics = Graphics.FromImage(scaled))
                 {
                     graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
-                    graphics.DrawImage(original, new Rectangle(0, 0, newWidth, newHeight));
+                    graphics.DrawImage(original, 0, 0, newWidth, newHeight);
                 }
 
-                // Optionally, save the scaled image for verification
-                // scaled.Save("scaled.png", ImageFormat.Png);
+                // Encode the scaled bitmap to a memory stream in PNG format
+                using (var ms = new MemoryStream())
+                {
+                    scaled.Save(ms, ImageFormat.Png);
+                    ms.Position = 0; // Reset stream position for reading
 
-                // Perform barcode reading on the scaled bitmap
-                ProcessBitmap(scaled);
-            }
-        }
-    }
-
-    // Reads barcodes from the provided bitmap and writes results to console
-    static void ProcessBitmap(Bitmap bitmap)
-    {
-        // Choose a set of common decode types; adjust as needed
-        using (BarCodeReader reader = new BarCodeReader(bitmap, DecodeType.Code128, DecodeType.QR, DecodeType.Code39))
-        {
-            // Use high‑performance mode to speed up recognition on limited hardware
-            reader.QualitySettings = QualitySettings.HighPerformance;
-
-            BarCodeResult[] results = reader.ReadBarCodes();
-
-            if (results.Length == 0)
-            {
-                Console.WriteLine("No barcodes detected.");
-                return;
-            }
-
-            foreach (BarCodeResult result in results)
-            {
-                Console.WriteLine($"Type: {result.CodeTypeName}, Text: {result.CodeText}");
+                    // Initialize barcode reader to process all supported barcode types
+                    using (var reader = new BarCodeReader(ms, DecodeType.AllSupportedTypes))
+                    {
+                        // Iterate through all detected barcodes and output their details
+                        foreach (var result in reader.ReadBarCodes())
+                        {
+                            Console.WriteLine($"Detected Type: {result.CodeTypeName}");
+                            Console.WriteLine($"Code Text: {result.CodeText}");
+                        }
+                    }
+                }
             }
         }
     }
