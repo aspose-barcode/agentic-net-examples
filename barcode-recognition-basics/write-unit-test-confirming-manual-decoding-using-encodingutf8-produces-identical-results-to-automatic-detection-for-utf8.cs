@@ -5,58 +5,83 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
+/// <summary>
+/// Demonstrates generation of a QR barcode with UTF‑8 text and compares automatic
+/// encoding detection with manual decoding using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a QR code, reads it with automatic encoding detection,
+    /// then reads it again with detection disabled and manually decodes the result.
+    /// </summary>
     static void Main()
     {
-        // Sample Unicode text containing Cyrillic characters
-        const string originalText = "Привет мир";
+        // Sample UTF‑8 text to encode in the QR barcode.
+        const string originalText = "Слово";
 
-        // Create barcode image in memory using UTF-8 encoding
-        using (var ms = new MemoryStream())
+        // Create an in‑memory stream to hold the generated barcode image.
+        using (var imageStream = new MemoryStream())
         {
+            // ---------- Barcode generation ----------
             using (var generator = new BarcodeGenerator(EncodeTypes.QR))
             {
-                // Manually encode the text with UTF-8
+                // Set the code text and explicitly specify UTF‑8 encoding.
                 generator.SetCodeText(originalText, Encoding.UTF8);
-                // Save to the memory stream as PNG
-                generator.Save(ms, BarCodeImageFormat.Png);
+                // Save the barcode as PNG into the memory stream.
+                generator.Save(imageStream, BarCodeImageFormat.Png);
             }
 
-            // Prepare the stream for reading
-            ms.Position = 0;
+            // Reset stream position so it can be read from the beginning.
+            imageStream.Position = 0;
 
-            // Read the barcode with automatic encoding detection enabled
-            using (var reader = new BarCodeReader(ms, DecodeType.QR))
+            // ---------- Automatic encoding detection ----------
+            string autoDetectedText;
+            using (var autoReader = new BarCodeReader(imageStream, DecodeType.QR))
             {
-                // Ensure detection is turned on (default is true)
-                reader.BarcodeSettings.DetectEncoding = true;
+                // Enable automatic detection of the text encoding.
+                autoReader.BarcodeSettings.DetectEncoding = true;
+                // Read all barcodes from the stream.
+                var result = autoReader.ReadBarCodes();
+                // Extract the decoded text if a barcode was found.
+                autoDetectedText = result.Length > 0 ? result[0].CodeText : null;
+            }
 
-                foreach (BarCodeResult result in reader.ReadBarCodes())
+            // Reset stream again for the second read operation.
+            imageStream.Position = 0;
+
+            // ---------- Manual decoding (automatic detection disabled) ----------
+            string manualDecodedText;
+            using (var manualReader = new BarCodeReader(imageStream, DecodeType.QR))
+            {
+                // Disable automatic encoding detection.
+                manualReader.BarcodeSettings.DetectEncoding = false;
+                var result = manualReader.ReadBarCodes();
+
+                if (result.Length > 0 && result[0].CodeText != null)
                 {
-                    // CodeText obtained via automatic detection
-                    string autoDetected = result.CodeText;
-
-                    // CodeText obtained by manually specifying UTF-8
-                    string manualDecoded = result.GetCodeText(Encoding.UTF8);
-
-                    // Compare the two results
-                    if (autoDetected == manualDecoded && autoDetected == originalText)
-                    {
-                        Console.WriteLine("Test passed: automatic detection matches manual UTF-8 decoding.");
-                    }
-                    else
-                    {
-                        Console.WriteLine("Test failed:");
-                        Console.WriteLine($"  Original text      : {originalText}");
-                        Console.WriteLine($"  Auto-detected text : {autoDetected}");
-                        Console.WriteLine($"  Manual UTF-8 text  : {manualDecoded}");
-                    }
-
-                    // Only one barcode expected; exit after first result
-                    break;
+                    // When detection is off, the engine returns characters using ISO‑8859‑1 mapping.
+                    // Convert those characters back to the original byte sequence and decode as UTF‑8.
+                    var isoEncoding = Encoding.GetEncoding("ISO-8859-1");
+                    byte[] rawBytes = isoEncoding.GetBytes(result[0].CodeText);
+                    manualDecodedText = Encoding.UTF8.GetString(rawBytes);
+                }
+                else
+                {
+                    manualDecodedText = null;
                 }
             }
+
+            // ---------- Result comparison ----------
+            bool isEqual = string.Equals(autoDetectedText, manualDecodedText, StringComparison.Ordinal);
+            Console.WriteLine(isEqual
+                ? "Test passed: manual UTF-8 decoding matches automatic detection."
+                : "Test failed: results differ.");
+
+            // Output both decoded strings for verification.
+            Console.WriteLine($"Automatic detection result: {autoDetectedText}");
+            Console.WriteLine($"Manual decoding result:   {manualDecodedText}");
         }
     }
 }

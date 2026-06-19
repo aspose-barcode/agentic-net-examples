@@ -1,57 +1,69 @@
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
+/// <summary>
+/// Demonstrates generating a barcode image, reading it, and evaluating the reading quality.
+/// </summary>
 class Program
 {
-    static void Main()
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a temporary barcode, reads it, logs quality information, and cleans up.
+    /// </summary>
+    /// <param name="args">Command‑line arguments (not used).</param>
+    static void Main(string[] args)
     {
-        // Prepare a temporary image file path
-        string imagePath = Path.Combine(Path.GetTempPath(), "sample.png");
-
-        // Generate a simple Code128 barcode and save it
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "12345"))
+        // --------------------------------------------------------------------
+        // 1. Generate a temporary barcode image and save it to the system temp folder.
+        // --------------------------------------------------------------------
+        string tempImagePath = Path.Combine(Path.GetTempPath(), "sample_barcode.png");
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
         {
-            generator.Save(imagePath);
+            // Save the barcode as a PNG file.
+            generator.Save(tempImagePath);
         }
 
-        // Verify the file exists before attempting to read
-        if (!File.Exists(imagePath))
+        // Verify that the image was created successfully.
+        if (!File.Exists(tempImagePath))
         {
-            Console.WriteLine($"Error: Barcode image not found at '{imagePath}'.");
+            Console.WriteLine("Failed to generate the barcode image.");
             return;
         }
 
-        // Read the barcode and evaluate ReadingQuality
-        using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.Code128))
+        // --------------------------------------------------------------------
+        // 2. Read the barcode from the generated image and evaluate its ReadingQuality.
+        // --------------------------------------------------------------------
+        using (var reader = new BarCodeReader(tempImagePath, DecodeType.AllSupportedTypes))
         {
-            foreach (BarCodeResult result in reader.ReadBarCodes())
+            // Iterate over all detected barcodes in the image.
+            foreach (var result in reader.ReadBarCodes())
             {
-                double quality = result.ReadingQuality; // ReadingQuality is a double representing percent
+                double readingQuality = result.ReadingQuality;
 
-                if (quality >= 1 && quality <= 99)
+                // Output the decoded text and its quality metric.
+                Console.WriteLine($"CodeText: {result.CodeText}");
+                Console.WriteLine($"ReadingQuality: {readingQuality}");
+
+                // Values 1‑99 indicate moderate quality; log a warning for this range.
+                if (readingQuality >= 1 && readingQuality <= 99)
                 {
-                    // Map to moderate quality and log a warning
-                    Console.WriteLine($"WARNING: ReadingQuality {quality} mapped to Moderate quality.");
-                }
-                else
-                {
-                    // For other quality values (e.g., 0 or 100)
-                    Console.WriteLine($"ReadingQuality {quality} is outside moderate range.");
+                    Console.WriteLine($"Warning: ReadingQuality {readingQuality} is moderate.");
                 }
             }
         }
 
-        // Clean up the temporary file
+        // --------------------------------------------------------------------
+        // 3. Clean up the temporary barcode image file.
+        // --------------------------------------------------------------------
         try
         {
-            File.Delete(imagePath);
+            File.Delete(tempImagePath);
         }
         catch
         {
-            // Ignored - cleanup failure should not affect program flow
+            // Suppress any exceptions that occur during cleanup.
         }
     }
 }

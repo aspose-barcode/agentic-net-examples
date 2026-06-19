@@ -1,29 +1,49 @@
 using System;
 using System.IO;
+using Aspose.BarCode;
+using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
+/// <summary>
+/// Demonstrates generating a QR code image if missing and reading it using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a QR code image when not present and reads its content.
+    /// </summary>
     static void Main()
     {
-        // Path to the image containing the QR code
-        string imagePath = "sample.png";
+        // Define the file path for the QR code image.
+        string imagePath = "qr_sample.png";
 
-        // Verify that the file exists before attempting to read it
+        // If the image file does not exist, create a QR code image with sample text.
         if (!File.Exists(imagePath))
         {
-            Console.WriteLine($"File not found: {imagePath}");
-            return;
+            // Initialize a BarcodeGenerator for QR encoding with the desired text.
+            using (var generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
+            {
+                // Save the generated QR code to the specified path.
+                generator.Save(imagePath);
+            }
         }
 
-        // Initialize the reader with QR decode type to limit recognition to QR only
-        using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.QR))
+        // Load the QR code image into a Bitmap object for processing.
+        using (var bitmap = new Bitmap(imagePath))
         {
-            // Perform recognition
-            foreach (var result in reader.ReadBarCodes())
+            // Create a BarCodeReader that is configured to decode only QR symbology.
+            using (var reader = new BarCodeReader(bitmap, DecodeType.QR))
             {
-                Console.WriteLine($"Barcode Type: {result.CodeTypeName}");
-                Console.WriteLine($"Barcode Text: {result.CodeText}");
+                // Iterate through all detected barcodes in the image.
+                foreach (var result in reader.ReadBarCodes())
+                {
+                    // Output the type of the detected barcode.
+                    Console.WriteLine("Detected Type: " + result.CodeTypeName);
+                    // Output the decoded text contained in the barcode.
+                    Console.WriteLine("Decoded Text: " + result.CodeText);
+                }
             }
         }
     }

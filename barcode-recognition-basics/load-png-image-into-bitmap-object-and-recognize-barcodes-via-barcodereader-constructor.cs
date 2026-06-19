@@ -1,46 +1,43 @@
 using System;
 using System.IO;
-using Aspose.BarCode;
-using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
+using Aspose.BarCode.BarCodeRecognition;
 
+/// <summary>
+/// Demonstrates how to read all supported barcode types from a PNG image using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Loads an image file, scans it for barcodes, and prints the results to the console.
+    /// </summary>
     static void Main()
     {
-        // Path to the PNG image file
-        string imagePath = "sample.png";
+        // Define the path to the PNG image that contains barcodes.
+        string imagePath = "barcode.png";
 
-        // Verify that the image file exists
+        // Ensure the specified file exists before attempting to load it.
         if (!File.Exists(imagePath))
         {
-            Console.WriteLine($"Image file not found: {imagePath}");
+            // Inform the user that the file could not be found and exit.
+            Console.WriteLine($"File not found: {imagePath}");
             return;
         }
 
-        // Load the PNG image into a Bitmap
+        // Load the image into an Aspose.Drawing.Bitmap within a using block to guarantee disposal.
         using (Bitmap bitmap = new Bitmap(imagePath))
         {
-            // Initialize the barcode reader with the bitmap and request all supported types
+            // Initialize a BarCodeReader to detect all supported barcode types in the bitmap.
             using (BarCodeReader reader = new BarCodeReader(bitmap, DecodeType.AllSupportedTypes))
             {
-                // Read all barcodes from the image
-                BarCodeResult[] results = reader.ReadBarCodes();
-
-                // If no barcodes were found, inform the user
-                if (results.Length == 0)
+                // Iterate over each detected barcode result.
+                foreach (var result in reader.ReadBarCodes())
                 {
-                    Console.WriteLine("No barcodes detected in the image.");
-                }
-                else
-                {
-                    // Output each detected barcode's type and text
-                    foreach (BarCodeResult result in results)
-                    {
-                        Console.WriteLine($"BarCode Type: {result.CodeTypeName}");
-                        Console.WriteLine($"BarCode Text: {result.CodeText}");
-                        Console.WriteLine();
-                    }
+                    // Output the type of the barcode (e.g., QR, Code128).
+                    Console.WriteLine($"BarCode Type: {result.CodeTypeName}");
+                    // Output the decoded text/value of the barcode.
+                    Console.WriteLine($"BarCode CodeText: {result.CodeText}");
                 }
             }
         }

@@ -1,89 +1,78 @@
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
+/// <summary>
+/// Demonstrates generating and reading barcodes using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates sample barcodes, saves them to disk, and reads them back with default checksum validation.
+    /// </summary>
     static void Main()
     {
-        // Prepare temporary folder
-        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
-        Directory.CreateDirectory(outputDir);
+        // Prepare output directory for generated barcode images
+        string outputDir = "Barcodes";
+        if (!Directory.Exists(outputDir))
+        {
+            Directory.CreateDirectory(outputDir);
+        }
 
-        // Paths for individual barcode images
-        string eanPath = Path.Combine(outputDir, "ean13.png");
+        // Define file paths for the sample barcodes
+        string code128Path = Path.Combine(outputDir, "code128.png");
         string code39Path = Path.Combine(outputDir, "code39.png");
-        string mixedPath = Path.Combine(outputDir, "mixed.png");
 
-        // Generate EAN13 barcode (valid checksum)
-        using (BarcodeGenerator eanGen = new BarcodeGenerator(EncodeTypes.EAN13, "1234567890128"))
+        // Generate a Code128 barcode (checksum always required)
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456789012"))
         {
-            eanGen.Save(eanPath);
+            generator.Save(code128Path);
         }
 
-        // Generate Code39 barcode
-        using (BarcodeGenerator code39Gen = new BarcodeGenerator(EncodeTypes.Code39, "ABC123"))
+        // Generate a Code39 barcode (checksum optional)
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code39FullASCII, "ABC-123"))
         {
-            code39Gen.Save(code39Path);
+            generator.Save(code39Path);
         }
 
-        // Combine both barcodes into one image (side by side)
-        if (File.Exists(eanPath) && File.Exists(code39Path))
+        // Read the generated images using default checksum validation
+        ReadBarcodeWithDefaultChecksum(code128Path);
+        ReadBarcodeWithDefaultChecksum(code39Path);
+    }
+
+    /// <summary>
+    /// Reads a barcode image and displays its type, text, and checksum (if applicable) using default checksum validation.
+    /// </summary>
+    /// <param name="imagePath">The full path to the barcode image file.</param>
+    static void ReadBarcodeWithDefaultChecksum(string imagePath)
+    {
+        // Verify that the image file exists before attempting to read it
+        if (!File.Exists(imagePath))
         {
-            using (Image eanImg = Image.FromFile(eanPath))
-            using (Image code39Img = Image.FromFile(code39Path))
-            {
-                int width = eanImg.Width + code39Img.Width;
-                int height = Math.Max(eanImg.Height, code39Img.Height);
-                using (Bitmap combined = new Bitmap(width, height))
-                using (Graphics g = Graphics.FromImage(combined))
-                {
-                    g.Clear(Color.White);
-                    g.DrawImage(eanImg, 0, 0, eanImg.Width, eanImg.Height);
-                    g.DrawImage(code39Img, eanImg.Width, 0, code39Img.Width, code39Img.Height);
-                    combined.Save(mixedPath);
-                }
-            }
-        }
-        else
-        {
-            Console.WriteLine("Failed to generate individual barcode images.");
+            Console.WriteLine($"File not found: {imagePath}");
             return;
         }
 
-        // Verify combined image exists
-        if (!File.Exists(mixedPath))
+        // Create a reader for the image, enabling detection of all supported symbologies
+        using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
         {
-            Console.WriteLine("Combined image not found.");
-            return;
-        }
-
-        // Read barcodes from the combined image with default checksum validation
-        using (BarCodeReader reader = new BarCodeReader(mixedPath, DecodeType.EAN13, DecodeType.Code39))
-        {
-            // Apply default checksum handling
+            // Apply default checksum handling (Aspose's default behavior)
             reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.Default;
 
-            BarCodeResult[] results = reader.ReadBarCodes();
-            if (results.Length == 0)
+            // Iterate through all recognized barcodes in the image
+            foreach (var result in reader.ReadBarCodes())
             {
-                Console.WriteLine("No barcodes detected.");
-            }
-            else
-            {
-                foreach (BarCodeResult result in results)
+                Console.WriteLine($"Image: {Path.GetFileName(imagePath)}");
+                Console.WriteLine($"  Type: {result.CodeTypeName}");
+                Console.WriteLine($"  CodeText: {result.CodeText}");
+
+                // If the barcode is 1D, display the detected checksum from extended parameters
+                if (result.Extended?.OneD != null)
                 {
-                    Console.WriteLine($"Type: {result.CodeTypeName}");
-                    Console.WriteLine($"CodeText: {result.CodeText}");
-                    // For 1D barcodes, also display checksum if available
-                    if (result.Extended?.OneD != null)
-                    {
-                        Console.WriteLine($"Value (without checksum): {result.Extended.OneD.Value}");
-                        Console.WriteLine($"Checksum: {result.Extended.OneD.CheckSum}");
-                    }
-                    Console.WriteLine();
+                    Console.WriteLine($"  Detected Checksum: {result.Extended.OneD.CheckSum}");
                 }
             }
         }

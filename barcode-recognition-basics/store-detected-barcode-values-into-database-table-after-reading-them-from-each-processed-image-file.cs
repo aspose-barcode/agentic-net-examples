@@ -1,58 +1,60 @@
 using System;
 using System.IO;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text.Json;
-using Aspose.BarCode;
-using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 namespace BarcodeProcessing
 {
-    // Simple record to hold barcode information
-    public class BarcodeRecord
+    /// <summary>
+    /// Simple data holder for barcode information extracted from an image.
+    /// </summary>
+    class BarcodeInfo
     {
         public string FileName { get; set; }
+        public string CodeType { get; set; }
         public string CodeText { get; set; }
-        public string CodeTypeName { get; set; }
         public int Confidence { get; set; }
+        public double ReadingQuality { get; set; }
+        public double Angle { get; set; }
     }
 
+    /// <summary>
+    /// Entry point for the barcode processing console application.
+    /// </summary>
     class Program
     {
+        /// <summary>
+        /// Scans image files in a folder, extracts barcode data, and writes the results to a CSV file.
+        /// </summary>
         static void Main()
         {
-            // Folder that contains images to be processed
+            // Folder containing image files to process (adjust as needed)
             string imagesFolder = "Images";
 
-            // Ensure the folder exists
-            if (!Directory.Exists(imagesFolder))
-            {
-                Directory.CreateDirectory(imagesFolder);
-            }
+            // Output CSV file (simulating database storage)
+            string outputCsv = "barcode_results.csv";
 
-            // Gather image files (png, jpg, jpeg, bmp)
-            var imageFiles = Directory.GetFiles(imagesFolder, "*.*", SearchOption.TopDirectoryOnly)
-                .Where(f => f.EndsWith(".png", StringComparison.OrdinalIgnoreCase) ||
-                            f.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) ||
-                            f.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase) ||
-                            f.EndsWith(".bmp", StringComparison.OrdinalIgnoreCase))
-                .ToList();
+            // Define supported image extensions
+            string[] supportedExtensions = new[] { ".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff" };
+            var imageFiles = new List<string>();
 
-            // If no images are present, create a sample barcode image
-            if (imageFiles.Count == 0)
+            // Verify the images folder exists and collect matching files
+            if (Directory.Exists(imagesFolder))
             {
-                string samplePath = Path.Combine(imagesFolder, "sample.png");
-                using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
+                foreach (var ext in supportedExtensions)
                 {
-                    generator.Save(samplePath);
+                    // Add files with the current extension (non‑recursive)
+                    imageFiles.AddRange(Directory.GetFiles(imagesFolder, "*" + ext, SearchOption.TopDirectoryOnly));
                 }
-                imageFiles.Add(samplePath);
-                Console.WriteLine($"No images found. Generated sample barcode at {samplePath}");
+            }
+            else
+            {
+                Console.WriteLine($"Folder not found: {imagesFolder}");
+                return;
             }
 
-            var records = new List<BarcodeRecord>();
+            var results = new List<BarcodeInfo>();
 
             // Process each image file
             foreach (var filePath in imageFiles)
@@ -63,56 +65,68 @@ namespace BarcodeProcessing
                     continue;
                 }
 
-                // Initialize reader for all supported barcode types
-                using (var reader = new BarCodeReader(filePath, DecodeType.AllSupportedTypes))
+                // Load the image and create a barcode reader for all supported types
+                using (var bitmap = new Bitmap(filePath))
+                using (var reader = new BarCodeReader(bitmap, DecodeType.AllSupportedTypes))
                 {
-                    // Read all barcodes in the image
+                    // Iterate over all detected barcodes in the current image
                     foreach (var result in reader.ReadBarCodes())
                     {
-                        var record = new BarcodeRecord
+                        // Populate a BarcodeInfo instance with the detection details
+                        var info = new BarcodeInfo
                         {
                             FileName = Path.GetFileName(filePath),
+                            CodeType = result.CodeTypeName,
                             CodeText = result.CodeText,
-                            CodeTypeName = result.CodeTypeName,
-                            Confidence = (int)result.Confidence
+                            Confidence = (int)result.Confidence,
+                            ReadingQuality = result.ReadingQuality,
+                            Angle = result.Region.Angle
                         };
-                        records.Add(record);
-                        Console.WriteLine($"Detected {record.CodeTypeName} in {record.FileName}: {record.CodeText}");
+
+                        results.Add(info);
+                        Console.WriteLine($"Detected {info.CodeType} in {info.FileName}: {info.CodeText}");
                     }
                 }
             }
 
-            // Store results in a local JSON file (acts as a simple database substitute)
-            string jsonPath = "barcode_results.json";
-            var jsonOptions = new JsonSerializerOptions { WriteIndented = true };
-            string json = JsonSerializer.Serialize(records, jsonOptions);
-            File.WriteAllText(jsonPath, json);
-            Console.WriteLine($"Barcode data saved to {jsonPath}");
+            // Write the collected results to a CSV file (placeholder for real DB storage)
+            using (var writer = new StreamWriter(outputCsv, false))
+            {
+                // Write CSV header
+                writer.WriteLine("FileName,CodeType,CodeText,Confidence,ReadingQuality,Angle");
 
-            // Real database implementation (e.g., SQLite) would look like this:
-            // ---------------------------------------------------------------
-            // // Requires Microsoft.Data.Sqlite NuGet package
-            // using var connection = new SqliteConnection("Data Source=barcodes.db");
-            // connection.Open();
-            // var createCmd = connection.CreateCommand();
-            // createCmd.CommandText = @"CREATE TABLE IF NOT EXISTS Barcodes (
-            //     FileName TEXT,
-            //     CodeText TEXT,
-            //     CodeTypeName TEXT,
-            //     Confidence INTEGER
-            // );";
-            // createCmd.ExecuteNonQuery();
-            // foreach (var rec in records)
-            // {
-            //     var insertCmd = connection.CreateCommand();
-            //     insertCmd.CommandText = "INSERT INTO Barcodes (FileName, CodeText, CodeTypeName, Confidence) VALUES (@file, @text, @type, @conf);";
-            //     insertCmd.Parameters.AddWithValue("@file", rec.FileName);
-            //     insertCmd.Parameters.AddWithValue("@text", rec.CodeText);
-            //     insertCmd.Parameters.AddWithValue("@type", rec.CodeTypeName);
-            //     insertCmd.Parameters.AddWithValue("@conf", rec.Confidence);
-            //     insertCmd.ExecuteNonQuery();
-            // }
-            // ---------------------------------------------------------------
+                // Write each result as a CSV line, escaping fields as needed
+                foreach (var r in results)
+                {
+                    string line = $"{Escape(r.FileName)},{Escape(r.CodeType)},{Escape(r.CodeText)},{r.Confidence},{r.ReadingQuality},{r.Angle}";
+                    writer.WriteLine(line);
+                }
+            }
+
+            Console.WriteLine($"Processing complete. Results written to {outputCsv}");
+
+            // NOTE: In a real application you would insert the collected data into a database table
+            // using an appropriate data access library (e.g., System.Data.SqlClient, Microsoft.Data.Sqlite, etc.).
+        }
+
+        /// <summary>
+        /// Escapes a CSV field by surrounding it with quotes and doubling internal quotes if necessary.
+        /// </summary>
+        /// <param name="field">The field value to escape.</param>
+        /// <returns>The escaped field suitable for CSV output.</returns>
+        static string Escape(string field)
+        {
+            // If the field contains commas, quotes, or newlines, it must be quoted
+            if (field.Contains(",") || field.Contains("\"") || field.Contains("\n"))
+            {
+                // Double any existing quotes
+                field = field.Replace("\"", "\"\"");
+                // Surround the field with quotes
+                return $"\"{field}\"";
+            }
+
+            // No escaping needed
+            return field;
         }
     }
 }

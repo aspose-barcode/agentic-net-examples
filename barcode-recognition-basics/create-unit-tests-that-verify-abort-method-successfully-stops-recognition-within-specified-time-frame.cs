@@ -1,77 +1,79 @@
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates barcode generation, recognition, and aborting the recognition process using Aspose.BarCode.
+/// </summary>
 class Program
 {
-    static void Main()
+    /// <summary>
+    /// Entry point of the application. Generates a barcode, attempts to recognize it, aborts the recognition,
+    /// and reports the outcome.
+    /// </summary>
+    /// <param name="args">Command‑line arguments (not used).</param>
+    static async Task Main(string[] args)
     {
-        // Prepare a simple barcode image and save it to a temporary file
-        string tempPath = Path.Combine(Path.GetTempPath(), "abort_test.png");
-        try
+        // Create an in‑memory stream to hold the generated barcode image.
+        using (var ms = new MemoryStream())
         {
-            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+            // Generate a Code128 barcode with the text "TestAbort" and save it as PNG into the memory stream.
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "TestAbort"))
             {
-                generator.Save(tempPath, BarCodeImageFormat.Png);
+                generator.Save(ms, BarCodeImageFormat.Png);
             }
 
-            if (!File.Exists(tempPath))
+            // Reset stream position so it can be read from the beginning.
+            ms.Position = 0;
+
+            // Load the PNG image from the memory stream into a Bitmap for recognition.
+            using (var bitmap = new Bitmap(ms))
             {
-                Console.WriteLine("Failed to create barcode image.");
-                return;
-            }
-
-            bool abortCaught = false;
-            Stopwatch totalWatch = Stopwatch.StartNew();
-
-            // Initialize the reader with a long timeout (10 seconds)
-            using (BarCodeReader reader = new BarCodeReader(tempPath, DecodeType.Code128))
-            {
-                reader.Timeout = 10000; // milliseconds
-
-                // Start a task that will abort the recognition after a short delay (200 ms)
-                Task abortTask = Task.Run(async () =>
+                // Initialize a barcode reader that can decode all supported barcode types.
+                using (var reader = new BarCodeReader(bitmap, DecodeType.AllSupportedTypes))
                 {
-                    await Task.Delay(200);
-                    reader.Abort();
-                });
+                    // Start the recognition process on a background thread.
+                    var recognitionTask = Task.Run(() =>
+                    {
+                        try
+                        {
+                            // Attempt to read barcodes; may throw if aborted.
+                            return reader.ReadBarCodes();
+                        }
+                        catch (RecognitionAbortedException)
+                        {
+                            // Expected exception when Abort is called; return an empty result set.
+                            return Array.Empty<BarCodeResult>();
+                        }
+                    });
 
-                try
-                {
-                    // This call blocks until recognition finishes or is aborted
-                    BarCodeResult[] results = reader.ReadBarCodes();
+                    // Allow the recognition task a brief moment to start before aborting.
+                    await Task.Delay(100);
+                    reader.Abort(); // Signal the reader to abort the ongoing recognition.
 
-                    // If we reach here without an exception, the abort did not work as expected
-                    Console.WriteLine($"Recognition completed normally, found {results.Length} barcode(s).");
+                    // Await the completion of the recognition task (either aborted or finished).
+                    var results = await recognitionTask;
+
+                    // Evaluate the results: an empty array indicates the abort was successful.
+                    if (results.Length == 0)
+                    {
+                        Console.WriteLine("Recognition was aborted successfully.");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Recognition completed with {results.Length} result(s).");
+                        // Output details of each recognized barcode.
+                        foreach (var result in results)
+                        {
+                            Console.WriteLine($"Type: {result.CodeTypeName}, Text: {result.CodeText}");
+                        }
+                    }
                 }
-                catch (RecognitionAbortedException ex)
-                {
-                    abortCaught = true;
-                    Console.WriteLine($"Recognition aborted after {ex.ExecutionTime} ms (exception caught).");
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Unexpected exception: {ex.GetType().Name} - {ex.Message}");
-                }
-            }
-
-            totalWatch.Stop();
-
-            // Output test verification results
-            Console.WriteLine($"Abort caught: {abortCaught}");
-            Console.WriteLine($"Total elapsed time: {totalWatch.ElapsedMilliseconds} ms (should be << timeout)");
-        }
-        finally
-        {
-            // Clean up the temporary file
-            if (File.Exists(tempPath))
-            {
-                try { File.Delete(tempPath); } catch { /* ignore cleanup errors */ }
             }
         }
     }

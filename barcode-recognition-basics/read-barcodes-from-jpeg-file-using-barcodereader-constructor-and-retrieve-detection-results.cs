@@ -1,44 +1,64 @@
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
+/// <summary>
+/// Demonstrates barcode detection in an image using Aspose.BarCode.
+/// </summary>
 class Program
 {
-    static void Main()
+    /// <summary>
+    /// Entry point of the application.
+    /// Scans the specified image (or a default image) for barcodes and prints details to the console.
+    /// </summary>
+    /// <param name="args">Command‑line arguments; the first argument may specify the image path.</param>
+    static void Main(string[] args)
     {
-        // Path to the JPEG image containing barcodes.
-        string imagePath = "sample.jpg";
+        // Determine the image file to process: use first argument if provided, otherwise default to "sample.jpg".
+        string imagePath = args.Length > 0 ? args[0] : "sample.jpg";
 
-        // Verify that the file exists before attempting to read.
+        // Ensure the image file exists before attempting to read it.
         if (!File.Exists(imagePath))
         {
             Console.WriteLine($"File not found: {imagePath}");
             return;
         }
 
-        // Initialize the reader for all supported barcode types.
-        using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
+        // Initialize a BarCodeReader to scan the image for all supported barcode types.
+        using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
         {
-            // Read all barcodes from the image.
+            // Perform barcode recognition and retrieve all results.
             BarCodeResult[] results = reader.ReadBarCodes();
 
+            // If no barcodes were detected, inform the user and exit.
             if (results.Length == 0)
             {
-                Console.WriteLine("No barcodes were detected.");
+                Console.WriteLine("No barcodes detected.");
                 return;
             }
 
-            // Output detection details for each barcode.
-            foreach (BarCodeResult result in results)
+            // Iterate over each detected barcode and output its properties.
+            foreach (var result in results)
             {
-                Console.WriteLine($"Barcode Type : {result.CodeTypeName}");
-                Console.WriteLine($"Code Text    : {result.CodeText}");
+                Console.WriteLine($"BarCode Type   : {result.CodeTypeName}");
+                Console.WriteLine($"BarCode Text   : {result.CodeText}");
+                Console.WriteLine($"Confidence     : {result.Confidence}");
+                Console.WriteLine($"ReadingQuality : {result.ReadingQuality}");
 
-                // Region rectangle provides the location of the barcode in the image.
-                Rectangle bounds = result.Region.Rectangle;
-                Console.WriteLine($"Region       : X={bounds.X}, Y={bounds.Y}, Width={bounds.Width}, Height={bounds.Height}");
-                Console.WriteLine(new string('-', 40));
+                // Extract the region rectangle that defines the barcode's location in the image.
+                var rect = result.Region.Rectangle;
+                int x = (int)Math.Round((double)rect.X);
+                int y = (int)Math.Round((double)rect.Y);
+                int width = (int)Math.Round((double)rect.Width);
+                int height = (int)Math.Round((double)rect.Height);
+                Console.WriteLine($"Region (px)    : X={x}, Y={y}, Width={width}, Height={height}");
+
+                // Retrieve the orientation angle of the barcode.
+                double angle = result.Region.Angle;
+                Console.WriteLine($"Orientation    : {angle} degrees");
+                Console.WriteLine();
             }
         }
     }

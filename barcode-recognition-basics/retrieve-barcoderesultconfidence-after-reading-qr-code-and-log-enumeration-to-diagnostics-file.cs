@@ -3,58 +3,48 @@ using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
+/// <summary>
+/// Demonstrates generating a QR code, reading it, and logging the confidence level.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a QR code, reads it back, and writes the confidence value to a file and console.
+    /// </summary>
     static void Main()
     {
-        // Paths for the generated QR image and diagnostics log
-        string qrImagePath = "qr.png";
-        string diagnosticsPath = "diagnostics.txt";
+        // Sample QR code text to encode
+        const string qrText = "https://example.com";
 
-        // Ensure any previous files are removed to start fresh
-        if (File.Exists(qrImagePath))
+        // Create a barcode generator for QR type with the specified text
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, qrText))
         {
-            File.Delete(qrImagePath);
-        }
-        if (File.Exists(diagnosticsPath))
-        {
-            File.Delete(diagnosticsPath);
-        }
-
-        // Generate a QR code image with sample text
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Hello Aspose"))
-        {
-            // Optional: set high error correction level for stronger confidence
-            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
-            generator.Save(qrImagePath);
-        }
-
-        // Verify the QR image was created before attempting to read it
-        if (!File.Exists(qrImagePath))
-        {
-            Console.WriteLine($"Failed to create QR image at '{qrImagePath}'.");
-            return;
-        }
-
-        // Read the QR code and obtain the confidence level
-        using (var reader = new BarCodeReader(qrImagePath, DecodeType.QR))
-        {
-            foreach (BarCodeResult result in reader.ReadBarCodes())
+            // Generate the QR code image as a bitmap in memory
+            using (Bitmap qrBitmap = generator.GenerateBarCodeImage())
             {
-                // Log the confidence enumeration value to the diagnostics file
-                using (var writer = new StreamWriter(diagnosticsPath, true))
+                // Initialize a reader to decode QR codes from the generated bitmap
+                using (var reader = new BarCodeReader(qrBitmap, DecodeType.QR))
                 {
-                    writer.WriteLine($"Timestamp: {DateTime.UtcNow:u}");
-                    writer.WriteLine($"Code Type: {result.CodeTypeName}");
-                    writer.WriteLine($"Code Text: {result.CodeText}");
-                    writer.WriteLine($"Confidence: {result.Confidence}");
-                    writer.WriteLine(new string('-', 40));
+                    // Iterate through all detected barcodes (should be one in this case)
+                    foreach (var result in reader.ReadBarCodes())
+                    {
+                        // Retrieve the confidence level of the detection
+                        BarCodeConfidence confidence = result.Confidence;
+
+                        // Write the confidence value to a diagnostics file (overwrites existing file)
+                        using (var writer = new StreamWriter("diagnostics.txt", false))
+                        {
+                            writer.WriteLine($"Confidence: {confidence}");
+                        }
+
+                        // Also output the confidence value to the console for demonstration
+                        Console.WriteLine($"Confidence: {confidence}");
+                    }
                 }
             }
         }
-
-        // Indicate completion
-        Console.WriteLine($"Recognition completed. Confidence details written to '{diagnosticsPath}'.");
     }
 }

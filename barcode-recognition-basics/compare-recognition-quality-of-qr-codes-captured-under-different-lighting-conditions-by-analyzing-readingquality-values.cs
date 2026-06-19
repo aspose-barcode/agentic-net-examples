@@ -6,83 +6,94 @@ using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates generating a QR code, applying lighting variations,
+/// and evaluating the reading quality using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a QR code, creates lighting scenarios, reads the code,
+    /// and prints the reading quality for each scenario.
+    /// </summary>
     static void Main()
     {
-        // Folder for temporary images
-        string tempDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
-        Directory.CreateDirectory(tempDir);
+        // QR code text to encode
+        const string qrText = "https://example.com";
 
-        // Base QR code image
-        string basePath = Path.Combine(tempDir, "qr_normal.png");
-        GenerateQrCode("https://example.com", basePath);
-
-        // Dimmed version (simulating low lighting)
-        string dimPath = Path.Combine(tempDir, "qr_dim.png");
-        CreateAdjustedImage(basePath, dimPath, Color.FromArgb(128, Color.Black));
-
-        // Brightened version (simulating strong lighting)
-        string brightPath = Path.Combine(tempDir, "qr_bright.png");
-        CreateAdjustedImage(basePath, brightPath, Color.FromArgb(128, Color.White));
-
-        // Analyze each image
-        AnalyzeImage("Normal Lighting", basePath);
-        AnalyzeImage("Low Lighting (Dim)", dimPath);
-        AnalyzeImage("Strong Lighting (Bright)", brightPath);
-    }
-
-    // Generates a QR code with default settings
-    private static void GenerateQrCode(string text, string filePath)
-    {
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, text))
+        // Generate the original QR code bitmap and keep it in memory
+        Bitmap originalBitmap;
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, qrText))
         {
-            // Optional: set higher error correction to survive lighting changes
-            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
-            generator.Save(filePath);
-        }
-    }
-
-    // Creates a new image by overlaying a semi‑transparent color to simulate lighting
-    private static void CreateAdjustedImage(string sourcePath, string destPath, Color overlayColor)
-    {
-        if (!File.Exists(sourcePath))
-        {
-            Console.WriteLine($"Source image not found: {sourcePath}");
-            return;
-        }
-
-        using (Bitmap bitmap = (Bitmap)Image.FromFile(sourcePath))
-        {
-            using (Graphics graphics = Graphics.FromImage(bitmap))
+            using (var ms = new MemoryStream())
             {
-                using (SolidBrush brush = new SolidBrush(overlayColor))
+                // Save the generated QR code as PNG into the memory stream
+                generator.Save(ms, BarCodeImageFormat.Png);
+                ms.Position = 0; // Reset stream position for reading
+                originalBitmap = new Bitmap(ms); // Load bitmap from stream
+            }
+        }
+
+        // Define lighting scenarios: normal, dark overlay, bright overlay
+        var scenarios = new (string Name, Action<Bitmap> ApplyEffect)[]
+        {
+            ("Normal", bmp => { /* No change for normal lighting */ }),
+            ("Dark",   bmp => ApplyOverlay(bmp, Color.Black, 100)),
+            ("Bright", bmp => ApplyOverlay(bmp, Color.White, 100))
+        };
+
+        // Process each lighting scenario
+        foreach (var scenario in scenarios)
+        {
+            // Clone the original bitmap so each scenario works on a fresh copy
+            using (var bmp = new Bitmap(originalBitmap))
+            {
+                // Apply the lighting effect specific to the scenario
+                scenario.ApplyEffect(bmp);
+
+                // Initialize a barcode reader for QR codes on the modified bitmap
+                using (var reader = new BarCodeReader(bmp, DecodeType.QR))
                 {
-                    graphics.FillRectangle(brush, 0, 0, bitmap.Width, bitmap.Height);
+                    // Attempt to read barcodes
+                    var results = reader.ReadBarCodes();
+
+                    if (results.Length > 0)
+                    {
+                        // If a barcode is found, retrieve its reading quality
+                        var result = results[0];
+                        double quality = result.ReadingQuality;
+                        Console.WriteLine($"{scenario.Name} lighting - ReadingQuality: {quality}");
+                    }
+                    else
+                    {
+                        // No barcode detected for this lighting condition
+                        Console.WriteLine($"{scenario.Name} lighting - No barcode detected.");
+                    }
                 }
             }
-
-            bitmap.Save(destPath, ImageFormat.Png);
         }
+
+        // Release resources held by the original bitmap
+        originalBitmap.Dispose();
     }
 
-    // Reads a QR code from an image and prints its ReadingQuality
-    private static void AnalyzeImage(string description, string imagePath)
+    /// <summary>
+    /// Applies a semi‑transparent color overlay to simulate lighting changes.
+    /// </summary>
+    /// <param name="bitmap">The bitmap to modify.</param>
+    /// <param name="overlayColor">The color of the overlay.</param>
+    /// <param name="alpha">The opacity of the overlay (0‑255).</param>
+    private static void ApplyOverlay(Bitmap bitmap, Color overlayColor, int alpha)
     {
-        if (!File.Exists(imagePath))
+        // Create graphics object from the bitmap for drawing
+        using (var graphics = Graphics.FromImage(bitmap))
         {
-            Console.WriteLine($"Image not found: {imagePath}");
-            return;
-        }
-
-        using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.QR))
-        {
-            foreach (BarCodeResult result in reader.ReadBarCodes())
+            // Create a brush with the specified color and opacity
+            using (var brush = new SolidBrush(Color.FromArgb(alpha, overlayColor)))
             {
-                Console.WriteLine($"{description}:");
-                Console.WriteLine($"  Code Text       : {result.CodeText}");
-                Console.WriteLine($"  Reading Quality : {result.ReadingQuality}%");
-                Console.WriteLine($"  Confidence      : {result.Confidence}");
+                // Fill the entire bitmap with the overlay brush
+                graphics.FillRectangle(brush, 0, 0, bitmap.Width, bitmap.Height);
             }
         }
     }

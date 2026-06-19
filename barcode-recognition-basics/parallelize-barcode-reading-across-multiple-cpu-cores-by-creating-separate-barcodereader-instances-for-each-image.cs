@@ -1,92 +1,80 @@
 using System;
-using System.IO;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading.Tasks;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.BarCode.Common;
 using Aspose.Drawing;
 
+/// <summary>
+/// Demonstrates generating various barcode types, then reading them in parallel using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Generates sample barcodes, reads them concurrently, and cleans up resources.
+    /// </summary>
     static void Main()
     {
-        // Prepare sample barcode images
-        var tempDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodes");
-        if (!Directory.Exists(tempDir))
+        // Prepare a small set of sample barcodes.
+        var samples = new List<(BaseEncodeType Type, Bitmap Image)>();
+
+        // Define the barcode types to generate.
+        BaseEncodeType[] encodeTypes = new BaseEncodeType[]
         {
-            Directory.CreateDirectory(tempDir);
+            EncodeTypes.Code128,
+            EncodeTypes.QR,
+            EncodeTypes.DataMatrix,
+            EncodeTypes.Pdf417,
+            EncodeTypes.EAN13
+        };
+
+        // Corresponding text values for each barcode type.
+        string[] texts = new string[]
+        {
+            "ABC123456",
+            "https://example.com",
+            "DM12345",
+            "PDF417Sample",
+            "1234567890128" // valid EAN13 with checksum
+        };
+
+        // Generate barcode images and store them with their type.
+        for (int i = 0; i < encodeTypes.Length; i++)
+        {
+            using (var generator = new BarcodeGenerator(encodeTypes[i], texts[i]))
+            {
+                // Generate the barcode image in memory.
+                Bitmap bmp = generator.GenerateBarCodeImage();
+
+                // Store the bitmap for later parallel reading.
+                samples.Add((encodeTypes[i], bmp));
+            }
         }
 
-        var imageFiles = new List<string>();
-        for (int i = 1; i <= 5; i++)
+        // Configure the reader to use all available processor cores.
+        BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount = Environment.ProcessorCount;
+
+        // Parallel processing of barcode images.
+        Parallel.ForEach(samples, sample =>
         {
-            var filePath = Path.Combine(tempDir, $"barcode{i}.png");
-            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, $"Sample{i}"))
+            // Each thread works with its own bitmap instance.
+            using (var reader = new BarCodeReader(sample.Image, DecodeType.AllSupportedTypes))
             {
-                // Simple image size settings
-                generator.Parameters.ImageWidth.Point = 300f;
-                generator.Parameters.ImageHeight.Point = 100f;
-                generator.Save(filePath, BarCodeImageFormat.Png);
-            }
-            imageFiles.Add(filePath);
-        }
-
-        // Enable multi‑core processing for BarCodeReader
-        BarCodeReader.ProcessorSettings.UseAllCores = true;
-
-        // Parallel reading of barcodes
-        var consoleLock = new object();
-        Parallel.ForEach(imageFiles, imagePath =>
-        {
-            if (!File.Exists(imagePath))
-            {
-                lock (consoleLock)
+                // Read all barcodes found in the image.
+                foreach (var result in reader.ReadBarCodes())
                 {
-                    Console.WriteLine($"File not found: {imagePath}");
-                }
-                return;
-            }
-
-            using (BarCodeReader reader = new BarCodeReader())
-            {
-                // Set decode type to Code128 (using MultiDecodeType)
-                reader.BarCodeReadType = new MultiDecodeType(DecodeType.Code128);
-                // Assign image file
-                reader.SetBarCodeImage(imagePath);
-
-                foreach (BarCodeResult result in reader.ReadBarCodes())
-                {
-                    lock (consoleLock)
-                    {
-                        Console.WriteLine($"File: {Path.GetFileName(imagePath)} | Type: {result.CodeTypeName} | Text: {result.CodeText}");
-                    }
+                    // Output the thread ID, barcode type, and decoded text.
+                    Console.WriteLine($"Thread {Task.CurrentId}: Detected {result.CodeTypeName} - \"{result.CodeText}\"");
                 }
             }
         });
 
-        // Cleanup temporary files
-        foreach (var file in imageFiles)
+        // Dispose all generated bitmaps to free unmanaged resources.
+        foreach (var sample in samples)
         {
-            try
-            {
-                File.Delete(file);
-            }
-            catch
-            {
-                // Ignore any deletion errors
-            }
-        }
-
-        // Remove temporary directory if empty
-        try
-        {
-            Directory.Delete(tempDir);
-        }
-        catch
-        {
-            // Ignore if directory not empty or cannot be removed
+            sample.Image.Dispose();
         }
     }
 }

@@ -1,71 +1,80 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
+using System.Collections.Generic;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
+/// <summary>
+/// Demonstrates generating a barcode image, verifying its creation,
+/// and reading back barcodes from the image using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a barcode, saves it to a file, then reads and displays barcode information.
+    /// </summary>
     static void Main()
     {
-        // Prepare a sample barcode image file
+        // Define the file path for the generated barcode image.
         string imagePath = "sample.png";
 
-        // Generate a barcode and save it to a file
+        // -------------------------------------------------
+        // Generate a sample barcode image (Code128, value "ABC123")
+        // -------------------------------------------------
         using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "ABC123"))
         {
-            // Ensure the image is saved as PNG
+            // Save the generated barcode to the specified path.
             generator.Save(imagePath);
         }
 
-        // Verify that the image file exists before attempting recognition
+        // -------------------------------------------------
+        // Verify that the barcode image was successfully created.
+        // -------------------------------------------------
         if (!File.Exists(imagePath))
         {
-            Console.WriteLine($"Error: Barcode image file '{imagePath}' not found.");
+            Console.WriteLine("Failed to create barcode image.");
             return;
         }
 
-        // Dictionary to hold unique code texts and their detected positions
-        var barcodePositions = new Dictionary<string, List<Rectangle>>();
-
-        // Read barcodes from the image using all supported types
+        // -------------------------------------------------
+        // Read all supported barcodes from the generated image.
+        // -------------------------------------------------
         using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
         {
-            // Perform recognition
-            reader.ReadBarCodes();
+            // Retrieve an array of barcode results.
+            BarCodeResult[] results = reader.ReadBarCodes();
 
-            // Iterate over the recognized barcodes
-            for (int i = 0; i < reader.FoundCount; i++)
+            // Determine the set of unique barcode texts.
+            var uniqueCodes = new HashSet<string>();
+            foreach (var result in results)
             {
-                var result = reader.FoundBarCodes[i];
-                string codeText = result.CodeText ?? string.Empty;
-                Rectangle rect = result.Region.Rectangle;
-
-                if (!barcodePositions.ContainsKey(codeText))
-                {
-                    barcodePositions[codeText] = new List<Rectangle>();
-                }
-
-                barcodePositions[codeText].Add(rect);
+                uniqueCodes.Add(result.CodeText);
             }
-        }
 
-        // Output the count of unique barcodes
-        Console.WriteLine($"Unique barcodes found: {barcodePositions.Count}");
+            // Output summary information.
+            Console.WriteLine($"Total barcodes detected: {results.Length}");
+            Console.WriteLine($"Unique barcodes count: {uniqueCodes.Count}");
 
-        // Display each unique barcode and its positions
-        foreach (var kvp in barcodePositions)
-        {
-            string code = kvp.Key;
-            List<Rectangle> rects = kvp.Value;
-
-            Console.WriteLine($"CodeText: {code}");
-            for (int idx = 0; idx < rects.Count; idx++)
+            // -------------------------------------------------
+            // Display detailed information for each detected barcode.
+            // -------------------------------------------------
+            foreach (var result in results)
             {
-                Rectangle r = rects[idx];
-                Console.WriteLine($"  Position {idx + 1}: X={r.X}, Y={r.Y}, Width={r.Width}, Height={r.Height}");
+                // Extract the bounding rectangle of the barcode region.
+                var rect = result.Region.Rectangle;
+                int x = (int)Math.Round((double)rect.X);
+                int y = (int)Math.Round((double)rect.Y);
+                int width = (int)Math.Round((double)rect.Width);
+                int height = (int)Math.Round((double)rect.Height);
+                double angle = result.Region.Angle; // Rotation angle of the barcode.
+
+                // Print barcode text and its position/size.
+                Console.WriteLine($"CodeText: {result.CodeText}");
+                Console.WriteLine($"Position: X={x}, Y={y}, Width={width}, Height={height}, Angle={angle}");
+                Console.WriteLine();
             }
         }
     }

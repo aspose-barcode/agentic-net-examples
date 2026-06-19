@@ -1,82 +1,90 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text.Json;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
-namespace ReadingQualitySample
+namespace DataMatrixReadingQualityDemo
 {
+    /// <summary>
+    /// Simple DTO to hold barcode information.
+    /// </summary>
+    public class BarcodeInfo
+    {
+        public string CodeText { get; set; }
+        public double ReadingQuality { get; set; }
+    }
+
+    /// <summary>
+    /// Demonstrates generation of a DataMatrix barcode, its recognition,
+    /// and recording of the reading quality to a JSON file.
+    /// </summary>
     class Program
     {
-        // Simple record to hold barcode data and its reading quality
-        class BarcodeInfo
+        /// <summary>
+        /// Entry point of the demo application.
+        /// </summary>
+        static void Main()
         {
-            public string CodeText { get; set; }
-            public double ReadingQuality { get; set; }
-        }
+            // Sample DataMatrix barcode text to encode.
+            const string sampleText = "SampleDataMatrix123";
 
-        static void Main(string[] args)
-        {
-            // Prepare a list to collect results
-            List<BarcodeInfo> results = new List<BarcodeInfo>();
-
-            // Directory to store temporary barcode images
-            string imageDir = "Barcodes";
-            if (!Directory.Exists(imageDir))
+            // Create a barcode generator for DataMatrix using the sample text.
+            using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, sampleText))
             {
-                Directory.CreateDirectory(imageDir);
-            }
-
-            // Generate and read a few DataMatrix barcodes
-            for (int i = 1; i <= 5; i++)
-            {
-                string codeText = $"DM{i:D3}";
-                string imagePath = Path.Combine(imageDir, $"dm_{i}.png");
-
-                // Create DataMatrix barcode and save it to a file
-                using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.DataMatrix, codeText))
+                // Save the generated barcode image to a memory stream in PNG format.
+                using (var ms = new MemoryStream())
                 {
-                    generator.Save(imagePath);
-                }
+                    generator.Save(ms, BarCodeImageFormat.Png);
+                    ms.Position = 0; // Reset stream position for reading.
 
-                // Read the barcode and capture its reading quality
-                using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.DataMatrix))
-                {
-                    foreach (BarCodeResult result in reader.ReadBarCodes())
+                    // Load the PNG image into a Bitmap for barcode recognition.
+                    using (var bitmap = new Bitmap(ms))
                     {
-                        // Store the code text and reading quality
-                        BarcodeInfo info = new BarcodeInfo
+                        // Initialize a reader that decodes only DataMatrix barcodes.
+                        using (var reader = new BarCodeReader(bitmap, DecodeType.DataMatrix))
                         {
-                            CodeText = result.CodeText,
-                            ReadingQuality = result.ReadingQuality
-                        };
-                        results.Add(info);
+                            // Perform the recognition and retrieve all detected barcodes.
+                            BarCodeResult[] results = reader.ReadBarCodes();
+
+                            // Prepare a list to hold reading quality information.
+                            var records = new List<BarcodeInfo>();
+
+                            // Iterate over each recognition result.
+                            foreach (var result in results)
+                            {
+                                // Filter to ensure the result is a DataMatrix barcode.
+                                if (result.CodeTypeName == "DataMatrix")
+                                {
+                                    // Add the barcode text and its reading quality to the list.
+                                    records.Add(new BarcodeInfo
+                                    {
+                                        CodeText = result.CodeText,
+                                        ReadingQuality = result.ReadingQuality
+                                    });
+                                }
+                            }
+
+                            // Serialize the collected records to a formatted JSON string.
+                            string json = JsonSerializer.Serialize(
+                                records,
+                                new JsonSerializerOptions { WriteIndented = true });
+
+                            // Define the output file path.
+                            const string outputPath = "datamatrix_reading_quality.json";
+
+                            // Write the JSON data to the file system.
+                            File.WriteAllText(outputPath, json);
+
+                            // Inform the user where the data was saved.
+                            Console.WriteLine($"Reading qualities saved to {outputPath}");
+                        }
                     }
                 }
             }
-
-            // Store the collected data in a CSV file (as a stand‑in for a database)
-            string csvPath = "reading_quality.csv";
-            using (StreamWriter writer = new StreamWriter(csvPath, false))
-            {
-                writer.WriteLine("CodeText,ReadingQuality");
-                foreach (BarcodeInfo info in results)
-                {
-                    writer.WriteLine($"{info.CodeText},{info.ReadingQuality}");
-                }
-            }
-
-            Console.WriteLine($"Reading quality data written to '{csvPath}'.");
-            // In a real scenario, replace the CSV logic with actual database insertion,
-            // e.g., using a SQLite connection:
-            // // using var connection = new SqliteConnection("Data Source=barcodes.db");
-            // // connection.Open();
-            // // using var command = connection.CreateCommand();
-            // // command.CommandText = "INSERT INTO BarcodeQuality (CodeText, ReadingQuality) VALUES (@code, @quality)";
-            // // command.Parameters.AddWithValue("@code", info.CodeText);
-            // // command.Parameters.AddWithValue("@quality", info.ReadingQuality);
-            // // command.ExecuteNonQuery();
         }
     }
 }
