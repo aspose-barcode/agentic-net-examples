@@ -1,59 +1,115 @@
 using System;
 using System.IO;
+using System.Diagnostics;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.BarCode.BarCodeRecognition; // for ChecksumValidation enum
 
+/// <summary>
+/// Demonstrates generating Code128 barcodes, recognizing them, and benchmarking
+/// the impact of checksum validation settings using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates sample barcode images, runs recognition with default and forced
+    /// checksum validation, reports confidence and timing, and cleans up temporary files.
+    /// </summary>
     static void Main()
     {
-        // Sample Code128 texts
-        string[] samples = { "123456", "ABCDEF", "9876543210", "Test123", "Code128Test" };
-        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
-        Directory.CreateDirectory(outputDir);
-
-        Console.WriteLine("Generating barcodes and comparing confidence levels:");
-        foreach (string text in samples)
+        // Define sample texts to encode as Code128 barcodes
+        string[] samples = new string[]
         {
-            string filePath = Path.Combine(outputDir, $"code128_{text}.png");
+            "1234567890",
+            "ABCDEFGHIJ",
+            "CODE128TEST",
+            "9876543210",
+            "A1B2C3D4E5"
+        };
 
-            // Generate barcode image
-            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, text))
+        // Create a temporary directory for storing generated barcode images
+        string tempDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
+        if (!Directory.Exists(tempDir))
+            Directory.CreateDirectory(tempDir);
+
+        Console.WriteLine("Generating barcode images...");
+
+        // Generate a PNG image for each sample text
+        string[] imagePaths = new string[samples.Length];
+        for (int i = 0; i < samples.Length; i++)
+        {
+            string filePath = Path.Combine(tempDir, $"barcode_{i}.png");
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, samples[i]))
             {
-                generator.Save(filePath, BarCodeImageFormat.Png);
+                // Save the barcode image to the temporary file
+                generator.Save(filePath);
             }
-
-            // Read with default checksum validation
-            BarCodeConfidence defaultConfidence = BarCodeConfidence.None;
-            using (BarCodeReader reader = new BarCodeReader(filePath, DecodeType.Code128))
-            {
-                foreach (BarCodeResult result in reader.ReadBarCodes())
-                {
-                    defaultConfidence = result.Confidence;
-                    break; // only one barcode expected
-                }
-            }
-
-            // Read with forced checksum validation (On)
-            BarCodeConfidence forcedConfidence = BarCodeConfidence.None;
-            using (BarCodeReader reader = new BarCodeReader(filePath, DecodeType.Code128))
-            {
-                reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
-                foreach (BarCodeResult result in reader.ReadBarCodes())
-                {
-                    forcedConfidence = result.Confidence;
-                    break;
-                }
-            }
-
-            Console.WriteLine($"Text: {text}");
-            Console.WriteLine($"  Default ChecksumValidation Confidence: {defaultConfidence}");
-            Console.WriteLine($"  Forced ChecksumValidation (On) Confidence: {forcedConfidence}");
-            Console.WriteLine();
+            imagePaths[i] = filePath;
         }
 
-        // Cleanup generated files (optional)
-        // Directory.Delete(outputDir, true);
+        Console.WriteLine("Starting recognition benchmark...");
+
+        // Iterate over each generated image and benchmark recognition
+        for (int i = 0; i < imagePaths.Length; i++)
+        {
+            string path = imagePaths[i];
+            Console.WriteLine($"\nSample {i + 1}: {samples[i]}");
+
+            // ---------- Default checksum validation (no explicit setting) ----------
+            double defaultConfidence = 0;
+            long defaultTicks = 0;
+            using (var readerDefault = new BarCodeReader(path, DecodeType.Code128))
+            {
+                var sw = Stopwatch.StartNew(); // Start timing
+                foreach (var result in readerDefault.ReadBarCodes())
+                {
+                    // Capture the confidence of the last read result
+                    defaultConfidence = (double)result.Confidence;
+                }
+                sw.Stop(); // Stop timing
+                defaultTicks = sw.ElapsedTicks;
+            }
+
+            // ---------- Forced checksum validation (ChecksumValidation.On) ----------
+            double forcedConfidence = 0;
+            long forcedTicks = 0;
+            using (var readerForced = new BarCodeReader(path, DecodeType.Code128))
+            {
+                // Enable checksum validation explicitly
+                readerForced.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
+                var sw = Stopwatch.StartNew(); // Start timing
+                foreach (var result in readerForced.ReadBarCodes())
+                {
+                    // Capture the confidence of the last read result
+                    forcedConfidence = (double)result.Confidence;
+                }
+                sw.Stop(); // Stop timing
+                forcedTicks = sw.ElapsedTicks;
+            }
+
+            // Output benchmark results for the current sample
+            Console.WriteLine($"Default Validation - Confidence: {defaultConfidence}, Time (ticks): {defaultTicks}");
+            Console.WriteLine($"Forced Validation  - Confidence: {forcedConfidence}, Time (ticks): {forcedTicks}");
+        }
+
+        // ---------- Cleanup temporary files ----------
+        try
+        {
+            foreach (var file in imagePaths)
+            {
+                if (File.Exists(file))
+                    File.Delete(file);
+            }
+            if (Directory.Exists(tempDir))
+                Directory.Delete(tempDir);
+        }
+        catch
+        {
+            // Ignore any errors that occur during cleanup
+        }
+
+        Console.WriteLine("\nBenchmark completed.");
     }
 }

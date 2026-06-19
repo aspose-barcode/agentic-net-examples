@@ -1,52 +1,63 @@
 using System;
 using System.IO;
 using System.Text;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates generating a QR code with Unicode (UTF-16) data,
+/// then reading it back while manually handling encoding.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a QR code containing Cyrillic text, saves it to a memory stream,
+    /// and reads it back using Aspose.BarCode with manual UTF-16 decoding.
+    /// </summary>
     static void Main()
     {
-        // Define barcode text containing Unicode characters
-        const string unicodeText = "Привет мир";
+        // Sample Unicode text (Cyrillic)
+        const string unicodeText = "Привет";
 
-        // Output file for the generated barcode image
-        string imagePath = Path.Combine(Environment.CurrentDirectory, "qr_utf16.png");
-
-        // -----------------------------------------------------------------
-        // Generate QR barcode using UTF-16 encoding (little‑endian)
-        // -----------------------------------------------------------------
+        // Create a QR code generator
         using (var generator = new BarcodeGenerator(EncodeTypes.QR))
         {
-            // Encode the Unicode text as UTF-16 bytes (BOM will be added automatically)
+            // Encode the text as UTF-16 (Unicode) bytes
             generator.SetCodeText(unicodeText, Encoding.Unicode);
-            // Save the image
-            generator.Save(imagePath, BarCodeImageFormat.Png);
-        }
 
-        // Verify that the image was created
-        if (!File.Exists(imagePath))
-        {
-            Console.WriteLine("Failed to create barcode image.");
-            return;
-        }
-
-        // -----------------------------------------------------------------
-        // Read the barcode without automatic encoding detection
-        // -----------------------------------------------------------------
-        using (var reader = new BarCodeReader(imagePath, DecodeType.QR))
-        {
-            // Disable automatic detection of code text encoding
-            reader.BarcodeSettings.DetectEncoding = false;
-
-            foreach (BarCodeResult result in reader.ReadBarCodes())
+            // Save the generated barcode image to a memory stream in PNG format
+            using (var imageStream = new MemoryStream())
             {
-                // Manually decode the raw bytes using UTF-16
-                string decodedText = result.GetCodeText(Encoding.Unicode);
-                Console.WriteLine("Manually decoded CodeText (UTF-16): " + decodedText);
+                generator.Save(imageStream, BarCodeImageFormat.Png);
+                // Reset stream position to the beginning for reading
+                imageStream.Position = 0;
+
+                // Load the image from the stream into a Bitmap for recognition
+                using (var bitmap = new Bitmap(imageStream))
+                {
+                    // Initialize a barcode reader configured for QR codes
+                    using (var reader = new BarCodeReader(bitmap, DecodeType.QR))
+                    {
+                        // Disable automatic encoding detection to demonstrate manual decoding
+                        reader.BarcodeSettings.DetectEncoding = false;
+
+                        // Iterate over all detected barcodes (should be one in this case)
+                        foreach (var result in reader.ReadBarCodes())
+                        {
+                            // The automatically detected CodeText may be incorrect because DetectEncoding is off
+                            Console.WriteLine("Auto-detected CodeText: " + result.CodeText);
+
+                            // Retrieve the raw byte array from the barcode
+                            byte[] rawBytes = result.CodeBytes;
+                            // Manually decode the bytes using UTF-16 (Unicode) encoding
+                            string manualText = Encoding.Unicode.GetString(rawBytes);
+                            Console.WriteLine("Manually decoded (UTF-16): " + manualText);
+                        }
+                    }
+                }
             }
         }
     }

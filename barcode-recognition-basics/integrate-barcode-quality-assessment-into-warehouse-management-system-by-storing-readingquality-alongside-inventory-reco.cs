@@ -1,78 +1,88 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
-namespace WarehouseBarcodeDemo
+namespace WarehouseBarcodeQuality
 {
-    // Simple inventory record that includes barcode reading quality
-    class InventoryItem
+    // Simple inventory record
+    public class InventoryItem
     {
         public int Id { get; set; }
         public string Name { get; set; }
-        public string BarcodeValue { get; set; }
-        public double ReadingQuality { get; set; } // percent value from BarCodeResult
+        public string BarcodeText { get; set; }
+        public double ReadingQuality { get; set; } // Value from 0 to 100
     }
 
+    /// <summary>
+    /// Entry point for the Warehouse Barcode Quality application.
+    /// </summary>
     class Program
     {
+        /// <summary>
+        /// Generates barcodes for sample inventory items, reads them back,
+        /// and records the reading quality for each item.
+        /// </summary>
         static void Main()
         {
-            // Sample inventory item
-            var item = new InventoryItem
+            // Define a sample list of inventory items.
+            var items = new List<InventoryItem>
             {
-                Id = 1,
-                Name = "Widget",
-                BarcodeValue = "123456789012"
+                new InventoryItem { Id = 1, Name = "Widget A", BarcodeText = "WGT001" },
+                new InventoryItem { Id = 2, Name = "Gadget B", BarcodeText = "GDT002" },
+                new InventoryItem { Id = 3, Name = "Device C", BarcodeText = "DVC003" }
             };
 
-            // Path for temporary barcode image
-            string barcodePath = Path.Combine(Path.GetTempPath(), "item_barcode.png");
-
-            // Generate barcode image for the item's barcode value
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, item.BarcodeValue))
+            // Determine the output directory for generated barcode images.
+            string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
+            if (!Directory.Exists(outputDir))
             {
-                // Optional: set image size or other parameters here
-                generator.Save(barcodePath);
+                // Create the directory if it does not already exist.
+                Directory.CreateDirectory(outputDir);
             }
 
-            // Verify that the image was created before attempting recognition
-            if (!File.Exists(barcodePath))
+            // Process each inventory item.
+            foreach (var item in items)
             {
-                Console.WriteLine("Failed to generate barcode image.");
-                return;
-            }
+                // Build the full file path for the barcode image.
+                string barcodePath = Path.Combine(outputDir, $"barcode_{item.Id}.png");
 
-            // Recognize the barcode and obtain reading quality
-            using (var reader = new BarCodeReader(barcodePath, DecodeType.Code128))
-            {
-                // Use a higher quality preset to demonstrate quality settings
-                reader.QualitySettings = QualitySettings.HighQuality;
-                // Optionally adjust the barcode element quality mode
-                reader.QualitySettings.BarcodeQuality = BarcodeQualityMode.High;
-
-                foreach (BarCodeResult result in reader.ReadBarCodes())
+                // Generate a Code128 barcode image for the current item.
+                using (var generator = new BarcodeGenerator(EncodeTypes.Code128, item.BarcodeText))
                 {
-                    // Store the reading quality (percentage) in the inventory record
-                    item.ReadingQuality = result.ReadingQuality;
+                    // Set a high resolution for better quality (300 DPI).
+                    generator.Parameters.Resolution = 300f;
+                    // Save the generated barcode to the specified path.
+                    generator.Save(barcodePath);
+                }
 
-                    // Output details for verification
-                    Console.WriteLine($"Item ID: {item.Id}");
-                    Console.WriteLine($"Name: {item.Name}");
-                    Console.WriteLine($"Barcode Text: {result.CodeText}");
-                    Console.WriteLine($"Reading Quality: {item.ReadingQuality}%");
+                // Verify that the barcode image was successfully created.
+                if (!File.Exists(barcodePath))
+                {
+                    Console.WriteLine($"Failed to create barcode image for item {item.Id}");
+                    continue; // Skip reading if the file does not exist.
+                }
+
+                // Read the barcode from the image and capture its reading quality.
+                using (var reader = new BarCodeReader(barcodePath, DecodeType.AllSupportedTypes))
+                {
+                    foreach (var result in reader.ReadBarCodes())
+                    {
+                        // Store the reading quality (percentage) in the inventory record.
+                        item.ReadingQuality = result.ReadingQuality;
+                        // Assuming only one barcode per image; exit after the first result.
+                        break;
+                    }
                 }
             }
 
-            // Clean up temporary file
-            try
+            // Output the inventory records along with their barcode reading quality.
+            Console.WriteLine("Inventory records with barcode reading quality:");
+            foreach (var item in items)
             {
-                File.Delete(barcodePath);
-            }
-            catch
-            {
-                // Ignore any cleanup errors
+                Console.WriteLine($"Id: {item.Id}, Name: {item.Name}, Code: {item.BarcodeText}, ReadingQuality: {item.ReadingQuality:F2}%");
             }
         }
     }

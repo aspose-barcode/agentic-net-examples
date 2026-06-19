@@ -1,74 +1,79 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
 using Aspose.BarCode;
+using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
+/// <summary>
+/// Demonstrates generating Code128 barcodes, storing them in memory,
+/// and recognizing them concurrently using the Aspose.BarCode library.
+/// </summary>
 class Program
 {
-    static async Task Main(string[] args)
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates sample barcodes, processes them in parallel, and outputs detection results.
+    /// </summary>
+    static void Main()
     {
-        // Folder containing barcode images (adjust as needed)
-        string imagesFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Barcodes");
-
-        if (!Directory.Exists(imagesFolder))
+        // Define a list of sample barcode texts to encode.
+        List<string> codeTexts = new List<string>
         {
-            Console.WriteLine($"Folder not found: {imagesFolder}");
-            return;
-        }
+            "Sample1",
+            "Sample2",
+            "Sample3",
+            "Sample4",
+            "Sample5"
+        };
 
-        // Get up to 5 image files of common formats
-        string[] supportedExtensions = new[] { ".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff" };
-        var imageFiles = Directory.GetFiles(imagesFolder)
-                                  .Where(f => supportedExtensions.Contains(Path.GetExtension(f), StringComparer.OrdinalIgnoreCase))
-                                  .Take(5)
-                                  .ToArray();
-
-        if (imageFiles.Length == 0)
+        // Generate barcode images for each text and store them in memory streams.
+        List<MemoryStream> imageStreams = new List<MemoryStream>();
+        foreach (string text in codeTexts)
         {
-            Console.WriteLine("No barcode image files found.");
-            return;
-        }
+            // Create a new memory stream for the current barcode image.
+            MemoryStream ms = new MemoryStream();
 
-        // Process each image concurrently
-        var tasks = imageFiles.Select(file => ProcessImageAsync(file)).ToArray();
-        await Task.WhenAll(tasks);
-    }
-
-    private static async Task ProcessImageAsync(string imagePath)
-    {
-        // Validate file existence (should already be true)
-        if (!File.Exists(imagePath))
-        {
-            Console.WriteLine($"File not found: {imagePath}");
-            return;
-        }
-
-        await Task.Run(() =>
-        {
-            // BarCodeReader implements IDisposable, use a using block
-            using (var reader = new BarCodeReader(imagePath))
+            // Use BarcodeGenerator to create a Code128 barcode.
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, text))
             {
-                // Optionally set quality preset (default is NormalQuality)
-                // reader.QualitySettings = QualitySettings.NormalQuality;
+                // Save the generated barcode as a PNG into the memory stream.
+                generator.Save(ms, BarCodeImageFormat.Png);
+            }
 
-                // Read all barcodes from the image
-                var results = reader.ReadBarCodes();
+            // Reset the stream position to the beginning for subsequent reading.
+            ms.Position = 0;
+            imageStreams.Add(ms);
+        }
 
-                if (results.Length == 0)
+        // Process each barcode image concurrently using the Task Parallel Library (TPL).
+        List<Task> tasks = new List<Task>();
+        foreach (MemoryStream stream in imageStreams)
+        {
+            // Capture the current stream in a local variable for the task closure.
+            Task task = Task.Run(() =>
+            {
+                // Create a BarCodeReader to decode all supported barcode types from the stream.
+                using (BarCodeReader reader = new BarCodeReader(stream, DecodeType.AllSupportedTypes))
                 {
-                    Console.WriteLine($"No barcodes detected in: {Path.GetFileName(imagePath)}");
-                }
-                else
-                {
-                    Console.WriteLine($"Barcodes in {Path.GetFileName(imagePath)}:");
-                    foreach (var result in results)
+                    // Iterate through all detected barcodes and output their type and text.
+                    foreach (var result in reader.ReadBarCodes())
                     {
-                        Console.WriteLine($"  Type: {result.CodeTypeName}, Text: {result.CodeText}");
+                        Console.WriteLine($"Detected: {result.CodeTypeName} - {result.CodeText}");
                     }
                 }
-            }
-        });
+
+                // Dispose the memory stream after processing to free resources.
+                stream.Dispose();
+            });
+
+            tasks.Add(task);
+        }
+
+        // Wait for all recognition tasks to complete before proceeding.
+        Task.WaitAll(tasks.ToArray());
+
+        Console.WriteLine("Parallel barcode recognition completed.");
     }
 }

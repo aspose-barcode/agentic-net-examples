@@ -1,65 +1,53 @@
 using System;
 using System.IO;
-using System.Collections.Generic;
 using Aspose.BarCode;
-using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
+/// <summary>
+/// Demonstrates barcode detection using Aspose.BarCode library on a local image file.
+/// </summary>
 class Program
 {
-    // Simulated API endpoint that processes an uploaded image stream
-    static List<(string TypeName, string CodeText)> ProcessBarcodeImage(Stream imageStream)
-    {
-        if (imageStream == null)
-            throw new ArgumentException("Image stream cannot be null.", nameof(imageStream));
-
-        // Ensure the stream is positioned at the beginning
-        if (imageStream.CanSeek)
-            imageStream.Position = 0;
-
-        var results = new List<(string, string)>();
-
-        using (var reader = new BarCodeReader(imageStream))
-        {
-            // Specify which barcode types to look for (example set)
-            reader.SetBarCodeReadType(DecodeType.Code128, DecodeType.Code39, DecodeType.QR, DecodeType.EAN13);
-
-            // Perform recognition
-            foreach (BarCodeResult result in reader.ReadBarCodes())
-            {
-                results.Add((result.CodeTypeName, result.CodeText));
-            }
-        }
-
-        return results;
-    }
-
+    /// <summary>
+    /// Entry point of the console application.
+    /// Detects all supported barcodes in the specified image and prints their type and text.
+    /// </summary>
     static void Main()
     {
-        // Generate a sample barcode image in memory
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Test123"))
+        // NOTE: Full web API integration cannot be demonstrated in a console app.
+        // The core barcode detection logic is shown below using a local image file.
+
+        // Path to the image that contains barcodes.
+        string imagePath = "sample.png";
+
+        // Verify that the image file exists before attempting to read it.
+        if (!File.Exists(imagePath))
         {
-            // Save barcode to a memory stream as PNG
-            using (var imageStream = new MemoryStream())
+            Console.WriteLine($"Image file not found: {imagePath}");
+            return;
+        }
+
+        // Open the image file as a read‑only stream and create a BarCodeReader
+        // configured to detect all supported barcode types.
+        using (FileStream stream = new FileStream(imagePath, FileMode.Open, FileAccess.Read))
+        using (BarCodeReader reader = new BarCodeReader(stream, DecodeType.AllSupportedTypes))
+        {
+            // Perform the barcode detection.
+            BarCodeResult[] results = reader.ReadBarCodes();
+
+            // If no barcodes were found, inform the user.
+            if (results.Length == 0)
             {
-                generator.Save(imageStream, BarCodeImageFormat.Png);
-
-                // Simulate receiving the image stream via a web API call
-                List<(string TypeName, string CodeText)> detectedBarcodes = ProcessBarcodeImage(imageStream);
-
-                // Output detection results
-                if (detectedBarcodes.Count == 0)
+                Console.WriteLine("No barcodes detected.");
+            }
+            else
+            {
+                // Iterate through each detected barcode and display its details.
+                foreach (BarCodeResult result in results)
                 {
-                    Console.WriteLine("No barcodes were detected.");
-                }
-                else
-                {
-                    foreach (var (typeName, codeText) in detectedBarcodes)
-                    {
-                        Console.WriteLine($"Detected Barcode Type: {typeName}");
-                        Console.WriteLine($"Detected Barcode Text: {codeText}");
-                    }
+                    Console.WriteLine($"BarCode Type: {result.CodeTypeName}");
+                    Console.WriteLine($"BarCode CodeText: {result.CodeText}");
+                    Console.WriteLine();
                 }
             }
         }

@@ -1,75 +1,98 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
+/// <summary>
+/// Demonstrates generating Code39 barcodes in memory and measuring
+/// the performance of reading them with checksum validation enabled and disabled.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates sample barcodes, runs performance measurements, and cleans up resources.
+    /// </summary>
     static void Main()
     {
-        // Prepare temporary folder for barcode images
-        string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
-        if (!Directory.Exists(tempFolder))
+        const int sampleCount = 10; // Number of barcode samples to generate
+
+        // Store generated barcode images in memory streams
+        var barcodeImages = new List<MemoryStream>();
+
+        // ------------------------------------------------------------
+        // Generate sample Code39 barcodes in memory
+        // ------------------------------------------------------------
+        for (int i = 0; i < sampleCount; i++)
         {
-            Directory.CreateDirectory(tempFolder);
+            // Create a barcode generator for Code39FullASCII with a unique text value
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code39FullASCII, $"TEST{i:D2}"))
+            {
+                // Save the generated barcode to a memory stream in PNG format
+                var ms = new MemoryStream();
+                generator.Save(ms, BarCodeImageFormat.Png);
+                ms.Position = 0; // Reset stream position for later reading
+                barcodeImages.Add(ms);
+            }
         }
 
-        // Sample code texts for Code39 barcodes
-        string[] codes = new string[] { "CODE1", "CODE2", "CODE3", "CODE4", "CODE5" };
-        string[] imagePaths = new string[codes.Length];
+        // ------------------------------------------------------------
+        // Measure performance with checksum validation enabled
+        // ------------------------------------------------------------
+        MeasurePerformance("Checksum Validation: On", ChecksumValidation.On, barcodeImages);
 
-        // Generate barcode images
-        for (int i = 0; i < codes.Length; i++)
+        // ------------------------------------------------------------
+        // Measure performance with checksum validation disabled
+        // ------------------------------------------------------------
+        MeasurePerformance("Checksum Validation: Off", ChecksumValidation.Off, barcodeImages);
+
+        // ------------------------------------------------------------
+        // Clean up memory streams
+        // ------------------------------------------------------------
+        foreach (var ms in barcodeImages)
         {
-            string filePath = Path.Combine(tempFolder, $"code{i + 1}.png");
-            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code39, codes[i]))
+            ms.Dispose();
+        }
+    }
+
+    /// <summary>
+    /// Measures and reports the time taken to read a collection of barcode images
+    /// using the specified checksum validation setting.
+    /// </summary>
+    /// <param name="description">Label describing the measurement scenario.</param>
+    /// <param name="validation">Checksum validation mode to apply.</param>
+    /// <param name="images">List of memory streams containing barcode images.</param>
+    static void MeasurePerformance(string description, ChecksumValidation validation, List<MemoryStream> images)
+    {
+        var stopwatch = new Stopwatch(); // Timer for performance measurement
+        stopwatch.Start();
+
+        // Iterate over each barcode image stream
+        foreach (var imageStream in images)
+        {
+            // Ensure the stream is positioned at the beginning before each read
+            imageStream.Position = 0;
+
+            // Create a barcode reader for Code39 format
+            using (var reader = new BarCodeReader(imageStream, DecodeType.Code39))
             {
-                generator.Save(filePath);
+                // Apply the requested checksum validation setting
+                reader.BarcodeSettings.ChecksumValidation = validation;
+
+                // Read all barcodes found in the image
+                foreach (var result in reader.ReadBarCodes())
+                {
+                    // Output the detected barcode text to verify processing
+                    Console.WriteLine($"{description} - Detected: {result.CodeText}");
+                }
             }
-            imagePaths[i] = filePath;
         }
 
-        // Benchmark with checksum validation OFF
-        Stopwatch swOff = Stopwatch.StartNew();
-        foreach (string path in imagePaths)
-        {
-            if (!File.Exists(path))
-            {
-                Console.WriteLine($"File not found: {path}");
-                continue;
-            }
-
-            using (BarCodeReader reader = new BarCodeReader(path, DecodeType.Code39))
-            {
-                reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.Off;
-                // Read barcodes (result not used, just to trigger recognition)
-                BarCodeResult[] results = reader.ReadBarCodes();
-            }
-        }
-        swOff.Stop();
-
-        // Benchmark with checksum validation ON
-        Stopwatch swOn = Stopwatch.StartNew();
-        foreach (string path in imagePaths)
-        {
-            if (!File.Exists(path))
-            {
-                Console.WriteLine($"File not found: {path}");
-                continue;
-            }
-
-            using (BarCodeReader reader = new BarCodeReader(path, DecodeType.Code39))
-            {
-                reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
-                BarCodeResult[] results = reader.ReadBarCodes();
-            }
-        }
-        swOn.Stop();
-
-        // Output timing results
-        Console.WriteLine($"Checksum validation OFF total time for {codes.Length} scans: {swOff.ElapsedMilliseconds} ms");
-        Console.WriteLine($"Checksum validation ON  total time for {codes.Length} scans: {swOn.ElapsedMilliseconds} ms");
+        stopwatch.Stop();
+        // Report total elapsed time for the measurement scenario
+        Console.WriteLine($"{description} - Total Time: {stopwatch.ElapsedMilliseconds} ms");
     }
 }

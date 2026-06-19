@@ -3,39 +3,88 @@ using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
+/// <summary>
+/// Demonstrates generating two different barcodes, combining them into a single image,
+/// and then reading back the barcodes from the combined image.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// </summary>
     static void Main()
     {
-        // Path for the generated barcode image
-        string imagePath = "barcode.png";
-
-        // Create a barcode (EAN13) that includes a checksum
-        using (var generator = new BarcodeGenerator(EncodeTypes.EAN13, "1234567890128"))
+        // ------------------------------------------------------------
+        // 1. Generate the first barcode (EAN13) which requires a checksum.
+        // ------------------------------------------------------------
+        using (var generatorEan = new BarcodeGenerator(EncodeTypes.EAN13, "1234567890128"))
         {
-            generator.Save(imagePath);
-        }
-
-        // Ensure the image file was created
-        if (!File.Exists(imagePath))
-        {
-            Console.WriteLine($"Failed to create barcode image at '{imagePath}'.");
-            return;
-        }
-
-        // Read the barcode with checksum validation turned on for all symbologies
-        using (var reader = new BarCodeReader(imagePath, DecodeType.EAN13))
-        {
-            // Enable checksum validation (both obligatory and optional checksum symbologies)
-            reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
-
-            foreach (BarCodeResult result in reader.ReadBarCodes())
+            using (var eanImage = generatorEan.GenerateBarCodeImage())
             {
-                Console.WriteLine($"Barcode Type: {result.CodeTypeName}");
-                Console.WriteLine($"CodeText: {result.CodeText}");
-                Console.WriteLine($"Value (without checksum): {result.Extended.OneD.Value}");
-                Console.WriteLine($"Checksum: {result.Extended.OneD.CheckSum}");
+                // ------------------------------------------------------------
+                // 2. Generate the second barcode (Code39) where the checksum is optional.
+                // ------------------------------------------------------------
+                using (var generatorCode39 = new BarcodeGenerator(EncodeTypes.Code39FullASCII, "CODE39"))
+                {
+                    using (var code39Image = generatorCode39.GenerateBarCodeImage())
+                    {
+                        // ------------------------------------------------------------
+                        // 3. Combine the two barcode images side by side with padding.
+                        // ------------------------------------------------------------
+                        int padding = 20;
+                        int combinedWidth = eanImage.Width + code39Image.Width + padding;
+                        int combinedHeight = Math.Max(eanImage.Height, code39Image.Height);
+
+                        using (var combinedBitmap = new Bitmap(combinedWidth, combinedHeight))
+                        {
+                            using (var graphics = Graphics.FromImage(combinedBitmap))
+                            {
+                                // Fill background with white.
+                                graphics.Clear(Color.White);
+                                // Draw the first barcode at the left.
+                                graphics.DrawImage(eanImage, 0, 0);
+                                // Draw the second barcode to the right of the first, separated by padding.
+                                graphics.DrawImage(code39Image, eanImage.Width + padding, 0);
+                            }
+
+                            // ------------------------------------------------------------
+                            // 4. Save the combined image to a memory stream (optional, for demo purposes).
+                            // ------------------------------------------------------------
+                            using (var ms = new MemoryStream())
+                            {
+                                combinedBitmap.Save(ms, Aspose.Drawing.Imaging.ImageFormat.Png);
+                                ms.Position = 0; // Reset stream position for reading.
+
+                                // ------------------------------------------------------------
+                                // 5. Read barcodes from the combined image.
+                                // ------------------------------------------------------------
+                                using (var reader = new BarCodeReader(new Bitmap(ms), DecodeType.AllSupportedTypes))
+                                {
+                                    // Enable checksum validation for all supported symbologies.
+                                    reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
+
+                                    // Iterate through all detected barcodes.
+                                    foreach (var result in reader.ReadBarCodes())
+                                    {
+                                        Console.WriteLine($"Detected Type: {result.CodeTypeName}");
+                                        Console.WriteLine($"CodeText: {result.CodeText}");
+
+                                        // For 1D barcodes, display the numeric value and checksum if available.
+                                        if (result.Extended?.OneD != null)
+                                        {
+                                            Console.WriteLine($"Value: {result.Extended.OneD.Value}");
+                                            Console.WriteLine($"Checksum: {result.Extended.OneD.CheckSum}");
+                                        }
+
+                                        Console.WriteLine(new string('-', 40));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }

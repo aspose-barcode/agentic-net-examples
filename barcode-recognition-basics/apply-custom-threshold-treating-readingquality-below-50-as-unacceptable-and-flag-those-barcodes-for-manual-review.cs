@@ -3,62 +3,64 @@ using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates generating Code128 barcodes, saving them to memory,
+/// and then recognizing them using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates sample barcodes, reads them back, and reports their reading quality.
+    /// </summary>
     static void Main()
     {
-        // Directory for temporary barcode images
-        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodes");
-        if (!Directory.Exists(outputDir))
+        // Sample barcode texts to process
+        string[] samples = new string[] { "1234567890", "ABCDEFGHIJ", "12345" };
+
+        // Iterate over each sample text
+        foreach (string text in samples)
         {
-            Directory.CreateDirectory(outputDir);
-        }
-
-        // Sample data to encode
-        string[] codes = { "12345", "ABCDE", "987654321" };
-        string[] filePaths = new string[codes.Length];
-
-        // Generate barcode images
-        for (int i = 0; i < codes.Length; i++)
-        {
-            string filePath = Path.Combine(outputDir, $"barcode_{i}.png");
-            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, codes[i]))
+            // Generate barcode image in a memory stream
+            using (var ms = new MemoryStream())
             {
-                generator.Save(filePath);
-            }
-            filePaths[i] = filePath;
-        }
-
-        // Recognize and evaluate reading quality
-        for (int i = 0; i < filePaths.Length; i++)
-        {
-            string filePath = filePaths[i];
-            if (!File.Exists(filePath))
-            {
-                Console.WriteLine($"File not found: {filePath}");
-                continue;
-            }
-
-            using (BarCodeReader reader = new BarCodeReader(filePath, DecodeType.Code128))
-            {
-                foreach (BarCodeResult result in reader.ReadBarCodes())
+                // Create a barcode generator for Code128 with the current text
+                using (var generator = new BarcodeGenerator(EncodeTypes.Code128, text))
                 {
-                    double quality = result.ReadingQuality;
-                    Console.WriteLine($"File: {Path.GetFileName(filePath)}");
-                    Console.WriteLine($"  Type: {result.CodeTypeName}");
-                    Console.WriteLine($"  CodeText: {result.CodeText}");
-                    Console.WriteLine($"  ReadingQuality: {quality}");
+                    // Save the generated barcode as PNG into the memory stream
+                    generator.Save(ms, BarCodeImageFormat.Png);
+                }
 
-                    if (quality < 50.0)
+                // Reset stream position to the beginning before reading
+                ms.Position = 0;
+
+                // Load the PNG image from the memory stream as a Bitmap for recognition
+                using (var bitmap = new Bitmap(ms))
+                {
+                    // Initialize a barcode reader that can decode all supported symbologies
+                    using (var reader = new BarCodeReader(bitmap, DecodeType.AllSupportedTypes))
                     {
-                        Console.WriteLine("  --> Flagged for manual review (quality below threshold)");
+                        // Read all barcodes found in the image
+                        foreach (var result in reader.ReadBarCodes())
+                        {
+                            double quality = result.ReadingQuality;
+
+                            // Flag low-quality readings for manual review
+                            if (quality < 50.0)
+                            {
+                                Console.WriteLine($"[FLAGGED] CodeText: {result.CodeText}, ReadingQuality: {quality:F2}% – requires manual review.");
+                            }
+                            else
+                            {
+                                Console.WriteLine($"[ACCEPTED] CodeText: {result.CodeText}, ReadingQuality: {quality:F2}%");
+                            }
+                        }
                     }
                 }
             }
         }
-
-        // Cleanup temporary files (optional)
-        // foreach (var path in filePaths) { File.Delete(path); }
     }
 }

@@ -4,88 +4,90 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates generating a Code128 barcode image and recognizing it within a specific region.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a barcode image if missing, then reads it from a defined region.
+    /// </summary>
     static void Main()
     {
-        // Paths for temporary images
-        string barcodePath = "barcode.png";
-        string canvasPath = "canvas.png";
+        // Path for the generated barcode image
+        string imagePath = "sample_barcode.png";
 
-        // Generate a simple Code128 barcode and save it
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+        // ------------------------------------------------------------
+        // Generate a barcode image if it does not already exist
+        // ------------------------------------------------------------
+        if (!File.Exists(imagePath))
         {
-            generator.Save(barcodePath);
-        }
-
-        // Verify barcode image was created
-        if (!File.Exists(barcodePath))
-        {
-            Console.WriteLine($"Failed to create barcode image at '{barcodePath}'.");
-            return;
-        }
-
-        // Load the generated barcode image
-        using (var barcodeBmp = new Bitmap(barcodePath))
-        {
-            // Create a larger canvas and draw the barcode onto it at a specific offset
-            int canvasWidth = 400;
-            int canvasHeight = 300;
-            int offsetX = 120;
-            int offsetY = 80;
-
-            using (var canvasBmp = new Bitmap(canvasWidth, canvasHeight, PixelFormat.Format32bppArgb))
+            // Create a BarcodeGenerator for Code128 with sample data
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
             {
-                using (var graphics = Graphics.FromImage(canvasBmp))
-                {
-                    // Fill background with white
-                    graphics.Clear(Color.White);
-                    // Draw the barcode onto the canvas
-                    graphics.DrawImage(barcodeBmp, offsetX, offsetY, barcodeBmp.Width, barcodeBmp.Height);
-                }
-
-                // Save the composite image (optional, for visual verification)
-                canvasBmp.Save(canvasPath);
-
-                // Define the rectangular region that exactly covers the barcode area
-                var targetRegion = new Rectangle(offsetX, offsetY, barcodeBmp.Width, barcodeBmp.Height);
-
-                // Initialize BarCodeReader with the canvas bitmap and the target region
-                using (var reader = new BarCodeReader(canvasBmp, targetRegion, DecodeType.Code128))
-                {
-                    // Perform recognition
-                    var results = reader.ReadBarCodes();
-
-                    if (results.Length == 0)
-                    {
-                        Console.WriteLine("No barcodes detected within the specified region.");
-                    }
-                    else
-                    {
-                        foreach (var result in results)
-                        {
-                            Console.WriteLine($"Detected Barcode Type: {result.CodeTypeName}");
-                            Console.WriteLine($"Detected Barcode Text: {result.CodeText}");
-                            // Show the region of the detected barcode
-                            var bounds = result.Region.Rectangle;
-                            Console.WriteLine($"Barcode Region: X={bounds.X}, Y={bounds.Y}, Width={bounds.Width}, Height={bounds.Height}");
-                        }
-                    }
-                }
+                // Save the generated barcode to the specified file using default settings
+                generator.Save(imagePath);
+                Console.WriteLine($"Barcode image created at: {Path.GetFullPath(imagePath)}");
             }
         }
 
-        // Clean up temporary files (optional)
-        try
+        // ------------------------------------------------------------
+        // Verify the image file exists before attempting recognition
+        // ------------------------------------------------------------
+        if (!File.Exists(imagePath))
         {
-            if (File.Exists(barcodePath)) File.Delete(barcodePath);
-            if (File.Exists(canvasPath)) File.Delete(canvasPath);
+            Console.WriteLine("Error: Barcode image file not found.");
+            return;
         }
-        catch
+
+        // ------------------------------------------------------------
+        // Load the image and define a rectangular region for recognition
+        // ------------------------------------------------------------
+        using (var bitmap = new Bitmap(imagePath))
         {
-            // Ignore any cleanup errors
+            // Define a region (central half of the image) to limit the scanning area
+            int regionWidth = bitmap.Width / 2;
+            int regionHeight = bitmap.Height / 2;
+            int regionX = (bitmap.Width - regionWidth) / 2;
+            int regionY = (bitmap.Height - regionHeight) / 2;
+            var targetRegion = new Rectangle(regionX, regionY, regionWidth, regionHeight);
+
+            // --------------------------------------------------------
+            // Initialize the barcode reader, configure it, and read
+            // --------------------------------------------------------
+            using (var reader = new BarCodeReader())
+            {
+                // Restrict decoding to Code128 for this example
+                reader.BarCodeReadType = DecodeType.Code128;
+
+                // Assign the image and the region to be scanned
+                reader.SetBarCodeImage(bitmap, targetRegion);
+
+                // Perform the recognition operation
+                var results = reader.ReadBarCodes();
+
+                // ----------------------------------------------------
+                // Output the recognition results
+                // ----------------------------------------------------
+                if (results.Length == 0)
+                {
+                    Console.WriteLine("No barcodes detected in the specified region.");
+                }
+                else
+                {
+                    foreach (var result in results)
+                    {
+                        Console.WriteLine($"Detected Barcode Type: {result.CodeTypeName}");
+                        Console.WriteLine($"Detected Code Text: {result.CodeText}");
+
+                        // Display the region of the detected barcode
+                        var rect = result.Region.Rectangle;
+                        Console.WriteLine($"Barcode Region - X:{rect.X}, Y:{rect.Y}, Width:{rect.Width}, Height:{rect.Height}");
+                    }
+                }
+            }
         }
     }
 }

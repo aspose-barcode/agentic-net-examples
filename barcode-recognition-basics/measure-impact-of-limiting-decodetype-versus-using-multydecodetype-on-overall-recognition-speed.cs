@@ -1,73 +1,98 @@
 using System;
 using System.Diagnostics;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates generation of barcode images, combining them into a single bitmap,
+/// and measuring recognition performance using different decode type configurations.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates Code128 and QR barcodes, combines them, and measures recognition times.
+    /// </summary>
     static void Main()
     {
-        // Prepare temporary folder for barcode images
-        string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
-        if (!Directory.Exists(tempFolder))
-            Directory.CreateDirectory(tempFolder);
-
-        // Paths for sample images
-        string code128Path = Path.Combine(tempFolder, "code128.png");
-        string qrPath = Path.Combine(tempFolder, "qr.png");
-
-        // Generate Code128 barcode image
-        using (BarcodeGenerator gen128 = new BarcodeGenerator(EncodeTypes.Code128, "CODE128_SAMPLE"))
+        // Prepare sample barcode images (Code128 and QR) in memory streams.
+        using (var code128Stream = new MemoryStream())
+        using (var qrStream = new MemoryStream())
         {
-            gen128.Save(code128Path);
-        }
-
-        // Generate QR barcode image
-        using (BarcodeGenerator genQr = new BarcodeGenerator(EncodeTypes.QR, "QR_SAMPLE"))
-        {
-            genQr.Save(qrPath);
-        }
-
-        // Verify files exist
-        if (!File.Exists(code128Path) || !File.Exists(qrPath))
-        {
-            Console.WriteLine("Failed to create sample barcode images.");
-            return;
-        }
-
-        string[] files = new[] { code128Path, qrPath };
-
-        // Measure recognition with limited DecodeType (only Code128)
-        Stopwatch swLimited = Stopwatch.StartNew();
-        foreach (string file in files)
-        {
-            using (BarCodeReader reader = new BarCodeReader(file))
+            // ----- Generate Code128 barcode and write to memory stream -----
+            using (var generator128 = new BarcodeGenerator(EncodeTypes.Code128, "CODE128_SAMPLE"))
             {
-                // Limit to Code128 only
-                reader.BarCodeReadType = DecodeType.Code128;
-                reader.ReadBarCodes();
+                generator128.Save(code128Stream, BarCodeImageFormat.Png);
+            }
+            // Reset stream position for reading.
+            code128Stream.Position = 0;
+
+            // ----- Generate QR barcode and write to memory stream -----
+            using (var generatorQr = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
+            {
+                generatorQr.Save(qrStream, BarCodeImageFormat.Png);
+            }
+            // Reset stream position for reading.
+            qrStream.Position = 0;
+
+            // ----- Load generated images into Bitmap objects -----
+            using (var bmp128 = new Bitmap(code128Stream))
+            using (var bmpQr = new Bitmap(qrStream))
+            {
+                // ----- Create a combined image that places the two barcodes side by side -----
+                int padding = 20; // Space between the two barcodes.
+                int combinedWidth = bmp128.Width + bmpQr.Width + padding;
+                int combinedHeight = Math.Max(bmp128.Height, bmpQr.Height);
+
+                using (var combinedBmp = new Bitmap(combinedWidth, combinedHeight))
+                {
+                    // Draw the two barcodes onto the combined bitmap.
+                    using (var graphics = Graphics.FromImage(combinedBmp))
+                    {
+                        graphics.Clear(Color.White);
+                        graphics.DrawImage(bmp128, 0, 0, bmp128.Width, bmp128.Height);
+                        graphics.DrawImage(bmpQr, bmp128.Width + padding, 0, bmpQr.Width, bmpQr.Height);
+                    }
+
+                    // ----- Measure recognition time using a single DecodeType (Code128 only) -----
+                    long singleTime = MeasureRecognition(combinedBmp, DecodeType.Code128);
+
+                    // ----- Measure recognition time using a MultiDecodeType (Code128 + QR) -----
+                    long multiTime = MeasureRecognition(combinedBmp, new MultiDecodeType(DecodeType.Code128, DecodeType.QR));
+
+                    // Output the measured times.
+                    Console.WriteLine($"Recognition time with single DecodeType (Code128): {singleTime} ms");
+                    Console.WriteLine($"Recognition time with MultiDecodeType (Code128 + QR): {multiTime} ms");
+                }
             }
         }
-        swLimited.Stop();
+    }
 
-        // Measure recognition with MultiDecodeType (Code128 + QR)
-        Stopwatch swMulti = Stopwatch.StartNew();
-        foreach (string file in files)
+    /// <summary>
+    /// Measures the time required to recognize barcodes in the provided image using the specified decode type.
+    /// </summary>
+    /// <param name="image">The bitmap containing barcodes to be recognized.</param>
+    /// <param name="decodeType">The decode type configuration (single or multi) to use for recognition.</param>
+    /// <returns>The elapsed time in milliseconds.</returns>
+    static long MeasureRecognition(Bitmap image, BaseDecodeType decodeType)
+    {
+        var stopwatch = Stopwatch.StartNew();
+
+        // Initialize the barcode reader with the image and decode type.
+        using (var reader = new BarCodeReader(image, decodeType))
         {
-            using (BarCodeReader reader = new BarCodeReader(file))
+            // Iterate through all detected barcodes.
+            foreach (var result in reader.ReadBarCodes())
             {
-                // Allow both Code128 and QR
-                reader.BarCodeReadType = new MultiDecodeType(DecodeType.Code128, DecodeType.QR);
-                reader.ReadBarCodes();
+                // Output detected barcode information (optional).
+                Console.WriteLine($"Detected: {result.CodeTypeName} - {result.CodeText}");
             }
         }
-        swMulti.Stop();
 
-        // Output results
-        Console.WriteLine($"Limited DecodeType (Code128 only) total time: {swLimited.ElapsedMilliseconds} ms");
-        Console.WriteLine($"MultiDecodeType (Code128 + QR) total time: {swMulti.ElapsedMilliseconds} ms");
+        stopwatch.Stop();
+        return stopwatch.ElapsedMilliseconds;
     }
 }
