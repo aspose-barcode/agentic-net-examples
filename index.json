@@ -2,10 +2,10 @@
   "product": "Aspose.BarCode",
   "platform": "net",
   "framework": "net9.0",
-  "package_version": "26.5.0",
-  "total_examples": 1125,
+  "package_version": "26.4.0",
+  "total_examples": 1127,
   "total_categories": 21,
-  "last_updated": "2026-06-18",
+  "last_updated": "2026-06-21",
   "categories": [
     {
       "name": "barcode-appearance-customization",
@@ -114,7 +114,7 @@
     {
       "name": "barcode-color-customization",
       "display_name": "Barcode Color Customization",
-      "file_count": 28,
+      "file_count": 29,
       "all_files": [
         "apply-custom-text-color-to-barcode-while-leaving-bar-and-background-colors-at-defaults.cs",
         "apply-different-custom-colors-to-same-barcode-type-and-compare-visual-differences-programmatically.cs",
@@ -138,6 +138,7 @@
         "set-background-color-to-transparent-and-generate-png-with-alpha-channel-for-overlay-use.cs",
         "set-caption-position-to-top-and-apply-custom-caption-color-before-saving-as-png.cs",
         "use-colorfromname-to-set-caption-color-to-purple-for-upc-barcode.cs",
+        "use-colorfromname-to-set-caption-color-to-purple-for-upca-barcode.cs",
         "use-custom-systemdrawingcolorfromargb-value-for-semi-transparent-bar-color-and-generate-png.cs",
         "use-loop-to-generate-barcodes-with-alternating-background-colors-while-keeping-bar-color-constant.cs",
         "use-loop-to-generate-one-hundred-barcodes-each-with-unique-random-background-color.cs",
@@ -283,7 +284,7 @@
     {
       "name": "barcode-recognition-basics",
       "display_name": "Barcode Recognition Basics",
-      "file_count": 75,
+      "file_count": 76,
       "all_files": [
         "access-barcoderesultreadingquality-for-each-datamatrix-barcode-and-store-numeric-value-in-database.cs",
         "access-foundbarcodes-collection-after-recognition-to-count-unique-barcodes-and-display-their-positions.cs",
@@ -301,6 +302,7 @@
         "configure-barcodesettingschecksumvalidation-to-on-for-both-obligatory-and-optional-checksum-symbologies-in-single-read-o.cs",
         "configure-barcodesettingschecksumvalidation-to-on-for-optional-symbologies-like-code-39-before-reading.cs",
         "configure-multydecodetype-to-include-upc-upc-e-and-ean-8-for-comprehensive-retail-barcode-scanning.cs",
+        "configure-multydecodetype-to-include-upca-upce-and-ean8-for-comprehensive-retail-barcode-scanning.cs",
         "configure-multydecodetype-with-code128-and-datamatrix-then-recognize-both-types-in-single-image.cs",
         "configure-qualitysettings-for-reed-solomon-error-correction-when-reading-datamatrix-barcodes-that-support-it.cs",
         "create-console-utility-that-accepts-directory-path-applies-checksumvalidationdefault-and-outputs-each-barcode-s-confiden.cs",

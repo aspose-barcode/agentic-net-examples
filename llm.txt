@@ -1,0 +1,44 @@
+# Aspose.BarCode for .NET Examples
+
+> Build-validated, standalone C# console examples for Aspose.BarCode for .NET 26.4.0.
+
+- Examples: 1127
+- Categories: 21
+- Coding-agent instructions: ./AGENTS.md
+- Structured index: ./index.json
+- Product documentation: https://docs.aspose.com/barcode/net/
+- API reference: https://reference.aspose.com/barcode/net/
+
+## Categories
+
+- [barcode-appearance-customization](./barcode-appearance-customization/): 30 standalone examples; instructions in [AGENTS.md](./barcode-appearance-customization/AGENTS.md)
+- [barcode-checksum-control](./barcode-checksum-control/): 30 standalone examples; instructions in [AGENTS.md](./barcode-checksum-control/AGENTS.md)
+- [barcode-color-customization](./barcode-color-customization/): 29 standalone examples; instructions in [AGENTS.md](./barcode-color-customization/AGENTS.md)
+- [barcode-configuration-serialization](./barcode-configuration-serialization/): 30 standalone examples; instructions in [AGENTS.md](./barcode-configuration-serialization/AGENTS.md)
+- [barcode-reading-properties](./barcode-reading-properties/): 50 standalone examples; instructions in [AGENTS.md](./barcode-reading-properties/AGENTS.md)
+- [barcode-recognition-basics](./barcode-recognition-basics/): 76 standalone examples; instructions in [AGENTS.md](./barcode-recognition-basics/AGENTS.md)
+- [barcode-recognition-performance](./barcode-recognition-performance/): 81 standalone examples; instructions in [AGENTS.md](./barcode-recognition-performance/AGENTS.md)
+- [barcode-recognition-xml-serialization](./barcode-recognition-xml-serialization/): 35 standalone examples; instructions in [AGENTS.md](./barcode-recognition-xml-serialization/AGENTS.md)
+- [barcode-saving-and-export](./barcode-saving-and-export/): 30 standalone examples; instructions in [AGENTS.md](./barcode-saving-and-export/AGENTS.md)
+- [barcode-size-and-resolution](./barcode-size-and-resolution/): 34 standalone examples; instructions in [AGENTS.md](./barcode-size-and-resolution/AGENTS.md)
+- [barcode-text-customization](./barcode-text-customization/): 29 standalone examples; instructions in [AGENTS.md](./barcode-text-customization/AGENTS.md)
+- [gs1-barcode-types](./gs1-barcode-types/): 34 standalone examples; instructions in [AGENTS.md](./gs1-barcode-types/AGENTS.md)
+- [hibc-lic-barcode](./hibc-lic-barcode/): 35 standalone examples; instructions in [AGENTS.md](./hibc-lic-barcode/AGENTS.md)
+- [mailmark-four-state-barcode](./mailmark-four-state-barcode/): 29 standalone examples; instructions in [AGENTS.md](./mailmark-four-state-barcode/AGENTS.md)
+- [mailmark-two-dimensional-barcode](./mailmark-two-dimensional-barcode/): 34 standalone examples; instructions in [AGENTS.md](./mailmark-two-dimensional-barcode/AGENTS.md)
+- [maxicode-barcode](./maxicode-barcode/): 34 standalone examples; instructions in [AGENTS.md](./maxicode-barcode/AGENTS.md)
+- [one-dimensional-barcode-types](./one-dimensional-barcode-types/): 126 standalone examples; instructions in [AGENTS.md](./one-dimensional-barcode-types/AGENTS.md)
+- [postal-barcode-types](./postal-barcode-types/): 90 standalone examples; instructions in [AGENTS.md](./postal-barcode-types/AGENTS.md)
+- [special-barcode-recognition-settings](./special-barcode-recognition-settings/): 48 standalone examples; instructions in [AGENTS.md](./special-barcode-recognition-settings/AGENTS.md)
+- [swiss-qr-code](./swiss-qr-code/): 28 standalone examples; instructions in [AGENTS.md](./swiss-qr-code/AGENTS.md)
+- [two-dimensional-barcode-types](./two-dimensional-barcode-types/): 215 standalone examples; instructions in [AGENTS.md](./two-dimensional-barcode-types/AGENTS.md)
+
+## Related Agentic .NET Repositories
+
+- Aspose.Words: https://github.com/aspose-words/agentic-net-examples
+- Aspose.Slides: https://github.com/aspose-slides/agentic-net-examples
+- Aspose.PDF: https://github.com/aspose-pdf/agentic-net-examples
+- Aspose.Imaging: https://github.com/aspose-imaging/agentic-net-examples
+- Aspose.HTML: https://github.com/aspose-html/agentic-net-examples
+- Aspose.Cells: https://github.com/aspose-cells/agentic-net-examples
+- Aspose.Email: https://github.com/aspose-email/agentic-net-examples

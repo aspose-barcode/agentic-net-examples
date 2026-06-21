@@ -1,6 +1,6 @@
 # Aspose.BarCode for .NET — Agentic Examples
 
-> Agentic, AI-generated, compiler-validated C# examples for the [Aspose.BarCode for .NET](https://products.aspose.com/barcode/net/) API. Every example in this repository compiles and runs successfully against the Aspose.BarCode NuGet package on .NET 9.
+Agentic, build-validated C# code examples for **Aspose.BarCode for .NET** covering barcode generation, recognition, and configuration across 60+ symbologies. Every example compiles and runs successfully. Includes `agents.md` guides optimized for AI coding agents.
 
 ## About Aspose.BarCode for .NET
 
@@ -33,11 +33,11 @@ Requires .NET SDK 9.0 or later.
 
 | Metric | Value |
 |--------|-------|
-| Total Examples | 1125 |
+| Total Examples | 1127 |
 | Categories | 21 |
 | Overall Pass Rate | 100.0% |
-| Package Version | Aspose.BarCode 26.5.0 |
-| Last Updated | 2026-06-18 |
+| Package Version | Aspose.BarCode 26.4.0 |
+| Last Updated | 2026-06-21 |
 
 ## Repository Structure
 
@@ -73,10 +73,10 @@ README.md
 |----------|----------|-----------|---------|
 | [Barcode Appearance Customization](./barcode-appearance-customization/) | 30 | 100.0% | [agents.md](./barcode-appearance-customization/agents.md) |
 | [Barcode Checksum Control](./barcode-checksum-control/) | 30 | 100.0% | [agents.md](./barcode-checksum-control/agents.md) |
-| [Barcode Color Customization](./barcode-color-customization/) | 28 | 100.0% | [agents.md](./barcode-color-customization/agents.md) |
+| [Barcode Color Customization](./barcode-color-customization/) | 29 | 100.0% | [agents.md](./barcode-color-customization/agents.md) |
 | [Barcode Configuration Serialization](./barcode-configuration-serialization/) | 30 | 100.0% | [agents.md](./barcode-configuration-serialization/agents.md) |
 | [Barcode Reading Properties](./barcode-reading-properties/) | 50 | 100.0% | [agents.md](./barcode-reading-properties/agents.md) |
-| [Barcode Recognition Basics](./barcode-recognition-basics/) | 75 | 100.0% | [agents.md](./barcode-recognition-basics/agents.md) |
+| [Barcode Recognition Basics](./barcode-recognition-basics/) | 76 | 100.0% | [agents.md](./barcode-recognition-basics/agents.md) |
 | [Barcode Recognition Performance](./barcode-recognition-performance/) | 81 | 100.0% | [agents.md](./barcode-recognition-performance/agents.md) |
 | [Barcode Recognition XML Serialization](./barcode-recognition-xml-serialization/) | 35 | 100.0% | [agents.md](./barcode-recognition-xml-serialization/agents.md) |
 | [Barcode Saving and Export](./barcode-saving-and-export/) | 30 | 100.0% | [agents.md](./barcode-saving-and-export/agents.md) |
@@ -173,7 +173,7 @@ If you are an AI coding agent generating Aspose.BarCode for .NET code, read the 
 ## Prerequisites
 
 - .NET SDK 9.0 or later
-- Aspose.BarCode for .NET 26.5.0 (via NuGet)
+- Aspose.BarCode for .NET 26.4.0 (via NuGet)
 
 A valid [Aspose license](https://purchase.aspose.com/buy) is required for production use. For evaluation, examples run without a license but output may include watermarks on generated barcode images.
 
@@ -182,7 +182,7 @@ A valid [Aspose license](https://purchase.aspose.com/buy) is required for produc
 Other Aspose products with agentic, build-validated example repositories:
 
 | Product | Repository | Focus |
-|---|---|---|
+|---------|-----------|-------|
 | Aspose.Words for .NET | [aspose-words/agentic-net-examples](https://github.com/aspose-words/agentic-net-examples) | Word processing, DOCX, mail merge |
 | Aspose.Cells for .NET | [aspose-cells/agentic-net-examples](https://github.com/aspose-cells/agentic-net-examples) | Spreadsheets, Excel, charts |
 | Aspose.HTML for .NET | [aspose-html/agentic-net-examples](https://github.com/aspose-html/agentic-net-examples) | HTML conversion, DOM editing |
@@ -191,19 +191,34 @@ Other Aspose products with agentic, build-validated example repositories:
 | Aspose.Email for .NET | [aspose-email/agentic-net-examples](https://github.com/aspose-email/agentic-net-examples) | Email, calendars, messaging |
 | Aspose.PDF for .NET | [aspose-pdf/agentic-net-examples](https://github.com/aspose-pdf/agentic-net-examples) | PDF creation, conversion and manipulation |
 
-## Resources
+## Related Resources
 
-- [Aspose.BarCode for .NET Product Page](https://products.aspose.com/barcode/net/)
-- [API Reference Documentation](https://reference.aspose.com/barcode/net/)
-- [Developer Guide](https://docs.aspose.com/barcode/net/)
-- [Release Notes](https://releases.aspose.com/barcode/net/release-notes/)
-- [Free Support Forum](https://forum.aspose.com/c/barcode/13)
-- [NuGet Package](https://www.nuget.org/packages/Aspose.BarCode/)
+### Official Documentation
+- [Aspose.BarCode for .NET Documentation](https://docs.aspose.com/barcode/net/) — Guides, tutorials, and feature overviews
+- [API Reference](https://reference.aspose.com/barcode/net/) — Complete class/method reference
+- [Release Notes](https://releases.aspose.com/barcode/net/release-notes/) — Version history and changelogs
+
+### Downloads & Packages
+- [NuGet Package](https://www.nuget.org/packages/Aspose.BarCode/) — Install via `dotnet add package Aspose.BarCode`
+- [Direct Downloads](https://releases.aspose.com/barcode/net/) — MSI/ZIP installers and DLLs
+
+### Community & Support
+- [Aspose.BarCode Forum](https://forum.aspose.com/c/barcode/13) — Community Q&A and official support
+- [Aspose Blog - BarCode](https://blog.aspose.com/category/barcode/) — Tutorials, tips, and product updates
+- [GitHub Issues](https://github.com/aspose-barcode/agentic-net-examples/issues) — Bug reports and feature requests
+
+### Licensing & Purchase
+- [Purchase](https://purchase.aspose.com/buy) — Commercial license options
+- [Temporary License](https://purchase.aspose.com/temporary-license/) — Full-feature evaluation license
+
+## License
+
+All examples use [Aspose.BarCode for .NET](https://products.aspose.com/barcode/net/) and require a valid license for production use. See [licensing options](https://purchase.aspose.com/buy).
 
 ---
 
-*Maintained by [agent-aspose-barcode-examples](https://github.com/aspose-barcode/agentic-net-examples) · Generated and validated by the Aspose.BarCode Examples Generator Agent*
+*This repository is maintained by automated code generation. For AI-friendly guidance, see [agents.md](./agents.md). Last updated: 2026-06-21*
 
 <!-- AUTOGENERATED:START -->
-Updated: 2026-06-18 | Examples: 1125 | Categories: 21 | Package: Aspose.BarCode 26.5.0
+Updated: 2026-06-21 | Examples: 1127 | Categories: 21 | Package: Aspose.BarCode 26.4.0
 <!-- AUTOGENERATED:END -->
