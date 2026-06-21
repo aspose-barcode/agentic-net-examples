@@ -1,72 +1,39 @@
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates barcode recognition on a low‑light image before and after applying
+/// histogram equalization to improve contrast.
+/// </summary>
 class Program
 {
-    static void Main()
-    {
-        string imagesFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Images");
-
-        if (!Directory.Exists(imagesFolder))
-        {
-            Console.WriteLine($"Images folder not found: {imagesFolder}");
-            return;
-        }
-
-        string[] jpegFiles = Directory.GetFiles(imagesFolder, "*.jpg");
-        if (jpegFiles.Length == 0)
-        {
-            Console.WriteLine("No JPEG images found.");
-            return;
-        }
-
-        foreach (string filePath in jpegFiles)
-        {
-            if (!File.Exists(filePath))
-            {
-                Console.WriteLine($"File not found: {filePath}");
-                continue;
-            }
-
-            Console.WriteLine($"Processing: {Path.GetFileName(filePath)}");
-
-            using (Bitmap originalBmp = new Bitmap(filePath))
-            {
-                using (Bitmap equalizedBmp = EqualizeHistogram(originalBmp))
-                {
-                    int originalCount = RecognizeBarcodes(originalBmp);
-                    int equalizedCount = RecognizeBarcodes(equalizedBmp);
-
-                    Console.WriteLine($"  Original detection count : {originalCount}");
-                    Console.WriteLine($"  After equalization count : {equalizedCount}");
-                    Console.WriteLine($"  Improvement               : {equalizedCount - originalCount}");
-                }
-            }
-        }
-    }
-
-    private static Bitmap EqualizeHistogram(Bitmap source)
+    /// <summary>
+    /// Applies simple histogram equalization to a grayscale bitmap.
+    /// </summary>
+    /// <param name="source">The source bitmap to be equalized.</param>
+    /// <returns>A new bitmap with equalized intensity values.</returns>
+    static Bitmap ApplyHistogramEqualization(Bitmap source)
     {
         int width = source.Width;
         int height = source.Height;
+        Bitmap result = new Bitmap(width, height);
 
-        Bitmap result = new Bitmap(width, height, PixelFormat.Format24bppRgb);
-
+        // Build histogram of intensity values (0‑255)
         int[] histogram = new int[256];
         for (int y = 0; y < height; y++)
         {
             for (int x = 0; x < width; x++)
             {
-                Color clr = source.GetPixel(x, y);
-                int lum = (clr.R + clr.G + clr.B) / 3;
-                histogram[lum]++;
+                Color c = source.GetPixel(x, y);
+                int intensity = (c.R + c.G + c.B) / 3;
+                histogram[intensity]++;
             }
         }
 
+        // Compute cumulative distribution function (CDF)
         int[] cdf = new int[256];
         cdf[0] = histogram[0];
         for (int i = 1; i < 256; i++)
@@ -75,45 +42,85 @@ class Program
         }
 
         int totalPixels = width * height;
-        byte[] lut = new byte[256];
+        byte[] map = new byte[256];
+
+        // Build mapping from old intensity to new equalized intensity
         for (int i = 0; i < 256; i++)
         {
-            lut[i] = (byte)Math.Round(((float)(cdf[i] - cdf[0]) / (totalPixels - cdf[0])) * 255f);
+            map[i] = (byte)Math.Round((double)cdf[i] * 255 / totalPixels);
         }
 
+        // Apply the mapping to each pixel to create the equalized image
         for (int y = 0; y < height; y++)
         {
             for (int x = 0; x < width; x++)
             {
-                Color clr = source.GetPixel(x, y);
-                int lum = (clr.R + clr.G + clr.B) / 3;
-                byte newVal = lut[lum];
-                float ratio = lum == 0 ? 0f : (float)newVal / lum;
-                int r = Math.Clamp((int)(clr.R * ratio), 0, 255);
-                int g = Math.Clamp((int)(clr.G * ratio), 0, 255);
-                int b = Math.Clamp((int)(clr.B * ratio), 0, 255);
-                result.SetPixel(x, y, Color.FromArgb(r, g, b));
+                Color c = source.GetPixel(x, y);
+                int intensity = (c.R + c.G + c.B) / 3;
+                byte newVal = map[intensity];
+                Color newColor = Color.FromArgb(newVal, newVal, newVal);
+                result.SetPixel(x, y, newColor);
             }
         }
 
         return result;
     }
 
-    private static int RecognizeBarcodes(Bitmap bmp)
+    /// <summary>
+    /// Performs barcode recognition on the supplied bitmap and writes results to the console.
+    /// </summary>
+    /// <param name="bitmap">The bitmap to be scanned for barcodes.</param>
+    /// <param name="label">A label used to identify the output (e.g., "Original" or "Equalized").</param>
+    static void Recognize(Bitmap bitmap, string label)
     {
-        int count = 0;
-        using (BarCodeReader reader = new BarCodeReader())
+        // Initialize the barcode reader for all supported types
+        using (var reader = new BarCodeReader(bitmap, DecodeType.AllSupportedTypes))
         {
-            reader.BarCodeReadType = DecodeType.AllSupportedTypes;
-            reader.SetBarCodeImage(bmp);
-            reader.QualitySettings = QualitySettings.HighQuality;
+            var results = reader.ReadBarCodes();
 
-            foreach (BarCodeResult result in reader.ReadBarCodes())
+            // Output detection results
+            if (results.Length > 0)
             {
-                count++;
-                Console.WriteLine($"    Detected: Type={result.CodeTypeName}, Text={result.CodeText}, Confidence={result.Confidence}");
+                foreach (var result in results)
+                {
+                    Console.WriteLine($"{label}: Detected {result.CodeTypeName} - {result.CodeText}");
+                }
+            }
+            else
+            {
+                Console.WriteLine($"{label}: No barcode detected.");
             }
         }
-        return count;
+    }
+
+    /// <summary>
+    /// Entry point of the program. Loads a low‑light image, runs barcode recognition,
+    /// applies histogram equalization, and runs recognition again.
+    /// </summary>
+    static void Main()
+    {
+        // Path to a low‑light JPEG image (replace with an actual file if available)
+        string imagePath = "lowlight.jpg";
+
+        // Verify that the image file exists before proceeding
+        if (!File.Exists(imagePath))
+        {
+            Console.WriteLine($"Image file not found: {imagePath}");
+            return;
+        }
+
+        // Load the original image from file
+        using (var original = new Bitmap(imagePath))
+        {
+            // Perform barcode recognition on the original low‑light image
+            Recognize(original, "Original");
+
+            // Apply histogram equalization to improve contrast
+            using (var equalized = ApplyHistogramEqualization(original))
+            {
+                // Perform barcode recognition on the enhanced image
+                Recognize(equalized, "Equalized");
+            }
+        }
     }
 }

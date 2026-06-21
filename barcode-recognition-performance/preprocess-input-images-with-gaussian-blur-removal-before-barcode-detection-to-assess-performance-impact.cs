@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
@@ -6,150 +7,113 @@ using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates generating a barcode, applying a sharpening filter,
+/// and recognizing the barcode using Aspose.BarCode.
+/// </summary>
 class Program
 {
-    // Apply a 3x3 Gaussian blur to a bitmap and return a new bitmap
-    static Bitmap ApplyGaussianBlur(Bitmap source)
+    /// <summary>
+    /// Applies a simple sharpening filter (approximation of Gaussian blur removal) to the given bitmap.
+    /// </summary>
+    /// <param name="source">The source bitmap to be processed.</param>
+    /// <returns>A new bitmap with the sharpening filter applied.</returns>
+    static Bitmap ApplySharpenFilter(Bitmap source)
     {
-        float[,] kernel = {
-            { 1f / 16f, 2f / 16f, 1f / 16f },
-            { 2f / 16f, 4f / 16f, 2f / 16f },
-            { 1f / 16f, 2f / 16f, 1f / 16f }
-        };
-
         int width = source.Width;
         int height = source.Height;
         Bitmap result = new Bitmap(width, height);
 
-        for (int y = 1; y < height - 1; y++)
+        // Sharpen kernel matrix
+        int[,] kernel = new int[,] { { 0, -1, 0 }, { -1, 5, -1 }, { 0, -1, 0 } };
+        int kernelSize = 3;
+        int offset = kernelSize / 2;
+
+        // Iterate over each pixel in the source image
+        for (int y = 0; y < height; y++)
         {
-            for (int x = 1; x < width - 1; x++)
+            for (int x = 0; x < width; x++)
             {
-                float r = 0, g = 0, b = 0;
-                for (int ky = -1; ky <= 1; ky++)
+                int r = 0, g = 0, b = 0;
+
+                // Apply kernel to the neighbourhood of the current pixel
+                for (int ky = -offset; ky <= offset; ky++)
                 {
-                    for (int kx = -1; kx <= 1; kx++)
+                    int py = y + ky;
+                    if (py < 0 || py >= height) continue; // Skip out‑of‑bounds rows
+
+                    for (int kx = -offset; kx <= offset; kx++)
                     {
-                        Color pixel = source.GetPixel(x + kx, y + ky);
-                        float weight = kernel[ky + 1, kx + 1];
+                        int px = x + kx;
+                        if (px < 0 || px >= width) continue; // Skip out‑of‑bounds columns
+
+                        Color pixel = source.GetPixel(px, py);
+                        int weight = kernel[ky + offset, kx + offset];
                         r += pixel.R * weight;
                         g += pixel.G * weight;
                         b += pixel.B * weight;
                     }
                 }
-                result.SetPixel(x, y, Color.FromArgb(
-                    Math.Clamp((int)r, 0, 255),
-                    Math.Clamp((int)g, 0, 255),
-                    Math.Clamp((int)b, 0, 255)));
-            }
-        }
 
-        // Copy edge pixels unchanged
-        for (int x = 0; x < width; x++)
-        {
-            result.SetPixel(x, 0, source.GetPixel(x, 0));
-            result.SetPixel(x, height - 1, source.GetPixel(x, height - 1));
-        }
-        for (int y = 0; y < height; y++)
-        {
-            result.SetPixel(0, y, source.GetPixel(0, y));
-            result.SetPixel(width - 1, y, source.GetPixel(width - 1, y));
+                // Clamp color values to the valid byte range
+                r = Math.Max(0, Math.Min(255, r));
+                g = Math.Max(0, Math.Min(255, g));
+                b = Math.Max(0, Math.Min(255, b));
+
+                result.SetPixel(x, y, Color.FromArgb(r, g, b));
+            }
         }
 
         return result;
     }
 
-    // Perform unsharp masking to reduce blur (simple implementation)
-    static Bitmap ApplyUnsharpMask(Bitmap original, float amount = 1.5f)
-    {
-        using (Bitmap blurred = ApplyGaussianBlur(original))
-        {
-            int width = original.Width;
-            int height = original.Height;
-            Bitmap result = new Bitmap(width, height);
-
-            for (int y = 0; y < height; y++)
-            {
-                for (int x = 0; x < width; x++)
-                {
-                    Color orig = original.GetPixel(x, y);
-                    Color blur = blurred.GetPixel(x, y);
-
-                    int r = Math.Clamp((int)(orig.R + amount * (orig.R - blur.R)), 0, 255);
-                    int g = Math.Clamp((int)(orig.G + amount * (orig.G - blur.G)), 0, 255);
-                    int b = Math.Clamp((int)(orig.B + amount * (orig.B - blur.B)), 0, 255);
-
-                    result.SetPixel(x, y, Color.FromArgb(r, g, b));
-                }
-            }
-
-            return result;
-        }
-    }
-
-    // Recognize barcode from a bitmap and output result
-    static void RecognizeAndPrint(string label, Bitmap image)
-    {
-        using (var reader = new BarCodeReader(image, DecodeType.Code128, DecodeType.QR))
-        {
-            // Use HighQuality preset to improve detection on degraded images
-            reader.QualitySettings = QualitySettings.HighQuality;
-
-            foreach (var result in reader.ReadBarCodes())
-            {
-                Console.WriteLine($"{label} - Type: {result.CodeTypeName}, Text: {result.CodeText}, Confidence: {result.Confidence}");
-            }
-
-            if (reader.FoundCount == 0)
-            {
-                Console.WriteLine($"{label} - No barcode detected.");
-            }
-        }
-    }
-
+    /// <summary>
+    /// Entry point of the program. Generates a barcode, sharpens the image,
+    /// and attempts to read the barcode while measuring recognition time.
+    /// </summary>
     static void Main()
     {
-        const string outputDir = "output";
-        Directory.CreateDirectory(outputDir);
-
-        string barcodePath = Path.Combine(outputDir, "barcode.png");
-        string blurredPath = Path.Combine(outputDir, "barcode_blurred.png");
-        string processedPath = Path.Combine(outputDir, "barcode_processed.png");
-
-        // 1. Generate a simple Code128 barcode
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456789"))
+        // Generate a sample barcode image (Code128) with checksum enabled
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            generator.Save(barcodePath);
-        }
+            generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
 
-        // Verify the generated file exists
-        if (!File.Exists(barcodePath))
-        {
-            Console.WriteLine("Failed to generate barcode image.");
-            return;
-        }
-
-        // 2. Load the generated barcode image
-        using (Bitmap originalBmp = new Bitmap(barcodePath))
-        {
-            // 3. Create a blurred version to simulate a low‑quality capture
-            using (Bitmap blurredBmp = ApplyGaussianBlur(originalBmp))
+            // Save the generated barcode to a memory stream in PNG format
+            using (var ms = new MemoryStream())
             {
-                blurredBmp.Save(blurredPath, ImageFormat.Png);
-            }
+                generator.Save(ms, BarCodeImageFormat.Png);
+                ms.Position = 0; // Reset stream position for reading
 
-            // 4. Load the blurred image for processing
-            using (Bitmap blurredBmp = new Bitmap(blurredPath))
-            {
-                // 5. Apply unsharp mask (Gaussian blur removal)
-                using (Bitmap processedBmp = ApplyUnsharpMask(blurredBmp))
+                // Load the generated image into a bitmap
+                using (var originalBitmap = new Bitmap(ms))
                 {
-                    processedBmp.Save(processedPath, ImageFormat.Png);
+                    // Apply the sharpening filter to reduce blur
+                    using (var processedBitmap = ApplySharpenFilter(originalBitmap))
+                    {
+                        // Save processed image for visual verification (optional)
+                        processedBitmap.Save("processed.png", ImageFormat.Png);
 
-                    // 6. Recognize barcodes from original, blurred, and processed images
-                    RecognizeAndPrint("Original", originalBmp);
-                    RecognizeAndPrint("Blurred", blurredBmp);
-                    RecognizeAndPrint("Processed", processedBmp);
+                        // Start timing the barcode recognition process
+                        var stopwatch = Stopwatch.StartNew();
+
+                        // Initialize the barcode reader for all supported types
+                        using (var reader = new BarCodeReader(processedBitmap, DecodeType.AllSupportedTypes))
+                        {
+                            // Optional: improve detection on degraded images
+                            reader.QualitySettings.Deconvolution = DeconvolutionMode.Fast;
+
+                            // Read and output all detected barcodes
+                            foreach (var result in reader.ReadBarCodes())
+                            {
+                                Console.WriteLine($"Detected Type: {result.CodeTypeName}");
+                                Console.WriteLine($"Code Text: {result.CodeText}");
+                            }
+                        }
+
+                        // Stop timing and output the elapsed time
+                        stopwatch.Stop();
+                        Console.WriteLine($"Recognition time (ms): {stopwatch.ElapsedMilliseconds}");
+                    }
                 }
             }
         }

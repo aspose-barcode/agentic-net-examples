@@ -1,61 +1,106 @@
 using System;
 using System.Diagnostics;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
+/// <summary>
+/// Demonstrates barcode generation at different resolutions and measures detection latency.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a Code128 barcode at 72 DPI and 300 DPI, then measures how long it takes
+    /// to detect the barcode in each image using Aspose.BarCode.
+    /// </summary>
     static void Main()
     {
-        const string barcodeText = "1234567890";
+        // Barcode content and type
+        const string codeText = "Test12345";
+        BaseEncodeType encodeType = EncodeTypes.Code128;
 
-        // Generate barcode at 72 DPI
-        byte[] image72 = GenerateBarcode(barcodeText, EncodeTypes.Code128, 72f);
-        // Generate barcode at 300 DPI
-        byte[] image300 = GenerateBarcode(barcodeText, EncodeTypes.Code128, 300f);
-
-        // Measure detection latency for 72 DPI image
-        long latency72 = MeasureDetectionLatency(image72, DecodeType.Code128);
-        // Measure detection latency for 300 DPI image
-        long latency300 = MeasureDetectionLatency(image300, DecodeType.Code128);
-
-        Console.WriteLine($"Detection latency at 72 DPI : {latency72} ms");
-        Console.WriteLine($"Detection latency at 300 DPI: {latency300} ms");
-        Console.WriteLine($"Latency increase: {latency300 - latency72} ms");
-    }
-
-    // Generates a barcode image with the specified resolution and returns it as a byte array.
-    private static byte[] GenerateBarcode(string text, BaseEncodeType type, float resolution)
-    {
-        using (var generator = new BarcodeGenerator(type, text))
+        // ------------------------------------------------------------
+        // Generate barcode image at 72 DPI (low resolution)
+        // ------------------------------------------------------------
+        MemoryStream lowResStream = new MemoryStream();
+        using (var generator = new BarcodeGenerator(encodeType, codeText))
         {
-            generator.Parameters.Resolution = resolution;
+            // Set low resolution
+            generator.Parameters.Resolution = 72f;
+            // Save image to memory stream in PNG format
+            generator.Save(lowResStream, BarCodeImageFormat.Png);
+        }
+        // Reset stream position for reading
+        lowResStream.Position = 0;
 
-            using (var ms = new MemoryStream())
+        // ------------------------------------------------------------
+        // Generate barcode image at 300 DPI (high resolution)
+        // ------------------------------------------------------------
+        MemoryStream highResStream = new MemoryStream();
+        using (var generator = new BarcodeGenerator(encodeType, codeText))
+        {
+            // Set high resolution
+            generator.Parameters.Resolution = 300f;
+            // Save image to memory stream in PNG format
+            generator.Save(highResStream, BarCodeImageFormat.Png);
+        }
+        // Reset stream position for reading
+        highResStream.Position = 0;
+
+        // ------------------------------------------------------------
+        // Measure detection latency for the 72 DPI image
+        // ------------------------------------------------------------
+        long lowResLatency;
+        using (var reader = new BarCodeReader(lowResStream, DecodeType.AllSupportedTypes))
+        {
+            // Start timing
+            Stopwatch sw = Stopwatch.StartNew();
+            // Perform barcode detection
+            var results = reader.ReadBarCodes();
+            // Stop timing
+            sw.Stop();
+            lowResLatency = sw.ElapsedMilliseconds;
+
+            // Output detection results
+            foreach (var result in results)
             {
-                generator.Save(ms, BarCodeImageFormat.Png);
-                return ms.ToArray();
+                Console.WriteLine($"[72 DPI] Detected: {result.CodeTypeName} - {result.CodeText}");
             }
         }
-    }
 
-    // Measures the time (in milliseconds) required to detect barcodes in the given image data.
-    private static long MeasureDetectionLatency(byte[] imageData, BaseDecodeType decodeType)
-    {
-        using (var ms = new MemoryStream(imageData))
+        // ------------------------------------------------------------
+        // Measure detection latency for the 300 DPI image
+        // ------------------------------------------------------------
+        long highResLatency;
+        using (var reader = new BarCodeReader(highResStream, DecodeType.AllSupportedTypes))
         {
-            using (var reader = new BarCodeReader(ms, decodeType))
+            // Start timing
+            Stopwatch sw = Stopwatch.StartNew();
+            // Perform barcode detection
+            var results = reader.ReadBarCodes();
+            // Stop timing
+            sw.Stop();
+            highResLatency = sw.ElapsedMilliseconds;
+
+            // Output detection results
+            foreach (var result in results)
             {
-                var stopwatch = Stopwatch.StartNew();
-                foreach (BarCodeResult result in reader.ReadBarCodes())
-                {
-                    var _ = result.CodeText;
-                }
-                stopwatch.Stop();
-                return stopwatch.ElapsedMilliseconds;
+                Console.WriteLine($"[300 DPI] Detected: {result.CodeTypeName} - {result.CodeText}");
             }
         }
+
+        // ------------------------------------------------------------
+        // Display latency measurements
+        // ------------------------------------------------------------
+        Console.WriteLine($"Detection latency at 72 DPI: {lowResLatency} ms");
+        Console.WriteLine($"Detection latency at 300 DPI: {highResLatency} ms");
+
+        // ------------------------------------------------------------
+        // Clean up memory streams
+        // ------------------------------------------------------------
+        lowResStream.Dispose();
+        highResStream.Dispose();
     }
 }

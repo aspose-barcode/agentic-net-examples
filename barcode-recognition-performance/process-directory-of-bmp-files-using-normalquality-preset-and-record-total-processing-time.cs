@@ -1,60 +1,68 @@
 using System;
-using System.IO;
 using System.Diagnostics;
-using Aspose.BarCode;
+using System.IO;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.BarCode.Generation;
 
+/// <summary>
+/// Entry point for the barcode processing console application.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Main method that processes BMP images in a specified directory,
+    /// reads all supported barcodes using Aspose.BarCode, and outputs results.
+    /// </summary>
+    /// <param name="args">Optional command‑line argument specifying the directory to scan.</param>
     static void Main(string[] args)
     {
-        // Define input folder for BMP files
-        string inputFolder = "InputBmp";
+        // Determine the directory to process: use the first argument if provided,
+        // otherwise fall back to the current working directory.
+        string directoryPath = args.Length > 0 ? args[0] : Directory.GetCurrentDirectory();
 
-        // Ensure the folder exists
-        if (!Directory.Exists(inputFolder))
+        // Verify that the target directory exists before proceeding.
+        if (!Directory.Exists(directoryPath))
         {
-            Directory.CreateDirectory(inputFolder);
+            Console.WriteLine($"Directory does not exist: {directoryPath}");
+            return;
         }
 
-        // Seed a sample BMP file if the folder is empty
-        string[] bmpFiles = Directory.GetFiles(inputFolder, "*.bmp");
+        // Retrieve all BMP files in the directory (non‑recursive).
+        string[] bmpFiles = Directory.GetFiles(directoryPath, "*.bmp", SearchOption.TopDirectoryOnly);
         if (bmpFiles.Length == 0)
         {
-            string samplePath = Path.Combine(inputFolder, "sample.bmp");
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
-            {
-                generator.Save(samplePath);
-            }
-            bmpFiles = Directory.GetFiles(inputFolder, "*.bmp");
+            Console.WriteLine("No BMP files found to process.");
+            return;
         }
 
-        // Start timing the processing
-        var stopwatch = Stopwatch.StartNew();
+        // Start a stopwatch to measure total processing time.
+        Stopwatch stopwatch = new Stopwatch();
+        stopwatch.Start();
 
-        int totalBarcodes = 0;
-
-        // Process each BMP file
+        // Process each BMP file individually.
         foreach (string filePath in bmpFiles)
         {
-            using (var reader = new BarCodeReader(filePath))
+            // Guard against a file being removed between enumeration and processing.
+            if (!File.Exists(filePath))
             {
-                // Apply NormalQuality preset
-                reader.QualitySettings = QualitySettings.NormalQuality;
+                Console.WriteLine($"File not found (skipped): {filePath}");
+                continue;
+            }
 
-                // Read barcodes from the image
+            // Create a BarCodeReader with default (NormalQuality) settings.
+            // The DecodeType.AllSupportedTypes flag tells the reader to attempt all known barcode formats.
+            using (var reader = new BarCodeReader(filePath, DecodeType.AllSupportedTypes))
+            {
+                // Iterate through all detected barcodes in the current image.
                 foreach (var result in reader.ReadBarCodes())
                 {
-                    totalBarcodes++;
-                    Console.WriteLine($"File: {Path.GetFileName(filePath)} - Type: {result.CodeTypeName}, Text: {result.CodeText}");
+                    // Output the file name, barcode type, and decoded text.
+                    Console.WriteLine($"File: {Path.GetFileName(filePath)} | Type: {result.CodeTypeName} | Text: {result.CodeText}");
                 }
             }
         }
 
+        // Stop the timer and report the elapsed time.
         stopwatch.Stop();
-
-        // Output summary
-        Console.WriteLine($"Processed {bmpFiles.Length} file(s), found {totalBarcodes} barcode(s) in {stopwatch.Elapsed.TotalSeconds:F2} seconds.");
+        Console.WriteLine($"Processed {bmpFiles.Length} BMP file(s) in {stopwatch.Elapsed.TotalSeconds:F2} seconds.");
     }
 }

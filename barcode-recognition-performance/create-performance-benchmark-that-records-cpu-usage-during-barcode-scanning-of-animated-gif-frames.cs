@@ -5,63 +5,88 @@ using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates loading an animated GIF, extracting frames, and scanning each frame for barcodes.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// </summary>
     static void Main()
     {
-        // Path to the animated GIF containing barcodes.
-        const string gifPath = "barcode_anim.gif";
+        // Base64-encoded simple animated GIF (2 frames, 2x2 pixels)
+        const string gifBase64 =
+            "R0lGODdhAgACAIAAAAAAAP///ywAAAAAAgACAAACCoSPqcvtD6OctNqLs968+w+G4kiW5oqnm" +
+            "rRvYbG2b7rv9gAAOw==";
 
-        // Verify that the file exists.
-        if (!File.Exists(gifPath))
+        // Write the decoded GIF bytes to a temporary file on disk
+        string tempPath = Path.Combine(Path.GetTempPath(), "sample.gif");
+        File.WriteAllBytes(tempPath, Convert.FromBase64String(gifBase64));
+
+        // Verify that the temporary file was created successfully
+        if (!File.Exists(tempPath))
         {
-            Console.WriteLine($"File not found: {gifPath}");
+            Console.WriteLine("Failed to create sample GIF.");
             return;
         }
 
-        // Load the animated GIF.
-        using (Image gifImage = Image.FromFile(gifPath))
+        // Load the animated GIF using Aspose.Drawing.Image
+        using (Image gifImage = Image.FromFile(tempPath))
         {
-            // The first entry in FrameDimensionsList is usually the time dimension for animated GIFs.
-            var timeDimension = new FrameDimension(gifImage.FrameDimensionsList[0]);
+            // Determine the number of frames in the time dimension (animation frames)
+            var timeDimension = FrameDimension.Time;
             int frameCount = gifImage.GetFrameCount(timeDimension);
-            Console.WriteLine($"Animated GIF contains {frameCount} frame(s).");
 
-            // Process each frame and measure CPU time.
-            Process currentProcess = Process.GetCurrentProcess();
+            // Process up to 5 frames as a safety cap (in case of many frames)
+            int framesToProcess = Math.Min(frameCount, 5);
+            Console.WriteLine($"Total frames: {frameCount}, processing: {framesToProcess}");
 
-            for (int i = 0; i < frameCount; i++)
+            // Iterate over each frame to be processed
+            for (int i = 0; i < framesToProcess; i++)
             {
-                // Select the current frame.
+                // Activate the current frame in the GIF image
                 gifImage.SelectActiveFrame(timeDimension, i);
 
-                // Clone the active frame into a Bitmap for recognition.
-                using (Bitmap frameBitmap = new Bitmap(gifImage))
+                // Save the active frame to a memory stream in PNG format
+                using (var ms = new MemoryStream())
                 {
-                    // Record CPU time before recognition.
-                    TimeSpan cpuStart = currentProcess.TotalProcessorTime;
-                    Stopwatch sw = Stopwatch.StartNew();
+                    gifImage.Save(ms, ImageFormat.Png);
+                    ms.Position = 0; // Reset stream position for reading
 
-                    // Initialize the barcode reader for common symbologies.
-                    using (BarCodeReader reader = new BarCodeReader(frameBitmap, DecodeType.Code128, DecodeType.QR, DecodeType.DataMatrix))
+                    // Load the PNG data as a bitmap for barcode recognition
+                    using (var bitmap = new Bitmap(ms))
                     {
-                        // Use high‑performance settings to focus on CPU usage.
-                        reader.QualitySettings = QualitySettings.HighPerformance;
+                        // Capture CPU time before barcode scanning
+                        Process proc = Process.GetCurrentProcess();
+                        TimeSpan cpuBefore = proc.TotalProcessorTime;
 
-                        // Perform recognition (results are ignored; we only measure time).
-                        foreach (var result in reader.ReadBarCodes())
+                        // Perform barcode recognition on the bitmap
+                        using (var reader = new BarCodeReader(bitmap, DecodeType.AllSupportedTypes))
                         {
-                            // No action needed; just iterate to ensure full processing.
+                            foreach (var result in reader.ReadBarCodes())
+                            {
+                                Console.WriteLine($"Frame {i + 1}: Type={result.CodeTypeName}, Text={result.CodeText}");
+                            }
                         }
+
+                        // Capture CPU time after barcode scanning and calculate elapsed time
+                        TimeSpan cpuAfter = proc.TotalProcessorTime;
+                        double cpuMs = (cpuAfter - cpuBefore).TotalMilliseconds;
+                        Console.WriteLine($"Frame {i + 1}: CPU time for scanning = {cpuMs:F2} ms");
                     }
-
-                    sw.Stop();
-                    TimeSpan cpuEnd = currentProcess.TotalProcessorTime;
-                    double cpuMs = (cpuEnd - cpuStart).TotalMilliseconds;
-
-                    Console.WriteLine($"Frame {i + 1}/{frameCount}: Elapsed = {sw.ElapsedMilliseconds} ms, CPU = {cpuMs:F2} ms");
                 }
             }
+        }
+
+        // Attempt to delete the temporary GIF file; ignore any errors
+        try
+        {
+            File.Delete(tempPath);
+        }
+        catch
+        {
+            // Ignored
         }
     }
 }

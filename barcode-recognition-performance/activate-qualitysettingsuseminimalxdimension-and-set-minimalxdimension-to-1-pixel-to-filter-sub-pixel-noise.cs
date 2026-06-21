@@ -1,34 +1,52 @@
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.BarCode;
+using Aspose.Drawing;
 
+/// <summary>
+/// Demonstrates generating a Code128 barcode, storing it in memory,
+/// and then reading it back using the Aspose.BarCode library.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a barcode, saves it to a memory stream, and reads it back.
+    /// </summary>
     static void Main()
     {
-        // Path to the barcode image to be recognized
-        string imagePath = "barcode.png";
-
-        // Verify that the file exists before attempting to read it
-        if (!File.Exists(imagePath))
+        // Generate a simple Code128 barcode and store it in a memory stream
+        using (var ms = new MemoryStream())
         {
-            Console.WriteLine($"File not found: {imagePath}");
-            return;
-        }
-
-        // Create a BarCodeReader for the image (using a common symbology for demonstration)
-        using (var reader = new BarCodeReader(imagePath, DecodeType.Code128))
-        {
-            // Activate UseMinimalXDimension mode and set MinimalXDimension to 1 pixel
-            reader.QualitySettings.XDimension = XDimensionMode.UseMinimalXDimension;
-            reader.QualitySettings.MinimalXDimension = 1f;
-
-            // Read all barcodes in the image
-            foreach (BarCodeResult result in reader.ReadBarCodes())
+            // Create a barcode generator for Code128 with the specified text
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
             {
-                Console.WriteLine($"Type: {result.CodeTypeName}, Text: {result.CodeText}");
+                // Save the generated barcode image as PNG into the memory stream
+                generator.Save(ms, BarCodeImageFormat.Png);
+            }
+
+            // Reset stream position to the beginning before reading
+            ms.Position = 0;
+
+            // Load the barcode image from the memory stream into a bitmap
+            using (var bitmap = new Bitmap(ms))
+            {
+                // Initialize a barcode reader that can decode all supported types
+                using (var reader = new BarCodeReader(bitmap, DecodeType.AllSupportedTypes))
+                {
+                    // Enable minimal XDimension mode and set the minimal XDimension threshold to 1 pixel
+                    reader.QualitySettings.XDimension = XDimensionMode.UseMinimalXDimension;
+                    reader.QualitySettings.MinimalXDimension = 1f;
+
+                    // Read all barcodes from the image and output their type and text
+                    foreach (var result in reader.ReadBarCodes())
+                    {
+                        Console.WriteLine($"Detected Type: {result.CodeTypeName}");
+                        Console.WriteLine($"Code Text: {result.CodeText}");
+                    }
+                }
             }
         }
     }

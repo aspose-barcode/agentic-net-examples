@@ -4,57 +4,84 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
+/// <summary>
+/// Demonstrates generating a sub‑pixel Code128 barcode and reading it with
+/// default and custom quality settings using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a barcode, reads it with different settings, and cleans up.
+    /// </summary>
     static void Main()
     {
-        const string imagePath = "subpixel_barcode.png";
+        // ------------------------------------------------------------
+        // Prepare a temporary file path for the barcode image.
+        // ------------------------------------------------------------
+        string tempDir = Path.GetTempPath();
+        string barcodePath = Path.Combine(tempDir, "subpixel_barcode.png");
 
-        // Generate a barcode with a minimal XDimension (1 pixel, the smallest allowed)
+        // ------------------------------------------------------------
+        // Generate a Code128 barcode with a very small XDimension
+        // (sub‑pixel size) and save it to the temporary file.
+        // ------------------------------------------------------------
         using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Test123"))
         {
-            // Ensure manual sizing is used
-            generator.Parameters.AutoSizeMode = AutoSizeMode.None;
+            // Set XDimension to 0.5 points (≈0.5 pixel at 72 DPI).
+            generator.Parameters.Barcode.XDimension.Point = 0.5f;
 
-            // Set XDimension to the smallest positive value accepted by the API
-            generator.Parameters.Barcode.XDimension.Pixels = 1f;
-
-            // Set a modest bar height so the barcode is visible
-            generator.Parameters.Barcode.BarHeight.Pixels = 30f;
-
-            // Save the generated image
-            generator.Save(imagePath);
+            // Save the generated barcode image to the specified path.
+            generator.Save(barcodePath);
         }
 
-        // Verify the image was created
-        if (!File.Exists(imagePath))
+        // ------------------------------------------------------------
+        // Verify that the barcode image was successfully created.
+        // ------------------------------------------------------------
+        if (!File.Exists(barcodePath))
         {
-            Console.WriteLine($"Failed to create barcode image at '{imagePath}'.");
+            Console.WriteLine("Failed to create barcode image.");
             return;
         }
 
-        // Read the barcode using default settings (for comparison)
+        // ------------------------------------------------------------
+        // Read the barcode using the default quality settings.
+        // ------------------------------------------------------------
         Console.WriteLine("Reading with default QualitySettings:");
-        using (var readerDefault = new BarCodeReader(imagePath, DecodeType.Code128))
+        using (var readerDefault = new BarCodeReader(barcodePath, DecodeType.AllSupportedTypes))
         {
-            foreach (BarCodeResult result in readerDefault.ReadBarCodes())
+            foreach (var result in readerDefault.ReadBarCodes())
             {
-                Console.WriteLine($"  CodeText: {result.CodeText}");
+                Console.WriteLine($"  Detected: {result.CodeTypeName}, Text: {result.CodeText}");
             }
         }
 
-        // Read the barcode using MinimalXDimension = 1 pixel and UseMinimalXDimension mode
-        Console.WriteLine("\nReading with MinimalXDimension = 1 pixel (UseMinimalXDimension mode):");
-        using (var readerCustom = new BarCodeReader(imagePath, DecodeType.Code128))
+        // ------------------------------------------------------------
+        // Read the barcode with MinimalXDimension set to 0.5 pixels
+        // to allow recognition of sub‑pixel elements.
+        // ------------------------------------------------------------
+        Console.WriteLine("Reading with MinimalXDimension = 0.5 pixels:");
+        using (var readerCustom = new BarCodeReader(barcodePath, DecodeType.AllSupportedTypes))
         {
-            // Configure recognition to use the minimal XDimension we set during generation
-            readerCustom.QualitySettings.XDimension = XDimensionMode.UseMinimalXDimension;
-            readerCustom.QualitySettings.MinimalXDimension = 1f;
+            // Configure recognition to accept sub‑pixel elements.
+            readerCustom.QualitySettings.MinimalXDimension = 0.5f;
 
-            foreach (BarCodeResult result in readerCustom.ReadBarCodes())
+            foreach (var result in readerCustom.ReadBarCodes())
             {
-                Console.WriteLine($"  CodeText: {result.CodeText}");
+                Console.WriteLine($"  Detected: {result.CodeTypeName}, Text: {result.CodeText}");
             }
+        }
+
+        // ------------------------------------------------------------
+        // Clean up the temporary image file.
+        // ------------------------------------------------------------
+        try
+        {
+            File.Delete(barcodePath);
+        }
+        catch
+        {
+            // Ignore any cleanup errors.
         }
     }
 }

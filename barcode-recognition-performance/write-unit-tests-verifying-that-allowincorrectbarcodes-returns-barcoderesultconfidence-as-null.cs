@@ -3,43 +3,82 @@ using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing.Imaging;
+using Aspose.Drawing;
 
+/// <summary>
+/// Demonstrates generating a Code39 barcode, reading it with relaxed quality settings,
+/// and verifying that the Confidence property is null when AllowIncorrectBarcodes is enabled.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// </summary>
     static void Main()
     {
-        // Generate an EAN13 barcode with an incorrect checksum (last digit is wrong)
-        using (var generator = new BarcodeGenerator(EncodeTypes.EAN13, "1234567890123"))
+        // --------------------------------------------------------------------
+        // Create a temporary PNG file path for the barcode image.
+        // --------------------------------------------------------------------
+        string tempFile = Path.Combine(Path.GetTempPath(), "test_barcode.png");
+
+        // --------------------------------------------------------------------
+        // Generate a simple Code39 barcode and save it to the temporary file.
+        // --------------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code39, "12345"))
         {
-            using (var ms = new MemoryStream())
+            generator.Save(tempFile);
+        }
+
+        // --------------------------------------------------------------------
+        // Verify that the barcode image file was successfully created.
+        // --------------------------------------------------------------------
+        if (!File.Exists(tempFile))
+        {
+            Console.WriteLine("Failed to create barcode image.");
+            return;
+        }
+
+        // --------------------------------------------------------------------
+        // Read the barcode from the file with AllowIncorrectBarcodes enabled.
+        // --------------------------------------------------------------------
+        using (var reader = new BarCodeReader(tempFile, DecodeType.Code39))
+        {
+            // Enable recognition of barcodes that may not meet strict quality criteria.
+            reader.QualitySettings.AllowIncorrectBarcodes = true;
+
+            // Perform the barcode reading operation.
+            BarCodeResult[] results = reader.ReadBarCodes();
+
+            // If no barcodes were detected, report and exit.
+            if (results.Length == 0)
             {
-                // Save barcode image to memory stream
-                generator.Save(ms, BarCodeImageFormat.Png);
-                ms.Position = 0;
-
-                // Read the barcode allowing incorrect barcodes
-                using (var reader = new BarCodeReader(ms, DecodeType.EAN13))
-                {
-                    // Enable recognition of incorrect barcodes
-                    reader.QualitySettings.AllowIncorrectBarcodes = true;
-
-                    bool testPassed = false;
-
-                    foreach (BarCodeResult result in reader.ReadBarCodes())
-                    {
-                        // According to the task, Confidence should be null.
-                        // In Aspose.BarCode the Confidence enum returns BarCodeConfidence.None for incorrect barcodes.
-                        // We treat this as the expected condition.
-                        if (result.Confidence == BarCodeConfidence.None)
-                        {
-                            testPassed = true;
-                        }
-                    }
-
-                    Console.WriteLine(testPassed ? "Test Passed: Confidence is None (treated as null)." : "Test Failed: Confidence is not None.");
-                }
+                Console.WriteLine("No barcode detected.");
+                return;
             }
+
+            // Iterate over each detected barcode result.
+            foreach (var result in results)
+            {
+                // Expect the Confidence property to be null when AllowIncorrectBarcodes is true.
+                bool isConfidenceNull = result.Confidence == null;
+
+                // Output test result based on the Confidence value.
+                Console.WriteLine(isConfidenceNull
+                    ? "Test Passed: Confidence is null."
+                    : $"Test Failed: Confidence is {result.Confidence}.");
+            }
+        }
+
+        // --------------------------------------------------------------------
+        // Clean up: delete the temporary barcode image file.
+        // --------------------------------------------------------------------
+        try
+        {
+            File.Delete(tempFile);
+        }
+        catch
+        {
+            // Suppress any exceptions that occur during cleanup.
         }
     }
 }

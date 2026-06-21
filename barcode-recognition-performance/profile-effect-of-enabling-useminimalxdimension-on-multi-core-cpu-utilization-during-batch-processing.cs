@@ -5,78 +5,110 @@ using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates batch generation and recognition of barcodes using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    // Number of barcodes to process in the batch (small size for the runner)
+    const int BatchSize = 5;
+
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a batch of barcode images, then processes them twice:
+    /// once with the default XDimension mode and once with the minimal XDimension mode.
+    /// </summary>
     static void Main()
     {
-        string outputFolder = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
-        if (!Directory.Exists(outputFolder))
-        {
-            Directory.CreateDirectory(outputFolder);
-        }
+        // Generate a list of barcode images stored in memory streams.
+        List<MemoryStream> barcodeImages = GenerateBarcodes();
 
-        // Generate sample barcode images
-        List<string> imagePaths = new List<string>();
-        for (int i = 1; i <= 5; i++)
+        // Configure the reader to use all available processor cores.
+        BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount = Environment.ProcessorCount;
+
+        // Process the batch using the default XDimension mode and measure elapsed time.
+        TimeSpan defaultTime = ProcessBatch(barcodeImages, useMinimalXDimension: false);
+        Console.WriteLine($"Default XDimension mode elapsed: {defaultTime.TotalMilliseconds} ms");
+
+        // Process the batch using the minimal XDimension mode and measure elapsed time.
+        TimeSpan minimalTime = ProcessBatch(barcodeImages, useMinimalXDimension: true);
+        Console.WriteLine($"UseMinimalXDimension mode elapsed: {minimalTime.TotalMilliseconds} ms");
+    }
+
+    /// <summary>
+    /// Generates a list of <see cref="MemoryStream"/> objects, each containing a PNG image of a Code128 barcode.
+    /// </summary>
+    /// <returns>A list of memory streams with generated barcode images.</returns>
+    static List<MemoryStream> GenerateBarcodes()
+    {
+        var streams = new List<MemoryStream>();
+
+        // Create the specified number of barcode images.
+        for (int i = 0; i < BatchSize; i++)
         {
-            string filePath = Path.Combine(outputFolder, $"code{i}.png");
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, $"CODE{i}"))
+            // Initialize a barcode generator with unique text for each barcode.
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, $"CODE{i:D4}"))
             {
-                generator.Save(filePath);
+                // Save the generated barcode to a memory stream in PNG format.
+                var ms = new MemoryStream();
+                generator.Save(ms, BarCodeImageFormat.Png);
+                ms.Position = 0; // Reset stream position for later reading.
+                streams.Add(ms);
             }
-            imagePaths.Add(filePath);
         }
 
-        // Warm‑up to avoid JIT impact
-        ProcessBatch(imagePaths, useMinimal: false);
-
-        // Measure without UseMinimalXDimension
-        var timeWithout = MeasureProcessingTime(imagePaths, useMinimal: false);
-        // Measure with UseMinimalXDimension
-        var timeWith = MeasureProcessingTime(imagePaths, useMinimal: true);
-
-        Console.WriteLine($"Processing time without UseMinimalXDimension: {timeWithout.TotalMilliseconds} ms");
-        Console.WriteLine($"Processing time with UseMinimalXDimension:    {timeWith.TotalMilliseconds} ms");
+        return streams;
     }
 
-    static TimeSpan MeasureProcessingTime(List<string> imagePaths, bool useMinimal)
+    /// <summary>
+    /// Reads all barcodes from the provided image streams and returns the total processing time.
+    /// </summary>
+    /// <param name="images">The list of memory streams containing barcode images.</param>
+    /// <param name="useMinimalXDimension">
+    /// If true, configures the reader to use <see cref="XDimensionMode.UseMinimalXDimension"/> with a minimal value;
+    /// otherwise uses the default <see cref="XDimensionMode.Auto"/>.
+    /// </param>
+    /// <returns>The <see cref="TimeSpan"/> representing the elapsed processing time.</returns>
+    static TimeSpan ProcessBatch(List<MemoryStream> images, bool useMinimalXDimension)
     {
-        Stopwatch sw = Stopwatch.StartNew();
-        ProcessBatch(imagePaths, useMinimal);
-        sw.Stop();
-        return sw.Elapsed;
-    }
+        // Start measuring elapsed time.
+        var stopwatch = Stopwatch.StartNew();
 
-    static void ProcessBatch(List<string> imagePaths, bool useMinimal)
-    {
-        // Enable multi‑core usage for each reader call
-        BarCodeReader.ProcessorSettings.UseAllCores = true;
-
-        foreach (string path in imagePaths)
+        // Iterate over each image stream in the batch.
+        foreach (var imageStream in images)
         {
-            using (var reader = new BarCodeReader(path, DecodeType.Code128))
+            // Ensure the stream is positioned at the beginning before each read operation.
+            imageStream.Position = 0;
+
+            // Create a barcode reader for the current image stream.
+            using (var reader = new BarCodeReader(imageStream, DecodeType.AllSupportedTypes))
             {
-                // Use a high‑performance preset for consistency
-                reader.QualitySettings = QualitySettings.HighPerformance;
-
-                // Configure XDimension mode
-                reader.QualitySettings.XDimension = useMinimal
-                    ? XDimensionMode.UseMinimalXDimension
-                    : XDimensionMode.Auto;
-
-                // Optional: set a minimal XDimension value when using the mode
-                if (useMinimal)
+                // Configure quality settings based on the requested XDimension mode.
+                if (useMinimalXDimension)
                 {
-                    reader.QualitySettings.MinimalXDimension = 1f;
+                    reader.QualitySettings.XDimension = XDimensionMode.UseMinimalXDimension;
+                    // Example minimal X dimension (in pixels).
+                    reader.QualitySettings.MinimalXDimension = 2f;
+                }
+                else
+                {
+                    // Default mode (Auto) lets the library determine the optimal X dimension.
+                    reader.QualitySettings.XDimension = XDimensionMode.Auto;
                 }
 
-                // Perform recognition (results are not used further)
+                // Read all barcodes from the image.
                 foreach (var result in reader.ReadBarCodes())
                 {
-                    // No operation; just iterate to ensure full processing
+                    // Output the decoded text to demonstrate successful recognition.
+                    Console.WriteLine($"Decoded: {result.CodeText}");
                 }
             }
         }
+
+        // Stop the timer and return the elapsed time.
+        stopwatch.Stop();
+        return stopwatch.Elapsed;
     }
 }

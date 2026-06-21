@@ -1,60 +1,106 @@
 using System;
 using System.Diagnostics;
 using System.IO;
-using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
+using Aspose.BarCode;
+using Aspose.BarCode.Generation;
+using Aspose.BarCode.BarCodeRecognition;
 
+/// <summary>
+/// Demonstrates barcode generation, loading, preprocessing, detection, and decoding
+/// while measuring the time taken for each stage.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a barcode image, reads it back, and outputs detection results.
+    /// </summary>
     static void Main()
     {
-        const string imagePath = "sample.png";
+        // --------------------------------------------------------------------
+        // Prepare temporary file path for the sample barcode image
+        // --------------------------------------------------------------------
+        string tempDir = Path.GetTempPath();
+        string imagePath = Path.Combine(tempDir, "sample_barcode.png");
 
+        // --------------------------------------------------------------------
+        // Stage: Barcode generation (setup)
+        // --------------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Test123"))
+        {
+            // Save the generated barcode to the temporary file
+            generator.Save(imagePath);
+        }
+
+        // Verify that the image was created successfully
         if (!File.Exists(imagePath))
         {
-            Console.WriteLine($"Image file not found: {imagePath}");
+            Console.WriteLine($"Failed to create barcode image at {imagePath}");
             return;
         }
 
-        var totalTimer = Stopwatch.StartNew();
+        // Stopwatch for timing each processing stage
+        var stopwatch = new Stopwatch();
 
-        // Loading stage
-        var loadTimer = Stopwatch.StartNew();
-        using (Bitmap bitmap = new Bitmap(imagePath))
+        // --------------------------------------------------------------------
+        // Stage: Loading the image
+        // --------------------------------------------------------------------
+        stopwatch.Start();
+        using (var bitmap = new Bitmap(imagePath))
         {
-            loadTimer.Stop();
-            Console.WriteLine($"Loading time: {loadTimer.ElapsedMilliseconds} ms");
+            stopwatch.Stop();
+            Console.WriteLine($"Loading time: {stopwatch.ElapsedMilliseconds} ms");
+            stopwatch.Reset();
 
-            // Preprocessing stage
-            var preprocessTimer = Stopwatch.StartNew();
-            using (BarCodeReader reader = new BarCodeReader())
+            // ----------------------------------------------------------------
+            // Stage: Preprocessing (configure reader and quality settings)
+            // ----------------------------------------------------------------
+            stopwatch.Start();
+            using (var reader = new BarCodeReader(bitmap, DecodeType.AllSupportedTypes))
             {
                 // Example preprocessing: set high performance quality preset
                 reader.QualitySettings = QualitySettings.HighPerformance;
-                preprocessTimer.Stop();
-                Console.WriteLine($"Preprocessing time: {preprocessTimer.ElapsedMilliseconds} ms");
+                stopwatch.Stop();
+                Console.WriteLine($"Preprocessing time: {stopwatch.ElapsedMilliseconds} ms");
+                stopwatch.Reset();
 
-                // Set image for recognition
-                reader.SetBarCodeImage(bitmap);
+                // ----------------------------------------------------------------
+                // Stage: Detection (read barcodes)
+                // ----------------------------------------------------------------
+                stopwatch.Start();
+                var results = reader.ReadBarCodes();
+                stopwatch.Stop();
+                Console.WriteLine($"Detection time: {stopwatch.ElapsedMilliseconds} ms");
+                stopwatch.Reset();
 
-                // Detection stage
-                var detectionTimer = Stopwatch.StartNew();
-                BarCodeResult[] results = reader.ReadBarCodes();
-                detectionTimer.Stop();
-                Console.WriteLine($"Detection time: {detectionTimer.ElapsedMilliseconds} ms");
-
-                // Decoding stage
-                var decodingTimer = Stopwatch.StartNew();
-                foreach (BarCodeResult result in results)
+                // ----------------------------------------------------------------
+                // Stage: Decoding (extract code text and other info)
+                // ----------------------------------------------------------------
+                stopwatch.Start();
+                foreach (var result in results)
                 {
-                    Console.WriteLine($"Type: {result.CodeTypeName}, Text: {result.CodeText}");
+                    Console.WriteLine($"Detected Type: {result.CodeTypeName}");
+                    Console.WriteLine($"Code Text: {result.CodeText}");
+                    Console.WriteLine($"Confidence: {result.Confidence}");
+                    Console.WriteLine($"Reading Quality: {result.ReadingQuality}");
                 }
-                decodingTimer.Stop();
-                Console.WriteLine($"Decoding time: {decodingTimer.ElapsedMilliseconds} ms");
+                stopwatch.Stop();
+                Console.WriteLine($"Decoding time: {stopwatch.ElapsedMilliseconds} ms");
+                stopwatch.Reset();
             }
         }
 
-        totalTimer.Stop();
-        Console.WriteLine($"Total execution time: {totalTimer.ElapsedMilliseconds} ms");
+        // --------------------------------------------------------------------
+        // Clean up temporary image file
+        // --------------------------------------------------------------------
+        try
+        {
+            File.Delete(imagePath);
+        }
+        catch
+        {
+            // Ignore any errors during cleanup
+        }
     }
 }

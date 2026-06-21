@@ -3,77 +3,77 @@ using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
+/// <summary>
+/// Demonstrates generating a Code128 barcode, then reading it twice:
+/// once with default settings and once with <c>AllowIncorrectBarcodes</c> enabled.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a barcode, reads it under two different quality settings,
+    /// and compares the decoded results.
+    /// </summary>
     static void Main()
     {
-        // Define a temporary file path for the barcode image
-        string imagePath = Path.Combine(Directory.GetCurrentDirectory(), "temp_barcode.png");
+        const string originalCodeText = "1234567890";
 
-        // Ensure any previous file is removed
-        if (File.Exists(imagePath))
+        // Create a barcode generator for Code128 with the original text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, originalCodeText))
         {
-            File.Delete(imagePath);
-        }
+            // Enable checksum calculation required for Code128.
+            generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
 
-        // Generate a valid EAN13 barcode (checksum is correct)
-        using (var generator = new BarcodeGenerator(EncodeTypes.EAN13, "1234567890128"))
-        {
-            generator.Save(imagePath);
-        }
-
-        // Verify the file was created
-        if (!File.Exists(imagePath))
-        {
-            Console.WriteLine("Failed to create barcode image.");
-            return;
-        }
-
-        // Read the barcode with default settings (AllowIncorrectBarcodes = false)
-        string codeTextDefault;
-        using (var reader = new BarCodeReader(imagePath, DecodeType.EAN13))
-        {
-            // Default AllowIncorrectBarcodes is false, no change needed
-            var result = reader.ReadBarCodes();
-            if (result.Length == 0)
+            // Save the generated barcode to a memory stream in PNG format.
+            using (var ms = new MemoryStream())
             {
-                Console.WriteLine("No barcode detected with default settings.");
-                return;
+                generator.Save(ms, BarCodeImageFormat.Png);
+                ms.Position = 0; // Reset stream position for reading.
+
+                // ------------------------------------------------------------
+                // First read: default quality settings (AllowIncorrectBarcodes = false)
+                // ------------------------------------------------------------
+                string decodedDefault;
+                using (var bitmap = new Bitmap(ms))
+                {
+                    using (var reader = new BarCodeReader(bitmap, DecodeType.Code128))
+                    {
+                        // Read all barcodes found in the image.
+                        var results = reader.ReadBarCodes();
+                        // Take the first result if any; otherwise null.
+                        decodedDefault = results.Length > 0 ? results[0].CodeText : null;
+                    }
+                }
+
+                // Reset stream position to reuse the same image for the second read.
+                ms.Position = 0;
+
+                // ------------------------------------------------------------
+                // Second read: enable AllowIncorrectBarcodes to true
+                // ------------------------------------------------------------
+                string decodedAllowIncorrect;
+                using (var bitmap = new Bitmap(ms))
+                {
+                    using (var reader = new BarCodeReader(bitmap, DecodeType.Code128))
+                    {
+                        // Allow reading barcodes that may not meet strict quality criteria.
+                        reader.QualitySettings.AllowIncorrectBarcodes = true;
+                        var results = reader.ReadBarCodes();
+                        decodedAllowIncorrect = results.Length > 0 ? results[0].CodeText : null;
+                    }
+                }
+
+                // Compare the two decoded strings for equality.
+                bool isEqual = string.Equals(decodedDefault, decodedAllowIncorrect, StringComparison.Ordinal);
+
+                // Output the original and decoded values along with the comparison result.
+                Console.WriteLine($"Original CodeText: {originalCodeText}");
+                Console.WriteLine($"Decoded (default settings): {decodedDefault ?? "null"}");
+                Console.WriteLine($"Decoded (AllowIncorrectBarcodes = true): {decodedAllowIncorrect ?? "null"}");
+                Console.WriteLine($"Result: {(isEqual ? "Pass – CodeText unchanged" : "Fail – CodeText differs")}");
             }
-            codeTextDefault = result[0].CodeText;
-        }
-
-        // Read the same barcode with AllowIncorrectBarcodes enabled
-        string codeTextAllowIncorrect;
-        using (var reader = new BarCodeReader(imagePath, DecodeType.EAN13))
-        {
-            // Enable recognition of incorrect barcodes (should not affect a valid barcode)
-            reader.QualitySettings.AllowIncorrectBarcodes = true;
-
-            var result = reader.ReadBarCodes();
-            if (result.Length == 0)
-            {
-                Console.WriteLine("No barcode detected with AllowIncorrectBarcodes enabled.");
-                return;
-            }
-            codeTextAllowIncorrect = result[0].CodeText;
-        }
-
-        // Compare the decoded CodeText values
-        bool areEqual = string.Equals(codeTextDefault, codeTextAllowIncorrect, StringComparison.Ordinal);
-        Console.WriteLine($"CodeText with default settings: {codeTextDefault}");
-        Console.WriteLine($"CodeText with AllowIncorrectBarcodes enabled: {codeTextAllowIncorrect}");
-        Console.WriteLine($"CodeText values are {(areEqual ? "identical" : "different")}.");
-
-        // Clean up the temporary image file
-        try
-        {
-            File.Delete(imagePath);
-        }
-        catch
-        {
-            // Ignore any cleanup errors
         }
     }
 }

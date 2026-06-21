@@ -3,58 +3,48 @@ using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
+/// <summary>
+/// Demonstrates generating a Code128 barcode, saving it to a memory stream,
+/// and then reading it back to verify the MinimalXDimension setting.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a barcode, reads it, and checks the MinimalXDimension value.
+    /// </summary>
     static void Main()
     {
-        int failedTests = 0;
-
-        // Test: MinimalXDimension should be zero when XDimension mode is not UseMinimalXDimension
-        try
+        // Create a barcode generator for Code128 with the data "123456"
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
         {
-            // Generate a simple barcode image in memory
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Test123"))
+            // Prepare a memory stream to hold the generated barcode image
+            using (var ms = new MemoryStream())
             {
-                using (var ms = new MemoryStream())
+                // Save the barcode image to the memory stream in PNG format
+                generator.Save(ms, BarCodeImageFormat.Png);
+                // Reset stream position to the beginning for reading
+                ms.Position = 0;
+
+                // Initialize a barcode reader to recognize all supported types from the stream
+                using (var reader = new BarCodeReader(ms, DecodeType.AllSupportedTypes))
                 {
-                    generator.Save(ms, BarCodeImageFormat.Png);
-                    ms.Position = 0;
+                    // Set XDimension mode to Normal (disables UseMinimalXDimension)
+                    reader.QualitySettings.XDimension = XDimensionMode.Normal;
 
-                    // Read the barcode with specific quality settings
-                    using (var reader = new BarCodeReader(ms, DecodeType.Code128))
-                    {
-                        // Set XDimension mode to Normal (not UseMinimalXDimension)
-                        reader.QualitySettings.XDimension = XDimensionMode.Normal;
+                    // Retrieve the MinimalXDimension value (should be zero in Normal mode)
+                    float minimalX = reader.QualitySettings.MinimalXDimension;
+                    // Determine if the retrieved value is effectively zero
+                    bool testPassed = Math.Abs(minimalX) < 0.0001f;
 
-                        // Verify that MinimalXDimension defaults to zero
-                        if (reader.QualitySettings.MinimalXDimension != 0f)
-                        {
-                            Console.WriteLine("FAILED: MinimalXDimension is not zero when XDimension is not UseMinimalXDimension.");
-                            failedTests++;
-                        }
-                        else
-                        {
-                            Console.WriteLine("PASSED: MinimalXDimension defaults to zero when XDimension is not UseMinimalXDimension.");
-                        }
-                    }
+                    // Output the test result to the console
+                    Console.WriteLine(testPassed
+                        ? "PASS: MinimalXDimension is zero when UseMinimalXDimension is false."
+                        : $"FAIL: MinimalXDimension is {minimalX}, expected zero.");
                 }
             }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"FAILED: Exception occurred during test - {ex.Message}");
-            failedTests++;
-        }
-
-        // Summary
-        if (failedTests == 0)
-        {
-            Console.WriteLine("All tests passed.");
-        }
-        else
-        {
-            Console.WriteLine($"FAILED: {failedTests} test(s) failed.");
         }
     }
 }

@@ -1,63 +1,56 @@
 using System;
-using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
+/// <summary>
+/// Demonstrates generating a Code128 barcode and reading it with different quality settings.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a barcode, saves it, and reads it using HighPerformance and HighQuality settings.
+    /// </summary>
     static void Main()
     {
-        // Define a temporary file path for the barcode image
-        string imagePath = Path.Combine(Path.GetTempPath(), "sample_barcode.png");
-
-        // Generate a Code128 barcode and save it to the file
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
+        // -------------------------------------------------
+        // Generate a simple Code128 barcode and save it to a file.
+        // -------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
         {
-            generator.Save(imagePath);
+            // Save the generated barcode image as PNG.
+            generator.Save("code128.png");
         }
 
-        // Verify that the image was created
-        if (!File.Exists(imagePath))
+        // -------------------------------------------------
+        // Read the barcode using the HighPerformance preset.
+        // -------------------------------------------------
+        using (var reader = new BarCodeReader("code128.png", DecodeType.Code128))
         {
-            Console.WriteLine("Failed to create barcode image.");
-            return;
-        }
-
-        // ----------- HighPerformance preset -----------
-        using (var reader = new BarCodeReader(imagePath, DecodeType.Code128))
-        {
-            // Switch to HighPerformance recognition mode
+            // Apply the HighPerformance quality settings to speed up processing.
             reader.QualitySettings = QualitySettings.HighPerformance;
 
-            Console.WriteLine("Reading with HighPerformance preset:");
-            foreach (BarCodeResult result in reader.ReadBarCodes())
+            // Iterate through all detected barcodes (should be one) and output the decoded text.
+            foreach (var result in reader.ReadBarCodes())
             {
-                Console.WriteLine($"  Type: {result.CodeTypeName}, Text: {result.CodeText}");
+                Console.WriteLine($"HighPerformance - Detected Text: {result.CodeText}");
             }
         }
 
-        // ----------- HighQuality preset -----------
-        using (var reader = new BarCodeReader(imagePath, DecodeType.Code128))
+        // -------------------------------------------------
+        // Read the same barcode using the HighQuality preset.
+        // -------------------------------------------------
+        using (var reader = new BarCodeReader("code128.png", DecodeType.Code128))
         {
-            // Switch to HighQuality recognition mode
+            // Apply the HighQuality quality settings for maximum accuracy.
             reader.QualitySettings = QualitySettings.HighQuality;
 
-            Console.WriteLine("Reading with HighQuality preset:");
-            foreach (BarCodeResult result in reader.ReadBarCodes())
+            // Iterate through all detected barcodes and output the decoded text.
+            foreach (var result in reader.ReadBarCodes())
             {
-                Console.WriteLine($"  Type: {result.CodeTypeName}, Text: {result.CodeText}");
+                Console.WriteLine($"HighQuality - Detected Text: {result.CodeText}");
             }
-        }
-
-        // Clean up the temporary image file
-        try
-        {
-            File.Delete(imagePath);
-        }
-        catch
-        {
-            // Ignore any errors during cleanup
         }
     }
 }

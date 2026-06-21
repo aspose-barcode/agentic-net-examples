@@ -1,33 +1,28 @@
 using System;
-using System.IO;
 using Aspose.BarCode;
-using Aspose.BarCode.BarCodeRecognition;
+using Aspose.BarCode.Generation;
 
+/// <summary>
+/// Demonstrates generating a Code128 barcode with a custom XDimension using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Generates a barcode image and writes a confirmation to the console.
+    /// </summary>
     static void Main()
     {
-        // Path to the barcode image file
-        string imagePath = "barcode.png";
-
-        // Verify that the file exists before attempting to read it
-        if (!File.Exists(imagePath))
+        // Initialize a Code128 barcode generator with the sample text "1234567890"
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            Console.WriteLine($"File not found: {imagePath}");
-            return;
+            // Configure the barcode's module width (XDimension) to 3 pixels
+            generator.Parameters.Barcode.XDimension.Pixels = 3f;
+
+            // Persist the generated barcode as a PNG file named "barcode.png"
+            generator.Save("barcode.png");
         }
 
-        // Create a BarCodeReader for the desired symbologies (example: Code128)
-        using (var reader = new BarCodeReader(imagePath, DecodeType.Code128))
-        {
-            // Adjust the XDimension quality setting to detect small elements (≈3 pixels)
-            reader.QualitySettings.XDimension = XDimensionMode.Small;
-
-            // Read all barcodes in the image and output their text
-            foreach (BarCodeResult result in reader.ReadBarCodes())
-            {
-                Console.WriteLine($"Detected barcode: {result.CodeText}");
-            }
-        }
+        // Inform the user that the barcode has been generated with the specified XDimension
+        Console.WriteLine("Barcode generated with XDimension = 3 pixels.");
     }
 }

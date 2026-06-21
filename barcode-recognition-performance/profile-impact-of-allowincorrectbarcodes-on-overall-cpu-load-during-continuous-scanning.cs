@@ -1,63 +1,84 @@
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates barcode generation and recognition timing with different
+/// <c>AllowIncorrectBarcodes</c> settings using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a Code128 barcode, then measures recognition time
+    /// with <c>AllowIncorrectBarcodes</c> set to false and true.
+    /// </summary>
     static void Main()
     {
-        // Prepare a small set of barcode images with an incorrect checksum (EAN13)
-        const int sampleCount = 5;
-        var barcodeImages = new List<MemoryStream>();
-
-        for (int i = 0; i < sampleCount; i++)
+        // Generate a sample barcode image (Code128) and keep it in memory.
+        byte[] barcodeBytes;
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            // Incorrect EAN13 code (last digit is wrong)
-            string incorrectCode = "1234567890123";
+            // Set a reasonable image size (points).
+            generator.Parameters.ImageWidth.Point = 300f;
+            generator.Parameters.ImageHeight.Point = 150f;
 
-            using (var generator = new BarcodeGenerator(EncodeTypes.EAN13, incorrectCode))
+            // Save the barcode to a memory stream in PNG format.
+            using (var ms = new MemoryStream())
             {
-                // Save to a memory stream in PNG format
-                var ms = new MemoryStream();
                 generator.Save(ms, BarCodeImageFormat.Png);
-                ms.Position = 0;
-                barcodeImages.Add(ms);
+                barcodeBytes = ms.ToArray();
             }
         }
 
-        // Benchmark without AllowIncorrectBarcodes (default = false)
-        long timeWithout = MeasureReadingTime(barcodeImages, allowIncorrect: false);
+        // Number of repetitions for each timing test.
+        const int repetitions = 5;
 
-        // Benchmark with AllowIncorrectBarcodes = true
-        long timeWith = MeasureReadingTime(barcodeImages, allowIncorrect: true);
+        // Measure recognition time with AllowIncorrectBarcodes = false (default).
+        long elapsedFalse = MeasureRecognition(barcodeBytes, false, repetitions);
 
-        Console.WriteLine($"Reading time without AllowIncorrectBarcodes: {timeWithout} ms");
-        Console.WriteLine($"Reading time with AllowIncorrectBarcodes   : {timeWith} ms");
+        // Measure recognition time with AllowIncorrectBarcodes = true.
+        long elapsedTrue = MeasureRecognition(barcodeBytes, true, repetitions);
+
+        // Output the results.
+        Console.WriteLine($"Recognition time with AllowIncorrectBarcodes = false: {elapsedFalse} ms");
+        Console.WriteLine($"Recognition time with AllowIncorrectBarcodes = true : {elapsedTrue} ms");
     }
 
-    static long MeasureReadingTime(List<MemoryStream> images, bool allowIncorrect)
+    /// <summary>
+    /// Measures the time required to recognize a barcode image multiple times.
+    /// </summary>
+    /// <param name="imageData">Byte array containing the barcode image.</param>
+    /// <param name="allowIncorrect">Whether to allow incorrect barcodes during recognition.</param>
+    /// <param name="repetitions">Number of times the recognition loop should run.</param>
+    /// <returns>Total elapsed time in milliseconds.</returns>
+    static long MeasureRecognition(byte[] imageData, bool allowIncorrect, int repetitions)
     {
         var stopwatch = new Stopwatch();
         stopwatch.Start();
 
-        foreach (var originalStream in images)
+        // Repeat the recognition process the specified number of times.
+        for (int i = 0; i < repetitions; i++)
         {
-            // Each read needs a fresh stream positioned at the beginning
-            originalStream.Position = 0;
-            using (var reader = new BarCodeReader(originalStream, DecodeType.EAN13))
+            // Create a new memory stream for each iteration to avoid stream reuse issues.
+            using (var ms = new MemoryStream(imageData))
             {
-                // Configure QualitySettings
-                reader.QualitySettings.AllowIncorrectBarcodes = allowIncorrect;
-
-                // Perform recognition (results are ignored for benchmarking)
-                foreach (var result in reader.ReadBarCodes())
+                // Initialize the barcode reader for all supported decode types.
+                using (var reader = new BarCodeReader(ms, DecodeType.AllSupportedTypes))
                 {
-                    // No operation; just iterate to ensure full processing
+                    // Apply the quality setting for this test run.
+                    reader.QualitySettings.AllowIncorrectBarcodes = allowIncorrect;
+
+                    // Perform recognition; iterate through results to ensure full processing.
+                    foreach (var result in reader.ReadBarCodes())
+                    {
+                        // No further processing needed; iteration forces complete read.
+                    }
                 }
             }
         }

@@ -1,92 +1,98 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing; // required for BarCodeImageFormat
 
+/// <summary>
+/// Demonstrates benchmarking of barcode reading with and without tolerant mode (AllowIncorrectBarcodes).
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Generates sample Code39 barcodes, then measures
+    /// the time required to read them with tolerant mode disabled and enabled.
+    /// </summary>
     static void Main()
     {
-        // Prepare temporary folder for barcode images
-        string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeBenchmark");
-        if (!Directory.Exists(tempFolder))
-        {
-            Directory.CreateDirectory(tempFolder);
-        }
+        // --------------------------------------------------------------------
+        // Prepare a small set of barcode images (Code39) to simulate a high‑throughput scenario.
+        // --------------------------------------------------------------------
+        const int sampleCount = 5;
+        var barcodeImages = new List<byte[]>();
 
-        // Sample barcode texts with intentional wrong checksum (EAN13 expects 13 digits)
-        string[] codeTexts = new[]
+        for (int i = 0; i < sampleCount; i++)
         {
-            "1234567890123",
-            "1234567890124",
-            "1234567890125",
-            "1234567890126",
-            "1234567890127"
-        };
-
-        // Generate barcode images
-        string[] imagePaths = new string[codeTexts.Length];
-        for (int i = 0; i < codeTexts.Length; i++)
-        {
-            string filePath = Path.Combine(tempFolder, $"barcode_{i}.png");
-            using (var generator = new BarcodeGenerator(EncodeTypes.EAN13, codeTexts[i]))
+            // Generate a barcode image and store it as a byte array.
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code39FullASCII, "ABC123"))
             {
-                generator.Save(filePath);
+                // Enable checksum to allow both correct and incorrect reads.
+                generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
+
+                using (var ms = new MemoryStream())
+                {
+                    // Save the barcode as PNG into the memory stream.
+                    generator.Save(ms, BarCodeImageFormat.Png);
+                    // Add the resulting byte array to the collection.
+                    barcodeImages.Add(ms.ToArray());
+                }
             }
-            imagePaths[i] = filePath;
         }
 
-        // Benchmark with AllowIncorrectBarcodes = false
-        var swFalse = Stopwatch.StartNew();
-        foreach (string path in imagePaths)
-        {
-            if (!File.Exists(path))
-                continue;
+        // --------------------------------------------------------------------
+        // Benchmark reading with AllowIncorrectBarcodes = false (default behavior).
+        // --------------------------------------------------------------------
+        var swWithout = Stopwatch.StartNew();
 
-            using (var reader = new BarCodeReader(path, DecodeType.EAN13))
+        foreach (var data in barcodeImages)
+        {
+            using (var ms = new MemoryStream(data))
+            using (var reader = new BarCodeReader(ms, DecodeType.AllSupportedTypes))
             {
-                // Ensure the setting is explicitly disabled
+                // Explicitly disable tolerant mode.
                 reader.QualitySettings.AllowIncorrectBarcodes = false;
+
+                // Force the recognition process; results are ignored for the benchmark.
                 foreach (var result in reader.ReadBarCodes())
                 {
-                    // No output needed; just force enumeration
+                    // No further processing needed.
                 }
             }
         }
-        swFalse.Stop();
 
-        // Benchmark with AllowIncorrectBarcodes = true
-        var swTrue = Stopwatch.StartNew();
-        foreach (string path in imagePaths)
+        swWithout.Stop();
+
+        // --------------------------------------------------------------------
+        // Benchmark reading with AllowIncorrectBarcodes = true (tolerant mode).
+        // --------------------------------------------------------------------
+        var swWith = Stopwatch.StartNew();
+
+        foreach (var data in barcodeImages)
         {
-            if (!File.Exists(path))
-                continue;
-
-            using (var reader = new BarCodeReader(path, DecodeType.EAN13))
+            using (var ms = new MemoryStream(data))
+            using (var reader = new BarCodeReader(ms, DecodeType.AllSupportedTypes))
             {
-                // Enable recognition of incorrect barcodes
+                // Enable tolerant mode to allow recognition of damaged/incorrect barcodes.
                 reader.QualitySettings.AllowIncorrectBarcodes = true;
+
+                // Force the recognition process; results are ignored for the benchmark.
                 foreach (var result in reader.ReadBarCodes())
                 {
-                    // No output needed; just force enumeration
+                    // No further processing needed.
                 }
             }
         }
-        swTrue.Stop();
 
-        // Display results
-        Console.WriteLine($"Recognition time with AllowIncorrectBarcodes = false: {swFalse.ElapsedMilliseconds} ms");
-        Console.WriteLine($"Recognition time with AllowIncorrectBarcodes = true : {swTrue.ElapsedMilliseconds} ms");
+        swWith.Stop();
 
-        // Cleanup temporary files
-        foreach (string path in imagePaths)
-        {
-            if (File.Exists(path))
-                File.Delete(path);
-        }
-        if (Directory.Exists(tempFolder))
-            Directory.Delete(tempFolder, true);
+        // --------------------------------------------------------------------
+        // Output the measured times.
+        // --------------------------------------------------------------------
+        Console.WriteLine(
+            $"Reading {sampleCount} barcodes without AllowIncorrectBarcodes: {swWithout.Elapsed.TotalMilliseconds} ms");
+        Console.WriteLine(
+            $"Reading {sampleCount} barcodes with AllowIncorrectBarcodes:    {swWith.Elapsed.TotalMilliseconds} ms");
     }
 }

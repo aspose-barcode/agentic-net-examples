@@ -1,33 +1,54 @@
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.BarCodeRecognition;
 
+/// <summary>
+/// Demonstrates barcode detection in a TIFF image using Aspose.BarCode.
+/// </summary>
 class Program
 {
-    static void Main()
+    /// <summary>
+    /// Entry point of the application.
+    /// Accepts an optional command‑line argument specifying the path to a TIFF file.
+    /// If no argument is provided, a default file name "sample.tiff" is used.
+    /// The method reads the image, detects all supported barcodes, and prints their type and text.
+    /// </summary>
+    /// <param name="args">Command‑line arguments.</param>
+    static void Main(string[] args)
     {
-        // Path to the high‑resolution TIFF file to be scanned
-        string imagePath = "highres.tif";
+        // Determine the TIFF file path (command‑line argument or default sample)
+        string tiffPath = args.Length > 0 ? args[0] : "sample.tiff";
 
         // Verify that the file exists before attempting to read it
-        if (!File.Exists(imagePath))
+        if (!File.Exists(tiffPath))
         {
-            Console.WriteLine($"File not found: {imagePath}");
+            Console.WriteLine($"File not found: {tiffPath}");
             return;
         }
 
-        // Initialize the barcode reader with a set of common decode types
-        using (BarCodeReader reader = new BarCodeReader(imagePath,
-            DecodeType.Code39, DecodeType.Code128, DecodeType.QR, DecodeType.DataMatrix))
+        // Initialize a BarCodeReader for the TIFF image, requesting all supported barcode types
+        using (var reader = new BarCodeReader(tiffPath, DecodeType.AllSupportedTypes))
         {
-            // Switch to the MaxQuality preset for maximum recognition accuracy
+            // Set the reader to use the highest quality settings for maximum detection accuracy
             reader.QualitySettings = QualitySettings.MaxQuality;
 
-            // Read and output all detected barcodes
-            foreach (BarCodeResult result in reader.ReadBarCodes())
+            // Read all barcodes present in the image
+            var results = reader.ReadBarCodes();
+
+            // Check whether any barcodes were found
+            if (results.Length == 0)
             {
-                Console.WriteLine($"Type: {result.CodeTypeName}, Text: {result.CodeText}");
+                Console.WriteLine("No barcodes were detected.");
+            }
+            else
+            {
+                // Iterate through each detected barcode and output its details
+                foreach (var result in results)
+                {
+                    Console.WriteLine($"Barcode Type: {result.CodeTypeName}");
+                    Console.WriteLine($"Code Text: {result.CodeText}");
+                    Console.WriteLine();
+                }
             }
         }
     }
