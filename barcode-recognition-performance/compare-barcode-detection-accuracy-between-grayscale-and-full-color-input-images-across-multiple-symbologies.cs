@@ -1,74 +1,120 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates barcode generation, conversion to grayscale, and recognition comparison
+/// using Aspose.BarCode library.
+/// </summary>
 class Program
 {
-    static void Main()
+    /// <summary>
+    /// Converts a color <see cref="Bitmap"/> to a grayscale image.
+    /// </summary>
+    /// <param name="source">The source color bitmap.</param>
+    /// <returns>A new bitmap containing the grayscale representation of the source.</returns>
+    static Bitmap ConvertToGrayscale(Bitmap source)
     {
-        // Define symbologies and sample texts
-        var tests = new List<(BaseEncodeType encode, BaseDecodeType decode, string text)>
+        // Create a new bitmap with the same dimensions as the source.
+        var gray = new Bitmap(source.Width, source.Height);
+
+        // Iterate over each pixel to compute its luminance.
+        for (int y = 0; y < source.Height; y++)
         {
-            (EncodeTypes.Code128, DecodeType.Code128, "ABC123"),
-            (EncodeTypes.QR, DecodeType.QR, "https://example.com"),
-            (EncodeTypes.DataMatrix, DecodeType.DataMatrix, "DM12345")
-        };
-
-        foreach (var (encode, decode, text) in tests)
-        {
-            // Grayscale barcode (black bars)
-            using (var generatorGray = new BarcodeGenerator(encode, text))
+            for (int x = 0; x < source.Width; x++)
             {
-                generatorGray.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-                generatorGray.Parameters.BackColor = Aspose.Drawing.Color.White;
+                // Retrieve the original pixel color.
+                Color c = source.GetPixel(x, y);
 
-                using (var msGray = new MemoryStream())
-                {
-                    generatorGray.Save(msGray, BarCodeImageFormat.Png);
-                    msGray.Position = 0;
+                // Calculate luminance using the standard NTSC coefficients.
+                int lum = (int)(0.299 * c.R + 0.587 * c.G + 0.114 * c.B);
 
-                    using (var readerGray = new BarCodeReader(msGray, decode))
-                    {
-                        var resultGray = GetFirstResult(readerGray);
-                        Console.WriteLine($"Symbology: {encode.GetType().Name} | Text: {text} | Mode: Grayscale | Confidence: {resultGray?.Confidence}");
-                    }
-                }
+                // Create a gray color where R, G, and B are equal to the luminance.
+                Color grayColor = Color.FromArgb(lum, lum, lum);
+
+                // Set the pixel in the grayscale bitmap.
+                gray.SetPixel(x, y, grayColor);
             }
-
-            // Color barcode (blue bars)
-            using (var generatorColor = new BarcodeGenerator(encode, text))
-            {
-                generatorColor.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Blue;
-                generatorColor.Parameters.BackColor = Aspose.Drawing.Color.White;
-
-                using (var msColor = new MemoryStream())
-                {
-                    generatorColor.Save(msColor, BarCodeImageFormat.Png);
-                    msColor.Position = 0;
-
-                    using (var readerColor = new BarCodeReader(msColor, decode))
-                    {
-                        var resultColor = GetFirstResult(readerColor);
-                        Console.WriteLine($"Symbology: {encode.GetType().Name} | Text: {text} | Mode: Color | Confidence: {resultColor?.Confidence}");
-                    }
-                }
-            }
-
-            Console.WriteLine(new string('-', 80));
         }
+
+        return gray;
     }
 
-    // Helper to read the first barcode result, returns null if none found
-    private static BarCodeResult GetFirstResult(BarCodeReader reader)
+    /// <summary>
+    /// Entry point of the program. Generates barcodes, creates grayscale versions,
+    /// and compares detection results between color and grayscale images.
+    /// </summary>
+    static void Main()
     {
-        foreach (var result in reader.ReadBarCodes())
+        // Define a list of barcode symbologies and the corresponding sample texts.
+        var symbologies = new List<(BaseEncodeType type, string text)>
         {
-            return result;
+            (EncodeTypes.Code128, "ABC123"),
+            (EncodeTypes.QR, "https://example.com"),
+            (EncodeTypes.DataMatrix, "DM12345"),
+            (EncodeTypes.Pdf417, "PDF417Test")
+        };
+
+        // Process each symbology/text pair.
+        foreach (var (sym, txt) in symbologies)
+        {
+            // Generate a barcode image in color.
+            using (var generator = new BarcodeGenerator(sym, txt))
+            {
+                using (Bitmap colorBmp = generator.GenerateBarCodeImage())
+                {
+                    // Convert the color barcode image to grayscale.
+                    using (Bitmap grayBmp = ConvertToGrayscale(colorBmp))
+                    {
+                        // -------------------- Recognition on Color Image --------------------
+                        bool detectedColor;
+                        BarCodeConfidence confidenceColor = BarCodeConfidence.None;
+
+                        // Initialize a reader for the color bitmap.
+                        using (var readerColor = new BarCodeReader(colorBmp, DecodeType.AllSupportedTypes))
+                        {
+                            // Read all barcodes present in the image.
+                            var results = readerColor.ReadBarCodes();
+
+                            // Determine if any barcode was detected.
+                            detectedColor = results.Length > 0;
+
+                            // Capture confidence of the first detected barcode, if any.
+                            if (detectedColor)
+                                confidenceColor = results[0].Confidence;
+                        }
+
+                        // -------------------- Recognition on Grayscale Image --------------------
+                        bool detectedGray;
+                        BarCodeConfidence confidenceGray = BarCodeConfidence.None;
+
+                        // Initialize a reader for the grayscale bitmap.
+                        using (var readerGray = new BarCodeReader(grayBmp, DecodeType.AllSupportedTypes))
+                        {
+                            // Read all barcodes present in the image.
+                            var results = readerGray.ReadBarCodes();
+
+                            // Determine if any barcode was detected.
+                            detectedGray = results.Length > 0;
+
+                            // Capture confidence of the first detected barcode, if any.
+                            if (detectedGray)
+                                confidenceGray = results[0].Confidence;
+                        }
+
+                        // -------------------- Output Comparison --------------------
+                        Console.WriteLine($"{sym.TypeName}:");
+                        Console.WriteLine($"  Color     - Detected: {detectedColor}, Confidence: {confidenceColor}");
+                        Console.WriteLine($"  Grayscale - Detected: {detectedGray}, Confidence: {confidenceGray}");
+                        Console.WriteLine();
+                    }
+                }
+            }
         }
-        return null;
     }
 }

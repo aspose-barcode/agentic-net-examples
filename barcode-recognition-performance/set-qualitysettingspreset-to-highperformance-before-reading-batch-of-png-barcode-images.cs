@@ -1,70 +1,78 @@
 using System;
 using System.IO;
-using Aspose.BarCode.Generation;
+using System.Collections.Generic;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
+/// <summary>
+/// Demonstrates reading barcodes from PNG images using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Processes a limited number of PNG barcode images
+    /// located in the "Barcodes" directory and outputs detected barcode information.
+    /// </summary>
     static void Main()
     {
-        string inputFolder = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
-        if (!Directory.Exists(inputFolder))
-        {
-            Directory.CreateDirectory(inputFolder);
-        }
+        // Directory that should contain the PNG barcode images.
+        string imagesDir = "Barcodes";
 
-        var samples = new (BaseEncodeType type, string text, string file)[]
+        // Verify that the directory exists before proceeding.
+        if (!Directory.Exists(imagesDir))
         {
-            (EncodeTypes.Code128, "Sample123", "code128.png"),
-            (EncodeTypes.QR, "https://example.com", "qr.png"),
-            (EncodeTypes.EAN13, "1234567890128", "ean13.png")
-        };
-
-        foreach (var sample in samples)
-        {
-            string filePath = Path.Combine(inputFolder, sample.file);
-            if (!File.Exists(filePath))
-            {
-                using (var generator = new BarcodeGenerator(sample.type, sample.text))
-                {
-                    generator.Save(filePath);
-                }
-            }
-        }
-
-        string[] pngFiles = Directory.GetFiles(inputFolder, "*.png");
-        if (pngFiles.Length == 0)
-        {
-            Console.WriteLine("No PNG barcode images found in the folder.");
+            Console.WriteLine($"Directory not found: {imagesDir}");
             return;
         }
 
-        foreach (string file in pngFiles)
+        // Retrieve all PNG files in the directory (no recursion).
+        string[] pngFiles = Directory.GetFiles(imagesDir, "*.png");
+        if (pngFiles.Length == 0)
         {
-            if (!File.Exists(file))
+            Console.WriteLine("No PNG files found in the directory.");
+            return;
+        }
+
+        // Limit processing to a maximum of 5 images to keep the sample quick.
+        int maxSamples = Math.Min(pngFiles.Length, 5);
+        Console.WriteLine($"Processing {maxSamples} PNG barcode image(s)...");
+
+        // Iterate over the selected sample files.
+        for (int i = 0; i < maxSamples; i++)
+        {
+            string filePath = pngFiles[i];
+
+            // Ensure the file still exists (it could have been removed meanwhile).
+            if (!File.Exists(filePath))
             {
-                Console.WriteLine($"File not found: {file}");
+                Console.WriteLine($"File not found: {filePath}");
                 continue;
             }
 
-            using (var reader = new BarCodeReader(file))
+            // Load the image and create a barcode reader instance.
+            using (var bitmap = new Bitmap(filePath))
+            using (var reader = new BarCodeReader())
             {
+                // Use a high‑performance preset for faster recognition.
                 reader.QualitySettings = QualitySettings.HighPerformance;
-                BarCodeResult[] results = reader.ReadBarCodes();
 
-                Console.WriteLine($"Processing file: {Path.GetFileName(file)}");
-                if (results.Length == 0)
+                // Configure the reader to detect all supported barcode types.
+                reader.BarCodeReadType = DecodeType.AllSupportedTypes;
+
+                // Assign the bitmap image to the reader.
+                reader.SetBarCodeImage(bitmap);
+
+                // Iterate through all detected barcodes in the image.
+                foreach (var result in reader.ReadBarCodes())
                 {
-                    Console.WriteLine("  No barcodes detected.");
-                }
-                else
-                {
-                    foreach (BarCodeResult result in results)
-                    {
-                        Console.WriteLine($"  Type: {result.CodeTypeName}, Text: {result.CodeText}");
-                    }
+                    Console.WriteLine($"File: {Path.GetFileName(filePath)}");
+                    Console.WriteLine($"  Type: {result.CodeTypeName}");
+                    Console.WriteLine($"  CodeText: {result.CodeText}");
                 }
             }
         }
+
+        // Indicate that processing has finished.
+        Console.WriteLine("Processing completed.");
     }
 }

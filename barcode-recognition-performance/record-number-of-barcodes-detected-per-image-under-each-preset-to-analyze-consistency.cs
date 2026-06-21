@@ -6,56 +6,157 @@ using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
+/// <summary>
+/// Demonstrates barcode generation, recognition with different quality settings,
+/// and cleanup of temporary files.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates sample barcodes, tests recognition under various quality presets,
+    /// outputs the detection counts, and cleans up temporary files.
+    /// </summary>
     static void Main()
     {
-        // Sample image files (place them in the same folder as the executable or adjust the paths)
-        string[] imageFiles = new[]
+        // Generate sample barcode images and obtain their file paths.
+        List<string> imagePaths = GenerateSampleBarcodes();
+
+        // Define the quality presets to be evaluated.
+        var presets = new List<(string Name, QualitySettings Settings)>
         {
-            "sample1.png",
-            "sample2.png",
-            "sample3.png"
+            ("NormalQuality", QualitySettings.NormalQuality),
+            ("HighPerformance", QualitySettings.HighPerformance),
+            ("HighQuality", QualitySettings.HighQuality)
         };
 
-        // Define the recognition presets to evaluate
-        var presets = new Dictionary<string, QualitySettings>
-        {
-            { "NormalQuality", QualitySettings.NormalQuality },
-            { "HighPerformance", QualitySettings.HighPerformance },
-            { "HighQuality", QualitySettings.HighQuality },
-            { "MaxQuality", QualitySettings.MaxQuality }
-        };
+        // Dictionary to store detection counts: preset name -> list of counts per image.
+        var results = new Dictionary<string, List<int>>();
 
-        // Iterate over each preset
+        // Iterate over each quality preset.
         foreach (var preset in presets)
         {
-            Console.WriteLine($"--- Preset: {preset.Key} ---");
+            var counts = new List<int>();
 
-            // Process each image under the current preset
-            foreach (string imagePath in imageFiles)
+            // Process each generated barcode image.
+            foreach (string path in imagePaths)
             {
-                if (!File.Exists(imagePath))
+                // Verify that the file exists before attempting to read.
+                if (!File.Exists(path))
                 {
-                    Console.WriteLine($"File not found: {imagePath}");
+                    Console.WriteLine($"Warning: File not found '{path}'. Skipping.");
+                    counts.Add(0);
                     continue;
                 }
 
-                // Initialize the reader for the image file
-                using (var reader = new BarCodeReader(imagePath))
+                // Open the barcode reader for the current image.
+                using (var reader = new BarCodeReader(path, DecodeType.AllSupportedTypes))
                 {
-                    // Apply the current quality preset
-                    reader.QualitySettings = preset.Value;
+                    // Apply the current quality preset to the reader.
+                    reader.QualitySettings = preset.Settings;
 
-                    // Perform recognition
-                    BarCodeResult[] results = reader.ReadBarCodes();
+                    // Perform barcode recognition.
+                    BarCodeResult[] detected = reader.ReadBarCodes();
 
-                    int count = results?.Length ?? 0;
-                    Console.WriteLine($"{Path.GetFileName(imagePath)}: {count} barcode(s) detected");
+                    // Record the number of barcodes detected in this image.
+                    counts.Add(detected.Length);
                 }
             }
 
-            Console.WriteLine(); // Blank line for readability between presets
+            // Store the counts for the current preset.
+            results[preset.Name] = counts;
+        }
+
+        // Output a header describing the collected data.
+        Console.WriteLine("Barcode detection counts per image for each quality preset:");
+        for (int i = 0; i < imagePaths.Count; i++)
+        {
+            Console.WriteLine($"Image {i + 1}: {Path.GetFileName(imagePaths[i])}");
+        }
+        Console.WriteLine();
+
+        // Display detection results for each quality preset.
+        foreach (var kvp in results)
+        {
+            Console.WriteLine($"Preset: {kvp.Key}");
+            for (int i = 0; i < kvp.Value.Count; i++)
+            {
+                Console.WriteLine($"  Image {i + 1}: {kvp.Value[i]} barcode(s) detected");
+            }
+            Console.WriteLine();
+        }
+
+        // Remove temporary barcode images and the containing directory.
+        CleanupSampleBarcodes(imagePaths);
+    }
+
+    /// <summary>
+    /// Generates a set of barcode images using different symbologies and returns their file paths.
+    /// </summary>
+    /// <returns>List of full file paths to the generated barcode images.</returns>
+    private static List<string> GenerateSampleBarcodes()
+    {
+        var paths = new List<string>();
+        string tempDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeSample");
+        Directory.CreateDirectory(tempDir);
+
+        // Define sample data for each barcode type.
+        var samples = new List<(BaseEncodeType Type, string Text, string FileName)>
+        {
+            (EncodeTypes.Code128, "Sample123", "code128.png"),
+            (EncodeTypes.QR, "https://example.com", "qr.png"),
+            (EncodeTypes.DataMatrix, "DM12345", "datamatrix.png")
+        };
+
+        // Generate each barcode and save it as a PNG file.
+        foreach (var sample in samples)
+        {
+            string fullPath = Path.Combine(tempDir, sample.FileName);
+            using (var generator = new BarcodeGenerator(sample.Type, sample.Text))
+            {
+                // Save the generated barcode image.
+                generator.Save(fullPath, BarCodeImageFormat.Png);
+            }
+            paths.Add(fullPath);
+        }
+
+        return paths;
+    }
+
+    /// <summary>
+    /// Deletes the temporary barcode image files and their containing directory.
+    /// </summary>
+    /// <param name="paths">List of file paths to delete.</param>
+    private static void CleanupSampleBarcodes(List<string> paths)
+    {
+        // Delete each individual file.
+        foreach (string path in paths)
+        {
+            try
+            {
+                if (File.Exists(path))
+                {
+                    File.Delete(path);
+                }
+            }
+            catch
+            {
+                // Suppress any exceptions during file deletion.
+            }
+        }
+
+        // Delete the temporary directory if it exists.
+        try
+        {
+            string dir = Path.GetDirectoryName(paths[0]);
+            if (Directory.Exists(dir))
+            {
+                Directory.Delete(dir, true);
+            }
+        }
+        catch
+        {
+            // Suppress any exceptions during directory deletion.
         }
     }
 }

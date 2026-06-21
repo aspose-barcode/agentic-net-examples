@@ -1,71 +1,115 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates generation of Code128 barcodes with different XDimension settings
+/// and evaluates detection success using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates barcode images, reads them back, and reports detection rates.
+    /// </summary>
     static void Main()
     {
-        // Sample data for barcodes
-        string[] codes = { "12345", "67890", "ABCDE", "FGHIJ", "KLMNO" };
-        string[] files = new string[codes.Length];
+        const int sampleCount = 10;               // Number of barcode samples to generate per setting
+        const string codeText = "1234567890";     // Text to encode in each barcode
 
-        // Generate small‑XDimension barcodes
-        for (int i = 0; i < codes.Length; i++)
+        // Containers for generated barcode images (as byte arrays)
+        var smallBarcodes = new List<byte[]>();
+        var defaultBarcodes = new List<byte[]>();
+
+        // --------------------------------------------------------------------
+        // Generate barcodes:
+        //   - smallBarcodes: XDimension set to 1 point (very small modules)
+        //   - defaultBarcodes: default XDimension (no explicit setting)
+        // --------------------------------------------------------------------
+        for (int i = 0; i < sampleCount; i++)
         {
-            string fileName = $"barcode_{i}.png";
-            files[i] = fileName;
-
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codes[i]))
+            // ---- Small XDimension barcode ----
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
             {
-                // Set a very small XDimension (1 point)
+                // Disable auto-sizing to allow manual XDimension control
+                generator.Parameters.AutoSizeMode = AutoSizeMode.None;
+                // Set module size to 1 point
                 generator.Parameters.Barcode.XDimension.Point = 1f;
-                generator.Save(fileName);
+                // Set bar height to 40 points
+                generator.Parameters.Barcode.BarHeight.Point = 40f;
+
+                using (var ms = new MemoryStream())
+                {
+                    // Save barcode as PNG into memory stream
+                    generator.Save(ms, BarCodeImageFormat.Png);
+                    // Store the resulting byte array
+                    smallBarcodes.Add(ms.ToArray());
+                }
             }
-        }
 
-        // Compare detection using default (Auto) vs Small XDimension mode
-        int detectedDefault = 0;
-        int detectedSmall = 0;
-
-        foreach (string file in files)
-        {
-            if (!File.Exists(file))
-                continue;
-
-            // Default detection (Auto)
-            if (Recognize(file, XDimensionMode.Auto))
-                detectedDefault++;
-
-            // Small XDimension detection
-            if (Recognize(file, XDimensionMode.Small))
-                detectedSmall++;
-        }
-
-        Console.WriteLine($"Total barcodes: {codes.Length}");
-        Console.WriteLine($"Detected with default (Auto) mode: {detectedDefault}/{codes.Length}");
-        Console.WriteLine($"Detected with Small XDimension mode: {detectedSmall}/{codes.Length}");
-    }
-
-    // Recognizes a barcode image using the specified XDimension mode.
-    // Returns true if at least one barcode is found.
-    static bool Recognize(string imagePath, XDimensionMode mode)
-    {
-        using (var reader = new BarCodeReader(imagePath, DecodeType.Code128))
-        {
-            // Use a high‑performance preset for speed
-            reader.QualitySettings = QualitySettings.HighPerformance;
-            // Set the XDimension recognition mode
-            reader.QualitySettings.XDimension = mode;
-
-            foreach (var result in reader.ReadBarCodes())
+            // ---- Default barcode (no explicit XDimension) ----
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
             {
-                // Successful detection
-                return true;
+                // Use default AutoSizeMode (Interpolation) and default XDimension
+                using (var ms = new MemoryStream())
+                {
+                    generator.Save(ms, BarCodeImageFormat.Png);
+                    defaultBarcodes.Add(ms.ToArray());
+                }
             }
         }
-        return false;
+
+        // --------------------------------------------------------------------
+        // Detect barcodes generated with small XDimension using XDimensionMode.Small
+        // --------------------------------------------------------------------
+        int smallDetected = 0;
+        foreach (var data in smallBarcodes)
+        {
+            using (var ms = new MemoryStream(data))
+            using (var bitmap = new Bitmap(ms))
+            using (var reader = new BarCodeReader(bitmap, DecodeType.Code128))
+            {
+                // Instruct the reader to treat modules as small
+                reader.QualitySettings.XDimension = XDimensionMode.Small;
+
+                // Perform detection
+                var results = reader.ReadBarCodes();
+
+                // Verify detection succeeded and matched expected text
+                if (results.Length > 0 && results[0].CodeText == codeText)
+                    smallDetected++;
+            }
+        }
+
+        // --------------------------------------------------------------------
+        // Detect barcodes generated with default XDimension (auto mode)
+        // --------------------------------------------------------------------
+        int defaultDetected = 0;
+        foreach (var data in defaultBarcodes)
+        {
+            using (var ms = new MemoryStream(data))
+            using (var bitmap = new Bitmap(ms))
+            using (var reader = new BarCodeReader(bitmap, DecodeType.Code128))
+            {
+                // No explicit XDimension setting; defaults to XDimensionMode.Auto
+                var results = reader.ReadBarCodes();
+
+                if (results.Length > 0 && results[0].CodeText == codeText)
+                    defaultDetected++;
+            }
+        }
+
+        // --------------------------------------------------------------------
+        // Output detection rates for both settings
+        // --------------------------------------------------------------------
+        Console.WriteLine(
+            $"Small XDimension detection rate: {smallDetected}/{sampleCount} ({(double)smallDetected / sampleCount:P0})");
+        Console.WriteLine(
+            $"Default detection rate: {defaultDetected}/{sampleCount} ({(double)defaultDetected / sampleCount:P0})");
     }
 }

@@ -1,54 +1,62 @@
 using System;
 using System.Diagnostics;
 using System.IO;
-using Aspose.BarCode;
-using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates loading an image and detecting barcodes using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Loads a bitmap, measures loading time, detects barcodes, and reports results.
+    /// </summary>
     static void Main()
     {
-        const string imagePath = "sample.png";
+        // Path to the barcode image file
+        string imagePath = "sample.png";
 
-        // Ensure a barcode image exists; generate one if missing.
+        // Verify that the image file exists before proceeding
         if (!File.Exists(imagePath))
         {
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+            Console.WriteLine($"Image file not found: {imagePath}");
+            return;
+        }
+
+        // Start timer to measure how long it takes to load the image into a Bitmap object
+        Stopwatch loadTimer = Stopwatch.StartNew();
+
+        // Load the image using Aspose.Drawing.Bitmap within a using block to ensure disposal
+        using (var bitmap = new Bitmap(imagePath))
+        {
+            // Stop the loading timer once the bitmap is created
+            loadTimer.Stop();
+            Console.WriteLine($"Image loading time: {loadTimer.ElapsedMilliseconds} ms");
+
+            // Start timer to measure barcode detection performance
+            Stopwatch detectTimer = Stopwatch.StartNew();
+
+            // Initialize the barcode reader for all supported barcode types
+            using (var reader = new BarCodeReader(bitmap, DecodeType.AllSupportedTypes))
             {
-                // Simple settings for the generated barcode.
-                generator.Parameters.Barcode.BarHeight.Point = 50f;
-                generator.Parameters.ImageWidth.Point = 300f;
-                generator.Parameters.ImageHeight.Point = 150f;
-                generator.Save(imagePath);
+                // Perform barcode detection
+                var results = reader.ReadBarCodes();
+
+                // Stop the detection timer after reading is complete
+                detectTimer.Stop();
+
+                // Output detection timing and result count
+                Console.WriteLine($"Barcode detection time: {detectTimer.ElapsedMilliseconds} ms");
+                Console.WriteLine($"Barcodes found: {results.Length}");
+
+                // Iterate through each detected barcode and display its type and decoded text
+                foreach (var result in results)
+                {
+                    Console.WriteLine($"Type: {result.CodeTypeName}, Text: {result.CodeText}");
+                }
             }
         }
-
-        // Measure image loading time.
-        Bitmap bitmap;
-        var loadTimer = Stopwatch.StartNew();
-        using (var bmp = new Bitmap(imagePath))
-        {
-            // Clone the bitmap to keep it after disposing the using block.
-            bitmap = new Bitmap(bmp);
-        }
-        loadTimer.Stop();
-
-        // Measure barcode detection time.
-        var detectTimer = Stopwatch.StartNew();
-        using (var reader = new BarCodeReader(bitmap, DecodeType.Code128))
-        {
-            foreach (BarCodeResult result in reader.ReadBarCodes())
-            {
-                Console.WriteLine($"Detected Type: {result.CodeTypeName}, Text: {result.CodeText}");
-            }
-        }
-        detectTimer.Stop();
-
-        // Output timing results.
-        Console.WriteLine($"Image loading time: {loadTimer.ElapsedMilliseconds} ms");
-        Console.WriteLine($"Barcode detection time: {detectTimer.ElapsedMilliseconds} ms");
     }
 }

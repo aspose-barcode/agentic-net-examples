@@ -1,53 +1,62 @@
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates barcode generation, saving to memory, and recognition with different X-dimension settings.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a Code128 barcode, reads it with minimal X-dimension enabled, then reads it again with default settings.
+    /// </summary>
     static void Main()
     {
-        // Define the barcode image file path
-        string barcodePath = "barcode.png";
-
-        // Create a Code128 barcode and save it
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
+        // Create a barcode generator for Code128 with the text "Sample123"
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
         {
-            generator.Save(barcodePath);
-        }
-
-        // Verify that the barcode image was created
-        if (!File.Exists(barcodePath))
-        {
-            Console.WriteLine("Failed to create barcode image.");
-            return;
-        }
-
-        // Read the barcode using UseMinimalXDimension mode
-        using (var reader = new BarCodeReader(barcodePath, DecodeType.Code128))
-        {
-            // Activate UseMinimalXDimension for this read operation
-            reader.QualitySettings.XDimension = XDimensionMode.UseMinimalXDimension;
-
-            Console.WriteLine("Reading with UseMinimalXDimension:");
-            foreach (BarCodeResult result in reader.ReadBarCodes())
+            // Store the generated barcode image in a memory stream
+            using (var ms = new MemoryStream())
             {
-                Console.WriteLine($"  Type: {result.CodeTypeName}, Text: {result.CodeText}");
-            }
+                // Save the barcode as PNG into the memory stream
+                generator.Save(ms, BarCodeImageFormat.Png);
+                // Reset stream position to the beginning for reading
+                ms.Position = 0;
 
-            // Deactivate UseMinimalXDimension to restore default handling (Auto)
-            reader.QualitySettings.XDimension = XDimensionMode.Auto;
-        }
+                // Load the PNG image from the memory stream into a Bitmap for recognition
+                using (var bitmap = new Bitmap(ms))
+                {
+                    // Initialize a barcode reader that supports all barcode types
+                    using (var reader = new BarCodeReader(bitmap, DecodeType.AllSupportedTypes))
+                    {
+                        // Enable minimal X-dimension mode and set an example minimal size
+                        reader.QualitySettings.XDimension = XDimensionMode.UseMinimalXDimension;
+                        reader.QualitySettings.MinimalXDimension = 5f; // example minimal size
 
-        // Optional: read again with default XDimension to confirm restoration
-        using (var reader = new BarCodeReader(barcodePath, DecodeType.Code128))
-        {
-            Console.WriteLine("Reading with default XDimension (Auto):");
-            foreach (BarCodeResult result in reader.ReadBarCodes())
-            {
-                Console.WriteLine($"  Type: {result.CodeTypeName}, Text: {result.CodeText}");
+                        Console.WriteLine("Recognition with UseMinimalXDimension:");
+                        // Iterate over all detected barcodes and output their type and text
+                        foreach (var result in reader.ReadBarCodes())
+                        {
+                            Console.WriteLine($"  Type: {result.CodeTypeName}, Text: {result.CodeText}");
+                        }
+
+                        // Deactivate minimal X-dimension mode to revert to normal handling
+                        reader.QualitySettings.XDimension = XDimensionMode.Normal;
+                        reader.QualitySettings.MinimalXDimension = 0f;
+
+                        Console.WriteLine("Recognition after deactivating UseMinimalXDimension:");
+                        // Perform recognition again with default X-dimension settings
+                        foreach (var result in reader.ReadBarCodes())
+                        {
+                            Console.WriteLine($"  Type: {result.CodeTypeName}, Text: {result.CodeText}");
+                        }
+                    }
+                }
             }
         }
     }

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
@@ -7,67 +8,113 @@ using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
+/// <summary>
+/// Demonstrates generating Code128 barcodes, scanning them synchronously and asynchronously,
+/// and comparing the execution times.
+/// </summary>
 class Program
 {
-    static void Main(string[] args)
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates sample barcode images, scans them synchronously and asynchronously,
+    /// and prints timing results and decoded texts.
+    /// </summary>
+    static void Main()
     {
-        // Prepare barcode image
-        string filePath = "barcode.png";
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+        // ------------------------------------------------------------
+        // Generate sample barcode images (Code128) and store as byte arrays
+        // ------------------------------------------------------------
+        var barcodeImages = new List<byte[]>();
+        for (int i = 0; i < 5; i++)
         {
-            generator.Save(filePath);
-        }
-
-        // Verify file exists
-        if (!File.Exists(filePath))
-        {
-            Console.WriteLine("Failed to create barcode image.");
-            return;
-        }
-
-        int iterations = 5;
-        long totalSyncTicks = 0;
-        long totalAsyncTicks = 0;
-
-        for (int i = 0; i < iterations; i++)
-        {
-            // Synchronous read
-            var swSync = Stopwatch.StartNew();
-            using (var reader = new BarCodeReader(filePath, DecodeType.Code128))
+            // Create a unique code text for each barcode (e.g., CODE000, CODE001, ...)
+            string codeText = $"CODE{i:D3}";
+            using (var ms = new MemoryStream())
             {
-                foreach (var result in reader.ReadBarCodes())
+                // Generate the barcode and save it as PNG into the memory stream
+                using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
                 {
-                    // Access result to ensure processing
-                    var _ = result.CodeText;
+                    generator.Save(ms, BarCodeImageFormat.Png);
                 }
+                // Store the generated image bytes for later scanning
+                barcodeImages.Add(ms.ToArray());
             }
-            swSync.Stop();
-            totalSyncTicks += swSync.ElapsedTicks;
+        }
 
-            // Asynchronous read using Task.Run
-            var swAsync = Stopwatch.StartNew();
-            var task = Task.Run(() =>
+        // ------------------------------------------------------------
+        // Synchronous scanning of the generated barcode images
+        // ------------------------------------------------------------
+        var syncStopwatch = Stopwatch.StartNew(); // Start timing
+        var syncResults = new List<string>();
+        foreach (var imgData in barcodeImages)
+        {
+            using (var ms = new MemoryStream(imgData))
             {
-                using (var reader = new BarCodeReader(filePath, DecodeType.Code128))
+                // Initialize a barcode reader for Code128 type
+                using (var reader = new BarCodeReader(ms, DecodeType.Code128))
                 {
+                    // Read all barcodes found in the image and collect their text
                     foreach (var result in reader.ReadBarCodes())
                     {
-                        var _ = result.CodeText;
+                        syncResults.Add(result.CodeText);
                     }
                 }
-            });
-            task.Wait();
-            swAsync.Stop();
-            totalAsyncTicks += swAsync.ElapsedTicks;
+            }
+        }
+        syncStopwatch.Stop(); // Stop timing
+
+        // ------------------------------------------------------------
+        // Asynchronous scanning (wrapped in Task.Run for parallel execution)
+        // ------------------------------------------------------------
+        var asyncStopwatch = Stopwatch.StartNew(); // Start timing
+        var asyncTasks = new List<Task<List<string>>>();
+        foreach (var imgData in barcodeImages)
+        {
+            // Queue a task that scans a single image and returns the decoded texts
+            asyncTasks.Add(Task.Run(() =>
+            {
+                var texts = new List<string>();
+                using (var ms = new MemoryStream(imgData))
+                {
+                    using (var reader = new BarCodeReader(ms, DecodeType.Code128))
+                    {
+                        foreach (var result in reader.ReadBarCodes())
+                        {
+                            texts.Add(result.CodeText);
+                        }
+                    }
+                }
+                return texts;
+            }));
         }
 
-        double tickToMs = 1000.0 / Stopwatch.Frequency;
-        double avgSyncMs = (totalSyncTicks * tickToMs) / iterations;
-        double avgAsyncMs = (totalAsyncTicks * tickToMs) / iterations;
-        double reduction = (avgSyncMs - avgAsyncMs) / avgSyncMs * 100.0;
+        // Wait for all scanning tasks to complete
+        Task.WaitAll(asyncTasks.ToArray());
 
-        Console.WriteLine($"Average synchronous read time: {avgSyncMs:F3} ms");
-        Console.WriteLine($"Average asynchronous read time: {avgAsyncMs:F3} ms");
-        Console.WriteLine($"Latency reduction: {reduction:F2}%");
+        // Aggregate results from all tasks
+        var asyncResults = new List<string>();
+        foreach (var task in asyncTasks)
+        {
+            asyncResults.AddRange(task.Result);
+        }
+        asyncStopwatch.Stop(); // Stop timing
+
+        // ------------------------------------------------------------
+        // Output timing comparison and decoded results
+        // ------------------------------------------------------------
+        Console.WriteLine($"Synchronous scan time: {syncStopwatch.ElapsedMilliseconds} ms");
+        Console.WriteLine($"Asynchronous scan time: {asyncStopwatch.ElapsedMilliseconds} ms");
+
+        Console.WriteLine("Synchronous results:");
+        foreach (var txt in syncResults)
+        {
+            Console.WriteLine(txt);
+        }
+
+        Console.WriteLine("Asynchronous results:");
+        foreach (var txt in asyncResults)
+        {
+            Console.WriteLine(txt);
+        }
     }
 }

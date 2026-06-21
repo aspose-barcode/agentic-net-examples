@@ -1,67 +1,99 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
+/// <summary>
+/// Demonstrates barcode generation and recognition timing using different quality presets.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Generates a barcode, then measures recognition time
+    /// using MaxQuality and HighPerformance quality settings.
+    /// </summary>
     static void Main()
     {
-        // Path for the sample barcode image
-        const string imagePath = "sample.png";
-
-        // Generate a simple Code128 barcode and save it to a file
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+        // Generate a sample barcode image in memory.
+        byte[] barcodeBytes;
+        using (var ms = new MemoryStream())
         {
-            generator.Save(imagePath, BarCodeImageFormat.Png);
-        }
-
-        // Verify that the image was created
-        if (!File.Exists(imagePath))
-        {
-            Console.WriteLine("Failed to create the barcode image.");
-            return;
-        }
-
-        // Measure recognition time with HighPerformance preset
-        long highPerfTime = MeasureRecognitionTime(imagePath, QualitySettings.HighPerformance);
-
-        // Measure recognition time with MaxQuality preset
-        long maxQualityTime = MeasureRecognitionTime(imagePath, QualitySettings.MaxQuality);
-
-        // Output the results
-        Console.WriteLine($"HighPerformance preset time: {highPerfTime} ms");
-        Console.WriteLine($"MaxQuality preset time: {maxQualityTime} ms");
-
-        // Clean up the temporary image file
-        try
-        {
-            File.Delete(imagePath);
-        }
-        catch
-        {
-            // Ignore any errors during cleanup
-        }
-    }
-
-    // Helper method to measure the elapsed time for barcode recognition using a specific QualitySettings preset
-    private static long MeasureRecognitionTime(string imageFile, QualitySettings preset)
-    {
-        using (var reader = new BarCodeReader(imageFile, DecodeType.Code128))
-        {
-            reader.QualitySettings = preset;
-
-            var stopwatch = Stopwatch.StartNew();
-
-            // Perform the recognition; iterate to ensure the operation is executed
-            foreach (var result in reader.ReadBarCodes())
+            // Create a Code128 barcode with the sample text.
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
             {
-                // No additional processing needed; just iterate
+                // Save the barcode as PNG into the memory stream.
+                generator.Save(ms, BarCodeImageFormat.Png);
             }
 
-            stopwatch.Stop();
-            return stopwatch.ElapsedMilliseconds;
+            // Retrieve the generated image bytes.
+            barcodeBytes = ms.ToArray();
+        }
+
+        // Define the two quality presets to compare.
+        var maxQuality = QualitySettings.MaxQuality;
+        // HighPerformance preset may not exist in all versions; fallback to MaxQuality if unavailable.
+        var highPerformance = GetHighPerformancePreset();
+
+        // Measure processing time with MaxQuality preset.
+        long maxQualityTime = MeasureRecognitionTime(barcodeBytes, maxQuality);
+        // Measure processing time with HighPerformance preset.
+        long highPerformanceTime = MeasureRecognitionTime(barcodeBytes, highPerformance);
+
+        // Output the timing results.
+        Console.WriteLine($"MaxQuality processing time: {maxQualityTime} ms");
+        Console.WriteLine($"HighPerformance processing time: {highPerformanceTime} ms");
+    }
+
+    /// <summary>
+    /// Attempts to retrieve a HighPerformance preset; if not available, uses MaxQuality as a fallback.
+    /// </summary>
+    /// <returns>A <see cref="QualitySettings"/> instance representing the high‑performance preset.</returns>
+    private static QualitySettings GetHighPerformancePreset()
+    {
+        // Some versions expose a HighPerformance static property; use reflection to avoid compile errors if absent.
+        var property = typeof(QualitySettings).GetProperty("HighPerformance");
+        if (property != null && property.PropertyType == typeof(QualitySettings))
+        {
+            return (QualitySettings)property.GetValue(null);
+        }
+
+        // Fallback to MaxQuality if HighPerformance is not defined.
+        return QualitySettings.MaxQuality;
+    }
+
+    /// <summary>
+    /// Measures the time (in milliseconds) taken to read barcodes from the provided image bytes
+    /// using the specified quality preset.
+    /// </summary>
+    /// <param name="imageBytes">The barcode image data.</param>
+    /// <param name="preset">The quality settings to apply during recognition.</param>
+    /// <returns>The elapsed time in milliseconds.</returns>
+    private static long MeasureRecognitionTime(byte[] imageBytes, QualitySettings preset)
+    {
+        using (var ms = new MemoryStream(imageBytes))
+        {
+            // Initialize the barcode reader for all supported decode types.
+            using (var reader = new BarCodeReader(ms, DecodeType.AllSupportedTypes))
+            {
+                // Apply the desired quality settings.
+                reader.QualitySettings = preset;
+
+                // Start timing.
+                var stopwatch = Stopwatch.StartNew();
+
+                // Perform the recognition; iterate results to ensure full processing.
+                foreach (var result in reader.ReadBarCodes())
+                {
+                    // Access result properties to avoid compiler optimizations eliminating the loop.
+                    var _ = result.CodeText;
+                }
+
+                // Stop timing and return elapsed milliseconds.
+                stopwatch.Stop();
+                return stopwatch.ElapsedMilliseconds;
+            }
         }
     }
 }
