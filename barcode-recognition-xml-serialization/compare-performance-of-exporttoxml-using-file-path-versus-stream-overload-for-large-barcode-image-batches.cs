@@ -29,7 +29,7 @@ class Program
         Stopwatch fileTimer = Stopwatch.StartNew();
         for (int i = 0; i < sampleCount; i++)
         {
-            // Create a barcode generator for each sample
+            // Create a barcode generator for each sample.
             using (var generator = new BarcodeGenerator(EncodeTypes.Code128, $"Sample{i}"))
             {
                 // Build the full path for the XML file
