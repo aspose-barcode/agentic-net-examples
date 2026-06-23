@@ -6,63 +6,77 @@ using Aspose.Slides;
 using Aspose.Slides.Export;
 using Aspose.Drawing;
 
+/// <summary>
+/// Demonstrates generating a barcode, saving it as EMF, and embedding it into a PowerPoint presentation.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Generates a Code128 barcode, saves it as an EMF file,
+    /// inserts the EMF into a new PowerPoint slide, and saves the presentation.
+    /// </summary>
     static void Main()
     {
-        // Paths for the generated EMF file and the PowerPoint presentation
-        string emfPath = "barcode.emf";
-        string pptxPath = "barcode_presentation.pptx";
+        // Define temporary file path for the EMF image and final PPTX output path
+        string emfPath = Path.Combine(Path.GetTempPath(), "barcode.emf");
+        string pptxPath = Path.Combine(Directory.GetCurrentDirectory(), "BarcodePresentation.pptx");
 
-        // Create a barcode generator for Code128 and set the code text
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128))
+        // ------------------------------------------------------------
+        // 1. Generate a barcode and save it as EMF
+        // ------------------------------------------------------------
+        try
         {
-            generator.CodeText = "1234567890";
-
-            // Save the barcode as an EMF vector file
-            try
+            // Initialize the barcode generator with Code128 symbology and data
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
             {
+                // Set image resolution (dots per inch) for higher quality output
+                generator.Parameters.Resolution = 300f;
+
+                // Save the generated barcode to the EMF file (vector format)
                 generator.Save(emfPath, BarCodeImageFormat.Emf);
             }
-            catch (Exception ex)
-            {
-                // Evaluation version of Aspose.BarCode allows only certain symbologies for EMF export
-                if (ex.Message.Contains("evaluation"))
-                {
-                    Console.WriteLine("EMF export requires a valid Aspose.BarCode license. Please apply a license before using this feature.");
-                    return;
-                }
-                throw;
-            }
         }
-
-        // Verify that the EMF file was created
-        if (!File.Exists(emfPath))
+        catch (Exception ex)
         {
-            Console.WriteLine("Failed to create the EMF file.");
-            return;
+            // The evaluation version may throw an exception for unsupported EMF export.
+            // Detect license limitation and inform the user, then exit gracefully.
+            if (ex.Message != null && ex.Message.Contains("evaluation"))
+            {
+                Console.WriteLine("A valid Aspose.BarCode license is required to export EMF for this barcode type.");
+                return;
+            }
+
+            // Re-throw any other unexpected exceptions
+            throw;
         }
 
-        // Create a new PowerPoint presentation and add the EMF image to the first slide
+        // ------------------------------------------------------------
+        // 2. Create a PowerPoint presentation and insert the EMF image
+        // ------------------------------------------------------------
         using (var presentation = new Presentation())
         {
+            // Retrieve the default first slide created with the presentation
             var slide = presentation.Slides[0];
 
-            // Load EMF bytes and add them to the presentation's image collection
+            // Read the EMF file bytes and add the image to the presentation's image collection
             byte[] emfBytes = File.ReadAllBytes(emfPath);
-            IPPImage emfImage = presentation.Images.AddImage(emfBytes);
+            var pptImage = presentation.Images.AddImage(emfBytes);
 
-            // Define picture frame dimensions (points)
-            float pictureWidth = 400f;
-            float pictureHeight = 300f;
+            // Define the position (X, Y) and size (Width, Height) of the picture frame in points
+            float pictureX = 50f;      // Left margin
+            float pictureY = 50f;      // Top margin
+            float pictureWidth = 300f; // Width of the barcode image
+            float pictureHeight = 150f;// Height of the barcode image
 
-            // Add the EMF image as a picture frame on the slide
-            slide.Shapes.AddPictureFrame(ShapeType.Rectangle, 0f, 0f, pictureWidth, pictureHeight, emfImage);
+            // Insert the EMF barcode into the slide as a picture frame
+            slide.Shapes.AddPictureFrame(ShapeType.Rectangle, pictureX, pictureY, pictureWidth, pictureHeight, pptImage);
 
-            // Save the presentation
+            // Save the PowerPoint file to the specified path
             presentation.Save(pptxPath, SaveFormat.Pptx);
         }
 
-        Console.WriteLine("Barcode EMF exported and embedded into PowerPoint successfully.");
+        // Output the locations of the generated files for user reference
+        Console.WriteLine($"Barcode EMF saved to: {emfPath}");
+        Console.WriteLine($"PowerPoint presentation created at: {pptxPath}");
     }
 }

@@ -3,48 +3,85 @@ using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
+/// <summary>
+/// Demonstrates generating Code39 barcodes from a list of strings (read from a CSV file or sample data)
+/// and saving them as SVG files using Aspose.BarCode.
+/// </summary>
 class Program
 {
-    static void Main(string[] args)
+    /// <summary>
+    /// Entry point of the application.
+    /// Reads input data, generates barcodes, and writes SVG files to the output directory.
+    /// </summary>
+    static void Main()
     {
-        // Determine input CSV path and output folder from arguments or use defaults
-        string inputCsv = args.Length > 0 ? args[0] : "codes.csv";
-        string outputFolder = args.Length > 1 ? args[1] : "Barcodes";
+        // Path to the optional CSV file containing barcode texts (one per line).
+        string csvPath = "input.csv";
 
-        // Ensure the CSV file exists; if not, create a small sample file
-        if (!File.Exists(inputCsv))
+        // Array to hold the barcode texts.
+        string[] codeTexts;
+
+        // Load barcode texts from CSV if it exists; otherwise use predefined sample data.
+        if (File.Exists(csvPath))
         {
-            string[] sampleCodes = { "ABC123", "CODE39", "HELLO", "12345", "TEST" };
-            File.WriteAllLines(inputCsv, sampleCodes);
+            // Read all lines from the CSV file; each line is expected to contain a single value.
+            codeTexts = File.ReadAllLines(csvPath);
         }
-
-        // Ensure the output directory exists
-        if (!Directory.Exists(outputFolder))
+        else
         {
-            Directory.CreateDirectory(outputFolder);
-        }
-
-        // Read each line (code text) from the CSV file
-        string[] lines = File.ReadAllLines(inputCsv);
-        int index = 1;
-        foreach (string rawLine in lines)
-        {
-            string codeText = rawLine.Trim();
-            if (string.IsNullOrEmpty(codeText))
-                continue; // Skip empty lines
-
-            // Build a safe file name for the SVG output
-            string safeFileName = $"barcode_{index:D4}.svg";
-            string outputPath = Path.Combine(outputFolder, safeFileName);
-
-            // Generate the Code39 barcode and save as SVG
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code39, codeText))
+            // Sample data used when the CSV file is missing.
+            codeTexts = new string[]
             {
-                // Optional: adjust image size or other parameters here if needed
-                generator.Save(outputPath, BarCodeImageFormat.Svg);
-            }
-
-            index++;
+                "ABC123",
+                "987654321",
+                "CODE-39",
+                "Aspose.BarCode",
+                "Sample001"
+            };
+            Console.WriteLine("CSV file not found. Using sample data.");
         }
+
+        // Ensure the output directory for barcode images exists.
+        string outputDir = "Barcodes";
+        if (!Directory.Exists(outputDir))
+        {
+            Directory.CreateDirectory(outputDir);
+        }
+
+        // Process each barcode text.
+        foreach (string rawLine in codeTexts)
+        {
+            // Trim whitespace and guard against null values.
+            string codeText = rawLine?.Trim();
+
+            // Skip empty or null lines.
+            if (string.IsNullOrEmpty(codeText))
+                continue;
+
+            // Create a safe file name by removing invalid path characters
+            string safeFileName = string.Concat(codeText.Split(Path.GetInvalidFileNameChars()));
+
+            // Full path for the SVG output file.
+            string outputPath = Path.Combine(outputDir, safeFileName + ".svg");
+
+            // Generate a Code39 barcode with full ASCII support.
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code39FullASCII, codeText))
+            {
+                // No additional settings are required for basic Code39 generation.
+                try
+                {
+                    // Save the barcode as an SVG file.
+                    generator.Save(outputPath, BarCodeImageFormat.Svg);
+                    Console.WriteLine($"Saved barcode for \"{codeText}\" to \"{outputPath}\"");
+                }
+                catch (Exception ex)
+                {
+                    // Handle potential errors (e.g., licensing restrictions) and continue processing.
+                    Console.WriteLine($"Failed to save barcode for \"{codeText}\": {ex.Message}");
+                }
+            }
+        }
+
+        Console.WriteLine("Processing completed.");
     }
 }

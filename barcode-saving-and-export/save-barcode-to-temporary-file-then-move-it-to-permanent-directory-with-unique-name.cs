@@ -1,36 +1,80 @@
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
+/// <summary>
+/// Demonstrates generating a Code128 barcode, saving it to a temporary file,
+/// and moving it to a permanent directory.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Application entry point. Generates a barcode image and stores it permanently.
+    /// </summary>
     static void Main()
     {
-        // Define temporary file path
-        string tempFolder = Path.GetTempPath();
-        string tempFile = Path.Combine(tempFolder, "tempBarcode.png");
+        // Define the barcode symbology (Code128) and the text to encode.
+        BaseEncodeType encodeType = EncodeTypes.Code128;
+        string codeText = "Sample123";
 
-        // Generate barcode and save to temporary file
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+        // Build a temporary file path in the system's temp folder with a .png extension.
+        string tempFilePath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString() + ".png");
+
+        // Generate the barcode and save it directly to the temporary file.
+        try
         {
-            generator.Save(tempFile);
+            using (var generator = new BarcodeGenerator(encodeType, codeText))
+            {
+                // Save the barcode image to the temporary location.
+                generator.Save(tempFilePath);
+            }
+        }
+        catch (Exception ex)
+        {
+            // Output any errors that occur during barcode generation.
+            Console.WriteLine("Error generating barcode: " + ex.Message);
+            return;
         }
 
-        // Define permanent directory
-        string permanentFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Barcodes");
-        if (!Directory.Exists(permanentFolder))
+        // Ensure the temporary file was created successfully.
+        if (!File.Exists(tempFilePath))
         {
-            Directory.CreateDirectory(permanentFolder);
+            Console.WriteLine("Temporary barcode file was not created.");
+            return;
         }
 
-        // Create a unique file name
-        string uniqueFileName = Guid.NewGuid().ToString("N") + ".png";
-        string destinationFile = Path.Combine(permanentFolder, uniqueFileName);
+        // Determine the permanent directory path relative to the application's base directory.
+        string permanentDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Barcodes");
 
-        // Move the file to the permanent location
-        File.Move(tempFile, destinationFile);
+        // Create the permanent directory if it does not already exist.
+        try
+        {
+            if (!Directory.Exists(permanentDir))
+            {
+                Directory.CreateDirectory(permanentDir);
+            }
+        }
+        catch (Exception ex)
+        {
+            // Output any errors that occur while creating the directory.
+            Console.WriteLine("Error creating permanent directory: " + ex.Message);
+            return;
+        }
 
-        // Optional: inform the user
-        Console.WriteLine("Barcode saved to: " + destinationFile);
+        // Build a unique file name for the permanent location.
+        string permanentFilePath = Path.Combine(permanentDir, Guid.NewGuid().ToString() + ".png");
+
+        // Move the file from the temporary location to the permanent directory.
+        try
+        {
+            File.Move(tempFilePath, permanentFilePath);
+            Console.WriteLine("Barcode saved to: " + permanentFilePath);
+        }
+        catch (Exception ex)
+        {
+            // Output any errors that occur during the file move operation.
+            Console.WriteLine("Error moving barcode file: " + ex.Message);
+        }
     }
 }

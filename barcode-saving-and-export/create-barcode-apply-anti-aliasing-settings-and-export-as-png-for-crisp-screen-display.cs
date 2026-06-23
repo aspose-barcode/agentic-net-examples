@@ -1,30 +1,34 @@
 using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 
-namespace BarcodeSample
+/// <summary>
+/// Demonstrates generating a Code128 barcode and saving it as a PNG file using Aspose.BarCode.
+/// </summary>
+class Program
 {
-    class Program
+    /// <summary>
+    /// Entry point of the application. Generates a barcode and writes it to disk.
+    /// </summary>
+    static void Main()
     {
-        static void Main()
+        // Define the file path where the generated barcode image will be saved.
+        string outputPath = "barcode.png";
+
+        // Initialize a BarcodeGenerator with the desired symbology (Code128) and data.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            // Create a barcode generator for Code128 with sample text
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
-            {
-                // Enable anti-aliasing for smoother rendering on screen
-                generator.Parameters.UseAntiAlias = true;
+            // Enable anti‑aliasing to improve visual quality of the rendered barcode.
+            generator.Parameters.UseAntiAlias = true;
 
-                // Set a higher resolution (e.g., 300 DPI) for crisp display
-                generator.Parameters.Resolution = 300f;
+            // Set the resolution (dots per inch) for the output image; higher values give sharper results.
+            generator.Parameters.Resolution = 300f;
 
-                // Optionally, define image size in points for consistent dimensions
-                generator.Parameters.ImageWidth.Point = 300f;
-                generator.Parameters.ImageHeight.Point = 100f;
-
-                // Save the barcode as a PNG file
-                generator.Save("barcode.png");
-            }
+            // Save the generated barcode image to the specified file in PNG format.
+            generator.Save(outputPath);
         }
+
+        // Inform the user that the barcode has been successfully saved.
+        Console.WriteLine($"Barcode saved to {outputPath}");
     }
 }

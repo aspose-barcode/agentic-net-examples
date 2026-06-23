@@ -2,34 +2,35 @@ using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
-namespace BarcodeSample
+/// <summary>
+/// Demonstrates generating a Code128 barcode and saving it as a GIF image.
+/// </summary>
+class Program
 {
-    class Program
+    /// <summary>
+    /// Entry point of the application. Generates a barcode, configures its appearance,
+    /// saves it to a file, and writes the output path to the console.
+    /// </summary>
+    static void Main()
     {
-        static void Main()
+        // Define the output file path for the generated barcode image.
+        string outputPath = "barcode.gif";
+
+        // Initialize a BarcodeGenerator with Code128 symbology and the desired text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
         {
-            // Define output file path
-            string outputPath = "barcode.gif";
+            // Set the background color of the image (light gray).
+            generator.Parameters.BackColor = Color.LightGray;
 
-            // Create a barcode generator for Code128
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128))
-            {
-                // Set the text to encode
-                generator.CodeText = "1234567890";
+            // Set the foreground (bar) color of the barcode (dark blue).
+            generator.Parameters.Barcode.BarColor = Color.DarkBlue;
 
-                // Set a custom background color (e.g., light yellow)
-                generator.Parameters.BackColor = Color.LightYellow;
-
-                // Optionally, set the bar (foreground) color
-                generator.Parameters.Barcode.BarColor = Color.DarkBlue;
-
-                // Save the barcode as a GIF image suitable for web use
-                generator.Save(outputPath, BarCodeImageFormat.Gif);
-            }
-
-            Console.WriteLine($"Barcode saved to {outputPath}");
+            // Save the barcode as a GIF image, which is suitable for web usage.
+            generator.Save(outputPath, BarCodeImageFormat.Gif);
         }
+
+        // Inform the user where the barcode image has been saved.
+        Console.WriteLine($"Barcode image saved to: {outputPath}");
     }
 }

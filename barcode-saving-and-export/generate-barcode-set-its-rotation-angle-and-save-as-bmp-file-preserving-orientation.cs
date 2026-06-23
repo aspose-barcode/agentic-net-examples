@@ -2,21 +2,31 @@ using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
-namespace BarcodeRotationExample
+/// <summary>
+/// Demonstrates generating a rotated Code128 barcode and saving it as a BMP image.
+/// </summary>
+class Program
 {
-    class Program
+    /// <summary>
+    /// Application entry point.
+    /// Generates a Code128 barcode with a rotation of 90 degrees and writes it to a BMP file.
+    /// </summary>
+    static void Main()
     {
-        static void Main()
-        {
-            // Create a barcode generator for Code128 with sample text
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456789"))
-            {
-                // Set the rotation angle (in degrees)
-                generator.Parameters.RotationAngle = 90f;
+        // Define the output file path for the generated barcode image.
+        string outputPath = "barcode.bmp";
 
-                // Save the barcode image as BMP, preserving the rotation
-                generator.Save("barcode.bmp");
-            }
+        // Initialize a BarcodeGenerator for Code128 format with the desired text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
+        {
+            // Apply a 90-degree rotation to the barcode.
+            generator.Parameters.RotationAngle = 90f;
+
+            // Save the rotated barcode to the specified path in BMP format.
+            generator.Save(outputPath, BarCodeImageFormat.Bmp);
         }
+
+        // Inform the user that the barcode has been saved successfully.
+        Console.WriteLine($"Barcode saved to {outputPath}");
     }
 }
