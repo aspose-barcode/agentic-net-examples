@@ -75,7 +75,7 @@ class Program
         }
         catch
         {
-            // Ignored - cleanup is best effort
+            // Ignored - cleanup is best effort.
         }
     }
 }
