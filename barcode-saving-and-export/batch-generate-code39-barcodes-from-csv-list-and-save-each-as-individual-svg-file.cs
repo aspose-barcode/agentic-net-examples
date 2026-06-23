@@ -58,7 +58,7 @@ class Program
             if (string.IsNullOrEmpty(codeText))
                 continue;
 
-            // Create a safe file name by removing invalid path characters.
+            // Create a safe file name by removing invalid path characters
             string safeFileName = string.Concat(codeText.Split(Path.GetInvalidFileNameChars()));
 
             // Full path for the SVG output file.
