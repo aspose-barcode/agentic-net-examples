@@ -9,7 +9,4 @@
   <ItemGroup>
     <PackageReference Include="Aspose.BarCode" Version="26.5.0" />
   </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Program.cs" />
-  </ItemGroup>
 </Project>
