@@ -1,108 +1,121 @@
 using System;
 using System.IO;
-using System.Linq;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
-namespace AsposeBarcodeWrapperDemo
+/// <summary>
+/// Wrapper around Aspose.BarCode's <see cref="BarCodeReader"/> providing simplified
+/// configuration loading, image assignment, and barcode reading functionality.
+/// </summary>
+public class BarcodeReaderWrapper
 {
-    // Wrapper that handles XML serialization and image assignment for BarCodeReader
-    public class BarcodeReaderXmlWrapper : IDisposable
+    // Internal Aspose barcode reader instance.
+    private readonly BarCodeReader _reader;
+
+    /// <summary>
+    /// Initializes a new instance of <see cref="BarcodeReaderWrapper"/>.
+    /// </summary>
+    public BarcodeReaderWrapper()
     {
-        private BarCodeReader _reader;
+        // Create a fresh BarCodeReader object.
+        _reader = new BarCodeReader();
+    }
 
-        // Loads BarCodeReader settings from an XML file
-        public void LoadFromXml(string xmlPath)
+    /// <summary>
+    /// Loads reader configuration from an XML file.
+    /// </summary>
+    /// <param name="xmlFilePath">Path to the XML configuration file.</param>
+    public void LoadConfiguration(string xmlFilePath)
+    {
+        // Verify that the configuration file exists before attempting to load it.
+        if (!File.Exists(xmlFilePath))
         {
-            if (!File.Exists(xmlPath))
-                throw new FileNotFoundException("XML file not found.", xmlPath);
-
-            _reader = BarCodeReader.ImportFromXml(xmlPath);
-            if (_reader == null)
-                throw new InvalidOperationException("Failed to import BarCodeReader from XML.");
+            Console.WriteLine($"Configuration file not found: {xmlFilePath}");
+            return;
         }
 
-        // Assigns the first image found in the specified folder to the reader
-        public void SetImageFromFolder(string folderPath)
+        // Open the XML file as a read‑only stream and import its settings.
+        using (var stream = new FileStream(xmlFilePath, FileMode.Open, FileAccess.Read))
         {
-            if (!Directory.Exists(folderPath))
-                throw new DirectoryNotFoundException($"Folder not found: {folderPath}");
-
-            var imageFile = Directory.GetFiles(folderPath, "*.*")
-                .FirstOrDefault(f =>
-                    f.EndsWith(".png", StringComparison.OrdinalIgnoreCase) ||
-                    f.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) ||
-                    f.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase) ||
-                    f.EndsWith(".bmp", StringComparison.OrdinalIgnoreCase));
-
-            if (imageFile == null)
-                throw new FileNotFoundException("No image file found in the specified folder.", folderPath);
-
-            _reader.SetBarCodeImage(imageFile);
-        }
-
-        // Reads barcodes using the configured reader
-        public BarCodeResult[] ReadBarCodes()
-        {
-            if (_reader == null)
-                throw new InvalidOperationException("BarCodeReader is not initialized.");
-
-            return _reader.ReadBarCodes();
-        }
-
-        // Exports current reader settings to an XML file
-        public bool ExportToXml(string xmlPath)
-        {
-            if (_reader == null)
-                throw new InvalidOperationException("BarCodeReader is not initialized.");
-
-            return _reader.ExportToXml(xmlPath);
-        }
-
-        public void Dispose()
-        {
-            _reader?.Dispose();
+            // Apply the XML configuration to the internal reader.
+            BarCodeReader.ImportFromXml(stream);
         }
     }
 
-    class Program
+    /// <summary>
+    /// Assigns an image file located in a folder to the reader.
+    /// </summary>
+    /// <param name="folderPath">Folder containing the image.</param>
+    /// <param name="imageFileName">Name of the image file.</param>
+    public void SetImageFromFolder(string folderPath, string imageFileName)
     {
-        static void Main()
+        // Build the full path to the image file.
+        string imagePath = Path.Combine(folderPath, imageFileName);
+
+        // Ensure the image file exists before setting it.
+        if (!File.Exists(imagePath))
         {
-            // Prepare folders
-            string inputFolder = Path.Combine(Environment.CurrentDirectory, "InputImages");
-            string outputFolder = Path.Combine(Environment.CurrentDirectory, "Output");
-            if (!Directory.Exists(inputFolder)) Directory.CreateDirectory(inputFolder);
-            if (!Directory.Exists(outputFolder)) Directory.CreateDirectory(outputFolder);
+            Console.WriteLine($"Image file not found: {imagePath}");
+            return;
+        }
 
-            // Paths for sample image and XML
-            string sampleImagePath = Path.Combine(inputFolder, "sample.png");
-            string sampleXmlPath = Path.Combine(inputFolder, "sample.xml");
+        // Provide the image to the internal barcode reader.
+        _reader.SetBarCodeImage(imagePath);
+    }
 
-            // Generate a sample barcode image and export its settings to XML
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "12345"))
+    /// <summary>
+    /// Reads barcodes using the configured reader.
+    /// </summary>
+    /// <returns>Array of <see cref="BarCodeResult"/> objects representing detected barcodes.</returns>
+    public BarCodeResult[] ReadBarcodes()
+    {
+        // Execute the barcode reading operation.
+        return _reader.ReadBarCodes();
+    }
+}
+
+/// <summary>
+/// Demonstrates generation of a barcode, exporting its configuration,
+/// and using <see cref="BarcodeReaderWrapper"/> to read the barcode back.
+/// </summary>
+public class Program
+{
+    /// <summary>
+    /// Application entry point.
+    /// </summary>
+    public static void Main()
+    {
+        // Define file names for the generated barcode image and its configuration.
+        string imageFile = "sample_barcode.png";
+        string configFile = "sample_config.xml";
+
+        // Generate a sample barcode and export its configuration to XML.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+        {
+            // Save the barcode image to disk.
+            generator.Save(imageFile);
+            // Export the generator's settings to an XML configuration file.
+            generator.ExportToXml(configFile);
+        }
+
+        // Create the wrapper, load the configuration, assign the image, and read barcodes.
+        var wrapper = new BarcodeReaderWrapper();
+        wrapper.LoadConfiguration(configFile);
+        wrapper.SetImageFromFolder(".", imageFile);
+        var results = wrapper.ReadBarcodes();
+
+        // Check if any barcodes were detected and output the results.
+        if (results == null || results.Length == 0)
+        {
+            Console.WriteLine("No barcodes detected.");
+        }
+        else
+        {
+            foreach (var result in results)
             {
-                generator.Save(sampleImagePath);
-                generator.ExportToXml(sampleXmlPath);
-            }
-
-            // Use the wrapper to load settings, assign image, and read barcodes
-            using (var wrapper = new BarcodeReaderXmlWrapper())
-            {
-                wrapper.LoadFromXml(sampleXmlPath);
-                wrapper.SetImageFromFolder(inputFolder);
-
-                var results = wrapper.ReadBarCodes();
-                foreach (var result in results)
-                {
-                    Console.WriteLine($"Detected Barcode Type: {result.CodeTypeName}");
-                    Console.WriteLine($"Detected Barcode Text: {result.CodeText}");
-                }
-
-                // Optionally export the (potentially modified) settings back to XML
-                string exportedXmlPath = Path.Combine(outputFolder, "exported.xml");
-                wrapper.ExportToXml(exportedXmlPath);
+                Console.WriteLine($"Detected Type: {result.CodeTypeName}");
+                Console.WriteLine($"Code Text: {result.CodeText}");
             }
         }
     }

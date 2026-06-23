@@ -1,62 +1,81 @@
 using System;
-using System.IO;
 using System.Diagnostics;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
+/// <summary>
+/// Demonstrates performance measurement of Aspose.BarCode ExportToXml using file path and stream overloads.
+/// </summary>
 class Program
 {
-    static void Main()
+    /// <summary>
+    /// Entry point of the application. Generates a set of barcode samples and measures the time taken
+    /// to export them to XML via file path and memory stream overloads.
+    /// </summary>
+    /// <param name="args">Command‑line arguments (not used).</param>
+    static void Main(string[] args)
     {
-        const int barcodeCount = 5;
-        string outputFolder = Path.Combine(Directory.GetCurrentDirectory(), "ExportXmlDemo");
-        if (!Directory.Exists(outputFolder))
+        // Number of barcode samples (small safe size for the runner)
+        const int sampleCount = 5;
+
+        // Temporary directory for XML files
+        string tempDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeExport");
+        Directory.CreateDirectory(tempDir);
+
+        // ------------------------------------------------------------
+        // Measure ExportToXml using the file‑path overload
+        // ------------------------------------------------------------
+        Stopwatch fileTimer = Stopwatch.StartNew();
+        for (int i = 0; i < sampleCount; i++)
         {
-            Directory.CreateDirectory(outputFolder);
-        }
-
-        long filePathTicks = 0;
-        long streamTicks = 0;
-
-        for (int i = 1; i <= barcodeCount; i++)
-        {
-            string codeText = $"Sample{i:D3}";
-            string xmlFilePath = Path.Combine(outputFolder, $"Barcode_{i}_File.xml");
-            string xmlStreamFilePath = Path.Combine(outputFolder, $"Barcode_{i}_Stream.xml");
-
-            // Create barcode generator
-            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+            // Create a barcode generator for each sample.
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, $"Sample{i}"))
             {
-                // Export using file path overload
-                Stopwatch swFile = new Stopwatch();
-                swFile.Start();
-                bool fileResult = generator.ExportToXml(xmlFilePath);
-                swFile.Stop();
-                filePathTicks += swFile.ElapsedTicks;
+                // Build the full path for the XML file
+                string xmlPath = Path.Combine(tempDir, $"barcode{i}.xml");
+                // Export the barcode definition to the specified file
+                generator.ExportToXml(xmlPath);
+            }
+        }
+        fileTimer.Stop();
 
-                // Export using stream overload
-                using (MemoryStream ms = new MemoryStream())
+        // ------------------------------------------------------------
+        // Measure ExportToXml using the stream overload
+        // ------------------------------------------------------------
+        Stopwatch streamTimer = Stopwatch.StartNew();
+        for (int i = 0; i < sampleCount; i++)
+        {
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, $"Sample{i}"))
+            {
+                // Export to a memory stream (no file system I/O)
+                using (var ms = new MemoryStream())
                 {
-                    Stopwatch swStream = new Stopwatch();
-                    swStream.Start();
-                    bool streamResult = generator.ExportToXml(ms);
-                    swStream.Stop();
-                    streamTicks += swStream.ElapsedTicks;
-
-                    // Save the stream content to a file for verification
-                    using (FileStream fileStream = new FileStream(xmlStreamFilePath, FileMode.Create, FileAccess.Write))
-                    {
-                        ms.Position = 0;
-                        ms.CopyTo(fileStream);
-                    }
+                    generator.ExportToXml(ms);
                 }
             }
         }
+        streamTimer.Stop();
 
-        double filePathMs = (double)filePathTicks / Stopwatch.Frequency * 1000;
-        double streamMs = (double)streamTicks / Stopwatch.Frequency * 1000;
+        // Output timing results
+        Console.WriteLine($"Export to file path total time: {fileTimer.ElapsedMilliseconds} ms");
+        Console.WriteLine($"Export to stream total time: {streamTimer.ElapsedMilliseconds} ms");
 
-        Console.WriteLine($"ExportToXml using file path total time: {filePathMs:F2} ms");
-        Console.WriteLine($"ExportToXml using stream total time: {streamMs:F2} ms");
+        // ------------------------------------------------------------
+        // Cleanup temporary files and directory
+        // ------------------------------------------------------------
+        try
+        {
+            // Delete each generated XML file
+            foreach (var file in Directory.GetFiles(tempDir, "*.xml"))
+                File.Delete(file);
+
+            // Remove the temporary directory itself
+            Directory.Delete(tempDir);
+        }
+        catch
+        {
+            // Ignored - cleanup is best effort.
+        }
     }
 }

@@ -6,39 +6,54 @@ using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates generating a Code128 barcode, exporting and importing reader settings via XML, and recognizing the barcode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// </summary>
     static void Main()
     {
-        // Generate a sample barcode image (Code128 with text "12345")
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "12345"))
+        // Generate a simple Code128 barcode and keep it in a memory stream
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
         {
-            using (Bitmap barcodeImage = generator.GenerateBarCodeImage())
-            {
-                // Create a temporary BarCodeReader to configure and export its state to XML
-                using (var tempReader = new BarCodeReader())
-                {
-                    // Set the decode type to Code128 (using MultiDecodeType)
-                    tempReader.BarCodeReadType = new MultiDecodeType(DecodeType.Code128);
+            // Enable checksum (required for Code128)
+            generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
 
-                    // Export the reader's state to an in‑memory XML stream
+            // Stream to hold the generated barcode image
+            using (var imageStream = new MemoryStream())
+            {
+                // Save barcode image to the stream in PNG format
+                generator.Save(imageStream, BarCodeImageFormat.Png);
+                // Reset stream position for reading
+                imageStream.Position = 0;
+
+                // Create a reader for the generated image
+                using (var reader = new BarCodeReader(imageStream, DecodeType.AllSupportedTypes))
+                {
+                    // Enable checksum validation to demonstrate state persistence
+                    reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
+
+                    // Export the reader's current state to an XML stream
                     using (var xmlStream = new MemoryStream())
                     {
-                        tempReader.ExportToXml(xmlStream);
-                        xmlStream.Position = 0; // Reset for reading
+                        reader.ExportToXml(xmlStream);
+                        // Reset XML stream position for import
+                        xmlStream.Position = 0;
 
-                        // Import a new BarCodeReader instance from the XML stream
-                        using (BarCodeReader reader = BarCodeReader.ImportFromXml(xmlStream))
+                        // Import the previously saved state into a new reader instance
+                        BarCodeReader importedReader = BarCodeReader.ImportFromXml(xmlStream);
+
+                        // Reapply the same barcode image to the imported reader
+                        imageStream.Position = 0;
+                        importedReader.SetBarCodeImage(imageStream);
+
+                        // Perform recognition using the imported settings
+                        foreach (var result in importedReader.ReadBarCodes())
                         {
-                            // Assign the previously generated barcode image to the reader
-                            reader.SetBarCodeImage(barcodeImage);
-
-                            // Perform barcode recognition
-                            foreach (var result in reader.ReadBarCodes())
-                            {
-                                Console.WriteLine($"Barcode Type: {result.CodeTypeName}");
-                                Console.WriteLine($"Barcode Text: {result.CodeText}");
-                            }
+                            Console.WriteLine($"Detected Type: {result.CodeTypeName}, Text: {result.CodeText}");
                         }
                     }
                 }

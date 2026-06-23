@@ -3,55 +3,72 @@ using System.IO;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
+/// <summary>
+/// Demonstrates generating a Code128 barcode, reading it,
+/// exporting the reader state to XML, and restoring the reader
+/// from the saved state.
+/// </summary>
 class Program
 {
-    static void Main()
+    /// <summary>
+    /// Entry point of the application.
+    /// </summary>
+    /// <param name="args">Command‑line arguments (not used).</param>
+    static void Main(string[] args)
     {
-        string imagePath = Path.Combine(Path.GetTempPath(), "demo_barcode.png");
-        string statePath = Path.Combine(Path.GetTempPath(), "reader_state.xml");
+        // Path for the generated barcode image
+        const string imagePath = "barcode.png";
 
-        if (File.Exists(imagePath)) File.Delete(imagePath);
-        if (File.Exists(statePath)) File.Delete(statePath);
-
-        // 1. Generate a simple Code128 barcode and save it to a file
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "Demo123"))
+        // -------------------------------------------------
+        // 1. Generate a simple Code128 barcode and save it
+        // -------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Demo123"))
         {
+            // Save the generated barcode image to the specified path
             generator.Save(imagePath);
         }
 
-        if (!File.Exists(imagePath))
+        // -------------------------------------------------
+        // 2. First reading session – read the barcode,
+        //    then export the reader state to an XML stream
+        // -------------------------------------------------
+        using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
         {
-            Console.WriteLine("Failed to create barcode image.");
-            return;
-        }
-
-        // 2. Create a reader, configure it, and export its state (checkpoint)
-        using (BarCodeReader reader = new BarCodeReader())
-        {
-            reader.BarCodeReadType = new MultiDecodeType(DecodeType.Code128);
-            reader.SetBarCodeImage(imagePath);
-            reader.ExportToXml(statePath);
-        }
-
-        if (!File.Exists(statePath))
-        {
-            Console.WriteLine("Failed to export reader state.");
-            return;
-        }
-
-        // 3. Reopen the reader from the saved state and continue detection
-        using (BarCodeReader resumedReader = BarCodeReader.ImportFromXml(statePath))
-        {
-            resumedReader.SetBarCodeImage(imagePath);
-
-            foreach (BarCodeResult result in resumedReader.ReadBarCodes())
+            // Read all barcodes from the image
+            var firstResults = reader.ReadBarCodes();
+            Console.WriteLine("First read results:");
+            foreach (var result in firstResults)
             {
-                Console.WriteLine("Detected Type : " + result.CodeTypeName);
-                Console.WriteLine("Detected Text : " + result.CodeText);
+                // Output each detected barcode type and its text
+                Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
+            }
+
+            // Export the current reader configuration/state to XML
+            using (var stateStream = new MemoryStream())
+            {
+                reader.ExportToXml(stateStream);
+                stateStream.Position = 0; // Rewind the stream for subsequent reading
+
+                // -------------------------------------------------
+                // 3. Simulate closing the reader and creating a new one
+                // -------------------------------------------------
+                // Import the previously saved state into a new reader instance
+                var restoredReader = BarCodeReader.ImportFromXml(stateStream);
+                using (restoredReader)
+                {
+                    // The image must be set again after import
+                    restoredReader.SetBarCodeImage(imagePath);
+
+                    // Continue detection with the restored reader
+                    var secondResults = restoredReader.ReadBarCodes();
+                    Console.WriteLine("After restart read results:");
+                    foreach (var result in secondResults)
+                    {
+                        // Output each detected barcode type and its text after restoration
+                        Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
+                    }
+                }
             }
         }
-
-        try { File.Delete(imagePath); } catch { }
-        try { File.Delete(statePath); } catch { }
     }
 }

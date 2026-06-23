@@ -1,56 +1,100 @@
 using System;
 using System.IO;
-using Aspose.BarCode.Generation;
+using System.Linq;
+using System.Xml.Linq;
+using Aspose.BarCode;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
+/// <summary>
+/// Entry point for the barcode processing application.
+/// Scans a directory for image files, reads any barcodes present,
+/// and writes the results to XML files alongside the images.
+/// </summary>
 class Program
 {
-    static void Main()
+    /// <summary>
+    /// Application start method.
+    /// Determines the target directory (from arguments or default) and initiates processing.
+    /// </summary>
+    /// <param name="args">Command‑line arguments; first argument may specify a directory path.</param>
+    static void Main(string[] args)
     {
-        string inputFolder = Path.Combine(Directory.GetCurrentDirectory(), "InputImages");
-        string outputFolder = Path.Combine(Directory.GetCurrentDirectory(), "OutputXml");
+        // Determine the directory to process. Use a default sample if not provided.
+        string directoryPath = args.Length > 0
+            ? args[0]
+            : Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
 
-        if (!Directory.Exists(inputFolder))
-            Directory.CreateDirectory(inputFolder);
-        if (!Directory.Exists(outputFolder))
-            Directory.CreateDirectory(outputFolder);
-
-        // Seed a sample barcode image if the input folder is empty
-        string[] existingFiles = Directory.GetFiles(inputFolder);
-        if (existingFiles.Length == 0)
+        // Verify that the directory exists before proceeding.
+        if (!Directory.Exists(directoryPath))
         {
-            string samplePath = Path.Combine(inputFolder, "Sample.png");
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128))
-            {
-                generator.CodeText = "Sample123";
-                generator.Save(samplePath);
-            }
+            Console.WriteLine($"Directory does not exist: {directoryPath}");
+            return;
         }
 
-        string[] imageFiles = Directory.GetFiles(inputFolder, "*.*", SearchOption.TopDirectoryOnly);
-        foreach (string imagePath in imageFiles)
+        // Process all supported image files in the directory.
+        ProcessBarcodesInDirectory(directoryPath);
+    }
+
+    /// <summary>
+    /// Scans the specified directory for image files, reads any barcodes,
+    /// and writes detection results to XML files.
+    /// </summary>
+    /// <param name="directoryPath">Path of the directory containing image files.</param>
+    static void ProcessBarcodesInDirectory(string directoryPath)
+    {
+        // Supported image extensions (lower‑case for comparison).
+        string[] extensions = new[] { ".png", ".jpg", ".jpeg", ".bmp", ".tiff", ".gif" };
+
+        // Retrieve all files in the directory (filtering occurs later).
+        var files = Directory.GetFiles(directoryPath);
+
+        foreach (var filePath in files)
         {
-            if (!File.Exists(imagePath))
-            {
-                Console.WriteLine($"File not found: {imagePath}");
+            // Skip files that do not have a supported image extension.
+            if (Array.IndexOf(extensions, Path.GetExtension(filePath).ToLowerInvariant()) < 0)
                 continue;
-            }
 
-            string xmlPath = Path.Combine(outputFolder, Path.GetFileNameWithoutExtension(imagePath) + ".xml");
-            bool exportSuccess = false;
-            int foundCount = 0;
+            Console.WriteLine($"Processing file: {Path.GetFileName(filePath)}");
 
-            using (var bitmap = new Bitmap(imagePath))
-            using (var reader = new BarCodeReader())
+            // Use BarCodeReader to read all supported barcode types from the image.
+            using (var reader = new BarCodeReader(filePath, DecodeType.AllSupportedTypes))
             {
-                reader.SetBarCodeImage(bitmap);
-                reader.ReadBarCodes();
-                foundCount = reader.FoundCount;
-                exportSuccess = reader.ExportToXml(xmlPath);
-            }
+                // Perform the barcode detection.
+                var results = reader.ReadBarCodes();
 
-            Console.WriteLine($"Processed '{Path.GetFileName(imagePath)}' - Barcodes found: {foundCount}, Exported XML: {exportSuccess}");
+                // Build an XML document containing the detection results.
+                var doc = new XDocument(
+                    new XElement("BarCodeResults",
+                        new XElement("SourceFile", Path.GetFileName(filePath)),
+                        new XElement("DetectedBarCodes",
+                            // Create an element for each detected barcode.
+                            from result in results
+                            select new XElement("BarCode",
+                                new XElement("CodeText", result.CodeText),
+                                new XElement("Symbology", result.CodeTypeName),
+                                new XElement("Confidence", (int)result.Confidence))
+                        )
+                    )
+                );
+
+                // Save the XML document alongside the image (same name with .xml extension).
+                string xmlPath = Path.ChangeExtension(filePath, ".xml");
+                doc.Save(xmlPath);
+                Console.WriteLine($"Saved XML: {Path.GetFileName(xmlPath)}");
+
+                // Log detection results to the console.
+                if (results.Length == 0)
+                {
+                    Console.WriteLine("  No barcodes detected.");
+                }
+                else
+                {
+                    foreach (var result in results)
+                    {
+                        Console.WriteLine($"  Detected: {result.CodeTypeName} - {result.CodeText} (Confidence: {result.Confidence})");
+                    }
+                }
+            }
         }
 
         Console.WriteLine("Processing completed.");

@@ -1,78 +1,75 @@
 using System;
 using System.IO;
-using System.Security.Cryptography;
-using System.Text;
-using Aspose.BarCode.Generation;
-using Aspose.BarCode;
+using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
+/// <summary>
+/// Demonstrates how to import a barcode reader configuration from an XML file
+/// and use it to read barcodes from an image.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// </summary>
     static void Main()
     {
-        const string encryptedFilePath = "barcode_state.enc";
-        const string outputImagePath = "restored.png";
+        // Paths to the required input files.
+        const string xmlPath = "encrypted_state.xml";
+        const string barcodeImagePath = "barcode.png";
 
-        // Simple AES key and IV (for demonstration only)
-        byte[] key = Encoding.UTF8.GetBytes("1234567890ABCDEF"); // 16 bytes = 128‑bit key
-        byte[] iv = Encoding.UTF8.GetBytes("ABCDEF1234567890"); // 16 bytes IV
-
-        if (!File.Exists(encryptedFilePath))
+        // Verify that the XML configuration file exists.
+        if (!File.Exists(xmlPath))
         {
-            Console.WriteLine($"Encrypted file not found: {encryptedFilePath}");
+            Console.WriteLine($"XML file not found: {xmlPath}");
             return;
         }
 
-        byte[] encryptedData;
-        try
+        // Verify that the barcode image file exists.
+        if (!File.Exists(barcodeImagePath))
         {
-            encryptedData = File.ReadAllBytes(encryptedFilePath);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Failed to read encrypted file: {ex.Message}");
+            Console.WriteLine($"Barcode image file not found: {barcodeImagePath}");
             return;
         }
 
-        byte[] decryptedXml;
-        try
+        BarCodeReader reader;
+
+        // Load the XML configuration into a memory stream and create the reader.
+        using (FileStream fs = File.OpenRead(xmlPath))
+        using (MemoryStream xmlStream = new MemoryStream())
         {
-            using (Aes aes = Aes.Create())
+            // Copy file contents to the memory stream.
+            fs.CopyTo(xmlStream);
+            // Reset stream position to the beginning before importing.
+            xmlStream.Position = 0;
+            // Import the barcode reader configuration from the XML stream.
+            reader = BarCodeReader.ImportFromXml(xmlStream);
+        }
+
+        // Open the barcode image and associate it with the reader.
+        using (Bitmap bitmap = new Bitmap(barcodeImagePath))
+        using (reader)
+        {
+            // Set the image that the reader will process.
+            reader.SetBarCodeImage(bitmap);
+            // Perform barcode detection.
+            var results = reader.ReadBarCodes();
+
+            // Check if any barcodes were detected.
+            if (results.Length == 0)
             {
-                aes.Key = key;
-                aes.IV = iv;
-                aes.Padding = PaddingMode.PKCS7;
-                aes.Mode = CipherMode.CBC;
-
-                using (ICryptoTransform decryptor = aes.CreateDecryptor())
-                using (MemoryStream msInput = new MemoryStream(encryptedData))
-                using (CryptoStream cs = new CryptoStream(msInput, decryptor, CryptoStreamMode.Read))
-                using (MemoryStream msOutput = new MemoryStream())
+                Console.WriteLine("No barcodes detected.");
+            }
+            else
+            {
+                // Output details for each detected barcode.
+                foreach (var result in results)
                 {
-                    cs.CopyTo(msOutput);
-                    decryptedXml = msOutput.ToArray();
+                    Console.WriteLine($"Detected Type: {result.CodeTypeName}");
+                    Console.WriteLine($"Code Text: {result.CodeText}");
+                    Console.WriteLine($"Confidence: {result.Confidence}");
                 }
             }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Decryption failed: {ex.Message}");
-            return;
-        }
-
-        // Import barcode settings from the decrypted XML
-        try
-        {
-            using (MemoryStream xmlStream = new MemoryStream(decryptedXml))
-            using (BarcodeGenerator generator = BarcodeGenerator.ImportFromXml(xmlStream))
-            {
-                // Save the restored barcode image to verify successful import
-                generator.Save(outputImagePath);
-                Console.WriteLine($"Barcode restored and saved to: {outputImagePath}");
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"ImportFromXml failed: {ex.Message}");
         }
     }
 }
