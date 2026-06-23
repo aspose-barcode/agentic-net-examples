@@ -4,28 +4,44 @@ using System.Threading.Tasks;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
+/// <summary>
+/// Demonstrates generating an EAN13 barcode and saving it asynchronously to a PNG file.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Generates an EAN13 barcode and writes it to a file asynchronously.
+    /// </summary>
+    /// <param name="args">Command‑line arguments (not used).</param>
     static async Task Main(string[] args)
     {
+        // Define the output file name (relative to the executable's directory).
         const string outputPath = "ean13.png";
-        const string codeText = "1234567890128"; // 13‑digit EAN13 value (including checksum)
 
-        // Create a barcode generator for EAN13 with the specified code text
+        // EAN13 barcode requires exactly 12 digits; the checksum digit is added automatically.
+        const string codeText = "123456789012";
+
+        // Initialize the barcode generator with the EAN13 symbology and the provided code text.
         using (var generator = new BarcodeGenerator(EncodeTypes.EAN13, codeText))
         {
-            // Example: set image resolution (optional)
-            generator.Parameters.Resolution = 300;
-
-            // Open a FileStream for asynchronous writing
-            using (var fileStream = new FileStream(outputPath, FileMode.Create, FileAccess.Write, FileShare.None, 4096, useAsync: true))
+            // Create a FileStream configured for asynchronous writing.
+            using (var fileStream = new FileStream(
+                outputPath,
+                FileMode.Create,
+                FileAccess.Write,
+                FileShare.None,
+                bufferSize: 4096,
+                useAsync: true))
             {
-                // Save the barcode image directly to the stream in PNG format
+                // Save the generated barcode image directly into the file stream as PNG.
                 generator.Save(fileStream, BarCodeImageFormat.Png);
 
-                // Ensure all data is flushed asynchronously
+                // Flush any buffered data to the underlying file asynchronously.
                 await fileStream.FlushAsync();
             }
         }
+
+        // Inform the user that the barcode has been saved.
+        Console.WriteLine($"EAN13 barcode saved to '{outputPath}'.");
     }
 }

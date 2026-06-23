@@ -1,80 +1,107 @@
 using System;
 using System.IO;
-using System.Linq;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates how to overlay a generated barcode onto each image file in a directory
+/// and save the resulting image as a BMP file.
+/// </summary>
 class Program
 {
-    static void Main(string[] args)
+    /// <summary>
+    /// Entry point of the application.
+    /// Scans the input directory for image files, generates a Code128 barcode from each file name,
+    /// draws the barcode onto the image, and saves the result to the output directory.
+    /// </summary>
+    static void Main()
     {
-        // Determine input and output folders (fallback to defaults)
-        string inputFolder = args.Length > 0 ? args[0] : "InputImages";
-        string outputFolder = args.Length > 1 ? args[1] : "OutputImages";
+        // Define input and output directories (fallback to sample folders)
+        string inputDir = Path.Combine(Directory.GetCurrentDirectory(), "input");
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "output");
 
-        // Ensure folders exist
-        if (!Directory.Exists(inputFolder))
+        // Ensure the output directory exists
+        Directory.CreateDirectory(outputDir);
+
+        // Verify that the input directory exists
+        if (!Directory.Exists(inputDir))
         {
-            Directory.CreateDirectory(inputFolder);
-        }
-        if (!Directory.Exists(outputFolder))
-        {
-            Directory.CreateDirectory(outputFolder);
+            Console.WriteLine($"Input directory not found: {inputDir}");
+            return;
         }
 
-        // Seed a sample image if the input folder is empty (so the example runs end‑to‑end)
-        string[] existingFiles = Directory.GetFiles(inputFolder);
-        if (existingFiles.Length == 0)
+        // Retrieve all files in the input directory (filter later by extension)
+        string[] imageFiles = Directory.GetFiles(inputDir, "*.*", SearchOption.TopDirectoryOnly);
+        if (imageFiles.Length == 0)
         {
-            string samplePath = Path.Combine(inputFolder, "sample.png");
-            using (var bmp = new Bitmap(200, 100))
+            Console.WriteLine("No image files found to process.");
+            return;
+        }
+
+        // Process each file individually
+        foreach (string filePath in imageFiles)
+        {
+            // Simple filter for common image extensions
+            string ext = Path.GetExtension(filePath).ToLowerInvariant();
+            if (ext != ".png" && ext != ".jpg" && ext != ".jpeg")
+                continue;
+
+            // Double‑check that the file still exists
+            if (!File.Exists(filePath))
             {
-                using (var g = Graphics.FromImage(bmp))
-                {
-                    g.Clear(Aspose.Drawing.Color.LightGray);
-                }
-                bmp.Save(samplePath, ImageFormat.Png);
+                Console.WriteLine($"File does not exist: {filePath}");
+                continue;
             }
-        }
 
-        // Get up to 5 image files (common image extensions)
-        var imageFiles = Directory.GetFiles(inputFolder)
-            .Where(f => f.EndsWith(".png", StringComparison.OrdinalIgnoreCase) ||
-                        f.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) ||
-                        f.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase) ||
-                        f.EndsWith(".bmp", StringComparison.OrdinalIgnoreCase))
-            .Take(5)
-            .ToArray();
-
-        foreach (var filePath in imageFiles)
-        {
-            // Load the source image
-            using (var sourceImage = new Bitmap(filePath))
+            try
             {
-                // Generate a barcode image (Code128 with sample text)
-                using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
+                // Load the original image from disk
+                using (Image original = Image.FromFile(filePath))
                 {
-                    // Optional: set barcode colors
-                    generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-                    generator.Parameters.BackColor = Aspose.Drawing.Color.White;
+                    // Use the file name (without extension) as the barcode text
+                    string codeText = Path.GetFileNameWithoutExtension(filePath);
 
-                    // Generate the barcode bitmap
-                    using (var barcodeImage = generator.GenerateBarCodeImage())
+                    // Initialize the barcode generator for Code128
+                    using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
                     {
-                        // Overlay the barcode onto the source image (top‑left corner)
-                        using (var graphics = Graphics.FromImage(sourceImage))
+                        // Optional: customize barcode appearance
+                        generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
+                        generator.Parameters.BackColor = Aspose.Drawing.Color.Transparent;
+
+                        // Generate the barcode image as a bitmap
+                        using (Bitmap barcodeImg = generator.GenerateBarCodeImage())
                         {
-                            graphics.DrawImage(barcodeImage, new Point(0, 0));
+                            // Draw the barcode onto the original image at the bottom‑right corner
+                            using (Graphics graphics = Graphics.FromImage(original))
+                            {
+                                const int padding = 10; // Space from the image edges
+                                int x = original.Width - barcodeImg.Width - padding;
+                                int y = original.Height - barcodeImg.Height - padding;
+
+                                // Ensure coordinates are not negative
+                                if (x < 0) x = 0;
+                                if (y < 0) y = 0;
+
+                                graphics.DrawImage(barcodeImg, x, y, barcodeImg.Width, barcodeImg.Height);
+                            }
+
+                            // Construct the output file name and path
+                            string outputFileName = Path.GetFileNameWithoutExtension(filePath) + "_barcode.bmp";
+                            string outputPath = Path.Combine(outputDir, outputFileName);
+
+                            // Save the combined image as BMP
+                            original.Save(outputPath, ImageFormat.Bmp);
+                            Console.WriteLine($"Processed and saved: {outputPath}");
                         }
                     }
                 }
-
-                // Save the combined image as BMP
-                string outputFileName = Path.GetFileNameWithoutExtension(filePath) + "_with_barcode.bmp";
-                string outputPath = Path.Combine(outputFolder, outputFileName);
-                sourceImage.Save(outputPath, ImageFormat.Bmp);
+            }
+            catch (Exception ex)
+            {
+                // Log any errors that occur during processing of the current file
+                Console.WriteLine($"Error processing file '{filePath}': {ex.Message}");
             }
         }
     }
