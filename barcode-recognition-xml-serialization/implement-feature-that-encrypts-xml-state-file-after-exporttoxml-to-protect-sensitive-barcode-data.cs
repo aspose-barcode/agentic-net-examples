@@ -3,42 +3,46 @@ using System.IO;
 using System.Security.Cryptography;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 
+/// <summary>
+/// Demonstrates exporting a barcode generator state to XML and encrypting the XML file using AES.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a Code128 barcode, exports its state to an XML file, and encrypts that file.
+    /// </summary>
     static void Main()
     {
-        // Paths for generated files
-        string imagePath = "barcode.png";
+        // Define file paths for the XML state and the encrypted output
         string xmlPath = "barcode_state.xml";
         string encryptedPath = "barcode_state.enc";
 
-        // Create a barcode, save image and export its state to XML
+        // Create a barcode generator for Code128 with sample data
         using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            // Example of setting a property
-            generator.Parameters.Barcode.BarColor = Color.Black;
-
-            // Save the barcode image
-            generator.Save(imagePath);
-
-            // Export barcode settings to XML file
+            // Export the generator's state to an XML file
             bool exported = generator.ExportToXml(xmlPath);
-            if (!exported)
-            {
-                Console.WriteLine("Failed to export barcode settings to XML.");
-                return;
-            }
+            Console.WriteLine(exported
+                ? $"Exported XML to '{xmlPath}'."
+                : $"Failed to export XML to '{xmlPath}'.");
         }
 
-        // Simple AES key and IV (for demonstration only; use secure key management in production)
-        byte[] key = new byte[32];
-        byte[] iv = new byte[16];
+        // Ensure the XML file was created before attempting encryption
+        if (!File.Exists(xmlPath))
+        {
+            Console.WriteLine("XML file not found. Encryption aborted.");
+            return;
+        }
+
+        // Prepare a deterministic 256‑bit key and 128‑bit IV for demonstration purposes
+        byte[] key = new byte[32]; // 256-bit key
+        byte[] iv = new byte[16];  // 128-bit IV
         for (int i = 0; i < key.Length; i++) key[i] = (byte)(i + 1);
         for (int i = 0; i < iv.Length; i++) iv[i] = (byte)(i + 1);
 
-        // Encrypt the XML file
+        // Perform AES encryption of the XML file
         using (var aes = Aes.Create())
         {
             aes.Key = key;
@@ -46,21 +50,19 @@ class Program
             aes.Mode = CipherMode.CBC;
             aes.Padding = PaddingMode.PKCS7;
 
-            using (var inputStream = new FileStream(xmlPath, FileMode.Open, FileAccess.Read))
-            using (var outputStream = new FileStream(encryptedPath, FileMode.Create, FileAccess.Write))
-            using (var encryptor = aes.CreateEncryptor())
-            using (var cryptoStream = new CryptoStream(outputStream, encryptor, CryptoStreamMode.Write))
+            // Open the source XML file for reading
+            using (var inputFile = new FileStream(xmlPath, FileMode.Open, FileAccess.Read))
+            // Create the destination file for the encrypted data
+            using (var outputFile = new FileStream(encryptedPath, FileMode.Create, FileAccess.Write))
+            // Set up a CryptoStream to handle encryption while writing
+            using (var cryptoStream = new CryptoStream(outputFile, aes.CreateEncryptor(), CryptoStreamMode.Write))
             {
-                inputStream.CopyTo(cryptoStream);
+                // Copy the entire XML content into the CryptoStream, which encrypts it on the fly
+                inputFile.CopyTo(cryptoStream);
             }
         }
 
-        // Remove the plain XML file to keep only the encrypted version
-        if (File.Exists(xmlPath))
-        {
-            File.Delete(xmlPath);
-        }
-
-        Console.WriteLine("Barcode generated and XML state encrypted successfully.");
+        // Inform the user that encryption succeeded
+        Console.WriteLine($"Encrypted XML saved to '{encryptedPath}'.");
     }
 }

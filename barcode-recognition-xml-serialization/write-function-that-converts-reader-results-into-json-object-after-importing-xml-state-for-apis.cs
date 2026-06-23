@@ -2,70 +2,101 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
+/// <summary>
+/// Demonstrates generating a barcode, reading it, exporting/importing reader state,
+/// and serializing the results to JSON.
+/// </summary>
 class Program
 {
+    // Simple DTO for JSON serialization of barcode results
+    class BarcodeResultInfo
+    {
+        public string CodeTypeName { get; set; }
+        public string CodeText { get; set; }
+        public int Confidence { get; set; }
+        public double ReadingQuality { get; set; }
+        public RegionInfo Region { get; set; }
+    }
+
+    // DTO representing the region of a detected barcode
+    class RegionInfo
+    {
+        public float X { get; set; }
+        public float Y { get; set; }
+        public float Width { get; set; }
+        public float Height { get; set; }
+        public double Angle { get; set; }
+    }
+
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a sample barcode if needed, reads it, exports/imports reader state,
+    /// and prints the detection results as formatted JSON.
+    /// </summary>
     static void Main()
     {
-        // Create a sample barcode generator
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "12345"))
+        const string imagePath = "barcode.png";
+        const string xmlPath = "reader.xml";
+
+        // Ensure a sample barcode image exists; generate one if missing
+        if (!File.Exists(imagePath))
         {
-            // Export generator settings to XML (in memory)
-            using (var xmlStream = new MemoryStream())
+            using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Hello World"))
             {
-                if (!generator.ExportToXml(xmlStream))
-                {
-                    Console.WriteLine("Failed to export generator settings to XML.");
-                    return;
-                }
-                xmlStream.Position = 0;
-
-                // Generate barcode image (PNG) in memory
-                using (var imageStream = new MemoryStream())
-                {
-                    generator.Save(imageStream, BarCodeImageFormat.Png);
-                    imageStream.Position = 0;
-
-                    // Import BarCodeReader from the exported XML
-                    using (var reader = BarCodeReader.ImportFromXml(xmlStream))
-                    {
-                        // Assign the generated image to the reader
-                        reader.SetBarCodeImage(imageStream);
-
-                        // Read barcodes from the image
-                        BarCodeResult[] results = reader.ReadBarCodes();
-
-                        // Convert results to a JSON-friendly structure
-                        var jsonItems = new List<object>();
-                        foreach (var result in results)
-                        {
-                            var rect = result.Region.Rectangle;
-                            jsonItems.Add(new
-                            {
-                                result.CodeText,
-                                result.CodeTypeName,
-                                Confidence = result.Confidence.ToString(),
-                                Region = new
-                                {
-                                    rect.X,
-                                    rect.Y,
-                                    rect.Width,
-                                    rect.Height,
-                                    result.Region.Angle
-                                }
-                            });
-                        }
-
-                        // Serialize to JSON and output
-                        string json = JsonSerializer.Serialize(jsonItems, new JsonSerializerOptions { WriteIndented = true });
-                        Console.WriteLine(json);
-                    }
-                }
+                generator.Save(imagePath);
             }
+        }
+
+        // Create a reader, assign the image, and export its state to XML
+        using (var bitmap = new Bitmap(imagePath))
+        using (var reader = new BarCodeReader(bitmap, DecodeType.AllSupportedTypes))
+        {
+            // Export the current reader configuration and state to an XML file
+            reader.ExportToXml(xmlPath);
+        }
+
+        // Import the reader state from the previously saved XML
+        using (var importedReader = BarCodeReader.ImportFromXml(xmlPath))
+        {
+            // Reassign the image after import (required for further reading)
+            importedReader.SetBarCodeImage(imagePath);
+
+            // Perform barcode detection on the image
+            var results = importedReader.ReadBarCodes();
+
+            // Convert detection results into a list of DTOs for serialization
+            var resultList = new List<BarcodeResultInfo>();
+            foreach (var result in results)
+            {
+                var regionRect = result.Region.Rectangle;
+                var info = new BarcodeResultInfo
+                {
+                    CodeTypeName = result.CodeTypeName,
+                    CodeText = result.CodeText,
+                    Confidence = (int)result.Confidence,
+                    ReadingQuality = result.ReadingQuality,
+                    Region = new RegionInfo
+                    {
+                        X = regionRect.X,
+                        Y = regionRect.Y,
+                        Width = regionRect.Width,
+                        Height = regionRect.Height,
+                        Angle = result.Region.Angle
+                    }
+                };
+                resultList.Add(info);
+            }
+
+            // Serialize the DTO list to formatted JSON
+            var jsonOptions = new JsonSerializerOptions { WriteIndented = true };
+            string json = JsonSerializer.Serialize(resultList, jsonOptions);
+
+            // Output the JSON to the console
+            Console.WriteLine(json);
         }
     }
 }

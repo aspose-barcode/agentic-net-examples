@@ -2,73 +2,49 @@ using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
+/// <summary>
+/// Demonstrates creating a Code128 barcode, exporting its state to XML,
+/// and logging the generated file paths.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// </summary>
     static void Main()
     {
-        // Paths for files
-        string barcodeImagePath = "barcode.png";
-        string generatorXmlPath = "generator_state.xml";
-        string readerXmlPath = "reader_state.xml";
-        string logPath = "log.txt";
+        // Define a temporary output directory for all generated files.
+        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
+        Directory.CreateDirectory(outputDir); // Ensure the directory exists.
 
-        // Create a barcode generator, generate image and save it
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
+        // Build full file paths for the barcode image, XML state, and log file.
+        string imagePath = Path.Combine(outputDir, "barcode.png");
+        string xmlPath   = Path.Combine(outputDir, "barcode_state.xml");
+        string logPath   = Path.Combine(outputDir, "log.txt");
+
+        // Create a simple Code128 barcode with the specified data.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            // Export generator settings to XML
-            bool genExported = generator.ExportToXml(generatorXmlPath);
-            if (!genExported)
-            {
-                Console.WriteLine("Failed to export generator XML.");
-            }
+            // Enable checksum calculation for the barcode.
+            generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
 
-            // Save barcode image
-            generator.Save(barcodeImagePath);
+            // Save the generated barcode as a PNG image.
+            generator.Save(imagePath);
+
+            // Export the generator's internal state to an XML file.
+            generator.ExportToXml(xmlPath);
         }
 
-        // Verify that the image file exists before reading
-        if (!File.Exists(barcodeImagePath))
-        {
-            Console.WriteLine($"Barcode image not found at path: {barcodeImagePath}");
-            return;
-        }
+        // Prepare a log message containing the locations of the generated files.
+        string logContent = $"Barcode image saved to: {imagePath}{Environment.NewLine}" +
+                            $"Generator state exported to XML: {xmlPath}{Environment.NewLine}" +
+                            $"Log generated at: {logPath}{Environment.NewLine}";
 
-        // Create a barcode reader and set the image using the file path
-        using (var reader = new BarCodeReader())
-        {
-            // Record the file path used in SetBarCodeImage
-            string setImageInfo = $"SetBarCodeImage called with path: {barcodeImagePath}";
+        // Output the log message to the console for immediate feedback.
+        Console.WriteLine(logContent);
 
-            // Set the image for recognition
-            reader.SetBarCodeImage(barcodeImagePath);
-
-            // Export reader settings to XML
-            bool readerExported = reader.ExportToXml(readerXmlPath);
-            if (!readerExported)
-            {
-                Console.WriteLine("Failed to export reader XML.");
-            }
-
-            // Read barcodes (optional, just to demonstrate usage)
-            foreach (var result in reader.ReadBarCodes())
-            {
-                Console.WriteLine($"Detected Type: {result.CodeTypeName}, Text: {result.CodeText}");
-            }
-
-            // Build log content
-            string logContent = $"{setImageInfo}{Environment.NewLine}" +
-                                $"Generator XML ({generatorXmlPath}):{Environment.NewLine}" +
-                                $"{File.ReadAllText(generatorXmlPath)}{Environment.NewLine}" +
-                                $"Reader XML ({readerXmlPath}):{Environment.NewLine}" +
-                                $"{File.ReadAllText(readerXmlPath)}";
-
-            // Write log to file
-            File.WriteAllText(logPath, logContent);
-        }
-
-        Console.WriteLine("Processing completed. Log written to " + logPath);
+        // Persist the log message to a text file.
+        File.WriteAllText(logPath, logContent);
     }
 }

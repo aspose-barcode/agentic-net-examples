@@ -1,76 +1,94 @@
 using System;
+using System.Globalization;
 using System.IO;
+using System.Xml;
 using Aspose.BarCode;
-using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
+/// <summary>
+/// Demonstrates reading barcodes from images and exporting the results to XML files.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Processes a set of sample images,
+    /// extracts barcode information, and writes the data to XML files.
+    /// </summary>
     static void Main()
     {
-        // Define input and output folders
-        string inputFolder = Path.Combine(Directory.GetCurrentDirectory(), "InputImages");
-        string outputFolder = Path.Combine(Directory.GetCurrentDirectory(), "OutputXml");
-
-        // Ensure folders exist
-        if (!Directory.Exists(inputFolder))
-            Directory.CreateDirectory(inputFolder);
-        if (!Directory.Exists(outputFolder))
-            Directory.CreateDirectory(outputFolder);
-
-        // Seed sample barcode images if the input folder is empty (up to 5 samples)
-        string[] existingImages = Directory.GetFiles(inputFolder, "*.png");
-        if (existingImages.Length == 0)
+        // Define sample image file paths (replace with actual paths as needed)
+        string[] imagePaths = new string[]
         {
-            for (int i = 1; i <= 5; i++)
-            {
-                string samplePath = Path.Combine(inputFolder, $"Sample{i}.png");
-                using (var generator = new BarcodeGenerator(EncodeTypes.Code128, $"Sample{i}"))
-                {
-                    generator.Save(samplePath);
-                }
-            }
+            "sample1.png",
+            "sample2.png",
+            "sample3.png"
+        };
+
+        // Ensure the output directory exists; create it if it does not
+        string outputDir = "output";
+        if (!Directory.Exists(outputDir))
+        {
+            Directory.CreateDirectory(outputDir);
         }
 
-        // Process each image file
-        string[] imageFiles = Directory.GetFiles(inputFolder, "*.png");
-        foreach (string imagePath in imageFiles)
+        // Process each image file individually
+        foreach (string imagePath in imagePaths)
         {
+            // Skip processing if the file cannot be found
             if (!File.Exists(imagePath))
             {
                 Console.WriteLine($"File not found: {imagePath}");
                 continue;
             }
 
-            // Create a BarCodeReader for the image with common decode types
-            using (var reader = new BarCodeReader(imagePath, DecodeType.Code128, DecodeType.QR, DecodeType.Code39, DecodeType.EAN13))
+            // Initialize a barcode reader for the current image, supporting all barcode types
+            using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
             {
-                // Perform barcode detection
-                BarCodeResult[] results = reader.ReadBarCodes();
+                // Read all barcodes present in the image
+                var results = reader.ReadBarCodes();
 
-                // Output detected barcodes to console
-                Console.WriteLine($"Processing '{Path.GetFileName(imagePath)}' - Found {results.Length} barcode(s):");
-                foreach (var result in results)
-                {
-                    Console.WriteLine($"  Type: {result.CodeTypeName}, Text: {result.CodeText}");
-                }
-
-                // Export the reader state (including settings) to an XML file
+                // Determine the XML output file name based on the image name
                 string xmlFileName = Path.GetFileNameWithoutExtension(imagePath) + ".xml";
-                string xmlPath = Path.Combine(outputFolder, xmlFileName);
-                bool exported = reader.ExportToXml(xmlPath);
-                if (exported)
+                string xmlPath = Path.Combine(outputDir, xmlFileName);
+
+                // Write the barcode data to an XML file with indentation for readability
+                using (var writer = XmlWriter.Create(xmlPath, new XmlWriterSettings { Indent = true }))
                 {
-                    Console.WriteLine($"  Exported state to XML: {xmlPath}");
+                    writer.WriteStartDocument();                                 // XML declaration
+                    writer.WriteStartElement("Barcodes");                        // Root element
+                    writer.WriteAttributeString("SourceImage", Path.GetFileName(imagePath));
+
+                    // Iterate over each detected barcode and write its details
+                    foreach (var result in results)
+                    {
+                        writer.WriteStartElement("BarCode");
+
+                        writer.WriteElementString("Type", result.CodeTypeName ?? string.Empty);
+                        writer.WriteElementString("CodeText", result.CodeText ?? string.Empty);
+                        writer.WriteElementString("Confidence", result.Confidence.ToString());
+                        writer.WriteElementString(
+                            "ReadingQuality",
+                            result.ReadingQuality.ToString(CultureInfo.InvariantCulture));
+
+                        // Write the region (bounding rectangle) of the barcode
+                        var rect = result.Region.Rectangle;
+                        writer.WriteStartElement("Region");
+                        writer.WriteElementString("X", rect.X.ToString(CultureInfo.InvariantCulture));
+                        writer.WriteElementString("Y", rect.Y.ToString(CultureInfo.InvariantCulture));
+                        writer.WriteElementString("Width", rect.Width.ToString(CultureInfo.InvariantCulture));
+                        writer.WriteElementString("Height", rect.Height.ToString(CultureInfo.InvariantCulture));
+                        writer.WriteEndElement(); // </Region>
+
+                        writer.WriteEndElement(); // </BarCode>
+                    }
+
+                    writer.WriteEndElement(); // </Barcodes>
+                    writer.WriteEndDocument(); // End of XML document
                 }
-                else
-                {
-                    Console.WriteLine($"  Failed to export XML for {imagePath}");
-                }
+
+                // Inform the user that processing for the current image is complete
+                Console.WriteLine($"Processed '{imagePath}' -> '{xmlPath}'");
             }
         }
-
-        Console.WriteLine("Batch processing completed.");
     }
 }

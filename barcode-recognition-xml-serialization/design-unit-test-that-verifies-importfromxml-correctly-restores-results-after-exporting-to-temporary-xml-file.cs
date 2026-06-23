@@ -4,80 +4,93 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
+/// <summary>
+/// Demonstrates exporting a barcode generator's configuration to XML,
+/// importing it back, and verifying that the settings are preserved.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// </summary>
     static void Main()
     {
-        // Prepare temporary file paths
-        string tempXml = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString() + ".xml");
-        string originalImage = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString() + ".png");
-        string importedImage = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString() + ".png");
+        // Prepare a temporary file path with an .xml extension for storing the exported settings.
+        string tempXmlPath = Path.ChangeExtension(Path.GetTempFileName(), ".xml");
 
-        // Expected barcode text
-        const string expectedText = "Test123";
-
-        // Create original barcode generator and export its settings to XML
-        using (BarcodeGenerator originalGenerator = new BarcodeGenerator(EncodeTypes.Code128, expectedText))
+        // Create a barcode generator, configure its parameters, and export the configuration to XML.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Test123"))
         {
-            // Export generator settings to XML file
-            bool exportSuccess = originalGenerator.ExportToXml(tempXml);
-            if (!exportSuccess)
-            {
-                Console.WriteLine("Failed to export generator settings to XML.");
-                return;
-            }
+            // Disable automatic sizing.
+            generator.Parameters.AutoSizeMode = AutoSizeMode.None;
 
-            // Save original barcode image
-            originalGenerator.Save(originalImage);
+            // Set the X-dimension (module width) to 2 points.
+            generator.Parameters.Barcode.XDimension.Point = 2f;
+
+            // Set the barcode height to 40 points.
+            generator.Parameters.Barcode.BarHeight.Point = 40f;
+
+            // Write the current configuration to the temporary XML file.
+            generator.ExportToXml(tempXmlPath);
         }
 
-        // Import generator settings from XML
-        BarcodeGenerator importedGenerator = BarcodeGenerator.ImportFromXml(tempXml);
-        if (importedGenerator == null)
+        // Attempt to import a barcode generator from the previously saved XML file.
+        BarcodeGenerator importedGenerator = null;
+        try
         {
-            Console.WriteLine("Failed to import generator settings from XML.");
+            importedGenerator = BarcodeGenerator.ImportFromXml(tempXmlPath);
+        }
+        catch (Exception ex)
+        {
+            // Report any import errors and clean up the temporary file before exiting.
+            Console.WriteLine("ImportFromXml threw an exception: " + ex.Message);
+            Cleanup(tempXmlPath);
             return;
         }
 
-        // Save imported barcode image
-        using (importedGenerator)
+        // Verify that the imported generator's settings match the original configuration.
+        bool isCodeTextEqual = importedGenerator.CodeText == "Test123";
+        bool isSymbologyEqual = importedGenerator.BarcodeType.TypeName == EncodeTypes.Code128.TypeName;
+        bool isXDimensionEqual = Math.Abs(importedGenerator.Parameters.Barcode.XDimension.Point - 2f) < 0.001f;
+        bool isBarHeightEqual = Math.Abs(importedGenerator.Parameters.Barcode.BarHeight.Point - 40f) < 0.001f;
+        bool isAutoSizeModeEqual = importedGenerator.Parameters.AutoSizeMode == AutoSizeMode.None;
+
+        if (isCodeTextEqual && isSymbologyEqual && isXDimensionEqual && isBarHeightEqual && isAutoSizeModeEqual)
         {
-            importedGenerator.Save(importedImage);
+            Console.WriteLine("Test Passed: Imported settings match the exported ones.");
+        }
+        else
+        {
+            // Output detailed mismatch information for debugging.
+            Console.WriteLine("Test Failed: Mismatch in imported settings.");
+            Console.WriteLine($"CodeText: Expected 'Test123', Actual '{importedGenerator.CodeText}'");
+            Console.WriteLine($"Symbology: Expected '{EncodeTypes.Code128.TypeName}', Actual '{importedGenerator.BarcodeType.TypeName}'");
+            Console.WriteLine($"XDimension: Expected 2, Actual {importedGenerator.Parameters.Barcode.XDimension.Point}");
+            Console.WriteLine($"BarHeight: Expected 40, Actual {importedGenerator.Parameters.Barcode.BarHeight.Point}");
+            Console.WriteLine($"AutoSizeMode: Expected None, Actual {importedGenerator.Parameters.AutoSizeMode}");
         }
 
-        // Read barcode from original image
-        string originalReadText;
-        using (BarCodeReader reader = new BarCodeReader(originalImage, DecodeType.AllSupportedTypes))
+        // Release resources used by the imported generator and delete the temporary XML file.
+        importedGenerator?.Dispose();
+        Cleanup(tempXmlPath);
+    }
+
+    /// <summary>
+    /// Deletes the specified file if it exists, suppressing any exceptions.
+    /// </summary>
+    /// <param name="filePath">The full path of the file to delete.</param>
+    static void Cleanup(string filePath)
+    {
+        try
         {
-            BarCodeResult[] results = reader.ReadBarCodes();
-            if (results.Length == 0)
+            if (File.Exists(filePath))
             {
-                Console.WriteLine("No barcode detected in original image.");
-                return;
+                File.Delete(filePath);
             }
-            originalReadText = results[0].CodeText;
         }
-
-        // Read barcode from imported image
-        string importedReadText;
-        using (BarCodeReader reader = new BarCodeReader(importedImage, DecodeType.AllSupportedTypes))
+        catch
         {
-            BarCodeResult[] results = reader.ReadBarCodes();
-            if (results.Length == 0)
-            {
-                Console.WriteLine("No barcode detected in imported image.");
-                return;
-            }
-            importedReadText = results[0].CodeText;
+            // Intentionally ignore any errors that occur during cleanup.
         }
-
-        // Verify that both readings match the expected text and each other
-        bool testPassed = originalReadText == expectedText && importedReadText == expectedText && originalReadText == importedReadText;
-        Console.WriteLine(testPassed ? "ImportFromXml test passed." : "ImportFromXml test failed.");
-
-        // Clean up temporary files
-        try { File.Delete(tempXml); } catch { }
-        try { File.Delete(originalImage); } catch { }
-        try { File.Delete(importedImage); } catch { }
     }
 }

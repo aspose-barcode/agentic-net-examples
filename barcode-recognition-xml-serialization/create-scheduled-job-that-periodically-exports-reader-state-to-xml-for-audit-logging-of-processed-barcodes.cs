@@ -1,57 +1,80 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates generating barcodes, reading them, and exporting the reader state to XML.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Application entry point.
+    /// Generates sample barcodes, reads them, and logs detection results and reader state.
+    /// </summary>
     static void Main()
     {
-        // Directory to store generated images and XML logs
-        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "output");
-        if (!Directory.Exists(outputDir))
+        // Define a collection of sample barcodes (symbology type and associated text)
+        var samples = new List<(BaseEncodeType type, string text)>
         {
-            Directory.CreateDirectory(outputDir);
-        }
+            (EncodeTypes.Code128, "Sample123"),
+            (EncodeTypes.QR, "https://example.com"),
+            (EncodeTypes.EAN13, "1234567890128")
+        };
 
-        // Process a small set of sample barcodes
-        for (int i = 1; i <= 3; i++)
+        int index = 0; // Used to differentiate output files for each sample
+
+        // Process each sample barcode definition
+        foreach (var sample in samples)
         {
-            // Create a barcode generator for Code128 with sample text
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, $"Sample{i}"))
+            // Create a memory stream to hold the generated barcode image
+            using (var ms = new MemoryStream())
             {
-                // Export generator configuration to XML (audit of generation settings)
-                string genXmlPath = Path.Combine(outputDir, $"generator_{i}.xml");
-                bool genExported = generator.ExportToXml(genXmlPath);
-                Console.WriteLine($"Generator export {(genExported ? "succeeded" : "failed")} for barcode {i}");
-
-                // Generate the barcode image in memory
-                using (Bitmap bitmap = generator.GenerateBarCodeImage())
+                // Generate the barcode image and write it to the memory stream
+                using (var generator = new BarcodeGenerator(sample.type, sample.text))
                 {
-                    // Save the image to a file for reference (optional)
-                    string imagePath = Path.Combine(outputDir, $"barcode_{i}.png");
-                    bitmap.Save(imagePath, Aspose.Drawing.Imaging.ImageFormat.Png);
+                    // Save the barcode as a PNG image
+                    generator.Save(ms, BarCodeImageFormat.Png);
+                }
 
-                    // Initialize a reader with the generated bitmap and specify the decode type
-                    using (var reader = new BarCodeReader(bitmap, DecodeType.Code128))
+                // Reset stream position to the beginning for reading
+                ms.Position = 0;
+
+                // Initialize a barcode reader that supports all available symbologies
+                using (var reader = new BarCodeReader(ms, DecodeType.AllSupportedTypes))
+                {
+                    // Iterate over all detected barcodes in the image
+                    foreach (var result in reader.ReadBarCodes())
                     {
-                        // Read barcodes from the image
-                        foreach (var result in reader.ReadBarCodes())
-                        {
-                            Console.WriteLine($"Read barcode {i}: Type={result.CodeTypeName}, Text={result.CodeText}");
-                        }
+                        // Output detection details to the console
+                        Console.WriteLine($"[{index}] Detected Type: {result.CodeTypeName}, Text: {result.CodeText}");
+                    }
 
-                        // Export reader state to XML (audit of recognition settings and results)
-                        string readerXmlPath = Path.Combine(outputDir, $"reader_{i}.xml");
-                        bool readerExported = reader.ExportToXml(readerXmlPath);
-                        Console.WriteLine($"Reader export {(readerExported ? "succeeded" : "failed")} for barcode {i}");
+                    // Build a unique file name for exporting the reader's internal state
+                    string xmlPath = $"ReaderState_{index}.xml";
+
+                    // Attempt to export the reader state (settings and results) to an XML file
+                    try
+                    {
+                        reader.ExportToXml(xmlPath);
+                        Console.WriteLine($"Reader state exported to: {xmlPath}");
+                    }
+                    catch (Exception ex)
+                    {
+                        // Log any errors that occur during export
+                        Console.WriteLine($"Failed to export reader state: {ex.Message}");
                     }
                 }
             }
+
+            index++; // Increment index for the next sample
         }
 
-        Console.WriteLine("Processing completed. XML logs are available in the 'output' folder.");
+        // Indicate that all processing is complete
+        Console.WriteLine("Processing completed.");
     }
 }

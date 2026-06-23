@@ -1,45 +1,56 @@
 using System;
 using System.IO;
 using Aspose.BarCode;
+using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
+/// <summary>
+/// Demonstrates barcode generation, recognition, and exporting the recognition state to XML.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point. Handles barcode generation (if needed), reads the barcode, prints details,
+    /// and exports the full recognition state to an XML file.
+    /// </summary>
     static void Main()
     {
-        // Path to the barcode image to be processed
+        // Define file paths for the barcode image and the exported XML.
         string imagePath = "barcode.png";
-
-        // Path where the recognition state XML will be saved
         string xmlPath = "recognition_state.xml";
 
-        // Verify that the image file exists
+        // If the barcode image does not exist, generate a sample Code128 barcode.
         if (!File.Exists(imagePath))
         {
-            Console.WriteLine($"Error: Image file not found at '{imagePath}'.");
-            return;
+            // Create a BarcodeGenerator with the desired encoding and data.
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
+            {
+                // Save the generated barcode image to the specified path.
+                generator.Save(imagePath);
+                Console.WriteLine($"Sample barcode image created at '{imagePath}'.");
+            }
         }
 
-        // Initialize the barcode reader with the image file
-        using (var reader = new BarCodeReader(imagePath))
+        // Initialize a BarCodeReader to detect all supported barcode types in the image.
+        using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
         {
-            // Perform barcode recognition
+            // Perform the recognition and retrieve all detected barcodes.
             var results = reader.ReadBarCodes();
 
-            // Output recognized barcodes to the console (optional)
+            // Iterate through each recognition result and output its details.
             foreach (var result in results)
             {
-                Console.WriteLine($"BarCode Type: {result.CodeTypeName}");
-                Console.WriteLine($"BarCode Text: {result.CodeText}");
+                Console.WriteLine($"Type: {result.CodeTypeName}");
+                Console.WriteLine($"CodeText: {result.CodeText}");
                 Console.WriteLine($"Confidence: {result.Confidence}");
+                Console.WriteLine($"ReadingQuality: {result.ReadingQuality}");
                 Console.WriteLine();
             }
 
-            // Export the recognition state to an XML file
-            bool success = reader.ExportToXml(xmlPath);
-            Console.WriteLine(success
-                ? $"Recognition state exported successfully to '{xmlPath}'."
-                : "Failed to export recognition state.");
+            // Export the complete recognition state (including all detected barcodes) to an XML file.
+            reader.ExportToXml(xmlPath);
+            Console.WriteLine($"Recognition state exported to '{xmlPath}'.");
         }
     }
 }

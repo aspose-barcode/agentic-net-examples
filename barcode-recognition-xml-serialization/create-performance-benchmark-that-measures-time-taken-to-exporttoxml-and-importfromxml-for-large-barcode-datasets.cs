@@ -1,65 +1,107 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
+/// <summary>
+/// Demonstrates benchmarking of Aspose.BarCode ExportToXml and ImportFromXml methods.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Generates a set of barcodes, exports them to XML,
+    /// imports them back, measures execution time, and cleans up temporary files.
+    /// </summary>
     static void Main()
     {
-        // Prepare a temporary folder for XML files
-        string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeBenchmark");
-        Directory.CreateDirectory(tempFolder);
+        // Number of barcode samples to process (kept small for quick execution)
+        const int sampleCount = 5;
 
-        // Define a small set of barcode configurations
-        var barcodeInfos = new (BaseEncodeType type, string text)[]
+        // List of barcode symbologies to be used for the samples
+        var symbologies = new List<BaseEncodeType>
         {
-            (EncodeTypes.Code128, "ABC123456"),
-            (EncodeTypes.QR, "https://example.com"),
-            (EncodeTypes.DataMatrix, "DM12345"),
-            (EncodeTypes.Pdf417, "PDF417_SAMPLE_TEXT"),
-            (EncodeTypes.EAN13, "123456789012")
+            EncodeTypes.Code128,
+            EncodeTypes.QR,
+            EncodeTypes.DataMatrix,
+            EncodeTypes.Pdf417,
+            EncodeTypes.Aztec
         };
 
-        // Export to XML benchmark
-        var exportStopwatch = Stopwatch.StartNew();
-        foreach (var info in barcodeInfos)
+        // If the requested sample count exceeds the predefined symbologies,
+        // repeat the first symbology to fill the list.
+        while (symbologies.Count < sampleCount)
         {
-            string xmlPath = Path.Combine(tempFolder, $"{info.type}_{Guid.NewGuid()}.xml");
-            using (var generator = new BarcodeGenerator(info.type, info.text))
+            symbologies.Add(EncodeTypes.Code128);
+        }
+
+        // Create a temporary directory to store generated XML files
+        string tempDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeXmlBenchmark");
+        Directory.CreateDirectory(tempDir);
+
+        // Keep track of the generated XML file paths for later import and cleanup
+        var xmlFiles = new List<string>();
+
+        // -------------------- Export to XML benchmark --------------------
+        var exportStopwatch = Stopwatch.StartNew(); // Start timing export operations
+
+        for (int i = 0; i < sampleCount; i++)
+        {
+            // Generate a unique text value for each barcode
+            string codeText = $"Sample{i + 1}";
+            BaseEncodeType type = symbologies[i];
+
+            // Create a barcode generator, export its definition to XML, and store the file path
+            using (var generator = new BarcodeGenerator(type, codeText))
             {
-                bool success = generator.ExportToXml(xmlPath);
-                if (!success)
-                {
-                    Console.WriteLine($"Export failed for {info.type}");
-                }
+                string xmlPath = Path.Combine(tempDir, $"barcode_{i + 1}.xml");
+                generator.ExportToXml(xmlPath);
+                xmlFiles.Add(xmlPath);
             }
         }
-        exportStopwatch.Stop();
-        Console.WriteLine($"ExportToXml total time for {barcodeInfos.Length} barcodes: {exportStopwatch.ElapsedMilliseconds} ms");
 
-        // Import from XML benchmark
-        var importStopwatch = Stopwatch.StartNew();
-        foreach (var file in Directory.GetFiles(tempFolder, "*.xml"))
+        exportStopwatch.Stop(); // Stop timing export operations
+
+        // -------------------- Import from XML benchmark --------------------
+        var importStopwatch = Stopwatch.StartNew(); // Start timing import operations
+
+        foreach (var xmlPath in xmlFiles)
         {
-            using (var importedGenerator = BarcodeGenerator.ImportFromXml(file))
+            // Import the barcode definition from the XML file.
+            // No further processing is required for the benchmark.
+            using (var generator = BarcodeGenerator.ImportFromXml(xmlPath))
             {
-                // Simple validation to ensure import succeeded
-                if (importedGenerator == null)
-                {
-                    Console.WriteLine($"Import returned null for file {file}");
-                }
+                // Intentionally left blank.
             }
         }
-        importStopwatch.Stop();
-        Console.WriteLine($"ImportFromXml total time for {barcodeInfos.Length} barcodes: {importStopwatch.ElapsedMilliseconds} ms");
 
-        // Clean up temporary files
-        foreach (var file in Directory.GetFiles(tempFolder))
+        importStopwatch.Stop(); // Stop timing import operations
+
+        // Output benchmark results to the console
+        Console.WriteLine($"ExportToXml time for {sampleCount} items: {exportStopwatch.ElapsedMilliseconds} ms");
+        Console.WriteLine($"ImportFromXml time for {sampleCount} items: {importStopwatch.ElapsedMilliseconds} ms");
+
+        // -------------------- Cleanup temporary files --------------------
+        foreach (var file in xmlFiles)
         {
-            try { File.Delete(file); } catch { }
+            try
+            {
+                File.Delete(file);
+            }
+            catch
+            {
+                // Suppress any exceptions during file deletion
+            }
         }
-        try { Directory.Delete(tempFolder); } catch { }
+
+        try
+        {
+            Directory.Delete(tempDir);
+        }
+        catch
+        {
+            // Suppress any exceptions during directory deletion
+        }
     }
 }

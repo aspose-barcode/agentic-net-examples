@@ -1,142 +1,119 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
-using System.Xml;
+using System.Xml.Serialization;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
+/// <summary>
+/// Represents a scanned barcode result with its text, type, and region coordinates.
+/// </summary>
+public class ScanResult
+{
+    public string CodeText { get; set; }
+    public string CodeTypeName { get; set; }
+    public float RegionX { get; set; }
+    public float RegionY { get; set; }
+    public float RegionWidth { get; set; }
+    public float RegionHeight { get; set; }
+}
+
+/// <summary>
+/// Provides methods to persist and retrieve scanning results to/from an XML file.
+/// </summary>
+public static class StatePersistence
+{
+    /// <summary>
+    /// Serializes a list of <see cref="ScanResult"/> objects to the specified file path.
+    /// </summary>
+    /// <param name="filePath">The file path where the XML will be saved.</param>
+    /// <param name="results">The list of scan results to serialize.</param>
+    public static void Save(string filePath, List<ScanResult> results)
+    {
+        var serializer = new XmlSerializer(typeof(List<ScanResult>));
+        using (var stream = new FileStream(filePath, FileMode.Create, FileAccess.Write))
+        {
+            serializer.Serialize(stream, results);
+        }
+    }
+
+    /// <summary>
+    /// Deserializes a list of <see cref="ScanResult"/> objects from the specified file path.
+    /// </summary>
+    /// <param name="filePath">The file path of the XML to read.</param>
+    /// <returns>A list of scan results; empty if the file does not exist.</returns>
+    public static List<ScanResult> Load(string filePath)
+    {
+        if (!File.Exists(filePath))
+        {
+            Console.WriteLine($"State file not found: {filePath}");
+            return new List<ScanResult>();
+        }
+
+        var serializer = new XmlSerializer(typeof(List<ScanResult>));
+        using (var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read))
+        {
+            return (List<ScanResult>)serializer.Deserialize(stream);
+        }
+    }
+}
+
+/// <summary>
+/// Demonstrates barcode generation, scanning, state persistence, and restoration.
+/// </summary>
 class Program
 {
-    // Path for the XML file that stores the scanning progress
-    private const string StateFile = "scanstate.xml";
-
-    // Directory to store generated barcode images
-    private const string ImagesDir = "Barcodes";
-
+    /// <summary>
+    /// Entry point of the application. Generates a barcode, scans it, saves state, clears memory, and restores state.
+    /// </summary>
     static void Main()
     {
-        // Ensure the images directory exists
-        if (!Directory.Exists(ImagesDir))
+        const string imagePath = "barcode.png";
+        const string statePath = "state.xml";
+
+        // Step 1: Generate a sample barcode image.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
         {
-            Directory.CreateDirectory(ImagesDir);
+            generator.Save(imagePath);
         }
 
-        // Sample barcode texts to generate and scan
-        string[] barcodeTexts = new[]
+        // Step 2: Scan the barcode and collect results.
+        var scannedResults = new List<ScanResult>();
+        using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
         {
-            "123456789012",   // EAN13
-            "9876543210",     // Code128
-            "ABCD1234",       // QR
-            "5555555555",     // Code39
-            "20230615"        // DataMatrix
-        };
-
-        // Generate barcode images if they are missing
-        for (int i = 0; i < barcodeTexts.Length; i++)
-        {
-            string filePath = GetImagePath(i);
-            if (!File.Exists(filePath))
+            foreach (var result in reader.ReadBarCodes())
             {
-                GenerateBarcodeImage(barcodeTexts[i], filePath);
-            }
-        }
-
-        // Load the next index to process from the XML state file (if it exists)
-        int nextIndex = LoadState();
-
-        // Process remaining barcodes
-        for (int i = nextIndex; i < barcodeTexts.Length; i++)
-        {
-            string imagePath = GetImagePath(i);
-            Console.WriteLine($"Scanning image: {Path.GetFileName(imagePath)}");
-
-            // Read the barcode
-            using (var reader = new BarCodeReader(imagePath))
-            {
-                foreach (var result in reader.ReadBarCodes())
+                var region = result.Region.Rectangle;
+                scannedResults.Add(new ScanResult
                 {
-                    Console.WriteLine($"  Detected Type : {result.CodeTypeName}");
-                    Console.WriteLine($"  Detected Text : {result.CodeText}");
-                }
+                    CodeText = result.CodeText,
+                    CodeTypeName = result.CodeTypeName,
+                    RegionX = (float)region.X,
+                    RegionY = (float)region.Y,
+                    RegionWidth = (float)region.Width,
+                    RegionHeight = (float)region.Height
+                });
+                Console.WriteLine($"Scanned: {result.CodeTypeName} - {result.CodeText}");
             }
-
-            // Update state after successful processing
-            SaveState(i + 1);
         }
 
-        // All items processed – clean up the state file
-        if (File.Exists(StateFile))
+        // Step 3: Persist the scanning state to XML.
+        StatePersistence.Save(statePath, scannedResults);
+        Console.WriteLine($"State saved to {statePath}");
+
+        // Simulate a crash by clearing the in‑memory list.
+        scannedResults.Clear();
+
+        // Step 4: Restore the state from XML after "restart".
+        var restoredResults = StatePersistence.Load(statePath);
+        Console.WriteLine($"State restored from {statePath}");
+
+        // Step 5: Display restored results.
+        foreach (var res in restoredResults)
         {
-            File.Delete(StateFile);
+            Console.WriteLine($"Restored: {res.CodeTypeName} - {res.CodeText} (Region: {res.RegionX},{res.RegionY},{res.RegionWidth},{res.RegionHeight})");
         }
-
-        Console.WriteLine("Scanning completed.");
-    }
-
-    // Returns the full path for a generated barcode image based on its index
-    private static string GetImagePath(int index)
-    {
-        return Path.Combine(ImagesDir, $"barcode_{index}.png");
-    }
-
-    // Generates a barcode image using Aspose.BarCode and saves it to the specified path
-    private static void GenerateBarcodeImage(string codeText, string filePath)
-    {
-        // Choose a symbology based on the length/content of the code text
-        BaseEncodeType encodeType = codeText.Length == 12 ? EncodeTypes.EAN13 :
-                                   codeText.All(char.IsDigit) ? EncodeTypes.Code128 :
-                                   EncodeTypes.QR;
-
-        using (var generator = new BarcodeGenerator(encodeType, codeText))
-        {
-            // Example of setting a property (image width) using unit members
-            generator.Parameters.ImageWidth.Point = 300f;
-            generator.Parameters.ImageHeight.Point = 150f;
-
-            // Export generator settings to XML (optional demonstration)
-            string genXml = Path.ChangeExtension(filePath, ".xml");
-            generator.ExportToXml(genXml);
-
-            // Save the barcode image
-            generator.Save(filePath);
-        }
-    }
-
-    // Loads the next index to process from the XML state file; returns 0 if the file is missing or malformed
-    private static int LoadState()
-    {
-        if (!File.Exists(StateFile))
-            return 0;
-
-        try
-        {
-            var doc = new XmlDocument();
-            doc.Load(StateFile);
-            var node = doc.SelectSingleNode("/State/NextIndex");
-            if (node != null && int.TryParse(node.InnerText, out int index))
-                return index;
-        }
-        catch
-        {
-            // If any error occurs, start from the beginning
-        }
-        return 0;
-    }
-
-    // Saves the next index to process into the XML state file
-    private static void SaveState(int nextIndex)
-    {
-        var doc = new XmlDocument();
-        var decl = doc.CreateXmlDeclaration("1.0", "UTF-8", null);
-        doc.AppendChild(decl);
-
-        var root = doc.CreateElement("State");
-        doc.AppendChild(root);
-
-        var indexNode = doc.CreateElement("NextIndex");
-        indexNode.InnerText = nextIndex.ToString();
-        root.AppendChild(indexNode);
-
-        doc.Save(StateFile);
     }
 }
