@@ -1,63 +1,78 @@
 using System;
 using System.IO;
 using Aspose.Words;
-using Aspose.Words.Drawing;
-using Aspose.BarCode;
-using Aspose.BarCode.Generation;
 using Aspose.BarCode.ComplexBarcode;
+using Aspose.BarCode.Generation;
+using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates how to generate a HIBC LIC secondary‑data‑only barcode,
+/// embed it into a Word document, and save the result.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Creates a sample Word document if needed, generates a barcode,
+    /// inserts the barcode image at the end of the document, and saves it.
+    /// </summary>
     static void Main()
     {
         // Paths for the input and output Word documents
-        string inputPath = "InputDocument.docx";
-        string outputPath = "OutputDocument.docx";
+        string inputPath = "input.docx";
+        string outputPath = "output.docx";
 
-        // Ensure the input document exists; if not, create a simple placeholder document
-        Document doc;
-        if (File.Exists(inputPath))
+        // Ensure an input document exists; create a simple one if missing
+        if (!File.Exists(inputPath))
         {
-            doc = new Document(inputPath);
-        }
-        else
-        {
-            doc = new Document();
-            var placeholderBuilder = new DocumentBuilder(doc);
-            placeholderBuilder.Writeln("Placeholder document created because the input file was not found.");
+            // Create a new empty Word document
+            var newDoc = new Document();
+
+            // Use DocumentBuilder to add introductory text
+            var builder = new DocumentBuilder(newDoc);
+            builder.Writeln("Document with embedded HIBC LIC barcode:");
+
+            // Save the newly created document to the input path
+            newDoc.Save(inputPath);
         }
 
-        // Prepare a DocumentBuilder for inserting the barcode image
-        DocumentBuilder builder = new DocumentBuilder(doc);
-        builder.MoveToDocumentEnd();
-
-        // Create HIBC LIC secondary‑and‑additional‑data codetext
+        // Prepare HIBC LIC secondary‑data‑only codetext
         var hibcCodetext = new HIBCLICSecondaryAndAdditionalDataCodetext
         {
             BarcodeType = EncodeTypes.HIBCCode128LIC,
-            LinkCharacter = 'L',
+            LinkCharacter = '+',
             Data = new SecondaryAndAdditionalData
             {
                 LotNumber = "LOT123",
-                SerialNumber = "SERIAL123"
-                // Additional fields (e.g., ExpiryDate) can be set here if needed
+                SerialNumber = "SN98765",
+                ExpiryDate = DateTime.Today.AddMonths(6),
+                ExpiryDateFormat = HIBCLICDateFormat.MMDDYY,
+                Quantity = 10,
+                DateOfManufacture = DateTime.Today.AddMonths(-1)
             }
         };
 
-        // Generate the barcode image and insert it into the Word document
+        // Generate the barcode image into a memory stream
         using (var generator = new ComplexBarcodeGenerator(hibcCodetext))
+        using (var ms = new MemoryStream())
         {
-            using (var imageStream = new MemoryStream())
-            {
-                // Save the barcode as PNG into the memory stream
-                generator.Save(imageStream, BarCodeImageFormat.Png);
-                // Insert the image bytes at the current builder position
-                builder.InsertImage(imageStream.ToArray());
-            }
+            // Save the barcode as PNG into the memory stream
+            generator.Save(ms, BarCodeImageFormat.Png);
+            ms.Position = 0; // Reset stream position for reading
+
+            // Load the existing Word document
+            var doc = new Document(inputPath);
+            var builder = new DocumentBuilder(doc);
+
+            // Move cursor to the end of the document and insert the barcode image
+            builder.MoveToDocumentEnd();
+            builder.InsertImage(ms);
+
+            // Save the modified document to the output path
+            doc.Save(outputPath);
         }
 
-        // Save the modified document
-        doc.Save(outputPath);
+        // Inform the user that the process completed successfully
         Console.WriteLine($"Barcode embedded and document saved to '{outputPath}'.");
     }
 }

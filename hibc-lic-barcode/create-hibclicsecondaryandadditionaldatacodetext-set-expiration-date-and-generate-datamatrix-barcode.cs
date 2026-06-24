@@ -1,38 +1,47 @@
 using System;
-using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.ComplexBarcode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
 
+/// <summary>
+/// Demonstrates generating a HIBC LIC DataMatrix barcode with secondary and additional data using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Creates a barcode with secondary data and saves it as an image.
+    /// </summary>
     static void Main()
     {
-        // Create HIBCLIC secondary and additional data codetext
-        var complexCodetext = new HIBCLICSecondaryAndAdditionalDataCodetext();
-        complexCodetext.BarcodeType = EncodeTypes.HIBCDataMatrixLIC; // Use DataMatrix LIC
-        complexCodetext.LinkCharacter = 'L'; // Optional link character
-
-        // Populate secondary data (expiry date, lot number, serial number)
-        var secondaryData = new SecondaryAndAdditionalData
+        // Initialize secondary and additional data codetext for a HIBC LIC DataMatrix barcode
+        var hibcCodetext = new HIBCLICSecondaryAndAdditionalDataCodetext
         {
-            ExpiryDate = DateTime.Today.AddMonths(6),
-            ExpiryDateFormat = HIBCLICDateFormat.MMDDYY,
-            LotNumber = "LOT12345",
-            SerialNumber = "SN98765"
+            // Set the barcode symbology to HIBC DataMatrix LIC
+            BarcodeType = EncodeTypes.HIBCDataMatrixLIC,
+            // Define the mandatory link character; default is '+'
+            LinkCharacter = '+',
+            // Populate the secondary data fields
+            Data = new SecondaryAndAdditionalData
+            {
+                // Set the expiration date (example: 30 days from the current date)
+                ExpiryDate = DateTime.Now.AddDays(30),
+                // Choose the date format for the expiration date (e.g., MMDDYY)
+                ExpiryDateFormat = HIBCLICDateFormat.MMDDYY,
+                // Optional: specify lot number
+                LotNumber = "LOT123",
+                // Optional: specify serial number
+                SerialNumber = "SN001"
+            }
         };
-        complexCodetext.Data = secondaryData;
 
-        // Generate and save the barcode image
-        using (var generator = new ComplexBarcodeGenerator(complexCodetext))
+        // Create a barcode generator using the configured codetext
+        using (var generator = new ComplexBarcodeGenerator(hibcCodetext))
         {
-            // Set image size (optional)
-            generator.Parameters.ImageWidth.Point = 300f;
-            generator.Parameters.ImageHeight.Point = 300f;
-
-            string outputFile = "hibc_lic_datamatrix.png";
-            generator.Save(outputFile, BarCodeImageFormat.Png);
-            Console.WriteLine($"Barcode saved to {Path.GetFullPath(outputFile)}");
+            // Save the generated barcode as a PNG image file
+            generator.Save("hibc_secondary_datamatrix.png");
         }
+
+        // Inform the user that the barcode has been generated
+        Console.WriteLine("HIBC LIC DataMatrix barcode generated: hibc_secondary_datamatrix.png");
     }
 }

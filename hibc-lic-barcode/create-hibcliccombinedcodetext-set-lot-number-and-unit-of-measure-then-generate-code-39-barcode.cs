@@ -1,58 +1,47 @@
 using System;
-using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.ComplexBarcode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates generation of a combined HIBC LIC barcode using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Creates a combined HIBC LIC codetext,
+    /// generates the barcode image, and saves it to a file.
+    /// </summary>
     static void Main()
     {
-        // Create combined codetext for HIBC LIC
-        var combinedCodetext = new HIBCLICCombinedCodetext();
-
-        // Set barcode type to Code 39 (default, but set explicitly for clarity)
-        combinedCodetext.BarcodeType = EncodeTypes.HIBCCode39LIC;
-
-        // Populate primary data (required fields)
-        combinedCodetext.PrimaryData = new PrimaryData
+        // Build the combined HIBC LIC codetext object
+        var combinedCodetext = new HIBCLICCombinedCodetext
         {
-            ProductOrCatalogNumber = "12345",
-            LabelerIdentificationCode = "A999",
-            UnitOfMeasureID = 1 // Unit of measure
+            // Specify the barcode symbology (HIBC Code 39 LIC)
+            BarcodeType = EncodeTypes.HIBCCode39LIC,
+
+            // Populate primary data fields: product number, labeler ID, and unit of measure
+            PrimaryData = new PrimaryData
+            {
+                ProductOrCatalogNumber = "12345",
+                LabelerIdentificationCode = "A999",
+                UnitOfMeasureID = 1 // Example unit of measure identifier
+            },
+
+            // Populate secondary and additional data fields (e.g., lot number)
+            SecondaryAndAdditionalData = new SecondaryAndAdditionalData
+            {
+                LotNumber = "LOT123"
+            }
         };
 
-        // Populate secondary data with lot number
-        combinedCodetext.SecondaryAndAdditionalData = new SecondaryAndAdditionalData
-        {
-            LotNumber = "LOT123"
-        };
-
-        // Generate and save the barcode image
+        // Create a barcode generator using the combined codetext
         using (var generator = new ComplexBarcodeGenerator(combinedCodetext))
         {
-            // Save directly to a PNG file
-            generator.Save("hibc_lic_code39.png");
+            // Save the generated barcode as a PNG file; the generator handles image creation
+            generator.Save("hibc_combined_code39.png");
         }
 
-        // Optional: decode the generated barcode to verify
-        if (File.Exists("hibc_lic_code39.png"))
-        {
-            using (var reader = new BarCodeReader("hibc_lic_code39.png", DecodeType.HIBCCode39LIC))
-            {
-                var barCodes = reader.ReadBarCodes();
-                if (barCodes.Length > 0)
-                {
-                    var decoded = ComplexCodetextReader.TryDecodeHIBCLIC(barCodes[0].CodeText) as HIBCLICCombinedCodetext;
-                    if (decoded != null)
-                    {
-                        Console.WriteLine("Decoded Lot Number: " + decoded.SecondaryAndAdditionalData?.LotNumber);
-                        Console.WriteLine("Decoded Unit of Measure ID: " + decoded.PrimaryData?.UnitOfMeasureID);
-                    }
-                }
-            }
-        }
+        // Inform the user that the barcode image has been created
+        Console.WriteLine("Barcode generated: hibc_combined_code39.png");
     }
 }

@@ -1,52 +1,55 @@
 using System;
 using System.IO;
 using System.IO.Compression;
-using Aspose.BarCode;
-using Aspose.BarCode.Generation;
 using Aspose.BarCode.ComplexBarcode;
+using Aspose.BarCode.Generation;
 
 class Program
 {
     static void Main()
     {
-        string zipPath = "HIBC_LIC_Code39.zip";
-
-        if (File.Exists(zipPath))
+        // Directory to store individual barcode images
+        string outputDir = Path.Combine(Path.GetTempPath(), "HIBCBarcodes");
+        if (!Directory.Exists(outputDir))
         {
-            File.Delete(zipPath);
+            Directory.CreateDirectory(outputDir);
         }
 
-        using (FileStream zipFile = new FileStream(zipPath, FileMode.Create))
-        using (ZipArchive archive = new ZipArchive(zipFile, ZipArchiveMode.Update))
+        // Generate 10 HIBC Code39 barcodes with varying primary product numbers
+        for (int i = 1; i <= 10; i++)
         {
-            for (int i = 1; i <= 10; i++)
+            // Prepare primary data
+            var primaryCodetext = new HIBCLICPrimaryDataCodetext
             {
-                var primary = new PrimaryData();
-                primary.ProductOrCatalogNumber = $"P{i:D4}";
-                primary.LabelerIdentificationCode = "A999";
-                primary.UnitOfMeasureID = 1;
-
-                var codetext = new HIBCLICPrimaryDataCodetext();
-                codetext.Data = primary;
-                codetext.BarcodeType = EncodeTypes.HIBCCode39LIC;
-
-                using (var generator = new ComplexBarcodeGenerator(codetext))
+                BarcodeType = EncodeTypes.HIBCCode39LIC,
+                Data = new PrimaryData
                 {
-                    using (var ms = new MemoryStream())
-                    {
-                        generator.Save(ms, BarCodeImageFormat.Png);
-                        ms.Position = 0;
-
-                        var entry = archive.CreateEntry($"barcode_{i:D2}.png");
-                        using (var entryStream = entry.Open())
-                        {
-                            ms.CopyTo(entryStream);
-                        }
-                    }
+                    ProductOrCatalogNumber = $"PN{i:D4}",          // Varying product number
+                    LabelerIdentificationCode = "A999",           // Example labeler ID
+                    UnitOfMeasureID = 1                           // Example UOM
                 }
+            };
+
+            // Generate barcode image and save to file
+            string filePath = Path.Combine(outputDir, $"HIBC_Code39_{i:D2}.png");
+            using (var generator = new ComplexBarcodeGenerator(primaryCodetext))
+            {
+                generator.Save(filePath);
+            }
+
+            Console.WriteLine($"Generated barcode {i} -> {filePath}");
+        }
+
+        // Create zip archive containing all generated images
+        string zipPath = Path.Combine(Directory.GetCurrentDirectory(), "HIBC_Code39_Barcodes.zip");
+        using (var zip = ZipFile.Open(zipPath, ZipArchiveMode.Create))
+        {
+            foreach (string file in Directory.GetFiles(outputDir, "*.png"))
+            {
+                zip.CreateEntryFromFile(file, Path.GetFileName(file));
             }
         }
 
-        Console.WriteLine($"Generated zip archive: {zipPath}");
+        Console.WriteLine($"All barcodes zipped to: {zipPath}");
     }
 }
