@@ -1,35 +1,34 @@
 using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 
+/// <summary>
+/// Demonstrates generating a GS1 Code128 barcode and saving it as a JPEG image.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Generates a barcode and writes the output path to the console.
+    /// </summary>
     static void Main()
     {
-        const string outputFile = "gs1code128.jpg";
-        const string gs1Data = "(01)12345678901231";
+        // Output file name for the generated barcode image
+        const string outputPath = "gs1code128.jpg";
 
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.GS1Code128, gs1Data))
+        // The data to encode; GS1 format with Application Identifier (01) for GTIN
+        const string codeText = "(01)12345678901231";
+
+        // Initialize a barcode generator for GS1 Code128 with the specified text
+        using (var generator = new BarcodeGenerator(EncodeTypes.GS1Code128, codeText))
         {
+            // Configure the human‑readable text to appear below the barcode graphic
             generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.Below;
-            generator.Parameters.Barcode.CodeTextParameters.Alignment = TextAlignment.Center;
 
-            generator.Parameters.CaptionBelow.Text = "Custom Human‑Readable Text";
-            generator.Parameters.CaptionBelow.Visible = true;
-            generator.Parameters.CaptionBelow.Alignment = TextAlignment.Center;
-
-            generator.Parameters.AutoSizeMode = AutoSizeMode.None;
-            generator.Parameters.Barcode.BarHeight.Point = 50f;
-            generator.Parameters.ImageWidth.Point = 300f;
-            generator.Parameters.ImageHeight.Point = 150f;
-
-            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-            generator.Parameters.BackColor = Aspose.Drawing.Color.White;
-
-            generator.Save(outputFile, BarCodeImageFormat.Jpeg);
+            // Persist the generated barcode to a JPEG file at the specified path
+            generator.Save(outputPath, BarCodeImageFormat.Jpeg);
         }
 
-        Console.WriteLine($"Barcode saved to {outputFile}");
+        // Inform the user where the barcode image was saved
+        Console.WriteLine($"Barcode saved to {outputPath}");
     }
 }

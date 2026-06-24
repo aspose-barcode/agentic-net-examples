@@ -3,62 +3,53 @@ using System.IO;
 using System.Net.Mail;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates generating a UPC‑A with GS1‑128 coupon barcode,
+/// saving it to a PNG image, and attaching it to an email message.
+/// </summary>
 class Program
 {
-    static void Main()
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates the barcode, writes it to a memory stream,
+    /// and creates an email with the barcode attached.
+    /// </summary>
+    /// <param name="args">Command‑line arguments (not used).</param>
+    static void Main(string[] args)
     {
-        // Sample UPC‑A with GS1‑128 coupon data
-        const string barcodeText = "514141100906(8102)03";
+        // Define the barcode text: UPC‑A part, GS1‑128 data in parentheses, and additional data.
+        string codeText = "514141100906(8102)03";
 
-        // Create the barcode generator for the specific symbology
-        using (var generator = new BarcodeGenerator(EncodeTypes.UpcaGs1Code128Coupon, barcodeText))
+        // Initialize the barcode generator for UPC‑A with GS1‑128 coupon encoding.
+        using (var generator = new BarcodeGenerator(EncodeTypes.UpcaGs1Code128Coupon, codeText))
         {
-            // Optional: set image size (points) and resolution
-            generator.Parameters.ImageWidth.Point = 300f;
-            generator.Parameters.ImageHeight.Point = 150f;
-            generator.Parameters.Resolution = 300f; // 300 DPI
-
-            // Generate the barcode image
-            using (Bitmap bitmap = generator.GenerateBarCodeImage())
+            // Save the generated barcode image to a memory stream in PNG format.
+            using (var ms = new MemoryStream())
             {
-                // Save the image to a memory stream as PNG and obtain the byte array
-                using (var ms = new MemoryStream())
-                {
-                    bitmap.Save(ms, ImageFormat.Png);
-                    byte[] imageBytes = ms.ToArray();
+                generator.Save(ms, BarCodeImageFormat.Png);
+                byte[] barcodeBytes = ms.ToArray(); // Convert stream to byte array.
 
-                    // Prepare an email with the barcode attached
+                // Create a memory stream for the attachment using the barcode bytes.
+                using (var attachmentStream = new MemoryStream(barcodeBytes))
+                {
+                    // Build the email message.
                     using (var message = new MailMessage())
                     {
+                        // Set sender and recipient addresses.
                         message.From = new MailAddress("sender@example.com");
                         message.To.Add("recipient@example.com");
-                        message.Subject = "UPC‑A Coupon Barcode";
+
+                        // Set email subject and body.
+                        message.Subject = "UPC‑A with Code128 Coupon Barcode";
                         message.Body = "Please find the generated barcode attached.";
 
-                        // Attach the barcode image from the byte array
-                        using (var attachmentStream = new MemoryStream(imageBytes))
-                        {
-                            attachmentStream.Position = 0;
-                            var attachment = new Attachment(attachmentStream, "barcode.png", "image/png");
-                            message.Attachments.Add(attachment);
+                        // Create the attachment (PNG image) and add it to the message.
+                        var attachment = new Attachment(attachmentStream, "barcode.png", "image/png");
+                        message.Attachments.Add(attachment);
 
-                            // Send the email (configure SMTP as needed)
-                            using (var client = new SmtpClient("localhost"))
-                            {
-                                try
-                                {
-                                    client.Send(message);
-                                    Console.WriteLine("Email sent successfully.");
-                                }
-                                catch (Exception ex)
-                                {
-                                    Console.WriteLine("Failed to send email: " + ex.Message);
-                                }
-                            }
-                        }
+                        // Output the size of the generated barcode image for verification.
+                        Console.WriteLine($"Barcode generated: {barcodeBytes.Length} bytes.");
                     }
                 }
             }

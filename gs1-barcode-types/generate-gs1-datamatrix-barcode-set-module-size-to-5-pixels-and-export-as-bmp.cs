@@ -2,21 +2,33 @@ using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
+/// <summary>
+/// Demonstrates generating a GS1 DataMatrix barcode using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Generates a GS1 DataMatrix barcode and saves it as a BMP file.
+    /// </summary>
     static void Main()
     {
-        // GS1 DataMatrix code text (example with GTIN Application Identifier)
+        // Define the barcode content: AI (01) followed by a 14‑digit GTIN.
         string codeText = "(01)12345678901231";
 
-        // Create a barcode generator for GS1 DataMatrix
-        using (var generator = new BarcodeGenerator(EncodeTypes.GS1DataMatrix, codeText))
+        // Choose the GS1 DataMatrix symbology.
+        BaseEncodeType encodeType = EncodeTypes.GS1DataMatrix;
+
+        // Create a barcode generator with the specified type and content.
+        using (var generator = new BarcodeGenerator(encodeType, codeText))
         {
-            // Set the module (X‑Dimension) size to 5 pixels
+            // Configure the X‑dimension (module size) to 5 pixels.
             generator.Parameters.Barcode.XDimension.Pixels = 5f;
 
-            // Export the barcode as a BMP image
+            // Render and save the barcode as a BMP image.
             generator.Save("gs1datamatrix.bmp");
         }
+
+        // Inform the user that the image has been saved.
+        Console.WriteLine("GS1 DataMatrix barcode saved as gs1datamatrix.bmp");
     }
 }

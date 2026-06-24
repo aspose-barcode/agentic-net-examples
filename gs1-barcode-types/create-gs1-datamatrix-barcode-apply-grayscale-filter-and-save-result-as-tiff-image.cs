@@ -5,49 +5,58 @@ using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates generation of a GS1 DataMatrix barcode and conversion to a grayscale TIFF image.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a GS1 DataMatrix barcode, converts it to grayscale, and saves it as a TIFF file.
+    /// </summary>
     static void Main()
     {
-        const string outputFile = "gs1_datamatrix_grayscale.tif";
+        // Define the barcode text using AI (01) for GTIN.
+        string codeText = "(01)12345678901231";
 
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.GS1DataMatrix, "(01)12345678901231"))
+        // Determine the output file path in the current working directory.
+        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "gs1datamatrix.tiff");
+
+        // Initialize the barcode generator for GS1 DataMatrix with the specified text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.GS1DataMatrix, codeText))
         {
-            using (Bitmap originalBitmap = generator.GenerateBarCodeImage())
+            // Generate the original colored bitmap.
+            using (Bitmap original = generator.GenerateBarCodeImage())
             {
-                using (Bitmap grayBitmap = new Bitmap(originalBitmap.Width, originalBitmap.Height, originalBitmap.PixelFormat))
+                // Create a new bitmap with the same dimensions to hold the grayscale image.
+                using (Bitmap grayBitmap = new Bitmap(original.Width, original.Height))
                 {
-                    using (Graphics graphics = Graphics.FromImage(grayBitmap))
+                    // Iterate over each pixel to compute its grayscale value.
+                    for (int y = 0; y < original.Height; y++)
                     {
-                        var colorMatrix = new ColorMatrix(new float[][]
+                        for (int x = 0; x < original.Width; x++)
                         {
-                            new float[] { 0.3f, 0.3f, 0.3f, 0, 0 },
-                            new float[] { 0.59f, 0.59f, 0.59f, 0, 0 },
-                            new float[] { 0.11f, 0.11f, 0.11f, 0, 0 },
-                            new float[] { 0, 0, 0, 1, 0 },
-                            new float[] { 0, 0, 0, 0, 1 }
-                        });
+                            // Retrieve the original pixel color.
+                            Color pixelColor = original.GetPixel(x, y);
 
-                        using (ImageAttributes imgAttr = new ImageAttributes())
-                        {
-                            imgAttr.SetColorMatrix(colorMatrix);
-                            graphics.DrawImage(
-                                originalBitmap,
-                                new Rectangle(0, 0, originalBitmap.Width, originalBitmap.Height),
-                                0,
-                                0,
-                                originalBitmap.Width,
-                                originalBitmap.Height,
-                                GraphicsUnit.Pixel,
-                                imgAttr);
+                            // Compute luminance using the simple average method.
+                            int gray = (pixelColor.R + pixelColor.G + pixelColor.B) / 3;
+
+                            // Preserve the original alpha channel while setting RGB to the grayscale value.
+                            Color grayColor = Color.FromArgb(pixelColor.A, gray, gray, gray);
+
+                            // Assign the grayscale color to the new bitmap.
+                            grayBitmap.SetPixel(x, y, grayColor);
                         }
                     }
 
-                    grayBitmap.Save(outputFile, ImageFormat.Tiff);
+                    // Save the grayscale bitmap as a TIFF file at the specified path.
+                    grayBitmap.Save(outputPath, ImageFormat.Tiff);
                 }
             }
         }
 
-        Console.WriteLine($"Barcode saved to {Path.GetFullPath(outputFile)}");
+        // Inform the user where the TIFF file has been saved.
+        Console.WriteLine($"GS1 DataMatrix barcode saved as TIFF at: {outputPath}");
     }
 }
