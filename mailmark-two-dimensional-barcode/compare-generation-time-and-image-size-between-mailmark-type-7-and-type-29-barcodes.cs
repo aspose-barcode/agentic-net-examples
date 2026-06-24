@@ -1,71 +1,79 @@
 using System;
 using System.Diagnostics;
 using System.IO;
-using Aspose.BarCode.ComplexBarcode;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
+using Aspose.BarCode.ComplexBarcode;
 using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates generation and timing of Mailmark 2D barcodes (Type 7 and Type 29) using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Generates two Mailmark barcodes, measures generation time,
+    /// and outputs the elapsed time and image size for each type.
+    /// </summary>
     static void Main()
     {
-        // Prepare common Mailmark2D data
-        const string destinationPostCode = "EF61AH8T "; // 9 chars with trailing spaces
-        const string versionId = "1";
-        const string informationTypeId = "0";
-        const string classId = "0";
-        const string rtsFlag = "0";
-        const int supplyChainId = 384224;
-        const int itemId = 16563762;
+        // Prepare two Mailmark 2D codetext objects: one for Type 7 and one for Type 29
+        var mailmark7 = CreateMailmark2DCodetext(Mailmark2DType.Type_7);
+        var mailmark29 = CreateMailmark2DCodetext(Mailmark2DType.Type_29);
 
-        // Measure Type 7 (24x24 modules)
-        var result7 = GenerateMailmark2D(Mailmark2DType.Type_7, destinationPostCode, versionId, informationTypeId, classId, rtsFlag, supplyChainId, itemId);
+        // Generate barcode for Type 7, measure time and size, then display results
+        var result7 = GenerateAndMeasure(mailmark7);
         Console.WriteLine($"Mailmark Type 7 - Generation Time: {result7.timeMs} ms, Image Size: {result7.sizeBytes} bytes");
 
-        // Measure Type 29 (16x48 modules)
-        var result29 = GenerateMailmark2D(Mailmark2DType.Type_29, destinationPostCode, versionId, informationTypeId, classId, rtsFlag, supplyChainId, itemId);
+        // Generate barcode for Type 29, measure time and size, then display results
+        var result29 = GenerateAndMeasure(mailmark29);
         Console.WriteLine($"Mailmark Type 29 - Generation Time: {result29.timeMs} ms, Image Size: {result29.sizeBytes} bytes");
     }
 
-    private static (long timeMs, long sizeBytes) GenerateMailmark2D(
-        Mailmark2DType matrixType,
-        string destinationPostCode,
-        string versionId,
-        string informationTypeId,
-        string classId,
-        string rtsFlag,
-        int supplyChainId,
-        int itemId)
+    // Creates a Mailmark2DCodetext instance with required fields and the specified DataMatrix type.
+    private static Mailmark2DCodetext CreateMailmark2DCodetext(Mailmark2DType matrixType)
     {
-        // Build Mailmark2D codetext
         var mailmark = new Mailmark2DCodetext
         {
-            DestinationPostCodeAndDPS = destinationPostCode,
-            VersionID = versionId,
-            InformationTypeID = informationTypeId,
-            Class = classId,
-            RTSFlag = rtsFlag,
-            SupplyChainID = supplyChainId,
-            ItemID = itemId,
+            // Required integer fields
+            ItemID = 16563762,
+            SupplyChainID = 384224,
+
+            // Required string fields
+            VersionID = "1",
+            InformationTypeID = "0",
+            DestinationPostCodeAndDPS = "EF61AH8T ",
+            RTSFlag = "0",
+
+            // Set the 2D Mailmark size (type)
             DataMatrixType = matrixType
         };
 
-        // Measure generation time
-        var stopwatch = Stopwatch.StartNew();
-        using (var generator = new ComplexBarcodeGenerator(mailmark))
+        // Optional: leave CustomerContent empty (default) and use default encode mode
+        return mailmark;
+    }
+
+    // Generates the barcode image, measures elapsed time, and returns both the time (ms) and image size (bytes).
+    private static (long timeMs, long sizeBytes) GenerateAndMeasure(Mailmark2DCodetext mailmark)
+    {
+        var stopwatch = new Stopwatch();
+
+        // Use a memory stream to avoid writing to disk
+        using (var ms = new MemoryStream())
         {
-            // Generate image into memory stream
-            using (var ms = new MemoryStream())
+            stopwatch.Start();
+
+            // Generate the barcode and save it as PNG directly into the memory stream
+            using (var generator = new ComplexBarcodeGenerator(mailmark))
             {
                 generator.Save(ms, BarCodeImageFormat.Png);
-                stopwatch.Stop();
-                long size = ms.Length;
-                // Optionally save to file for visual verification
-                string fileName = $"Mailmark_{matrixType}.png";
-                File.WriteAllBytes(fileName, ms.ToArray());
-                return (stopwatch.ElapsedMilliseconds, size);
             }
+
+            stopwatch.Stop();
+
+            // Determine the size of the generated image in bytes
+            long size = ms.Length;
+            return (stopwatch.ElapsedMilliseconds, size);
         }
     }
 }

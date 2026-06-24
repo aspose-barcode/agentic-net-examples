@@ -3,78 +3,109 @@ using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
+/// <summary>
+/// Demonstrates generating a barcode image, reading it back, and cleaning up the temporary file.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a Code128 barcode, saves it to a temporary file, reads it back,
+    /// displays detection results, and finally deletes the temporary file.
+    /// </summary>
     static void Main()
     {
-        const string barcodeFile = "sample_barcode.png";
+        // Define the path for the temporary barcode image.
+        string barcodePath = Path.Combine(Path.GetTempPath(), "sample_barcode.png");
 
-        // Create a barcode image and save it to a file
+        // ------------------------------------------------------------
+        // Generate a sample barcode image and save it to the temporary path.
+        // ------------------------------------------------------------
         try
         {
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456789012"))
             {
-                // Example of setting a simple property
-                generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-                generator.Save(barcodeFile);
-                Console.WriteLine($"Barcode image saved to '{barcodeFile}'.");
+                // Optional: configure generator settings such as resolution here.
+                generator.Save(barcodePath);
+                Console.WriteLine($"Barcode image saved to: {barcodePath}");
             }
-        }
-        catch (BarCodeException ex)
-        {
-            Console.WriteLine($"Error generating barcode: {ex.Message}");
-            return;
-        }
-
-        // Verify that the file exists before attempting to read it
-        if (!File.Exists(barcodeFile))
-        {
-            Console.WriteLine($"File '{barcodeFile}' does not exist. Cannot proceed with decoding.");
-            return;
-        }
-
-        // Attempt to read the barcode with robust error handling
-        try
-        {
-            using (var reader = new BarCodeReader(barcodeFile, DecodeType.Code128))
-            {
-                // Optional: configure decoding settings
-                reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
-                reader.QualitySettings.AllowIncorrectBarcodes = false;
-
-                var results = reader.ReadBarCodes();
-
-                if (results == null || results.Length == 0)
-                {
-                    Console.WriteLine("No barcodes were detected in the image.");
-                    return;
-                }
-
-                foreach (var result in results)
-                {
-                    // Check for incomplete or missing codetext
-                    if (string.IsNullOrEmpty(result.CodeText))
-                    {
-                        Console.WriteLine($"Barcode of type '{result.CodeTypeName}' was detected but contains no codetext.");
-                    }
-                    else
-                    {
-                        Console.WriteLine($"Detected Barcode:");
-                        Console.WriteLine($"  Type      : {result.CodeTypeName}");
-                        Console.WriteLine($"  CodeText  : {result.CodeText}");
-                        Console.WriteLine($"  Confidence: {result.Confidence}");
-                    }
-                }
-            }
-        }
-        catch (BarCodeRecognitionException ex)
-        {
-            Console.WriteLine($"Recognition error: {ex.Message}");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Unexpected error during decoding: {ex.Message}");
+            Console.WriteLine($"Failed to generate barcode: {ex.Message}");
+            return;
+        }
+
+        // Verify that the image file exists before attempting to read it.
+        if (!File.Exists(barcodePath))
+        {
+            Console.WriteLine("Barcode image file does not exist.");
+            return;
+        }
+
+        // ------------------------------------------------------------
+        // Read the barcode from the saved image with error handling.
+        // ------------------------------------------------------------
+        try
+        {
+            using (var reader = new BarCodeReader(barcodePath, DecodeType.AllSupportedTypes))
+            {
+                // Enable checksum validation (optional).
+                reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
+                // Allow recognition of barcodes with incorrect checksum or damaged data.
+                reader.QualitySettings.AllowIncorrectBarcodes = true;
+
+                // Perform the barcode detection.
+                BarCodeResult[] results = reader.ReadBarCodes();
+
+                // Check if any barcodes were detected.
+                if (results == null || results.Length == 0)
+                {
+                    Console.WriteLine("No barcodes were detected in the image.");
+                }
+                else
+                {
+                    // Iterate through each detected barcode and display its details.
+                    foreach (var result in results)
+                    {
+                        // Handle cases where the decoded text is missing or incomplete.
+                        if (string.IsNullOrEmpty(result.CodeText))
+                        {
+                            Console.WriteLine($"Detected barcode of type '{result.CodeTypeName}' but CodeText is missing or incomplete.");
+                        }
+                        else
+                        {
+                            Console.WriteLine($"Detected barcode type: {result.CodeTypeName}");
+                            Console.WriteLine($"CodeText: {result.CodeText}");
+                            Console.WriteLine($"Confidence: {result.Confidence}");
+                            Console.WriteLine($"ReadingQuality: {result.ReadingQuality}");
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error during barcode decoding: {ex.Message}");
+        }
+        finally
+        {
+            // ------------------------------------------------------------
+            // Clean up the temporary file regardless of success or failure.
+            // ------------------------------------------------------------
+            try
+            {
+                if (File.Exists(barcodePath))
+                {
+                    File.Delete(barcodePath);
+                }
+            }
+            catch
+            {
+                // Ignored - cleanup failure should not affect program flow.
+            }
         }
     }
 }

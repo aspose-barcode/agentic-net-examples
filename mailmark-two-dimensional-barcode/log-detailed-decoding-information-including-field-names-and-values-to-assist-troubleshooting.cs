@@ -3,79 +3,94 @@ using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates generating a Code128 barcode, saving it to a file,
+/// and then reading it back to display detailed decoding information.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a barcode image, verifies its creation, and reads the barcode data.
+    /// </summary>
     static void Main()
     {
-        // Define temporary file path for the barcode image
-        string imagePath = Path.Combine(Directory.GetCurrentDirectory(), "sample_barcode.png");
+        // Define the output path for the generated barcode image.
+        string imagePath = "barcode.png";
 
-        // Generate a Code128 barcode (moderate confidence) and save it
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "12345"))
+        // -------------------------------------------------
+        // Generate a sample Code128 barcode
+        // -------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            // You can customize generator parameters here if needed
+            // Enable checksum for demonstration purposes.
+            generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
+
+            // Save the generated barcode image to the specified file.
             generator.Save(imagePath);
         }
 
-        // Verify that the image file was created
+        // Verify that the image file was successfully created.
         if (!File.Exists(imagePath))
         {
-            Console.WriteLine($"Error: Barcode image not found at '{imagePath}'.");
+            Console.WriteLine($"Failed to create barcode image at '{imagePath}'.");
             return;
         }
 
-        // Read the barcode and log detailed decoding information
-        using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.Code39, DecodeType.Code128))
+        // -------------------------------------------------
+        // Read the barcode and log detailed decoding info
+        // -------------------------------------------------
+        using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
         {
-            foreach (BarCodeResult result in reader.ReadBarCodes())
+            // Read all barcodes found in the image.
+            BarCodeResult[] results = reader.ReadBarCodes();
+
+            // If no barcodes were detected, inform the user and exit.
+            if (results.Length == 0)
             {
-                Console.WriteLine("=== Decoding Details ===");
-                Console.WriteLine($"BarCode Type          : {result.CodeTypeName}");
-                Console.WriteLine($"BarCode CodeText      : {result.CodeText}");
-                Console.WriteLine($"BarCode Confidence    : {result.Confidence}");
-                Console.WriteLine($"BarCode ReadingQuality: {result.ReadingQuality}");
-                Console.WriteLine($"BarCode Angle (Region): {result.Region.Angle}");
+                Console.WriteLine("No barcodes were detected.");
+                return;
+            }
 
-                // Extended parameters may contain additional data depending on symbology
-                if (result.Extended != null)
+            // Iterate through each detected barcode and display its properties.
+            foreach (BarCodeResult result in results)
+            {
+                Console.WriteLine("=== Barcode Detected ===");
+                Console.WriteLine($"Type               : {result.CodeTypeName}");
+                Console.WriteLine($"CodeText           : {result.CodeText}");
+                Console.WriteLine($"Confidence         : {result.Confidence}");
+                Console.WriteLine($"ReadingQuality     : {result.ReadingQuality}");
+
+                // Extract region bounds (X, Y, Width, Height) and round to integers.
+                var rect = result.Region.Rectangle;
+                int x = (int)Math.Round((double)rect.X);
+                int y = (int)Math.Round((double)rect.Y);
+                int width = (int)Math.Round((double)rect.Width);
+                int height = (int)Math.Round((double)rect.Height);
+                Console.WriteLine($"Region (X,Y,W,H)   : X={x}, Y={y}, Width={width}, Height={height}");
+
+                // Output the orientation angle of the detected barcode.
+                Console.WriteLine($"Orientation Angle  : {result.Region.Angle}");
+
+                // If the barcode is a 1D type, display extended 1D-specific parameters.
+                if (result.Extended?.OneD != null)
                 {
-                    // Example for 1D barcodes (e.g., Code128) – show raw value and checksum if available
-                    try
-                    {
-                        var oneD = result.Extended.OneD;
-                        Console.WriteLine($"Extended Value        : {oneD.Value}");
-                        Console.WriteLine($"Extended CheckSum     : {oneD.CheckSum}");
-                    }
-                    catch
-                    {
-                        // Extended.OneD may not be available for all symbologies
-                    }
+                    Console.WriteLine($"OneD Value         : {result.Extended.OneD.Value}");
+                    Console.WriteLine($"OneD CheckSum      : {result.Extended.OneD.CheckSum}");
+                }
 
-                    // Example for Code128 specific data portions
-                    try
-                    {
-                        var code128 = result.Extended.Code128;
-                        Console.WriteLine($"Code128 Data Portions : {code128}");
-                    }
-                    catch
-                    {
-                        // Extended.Code128 may not be available for other symbologies
-                    }
+                // If the barcode is a QR code, display extended QR-specific parameters.
+                if (result.Extended?.QR != null)
+                {
+                    Console.WriteLine($"QR Version         : {result.Extended.QR.Version}");
+                    Console.WriteLine($"QR ErrorLevel      : {result.Extended.QR.ErrorLevel}");
                 }
 
                 Console.WriteLine();
             }
-        }
-
-        // Clean up the generated image file (optional)
-        try
-        {
-            File.Delete(imagePath);
-        }
-        catch
-        {
-            // If deletion fails, ignore – the file will remain for inspection
         }
     }
 }

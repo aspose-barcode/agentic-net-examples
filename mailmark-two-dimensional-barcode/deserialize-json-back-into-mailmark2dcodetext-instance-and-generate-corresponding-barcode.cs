@@ -1,88 +1,81 @@
 using System;
 using System.IO;
 using System.Text.Json;
+using Aspose.BarCode;
 using Aspose.BarCode.ComplexBarcode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 
+/// <summary>
+/// Demonstrates generating a Mailmark 2D barcode from JSON data using Aspose.BarCode.
+/// </summary>
 class Program
 {
-    // Model matching the JSON structure for Mailmark2DCodetext
-    private class Mailmark2DModel
-    {
-        public string Class { get; set; }
-        public string CustomerContent { get; set; }
-        public string DestinationPostCodeAndDPS { get; set; }
-        public string InformationTypeID { get; set; }
-        public int ItemID { get; set; }
-        public string ReturnToSenderPostCode { get; set; }
-        public string RTSFlag { get; set; }
-        public int SupplyChainID { get; set; }
-        public string UPUCountryID { get; set; }
-        public string VersionID { get; set; }
-        public int DataMatrixType { get; set; } // enum underlying int
-        public string CustomerContentEncodeMode { get; set; }
-    }
-
+    /// <summary>
+    /// Entry point of the application.
+    /// </summary>
     static void Main()
     {
-        // Sample JSON representing a Mailmark2DCodetext instance
+        // Sample JSON representing a Mailmark2DCodetext object.
+        // In a real scenario this could be read from a file or other source.
         string json = @"{
-            ""Class"": ""1"",
-            ""CustomerContent"": ""SampleContent"",
-            ""DestinationPostCodeAndDPS"": ""EF61AH8T "",
+            ""VersionID"": ""1"",
             ""InformationTypeID"": ""0"",
-            ""ItemID"": 16563762,
-            ""ReturnToSenderPostCode"": ""SW1A1AA"",
+            ""Class"": ""1"",
             ""RTSFlag"": ""0"",
             ""SupplyChainID"": 384224,
+            ""ItemID"": 16563762,
+            ""DestinationPostCodeAndDPS"": ""EF61AH8T "",
+            ""ReturnToSenderPostCode"": ""SW1A1AA"",
             ""UPUCountryID"": ""GB"",
-            ""VersionID"": ""1"",
             ""DataMatrixType"": 0,
-            ""CustomerContentEncodeMode"": ""C40""
+            ""CustomerContent"": ""Sample customer data"",
+            ""CustomerContentEncodeMode"": 0
         }";
 
-        // Deserialize JSON into the model
-        Mailmark2DModel model = JsonSerializer.Deserialize<Mailmark2DModel>(json);
-        if (model == null)
+        // Deserialize JSON into a Mailmark2DCodetext instance.
+        Mailmark2DCodetext mailmark2d;
+        try
         {
-            Console.WriteLine("Failed to deserialize JSON.");
+            mailmark2d = JsonSerializer.Deserialize<Mailmark2DCodetext>(json);
+            if (mailmark2d == null)
+                throw new ArgumentException("Deserialization resulted in null.");
+        }
+        catch (Exception ex)
+        {
+            // Output error and abort if JSON cannot be deserialized.
+            Console.WriteLine($"Failed to deserialize JSON: {ex.Message}");
             return;
         }
 
-        // Populate Mailmark2DCodetext instance
-        var mailmark = new Mailmark2DCodetext
+        // Validate that required single‑character string properties meet API constraints.
+        if (mailmark2d.VersionID?.Length != 1 ||
+            mailmark2d.InformationTypeID?.Length != 1 ||
+            mailmark2d.Class?.Length != 1 ||
+            mailmark2d.RTSFlag?.Length != 1)
         {
-            Class = model.Class,
-            CustomerContent = model.CustomerContent,
-            DestinationPostCodeAndDPS = model.DestinationPostCodeAndDPS,
-            InformationTypeID = model.InformationTypeID,
-            ItemID = model.ItemID,
-            ReturnToSenderPostCode = model.ReturnToSenderPostCode,
-            RTSFlag = model.RTSFlag,
-            SupplyChainID = model.SupplyChainID,
-            UPUCountryID = model.UPUCountryID,
-            VersionID = model.VersionID,
-            DataMatrixType = (Mailmark2DType)model.DataMatrixType
-            // CustomerContentEncodeMode can be set if needed via enum EncodeMode, omitted for brevity
-        };
+            Console.WriteLine("One of the required single‑character string properties is invalid.");
+            return;
+        }
 
-        // Generate the barcode using ComplexBarcodeGenerator
-        using (var generator = new ComplexBarcodeGenerator(mailmark))
+        // Define the output file path for the generated barcode image.
+        string outputPath = "mailmark2d.png";
+
+        // Generate the Mailmark 2D barcode using ComplexBarcodeGenerator.
+        try
         {
-            // Ensure a visible barcode height
-            generator.Parameters.Barcode.BarHeight.Point = 10f;
-            // Optional: set resolution
-            generator.Parameters.Resolution = 300;
-
-            // Save to a PNG file
-            string outputPath = "mailmark2d.png";
-            using (var stream = new FileStream(outputPath, FileMode.Create, FileAccess.Write))
+            using (var generator = new ComplexBarcodeGenerator(mailmark2d))
             {
-                generator.Save(stream, BarCodeImageFormat.Png);
+                // Save the barcode image to a PNG file.
+                generator.Save(outputPath, BarCodeImageFormat.Png);
             }
 
-            Console.WriteLine($"Barcode saved to {Path.GetFullPath(outputPath)}");
+            // Inform the user where the barcode image was saved.
+            Console.WriteLine($"Barcode generated and saved to '{Path.GetFullPath(outputPath)}'.");
+        }
+        catch (Exception ex)
+        {
+            // Output any errors that occur during barcode generation.
+            Console.WriteLine($"Barcode generation failed: {ex.Message}");
         }
     }
 }

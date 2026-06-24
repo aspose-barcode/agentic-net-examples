@@ -4,70 +4,65 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates generation and recognition of an Australia Post barcode using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Generates a barcode, saves it to a memory stream,
+    /// then reads it back to verify the encoded text matches the original.
+    /// </summary>
     static void Main()
     {
-        try
-        {
-            TestRoutingAndServiceCode();
-            Console.WriteLine("All tests passed.");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Test failed: {ex.Message}");
-        }
-    }
+        // Sample routing and service code values for AustraliaPost barcode
+        string originalCodeText = "5912345678ABCde"; // example includes routing/service info
 
-    static void TestRoutingAndServiceCode()
-    {
-        // Expected values
-        string expectedRouting = "RT123";
-        string expectedService = "SC456";
-        string expectedFullCode = $"{expectedRouting}{expectedService}";
-
-        // Generate barcode with the combined code text
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, expectedFullCode))
+        // Create a barcode generator for Australia Post format with the original text
+        using (var generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, originalCodeText))
         {
-            // Use a memory stream to avoid file I/O
+            // Optional: set the encoding table to CTable for customer information interpretation
+            generator.Parameters.Barcode.AustralianPost.AustralianPostEncodingTable = CustomerInformationInterpretingType.CTable;
+
+            // Use a memory stream to hold the generated PNG image
             using (var ms = new MemoryStream())
             {
+                // Save the barcode image into the memory stream
                 generator.Save(ms, BarCodeImageFormat.Png);
-                ms.Position = 0; // Reset stream for reading
+                // Reset stream position to the beginning for reading
+                ms.Position = 0;
 
-                // Recognize the barcode from the generated image
-                using (var reader = new BarCodeReader(ms, DecodeType.Code128))
+                // Initialize a barcode reader to decode the image from the memory stream
+                using (var reader = new BarCodeReader(ms, DecodeType.AustraliaPost))
                 {
-                    // Read first (and only) barcode result
-                    BarCodeResult result = null;
-                    foreach (var r in reader.ReadBarCodes())
+                    // Ensure checksum validation is enabled (default behavior)
+                    reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
+
+                    // Read all barcodes found in the image
+                    var results = reader.ReadBarCodes();
+
+                    // If no barcodes were detected, report failure and exit
+                    if (results.Length == 0)
                     {
-                        result = r;
-                        break;
+                        Console.WriteLine("FAIL: No barcode detected.");
+                        return;
                     }
 
-                    if (result == null)
-                        throw new InvalidOperationException("No barcode was recognized.");
+                    // Take the first detected barcode result
+                    var result = results[0];
 
-                    // Verify that the full code text matches the expected value
-                    if (!string.Equals(result.CodeText, expectedFullCode, StringComparison.Ordinal))
-                        throw new InvalidOperationException($"Full code text mismatch. Expected: {expectedFullCode}, Actual: {result.CodeText}");
+                    // Compare the recognized text with the original input
+                    if (result.CodeText == originalCodeText)
+                    {
+                        Console.WriteLine("PASS: Recognized CodeText matches original.");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"FAIL: Recognized CodeText '{result.CodeText}' does not match original '{originalCodeText}'.");
+                    }
 
-                    // For demonstration, split the recognized text into routing and service parts
-                    // (Assuming fixed lengths: 5 for routing, 5 for service)
-                    if (result.CodeText.Length < 10)
-                        throw new InvalidOperationException("Recognized code text is shorter than expected.");
-
-                    string actualRouting = result.CodeText.Substring(0, 5);
-                    string actualService = result.CodeText.Substring(5, 5);
-
-                    if (!string.Equals(actualRouting, expectedRouting, StringComparison.Ordinal))
-                        throw new InvalidOperationException($"Routing code mismatch. Expected: {expectedRouting}, Actual: {actualRouting}");
-
-                    if (!string.Equals(actualService, expectedService, StringComparison.Ordinal))
-                        throw new InvalidOperationException($"Service code mismatch. Expected: {expectedService}, Actual: {actualService}");
+                    // Placeholder for additional verification of routing/service fields if needed
                 }
             }
         }

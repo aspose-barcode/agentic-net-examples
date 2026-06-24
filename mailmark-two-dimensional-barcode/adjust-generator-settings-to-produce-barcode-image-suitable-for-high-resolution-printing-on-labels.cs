@@ -1,44 +1,49 @@
 using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 
-class Program
+namespace BarcodeHighResolution
 {
-    static void Main()
+    /// <summary>
+    /// Demonstrates generating a high‑resolution Code128 barcode and saving it as a PNG file.
+    /// </summary>
+    class Program
     {
-        // Create a barcode generator for Code128 with sample text
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456789012"))
+        /// <summary>
+        /// Entry point of the application. Creates a barcode with specific dimensions and resolution,
+        /// then writes the image to disk.
+        /// </summary>
+        static void Main()
         {
-            // Set high resolution suitable for label printing (e.g., 300 DPI)
-            generator.Parameters.Resolution = 300f;
+            // Path where the generated barcode image will be saved.
+            string outputPath = "highres_label.png";
 
-            // Define image size in pixels (width x height)
-            generator.Parameters.ImageWidth.Pixels = 600f;   // 2 inches wide at 300 DPI
-            generator.Parameters.ImageHeight.Pixels = 300f;  // 1 inch high at 300 DPI
+            // Initialize a barcode generator for Code128 with the sample text "1234567890".
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+            {
+                // Set the image resolution to 300 DPI, suitable for high‑quality label printing.
+                generator.Parameters.Resolution = 300f;
 
-            // Use explicit sizing (no auto‑size interpolation)
-            generator.Parameters.AutoSizeMode = AutoSizeMode.None;
+                // Turn off automatic sizing so we can manually define dimensions.
+                generator.Parameters.AutoSizeMode = AutoSizeMode.None;
 
-            // Set X‑dimension (module width) and bar height for 1D barcode
-            generator.Parameters.Barcode.XDimension.Pixels = 2f;   // narrow bar width
-            generator.Parameters.Barcode.BarHeight.Pixels = 100f; // bar height
+                // Configure the module (X) size and the bar height in points.
+                generator.Parameters.Barcode.XDimension.Point = 2f;   // 2 points per module (narrow bar width)
+                generator.Parameters.Barcode.BarHeight.Point = 50f; // 50 points tall (overall bar height)
 
-            // Optional: adjust padding around the barcode
-            generator.Parameters.Barcode.Padding.Left.Point = 5f;
-            generator.Parameters.Barcode.Padding.Top.Point = 5f;
-            generator.Parameters.Barcode.Padding.Right.Point = 5f;
-            generator.Parameters.Barcode.Padding.Bottom.Point = 5f;
+                // Apply uniform padding of 5 points on all sides of the barcode.
+                generator.Parameters.Barcode.Padding.Left.Point   = 5f;
+                generator.Parameters.Barcode.Padding.Top.Point    = 5f;
+                generator.Parameters.Barcode.Padding.Right.Point  = 5f;
+                generator.Parameters.Barcode.Padding.Bottom.Point = 5f;
 
-            // Set colors (black bars on white background)
-            generator.Parameters.Barcode.BarColor = Color.Black;
-            generator.Parameters.BackColor = Color.White;
+                // Save the generated barcode image to the specified file.
+                // The format (PNG) is inferred from the file extension.
+                generator.Save(outputPath);
+            }
 
-            // Enable anti‑aliasing for smoother edges at high DPI
-            generator.Parameters.UseAntiAlias = true;
-
-            // Save the barcode image
-            generator.Save("highres_code128.png");
+            // Inform the user that the image has been saved.
+            Console.WriteLine($"Barcode image saved to: {outputPath}");
         }
     }
 }
