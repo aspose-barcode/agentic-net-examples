@@ -1,26 +1,48 @@
 using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing;
 
-class Program
+namespace BarcodeExample
 {
-    static void Main()
+    /// <summary>
+    /// Demonstrates generating a DataMatrix barcode with a caption using Aspose.BarCode.
+    /// </summary>
+    class Program
     {
-        // Create a DataMatrix barcode generator with sample codetext
-        using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, "123456"))
+        /// <summary>
+        /// Entry point of the application. Generates a DataMatrix barcode, adds a caption, and saves the image.
+        /// </summary>
+        static void Main()
         {
-            // Configure the top caption (CaptionAbove)
-            generator.Parameters.CaptionAbove.Visible = true;
-            generator.Parameters.CaptionAbove.Text = "Top Caption";
+            // Define the output file path for the generated barcode image.
+            string outputPath = "DataMatrixWithCaption.png";
 
-            // Center the caption horizontally
-            generator.Parameters.CaptionAbove.Alignment = TextAlignment.Center;
+            // Initialize a BarcodeGenerator for a DataMatrix barcode with the specified code text.
+            using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, "Sample123"))
+            {
+                // Set the caption text that appears above the barcode.
+                generator.Parameters.CaptionAbove.Text = "DataMatrix Sample";
 
-            // Add 10 pixels padding to the top of the caption
-            generator.Parameters.CaptionAbove.Padding.Top.Pixels = 10f;
+                // Make sure the caption is rendered (visible) in the output image.
+                generator.Parameters.CaptionAbove.Visible = true;
 
-            // Save the generated barcode image
-            generator.Save("datamatrix.png");
+                // Align the caption horizontally to the center of the image.
+                generator.Parameters.CaptionAbove.Alignment = TextAlignment.Center;
+
+                // Add a top padding of 10 pixels to create space between the caption and the barcode.
+                generator.Parameters.CaptionAbove.Padding.Top.Pixels = 10f;
+
+                // Optional: specify a particular DataMatrix version.
+                // This line is commented out because the default version is sufficient for most cases.
+                // generator.Parameters.Barcode.DataMatrix.DataMatrixVersion = DataMatrixVersion.ECC200_20x20;
+
+                // Save the generated barcode (with caption) to the specified file path.
+                generator.Save(outputPath);
+            }
+
+            // Inform the user that the barcode image has been saved successfully.
+            Console.WriteLine($"Barcode image saved to: {outputPath}");
         }
     }
 }

@@ -2,74 +2,93 @@ using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing.Imaging;
+using Aspose.Drawing;
 
+/// <summary>
+/// Demonstrates generating barcodes with visible and hidden human‑readable text,
+/// compares the resulting image heights, and cleans up temporary files.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates two barcode images (one with text, one without),
+    /// compares their heights, outputs the test result, and deletes the temporary files.
+    /// </summary>
     static void Main()
     {
-        // Prepare common barcode settings
-        const string codeText = "1234567890";
-        var encodeType = EncodeTypes.Code128;
+        // Prepare temporary file paths for the generated barcode images.
+        string tempDir = Path.GetTempPath();
+        string visiblePath = Path.Combine(tempDir, "barcode_visible.png");
+        string hiddenPath = Path.Combine(tempDir, "barcode_hidden.png");
 
-        // Generate barcode with visible code text (default location is Below)
-        byte[] imageWithText;
-        using (var generator = new BarcodeGenerator(encodeType, codeText))
+        // ------------------------------------------------------------
+        // Generate barcode with visible human‑readable text (default location)
+        // ------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
         {
-            // Ensure the code text is visible
+            // Ensure the text is placed below the bars (default behavior).
             generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.Below;
-            using (var ms = new MemoryStream())
-            {
-                generator.Save(ms, BarCodeImageFormat.Png);
-                imageWithText = ms.ToArray();
-            }
+            // Save the image to the temporary path.
+            generator.Save(visiblePath);
         }
 
-        // Generate barcode with hidden code text
-        byte[] imageWithoutText;
-        using (var generator = new BarcodeGenerator(encodeType, codeText))
+        // ------------------------------------------------------------
+        // Generate barcode with hidden human‑readable text
+        // ------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
         {
-            // Hide the code text
+            // Hide the text by setting its location to None.
             generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.None;
-            using (var ms = new MemoryStream())
-            {
-                generator.Save(ms, BarCodeImageFormat.Png);
-                imageWithoutText = ms.ToArray();
-            }
+            // Save the image to the temporary path.
+            generator.Save(hiddenPath);
         }
 
-        // Simple verification: the two images must differ in size (text adds pixels)
-        if (imageWithText.Length == imageWithoutText.Length)
+        // ------------------------------------------------------------
+        // Load the generated images to compare their heights
+        // ------------------------------------------------------------
+        int visibleHeight;
+        int hiddenHeight;
+
+        using (var imgVisible = Image.FromFile(visiblePath))
         {
-            Console.WriteLine("Test Failed: Images have the same size, text visibility may not have changed.");
+            visibleHeight = imgVisible.Height;
+        }
+
+        using (var imgHidden = Image.FromFile(hiddenPath))
+        {
+            hiddenHeight = imgHidden.Height;
+        }
+
+        // ------------------------------------------------------------
+        // Evaluate the result: image without text should be shorter
+        // ------------------------------------------------------------
+        if (hiddenHeight < visibleHeight)
+        {
+            Console.WriteLine(
+                "Test passed: hidden text image height ({0}) is less than visible text image height ({1}).",
+                hiddenHeight, visibleHeight);
         }
         else
         {
-            Console.WriteLine("Test Passed: Images differ, indicating code text visibility toggled correctly.");
+            Console.WriteLine(
+                "Test failed: hidden text image height ({0}) is not less than visible text image height ({1}).",
+                hiddenHeight, visibleHeight);
         }
 
-        // Additional check: ensure the location property reflects the intended setting
-        using (var generator = new BarcodeGenerator(encodeType, codeText))
+        // ------------------------------------------------------------
+        // Clean up temporary files
+        // ------------------------------------------------------------
+        try
         {
-            generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.Below;
-            if (generator.Parameters.Barcode.CodeTextParameters.Location != CodeLocation.Below)
-            {
-                Console.WriteLine("Test Failed: CodeTextParameters.Location did not retain the set value (Below).");
-            }
-            else
-            {
-                Console.WriteLine("Location set to Below verified.");
-            }
-
-            generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.None;
-            if (generator.Parameters.Barcode.CodeTextParameters.Location != CodeLocation.None)
-            {
-                Console.WriteLine("Test Failed: CodeTextParameters.Location did not retain the set value (None).");
-            }
-            else
-            {
-                Console.WriteLine("Location set to None verified.");
-            }
+            if (File.Exists(visiblePath))
+                File.Delete(visiblePath);
+            if (File.Exists(hiddenPath))
+                File.Delete(hiddenPath);
+        }
+        catch
+        {
+            // Ignored – cleanup failure should not affect test result.
         }
     }
 }
