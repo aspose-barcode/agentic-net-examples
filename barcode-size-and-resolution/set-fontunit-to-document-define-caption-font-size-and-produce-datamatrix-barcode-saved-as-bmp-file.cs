@@ -3,27 +3,39 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
+/// <summary>
+/// Demonstrates generating a DataMatrix barcode with a caption using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Generates a DataMatrix barcode, adds a caption,
+    /// configures its appearance, saves it as a BMP file, and writes a confirmation to the console.
+    /// </summary>
     static void Main()
     {
-        // Create a DataMatrix barcode generator with sample text
-        using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, "SampleText"))
+        // Create a BarcodeGenerator for DataMatrix type with the encoded value "ABC123"
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.DataMatrix, "ABC123"))
         {
-            // Set caption text and make it visible
+            // Enable the caption displayed above the barcode
             generator.Parameters.CaptionAbove.Visible = true;
-            generator.Parameters.CaptionAbove.Text = "DataMatrix Sample";
 
-            // Define caption font using FontUnit with Document unit
+            // Set the caption text
+            generator.Parameters.CaptionAbove.Text = "DataMatrix Example";
+
+            // Configure caption font: Arial, 12 points
             generator.Parameters.CaptionAbove.Font.FamilyName = "Arial";
-            generator.Parameters.CaptionAbove.Font.Size.Document = 12f; // 12 points in document units
+            generator.Parameters.CaptionAbove.Font.Size.Point = 12f; // Font size 12 points
 
-            // Optional: set barcode colors
-            generator.Parameters.Barcode.BarColor = Color.Black;
-            generator.Parameters.BackColor = Color.White;
+            // Center the caption horizontally and set its color to black
+            generator.Parameters.CaptionAbove.Alignment = TextAlignment.Center;
+            generator.Parameters.CaptionAbove.TextColor = Color.Black;
 
-            // Save the barcode as BMP file
-            generator.Save("DataMatrixSample.bmp");
+            // Save the generated barcode image as a BMP file
+            generator.Save("datamatrix.bmp");
         }
+
+        // Inform the user that the barcode has been saved
+        Console.WriteLine("DataMatrix barcode saved as datamatrix.bmp");
     }
 }

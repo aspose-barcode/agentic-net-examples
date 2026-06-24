@@ -1,52 +1,61 @@
 using System;
 using System.IO;
-using Aspose.BarCode.Generation;
 using Aspose.BarCode;
+using Aspose.BarCode.Generation;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates generating a low‑resolution barcode image using Aspose.BarCode
+/// and verifies its DPI settings.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a Code128 barcode at 72 DPI, saves it to a file,
+    /// and validates the image resolution.
+    /// </summary>
     static void Main()
     {
-        const string outputPath = "lowres_barcode.png";
+        // Define the output file path for the generated barcode image.
+        string outputPath = "lowres_barcode.png";
 
-        // Ensure the output directory exists
-        string directory = Path.GetDirectoryName(Path.GetFullPath(outputPath));
-        if (!Directory.Exists(directory))
+        // Create a barcode generator for Code128 with the sample text "123456".
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
         {
-            Directory.CreateDirectory(directory);
-        }
-
-        // Create a barcode generator for Code128 with sample text
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
-        {
-            // Set low resolution to 72 DPI
+            // Set low resolution (72 DPI) to meet low‑resolution display requirements.
             generator.Parameters.Resolution = 72f;
 
-            // Define image size (optional, helps visibility at low DPI)
-            generator.Parameters.ImageWidth.Point = 200f;
-            generator.Parameters.ImageHeight.Point = 100f;
-
-            // Save the barcode image
+            // Save the generated barcode image to the specified path.
             generator.Save(outputPath);
         }
 
-        // Verify the saved image's resolution using Aspose.Drawing
-        if (File.Exists(outputPath))
+        // Verify that the image file was successfully created.
+        if (!File.Exists(outputPath))
         {
-            using (var image = Image.FromFile(outputPath))
-            {
-                float horizontalDpi = image.HorizontalResolution;
-                float verticalDpi = image.VerticalResolution;
-
-                Console.WriteLine($"Saved barcode resolution: {horizontalDpi} DPI (horizontal), {verticalDpi} DPI (vertical)");
-                Console.WriteLine($"Image dimensions: {image.Width}x{image.Height} pixels");
-            }
+            Console.WriteLine($"Failed to create barcode image at '{outputPath}'.");
+            return;
         }
-        else
+
+        // Load the saved image to inspect its resolution properties.
+        using (var image = Image.FromFile(outputPath))
         {
-            Console.WriteLine("Barcode image was not created.");
+            // Aspose.Drawing.Image provides HorizontalResolution and VerticalResolution properties.
+            float horizDpi = image.HorizontalResolution;
+            float vertDpi = image.VerticalResolution;
+
+            Console.WriteLine($"Barcode image saved to '{outputPath}'.");
+            Console.WriteLine($"Image resolution: {horizDpi} DPI (horizontal), {vertDpi} DPI (vertical).");
+
+            // Simple validation: both dimensions should be approximately 72 DPI.
+            if (Math.Abs(horizDpi - 72f) < 0.01f && Math.Abs(vertDpi - 72f) < 0.01f)
+            {
+                Console.WriteLine("Resolution verification passed: image is 72 DPI.");
+            }
+            else
+            {
+                Console.WriteLine("Resolution verification failed: image DPI does not match 72.");
+            }
         }
     }
 }

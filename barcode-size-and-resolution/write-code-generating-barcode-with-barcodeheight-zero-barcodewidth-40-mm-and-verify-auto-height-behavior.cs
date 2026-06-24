@@ -3,51 +3,58 @@ using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
-class Program
+namespace BarcodeExample
 {
-    static void Main()
+    /// <summary>
+    /// Demonstrates generating a Code128 barcode image using Aspose.BarCode.
+    /// </summary>
+    class Program
     {
-        const string outputPath = "barcode.png";
-
-        // Create a barcode generator for Code128 with sample text
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+        /// <summary>
+        /// Entry point of the application. Generates a barcode, saves it to a file,
+        /// and outputs the image dimensions to the console.
+        /// </summary>
+        static void Main()
         {
-            // Enable auto‑size mode that uses ImageWidth/ImageHeight
-            generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
+            // Define the output file path for the generated barcode image.
+            string outputPath = "barcode.png";
 
-            // Set desired barcode image width to 40 mm
-            generator.Parameters.ImageWidth.Millimeters = 40f;
-
-            // Optionally set a high resolution for better accuracy
-            generator.Parameters.Resolution = 300f; // dpi
-
-            // Generate the barcode image
-            using (Bitmap bitmap = generator.GenerateBarCodeImage())
+            // Create a BarcodeGenerator instance configured for Code128 encoding.
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128))
             {
-                // Save the image to file
-                bitmap.Save(outputPath, ImageFormat.Png);
-            }
-        }
+                // Set the text to be encoded in the barcode.
+                generator.CodeText = "1234567890";
 
-        // Verify the resulting image height (auto‑height behavior)
-        if (File.Exists(outputPath))
-        {
-            using (Image img = Image.FromFile(outputPath))
+                // Enable automatic height adjustment using interpolation mode.
+                // No explicit BarHeight is set; the generator determines height automatically.
+                generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
+
+                // Specify the desired image width (40 millimeters). Height will be auto‑sized.
+                generator.Parameters.ImageWidth.Millimeters = 40f;
+
+                // Save the generated barcode image to the specified file path.
+                generator.Save(outputPath);
+            }
+
+            // Check whether the barcode image file was successfully created.
+            if (File.Exists(outputPath))
             {
-                int heightPixels = img.Height;
-                float dpi = img.HorizontalResolution; // assume square pixels
-                float heightMillimeters = heightPixels * 25.4f / dpi;
+                // Load the image to retrieve its dimensions.
+                using (var image = Image.FromFile(outputPath))
+                {
+                    int width = image.Width;   // Image width in pixels
+                    int height = image.Height; // Image height in pixels
 
-                Console.WriteLine($"Generated barcode saved to '{Path.GetFullPath(outputPath)}'.");
-                Console.WriteLine($"Image size: {img.Width} px × {heightPixels} px");
-                Console.WriteLine($"Image height: {heightMillimeters:F2} mm (auto‑height)");
+                    // Output the dimensions to the console.
+                    Console.WriteLine($"Generated barcode size: {width}x{height} pixels");
+                }
             }
-        }
-        else
-        {
-            Console.WriteLine("Failed to generate the barcode image.");
+            else
+            {
+                // Inform the user that the image was not created.
+                Console.WriteLine("Barcode image was not created.");
+            }
         }
     }
 }

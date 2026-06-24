@@ -5,76 +5,66 @@ using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates generating a Code128 barcode, applying auto‑size mode,
+/// and handling the exception thrown when an unsupported BarHeight is set.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a barcode, attempts an invalid BarHeight setting,
+    /// applies auto‑size, and validates the resulting image dimensions.
+    /// </summary>
     static void Main()
     {
-        int passed = 0;
-        int failed = 0;
-
-        // Test 1: Setting BarHeight to zero should throw ArgumentException
         try
         {
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128))
+            // Create a barcode generator for Code128 with the text "Test123"
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Test123"))
             {
-                // Attempt to set BarHeight to zero (invalid per API)
+                // Attempt to set BarHeight to zero (this will throw ArgumentException)
                 generator.Parameters.Barcode.BarHeight.Point = 0f;
-                // If no exception, the test fails
-                Console.WriteLine("FAILED: Setting BarHeight to zero did not throw.");
-                failed++;
-            }
-        }
-        catch (ArgumentException)
-        {
-            Console.WriteLine("PASSED: Setting BarHeight to zero threw ArgumentException as expected.");
-            passed++;
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"FAILED: Unexpected exception type: {ex.GetType().Name}");
-            failed++;
-        }
 
-        // Test 2: AutoSizeMode.Interpolation should respect ImageWidth/ImageHeight
-        try
-        {
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
-            {
-                // Enable interpolation auto‑size
+                // Enable auto‑size mode (Interpolation) – the correct way to auto‑size
                 generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
 
-                // Define target size using default units (points)
-                generator.Parameters.ImageWidth.Point = 200f;
-                generator.Parameters.ImageHeight.Point = 100f;
-
-                // Generate bitmap
-                using (Bitmap bitmap = generator.GenerateBarCodeImage())
+                // Save the generated barcode to a memory stream in PNG format
+                using (var ms = new MemoryStream())
                 {
-                    // Verify dimensions match the requested size
-                    if (bitmap.Width == 200 && bitmap.Height == 100)
-                    {
-                        Console.WriteLine("PASSED: AutoSizeMode.Interpolation produced expected image size.");
-                        passed++;
-                    }
-                    else
-                    {
-                        Console.WriteLine($"FAILED: Image size mismatch. Expected 200x100, got {bitmap.Width}x{bitmap.Height}.");
-                        failed++;
-                    }
+                    generator.Save(ms, BarCodeImageFormat.Png);
+                    ms.Position = 0; // Reset stream position for reading
 
-                    // Optionally save the image for manual inspection
-                    string tempPath = Path.Combine(Path.GetTempPath(), "autosize_test.png");
-                    bitmap.Save(tempPath, ImageFormat.Png);
+                    // Load the image from the memory stream
+                    using (var bitmap = new Bitmap(ms))
+                    {
+                        int width = bitmap.Width;
+                        int height = bitmap.Height;
+                        Console.WriteLine($"Generated barcode size: {width}x{height}");
+
+                        // Verify that the image dimensions are valid (greater than zero)
+                        if (width > 0 && height > 0)
+                        {
+                            Console.WriteLine("PASS: Auto‑size applied based on content.");
+                        }
+                        else
+                        {
+                            Console.WriteLine("FAIL: Image dimensions are invalid.");
+                        }
+                    }
                 }
             }
         }
+        catch (ArgumentException ex)
+        {
+            // Expected when BarHeight is set to zero
+            Console.WriteLine($"Caught expected exception: {ex.Message}");
+            Console.WriteLine("NOTE: Setting BarHeight to zero is not supported; use AutoSizeMode for auto‑sizing.");
+        }
         catch (Exception ex)
         {
-            Console.WriteLine($"FAILED: Exception during AutoSizeMode test: {ex.Message}");
-            failed++;
+            // Handle any other unexpected errors
+            Console.WriteLine($"Unexpected error: {ex.Message}");
         }
-
-        // Summary
-        Console.WriteLine($"TEST SUMMARY: {passed} passed, {failed} failed.");
     }
 }

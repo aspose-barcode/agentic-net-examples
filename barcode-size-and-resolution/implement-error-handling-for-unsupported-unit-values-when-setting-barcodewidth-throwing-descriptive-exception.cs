@@ -1,52 +1,65 @@
 using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates how to generate a barcode image with a custom width using Aspose.BarCode.
+/// </summary>
 class Program
 {
-    // Sets the barcode image width in pixels.
-    // Throws ArgumentOutOfRangeException if the value is not positive.
-    static void SetBarCodeWidth(BarcodeGenerator generator, float widthInPixels)
+    /// <summary>
+    /// Validates and applies the barcode width.
+    /// Throws <see cref="ArgumentOutOfRangeException"/> if the value is not supported.
+    /// </summary>
+    /// <param name="generator">The <see cref="BarcodeGenerator"/> instance to configure.</param>
+    /// <param name="width">Desired barcode width in points. Must be greater than zero.</param>
+    static void SetBarCodeWidth(BarcodeGenerator generator, float width)
     {
-        if (widthInPixels <= 0f)
+        // Ensure the width is a positive value.
+        if (width <= 0f)
         {
-            throw new ArgumentOutOfRangeException(
-                nameof(widthInPixels),
-                widthInPixels,
-                "BarCodeWidth must be a positive value greater than zero.");
+            throw new ArgumentOutOfRangeException(nameof(width), "BarCodeWidth must be greater than zero.");
         }
 
-        // AutoSizeMode must be set to a mode that respects ImageWidth.
-        generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
-        generator.Parameters.ImageWidth.Pixels = widthInPixels;
+        // ImageWidth controls the resulting BarCodeWidth when AutoSizeMode is set to Interpolation or Nearest.
+        generator.Parameters.ImageWidth.Point = width;
     }
 
+    /// <summary>
+    /// Entry point of the application. Generates a Code128 barcode and saves it as a PNG file.
+    /// </summary>
     static void Main()
     {
+        // Define output file path and barcode content.
+        const string outputPath = "barcode.png";
+        const string codeText = "1234567890";
+
         try
         {
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+            // Initialize the barcode generator with the desired symbology and data.
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
             {
-                // Attempt to set a valid width.
+                // Use interpolation mode so that ImageWidth influences the final barcode width.
+                generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
+
+                // Attempt to set a valid width for the barcode image.
                 SetBarCodeWidth(generator, 300f);
 
-                // Save the barcode image.
-                generator.Save("barcode_valid.png");
-                Console.WriteLine("Barcode saved with valid width.");
-
-                // Attempt to set an invalid width to demonstrate error handling.
-                SetBarCodeWidth(generator, -50f);
-                generator.Save("barcode_invalid.png"); // This line will not be reached.
+                // Save the generated barcode image to the specified file in PNG format.
+                generator.Save(outputPath, BarCodeImageFormat.Png);
+                Console.WriteLine($"Barcode saved to {outputPath}");
             }
         }
         catch (ArgumentOutOfRangeException ex)
         {
-            Console.WriteLine($"Error: {ex.Message}");
+            // Handle unsupported width values.
+            Console.WriteLine($"Invalid barcode width: {ex.Message}");
         }
-        catch (BarCodeException ex)
+        catch (Exception ex)
         {
-            // Handles any Aspose.BarCode specific exceptions.
-            Console.WriteLine($"Barcode generation error: {ex.Message}");
+            // General error handling for any other exceptions.
+            Console.WriteLine($"An error occurred: {ex.Message}");
         }
     }
 }
