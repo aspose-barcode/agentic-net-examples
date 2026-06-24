@@ -1,36 +1,50 @@
 using System;
 using System.IO;
 using Aspose.BarCode;
+using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.BarCode.ComplexBarcode;
 
+/// <summary>
+/// Demonstrates generation and recognition of a MaxiCode barcode using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a MaxiCode barcode, stores it in memory, and then reads it back.
+    /// </summary>
     static void Main()
     {
-        // Path to the MaxiCode image to be decoded.
-        const string imagePath = "maxicode.png";
-
-        // Verify that the image file exists before attempting to read it.
-        if (!File.Exists(imagePath))
+        // Create an in‑memory stream to hold the generated barcode image.
+        using (var imageStream = new MemoryStream())
         {
-            Console.WriteLine($"Image file not found: {imagePath}");
-            return;
-        }
-
-        // Create a BarCodeReader for MaxiCode symbology.
-        using (var reader = new BarCodeReader(imagePath, DecodeType.MaxiCode))
-        {
-            // Ignore checksum validation to tolerate errors in noisy images.
-            reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.Off;
-
-            // Use a high‑quality preset to improve recognition in a high‑noise environment.
-            reader.QualitySettings = QualitySettings.HighQuality;
-
-            // Perform the recognition.
-            foreach (var result in reader.ReadBarCodes())
+            // Generate a MaxiCode barcode with the specified data.
+            using (var generator = new BarcodeGenerator(EncodeTypes.MaxiCode, "123456789012"))
             {
-                Console.WriteLine($"Detected MaxiCode: {result.CodeText}");
+                // Save the generated barcode as a PNG image into the memory stream.
+                generator.Save(imageStream, BarCodeImageFormat.Png);
+            }
+
+            // Reset the stream position to the beginning before reading.
+            imageStream.Position = 0;
+
+            // Initialize a barcode reader configured for MaxiCode symbology.
+            using (var reader = new BarCodeReader(imageStream, DecodeType.MaxiCode))
+            {
+                // Disable checksum validation to tolerate noisy or damaged barcodes.
+                reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.Off;
+
+                // Use high‑quality settings to improve detection of damaged barcodes.
+                reader.QualitySettings = QualitySettings.HighQuality;
+
+                // Allow recognition of barcodes even if their checksums are incorrect.
+                reader.QualitySettings.AllowIncorrectBarcodes = true;
+
+                // Read all barcodes from the stream and output their text.
+                foreach (var result in reader.ReadBarCodes())
+                {
+                    Console.WriteLine($"Detected MaxiCode: {result.CodeText}");
+                }
             }
         }
     }

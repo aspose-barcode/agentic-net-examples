@@ -1,46 +1,62 @@
 using System;
 using System.IO;
 using Aspose.BarCode;
-using Aspose.BarCode.ComplexBarcode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode.ComplexBarcode;
 
+/// <summary>
+/// Demonstrates generation of MaxiCode barcodes in different modes using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Creates an output directory,
+    /// generates MaxiCode images for several modes, and reports the result.
+    /// </summary>
     static void Main()
     {
-        // Output directory
-        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "MaxiCodeOutputs");
+        // Determine the output directory path relative to the current working directory.
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "MaxiCodeImages");
+
+        // Ensure the output directory exists; create it if it does not.
         if (!Directory.Exists(outputDir))
-            Directory.CreateDirectory(outputDir);
-
-        // Define the MaxiCode modes to generate (Mode4, Mode5, Mode6)
-        MaxiCodeMode[] modes = new[] { MaxiCodeMode.Mode4, MaxiCodeMode.Mode5, MaxiCodeMode.Mode6 };
-
-        foreach (var mode in modes)
         {
-            // Prepare standard codetext for the current mode
-            var maxiCodeCodetext = new MaxiCodeStandardCodetext
-            {
-                Mode = mode,
-                Message = $"Sample message for {mode}"
-            };
+            Directory.CreateDirectory(outputDir);
+        }
 
-            // Generate the MaxiCode image using ComplexBarcodeGenerator
-            using (var generator = new ComplexBarcodeGenerator(maxiCodeCodetext))
-            {
-                // Save the generated image as GIF to a memory stream
-                using (var ms = new MemoryStream())
-                {
-                    generator.Save(ms, BarCodeImageFormat.Gif);
-                    ms.Position = 0;
+        // Generate MaxiCode images for Mode 4, Mode 5, and Mode 6.
+        GenerateMaxiCode(outputDir, MaxiCodeMode.Mode4, "Sample message for Mode 4", "maxicode_mode4.gif");
+        GenerateMaxiCode(outputDir, MaxiCodeMode.Mode5, "Sample message for Mode 5", "maxicode_mode5.gif");
+        GenerateMaxiCode(outputDir, MaxiCodeMode.Mode6, "Sample message for Mode 6", "maxicode_mode6.gif");
 
-                    // Write the GIF file to disk
-                    string filePath = Path.Combine(outputDir, $"MaxiCode_{mode}.gif");
-                    File.WriteAllBytes(filePath, ms.ToArray());
+        // Inform the user where the images have been saved.
+        Console.WriteLine("MaxiCode images have been generated in: " + outputDir);
+    }
 
-                    Console.WriteLine($"Generated {filePath}");
-                }
-            }
+    /// <summary>
+    /// Generates a MaxiCode barcode image using the specified mode, message, and file name.
+    /// </summary>
+    /// <param name="folder">The directory where the image will be saved.</param>
+    /// <param name="mode">The MaxiCode mode to use (e.g., Mode4, Mode5, Mode6).</param>
+    /// <param name="message">The text message to encode in the barcode.</param>
+    /// <param name="fileName">The name of the output image file.</param>
+    private static void GenerateMaxiCode(string folder, MaxiCodeMode mode, string message, string fileName)
+    {
+        // Prepare the standard MaxiCode codetext with the specified mode and message.
+        var codetext = new MaxiCodeStandardCodetext
+        {
+            Mode = mode,
+            Message = message
+        };
+
+        // Use a ComplexBarcodeGenerator to create and save the barcode image.
+        using (var generator = new ComplexBarcodeGenerator(codetext))
+        {
+            // Combine the folder path and file name to get the full output path.
+            string outputPath = Path.Combine(folder, fileName);
+
+            // Save the generated barcode as a GIF image.
+            generator.Save(outputPath, BarCodeImageFormat.Gif);
         }
     }
 }

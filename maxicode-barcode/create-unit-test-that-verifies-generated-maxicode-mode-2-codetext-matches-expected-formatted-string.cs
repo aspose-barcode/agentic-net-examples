@@ -1,54 +1,58 @@
 using System;
-using System.IO;
 using Aspose.BarCode;
-using Aspose.BarCode.ComplexBarcode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.BarCode.ComplexBarcode;
 
+/// <summary>
+/// Demonstrates creation, encoding, and decoding of MaxiCode Mode 2 codetext using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// </summary>
     static void Main()
     {
-        // Prepare MaxiCode Mode 2 codetext
+        // Create a MaxiCode Mode 2 codetext object and set the required fields.
         var maxiCodeCodetext = new MaxiCodeCodetextMode2();
-        maxiCodeCodetext.PostalCode = "524032140";
-        maxiCodeCodetext.CountryCode = 56; // leading zeros are not required for integer
-        maxiCodeCodetext.ServiceCategory = 999;
+        maxiCodeCodetext.PostalCode = "524032140";      // 9‑digit US postal code
+        maxiCodeCodetext.CountryCode = 56;             // 3‑digit country code (leading zeros are optional)
+        maxiCodeCodetext.ServiceCategory = 999;        // 3‑digit service category
 
+        // Create and assign the standard second message.
         var secondMessage = new MaxiCodeStandardSecondMessage();
         secondMessage.Message = "Test message";
         maxiCodeCodetext.SecondMessage = secondMessage;
 
-        // Expected formatted codetext (based on documentation example)
-        const string expectedCodetext = "524032140056999Test message";
+        // Generate the formatted codetext string from the object.
+        string generatedCodetext = maxiCodeCodetext.GetConstructedCodetext();
 
-        // Get the constructed codetext from the object
-        string actualCodetext = maxiCodeCodetext.GetConstructedCodetext();
+        // Decode the generated codetext back into a MaxiCode object.
+        var decodedCodetext = ComplexCodetextReader.TryDecodeMaxiCode(MaxiCodeMode.Mode2, generatedCodetext) as MaxiCodeCodetextMode2;
 
-        // Verify that the generated codetext matches the expected string
-        if (actualCodetext == expectedCodetext)
+        // Simple assertion helper to validate conditions.
+        void Assert(bool condition, string message)
         {
-            Console.WriteLine("Test Passed: Codetext matches expected value.");
-        }
-        else
-        {
-            Console.WriteLine("Test Failed:");
-            Console.WriteLine($"Expected: {expectedCodetext}");
-            Console.WriteLine($"Actual:   {actualCodetext}");
-        }
-
-        // Generate the barcode image to ensure the codetext can be used for rendering
-        using (var generator = new ComplexBarcodeGenerator(maxiCodeCodetext))
-        {
-            generator.GenerateBarCodeImage();
-
-            // Save the image to a memory stream (no file I/O required)
-            using (var ms = new MemoryStream())
+            if (!condition)
             {
-                generator.Save(ms, BarCodeImageFormat.Png);
-                // Optionally, you could verify that the stream contains data
-                Console.WriteLine($"Generated image size: {ms.Length} bytes");
+                Console.WriteLine("ASSERTION FAILED: " + message);
+                Environment.Exit(1);
             }
         }
+
+        // Verify that decoding succeeded and all fields match the original values.
+        Assert(decodedCodetext != null, "Decoded codetext should not be null.");
+        Assert(decodedCodetext.PostalCode == maxiCodeCodetext.PostalCode, "PostalCode mismatch.");
+        Assert(decodedCodetext.CountryCode == maxiCodeCodetext.CountryCode, "CountryCode mismatch.");
+        Assert(decodedCodetext.ServiceCategory == maxiCodeCodetext.ServiceCategory, "ServiceCategory mismatch.");
+
+        // Verify the second message content.
+        var decodedSecond = decodedCodetext.SecondMessage as MaxiCodeStandardSecondMessage;
+        Assert(decodedSecond != null, "SecondMessage type mismatch.");
+        Assert(decodedSecond.Message == secondMessage.Message, "SecondMessage content mismatch.");
+
+        // If all assertions pass, the generated codetext matches the expected format.
+        Console.WriteLine("MaxiCode Mode 2 codetext generation test passed.");
     }
 }

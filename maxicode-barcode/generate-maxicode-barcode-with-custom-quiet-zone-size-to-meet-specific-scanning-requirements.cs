@@ -1,32 +1,54 @@
 using System;
+using Aspose.BarCode.ComplexBarcode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode;
+using Aspose.Drawing;
 
+/// <summary>
+/// Demonstrates generation of a MaxiCode barcode (Mode 2) using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Generates a MaxiCode barcode and saves it as a PNG file.
+    /// </summary>
     static void Main()
     {
-        // Define output file path
-        const string outputPath = "maxicode_custom_quietzone.png";
+        // Define the output file path for the generated barcode image.
+        string outputPath = "maxicode.png";
 
-        // Create a MaxiCode generator with sample codetext
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.MaxiCode, "Sample MaxiCode"))
+        // Create MaxiCode codetext for Mode 2 (postal + data).
+        var maxiCodeCodetext = new MaxiCodeCodetextMode2
         {
-            // Set custom quiet zone (padding) around the barcode
-            // Values are in points; adjust as needed for scanning requirements
+            PostalCode = "524032140",   // 9‑digit US postal code.
+            CountryCode = 56,           // Country code (e.g., 056 for USA).
+            ServiceCategory = 999       // Example service category.
+        };
+
+        // Create the standard second message (simple text) and assign it to the codetext.
+        var secondMessage = new MaxiCodeStandardSecondMessage
+        {
+            Message = "Sample MaxiCode data"
+        };
+        maxiCodeCodetext.SecondMessage = secondMessage;
+
+        // Generate the MaxiCode barcode using ComplexBarcodeGenerator.
+        using (var generator = new ComplexBarcodeGenerator(maxiCodeCodetext))
+        {
+            // Set custom quiet zone (padding) around the barcode.
             generator.Parameters.Barcode.Padding.Left.Point = 20f;
             generator.Parameters.Barcode.Padding.Top.Point = 20f;
             generator.Parameters.Barcode.Padding.Right.Point = 20f;
             generator.Parameters.Barcode.Padding.Bottom.Point = 20f;
 
-            // Optional: set barcode colors if desired
-            // generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-            // generator.Parameters.BackColor = Aspose.Drawing.Color.White;
+            // Optional: set foreground (barcode) and background colors.
+            generator.Parameters.Barcode.BarColor = Color.Black;
+            generator.Parameters.BackColor = Color.White;
 
-            // Save the generated barcode image
-            generator.Save(outputPath);
+            // Save the barcode image as a PNG file.
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
+        // Inform the user where the barcode image has been saved.
         Console.WriteLine($"MaxiCode barcode saved to: {outputPath}");
     }
 }

@@ -1,73 +1,126 @@
 using System;
 using System.IO;
 using Aspose.BarCode;
+using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.BarCode.ComplexBarcode;
+using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates generation and recognition of a MaxiCode (Mode 2) barcode using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a MaxiCode barcode, attempts to read it up to three times,
+    /// and outputs the decoded information to the console.
+    /// </summary>
     static void Main()
     {
-        // Path to the image containing a MaxiCode barcode.
-        string imagePath = "maxicode.png";
-
-        // Verify that the image file exists.
-        if (!File.Exists(imagePath))
+        // --------------------------------------------------------------------
+        // 1. Create a sample MaxiCode codetext (Mode 2) with required fields.
+        // --------------------------------------------------------------------
+        var maxiCode = new MaxiCodeCodetextMode2
         {
-            Console.WriteLine($"File not found: {imagePath}");
-            return;
-        }
+            PostalCode = "524032140",
+            CountryCode = 56,
+            ServiceCategory = 999,
+            SecondMessage = new MaxiCodeStandardSecondMessage { Message = "Sample message" }
+        };
 
-        const int maxAttempts = 3;
-        bool decoded = false;
-
-        for (int attempt = 1; attempt <= maxAttempts && !decoded; attempt++)
+        // ---------------------------------------------------------------
+        // 2. Generate the barcode image and store it in a memory stream.
+        // ---------------------------------------------------------------
+        using (var barcodeStream = new MemoryStream())
         {
-            try
+            using (var generator = new ComplexBarcodeGenerator(maxiCode))
             {
-                // Use AllSupportedTypes as required for image streams.
-                using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
+                // Save the generated barcode as PNG into the memory stream.
+                generator.Save(barcodeStream, BarCodeImageFormat.Png);
+            }
+
+            // -----------------------------------------------------------
+            // 3. Prepare for up to three read attempts of the generated image.
+            // -----------------------------------------------------------
+            bool decoded = false;
+            const int maxAttempts = 3;
+
+            for (int attempt = 1; attempt <= maxAttempts && !decoded; attempt++)
+            {
+                try
                 {
-                    // Use the highest quality preset to improve recognition chances.
-                    reader.QualitySettings = QualitySettings.MaxQuality;
+                    // Reset the stream position to the beginning before each read.
+                    barcodeStream.Position = 0;
 
-                    // Read all barcodes from the image.
-                    var results = reader.ReadBarCodes();
-
-                    foreach (var result in results)
+                    // Initialize the barcode reader for MaxiCode type.
+                    using (var reader = new BarCodeReader(barcodeStream, DecodeType.MaxiCode))
                     {
-                        // Attempt to decode the MaxiCode specific codetext.
-                        var maxiCodeCodetext = ComplexCodetextReader.TryDecodeMaxiCode(
-                            result.Extended.MaxiCode.MaxiCodeMode,
-                            result.CodeText);
+                        // Allow recognition of imperfect barcodes.
+                        reader.QualitySettings.AllowIncorrectBarcodes = true;
 
-                        if (maxiCodeCodetext != null)
+                        // Perform the read operation.
+                        var results = reader.ReadBarCodes();
+
+                        if (results.Length > 0)
                         {
-                            Console.WriteLine($"Attempt {attempt}: Successfully decoded MaxiCode.");
-                            Console.WriteLine($"Mode: {maxiCodeCodetext.GetMode()}");
-                            Console.WriteLine($"Constructed Codetext: {maxiCodeCodetext.GetConstructedCodetext()}");
+                            // Process each detected barcode.
+                            foreach (var result in results)
+                            {
+                                // Decode the complex MaxiCode codetext.
+                                var decodedCodetext = ComplexCodetextReader.TryDecodeMaxiCode(
+                                    result.Extended.MaxiCode.MaxiCodeMode,
+                                    result.CodeText);
+
+                                // Verify that the decoded codetext matches the expected Mode 2 type.
+                                if (decodedCodetext is MaxiCodeCodetextMode2 mode2)
+                                {
+                                    Console.WriteLine($"Attempt {attempt}: Decoded successfully.");
+                                    Console.WriteLine($"PostalCode: {mode2.PostalCode}");
+                                    Console.WriteLine($"CountryCode: {mode2.CountryCode}");
+                                    Console.WriteLine($"ServiceCategory: {mode2.ServiceCategory}");
+
+                                    // Output the optional second message if present.
+                                    if (mode2.SecondMessage is MaxiCodeStandardSecondMessage msg)
+                                    {
+                                        Console.WriteLine($"Message: {msg.Message}");
+                                    }
+                                }
+                                else
+                                {
+                                    Console.WriteLine($"Attempt {attempt}: Decoded but unexpected codetext type.");
+                                }
+                            }
+
+                            // Mark as successfully decoded to exit the retry loop.
                             decoded = true;
-                            break;
+                        }
+                        else
+                        {
+                            Console.WriteLine($"Attempt {attempt}: No barcode detected.");
                         }
                     }
+                }
+                catch (Exception ex)
+                {
+                    // Log any exception that occurs during the read attempt.
+                    Console.WriteLine($"Attempt {attempt}: Exception - {ex.Message}");
+                }
 
-                    // If no results were found, treat it as a failure for this attempt.
-                    if (!decoded)
-                    {
-                        Console.WriteLine($"Attempt {attempt}: No MaxiCode detected.");
-                    }
+                // If not decoded and more attempts remain, indicate a retry.
+                if (!decoded && attempt < maxAttempts)
+                {
+                    Console.WriteLine("Retrying...");
                 }
             }
-            catch (Exception ex)
-            {
-                // Log the exception and continue to the next attempt.
-                Console.WriteLine($"Attempt {attempt}: Exception occurred - {ex.Message}");
-            }
-        }
 
-        if (!decoded)
-        {
-            Console.WriteLine("Failed to decode MaxiCode after three attempts.");
+            // -----------------------------------------------------------
+            // 4. Final outcome after all attempts.
+            // -----------------------------------------------------------
+            if (!decoded)
+            {
+                Console.WriteLine("Failed to decode after 3 attempts.");
+            }
         }
     }
 }

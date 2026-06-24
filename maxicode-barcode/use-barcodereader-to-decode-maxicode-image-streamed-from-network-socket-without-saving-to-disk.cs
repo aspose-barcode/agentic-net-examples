@@ -2,72 +2,81 @@ using System;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
-using Aspose.BarCode;
+using System.Threading.Tasks;
+using Aspose.BarCode.ComplexBarcode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.BarCode.ComplexBarcode;
 
+/// <summary>
+/// Demonstrates generating a MaxiCode barcode, transmitting it over a TCP connection,
+/// and decoding it using Aspose.BarCode libraries.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a MaxiCode image, sends it via a TCP listener, receives it on a client,
+    /// and decodes the barcode data.
+    /// </summary>
     static void Main()
     {
-        // Generate a simple MaxiCode image and keep it in memory
-        byte[] imageBytes;
-        using (var ms = new MemoryStream())
-        {
-            using (var generator = new BarcodeGenerator(EncodeTypes.MaxiCode, "Sample MaxiCode"))
-            {
-                generator.Save(ms, BarCodeImageFormat.Png);
-            }
-            imageBytes = ms.ToArray();
-        }
+        // Generate a sample MaxiCode image in memory and obtain its PNG byte array.
+        byte[] maxiCodeBytes = GenerateMaxiCodeImage();
 
-        // Set up a TCP listener on a free port
-        int port;
+        // Set up a TCP listener on a free (ephemeral) port bound to the loopback address.
         using (var listener = new TcpListener(IPAddress.Loopback, 0))
         {
             listener.Start();
-            port = ((IPEndPoint)listener.LocalEndpoint).Port;
+            int port = ((IPEndPoint)listener.LocalEndpoint).Port;
 
-            // Connect a client to the listener
+            // Server task: accept a client connection and send the image bytes.
+            Task serverTask = Task.Run(() =>
+            {
+                using (TcpClient serverClient = listener.AcceptTcpClient())
+                using (NetworkStream serverStream = serverClient.GetStream())
+                {
+                    // Write the entire image byte array to the network stream.
+                    serverStream.Write(maxiCodeBytes, 0, maxiCodeBytes.Length);
+                    serverStream.Flush();
+                }
+            });
+
+            // Client: connect to the server and read the transmitted image stream.
             using (var client = new TcpClient())
             {
                 client.Connect(IPAddress.Loopback, port);
-
-                // Accept the incoming connection on the server side
-                using (var serverClient = listener.AcceptTcpClient())
+                using (NetworkStream clientStream = client.GetStream())
+                using (var memory = new MemoryStream())
                 {
-                    // Server: send the image bytes over the network stream
-                    using (var serverStream = serverClient.GetStream())
-                    {
-                        serverStream.Write(imageBytes, 0, imageBytes.Length);
-                        serverStream.Flush();
-                    }
+                    // Copy the incoming data into a memory stream for later processing.
+                    clientStream.CopyTo(memory);
+                    memory.Position = 0; // Reset position to the beginning for reading.
 
-                    // Client: receive the image bytes into a memory stream
-                    using (var clientStream = client.GetStream())
-                    using (var receivedMs = new MemoryStream())
+                    // Decode the MaxiCode from the received memory stream.
+                    using (var reader = new BarCodeReader(memory, DecodeType.MaxiCode))
                     {
-                        clientStream.CopyTo(receivedMs);
-                        receivedMs.Position = 0;
-
-                        // Decode the MaxiCode image from the received stream
-                        using (var reader = new BarCodeReader(receivedMs, DecodeType.MaxiCode))
+                        foreach (var result in reader.ReadBarCodes())
                         {
-                            foreach (BarCodeResult result in reader.ReadBarCodes())
+                            // Attempt to decode complex MaxiCode codetext based on its mode.
+                            var decoded = ComplexCodetextReader.TryDecodeMaxiCode(
+                                result.Extended.MaxiCode.MaxiCodeMode,
+                                result.CodeText);
+
+                            // Output basic barcode information.
+                            Console.WriteLine($"Detected Barcode Type: {result.CodeTypeName}");
+                            Console.WriteLine($"Raw CodeText: {result.CodeText}");
+
+                            // If the decoded data matches Mode 2, display its specific fields.
+                            if (decoded is MaxiCodeCodetextMode2 mode2)
                             {
-                                Console.WriteLine("Detected Type: " + result.CodeTypeName);
-                                Console.WriteLine("CodeText: " + result.CodeText);
+                                Console.WriteLine($"Postal Code: {mode2.PostalCode}");
+                                Console.WriteLine($"Country Code: {mode2.CountryCode}");
+                                Console.WriteLine($"Service Category: {mode2.ServiceCategory}");
 
-                                // Decode complex MaxiCode codetext if possible
-                                var maxiCodeData = ComplexCodetextReader.TryDecodeMaxiCode(
-                                    result.Extended.MaxiCode.MaxiCodeMode,
-                                    result.CodeText);
-
-                                if (maxiCodeData != null)
+                                // If a standard second message is present, display it.
+                                if (mode2.SecondMessage is MaxiCodeStandardSecondMessage stdMsg)
                                 {
-                                    Console.WriteLine("MaxiCode Mode: " + maxiCodeData.GetMode());
-                                    Console.WriteLine("Constructed Codetext: " + maxiCodeData.GetConstructedCodetext());
+                                    Console.WriteLine($"Message: {stdMsg.Message}");
                                 }
                             }
                         }
@@ -75,7 +84,32 @@ class Program
                 }
             }
 
-            listener.Stop();
+            // Ensure the server task has completed before exiting.
+            serverTask.Wait();
+        }
+    }
+
+    /// <summary>
+    /// Generates a simple MaxiCode (Mode 2) image and returns its PNG byte array.
+    /// </summary>
+    /// <returns>Byte array containing the PNG representation of the generated MaxiCode.</returns>
+    private static byte[] GenerateMaxiCodeImage()
+    {
+        // Define the codetext for a Mode 2 MaxiCode with sample data.
+        var codetext = new MaxiCodeCodetextMode2
+        {
+            PostalCode = "524032140",
+            CountryCode = 56,
+            ServiceCategory = 999,
+            SecondMessage = new MaxiCodeStandardSecondMessage { Message = "Test message" }
+        };
+
+        // Use the ComplexBarcodeGenerator to create the barcode and save it to a memory stream.
+        using (var generator = new ComplexBarcodeGenerator(codetext))
+        using (var ms = new MemoryStream())
+        {
+            generator.Save(ms, BarCodeImageFormat.Png);
+            return ms.ToArray(); // Return the PNG bytes.
         }
     }
 }

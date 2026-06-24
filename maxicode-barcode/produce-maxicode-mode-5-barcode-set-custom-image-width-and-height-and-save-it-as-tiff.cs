@@ -2,27 +2,36 @@ using System;
 using Aspose.BarCode.ComplexBarcode;
 using Aspose.BarCode.Generation;
 
-namespace Example
+/// <summary>
+/// Demonstrates generation of a MaxiCode barcode (Mode 5) using Aspose.BarCode.
+/// </summary>
+class Program
 {
-    class Program
+    /// <summary>
+    /// Entry point of the application. Creates a MaxiCode barcode, configures its size,
+    /// saves it to a TIFF file, and writes a confirmation message to the console.
+    /// </summary>
+    static void Main()
     {
-        static void Main()
+        // Initialize MaxiCode data with Mode 5 and a sample message.
+        var maxiCode = new MaxiCodeStandardCodetext
         {
-            // Create standard codetext for MaxiCode Mode 5
-            var maxiCodeCodetext = new MaxiCodeStandardCodetext();
-            maxiCodeCodetext.Mode = MaxiCodeMode.Mode5;
-            maxiCodeCodetext.Message = "Test message";
+            Mode = MaxiCodeMode.Mode5,
+            Message = "Sample MaxiCode Mode 5"
+        };
 
-            // Generate the barcode, set custom image size, and save as TIFF
-            using (var generator = new ComplexBarcodeGenerator(maxiCodeCodetext))
-            {
-                // Set custom image dimensions (points)
-                generator.Parameters.ImageWidth.Point = 300f;
-                generator.Parameters.ImageHeight.Point = 200f;
+        // Create a barcode generator for the specified MaxiCode data.
+        using (ComplexBarcodeGenerator generator = new ComplexBarcodeGenerator(maxiCode))
+        {
+            // Set the desired image dimensions (in points).
+            generator.Parameters.ImageWidth.Point = 300f;   // Width of the barcode image
+            generator.Parameters.ImageHeight.Point = 200f;  // Height of the barcode image
 
-                // Save the barcode image as TIFF
-                generator.Save("maxicode_mode5.tif");
-            }
+            // Save the generated barcode to a TIFF file.
+            generator.Save("MaxiCodeMode5.tiff");
         }
+
+        // Inform the user that the barcode has been saved.
+        Console.WriteLine("MaxiCode Mode 5 barcode saved as MaxiCodeMode5.tiff");
     }
 }
