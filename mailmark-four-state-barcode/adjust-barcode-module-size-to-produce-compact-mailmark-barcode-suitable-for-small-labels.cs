@@ -3,46 +3,53 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.ComplexBarcode;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates generation of a Mailmark barcode using Aspose.BarCode library.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Generates a Mailmark barcode image and saves it to disk.
+    /// </summary>
     static void Main()
     {
-        // Prepare Mailmark codetext with valid sample data
-        var mailmark = new MailmarkCodetext();
-        mailmark.Format = 4;                     // 4‑state format
-        mailmark.VersionID = 1;                  // version
-        mailmark.Class = "0";                    // test/null class
-        mailmark.SupplychainID = 384224;         // example supply chain ID
-        mailmark.ItemID = 16563762;              // example item ID
-        mailmark.DestinationPostCodePlusDPS = "EF61AH8T "; // known‑valid destination
+        // Prepare Mailmark data (valid sample)
+        var mailmark = new MailmarkCodetext
+        {
+            // 4‑state format identifier
+            Format = 4,
+            // Version identifier
+            VersionID = 1,
+            // Test class identifier
+            Class = "0",
+            // Supply chain identifier
+            SupplychainID = 384224,
+            // Item identifier
+            ItemID = 16563762,
+            // Destination postcode plus DP suffix (trailing space is intentional)
+            DestinationPostCodePlusDPS = "EF61AH8T "
+        };
 
-        // Create ComplexBarcodeGenerator for Mailmark
+        // Create a generator for the Mailmark barcode using the prepared data
         using (var generator = new ComplexBarcodeGenerator(mailmark))
         {
-            // Ensure fixed size (no auto‑sizing) so BarHeight is respected
-            generator.Parameters.AutoSizeMode = AutoSizeMode.None;
-
-            // Set a small bar height suitable for small labels (points)
-            generator.Parameters.Barcode.BarHeight.Point = 5f;
-
-            // Reduce module width to make the barcode more compact
+            // Reduce the module size (XDimension) for a tighter barcode appearance
             generator.Parameters.Barcode.XDimension.Point = 0.5f;
 
-            // Optional: minimal padding to save space
-            generator.Parameters.Barcode.Padding.Left.Point = 0f;
-            generator.Parameters.Barcode.Padding.Top.Point = 0f;
-            generator.Parameters.Barcode.Padding.Right.Point = 0f;
-            generator.Parameters.Barcode.Padding.Bottom.Point = 0f;
+            // Enable auto‑size mode to automatically fit the barcode within the target dimensions
+            generator.Parameters.AutoSizeMode = AutoSizeMode.Nearest;
 
-            // Optional: set foreground and background colors
-            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-            generator.Parameters.BackColor = Aspose.Drawing.Color.White;
+            // Define the target image dimensions (in points)
+            generator.Parameters.ImageWidth.Point = 200f;   // Desired image width
+            generator.Parameters.ImageHeight.Point = 100f;  // Desired image height
 
-            // Save the generated barcode image
-            const string outputPath = "MailmarkCompact.png";
+            // Save the generated barcode as a PNG file
+            string outputPath = "mailmark.png";
             generator.Save(outputPath, BarCodeImageFormat.Png);
+
+            // Inform the user where the file was saved
             Console.WriteLine($"Mailmark barcode saved to {outputPath}");
         }
     }

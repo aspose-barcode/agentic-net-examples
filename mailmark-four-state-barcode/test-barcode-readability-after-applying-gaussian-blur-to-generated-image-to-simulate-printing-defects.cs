@@ -1,116 +1,130 @@
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates generating an EAN13 barcode, applying a Gaussian blur,
+/// and then recognizing the barcode from the blurred image using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    // Simple 5x5 Gaussian blur kernel (sigma ≈ 1.0)
+    static readonly double[,] GaussianKernel = new double[5, 5]
+    {
+        { 1,  4,  7,  4, 1 },
+        { 4, 16, 26, 16, 4 },
+        { 7, 26, 41, 26, 7 },
+        { 4, 16, 26, 16, 4 },
+        { 1,  4,  7,  4, 1 }
+    };
+    // Sum of all kernel values (used for normalization)
+    static readonly double KernelSum = 273.0;
+
+    /// <summary>
+    /// Entry point of the program. Generates a barcode, blurs it, saves the result,
+    /// and attempts to read the barcode from the blurred image.
+    /// </summary>
     static void Main()
     {
-        // Paths for temporary images
-        string originalPath = Path.Combine(Path.GetTempPath(), "barcode_original.png");
-        string blurredPath = Path.Combine(Path.GetTempPath(), "barcode_blurred.png");
+        const string codeText = "123456789012";
+        const string tempPath = "barcode.png";
 
-        // Generate a simple Code128 barcode
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456789"))
+        // 1. Generate barcode image and save to a memory stream
+        using (var generator = new BarcodeGenerator(EncodeTypes.EAN13, codeText))
         {
-            // Save original image
-            generator.Save(originalPath, BarCodeImageFormat.Png);
+            generator.Parameters.Resolution = 300f; // high resolution for better quality
 
-            // Generate bitmap for processing
-            using (Bitmap originalBitmap = generator.GenerateBarCodeImage())
+            using (var ms = new MemoryStream())
             {
-                // Apply a simple Gaussian-like blur (radius 1)
-                using (Bitmap blurredBitmap = ApplyGaussianBlur(originalBitmap, 1, 1.0))
+                generator.Save(ms, BarCodeImageFormat.Png);
+                ms.Position = 0; // reset stream position for reading
+
+                // 2. Load the image into Aspose.Drawing.Bitmap
+                using (var originalBitmap = new Bitmap(ms))
                 {
-                    // Save blurred image
-                    blurredBitmap.Save(blurredPath, ImageFormat.Png);
+                    // 3. Apply Gaussian blur to the bitmap
+                    using (var blurredBitmap = ApplyGaussianBlur(originalBitmap))
+                    {
+                        // 4. Save blurred image (optional, for visual inspection)
+                        blurredBitmap.Save(tempPath, Aspose.Drawing.Imaging.ImageFormat.Png);
+
+                        // 5. Recognize barcode from blurred image
+                        using (var reader = new BarCodeReader(blurredBitmap, DecodeType.EAN13))
+                        {
+                            // Use a high-quality preset to improve detection on blurred image
+                            reader.QualitySettings = QualitySettings.HighQuality;
+
+                            // Iterate over all detected barcodes and output details
+                            foreach (var result in reader.ReadBarCodes())
+                            {
+                                Console.WriteLine($"Detected Type: {result.CodeTypeName}");
+                                Console.WriteLine($"Detected Text: {result.CodeText}");
+                                Console.WriteLine($"Confidence   : {result.Confidence}");
+                                Console.WriteLine($"ReadingQuality: {result.ReadingQuality}");
+                            }
+                        }
+                    }
                 }
             }
         }
-
-        // Verify that the blurred image exists
-        if (!File.Exists(blurredPath))
-        {
-            Console.WriteLine("Blurred image was not created.");
-            return;
-        }
-
-        // Read the blurred barcode and output confidence
-        using (var reader = new BarCodeReader(blurredPath, DecodeType.Code128))
-        {
-            // Use high quality settings to improve detection of damaged barcodes
-            reader.QualitySettings = QualitySettings.HighQuality;
-
-            foreach (BarCodeResult result in reader.ReadBarCodes())
-            {
-                Console.WriteLine("Detected Type: " + result.CodeTypeName);
-                Console.WriteLine("Detected Text: " + result.CodeText);
-                Console.WriteLine("Confidence: " + result.Confidence);
-                Console.WriteLine("Reading Quality: " + result.ReadingQuality);
-            }
-        }
-
-        // Clean up temporary files (optional)
-        try { File.Delete(originalPath); } catch { }
-        try { File.Delete(blurredPath); } catch { }
     }
 
-    // Simple Gaussian blur implementation using a 3x3 kernel
-    static Bitmap ApplyGaussianBlur(Bitmap source, int radius, double sigma)
+    /// <summary>
+    /// Applies a simple Gaussian blur to the provided bitmap and returns a new blurred bitmap.
+    /// </summary>
+    /// <param name="source">The source bitmap to blur.</param>
+    /// <returns>A new bitmap containing the blurred image.</returns>
+    static Bitmap ApplyGaussianBlur(Bitmap source)
     {
         int width = source.Width;
         int height = source.Height;
-        Bitmap blurred = new Bitmap(width, height);
+        var blurred = new Bitmap(width, height);
 
-        // Precompute Gaussian kernel
-        double[,] kernel = new double[3, 3];
-        double sum = 0;
-        int kCenter = 1;
-        for (int y = -kCenter; y <= kCenter; y++)
+        // Process each pixel (skip the border to avoid out-of-range checks)
+        for (int y = 2; y < height - 2; y++)
         {
-            for (int x = -kCenter; x <= kCenter; x++)
+            for (int x = 2; x < width - 2; x++)
             {
-                double exponent = -(x * x + y * y) / (2 * sigma * sigma);
-                double value = Math.Exp(exponent);
-                kernel[y + kCenter, x + kCenter] = value;
-                sum += value;
-            }
-        }
-        // Normalize kernel
-        for (int y = 0; y < 3; y++)
-            for (int x = 0; x < 3; x++)
-                kernel[y, x] /= sum;
+                double a = 0, r = 0, g = 0, b = 0;
 
-        // Apply convolution
-        for (int y = 0; y < height; y++)
-        {
-            for (int x = 0; x < width; x++)
-            {
-                double r = 0, g = 0, b = 0, a = 0;
-                for (int ky = -kCenter; ky <= kCenter; ky++)
+                // Convolve the kernel over the neighborhood
+                for (int ky = -2; ky <= 2; ky++)
                 {
-                    int py = Math.Min(height - 1, Math.Max(0, y + ky));
-                    for (int kx = -kCenter; kx <= kCenter; kx++)
+                    for (int kx = -2; kx <= 2; kx++)
                     {
-                        int px = Math.Min(width - 1, Math.Max(0, x + kx));
-                        Color pixel = source.GetPixel(px, py);
-                        double weight = kernel[ky + kCenter, kx + kCenter];
+                        Color pixel = source.GetPixel(x + kx, y + ky);
+                        double weight = GaussianKernel[ky + 2, kx + 2];
+
                         a += pixel.A * weight;
                         r += pixel.R * weight;
                         g += pixel.G * weight;
                         b += pixel.B * weight;
                     }
                 }
-                blurred.SetPixel(x, y, Color.FromArgb(
-                    (int)Math.Round(a),
-                    (int)Math.Round(r),
-                    (int)Math.Round(g),
-                    (int)Math.Round(b)));
+
+                // Normalize the accumulated values and convert to byte
+                byte aByte = (byte)Math.Round(a / KernelSum);
+                byte rByte = (byte)Math.Round(r / KernelSum);
+                byte gByte = (byte)Math.Round(g / KernelSum);
+                byte bByte = (byte)Math.Round(b / KernelSum);
+
+                blurred.SetPixel(x, y, Color.FromArgb(aByte, rByte, gByte, bByte));
             }
+        }
+
+        // Copy border pixels unchanged to preserve original edges
+        for (int y = 0; y < height; y++)
+        {
+            blurred.SetPixel(0, y, source.GetPixel(0, y));
+            blurred.SetPixel(width - 1, y, source.GetPixel(width - 1, y));
+        }
+        for (int x = 0; x < width; x++)
+        {
+            blurred.SetPixel(x, 0, source.GetPixel(x, 0));
+            blurred.SetPixel(x, height - 1, source.GetPixel(x, height - 1));
         }
 
         return blurred;
