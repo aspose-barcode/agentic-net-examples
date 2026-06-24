@@ -3,37 +3,47 @@ using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
+/// <summary>
+/// Demonstrates batch generation of Code128 barcodes using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Generates a set of barcode images with varying XDimension values.
+    /// </summary>
     static void Main()
     {
-        // Output folder for generated barcodes
-        string outputFolder = "Barcodes";
-        if (!Directory.Exists(outputFolder))
+        // Determine the output folder path relative to the current working directory.
+        string outputFolder = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
+
+        // Ensure the output directory exists.
+        Directory.CreateDirectory(outputFolder);
+
+        // Number of barcode samples to generate.
+        // Use a smaller count for quick execution; set to 100 for full batch.
+        int sampleCount = 5;
+
+        // Loop to create each barcode with a distinct XDimension.
+        for (int i = 0; i < sampleCount; i++)
         {
-            Directory.CreateDirectory(outputFolder);
-        }
+            // Calculate XDimension in millimeters (e.g., 0.5mm, 0.6mm, ...).
+            float xDimensionMm = 0.5f + i * 0.1f;
 
-        // Number of barcodes to generate (reduced for safe execution)
-        int barcodeCount = 10;
-
-        for (int i = 1; i <= barcodeCount; i++)
-        {
-            // Vary XDimension in millimeters (e.g., 0.5 mm, 1.0 mm, ...)
-            float xDimensionMm = i * 0.5f;
-
-            // Simple codetext for each barcode
-            string codeText = $"CODE{i:D3}";
-
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+            // Initialize a barcode generator for Code128 with unique text.
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, $"Sample{i + 1}"))
             {
-                // Set XDimension using the Millimeters unit member
+                // Apply the calculated XDimension (in millimeters) to the barcode parameters.
                 generator.Parameters.Barcode.XDimension.Millimeters = xDimensionMm;
 
-                // Build file name and save as TIFF
-                string fileName = Path.Combine(outputFolder, $"barcode_{i:D3}.tif");
-                generator.Save(fileName, BarCodeImageFormat.Tiff);
+                // Construct the full file path for the output TIFF image.
+                string filePath = Path.Combine(outputFolder, $"barcode_{i + 1}.tiff");
+
+                // Save the generated barcode as a TIFF file.
+                generator.Save(filePath, BarCodeImageFormat.Tiff);
             }
         }
+
+        // Inform the user about the generation result.
+        Console.WriteLine($"Generated {sampleCount} barcode images in '{outputFolder}'.");
     }
 }

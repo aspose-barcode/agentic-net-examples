@@ -1,88 +1,123 @@
 using System;
 using System.IO;
 using System.Collections.Generic;
-using System.Reflection;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
+/// <summary>
+/// Generates barcode images from a CSV file or sample data using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Reads barcode definitions, creates output directory, and generates PNG files.
+    /// </summary>
+    /// <param name="args">Command‑line arguments; first argument may specify the CSV path.</param>
     static void Main(string[] args)
     {
-        // CSV file path can be passed as first argument; otherwise use "input.csv"
-        string csvPath = args.Length > 0 ? args[0] : "input.csv";
+        // Determine CSV file path: use first argument if provided, otherwise default.
+        string csvPath = args.Length > 0 ? args[0] : "barcodes.csv";
 
-        // Load CSV rows (comma‑separated). Expected columns:
-        // Symbology, CodeText, BarHeightMillimeters (optional), XDimensionPixels (optional)
-        List<string[]> rows = new List<string[]>();
+        // List to hold barcode data: text, width, and height.
+        List<(string CodeText, float Width, float Height)> items = new List<(string, float, float)>();
 
+        // Attempt to read barcode definitions from the CSV file.
         if (File.Exists(csvPath))
         {
-            foreach (var line in File.ReadAllLines(csvPath))
+            using (var reader = new StreamReader(csvPath))
             {
-                if (string.IsNullOrWhiteSpace(line))
-                    continue;
+                bool isFirstLine = true; // Tracks header row.
 
-                var parts = line.Split(',');
-                rows.Add(parts);
+                while (!reader.EndOfStream)
+                {
+                    string line = reader.ReadLine();
+
+                    // Skip empty lines.
+                    if (string.IsNullOrWhiteSpace(line))
+                        continue;
+
+                    // Skip header line if it contains column names.
+                    if (isFirstLine && line.Contains("CodeText"))
+                    {
+                        isFirstLine = false;
+                        continue;
+                    }
+
+                    // Split CSV line into parts.
+                    string[] parts = line.Split(',');
+
+                    // Ensure we have at least three columns (code, width, height).
+                    if (parts.Length < 3)
+                        continue; // insufficient data, skip
+
+                    // Extract and trim code text.
+                    string codeText = parts[0].Trim();
+
+                    // Parse width; fall back to default if parsing fails.
+                    if (!float.TryParse(parts[1].Trim(), out float width))
+                        width = 200f; // default width
+
+                    // Parse height; fall back to default if parsing fails.
+                    if (!float.TryParse(parts[2].Trim(), out float height))
+                        height = 100f; // default height
+
+                    // Add the parsed item to the collection.
+                    items.Add((codeText, width, height));
+                }
             }
         }
         else
         {
-            // Fallback sample data when CSV is missing
-            rows.Add(new[] { "Code128", "ABC123", "10", "3" });
-            rows.Add(new[] { "QR", "Hello World" });
-            rows.Add(new[] { "Code39FullASCII", "A*B/C", "12", "2" });
+            // CSV not found – use hard‑coded sample data.
+            Console.WriteLine($"CSV file not found at '{csvPath}'. Using sample data.");
+            items.Add(("Sample123", 250f, 120f));
+            items.Add(("Test456", 300f, 150f));
+            items.Add(("Demo789", 200f, 100f));
         }
 
-        int index = 1;
-        foreach (var fields in rows)
+        // Ensure the output directory exists.
+        string outputDir = "BarcodesOutput";
+        if (!Directory.Exists(outputDir))
         {
-            if (fields.Length < 2)
-                continue; // Need at least symbology and text
+            Directory.CreateDirectory(outputDir);
+        }
 
-            string symbology = fields[0].Trim();
-            string codeText = fields[1].Trim();
-
-            // Resolve symbology name to a BaseEncodeType using reflection
-            BaseEncodeType encodeType = ResolveEncodeType(symbology);
-
-            using (var generator = new BarcodeGenerator(encodeType, codeText))
+        // Generate a barcode image for each item.
+        foreach (var item in items)
+        {
+            // Use Code128 as a generic symbology.
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, item.CodeText))
             {
-                // Optional: set bar height in millimeters if provided
-                if (fields.Length >= 3 && float.TryParse(fields[2], out float barHeightMm) && barHeightMm > 0f)
-                {
-                    generator.Parameters.Barcode.BarHeight.Millimeters = barHeightMm;
-                }
+                // Set image dimensions in points.
+                generator.Parameters.ImageWidth.Point = item.Width;
+                generator.Parameters.ImageHeight.Point = item.Height;
 
-                // Optional: set X‑dimension in pixels if provided
-                if (fields.Length >= 4 && float.TryParse(fields[3], out float xDimPx) && xDimPx > 0f)
-                {
-                    generator.Parameters.Barcode.XDimension.Pixels = xDimPx;
-                }
+                // Optional: set image resolution (DPI).
+                generator.Parameters.Resolution = 300f;
 
-                // Save each barcode as a PNG file
-                string fileName = $"barcode_{index}_{symbology}.png";
-                generator.Save(fileName);
-                Console.WriteLine($"Saved {fileName}");
+                // Build a safe file name for the output PNG.
+                string safeFileName = MakeSafeFileName(item.CodeText);
+                string outputPath = Path.Combine(outputDir, $"{safeFileName}.png");
+
+                // Save the barcode image.
+                generator.Save(outputPath);
+                Console.WriteLine($"Generated barcode for '{item.CodeText}' -> {outputPath}");
             }
-
-            index++;
         }
     }
 
-    // Resolves a symbology name (case‑insensitive) to the corresponding EncodeTypes field.
-    // Returns Code128 as a safe default if the name cannot be resolved.
-    static BaseEncodeType ResolveEncodeType(string name)
+    /// <summary>
+    /// Creates a file‑system‑safe file name by replacing invalid characters with underscores.
+    /// </summary>
+    /// <param name="name">Original file name.</param>
+    /// <returns>Sanitized file name.</returns>
+    static string MakeSafeFileName(string name)
     {
-        var prop = typeof(EncodeTypes).GetProperty(name,
-            BindingFlags.Public | BindingFlags.Static | BindingFlags.IgnoreCase);
-        if (prop != null)
+        foreach (char c in Path.GetInvalidFileNameChars())
         {
-            return (BaseEncodeType)prop.GetValue(null);
+            name = name.Replace(c, '_');
         }
-
-        // Fallback to Code128 if the requested symbology is not found
-        return EncodeTypes.Code128;
+        return name;
     }
 }
