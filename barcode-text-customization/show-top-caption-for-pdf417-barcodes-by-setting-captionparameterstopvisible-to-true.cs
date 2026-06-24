@@ -2,23 +2,37 @@ using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
+/// <summary>
+/// Demonstrates generating a PDF417 barcode with a top caption using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Generates a PDF417 barcode image with a caption above it and saves the file.
+    /// </summary>
     static void Main()
     {
-        // Create a PDF417 barcode generator with sample code text
-        using (var generator = new BarcodeGenerator(EncodeTypes.Pdf417, "1234567890"))
+        // Define the output file path for the generated barcode image.
+        string outputPath = "pdf417_top_caption.png";
+
+        // Create a BarcodeGenerator instance for PDF417 encoding with the sample text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Pdf417, "Sample PDF417 Text"))
         {
-            // Enable the top caption (CaptionAbove) and set its text
+            // Enable the caption that appears above the barcode.
             generator.Parameters.CaptionAbove.Visible = true;
+
+            // Set the caption text.
             generator.Parameters.CaptionAbove.Text = "Top Caption";
 
-            // Optionally adjust caption appearance (font size, alignment, etc.)
-            generator.Parameters.CaptionAbove.Font.Size.Point = 12f;
+            // Optional: Align the caption to the center and set its font size.
             generator.Parameters.CaptionAbove.Alignment = TextAlignment.Center;
+            generator.Parameters.CaptionAbove.Font.Size.Point = 12f;
 
-            // Save the barcode image to a PNG file
-            generator.Save("pdf417_caption.png");
+            // Save the generated barcode image to the specified path.
+            generator.Save(outputPath);
         }
+
+        // Inform the user where the barcode image has been saved.
+        Console.WriteLine($"Barcode saved to: {outputPath}");
     }
 }

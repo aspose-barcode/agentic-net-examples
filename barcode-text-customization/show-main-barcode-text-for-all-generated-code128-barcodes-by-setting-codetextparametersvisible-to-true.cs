@@ -1,48 +1,45 @@
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
+using Aspose.BarCode;
 
+/// <summary>
+/// Generates a set of Code128 barcodes and saves them as PNG files.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Creates barcodes for predefined sample texts
+    /// and writes them to the "Barcodes" folder in the current directory.
+    /// </summary>
     static void Main()
     {
-        // Directory to store generated barcodes
+        // Sample texts to encode as Code128 barcodes.
+        string[] samples = { "ABC123", "9876543210", "CODE128TEST" };
+
+        // Determine the output directory and ensure it exists.
         string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
-        if (!Directory.Exists(outputDir))
-        {
-            Directory.CreateDirectory(outputDir);
-        }
+        Directory.CreateDirectory(outputDir);
 
-        // Sample Code128 texts
-        string[] texts = new string[]
+        // Iterate over each sample text, generate a barcode, and save it.
+        foreach (string text in samples)
         {
-            "ABC123456",
-            "CODE128TEST",
-            "1234567890",
-            "HELLO-WORLD",
-            "AsposeBarCode"
-        };
+            // Build the full file path for the PNG image.
+            string filePath = Path.Combine(outputDir, $"{text}.png");
 
-        foreach (string txt in texts)
-        {
-            // Create a barcode generator for Code128 with the given text
-            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, txt))
+            // Create a BarcodeGenerator for Code128 with the current text.
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, text))
             {
-                // Ensure the human‑readable text is visible (default is Below, but set explicitly)
-                generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.Below;
-
-                // Optional: customize appearance of the text
-                generator.Parameters.Barcode.CodeTextParameters.Font.FamilyName = "Arial";
-                generator.Parameters.Barcode.CodeTextParameters.Font.Size.Point = 10f;
-                generator.Parameters.Barcode.CodeTextParameters.Alignment = TextAlignment.Center;
-
-                // Save the barcode image as PNG
-                string filePath = Path.Combine(outputDir, $"{txt}.png");
-                generator.Save(filePath, BarCodeImageFormat.Png);
-                Console.WriteLine($"Saved barcode for \"{txt}\" to \"{filePath}\"");
+                // The human‑readable text is displayed by default (Location = Below),
+                // so no additional configuration is required.
+                generator.Save(filePath);
             }
+
+            // Inform the user that the barcode has been saved.
+            Console.WriteLine($"Generated barcode saved to: {filePath}");
         }
+
+        // Final status message.
+        Console.WriteLine("All Code128 barcodes have been generated with visible human‑readable text.");
     }
 }

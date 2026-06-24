@@ -3,31 +3,49 @@ using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
+/// <summary>
+/// Demonstrates generating QR code images without human‑readable text using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Generates a set of QR code images and saves them to an output folder.
+    /// </summary>
     static void Main()
     {
-        // Output folder for generated QR code images
-        string outputFolder = "OutputQR";
-        if (!Directory.Exists(outputFolder))
+        // Determine the output directory path relative to the current working directory.
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "output");
+
+        // Ensure the output directory exists; create it if it does not.
+        if (!Directory.Exists(outputDir))
         {
-            Directory.CreateDirectory(outputFolder);
+            Directory.CreateDirectory(outputDir);
         }
 
-        // Generate a small batch of QR codes with hidden human‑readable text
-        for (int i = 1; i <= 5; i++)
-        {
-            string codeText = $"Sample{i}";
-            string filePath = Path.Combine(outputFolder, $"qr_{i}.png");
+        // Define the sample texts to encode into QR codes.
+        string[] texts = { "Sample1", "Sample2", "Sample3", "Sample4", "Sample5" };
 
-            using (var generator = new BarcodeGenerator(EncodeTypes.QR, codeText))
+        // Iterate over each text, generate a QR code, and save it as a PNG file.
+        for (int i = 0; i < texts.Length; i++)
+        {
+            // Current text to encode.
+            string text = texts[i];
+
+            // Build the file name using a 1‑based index.
+            string filePath = Path.Combine(outputDir, $"qr_{i + 1}.png");
+
+            // Create a QR code generator with the specified text.
+            using (var generator = new BarcodeGenerator(EncodeTypes.QR, text))
             {
-                // Hide the main barcode text
+                // Suppress the display of human‑readable text beneath the barcode.
                 generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.None;
 
-                // Save the QR code image
+                // Save the generated QR code image to the file system.
                 generator.Save(filePath);
             }
+
+            // Output the location of the generated file to the console.
+            Console.WriteLine($"Generated QR code without text: {filePath}");
         }
     }
 }

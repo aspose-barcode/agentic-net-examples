@@ -1,32 +1,52 @@
 using System;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
+/// <summary>
+/// Demonstrates generating a Code128 barcode with custom text and caption,
+/// then saving it as a PNG image.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Generates a barcode and writes it to disk.
+    /// </summary>
     static void Main()
     {
-        // Create a barcode generator for Code128 with sample code text
+        // Define the full path for the output PNG file.
+        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "barcode.png");
+
+        // Ensure the directory for the output file exists; create it if necessary.
+        string outputDir = Path.GetDirectoryName(outputPath);
+        if (!Directory.Exists(outputDir))
+        {
+            Directory.CreateDirectory(outputDir);
+        }
+
+        // Initialize a barcode generator for Code128 with the sample data "1234567890".
         using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            // Ensure the human‑readable code text is shown below the bars
+            // Configure the human‑readable code text to appear below the bars.
             generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.Below;
-            // Align the code text to the left
             generator.Parameters.Barcode.CodeTextParameters.Alignment = TextAlignment.Left;
+            generator.Parameters.Barcode.CodeTextParameters.Font.FamilyName = "Arial";
+            generator.Parameters.Barcode.CodeTextParameters.Font.Size.Point = 10f;
 
-            // Configure the caption that appears below the barcode
-            generator.Parameters.CaptionBelow.Text = "Sample Caption";
+            // Set up a caption that will appear below the barcode (and code text).
             generator.Parameters.CaptionBelow.Visible = true;
-            // Align the caption to the left
+            generator.Parameters.CaptionBelow.Text = "Bottom Caption";
             generator.Parameters.CaptionBelow.Alignment = TextAlignment.Left;
+            generator.Parameters.CaptionBelow.Font.FamilyName = "Arial";
+            generator.Parameters.CaptionBelow.Font.Size.Point = 9f;
+            generator.Parameters.CaptionBelow.TextColor = Color.Black;
 
-            // Optional: set some visual properties
-            generator.Parameters.Barcode.BarColor = Color.Black;
-            generator.Parameters.BackColor = Color.White;
-
-            // Save the barcode image to a file
-            generator.Save("barcode.png");
+            // Save the generated barcode image to the specified PNG file.
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
+
+        // Inform the user where the barcode image was saved.
+        Console.WriteLine($"Barcode image saved to: {outputPath}");
     }
 }
