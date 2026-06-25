@@ -4,50 +4,64 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
+/// <summary>
+/// Demonstrates generating a Code128 barcode with bar‑width reduction,
+/// saving it to a file, and then reading it back using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a barcode image, verifies its creation, and attempts to read it.
+    /// </summary>
     static void Main()
     {
-        // Define output file
-        string outputPath = Path.Combine(Environment.CurrentDirectory, "barcode.png");
+        // Define the output file path for the generated barcode image.
+        string outputPath = "barcode.png";
 
-        // Create a Code128 barcode with sample text
+        // Create a Code128 barcode generator with the specified text.
         using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            // Set bar width reduction to 5 points (approx. 5%)
+            // Simulate a low‑resolution mobile scanner by setting a low DPI.
+            generator.Parameters.Resolution = 72f; // 72 DPI
+
+            // Apply a 5 % bar‑width reduction to the barcode.
             generator.Parameters.Barcode.BarWidthReduction.Point = 5f;
 
-            // Simulate low‑resolution mobile scanner by lowering image resolution
-            generator.Parameters.Resolution = 72; // DPI
-
-            // Save the barcode image
+            // Save the generated barcode image to the specified path.
             generator.Save(outputPath);
         }
 
-        // Verify the file was created
+        // Verify that the barcode image file was successfully created.
         if (!File.Exists(outputPath))
         {
-            Console.WriteLine("Failed to create barcode image.");
+            Console.WriteLine("Failed to generate the barcode image.");
             return;
         }
 
-        // Read the barcode using low‑quality settings to mimic a low‑resolution scanner
-        using (var reader = new BarCodeReader(outputPath, DecodeType.Code128))
+        // Initialize a barcode reader for the generated image, supporting all barcode types.
+        using (var reader = new BarCodeReader(outputPath, DecodeType.AllSupportedTypes))
         {
-            // Set recognition quality to low
-            reader.QualitySettings.BarcodeQuality = BarcodeQualityMode.Low;
+            // Use a high‑quality setting to improve recognition on low‑resolution images.
+            reader.QualitySettings = QualitySettings.HighQuality;
 
-            bool found = false;
-            foreach (var result in reader.ReadBarCodes())
+            // Perform the barcode recognition.
+            var results = reader.ReadBarCodes();
+
+            // Check if any barcodes were detected.
+            if (results.Length == 0)
             {
-                Console.WriteLine($"Detected CodeText: {result.CodeText}");
-                Console.WriteLine($"Confidence: {result.Confidence}");
-                found = true;
+                Console.WriteLine("No barcode detected.");
             }
-
-            if (!found)
+            else
             {
-                Console.WriteLine("No barcode detected at low quality.");
+                // Output details for each detected barcode.
+                foreach (var result in results)
+                {
+                    Console.WriteLine($"Detected CodeText: {result.CodeText}");
+                    Console.WriteLine($"Confidence: {result.Confidence}");
+                    Console.WriteLine($"ReadingQuality: {result.ReadingQuality}");
+                }
             }
         }
     }

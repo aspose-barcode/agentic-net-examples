@@ -1,27 +1,33 @@
 using System;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
+/// <summary>
+/// Demonstrates generation of a Code16K barcode and saving it as a PNG file.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Generates a Code16K barcode with sample data,
+    /// configures its aspect ratio, saves it to a PNG file, and writes the output path to the console.
+    /// </summary>
     static void Main()
     {
-        // Sample codetext – Code16K accepts any string; using a simple example.
-        const string codeText = "SampleCode16K";
+        // Determine the full path for the output PNG file in the current working directory.
+        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "code16k.png");
 
-        // Create the barcode generator for Code16K symbology.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code16K, codeText))
+        // Initialize a barcode generator for Code16K format with the sample text "1234567890".
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code16K, "1234567890"))
         {
-            // Set the aspect ratio of the Code16K modules to 9 (height/width).
+            // Configure the barcode's aspect ratio (height divided by width) to 9.
             generator.Parameters.Barcode.Code16K.AspectRatio = 9f;
 
-            // Optional: set image resolution (dpi) if desired.
-            generator.Parameters.Resolution = 300;
-
-            // Save the generated barcode as a PNG image.
-            generator.Save("code16k.png");
+            // Render and save the barcode image to the specified file path in PNG format.
+            generator.Save(outputPath);
         }
 
-        Console.WriteLine("Code16K barcode saved as code16k.png");
+        // Inform the user where the barcode image has been saved.
+        Console.WriteLine($"Code16K barcode saved to: {outputPath}");
     }
 }

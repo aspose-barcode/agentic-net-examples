@@ -1,59 +1,89 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
+/// <summary>
+/// Demonstrates generation and verification of a Codabar barcode with Mod16 checksum using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a Codabar barcode, saves it as an image, and validates the checksum.
+    /// </summary>
     static void Main()
     {
-        // Define barcode data (start/stop characters A and B for Codabar)
-        string startStop = "AB";
+        // -------------------- Prepare barcode data --------------------
+        // Data part of the Codabar (without start/stop characters)
         string data = "123456";
-        string fullCodeText = startStop[0] + data + startStop[1];
 
-        // Create Codabar barcode generator with Mod16 checksum
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Codabar, fullCodeText))
+        // Start and stop characters required by Codabar specification
+        string start = "A";
+        string stop = "B";
+
+        // Full codetext including start/stop characters
+        string fullCode = start + data + stop;
+
+        // Path where the generated barcode image will be saved
+        string outputPath = "codabar_mod16.png";
+
+        // -------------------- Generate barcode with Mod16 checksum --------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.Codabar, fullCode))
         {
-            // Enable checksum generation
-            generator.Parameters.Barcode.IsChecksumEnabled = Aspose.BarCode.Generation.EnableChecksum.Yes;
-            // Set Mod16 checksum mode
-            generator.Parameters.Barcode.Codabar.ChecksumMode = Aspose.BarCode.Generation.CodabarChecksumMode.Mod16;
-            // Show checksum in human‑readable text
-            generator.Parameters.Barcode.ChecksumAlwaysShow = true;
+            // Enable checksum generation for the barcode
+            generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
 
-            // Save barcode image
-            string imagePath = "codabar_mod16.png";
-            generator.Save(imagePath);
-            Console.WriteLine($"Barcode image saved to {Path.GetFullPath(imagePath)}");
+            // Specify that the Mod16 checksum algorithm should be used
+            generator.Parameters.Barcode.Codabar.ChecksumMode = CodabarChecksumMode.Mod16;
+
+            // Save the generated barcode image to the specified file
+            generator.Save(outputPath);
         }
 
-        // Verify the checksum using barcode reader
-        if (!File.Exists("codabar_mod16.png"))
+        // -------------------- Compute expected checksum --------------------
+        // Expected checksum: sum of numeric data characters modulo 16
+        int sum = data.Sum(ch => ch - '0');
+        int expectedChecksumValue = sum % 16;
+        string expectedChecksum = expectedChecksumValue.ToString();
+
+        // Verify that the image file was created successfully
+        if (!File.Exists(outputPath))
         {
-            Console.WriteLine("Generated image not found.");
+            Console.WriteLine($"Failed to generate barcode image at {outputPath}");
             return;
         }
 
-        using (BarCodeReader reader = new BarCodeReader("codabar_mod16.png", DecodeType.Codabar))
+        // -------------------- Read and validate barcode --------------------
+        using (var reader = new BarCodeReader(outputPath, DecodeType.Codabar))
         {
-            // Ensure checksum validation is performed
+            // Ensure checksum validation is performed during recognition
             reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
 
-            foreach (BarCodeResult result in reader.ReadBarCodes())
+            // Read all barcodes found in the image
+            var results = reader.ReadBarCodes();
+
+            // If no barcodes were detected, report and exit
+            if (results.Length == 0)
             {
-                string recognizedCode = result.CodeText;
-                string recognizedChecksum = result.Extended.OneD.CheckSum;
-                Console.WriteLine($"Recognized CodeText: {recognizedCode}");
-                Console.WriteLine($"Recognized Checksum: {recognizedChecksum}");
+                Console.WriteLine("No barcode detected.");
+                return;
+            }
 
-                // Compute expected Mod16 checksum for the data part
-                string expectedChecksum = ComputeMod16Checksum(data);
-                Console.WriteLine($"Expected Checksum: {expectedChecksum}");
+            // Iterate through each detected barcode (typically only one)
+            foreach (var result in results)
+            {
+                // Retrieve the checksum reported by the reader
+                string detectedChecksum = result.Extended.OneD.CheckSum;
 
-                if (string.Equals(recognizedChecksum, expectedChecksum, StringComparison.OrdinalIgnoreCase))
+                // Output both detected and expected checksum values
+                Console.WriteLine($"Detected checksum: {detectedChecksum}");
+                Console.WriteLine($"Expected checksum: {expectedChecksum}");
+
+                // Compare detected checksum with the expected value
+                if (detectedChecksum == expectedChecksum)
                 {
                     Console.WriteLine("Checksum verification succeeded.");
                 }
@@ -63,31 +93,5 @@ class Program
                 }
             }
         }
-    }
-
-    // Computes Mod16 checksum character for Codabar data (excluding start/stop)
-    private static string ComputeMod16Checksum(string data)
-    {
-        // Mapping of characters to values for Codabar
-        Dictionary<char, int> charToValue = new Dictionary<char, int>
-        {
-            { '0', 0 }, { '1', 1 }, { '2', 2 }, { '3', 3 }, { '4', 4 },
-            { '5', 5 }, { '6', 6 }, { '7', 7 }, { '8', 8 }, { '9', 9 },
-            { '-', 10 }, { '$', 11 }, { ':', 12 }, { '/', 13 }, { '.', 14 }, { '+', 15 }
-        };
-
-        // Reverse mapping from value to character
-        char[] valueToChar = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '-', '$', ':', '/', '.', '+' };
-
-        int sum = 0;
-        foreach (char c in data)
-        {
-            if (!charToValue.TryGetValue(c, out int val))
-                throw new ArgumentException($"Invalid character '{c}' for Codabar checksum calculation.");
-            sum += val;
-        }
-
-        int checksumValue = sum % 16;
-        return valueToChar[checksumValue].ToString();
     }
 }

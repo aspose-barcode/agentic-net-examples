@@ -4,64 +4,80 @@ using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
-namespace BarcodeBatchGenerator
+/// <summary>
+/// Demonstrates generating Code128 barcodes for a list of identifiers
+/// and saving them as JPEG images using Aspose.BarCode.
+/// </summary>
+class Program
 {
-    class Program
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates barcode images for a predefined list of identifiers.
+    /// </summary>
+    static void Main()
     {
-        static void Main()
+        // Simulated database query result: list of identifier strings.
+        List<string> identifiers = new List<string>
         {
-            // Prepare output folder
-            string outputFolder = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
-            if (!Directory.Exists(outputFolder))
-            {
-                Directory.CreateDirectory(outputFolder);
-            }
+            "1001",
+            "1002",
+            "1003",
+            "1004",
+            "1005"
+        };
 
-            // Retrieve identifiers from a data source (simulated here)
-            List<string> identifiers = GetIdentifiers();
+        // Determine the output directory for the generated JPEG images.
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
 
-            // Generate a barcode for each identifier
-            foreach (string id in identifiers)
-            {
-                // Build a safe file name
-                string safeFileName = MakeSafeFileName(id) + ".jpeg";
-                string filePath = Path.Combine(outputFolder, safeFileName);
-
-                // Create and configure the barcode generator
-                using (var generator = new BarcodeGenerator(EncodeTypes.Code128))
-                {
-                    generator.CodeText = id;
-                    // Save as JPEG
-                    generator.Save(filePath, BarCodeImageFormat.Jpeg);
-                }
-            }
-
-            Console.WriteLine("Barcode generation completed. Files saved to: " + outputFolder);
+        // Create the output directory if it does not already exist.
+        if (!Directory.Exists(outputDir))
+        {
+            Directory.CreateDirectory(outputDir);
         }
 
-        // Simulated data retrieval – replace with real DB query as needed
-        private static List<string> GetIdentifiers()
+        // Iterate over each identifier and generate a corresponding barcode image.
+        foreach (string id in identifiers)
         {
-            // In a real scenario, execute a database query and populate this list.
-            // For safety in this example, we return a small static set.
-            return new List<string>
+            // Build the full file path for the current barcode image.
+            string outputPath = Path.Combine(outputDir, $"barcode_{id}.jpg");
+
+            // Create a BarcodeGenerator for Code128 using the identifier as the code text.
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, id))
             {
-                "ID001",
-                "ID002",
-                "ID003",
-                "ID004",
-                "ID005"
-            };
+                // Set the image resolution to 300 DPI (optional configuration).
+                generator.Parameters.Resolution = 300f;
+
+                // Save the generated barcode as a JPEG file.
+                generator.Save(outputPath, BarCodeImageFormat.Jpeg);
+            }
+
+            // Output a confirmation message to the console.
+            Console.WriteLine($"Generated barcode for ID {id} at {outputPath}");
         }
 
-        // Replace characters that are invalid in file names
-        private static string MakeSafeFileName(string name)
-        {
-            foreach (char c in Path.GetInvalidFileNameChars())
-            {
-                name = name.Replace(c, '_');
-            }
-            return name;
-        }
+        // Example of how to retrieve identifiers from a real database (commented out).
+        /*
+        // using System.Data.SqlClient;
+        // string connectionString = "your_connection_string";
+        // string query = "SELECT Identifier FROM YourTable";
+        // using (var connection = new SqlConnection(connectionString))
+        // {
+        //     connection.Open();
+        //     using (var command = new SqlCommand(query, connection))
+        //     using (var reader = command.ExecuteReader())
+        //     {
+        //         while (reader.Read())
+        //         {
+        //             string id = reader.GetString(0);
+        //             string outputPath = Path.Combine(outputDir, $"barcode_{id}.jpg");
+        //             using (var generator = new BarcodeGenerator(EncodeTypes.Code128, id))
+        //             {
+        //                 generator.Parameters.Resolution = 300f;
+        //                 generator.Save(outputPath, BarCodeImageFormat.Jpeg);
+        //             }
+        //         }
+        //     }
+        // }
+        */
     }
 }

@@ -1,63 +1,86 @@
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates generating Code128 barcodes at different DPI settings
+/// and comparing the resulting image files.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates two barcode images (120 DPI and 300 DPI),
+    /// verifies their creation, displays their properties,
+    /// and performs a simple file‑size comparison.
+    /// </summary>
     static void Main()
     {
-        // Sample barcode text and type
-        const string codeText = "1234567890";
-        const string file120 = "barcode_120dpi.png";
-        const string file300 = "barcode_300dpi.png";
+        // Barcode data to encode
+        string codeText = "1234567890";
 
-        // Generate barcode at 120 DPI
+        // Destination file names for the generated images
+        string path120 = "barcode_120.png";
+        string path300 = "barcode_300.png";
+
+        // ------------------------------------------------------------
+        // Generate a barcode image at 120 DPI
+        // ------------------------------------------------------------
         using (var generator120 = new BarcodeGenerator(EncodeTypes.Code128, codeText))
         {
-            generator120.Parameters.Resolution = 120f; // set resolution to 120 DPI
-            generator120.Save(file120, BarCodeImageFormat.Png);
+            generator120.Parameters.Resolution = 120f; // set image resolution to 120 DPI
+            generator120.Save(path120);               // write the image to disk
         }
 
-        // Generate barcode at 300 DPI (reference)
+        // ------------------------------------------------------------
+        // Generate a barcode image at 300 DPI (higher resolution)
+        // ------------------------------------------------------------
         using (var generator300 = new BarcodeGenerator(EncodeTypes.Code128, codeText))
         {
-            generator300.Parameters.Resolution = 300f; // set resolution to 300 DPI
-            generator300.Save(file300, BarCodeImageFormat.Png);
+            generator300.Parameters.Resolution = 300f; // set image resolution to 300 DPI
+            generator300.Save(path300);                // write the image to disk
         }
 
-        // Verify that files were created
-        if (!File.Exists(file120) || !File.Exists(file300))
+        // Verify that both image files were successfully created
+        if (!File.Exists(path120) || !File.Exists(path300))
         {
-            Console.WriteLine("Failed to create one or both barcode images.");
+            Console.WriteLine("Failed to generate one or both barcode images.");
             return;
         }
 
-        // Load images to read their DPI metadata
-        using (var img120 = Image.FromFile(file120))
-        using (var img300 = Image.FromFile(file300))
+        // ------------------------------------------------------------
+        // Load the generated images and output their dimensions,
+        // resolution, and file size
+        // ------------------------------------------------------------
+        using (var img120 = Image.FromFile(path120))
+        using (var img300 = Image.FromFile(path300))
         {
-            float dpi120 = img120.HorizontalResolution; // should be 120
-            float dpi300 = img300.HorizontalResolution; // should be 300
+            Console.WriteLine(
+                $"120 DPI image: {img120.Width}x{img120.Height} px, " +
+                $"HRes={img120.HorizontalResolution}, VRes={img120.VerticalResolution}, " +
+                $"Size={new FileInfo(path120).Length} bytes");
 
-            Console.WriteLine($"120 DPI image resolution: {dpi120} DPI");
-            Console.WriteLine($"300 DPI reference resolution: {dpi300} DPI");
+            Console.WriteLine(
+                $"300 DPI image: {img300.Width}x{img300.Height} px, " +
+                $"HRes={img300.HorizontalResolution}, VRes={img300.VerticalResolution}, " +
+                $"Size={new FileInfo(path300).Length} bytes");
+        }
 
-            // Simple visual quality comparison based on DPI
-            if (dpi120 < dpi300)
-            {
-                Console.WriteLine("The 120 DPI barcode has lower visual quality compared to the 300 DPI reference.");
-            }
-            else if (dpi120 > dpi300)
-            {
-                Console.WriteLine("The 120 DPI barcode unexpectedly has higher DPI than the reference.");
-            }
-            else
-            {
-                Console.WriteLine("Both images have the same DPI.");
-            }
+        // ------------------------------------------------------------
+        // Simple comparison based on file size (higher DPI usually yields larger file)
+        // ------------------------------------------------------------
+        long size120 = new FileInfo(path120).Length;
+        long size300 = new FileInfo(path300).Length;
+
+        if (size300 > size120)
+        {
+            Console.WriteLine("Higher DPI image has larger file size, indicating higher visual detail.");
+        }
+        else
+        {
+            Console.WriteLine("File size comparison does not show increased visual detail.");
         }
     }
 }

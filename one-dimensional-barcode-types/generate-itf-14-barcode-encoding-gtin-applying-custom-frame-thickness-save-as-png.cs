@@ -1,30 +1,38 @@
 using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
+using Aspose.BarCode.BarCodeRecognition;
 
+/// <summary>
+/// Demonstrates generating an ITF-14 barcode from a GTIN and saving it as a PNG file.
+/// </summary>
 class Program
 {
-    static void Main(string[] args)
+    /// <summary>
+    /// Entry point of the application. Generates an ITF-14 barcode with a framed border and saves it.
+    /// </summary>
+    static void Main()
     {
-        // Sample GTIN-14 value (14 digits)
-        string gtin14 = "01234567890123";
+        // Define a sample GTIN (14‑digit) to encode as ITF‑14.
+        string gtin = "01234567890123";
 
-        // Create the barcode generator for ITF-14
-        using (var generator = new BarcodeGenerator(EncodeTypes.ITF14, gtin14))
+        // Specify the output file path for the generated PNG image.
+        string outputPath = "itf14.png";
+
+        // Initialize the barcode generator for ITF‑14 using the provided GTIN.
+        using (var generator = new BarcodeGenerator(EncodeTypes.ITF14, gtin))
         {
-            // Set a frame border around the barcode
+            // Configure the barcode to have a frame border.
             generator.Parameters.Barcode.ITF.BorderType = ITF14BorderType.Frame;
 
-            // Apply custom frame thickness (5 points)
-            generator.Parameters.Barcode.ITF.BorderThickness.Point = 5f;
+            // Set the thickness of the frame border to 2 points.
+            generator.Parameters.Barcode.ITF.BorderThickness.Point = 2f;
 
-            // Optional: set barcode colors
-            generator.Parameters.Barcode.BarColor = Color.Black;
-            generator.Parameters.BackColor = Color.White;
-
-            // Save the barcode as PNG
-            generator.Save("itf14.png");
+            // Save the generated barcode image to the specified path in PNG format.
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
+
+        // Inform the user that the barcode has been saved.
+        Console.WriteLine($"ITF‑14 barcode saved to: {outputPath}");
     }
 }

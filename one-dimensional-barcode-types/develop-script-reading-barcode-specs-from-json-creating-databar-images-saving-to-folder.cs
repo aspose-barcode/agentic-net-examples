@@ -1,127 +1,125 @@
 using System;
-using System.IO;
 using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
 using System.Text.Json;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
-namespace BarcodeBatchGenerator
+namespace BarcodeDataBarGenerator
 {
-    // Represents a single barcode specification read from JSON.
+    // Represents a single barcode specification from the JSON file.
     public class BarcodeSpec
     {
-        public string Type { get; set; }          // Symbology name, e.g., "DataBarOmniDirectional"
-        public string CodeText { get; set; }      // Text to encode
-        public int Columns { get; set; }          // Optional DataBar columns (0 = default)
-        public int Rows { get; set; }             // Optional DataBar rows (0 = default)
+        public string Symbology { get; set; }
+        public string CodeText { get; set; }
     }
 
+    /// <summary>
+    /// Main program class that reads barcode specifications from a JSON file
+    /// and generates DataBar barcode images using Aspose.BarCode.
+    /// </summary>
     class Program
     {
-        static void Main()
+        /// <summary>
+        /// Entry point of the application.
+        /// </summary>
+        /// <param name="args">Command‑line arguments (not used).</param>
+        static void Main(string[] args)
         {
-            string baseDir = AppDomain.CurrentDomain.BaseDirectory;
-            string inputFolder = Path.Combine(baseDir, "Input");
-            string outputFolder = Path.Combine(baseDir, "Output");
-            string jsonPath = Path.Combine(inputFolder, "specs.json");
+            const string jsonFileName = "barcodes.json";
+            const string outputFolder = "output";
 
-            // Ensure input folder exists; create a sample JSON if missing.
-            if (!Directory.Exists(inputFolder))
+            // Verify that the JSON input file exists before proceeding.
+            if (!File.Exists(jsonFileName))
             {
-                Directory.CreateDirectory(inputFolder);
-                var sampleSpecs = new List<BarcodeSpec>
-                {
-                    new BarcodeSpec
-                    {
-                        Type = "DataBarOmniDirectional",
-                        CodeText = "123456789012",
-                        Columns = 0,
-                        Rows = 0
-                    },
-                    new BarcodeSpec
-                    {
-                        Type = "DataBarStacked",
-                        CodeText = "987654321098",
-                        Columns = 0,
-                        Rows = 0
-                    }
-                };
-                string sampleJson = JsonSerializer.Serialize(sampleSpecs, new JsonSerializerOptions { WriteIndented = true });
-                File.WriteAllText(jsonPath, sampleJson);
-                Console.WriteLine($"Sample JSON created at: {jsonPath}");
+                Console.WriteLine($"Input file '{jsonFileName}' not found. Exiting.");
+                return;
             }
 
-            // Ensure output folder exists.
+            // Read the JSON file and deserialize it into a list of BarcodeSpec objects.
+            List<BarcodeSpec> specs;
+            using (FileStream jsonStream = new FileStream(jsonFileName, FileMode.Open, FileAccess.Read))
+            {
+                specs = JsonSerializer.Deserialize<List<BarcodeSpec>>(jsonStream);
+            }
+
+            // Ensure that we actually loaded some specifications.
+            if (specs == null || specs.Count == 0)
+            {
+                Console.WriteLine("No barcode specifications found in the JSON file.");
+                return;
+            }
+
+            // Create the output directory if it does not already exist.
             if (!Directory.Exists(outputFolder))
             {
                 Directory.CreateDirectory(outputFolder);
             }
 
-            // Validate JSON file existence.
-            if (!File.Exists(jsonPath))
+            // Define the set of allowed DataBar symbologies.
+            var allowedDataBarTypes = new HashSet<string>
             {
-                Console.WriteLine($"JSON file not found: {jsonPath}");
-                return;
-            }
+                nameof(EncodeTypes.DatabarOmniDirectional),
+                nameof(EncodeTypes.DatabarStacked),
+                nameof(EncodeTypes.DatabarStackedOmniDirectional),
+                nameof(EncodeTypes.DatabarLimited),
+                nameof(EncodeTypes.DatabarExpanded),
+                nameof(EncodeTypes.DatabarExpandedStacked)
+            };
 
-            // Read and deserialize specifications.
-            List<BarcodeSpec> specs;
-            try
+            int index = 0;
+            // Process each barcode specification.
+            foreach (var spec in specs)
             {
-                string jsonContent = File.ReadAllText(jsonPath);
-                specs = JsonSerializer.Deserialize<List<BarcodeSpec>>(jsonContent);
-                if (specs == null || specs.Count == 0)
-                {
-                    Console.WriteLine("No barcode specifications found in JSON.");
-                    return;
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Failed to parse JSON: {ex.Message}");
-                return;
-            }
+                index++;
 
-            // Process each specification (limit to a safe number).
-            int maxItems = Math.Min(specs.Count, 10);
-            for (int i = 0; i < maxItems; i++)
-            {
-                BarcodeSpec spec = specs[i];
-                // Resolve EncodeTypes member via reflection (allowed by rule 14).
-                var encodeField = typeof(EncodeTypes).GetField(spec.Type);
-                if (encodeField == null)
+                // Skip specifications missing required fields.
+                if (string.IsNullOrWhiteSpace(spec.Symbology) || string.IsNullOrWhiteSpace(spec.CodeText))
                 {
-                    Console.WriteLine($"Unsupported symbology: {spec.Type}");
+                    Console.WriteLine($"Specification #{index} is missing required fields. Skipping.");
                     continue;
                 }
 
-                var encodeType = (BaseEncodeType)encodeField.GetValue(null);
+                // Ensure the requested symbology is one of the supported DataBar types.
+                if (!allowedDataBarTypes.Contains(spec.Symbology))
+                {
+                    Console.WriteLine($"Specification #{index}: Symbology '{spec.Symbology}' is not a supported DataBar type. Skipping.");
+                    continue;
+                }
 
+                // Resolve the symbology name to a BaseEncodeType enum value using reflection.
+                FieldInfo field = typeof(EncodeTypes).GetField(spec.Symbology);
+                if (field == null)
+                {
+                    Console.WriteLine($"Specification #{index}: Unknown symbology '{spec.Symbology}'. Skipping.");
+                    continue;
+                }
+
+                BaseEncodeType encodeType = (BaseEncodeType)field.GetValue(null);
+
+                // Build the output file path for the generated barcode image.
+                string outputPath = Path.Combine(outputFolder, $"{spec.Symbology}_{index}.png");
+
+                // Generate the barcode and save it as a PNG image.
                 using (var generator = new BarcodeGenerator(encodeType, spec.CodeText))
                 {
-                    // Apply DataBar specific parameters if applicable.
-                    generator.Parameters.Barcode.DataBar.Columns = spec.Columns;
-                    generator.Parameters.Barcode.DataBar.Rows = spec.Rows;
+                    // Disable auto‑sizing so that BarHeight can be set manually if needed.
+                    generator.Parameters.AutoSizeMode = AutoSizeMode.None;
 
-                    // Optional: set image size to ensure visibility.
-                    generator.Parameters.ImageWidth.Point = 300f;
-                    generator.Parameters.ImageHeight.Point = 150f;
+                    // Optional: set a custom bar height.
+                    // generator.Parameters.Barcode.BarHeight.Point = 30f;
 
-                    string fileName = $"{spec.Type}_{i + 1}.png";
-                    string outputPath = Path.Combine(outputFolder, fileName);
-
-                    try
-                    {
-                        generator.Save(outputPath);
-                        Console.WriteLine($"Saved barcode: {outputPath}");
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"Failed to save barcode '{fileName}': {ex.Message}");
-                    }
+                    // Save the generated barcode image.
+                    generator.Save(outputPath);
                 }
+
+                Console.WriteLine($"Generated barcode #{index}: {outputPath}");
             }
+
+            Console.WriteLine("Processing completed.");
         }
     }
 }

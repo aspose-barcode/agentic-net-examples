@@ -1,33 +1,37 @@
 using System;
-using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates generating an ITF-14 barcode and saving it as a JPEG image.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Generates an ITF-14 barcode with custom visual settings.
+    /// </summary>
     static void Main()
     {
-        // Output file path
-        string outputPath = "itf_barcode.jpg";
+        // Define the barcode data: 14 numeric characters required for ITF-14.
+        const string codeText = "12345678901231";
 
-        // Create a barcode generator for ITF14
-        using (var generator = new BarcodeGenerator(EncodeTypes.ITF14))
+        // Initialize the barcode generator with ITF-14 symbology and the provided data.
+        using (var generator = new BarcodeGenerator(EncodeTypes.ITF14, codeText))
         {
-            // Set the code text (numeric, even length)
-            generator.CodeText = "123456789012";
+            // Set a light yellow background color for the image.
+            generator.Parameters.BackColor = Color.FromArgb(255, 255, 224); // Light yellow
 
-            // Apply a custom background color
-            generator.Parameters.BackColor = Color.LightGray;
+            // Configure visual appearance of the barcode bars.
+            generator.Parameters.Barcode.BarColor = Color.Black;          // Color of the bars
+            generator.Parameters.Barcode.BarHeight.Point = 40f;          // Height of the bars in points
 
-            // Optional: set bar (foreground) color
-            generator.Parameters.Barcode.BarColor = Color.Black;
-
-            // Save the barcode as JPEG
+            // Define the output file path and save the barcode as a JPEG image.
+            const string outputPath = "itf_barcode.jpg";
             generator.Save(outputPath, BarCodeImageFormat.Jpeg);
-        }
 
-        Console.WriteLine($"Barcode saved to {Path.GetFullPath(outputPath)}");
+            // Inform the user that the barcode has been saved.
+            Console.WriteLine($"Barcode saved to {outputPath}");
+        }
     }
 }

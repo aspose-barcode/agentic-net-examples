@@ -3,15 +3,28 @@ using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
+/// <summary>
+/// Demonstrates generation of various DataBar barcode symbologies,
+/// rotates each barcode 90 degrees, and saves them as PNG files.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates, rotates, and saves DataBar barcodes.
+    /// </summary>
     static void Main()
     {
-        // Output folder
-        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "DataBarOutputs");
-        Directory.CreateDirectory(outputDir);
+        // Determine the output directory for generated images.
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "output");
 
-        // DataBar symbologies to generate
+        // Create the output directory if it does not already exist.
+        if (!Directory.Exists(outputDir))
+        {
+            Directory.CreateDirectory(outputDir);
+        }
+
+        // List of DataBar symbologies to generate.
         BaseEncodeType[] dataBarTypes = new BaseEncodeType[]
         {
             EncodeTypes.DatabarOmniDirectional,
@@ -22,28 +35,45 @@ class Program
             EncodeTypes.DatabarExpandedStacked
         };
 
-        foreach (BaseEncodeType type in dataBarTypes)
+        // Corresponding file name parts for each symbology.
+        string[] typeNames = new string[]
         {
-            // Choose a valid code text for each DataBar type
-            string codeText = type == EncodeTypes.DatabarLimited
+            "DatabarOmniDirectional",
+            "DatabarStacked",
+            "DatabarStackedOmniDirectional",
+            "DatabarLimited",
+            "DatabarExpanded",
+            "DatabarExpandedStacked"
+        };
+
+        // Iterate over each DataBar type and generate the barcode.
+        for (int i = 0; i < dataBarTypes.Length; i++)
+        {
+            BaseEncodeType type = dataBarTypes[i];
+            string fileName = $"{typeNames[i]}.png";
+            string outputPath = Path.Combine(outputDir, fileName);
+
+            // Choose appropriate codetext for each DataBar type.
+            // Limited type requires a GTIN style codetext.
+            string codeText = (type == EncodeTypes.DatabarLimited)
                 ? "(01)08888888888888"
                 : "(01)12345678901231";
 
-            // Create generator, set rotation, and save PNG
+            // Generate the barcode, rotate it 90 degrees, and save as PNG.
             using (var generator = new BarcodeGenerator(type, codeText))
             {
-                // Rotate the barcode image 90 degrees
+                // Set rotation angle to 90 degrees.
                 generator.Parameters.RotationAngle = 90f;
 
-                // Optional: set image size if needed
-                generator.Parameters.ImageWidth.Point = 300f;
-                generator.Parameters.ImageHeight.Point = 150f;
-
-                // Save as PNG
-                string filePath = Path.Combine(outputDir, $"{type.TypeName}_Rotated.png");
-                generator.Save(filePath);
-                Console.WriteLine($"Saved rotated DataBar barcode: {filePath}");
+                // Save the rotated barcode image to the output path.
+                generator.Save(outputPath);
             }
+
+            // Inform the user that the file has been generated.
+            Console.WriteLine($"Generated {fileName}");
         }
+
+        // Final status message.
+        Console.WriteLine("All DataBar barcodes have been generated and rotated.");
     }
 }

@@ -1,50 +1,69 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode;
 
-namespace BarcodeBatchGenerator
+/// <summary>
+/// Program that generates barcode images for a predefined list of URLs using Aspose.BarCode.
+/// </summary>
+public class Program
 {
-    class Program
+    /// <summary>
+    /// Entry point of the application. Generates barcode PNG files for each URL in the list.
+    /// </summary>
+    public static void Main()
     {
-        static void Main()
+        // Define a sample list of URLs to encode as barcodes.
+        var urls = new List<string>
         {
-            // Output directory for generated PNG files
-            string outputFolder = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
-            if (!Directory.Exists(outputFolder))
-            {
-                Directory.CreateDirectory(outputFolder);
-            }
+            "https://example.com",
+            "https://openai.com",
+            "https://github.com",
+            "https://dotnet.microsoft.com",
+            "https://aspose.com"
+        };
 
-            // Sample list of URLs to encode as barcodes
-            List<string> urls = new List<string>
-            {
-                "https://example.com/page1",
-                "https://example.com/page2",
-                "https://example.com/page3",
-                "https://example.com/page4",
-                "https://example.com/page5"
-            };
+        // Ensure the output directory exists; create it if it does not.
+        string outputDir = "Barcodes";
+        if (!Directory.Exists(outputDir))
+        {
+            Directory.CreateDirectory(outputDir);
+        }
 
-            int index = 1;
-            foreach (string url in urls)
+        // Choose a symbology. Code128 works well for alphanumeric strings.
+        BaseEncodeType encodeType = EncodeTypes.Code128;
+
+        int index = 1;
+        // Iterate over each URL and generate a corresponding barcode image.
+        foreach (var url in urls)
+        {
+            // Build the output file name and full path for the current barcode.
+            string fileName = $"barcode_{index}.png";
+            string outputPath = Path.Combine(outputDir, fileName);
+
+            try
             {
-                // Create a QR code generator with the URL as CodeText
-                using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, url))
+                // Create a barcode generator with the selected symbology and the URL as the code text.
+                using (var generator = new BarcodeGenerator(encodeType, url))
                 {
-                    // Set QR error correction level (optional)
-                    generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
+                    // Optional: set the image resolution (dots per inch).
+                    generator.Parameters.Resolution = 300f;
 
-                    // Build the output file name
-                    string filePath = Path.Combine(outputFolder, $"barcode_{index}.png");
-
-                    // Save the barcode image as PNG
-                    generator.Save(filePath);
+                    // Save the generated barcode as a PNG file.
+                    generator.Save(outputPath);
                 }
 
-                index++;
+                // Inform the user that the barcode was generated successfully.
+                Console.WriteLine($"Generated barcode for '{url}' -> {outputPath}");
             }
+            catch (Exception ex)
+            {
+                // Report any errors that occur during barcode generation.
+                Console.WriteLine($"Failed to generate barcode for '{url}': {ex.Message}");
+            }
+
+            index++;
         }
     }
 }

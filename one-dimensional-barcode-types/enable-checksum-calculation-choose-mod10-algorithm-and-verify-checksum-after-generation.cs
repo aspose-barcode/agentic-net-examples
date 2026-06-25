@@ -4,37 +4,54 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
+/// <summary>
+/// Demonstrates generation and verification of a Codabar barcode with checksum using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a Codabar barcode, saves it as PNG, and then reads it back to verify the checksum.
+    /// </summary>
     static void Main()
     {
-        string outputPath = Path.Combine(Environment.CurrentDirectory, "codabar.png");
+        // Define the full path for the output PNG file in the current working directory.
+        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "codabar.png");
 
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Codabar, "1234567890"))
+        // -------------------------------------------------
+        // Barcode Generation
+        // -------------------------------------------------
+        // Create a BarcodeGenerator for Codabar with the specified data string.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Codabar, "A123456A"))
         {
+            // Enable checksum generation for the barcode.
             generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
-            // Default checksum mode for Codabar is Mod10; explicit setting omitted due to API version differences
-            generator.Parameters.Barcode.ChecksumAlwaysShow = true;
-            generator.Save(outputPath);
+
+            // Set the checksum calculation mode to Mod10 (specific to Codabar).
+            generator.Parameters.Barcode.Codabar.ChecksumMode = CodabarChecksumMode.Mod10;
+
+            // Save the generated barcode image to the defined path in PNG format.
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        if (File.Exists(outputPath))
+        // -------------------------------------------------
+        // Barcode Verification (Checksum Validation)
+        // -------------------------------------------------
+        // Initialize a BarCodeReader to read the saved image, specifying Codabar as the decode type.
+        using (var reader = new BarCodeReader(outputPath, DecodeType.Codabar))
         {
-            using (BarCodeReader reader = new BarCodeReader(outputPath, DecodeType.Codabar))
+            // Turn on checksum validation so the reader will verify the checksum during recognition.
+            reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
+
+            // Iterate through all recognized barcodes (should be one in this case).
+            foreach (var result in reader.ReadBarCodes())
             {
-                reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
+                // Output the decoded text of the barcode.
+                Console.WriteLine($"CodeText: {result.CodeText}");
 
-                foreach (BarCodeResult result in reader.ReadBarCodes())
-                {
-                    Console.WriteLine("CodeText: " + result.CodeText);
-                    Console.WriteLine("Value (without checksum): " + result.Extended.OneD.Value);
-                    Console.WriteLine("Checksum: " + result.Extended.OneD.CheckSum);
-                }
+                // Output the checksum value obtained from the extended OneD parameters.
+                Console.WriteLine($"Checksum (from recognition): {result.Extended.OneD.CheckSum}");
             }
-        }
-        else
-        {
-            Console.WriteLine("Barcode image not found at: " + outputPath);
         }
     }
 }

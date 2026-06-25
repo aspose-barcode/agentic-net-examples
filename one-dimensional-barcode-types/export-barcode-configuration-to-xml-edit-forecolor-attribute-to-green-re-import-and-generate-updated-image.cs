@@ -1,64 +1,73 @@
 using System;
 using System.IO;
-using System.Xml.Linq;
+using System.Text.RegularExpressions;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
+/// <summary>
+/// Demonstrates exporting a barcode configuration to XML, modifying it, and re-importing to generate an image.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Generates a Code128 barcode, modifies its color via XML, and saves the image.
+    /// </summary>
     static void Main()
     {
-        // File paths
-        string xmlPath = "barcodeConfig.xml";
-        string originalImagePath = "barcode_original.png";
-        string updatedImagePath = "barcode_updated.png";
+        // Define temporary file paths for the original and modified XML configurations.
+        string originalXmlPath = Path.GetTempFileName();
+        string modifiedXmlPath = Path.GetTempFileName();
 
-        // Create a barcode, save image and export configuration to XML
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+        // Define the output image file path.
+        string outputImagePath = "barcode.png";
+
+        // --------------------------------------------------------------------
+        // Create a barcode generator, configure basic properties, and export to XML.
+        // --------------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
         {
-            // Optional: set initial bar color
+            // Set the initial bar color (default is black).
             generator.Parameters.Barcode.BarColor = Color.Black;
 
-            // Save original barcode image
-            generator.Save(originalImagePath);
-
-            // Export configuration to XML file
-            generator.ExportToXml(xmlPath);
+            // Export the current configuration to an XML file.
+            generator.ExportToXml(originalXmlPath);
         }
 
-        // Load the exported XML, modify the ForeColor attribute to green
-        if (File.Exists(xmlPath))
+        // --------------------------------------------------------------------
+        // Load the exported XML, modify the ForeColor attribute to green.
+        // --------------------------------------------------------------------
+        string xmlContent = File.ReadAllText(originalXmlPath);
+
+        // Replace any existing ForeColor attribute value with "Green".
+        string updatedXml = Regex.Replace(xmlContent, "ForeColor=\"[^\"]*\"", "ForeColor=\"Green\"");
+
+        // If the attribute does not exist, add it to the <Barcode> element.
+        if (!updatedXml.Contains("ForeColor=\"Green\""))
         {
-            XDocument doc = XDocument.Load(xmlPath);
-            XElement root = doc.Root;
-            if (root != null)
-            {
-                XAttribute foreColorAttr = root.Attribute("ForeColor");
-                if (foreColorAttr != null)
-                {
-                    foreColorAttr.Value = "Green";
-                }
-                else
-                {
-                    root.SetAttributeValue("ForeColor", "Green");
-                }
-                doc.Save(xmlPath);
-            }
-        }
-        else
-        {
-            Console.WriteLine($"XML file not found: {xmlPath}");
-            return;
+            // Insert ForeColor attribute after the opening Barcode tag.
+            updatedXml = Regex.Replace(updatedXml, "(<Barcode[^>]*?)>", "$1 ForeColor=\"Green\">");
         }
 
-        // Import the modified configuration and generate updated barcode image
-        using (BarcodeGenerator updatedGenerator = BarcodeGenerator.ImportFromXml(xmlPath))
+        // Write the modified XML to a new temporary file.
+        File.WriteAllText(modifiedXmlPath, updatedXml);
+
+        // --------------------------------------------------------------------
+        // Import the modified XML configuration and generate the barcode image.
+        // --------------------------------------------------------------------
+        using (var importedGenerator = BarcodeGenerator.ImportFromXml(modifiedXmlPath))
         {
-            // Save the updated barcode image
-            updatedGenerator.Save(updatedImagePath);
+            // Save the barcode image with the updated color.
+            importedGenerator.Save(outputImagePath);
         }
 
-        Console.WriteLine("Barcode generation completed.");
+        // --------------------------------------------------------------------
+        // Clean up temporary files.
+        // --------------------------------------------------------------------
+        try { File.Delete(originalXmlPath); } catch { }
+        try { File.Delete(modifiedXmlPath); } catch { }
+
+        // Output the location of the generated barcode image.
+        Console.WriteLine($"Barcode image generated at: {Path.GetFullPath(outputImagePath)}");
     }
 }

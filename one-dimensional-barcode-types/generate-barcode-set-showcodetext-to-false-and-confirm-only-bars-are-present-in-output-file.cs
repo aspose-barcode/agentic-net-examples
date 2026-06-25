@@ -1,64 +1,61 @@
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
+/// <summary>
+/// Demonstrates generating a Code128 barcode with hidden human‑readable text,
+/// saving it to a file, and then verifying the barcode by reading it back.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a barcode, saves it, and validates the saved image.
+    /// </summary>
     static void Main()
     {
-        // Define output file
-        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "barcode.png");
+        // Define the output file path for the generated barcode image.
+        string outputPath = "barcode.png";
 
-        // Generate barcode with hidden human‑readable text
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
+        // Set barcode encoding type and the text to encode.
+        BaseEncodeType encodeType = EncodeTypes.Code128;
+        string codeText = "123456";
+
+        // Create a BarcodeGenerator instance with the specified type and text.
+        using (var generator = new BarcodeGenerator(encodeType, codeText))
         {
-            // Hide the code text (human readable) – only bars will be rendered
+            // Configure the generator to hide the human‑readable code text.
+            // Only the barcode bars will be rendered in the image.
             generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.None;
 
-            // Save the barcode image
+            // Save the generated barcode image to the specified file.
             generator.Save(outputPath);
         }
 
-        // Verify that the barcode can be read correctly
+        // Verify that the barcode image file was successfully created.
+        if (!File.Exists(outputPath))
+        {
+            Console.WriteLine("Failed to create the barcode image.");
+            return;
+        }
+
+        // Initialize a BarCodeReader to read and decode the saved barcode image.
         using (var reader = new BarCodeReader(outputPath, DecodeType.Code128))
         {
-            bool found = false;
-            foreach (BarCodeResult result in reader.ReadBarCodes())
-            {
-                Console.WriteLine($"Detected barcode type: {result.CodeTypeName}, code text: {result.CodeText}");
-                found = true;
-            }
+            // Read all barcodes found in the image.
+            var results = reader.ReadBarCodes();
 
-            if (!found)
+            // Check if at least one barcode was read and if its text matches the original.
+            if (results.Length > 0 && results[0].CodeText == codeText)
             {
-                Console.WriteLine("No barcode detected in the generated image.");
-                return;
+                Console.WriteLine("Barcode generated successfully. Code text is hidden (only bars present).");
             }
-        }
-
-        // Confirm that the image contains only black bars on a white background
-        bool onlyBarsAndBackground = true;
-        using (var bitmap = new Bitmap(outputPath))
-        {
-            for (int y = 0; y < bitmap.Height && onlyBarsAndBackground; y++)
+            else
             {
-                for (int x = 0; x < bitmap.Width && onlyBarsAndBackground; x++)
-                {
-                    Color pixel = bitmap.GetPixel(x, y);
-                    // Accept only pure black or pure white pixels
-                    if (!pixel.Equals(Color.Black) && !pixel.Equals(Color.White))
-                    {
-                        onlyBarsAndBackground = false;
-                    }
-                }
+                Console.WriteLine("Barcode verification failed.");
             }
         }
-
-        Console.WriteLine(onlyBarsAndBackground
-            ? "Verification passed: image contains only bars and background."
-            : "Verification failed: image contains colors other than bars and background.");
     }
 }

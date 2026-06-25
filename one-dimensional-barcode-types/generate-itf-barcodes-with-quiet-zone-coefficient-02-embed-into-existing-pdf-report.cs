@@ -2,103 +2,87 @@ using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Pdf;
-using Aspose.Pdf.Text;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
+using Aspose.Pdf;
 
+/// <summary>
+/// Demonstrates embedding an ITF14 barcode into an existing PDF document using Aspose libraries.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Generates an ITF14 barcode and inserts it into the first page of a PDF.
+    /// </summary>
     static void Main()
     {
-        // Paths for the existing PDF and the output PDF
-        const string inputPdfPath = "report.pdf";
+        // Define file paths for the source PDF and the resulting PDF with the barcode.
+        const string sourcePdfPath = "report.pdf";
         const string outputPdfPath = "report_with_barcode.pdf";
 
-        // Verify that the source PDF exists
-        if (!File.Exists(inputPdfPath))
+        // Ensure the source PDF exists before proceeding.
+        if (!File.Exists(sourcePdfPath))
         {
-            Console.WriteLine($"Input PDF file not found: {inputPdfPath}");
+            Console.WriteLine($"Source PDF not found: {sourcePdfPath}");
             return;
         }
 
-        // Create the ITF14 barcode generator
-        using (var generator = new BarcodeGenerator(EncodeTypes.ITF14))
+        // Sample ITF14 barcode text (must be 14 numeric characters).
+        const string itfCodeText = "12345678901234";
+
+        // Desired quiet zone coefficient (the API requires an integer >= 10).
+        const float desiredQuietZoneCoef = 0.2f;
+
+        // MemoryStream will hold the generated barcode image in PNG format.
+        using (var barcodeStream = new MemoryStream())
         {
-            // Sample code text for ITF14 (13 digits, checksum will be added automatically)
-            generator.CodeText = "1234567890123";
-
-            // Set a reasonable XDimension (e.g., 2 points)
-            generator.Parameters.Barcode.XDimension.Point = 2f;
-
-            // Attempt to set QuietZoneCoef to 0.2 (the API expects an integer >= 10)
-            // Since 0.2 is invalid, handle it gracefully.
-            try
+            // Create a barcode generator for ITF14 using the provided text.
+            using (var generator = new BarcodeGenerator(EncodeTypes.ITF14, itfCodeText))
             {
-                // Convert 0.2 to an integer multiplier (invalid on purpose)
-                int quietZoneCoef = (int)(0.2 * 10); // results in 2
-                generator.Parameters.Barcode.ITF.QuietZoneCoef = quietZoneCoef; // will throw
-            }
-            catch (ArgumentException ex)
-            {
-                Console.WriteLine("QuietZoneCoef value is invalid (must be >= 10). Using default value.");
-                // Keep the default QuietZoneCoef (10)
-            }
+                // The QuietZoneCoef property expects an integer >= 10.
+                // If the requested coefficient is invalid, inform the user and keep the default.
+                if (desiredQuietZoneCoef < 10f)
+                {
+                    Console.WriteLine("Quiet zone coefficient 0.2 is below the minimum allowed value (10). Using default quiet zone.");
+                }
+                else
+                {
+                    // This block would set a valid quiet zone coefficient if needed.
+                    generator.Parameters.Barcode.ITF.QuietZoneCoef = (int)desiredQuietZoneCoef;
+                }
 
-            // Optional: set barcode colors
-            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-            generator.Parameters.BackColor = Aspose.Drawing.Color.White;
+                // Enable automatic sizing of the barcode image using interpolation.
+                generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
 
-            // Render the barcode to a memory stream in PNG format
-            using (var barcodeStream = new MemoryStream())
-            {
+                // Save the generated barcode image to the memory stream in PNG format.
                 generator.Save(barcodeStream, BarCodeImageFormat.Png);
-                barcodeStream.Position = 0; // Reset stream position for reading
-
-                // Load the existing PDF
-                using (var pdfDoc = new Document(inputPdfPath))
-                {
-                    // Ensure there is at least one page
-                    if (pdfDoc.Pages.Count == 0)
-                    {
-                        pdfDoc.Pages.Add();
-                    }
-
-                    // Add the barcode image to the first page
-                    var page = pdfDoc.Pages[1];
-                    var pdfImage = new Aspose.Pdf.Image
-                    {
-                        ImageStream = barcodeStream,
-                        // Position the image (coordinates in points)
-                        // Here we place it at (100, 500) with a width of 200 points
-                        // Height will be scaled proportionally
-                        FixWidth = 200
-                    };
-                    page.Paragraphs.Add(pdfImage);
-                }
-
-                // Save the modified PDF
-                using (var outputStream = new FileStream(outputPdfPath, FileMode.Create, FileAccess.Write))
-                {
-                    // Re-open the PDF to write the changes (since the using block above disposed it)
-                    using (var pdfDoc = new Document(inputPdfPath))
-                    {
-                        // Add the image again (the same steps as before)
-                        var page = pdfDoc.Pages[1];
-                        var pdfImage = new Aspose.Pdf.Image
-                        {
-                            ImageStream = barcodeStream,
-                            FixWidth = 200
-                        };
-                        page.Paragraphs.Add(pdfImage);
-
-                        pdfDoc.Save(outputStream);
-                    }
-                }
-
-                Console.WriteLine($"Barcode embedded successfully into '{outputPdfPath}'.");
             }
+
+            // Reset the stream position to the beginning before reading it for PDF insertion.
+            barcodeStream.Position = 0;
+
+            // Load the existing PDF document.
+            var pdfDocument = new Document(sourcePdfPath);
+
+            // Access the first page of the PDF where the barcode will be placed.
+            var page = pdfDocument.Pages[1];
+
+            // Create an Aspose.Pdf.Image object using the barcode stream.
+            var pdfImage = new Aspose.Pdf.Image
+            {
+                ImageStream = barcodeStream,
+                // Set fixed dimensions for the barcode image (adjust as needed).
+                FixWidth = 200.0,
+                FixHeight = 100.0
+            };
+
+            // Add the image to the page's paragraph collection.
+            page.Paragraphs.Add(pdfImage);
+
+            // Save the modified PDF to the specified output path.
+            pdfDocument.Save(outputPdfPath);
         }
+
+        // Inform the user that the operation completed successfully.
+        Console.WriteLine($"Barcode embedded successfully into '{outputPdfPath}'.");
     }
 }

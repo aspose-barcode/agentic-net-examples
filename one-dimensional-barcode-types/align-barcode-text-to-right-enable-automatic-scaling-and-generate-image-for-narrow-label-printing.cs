@@ -2,28 +2,46 @@ using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
+/// <summary>
+/// Demonstrates generating a Code128 barcode suitable for a narrow label using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Generates the barcode and saves it as an image file.
+    /// </summary>
     static void Main()
     {
-        // Create a barcode generator for Code128 with sample code text
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+        // Define the barcode symbology (Code128) and the text to encode.
+        BaseEncodeType symbology = EncodeTypes.Code128;
+        string codeText = "123456789012";
+
+        // Create a BarcodeGenerator instance inside a using block to ensure proper disposal.
+        using (var generator = new BarcodeGenerator(symbology, codeText))
         {
-            // Align human‑readable text to the right
+            // Align the human‑readable text to the right side of the barcode.
             generator.Parameters.Barcode.CodeTextParameters.Alignment = TextAlignment.Right;
 
-            // Enable automatic scaling (interpolation) for narrow label printing
+            // Enable automatic scaling (interpolation) to adapt the barcode to a narrow label.
             generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
 
-            // Define the target image size (e.g., 150 pt × 50 pt) suitable for a narrow label
-            generator.Parameters.ImageWidth.Point = 150f;
-            generator.Parameters.ImageHeight.Point = 50f;
+            // Set the target image dimensions (in points) appropriate for a narrow label.
+            generator.Parameters.ImageWidth.Point = 200f;   // Image width
+            generator.Parameters.ImageHeight.Point = 100f;  // Image height
 
-            // Optional: increase resolution for better print quality
-            generator.Parameters.Resolution = 300; // DPI
+            // Increase the resolution (DPI) for higher print quality (optional).
+            generator.Parameters.Resolution = 300f;
 
-            // Save the generated barcode image
-            generator.Save("label.png");
+            // Specify the font family and size for the human‑readable code text (optional).
+            generator.Parameters.Barcode.CodeTextParameters.Font.FamilyName = "Arial";
+            generator.Parameters.Barcode.CodeTextParameters.Font.Size.Point = 8f;
+
+            // Define the output file path and save the generated barcode image.
+            string outputPath = "narrow_label_barcode.png";
+            generator.Save(outputPath);
+
+            // Inform the user that the barcode has been saved.
+            Console.WriteLine($"Barcode saved to {outputPath}");
         }
     }
 }
