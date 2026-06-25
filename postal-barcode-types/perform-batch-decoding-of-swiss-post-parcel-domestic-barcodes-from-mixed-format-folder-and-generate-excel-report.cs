@@ -1,111 +1,183 @@
 using System;
-using System.IO;
 using System.Collections.Generic;
+using System.Drawing;
+using System.IO;
 using Aspose.BarCode;
-using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.BarCode.Generation;
 using Aspose.Cells;
+using Aspose.Pdf;
+using Aspose.Pdf.Facades;
 
+/// <summary>
+/// Demonstrates scanning various image files and PDF pages for Swiss Post parcel barcodes,
+/// then writes the results to an Excel report.
+/// </summary>
 class Program
 {
+    // Simple data holder for each decoded barcode
+    class DecodeRecord
+    {
+        public string FileName { get; set; }
+        public int PageNumber { get; set; } // 0 for non‑PDF images
+        public string BarcodeType { get; set; }
+        public string CodeText { get; set; }
+        public double ReadingQuality { get; set; }
+        public int Confidence { get; set; }
+    }
+
+    /// <summary>
+    /// Entry point of the application. Scans a folder for supported image/PDF files,
+    /// extracts Swiss Post parcel barcodes, and generates an Excel report.
+    /// </summary>
     static void Main()
     {
-        // Define input and output paths
-        string inputFolder = Path.Combine(Environment.CurrentDirectory, "InputBarcodes");
-        string outputReport = Path.Combine(Environment.CurrentDirectory, "SwissPostParcelReport.xlsx");
+        // Input folder (mixed formats) and output Excel file
+        string inputFolder = "BarcodesInput";
+        string outputExcel = "SwissPostReport.xlsx";
 
-        // Ensure input folder exists
+        // Ensure input folder exists; create a sample image if it does not
         if (!Directory.Exists(inputFolder))
         {
+            Console.WriteLine($"Input folder \"{inputFolder}\" does not exist. Creating sample folder.");
             Directory.CreateDirectory(inputFolder);
+            // Create a placeholder image so the demo runs without external files
+            using (var generator = new BarcodeGenerator(EncodeTypes.SwissPostParcel, "123456789012"))
+            {
+                generator.Save(Path.Combine(inputFolder, "sample.png"));
+            }
         }
 
-        // Seed a few sample Swiss Post Parcel barcodes if folder is empty
-        SeedSampleBarcodes(inputFolder);
+        var records = new List<DecodeRecord>();
 
-        // Collect decoding results
-        var results = new List<DecodeResult>();
-
-        // Get all files in the folder (common image and PDF extensions)
-        string[] files = Directory.GetFiles(inputFolder);
-        foreach (string filePath in files)
+        // Process each file in the folder
+        foreach (var filePath in Directory.GetFiles(inputFolder))
         {
-            if (!File.Exists(filePath))
-                continue; // Skip missing files
-
-            // Use BarCodeReader to decode Swiss Post Parcel barcodes
-            using (var reader = new BarCodeReader(filePath, DecodeType.SwissPostParcel))
+            string ext = Path.GetExtension(filePath).ToLowerInvariant();
+            if (ext == ".pdf")
             {
-                // Optional: enable checksum validation for postal barcodes
-                reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
+                // PDF files may contain multiple pages; each page is processed separately
+                ProcessPdfFile(filePath, records);
+            }
+            else if (ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".bmp" || ext == ".tif" || ext == ".tiff")
+            {
+                // Image files are processed directly; page number is 0
+                ProcessImageFile(filePath, 0, records);
+            }
+            else
+            {
+                // Unsupported file types are ignored with a console message
+                Console.WriteLine($"Skipping unsupported file: {Path.GetFileName(filePath)}");
+            }
+        }
 
-                // Read all barcodes in the image/PDF
-                foreach (var result in reader.ReadBarCodes())
+        // Generate Excel report from collected barcode data
+        GenerateExcelReport(records, outputExcel);
+        Console.WriteLine($"Report generated: {outputExcel}");
+    }
+
+    static void ProcessPdfFile(string pdfPath, List<DecodeRecord> records)
+    {
+        if (!File.Exists(pdfPath))
+        {
+            Console.WriteLine($"PDF file not found: {pdfPath}");
+            return;
+        }
+
+        // Load PDF document using Aspose.Pdf
+        using (var pdfDocument = new Document(pdfPath))
+        {
+            var pdfConverter = new PdfConverter(pdfDocument);
+            pdfConverter.RenderingOptions.BarcodeOptimization = true;
+
+            // Iterate through each page, converting it to an image stream for barcode reading
+            for (int page = 1; page <= pdfDocument.Pages.Count; page++)
+            {
+                pdfConverter.StartPage = page;
+                pdfConverter.EndPage = page;
+                pdfConverter.DoConvert();
+
+                using (var ms = new MemoryStream())
                 {
-                    results.Add(new DecodeResult
-                    {
-                        FileName = Path.GetFileName(filePath),
-                        BarcodeType = result.CodeTypeName,
-                        CodeText = result.CodeText,
-                        Confidence = result.Confidence.ToString()
-                    });
+                    pdfConverter.GetNextImage(ms);
+                    ms.Position = 0;
+                    ProcessImageStream(ms, Path.GetFileName(pdfPath), page, records);
                 }
             }
         }
-
-        // Generate Excel report using Aspose.Cells
-        var workbook = new Workbook();
-        var sheet = workbook.Worksheets[0];
-        // Header row
-        sheet.Cells[0, 0].PutValue("File Name");
-        sheet.Cells[0, 1].PutValue("Barcode Type");
-        sheet.Cells[0, 2].PutValue("Code Text");
-        sheet.Cells[0, 3].PutValue("Confidence");
-
-        // Data rows
-        for (int i = 0; i < results.Count; i++)
-        {
-            var r = results[i];
-            int row = i + 1;
-            sheet.Cells[row, 0].PutValue(r.FileName);
-            sheet.Cells[row, 1].PutValue(r.BarcodeType);
-            sheet.Cells[row, 2].PutValue(r.CodeText);
-            sheet.Cells[row, 3].PutValue(r.Confidence);
-        }
-
-        // Save the Excel file
-        workbook.Save(outputReport);
-        Console.WriteLine($"Report generated: {outputReport}");
     }
 
-    // Helper method to create a few sample barcode images
-    private static void SeedSampleBarcodes(string folder)
+    static void ProcessImageFile(string imagePath, int pageNumber, List<DecodeRecord> records)
     {
-        // If there are already files, do not overwrite
-        if (Directory.GetFiles(folder).Length > 0)
-            return;
-
-        // Sample code texts (these are arbitrary valid examples)
-        string[] sampleTexts = { "123456789012", "987654321098", "555555555555", "111111111111", "222222222222" };
-        for (int i = 0; i < sampleTexts.Length; i++)
+        if (!File.Exists(imagePath))
         {
-            string fileName = Path.Combine(folder, $"Sample_{i + 1}.png");
-            using (var generator = new BarcodeGenerator(EncodeTypes.SwissPostParcel, sampleTexts[i]))
+            Console.WriteLine($"Image file not found: {imagePath}");
+            return;
+        }
+
+        // Open image file as a stream and delegate to the common image processing method
+        using (var stream = new FileStream(imagePath, FileMode.Open, FileAccess.Read))
+        {
+            ProcessImageStream(stream, Path.GetFileName(imagePath), pageNumber, records);
+        }
+    }
+
+    static void ProcessImageStream(Stream imageStream, string fileName, int pageNumber, List<DecodeRecord> records)
+    {
+        // Initialize barcode reader for Swiss Post parcel barcodes
+        using (var reader = new BarCodeReader(imageStream, DecodeType.SwissPostParcel))
+        {
+            // Use a balanced quality preset
+            reader.QualitySettings = QualitySettings.NormalQuality;
+
+            // Iterate over all detected barcodes in the image/stream
+            foreach (var result in reader.ReadBarCodes())
             {
-                // Ensure a reasonable image size
-                generator.Parameters.ImageWidth.Point = 300f;
-                generator.Parameters.ImageHeight.Point = 150f;
-                generator.Save(fileName);
+                var rec = new DecodeRecord
+                {
+                    FileName = fileName,
+                    PageNumber = pageNumber,
+                    BarcodeType = result.CodeTypeName,
+                    CodeText = result.CodeText,
+                    ReadingQuality = result.ReadingQuality,
+                    Confidence = (int)result.Confidence
+                };
+                records.Add(rec);
             }
         }
     }
 
-    // Simple DTO to hold decoding information
-    private class DecodeResult
+    static void GenerateExcelReport(List<DecodeRecord> records, string outputPath)
     {
-        public string FileName { get; set; }
-        public string BarcodeType { get; set; }
-        public string CodeText { get; set; }
-        public string Confidence { get; set; }
+        var workbook = new Workbook();
+        var sheet = workbook.Worksheets[0];
+        sheet.Name = "Swiss Post Parcel";
+
+        // Header row
+        sheet.Cells[0, 0].PutValue("File Name");
+        sheet.Cells[0, 1].PutValue("Page #");
+        sheet.Cells[0, 2].PutValue("Barcode Type");
+        sheet.Cells[0, 3].PutValue("Code Text");
+        sheet.Cells[0, 4].PutValue("Reading Quality");
+        sheet.Cells[0, 5].PutValue("Confidence");
+
+        // Populate rows with barcode data
+        int row = 1;
+        foreach (var rec in records)
+        {
+            sheet.Cells[row, 0].PutValue(rec.FileName);
+            sheet.Cells[row, 1].PutValue(rec.PageNumber);
+            sheet.Cells[row, 2].PutValue(rec.BarcodeType);
+            sheet.Cells[row, 3].PutValue(rec.CodeText);
+            sheet.Cells[row, 4].PutValue(rec.ReadingQuality);
+            sheet.Cells[row, 5].PutValue(rec.Confidence);
+            row++;
+        }
+
+        // Auto‑fit columns for readability
+        sheet.AutoFitColumns();
+
+        // Save the workbook to the specified path
+        workbook.Save(outputPath);
     }
 }

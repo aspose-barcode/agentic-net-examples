@@ -1,78 +1,86 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 using Aspose.Pdf;
 
+/// <summary>
+/// Demonstrates generating Swiss Post Parcel barcodes and embedding them into a multi‑page PDF.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point. Generates barcodes for sample code texts, creates a PDF with each barcode on its own page, and saves the document.
+    /// </summary>
     static void Main()
     {
-        List<string> codeTexts = new List<string>
+        // Sample Swiss Post Parcel domestic codetexts (up to 4 for evaluation mode)
+        var codeTexts = new List<string>
         {
             "1234567890",
-            "0987654321",
-            "1122334455",
-            "5566778899"
+            "2345678901",
+            "3456789012",
+            "4567890123"
         };
 
-        List<MemoryStream> imageStreams = new List<MemoryStream>();
+        // Store generated barcode images in memory streams for later PDF insertion
+        var imageStreams = new List<MemoryStream>();
 
-        using (Document pdfDoc = new Document())
+        // Generate a barcode image for each codetext
+        foreach (var text in codeTexts)
         {
-            foreach (string code in codeTexts)
+            // Create a new memory stream to hold the PNG image
+            var ms = new MemoryStream();
+
+            // Use Aspose.BarCode to generate the barcode and write it to the stream
+            using (var generator = new BarcodeGenerator(EncodeTypes.SwissPostParcel, text))
             {
-                using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.SwissPostParcel, code))
-                {
-                    generator.Parameters.ImageWidth.Point = 300f;
-                    generator.Parameters.ImageHeight.Point = 150f;
-                    generator.Parameters.Resolution = 300f;
-
-                    using (MemoryStream ms = new MemoryStream())
-                    {
-                        generator.Save(ms, BarCodeImageFormat.Png);
-                        ms.Position = 0;
-
-                        using (Bitmap bitmap = new Bitmap(ms))
-                        {
-                            using (MemoryStream imgStream = new MemoryStream())
-                            {
-                                bitmap.Save(imgStream, ImageFormat.Png);
-                                imgStream.Position = 0;
-
-                                // Keep the stream alive for PDF saving
-                                MemoryStream pdfImgStream = new MemoryStream(imgStream.ToArray());
-                                imageStreams.Add(pdfImgStream);
-
-                                Page page = pdfDoc.Pages.Add();
-
-                                Aspose.Pdf.Image pdfImage = new Aspose.Pdf.Image
-                                {
-                                    ImageStream = pdfImgStream
-                                };
-
-                                pdfImage.FixWidth = page.PageInfo.Width;
-                                pdfImage.FixHeight = page.PageInfo.Height;
-
-                                page.Paragraphs.Add(pdfImage);
-                            }
-                        }
-                    }
-                }
+                // Save the barcode as PNG into the memory stream
+                generator.Save(ms, BarCodeImageFormat.Png);
+                // Reset stream position so it can be read from the beginning later
+                ms.Position = 0;
             }
 
-            string outputPdfPath = Path.Combine(Directory.GetCurrentDirectory(), "SwissPostParcelBarcodes.pdf");
-            pdfDoc.Save(outputPdfPath);
+            // Keep the stream for later use when building the PDF
+            imageStreams.Add(ms);
         }
 
-        // Dispose image streams after PDF is saved
-        foreach (MemoryStream stream in imageStreams)
+        // Create a new PDF document
+        var pdfDoc = new Document();
+
+        // Add each barcode image to a separate page in the PDF
+        foreach (var stream in imageStreams)
+        {
+            // Add a new page to the document
+            var page = pdfDoc.Pages.Add();
+
+            // Create an Aspose.Pdf.Image object that reads from the memory stream
+            var pdfImage = new Aspose.Pdf.Image
+            {
+                ImageStream = stream,
+                // Set fixed dimensions for the barcode image (adjust as needed)
+                FixWidth = 200.0,
+                FixHeight = 100.0
+            };
+
+            // Add the image to the page's paragraph collection
+            page.Paragraphs.Add(pdfImage);
+        }
+
+        // Define the output PDF file path
+        const string pdfPath = "SwissPostParcelBarcodes.pdf";
+
+        // Save the multi‑page PDF to disk
+        pdfDoc.Save(pdfPath);
+
+        // Dispose of all memory streams now that the PDF has been saved
+        foreach (var stream in imageStreams)
         {
             stream.Dispose();
         }
 
-        Console.WriteLine($"PDF saved to: {Path.Combine(Directory.GetCurrentDirectory(), "SwissPostParcelBarcodes.pdf")}");
+        // Inform the user that the operation completed successfully
+        Console.WriteLine($"PDF with {codeTexts.Count} Swiss Post Parcel barcodes saved to '{pdfPath}'.");
     }
 }

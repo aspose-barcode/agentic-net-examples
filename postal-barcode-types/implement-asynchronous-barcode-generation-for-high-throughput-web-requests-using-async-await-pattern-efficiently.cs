@@ -1,63 +1,90 @@
 using System;
 using System.IO;
 using System.Threading.Tasks;
-using System.Collections.Generic;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates asynchronous generation of Code128 bar‑code images using Aspose.BarCode.
+/// </summary>
 class Program
 {
-    static async Task Main(string[] args)
+    /// <summary>
+    /// Asynchronously generates a barcode image and saves it to the specified path.
+    /// </summary>
+    /// <param name="codeText">The text to encode in the barcode.</param>
+    /// <param name="outputPath">The full file path where the PNG image will be saved.</param>
+    /// <returns>The same <paramref name="outputPath"/> after the image has been saved.</returns>
+    private static async Task<string> GenerateBarcodeAsync(string codeText, string outputPath)
     {
-        // Sample payloads simulating incoming web requests
-        var requests = new List<(string CodeText, BaseEncodeType Type)>
+        // Barcode generation is CPU‑bound; offload it to a thread‑pool thread.
+        return await Task.Run(() =>
         {
-            ("1234567890", EncodeTypes.Code128),
-            ("9876543210", EncodeTypes.EAN13),
-            ("HELLO", EncodeTypes.QR),
-            ("A1B2C3D4", EncodeTypes.DataMatrix),
-            ("CODE-XYZ", EncodeTypes.Code39)
-        };
-
-        var tasks = new List<Task<(int Index, byte[] ImageData)>>();
-
-        for (int i = 0; i < requests.Count; i++)
-        {
-            int index = i; // capture loop variable
-            var (codeText, type) = requests[i];
-            tasks.Add(Task.Run(async () =>
+            // Ensure the target directory exists before saving.
+            string directory = Path.GetDirectoryName(outputPath);
+            if (!Directory.Exists(directory))
             {
-                var imageData = await GenerateBarcodeAsync(codeText, type);
-                return (Index: index, ImageData: imageData);
-            }));
-        }
+                Directory.CreateDirectory(directory);
+            }
 
-        var results = await Task.WhenAll(tasks);
+            // Create a generator for Code128 and configure its parameters.
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+            {
+                // Enable checksum for Code128 (required for data integrity).
+                generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
 
-        foreach (var result in results)
-        {
-            string fileName = $"barcode_{result.Index}.png";
-            await File.WriteAllBytesAsync(fileName, result.ImageData);
-            Console.WriteLine($"Saved {fileName}");
-        }
+                // Set image resolution (optional, 300 DPI provides good quality).
+                generator.Parameters.Resolution = 300f;
+
+                // Save the generated barcode as a PNG file.
+                generator.Save(outputPath);
+            }
+
+            // Return the path so callers can know where the file was written.
+            return outputPath;
+        });
     }
 
-    private static Task<byte[]> GenerateBarcodeAsync(string codeText, BaseEncodeType type)
+    /// <summary>
+    /// Application entry point. Generates a set of barcode images asynchronously and reports their locations.
+    /// </summary>
+    /// <param name="args">Command‑line arguments (not used).</param>
+    static async Task Main(string[] args)
     {
-        return Task.Run(() =>
+        // Sample barcode texts; in a real scenario these could be supplied by a user or service.
+        string[] sampleTexts = new[]
         {
-            using (var generator = new BarcodeGenerator(type, codeText))
-            {
-                // Example of setting a generation parameter
-                generator.Parameters.Resolution = 300; // DPI
+            "ABC123",
+            "DEF456",
+            "GHI789",
+            "JKL012",
+            "MNO345"
+        };
 
-                using (var memoryStream = new MemoryStream())
-                {
-                    generator.Save(memoryStream, BarCodeImageFormat.Png);
-                    return memoryStream.ToArray();
-                }
-            }
-        });
+        // Prepare an array to hold the asynchronous generation tasks.
+        Task<string>[] generationTasks = new Task<string>[sampleTexts.Length];
+
+        // Create a generation task for each sample text.
+        for (int i = 0; i < sampleTexts.Length; i++)
+        {
+            // Build a unique file name for each barcode.
+            string fileName = $"barcode_{i + 1}.png";
+
+            // Combine the directory and file name to get the full output path.
+            string outputPath = Path.Combine("Barcodes", fileName);
+
+            // Start the asynchronous generation and store the task.
+            generationTasks[i] = GenerateBarcodeAsync(sampleTexts[i], outputPath);
+        }
+
+        // Wait for all barcode generation tasks to complete.
+        string[] generatedFiles = await Task.WhenAll(generationTasks);
+
+        // Report the results to the console.
+        Console.WriteLine("Barcode generation completed. Files created:");
+        foreach (var file in generatedFiles)
+        {
+            Console.WriteLine(Path.GetFullPath(file));
+        }
     }
 }

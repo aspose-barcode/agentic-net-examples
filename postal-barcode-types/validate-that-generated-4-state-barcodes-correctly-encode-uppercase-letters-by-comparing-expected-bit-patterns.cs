@@ -3,64 +3,62 @@ using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing.Imaging;
+using Aspose.Drawing;
 
+/// <summary>
+/// Demonstrates generation and recognition of RM4SCC barcodes for uppercase letters A‑Z using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point. Generates a barcode for each letter, saves it to a memory stream, and verifies recognition.
+    /// </summary>
     static void Main()
     {
-        // Use Code39 which encodes uppercase letters A‑Z.
-        const string symbology = "Code39";
-        bool allPassed = true;
-
+        // Loop through uppercase alphabet characters
         for (char ch = 'A'; ch <= 'Z'; ch++)
         {
-            string text = ch.ToString();
+            // Convert character to string for barcode text
+            string codeText = ch.ToString();
 
-            // Generate barcode image in memory.
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code39, text))
+            // Create a barcode generator for RM4SCC type with the current character
+            using (var generator = new BarcodeGenerator(EncodeTypes.RM4SCC, codeText))
             {
-                // Optional: set size parameters.
-                generator.Parameters.AutoSizeMode = AutoSizeMode.None;
-                generator.Parameters.Barcode.BarHeight.Point = 50f;
-                generator.Parameters.Barcode.XDimension.Point = 1f;
-
+                // Save generated barcode to a memory stream in PNG format
                 using (var ms = new MemoryStream())
                 {
-                    // Save to stream as PNG.
                     generator.Save(ms, BarCodeImageFormat.Png);
+                    // Reset stream position to beginning for reading
                     ms.Position = 0;
 
-                    // Recognize barcode from the generated image.
-                    using (var reader = new BarCodeReader(ms, DecodeType.Code39))
+                    // Initialize a barcode reader for RM4SCC decoding
+                    using (var reader = new BarCodeReader(ms, DecodeType.RM4SCC))
                     {
-                        // Disable checksum validation for simplicity.
-                        reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.Off;
-
+                        // Read all barcodes found in the image
                         var results = reader.ReadBarCodes();
+
+                        // If no barcode was detected, report and continue to next character
                         if (results.Length == 0)
                         {
-                            Console.WriteLine($"[FAIL] No barcode detected for '{text}'.");
-                            allPassed = false;
+                            Console.WriteLine($"[{codeText}] No barcode detected.");
                             continue;
                         }
 
+                        // Take the first detection result
                         var result = results[0];
-                        if (result.CodeText == text)
+
+                        // Compare the recognized text with the original input
+                        if (result.CodeText == codeText)
                         {
-                            Console.WriteLine($"[PASS] '{text}' encoded and decoded correctly.");
+                            Console.WriteLine($"[{codeText}] Success: recognized correctly.");
                         }
                         else
                         {
-                            Console.WriteLine($"[FAIL] Expected '{text}', got '{result.CodeText}'.");
-                            allPassed = false;
+                            Console.WriteLine($"[{codeText}] Failure: expected '{codeText}', got '{result.CodeText}'.");
                         }
                     }
                 }
             }
         }
-
-        Console.WriteLine(allPassed ? "All uppercase letters validated successfully."
-                                    : "Some validations failed.");
     }
 }

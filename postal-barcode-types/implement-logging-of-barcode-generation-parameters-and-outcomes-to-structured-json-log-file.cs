@@ -4,87 +4,97 @@ using System.Text.Json;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
-namespace BarcodeLoggingDemo
+namespace BarcodeLoggingExample
 {
+    /// <summary>
+    /// Represents a single log entry for barcode generation.
+    /// </summary>
+    public class LogEntry
+    {
+        public DateTime Timestamp { get; set; }
+        public string Symbology { get; set; }
+        public string CodeText { get; set; }
+        public string OutputPath { get; set; }
+        public bool Success { get; set; }
+        public string ErrorMessage { get; set; }
+
+        // Example of a few generation parameters.
+        public float? XDimension { get; set; }
+        public float? BarHeight { get; set; }
+        public float? ImageWidth { get; set; }
+        public float? ImageHeight { get; set; }
+    }
+
     class Program
     {
+        /// <summary>
+        /// Entry point of the application. Generates a barcode, saves it, and logs the operation.
+        /// </summary>
         static void Main()
         {
-            // Define output paths
-            string imagePath = "barcode.png";
-            string logPath = "barcode_log.json";
+            // Sample barcode data.
+            string codeText = "123ABC";
+            BaseEncodeType symbology = EncodeTypes.Code128;
+            string outputFile = "barcode.png";
+            string logFile = "barcode_log.json";
 
-            // Prepare a log entry object
-            var logEntry = new
+            // Prepare a log entry with initial data.
+            var entry = new LogEntry
             {
                 Timestamp = DateTime.UtcNow,
-                Success = false,
-                Message = string.Empty,
-                Parameters = new
-                {
-                    Symbology = "Code128",
-                    CodeText = "123ABC",
-                    XDimension = 2f,
-                    BarHeight = 50f,
-                    ImageWidth = 300f,
-                    ImageHeight = 150f,
-                    Resolution = 300,
-                    BarColor = "Blue",
-                    BackColor = "White"
-                },
-                OutputImage = imagePath
+                Symbology = symbology.GetType().Name + "." + symbology.ToString(),
+                CodeText = codeText,
+                OutputPath = Path.GetFullPath(outputFile)
             };
 
             try
             {
-                // Create and configure the barcode generator
-                using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123ABC"))
+                // Generate and save the barcode.
+                using (var generator = new BarcodeGenerator(symbology, codeText))
                 {
-                    // Set unit‑based properties using the appropriate members
+                    // Set a few generation parameters.
+                    generator.Parameters.AutoSizeMode = AutoSizeMode.None;
                     generator.Parameters.Barcode.XDimension.Point = 2f;
-                    generator.Parameters.Barcode.BarHeight.Point = 50f;
+                    generator.Parameters.Barcode.BarHeight.Point = 40f;
                     generator.Parameters.ImageWidth.Point = 300f;
                     generator.Parameters.ImageHeight.Point = 150f;
-                    generator.Parameters.Resolution = 300;
-                    generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Blue;
-                    generator.Parameters.BackColor = Aspose.Drawing.Color.White;
 
-                    // Generate the barcode image and save it
-                    using (Bitmap bitmap = generator.GenerateBarCodeImage())
-                    {
-                        bitmap.Save(imagePath, ImageFormat.Png);
-                    }
+                    // Capture parameter values for logging.
+                    entry.XDimension = generator.Parameters.Barcode.XDimension.Point;
+                    entry.BarHeight = generator.Parameters.Barcode.BarHeight.Point;
+                    entry.ImageWidth = generator.Parameters.ImageWidth.Point;
+                    entry.ImageHeight = generator.Parameters.ImageHeight.Point;
+
+                    // Save the generated barcode image to file.
+                    generator.Save(outputFile);
                 }
 
-                // If we reach this point, generation succeeded
-                var successLog = new
-                {
-                    Timestamp = DateTime.UtcNow,
-                    Success = true,
-                    Message = "Barcode generated and saved successfully.",
-                    Parameters = logEntry.Parameters,
-                    OutputImage = imagePath
-                };
-
-                string jsonSuccess = JsonSerializer.Serialize(successLog, new JsonSerializerOptions { WriteIndented = true });
-                File.WriteAllText(logPath, jsonSuccess);
+                // Mark the operation as successful.
+                entry.Success = true;
+                entry.ErrorMessage = null;
             }
             catch (Exception ex)
             {
-                // On error, write failure details to the log
-                var errorLog = new
-                {
-                    Timestamp = DateTime.UtcNow,
-                    Success = false,
-                    Message = ex.Message,
-                    Parameters = logEntry.Parameters,
-                    OutputImage = imagePath
-                };
+                // Record failure details.
+                entry.Success = false;
+                entry.ErrorMessage = ex.Message;
+            }
 
-                string jsonError = JsonSerializer.Serialize(errorLog, new JsonSerializerOptions { WriteIndented = true });
-                File.WriteAllText(logPath, jsonError);
+            // Append the log entry as a JSON line to the log file.
+            try
+            {
+                string json = JsonSerializer.Serialize(entry);
+                using (var stream = new FileStream(logFile, FileMode.Append, FileAccess.Write, FileShare.Read))
+                using (var writer = new StreamWriter(stream))
+                {
+                    writer.WriteLine(json);
+                }
+            }
+            catch
+            {
+                // If logging fails, write to console but do not crash the program.
+                Console.WriteLine("Failed to write log entry.");
             }
         }
     }

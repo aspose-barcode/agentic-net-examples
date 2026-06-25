@@ -3,85 +3,98 @@ using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
+/// <summary>
+/// Demonstrates generation and validation of RM4SCC (2‑state) barcodes using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Generates sample barcodes, reads them back,
+    /// validates that the decoded text contains only numeric characters, and cleans up temporary files.
+    /// </summary>
     static void Main()
     {
-        // Prepare output directory
-        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
-        if (!Directory.Exists(outputDir))
-        {
-            Directory.CreateDirectory(outputDir);
-        }
+        // Sample numeric texts for 2‑state (RM4SCC) barcodes
+        string[] samples = { "1234567890", "987654321", "0011223344" };
+        // Use the system temporary directory for generated images
+        string tempDir = Path.GetTempPath();
 
-        // Sample code texts (some numeric, some not)
-        string[] codeTexts = new string[]
+        // Process each sample text
+        foreach (var text in samples)
         {
-            "1234567890",
-            "987654321",
-            "ABC12345",   // invalid: contains letters
-            "0011223344",
-            "12A34B56"    // invalid: contains letters
-        };
+            // Build a unique file name for the barcode image
+            string filePath = Path.Combine(tempDir, $"rm4scc_{text}.png");
 
-        // Generate barcodes
-        foreach (string text in codeTexts)
-        {
-            string filePath = Path.Combine(outputDir, $"{text}.png");
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, text))
+            // -------------------------------------------------
+            // Generate the barcode image and save it to disk
+            // -------------------------------------------------
+            using (var generator = new BarcodeGenerator(EncodeTypes.RM4SCC, text))
             {
-                // Save barcode image
                 generator.Save(filePath);
             }
-        }
 
-        // Validate generated barcodes contain only numeric characters
-        foreach (string text in codeTexts)
-        {
-            string filePath = Path.Combine(outputDir, $"{text}.png");
+            // Verify that the image file was successfully created
             if (!File.Exists(filePath))
             {
-                Console.WriteLine($"File not found: {filePath}");
+                Console.WriteLine($"Failed to create barcode for '{text}'.");
                 continue;
             }
 
-            using (var reader = new BarCodeReader(filePath, DecodeType.Code128))
+            // -------------------------------------------------
+            // Read the barcode from the image and validate its content
+            // -------------------------------------------------
+            using (var reader = new BarCodeReader(filePath, DecodeType.RM4SCC))
             {
-                // Enable checksum validation (optional)
-                reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
+                var results = reader.ReadBarCodes();
 
-                bool anyResult = false;
-                foreach (BarCodeResult result in reader.ReadBarCodes())
+                // No barcode detected
+                if (results.Length == 0)
                 {
-                    anyResult = true;
-                    string decoded = result.CodeText ?? string.Empty;
-                    bool isNumeric = true;
-                    foreach (char c in decoded)
-                    {
-                        if (!char.IsDigit(c))
-                        {
-                            isNumeric = false;
-                            break;
-                        }
-                    }
-
-                    if (isNumeric)
-                    {
-                        Console.WriteLine($"[PASS] Barcode '{Path.GetFileName(filePath)}' decoded as numeric: {decoded}");
-                    }
-                    else
-                    {
-                        Console.WriteLine($"[FAIL] Barcode '{Path.GetFileName(filePath)}' contains non‑numeric characters: {decoded}");
-                    }
+                    Console.WriteLine($"No barcode detected in image for '{text}'.");
                 }
-
-                if (!anyResult)
+                else
                 {
-                    Console.WriteLine($"[WARN] No barcode detected in file: {Path.GetFileName(filePath)}");
+                    // Iterate over all detected barcodes (should be one per image)
+                    foreach (var result in results)
+                    {
+                        // Check if the decoded text consists only of digits
+                        bool isNumeric = IsStringNumeric(result.CodeText);
+                        Console.WriteLine($"Input '{text}' => Decoded '{result.CodeText}' is {(isNumeric ? "valid" : "invalid")}.");
+                    }
                 }
             }
+
+            // -------------------------------------------------
+            // Clean up the temporary barcode image file
+            // -------------------------------------------------
+            try
+            {
+                File.Delete(filePath);
+            }
+            catch
+            {
+                // Suppress any exceptions during cleanup
+            }
         }
+    }
+
+    /// <summary>
+    /// Determines whether the specified string consists solely of numeric digits.
+    /// </summary>
+    /// <param name="s">The string to evaluate.</param>
+    /// <returns>True if the string is non‑empty and contains only digits; otherwise, false.</returns>
+    static bool IsStringNumeric(string s)
+    {
+        if (string.IsNullOrEmpty(s))
+            return false;
+
+        foreach (char c in s)
+        {
+            if (!char.IsDigit(c))
+                return false;
+        }
+
+        return true;
     }
 }

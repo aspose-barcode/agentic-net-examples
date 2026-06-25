@@ -3,66 +3,70 @@ using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates generation and recognition of a Swiss Post Parcel barcode,
+/// including automatic checksum correction.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a barcode from an incorrect code, lets the library auto‑correct it,
+    /// then reads the barcode back and verifies the correction.
+    /// </summary>
     static void Main()
     {
-        // Prepare a temporary file path
-        string tempFile = Path.Combine(Path.GetTempPath(), "SwissPostParcel.png");
+        // Sample incorrect code text for Swiss Post Parcel (checksum will be auto‑corrected)
+        string incorrectCode = "1234567890123456789012"; // length may not match spec; generator will adjust
 
-        // Incorrect code text (missing checksum) for Swiss Post Parcel International barcode
-        string incorrectCode = "1234567890";
-
-        // Generate the barcode with auto‑correction enabled
-        using (var generator = new BarcodeGenerator(EncodeTypes.SwissPostParcel, incorrectCode))
+        // Create barcode generator for Swiss Post Parcel symbology
+        BaseEncodeType symbology = EncodeTypes.SwissPostParcel;
+        using (var generator = new BarcodeGenerator(symbology, incorrectCode))
         {
-            // Do not throw on incorrect code text – let the generator correct it
+            // Disable exception on incorrect code to allow auto‑correction
             generator.Parameters.Barcode.ThrowExceptionWhenCodeTextIncorrect = false;
-            // Ensure checksum generation is enabled
-            generator.Parameters.Barcode.IsChecksumEnabled = Aspose.BarCode.Generation.EnableChecksum.Yes;
 
-            // Save the barcode image
-            generator.Save(tempFile);
-        }
-
-        // Verify that the checksum was auto‑corrected by reading the barcode back
-        using (var reader = new BarCodeReader(tempFile, DecodeType.SwissPostParcel))
-        {
-            // Enable checksum validation during recognition
-            reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
-
-            bool checksumFound = false;
-            foreach (BarCodeResult result in reader.ReadBarCodes())
+            // Save generated barcode image to a memory stream in PNG format
+            using (var ms = new MemoryStream())
             {
-                // For 1D barcodes the checksum is available in Extended.OneD.CheckSum
-                string checksum = result.Extended.OneD.CheckSum;
-                if (!string.IsNullOrEmpty(checksum))
+                generator.Save(ms, BarCodeImageFormat.Png);
+                ms.Position = 0; // Reset stream position for reading
+
+                // Retrieve the corrected code text after generation
+                string correctedCode = generator.CodeText;
+                Console.WriteLine($"Corrected CodeText after generation: {correctedCode}");
+
+                // Initialize barcode reader for Swiss Post Parcel from the memory stream
+                using (var reader = new BarCodeReader(ms, DecodeType.SwissPostParcel))
                 {
-                    checksumFound = true;
-                    Console.WriteLine($"Detected checksum: {checksum}");
-                }
-                else
-                {
-                    Console.WriteLine("Checksum not detected.");
+                    // Enable checksum validation during recognition
+                    reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
+
+                    // Read all barcodes found in the image
+                    var results = reader.ReadBarCodes();
+                    if (results.Length == 0)
+                    {
+                        Console.WriteLine("No barcode detected.");
+                        return;
+                    }
+
+                    // Use the first detected barcode result
+                    var result = results[0];
+                    Console.WriteLine($"Recognized CodeText: {result.CodeText}");
+
+                    // Compare recognized code with the corrected code to verify auto‑correction
+                    if (string.Equals(correctedCode, result.CodeText, StringComparison.Ordinal))
+                    {
+                        Console.WriteLine("Checksum auto‑correction verified successfully.");
+                    }
+                    else
+                    {
+                        Console.WriteLine("Checksum auto‑correction verification failed.");
+                    }
                 }
             }
-
-            if (checksumFound)
-                Console.WriteLine("Test passed: checksum auto‑correction works.");
-            else
-                Console.WriteLine("Test failed: checksum was not auto‑corrected.");
-        }
-
-        // Clean up the temporary file
-        try
-        {
-            if (File.Exists(tempFile))
-                File.Delete(tempFile);
-        }
-        catch
-        {
-            // Ignore any cleanup errors
         }
     }
 }

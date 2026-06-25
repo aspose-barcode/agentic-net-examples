@@ -1,56 +1,64 @@
 using System;
 using System.IO;
-using Aspose.BarCode;
-using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Pdf;
-using Aspose.Pdf.Devices;
+using Aspose.Pdf.Facades;
+using Aspose.BarCode.BarCodeRecognition;
+using Aspose.BarCode;
 
+/// <summary>
+/// Demonstrates how to extract RM4SCC barcodes from each page of a PDF using Aspose.Pdf and Aspose.BarCode.
+/// </summary>
 class Program
 {
-    static void Main()
+    /// <summary>
+    /// Entry point of the application.
+    /// Accepts an optional command‑line argument specifying the PDF file path.
+    /// </summary>
+    /// <param name="args">Command‑line arguments.</param>
+    static void Main(string[] args)
     {
-        // Path to the PDF file containing the RM4SCC barcode.
-        const string pdfPath = "sample.pdf";
+        // Determine the PDF file path: use the first argument if supplied, otherwise default to "sample.pdf".
+        string pdfPath = args.Length > 0 ? args[0] : "sample.pdf";
 
-        // Verify that the PDF file exists.
+        // Verify that the specified PDF file exists before proceeding.
         if (!File.Exists(pdfPath))
         {
-            Console.WriteLine($"File not found: {pdfPath}");
+            Console.WriteLine($"PDF file not found: {pdfPath}");
             return;
         }
 
-        // Load the PDF document.
+        // Open the PDF document within a using block to ensure proper disposal.
         using (var pdfDocument = new Document(pdfPath))
         {
-            // Ensure the document has at least one page.
-            if (pdfDocument.Pages.Count == 0)
-            {
-                Console.WriteLine("The PDF does not contain any pages.");
-                return;
-            }
+            // Create a PdfConverter to render PDF pages as images.
+            var pdfConverter = new PdfConverter(pdfDocument);
+            // Enable barcode optimization to improve barcode detection performance.
+            pdfConverter.RenderingOptions.BarcodeOptimization = true;
 
-            // Convert the first page to a PNG image stored in a memory stream.
-            var resolution = new Resolution(300);
-            var pngDevice = new PngDevice(resolution);
-            using (var imageStream = new MemoryStream())
+            // Loop through each page in the PDF.
+            for (int pageNumber = 1; pageNumber <= pdfDocument.Pages.Count; pageNumber++)
             {
-                pngDevice.Process(pdfDocument.Pages[1], imageStream);
-                imageStream.Position = 0; // Reset stream position for reading.
+                // Configure the converter to process only the current page.
+                pdfConverter.StartPage = pageNumber;
+                pdfConverter.EndPage = pageNumber;
+                pdfConverter.DoConvert();
 
-                // Initialize the barcode reader for RM4SCC decoding.
-                using (var reader = new BarCodeReader(imageStream, DecodeType.RM4SCC))
+                // Store the rendered page image in a memory stream.
+                using (var imageStream = new MemoryStream())
                 {
-                    var results = reader.ReadBarCodes();
+                    pdfConverter.GetNextImage(imageStream);
+                    // Reset stream position to the beginning for reading.
+                    imageStream.Position = 0;
 
-                    if (results.Length == 0)
+                    // Initialize a barcode reader for RM4SCC barcodes using the image stream.
+                    using (var reader = new BarCodeReader(imageStream, DecodeType.RM4SCC))
                     {
-                        Console.WriteLine("No RM4SCC barcode detected on the page.");
-                    }
-                    else
-                    {
+                        // Read all barcodes found on the page.
+                        var results = reader.ReadBarCodes();
+                        // Output each barcode's type and decoded text.
                         foreach (var result in results)
                         {
-                            Console.WriteLine($"Decoded RM4SCC data: {result.CodeText}");
+                            Console.WriteLine($"Page {pageNumber}: Type = {result.CodeTypeName}, Text = {result.CodeText}");
                         }
                     }
                 }

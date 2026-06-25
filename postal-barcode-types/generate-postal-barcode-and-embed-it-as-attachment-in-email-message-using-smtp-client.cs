@@ -1,56 +1,72 @@
 using System;
 using System.IO;
-using System.Net;
 using System.Net.Mail;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode.ComplexBarcode;
+using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates generating a Royal Mail Mailmark barcode, attaching it to an email,
+/// and sending the email via SMTP.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Generates a Mailmark barcode, creates an email
+    /// with the barcode image attached, and sends it using an SMTP client.
+    /// </summary>
     static void Main()
     {
-        // Generate a postal barcode (Postnet) and save it to a memory stream
-        using (var barcodeStream = new MemoryStream())
+        // Create Mailmark data (4‑state Royal Mail barcode)
+        var mailmark = new MailmarkCodetext
         {
-            using (var generator = new BarcodeGenerator(EncodeTypes.Postnet, "12345"))
+            // Format = 4 (4‑state), VersionID = 1, Class as string, SupplychainID, ItemID, DestinationPostCodePlusDPS
+            Format = 4,
+            VersionID = 1,
+            Class = "0",
+            SupplychainID = 384224,
+            ItemID = 16563762,
+            DestinationPostCodePlusDPS = "EF61AH8T "
+        };
+
+        // Generate the barcode image using ComplexBarcodeGenerator
+        var complexGenerator = new ComplexBarcodeGenerator(mailmark);
+        using (Bitmap barcodeImage = complexGenerator.GenerateBarCodeImage())
+        {
+            // Save image to a memory stream in PNG format
+            using (var imageStream = new MemoryStream())
             {
-                // Set short bar height for postal barcode (example value)
-                generator.Parameters.Barcode.Postal.ShortBarHeight.Point = 2f;
+                barcodeImage.Save(imageStream, ImageFormat.Png);
+                imageStream.Position = 0; // Reset stream position for reading
 
-                // Save barcode image as PNG into the memory stream
-                generator.Save(barcodeStream, BarCodeImageFormat.Png);
-                barcodeStream.Position = 0;
-            }
-
-            // Prepare email message with the barcode as an attachment
-            using (var message = new MailMessage())
-            {
-                message.From = new MailAddress("sender@example.com");
-                message.To.Add(new MailAddress("recipient@example.com"));
-                message.Subject = "Postal Barcode Attachment";
-                message.Body = "Please find the generated postal barcode attached.";
-
-                // Attach the barcode image from the memory stream
-                var attachment = new Attachment(barcodeStream, "postal_barcode.png", "image/png");
-                message.Attachments.Add(attachment);
-
-                // Configure SMTP client (replace with actual SMTP server details)
-                using (var smtp = new SmtpClient("localhost", 25))
+                // Prepare email message
+                using (var mail = new MailMessage())
                 {
-                    smtp.DeliveryMethod = SmtpDeliveryMethod.Network;
-                    smtp.EnableSsl = false;
-                    // If authentication is required, set credentials:
-                    // smtp.Credentials = new NetworkCredential("username", "password");
+                    mail.From = new MailAddress("sender@example.com");
+                    mail.To.Add("recipient@example.com");
+                    mail.Subject = "Postal Barcode Attachment";
+                    mail.Body = "Please find the generated postal barcode attached.";
 
-                    try
+                    // Attach the barcode image
+                    var attachment = new Attachment(imageStream, "postal.png", "image/png");
+                    mail.Attachments.Add(attachment);
+
+                    // Configure SMTP client (replace with real server details)
+                    using (var smtp = new SmtpClient("smtp.example.com", 25))
                     {
-                        smtp.Send(message);
-                        Console.WriteLine("Email sent successfully.");
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine("Failed to send email: " + ex.Message);
+                        // Uncomment and set credentials if required
+                        // smtp.Credentials = new System.Net.NetworkCredential("username", "password");
+                        try
+                        {
+                            smtp.Send(mail);
+                            Console.WriteLine("Email sent successfully.");
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine("Failed to send email: " + ex.Message);
+                        }
                     }
                 }
             }

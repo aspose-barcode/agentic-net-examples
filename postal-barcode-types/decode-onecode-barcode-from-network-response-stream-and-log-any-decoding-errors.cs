@@ -1,53 +1,83 @@
 using System;
-using System.IO;
-using Aspose.BarCode;
-using Aspose.BarCode.Generation;
+using System.Net.Http;
+using System.Threading.Tasks;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates downloading an image and recognizing OneCode barcodes using Aspose.BarCode.
+/// </summary>
 class Program
 {
-    static void Main()
+    /// <summary>
+    /// Entry point of the application.
+    /// Downloads an image (from a provided URL or a default sample) and attempts to read OneCode barcodes.
+    /// </summary>
+    /// <param name="args">Command‑line arguments; the first argument can be a URL to an image.</param>
+    static async Task Main(string[] args)
     {
-        // Sample numeric code for OneCode (20 digits)
-        const string oneCodeText = "12345678901234567890";
+        // Determine the image URL: use the first command‑line argument if supplied,
+        // otherwise fall back to a predefined sample URL.
+        string url = args.Length > 0 ? args[0] : "https://example.com/onecode.png";
 
-        try
+        // HttpClient implements IDisposable; wrap it in a using block to ensure proper disposal.
+        using (var httpClient = new HttpClient())
         {
-            // Generate a OneCode barcode image and write it to a memory stream
-            using (var generator = new BarcodeGenerator(EncodeTypes.OneCode, oneCodeText))
+            try
             {
-                using (var networkStream = new MemoryStream())
+                // Send an asynchronous GET request to download the image.
+                using (var response = await httpClient.GetAsync(url))
                 {
-                    // Save the barcode as PNG into the stream (simulating a network response)
-                    generator.Save(networkStream, BarCodeImageFormat.Png);
-                    networkStream.Position = 0; // Reset for reading
-
-                    // Decode the barcode from the stream, specifying OneCode decode type
-                    using (var reader = new BarCodeReader(networkStream, DecodeType.OneCode))
+                    // Verify that the HTTP request succeeded.
+                    if (!response.IsSuccessStatusCode)
                     {
-                        BarCodeResult[] results = reader.ReadBarCodes();
+                        Console.WriteLine($"Failed to download image. HTTP status: {response.StatusCode}");
+                        return;
+                    }
 
-                        if (results.Length == 0)
+                    // Read the response content as a stream for barcode processing.
+                    using (var imageStream = await response.Content.ReadAsStreamAsync())
+                    {
+                        // Initialize the BarCodeReader for the OneCode symbology using the image stream.
+                        using (var reader = new BarCodeReader(imageStream, DecodeType.OneCode))
                         {
-                            Console.WriteLine("No OneCode barcode detected in the stream.");
-                        }
-                        else
-                        {
-                            foreach (BarCodeResult result in results)
+                            // Perform the barcode recognition operation.
+                            var results = reader.ReadBarCodes();
+
+                            // If no barcodes were found, inform the user and exit.
+                            if (results == null || results.Length == 0)
                             {
-                                Console.WriteLine($"Barcode Type: {result.CodeTypeName}");
-                                Console.WriteLine($"Decoded Text: {result.CodeText}");
+                                Console.WriteLine("No barcodes detected.");
+                                return;
+                            }
+
+                            // Iterate through each detected barcode result.
+                            foreach (var result in results)
+                            {
+                                // If the decoded text is missing, log a decoding error.
+                                if (string.IsNullOrEmpty(result.CodeText))
+                                {
+                                    Console.WriteLine($"Decoding error for barcode type {result.CodeTypeName}: CodeText is empty.");
+                                }
+                                else
+                                {
+                                    // Output the successfully decoded barcode information.
+                                    Console.WriteLine($"Detected OneCode barcode. Type: {result.CodeTypeName}, Text: {result.CodeText}");
+                                }
                             }
                         }
                     }
                 }
             }
-        }
-        catch (Exception ex)
-        {
-            // Log any decoding or processing errors
-            Console.WriteLine($"Error during barcode decoding: {ex.Message}");
+            // Handle network‑related exceptions such as DNS failures or connectivity issues.
+            catch (HttpRequestException ex)
+            {
+                Console.WriteLine($"Network error while downloading image: {ex.Message}");
+            }
+            // Catch any other unexpected exceptions to prevent the application from crashing.
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Unexpected error: {ex.Message}");
+            }
         }
     }
 }

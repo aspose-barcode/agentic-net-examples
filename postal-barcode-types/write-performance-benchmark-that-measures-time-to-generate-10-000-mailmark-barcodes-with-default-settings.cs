@@ -1,55 +1,57 @@
 using System;
 using System.Diagnostics;
+using System.IO;
 using Aspose.BarCode;
-using Aspose.BarCode.ComplexBarcode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
+using Aspose.BarCode.ComplexBarcode;
 
+/// <summary>
+/// Demonstrates generation of Mailmark barcodes using Aspose.BarCode library.
+/// </summary>
 class Program
 {
-    static void Main()
+    /// <summary>
+    /// Entry point. Generates a set number of Mailmark barcodes and measures execution time.
+    /// </summary>
+    /// <param name="args">Command‑line arguments (not used).</param>
+    static void Main(string[] args)
     {
-        const int totalBarcodes = 10000;
-        const int sampleCount = 10;
+        // Number of barcodes to generate (kept small for safe execution)
+        const int barcodeCount = 10;
 
-        Stopwatch stopwatch = Stopwatch.StartNew();
-
-        for (int i = 0; i < sampleCount; i++)
+        // Prepare a Mailmark codetext with required fields
+        var mailmark = new MailmarkCodetext
         {
-            var mailmark = new MailmarkCodetext
+            Format = 4,                     // 4‑state format
+            VersionID = 1,
+            Class = "0",                    // string property
+            SupplychainID = 384224,
+            ItemID = 16563762,
+            DestinationPostCodePlusDPS = "EF61AH8T " // known‑valid sample
+        };
+
+        // Start timing the generation loop
+        var stopwatch = Stopwatch.StartNew();
+
+        // Generate the specified number of barcodes
+        for (int i = 0; i < barcodeCount; i++)
+        {
+            // Create a generator for the current Mailmark codetext
+            using (var generator = new ComplexBarcodeGenerator(mailmark))
             {
-                Format = 4,
-                VersionID = 1,
-                Class = "0",
-                SupplychainID = 384224,
-                ItemID = 16563762,
-                DestinationPostCodePlusDPS = "EF61AH8T "
-            };
-
-            using (ComplexBarcodeGenerator generator = new ComplexBarcodeGenerator(mailmark))
-            {
-                // Set image size to avoid zero‑size errors
-                generator.Parameters.ImageWidth.Point = 300f;
-                generator.Parameters.ImageHeight.Point = 150f;
-
-                // Set a reasonable bar height
-                generator.Parameters.Barcode.BarHeight.Point = 10f;
-
-                using (Bitmap bitmap = generator.GenerateBarCodeImage())
+                // Save the barcode image to a memory stream (PNG format) to force rendering
+                using (var ms = new MemoryStream())
                 {
-                    // No saving needed for benchmark
+                    generator.Save(ms, BarCodeImageFormat.Png);
                 }
             }
         }
 
+        // Stop the timer after generation completes
         stopwatch.Stop();
 
-        double elapsedMs = stopwatch.Elapsed.TotalMilliseconds;
-        double avgPerBarcodeMs = elapsedMs / sampleCount;
-        double estimatedTotalMs = avgPerBarcodeMs * totalBarcodes;
-
-        Console.WriteLine($"Generated {sampleCount} Mailmark barcodes in {elapsedMs:F2} ms.");
-        Console.WriteLine($"Average time per barcode: {avgPerBarcodeMs:F2} ms.");
-        Console.WriteLine($"Estimated time for {totalBarcodes} barcodes: {estimatedTotalMs:F2} ms.");
+        // Output total and average generation times
+        Console.WriteLine($"Generated {barcodeCount} Mailmark barcodes in {stopwatch.ElapsedMilliseconds} ms.");
+        Console.WriteLine($"Average time per barcode: {stopwatch.ElapsedMilliseconds / (double)barcodeCount:F2} ms.");
     }
 }

@@ -1,84 +1,132 @@
 using System;
 using System.IO;
-using System.Collections.Generic;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
+/// <summary>
+/// Demonstrates generating a barcode image and attempting to decode it using Aspose.BarCode.
+/// Includes logging for success, failure, and processing steps.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Prepares a temporary directory, creates a sample barcode, and attempts to decode it
+    /// along with a non‑existent file to illustrate error handling.
+    /// </summary>
     static void Main()
     {
-        // Directory to store sample barcode images
-        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeSamples");
-        if (!Directory.Exists(outputDir))
-        {
-            Directory.CreateDirectory(outputDir);
-        }
+        // Prepare a temporary directory for sample images
+        string tempDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
+        Directory.CreateDirectory(tempDir);
 
-        // Prepare sample data: barcode type, text, file name
-        var samples = new List<(BaseEncodeType encodeType, string codeText, string fileName)>
+        // Generate a sample barcode image and save it to the temporary directory
+        string sampleImagePath = Path.Combine(tempDir, "sample_code128.png");
+        GenerateSampleBarcode(sampleImagePath);
+
+        // Define the list of files to attempt decoding (includes a missing file for failure demo)
+        string[] filesToDecode = new string[]
         {
-            (EncodeTypes.Code128, "Sample123", "code128.png"),
-            (EncodeTypes.QR, "https://example.com", "qr.png"),
-            (EncodeTypes.EAN13, "1234567890128", "ean13.png")
+            sampleImagePath,
+            Path.Combine(tempDir, "nonexistent.png")
         };
 
-        // Generate barcode images
-        foreach (var sample in samples)
-        {
-            string filePath = Path.Combine(outputDir, sample.fileName);
-            using (var generator = new BarcodeGenerator(sample.encodeType, sample.codeText))
-            {
-                generator.Save(filePath);
-            }
-        }
-
-        // List of files to decode (including a non‑existent file to demonstrate failure handling)
-        var filesToDecode = new List<string>
-        {
-            Path.Combine(outputDir, "code128.png"),
-            Path.Combine(outputDir, "qr.png"),
-            Path.Combine(outputDir, "ean13.png"),
-            Path.Combine(outputDir, "missing.png") // intentionally missing
-        };
-
-        // Process each file
+        // Iterate over each file path and try to read barcodes
         foreach (string filePath in filesToDecode)
         {
-            string timestamp = DateTime.Now.ToString("o");
+            LogAttempt(filePath);
+
+            // Verify that the file exists before attempting to read
             if (!File.Exists(filePath))
             {
-                Console.WriteLine($"{timestamp} | FAILURE | File not found: {filePath}");
+                LogFailure(filePath, "File does not exist.");
                 continue;
             }
 
-            try
+            // Use BarCodeReader to decode all supported barcode types from the file
+            using (var reader = new BarCodeReader(filePath, DecodeType.AllSupportedTypes))
             {
-                // Initialize reader for all supported types
-                using (var reader = new BarCodeReader(filePath, DecodeType.AllSupportedTypes))
-                {
-                    // Perform recognition
-                    BarCodeResult[] results = reader.ReadBarCodes();
+                // Enable checksum validation to detect incorrect barcodes
+                reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
+                // Allow reading of barcodes that may be slightly incorrect
+                reader.QualitySettings.AllowIncorrectBarcodes = true;
 
-                    if (results.Length == 0)
+                BarCodeResult[] results = null;
+                try
+                {
+                    // Attempt to read barcodes from the image
+                    results = reader.ReadBarCodes();
+                }
+                catch (Exception ex)
+                {
+                    // Log any exception that occurs during reading
+                    LogFailure(filePath, $"Exception during reading: {ex.Message}");
+                    continue;
+                }
+
+                // Process the results if any barcodes were detected
+                if (results != null && results.Length > 0)
+                {
+                    foreach (var result in results)
                     {
-                        Console.WriteLine($"{timestamp} | FAILURE | No barcode detected in: {filePath}");
-                    }
-                    else
-                    {
-                        foreach (BarCodeResult result in results)
-                        {
-                            Console.WriteLine($"{timestamp} | SUCCESS | File: {filePath} | Type: {result.CodeTypeName} | Text: {result.CodeText}");
-                        }
+                        LogSuccess(filePath, result);
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                // Log unexpected errors as failures
-                Console.WriteLine($"{timestamp} | FAILURE | Exception while processing {filePath}: {ex.Message}");
+                else
+                {
+                    // No barcodes were found in the image
+                    LogFailure(filePath, "No barcode detected.");
+                }
             }
         }
+    }
+
+    /// <summary>
+    /// Generates a simple Code128 barcode image and saves it to the specified path.
+    /// </summary>
+    /// <param name="outputPath">The file path where the barcode image will be saved.</param>
+    private static void GenerateSampleBarcode(string outputPath)
+    {
+        // Create a barcode generator for Code128 with sample text
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
+        {
+            // Set a reasonable image size (width and height in points)
+            generator.Parameters.ImageWidth.Point = 300f;
+            generator.Parameters.ImageHeight.Point = 150f;
+
+            // Save the generated barcode image to the provided path
+            generator.Save(outputPath);
+        }
+    }
+
+    /// <summary>
+    /// Logs an attempt to decode a barcode from the specified file.
+    /// </summary>
+    /// <param name="filePath">The path of the file being processed.</param>
+    private static void LogAttempt(string filePath)
+    {
+        Console.WriteLine($"{DateTime.Now:O} - Attempting to decode barcode from \"{filePath}\"");
+    }
+
+    /// <summary>
+    /// Logs a successful barcode decode with detailed information.
+    /// </summary>
+    /// <param name="filePath">The path of the file that was decoded.</param>
+    /// <param name="result">The result object containing barcode details.</param>
+    private static void LogSuccess(string filePath, BarCodeResult result)
+    {
+        Console.WriteLine($"{DateTime.Now:O} - SUCCESS: File=\"{filePath}\", Type={result.CodeTypeName}, CodeText=\"{result.CodeText}\", Confidence={result.Confidence}, ReadingQuality={result.ReadingQuality}");
+    }
+
+    /// <summary>
+    /// Logs a failure to decode a barcode, including the reason for failure.
+    /// </summary>
+    /// <param name="filePath">The path of the file that failed to decode.</param>
+    /// <param name="reason">A description of why the decoding failed.</param>
+    private static void LogFailure(string filePath, string reason)
+    {
+        Console.WriteLine($"{DateTime.Now:O} - FAILURE: File=\"{filePath}\", Reason={reason}");
     }
 }

@@ -1,76 +1,101 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
-using Aspose.BarCode;
-using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
+/// <summary>
+/// Demonstrates batch decoding of Dutch KIX barcodes from a list of image files,
+/// logging any failures to a text file.
+/// </summary>
 class Program
 {
-    static void Main(string[] args)
+    /// <summary>
+    /// Entry point of the application. Processes a predefined list of image files,
+    /// attempts to decode Dutch KIX barcodes, outputs results to the console,
+    /// and logs any failures.
+    /// </summary>
+    static void Main()
     {
-        // Input folder – can be passed as first argument, otherwise use a default "Input" folder.
-        string inputFolder = args.Length > 0 ? args[0] : "Input";
-
-        // Ensure the input folder exists.
-        if (!Directory.Exists(inputFolder))
+        // Define a sample list of image files.
+        // In a real scenario these would be retrieved from cloud storage.
+        List<string> imageFiles = new List<string>
         {
-            Directory.CreateDirectory(inputFolder);
-            // Seed a sample Dutch KIX barcode so the example can run end‑to‑end.
-            string samplePath = Path.Combine(inputFolder, "SampleDutchKIX.png");
-            using (var generator = new BarcodeGenerator(EncodeTypes.DutchKIX, "1234567890"))
-            {
-                generator.Save(samplePath);
-            }
-        }
+            "kix1.png",
+            "kix2.png",
+            "kix3.png",
+            "kix4.png",
+            "kix5.png"
+        };
 
-        // Prepare a log file for failures.
-        string logPath = Path.Combine(inputFolder, "decode_log.txt");
-        using (var logWriter = new StreamWriter(logPath, false))
+        // Path to the log file that will capture any decoding failures.
+        string logPath = "decode_log.txt";
+
+        // Ensure the log file starts empty for this run.
+        File.WriteAllText(logPath, string.Empty);
+
+        // Iterate over each image file and attempt barcode decoding.
+        foreach (string filePath in imageFiles)
         {
-            // Process image files in the folder (common image extensions).
-            string[] files = Directory.GetFiles(inputFolder, "*.*", SearchOption.TopDirectoryOnly);
-            foreach (string file in files)
+            try
             {
-                string extension = Path.GetExtension(file).ToLowerInvariant();
-                if (extension != ".png" && extension != ".jpg" && extension != ".jpeg" && extension != ".bmp" && extension != ".tif" && extension != ".tiff")
+                // Verify that the file exists before attempting to read it.
+                if (!File.Exists(filePath))
                 {
-                    continue; // Skip non‑image files.
+                    LogFailure(logPath, filePath, "File does not exist.");
+                    continue;
                 }
 
-                try
+                // Load the image into a bitmap and create a barcode reader for Dutch KIX.
+                using (var bitmap = new Bitmap(filePath))
+                using (var reader = new BarCodeReader(bitmap, DecodeType.DutchKIX))
                 {
-                    using (var reader = new BarCodeReader(file, DecodeType.DutchKIX))
-                    {
-                        // Perform the recognition.
-                        reader.ReadBarCodes();
+                    // Optional: enforce checksum validation if desired.
+                    // reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
 
-                        if (reader.FoundCount > 0)
-                        {
-                            for (int i = 0; i < reader.FoundCount; i++)
-                            {
-                                var result = reader.FoundBarCodes[i];
-                                Console.WriteLine($"File: {Path.GetFileName(file)} | Type: {result.CodeTypeName} | Text: {result.CodeText}");
-                            }
-                        }
-                        else
-                        {
-                            // No barcode found – log as failure.
-                            string message = $"File: {Path.GetFileName(file)} – No Dutch KIX barcode detected.";
-                            Console.WriteLine(message);
-                            logWriter.WriteLine(message);
-                        }
+                    // Perform the barcode reading operation.
+                    BarCodeResult[] results = reader.ReadBarCodes();
+
+                    // If no barcodes were found, log the failure.
+                    if (results.Length == 0)
+                    {
+                        LogFailure(logPath, filePath, "No Dutch KIX barcode detected.");
+                        continue;
+                    }
+
+                    // Output each detected barcode's type and text to the console.
+                    foreach (var result in results)
+                    {
+                        Console.WriteLine($"File: {filePath} | Type: {result.CodeTypeName} | Text: {result.CodeText}");
                     }
                 }
-                catch (Exception ex)
-                {
-                    // Unexpected error – log details.
-                    string error = $"File: {Path.GetFileName(file)} – Exception: {ex.Message}";
-                    Console.WriteLine(error);
-                    logWriter.WriteLine(error);
-                }
+            }
+            catch (Exception ex)
+            {
+                // Log any unexpected exceptions that occur during processing.
+                LogFailure(logPath, filePath, $"Exception: {ex.Message}");
             }
         }
 
+        // Inform the user that processing is complete.
         Console.WriteLine("Batch decoding completed. See decode_log.txt for any failures.");
+    }
+
+    /// <summary>
+    /// Writes a failure entry to both the console and the specified log file.
+    /// </summary>
+    /// <param name="logPath">Path to the log file.</param>
+    /// <param name="filePath">Path of the image file that caused the failure.</param>
+    /// <param name="message">Description of the failure.</param>
+    static void LogFailure(string logPath, string filePath, string message)
+    {
+        // Format the log entry with a timestamp.
+        string logEntry = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] File: {filePath} - {message}";
+        Console.WriteLine(logEntry);
+        // Append the entry to the log file.
+        using (var writer = new StreamWriter(logPath, true))
+        {
+            writer.WriteLine(logEntry);
+        }
     }
 }

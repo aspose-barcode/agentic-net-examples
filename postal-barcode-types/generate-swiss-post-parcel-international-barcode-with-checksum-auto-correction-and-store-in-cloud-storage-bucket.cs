@@ -2,69 +2,53 @@ using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
+/// <summary>
+/// Demonstrates generating a Swiss Post Parcel barcode using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point that creates a barcode image and saves it to a temporary file.
+    /// </summary>
     static void Main()
     {
-        // Sample code text for Swiss Post Parcel International barcode.
-        // The library will auto‑correct the checksum if needed.
-        const string codeText = "1234567890123";
+        // Sample codetext for Swiss Post Parcel international barcode.
+        // In a real scenario, this should follow the Swiss Post specification.
+        string codeText = "1234567890123";
 
-        // Path to save the generated barcode image locally.
-        const string localPath = "SwissPostParcel.png";
+        // Build a full path in the system's temporary folder for the output PNG file.
+        string outputPath = Path.Combine(Path.GetTempPath(), "SwissPostParcel.png");
 
-        // Generate the barcode.
+        // Initialize the barcode generator with the SwissPostParcel symbology and the provided codetext.
         using (var generator = new BarcodeGenerator(EncodeTypes.SwissPostParcel, codeText))
         {
-            // Enable checksum generation (auto‑correction is the default behavior).
-            generator.Parameters.Barcode.IsChecksumEnabled = Aspose.BarCode.Generation.EnableChecksum.Yes;
+            // Allow the generator to automatically correct an invalid codetext instead of throwing.
+            generator.Parameters.Barcode.ThrowExceptionWhenCodeTextIncorrect = false;
 
-            // Optional: set visual appearance.
-            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-            generator.Parameters.BackColor = Aspose.Drawing.Color.White;
+            // Enable checksum calculation (required for many postal barcodes).
+            generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
 
-            // Save the image.
-            generator.Save(localPath);
+            // Set a higher resolution (dots per inch) for better image quality.
+            generator.Parameters.Resolution = 300f;
+
+            // Save the generated barcode image to the specified file (PNG format by default).
+            generator.Save(outputPath);
         }
 
-        // -----------------------------------------------------------------
-        // In a real environment you would upload the file to a cloud bucket
-        // (e.g., Azure Blob Storage, AWS S3, Google Cloud Storage). The
-        // required SDKs are not available in the snippet runner, so the
-        // upload code is provided as a comment for reference.
-        // -----------------------------------------------------------------
-        /*
-        // Example: Azure Blob Storage upload (requires Azure.Storage.Blobs package)
-        string connectionString = "<your-connection-string>";
-        string containerName = "<your-container>";
-        string blobName = Path.GetFileName(localPath);
+        // Inform the user where the barcode image has been saved.
+        Console.WriteLine($"Barcode image saved to: {outputPath}");
 
-        var blobClient = new BlobClient(connectionString, containerName, blobName);
-        using (FileStream uploadFileStream = File.OpenRead(localPath))
-        {
-            blobClient.Upload(uploadFileStream, overwrite: true);
-        }
-        */
-
-        // Verify that the barcode can be read back (optional).
-        using (var reader = new BarCodeReader(localPath, DecodeType.SwissPostParcel))
-        {
-            // Enable checksum validation during recognition.
-            reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
-
-            foreach (var result in reader.ReadBarCodes())
-            {
-                Console.WriteLine($"Detected Type: {result.CodeTypeName}");
-                Console.WriteLine($"Code Text: {result.CodeText}");
-                // The library automatically validates the checksum; if invalid,
-                // result.CodeText may be empty or incorrect.
-            }
-        }
-
-        // Clean up the local file if desired.
-        // File.Delete(localPath);
+        // -------------------------------------------------------------------------
+        // Cloud storage upload (placeholder):
+        // The following comment shows where you would integrate with a cloud SDK
+        // (e.g., AWS S3, Azure Blob Storage, Google Cloud Storage) to upload the
+        // generated file to a bucket. The actual implementation depends on the
+        // specific SDK and credentials, which are not available in this runner.
+        //
+        // Example (pseudo‑code):
+        // var client = new CloudStorageClient(...);
+        // client.UploadFile(bucketName, "SwissPostParcel.png", File.ReadAllBytes(outputPath));
+        // -------------------------------------------------------------------------
     }
 }

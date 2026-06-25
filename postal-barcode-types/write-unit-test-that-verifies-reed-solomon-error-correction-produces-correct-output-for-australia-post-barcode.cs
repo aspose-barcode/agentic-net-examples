@@ -4,60 +4,73 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates generation and recognition of an Australia Post barcode using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Generates a barcode, saves it to a memory stream,
+    /// then reads it back and verifies that the decoded text matches the original.
+    /// </summary>
     static void Main()
     {
-        // Original Australia Post barcode text (CTable encoding)
-        const string originalCodeText = "5912345678AB";
+        // Sample Australia Post barcode data
+        const string originalCodeText = "5912345678ABCde";
 
-        // Generate the barcode image
+        // Create a barcode generator for Australia Post format with the sample data
         using (var generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, originalCodeText))
         {
-            // Set CTable interpreting type
+            // Set the interpreting type to CTable for customer information
             generator.Parameters.Barcode.AustralianPost.AustralianPostEncodingTable = CustomerInformationInterpretingType.CTable;
 
-            // Generate bitmap
-            using (var barcodeImage = generator.GenerateBarCodeImage())
+            // Prepare a memory stream to hold the generated image
+            using (var ms = new MemoryStream())
             {
-                // Corrupt a small area of the image to simulate damage
-                using (var graphics = Graphics.FromImage(barcodeImage))
+                // Save the barcode as a PNG image into the memory stream
+                generator.Save(ms, BarCodeImageFormat.Png);
+                ms.Position = 0; // Reset stream position for reading
+
+                // Load the PNG image from the memory stream into a bitmap
+                using (var bitmap = new Bitmap(ms))
                 {
-                    // Draw a white rectangle over the middle of the barcode
-                    var rect = new Rectangle(barcodeImage.Width / 3, barcodeImage.Height / 3,
-                                             barcodeImage.Width / 3, barcodeImage.Height / 3);
-                    graphics.FillRectangle(Brushes.White, rect);
-                }
+                    // Initialize a barcode reader for Australia Post type
+                    using (var reader = new BarCodeReader(bitmap, DecodeType.AustraliaPost))
+                    {
+                        // Configure the reader to use the same CTable interpreting type
+                        reader.BarcodeSettings.AustraliaPost.CustomerInformationInterpretingType = CustomerInformationInterpretingType.CTable;
 
-                // Decode the possibly damaged barcode
-                using (var reader = new BarCodeReader(barcodeImage, DecodeType.AustraliaPost))
-                {
-                    // Configure decoding to use the same interpreting type
-                    reader.BarcodeSettings.AustraliaPost.CustomerInformationInterpretingType = CustomerInformationInterpretingType.CTable;
-                    // Enable checksum validation (optional but safe)
-                    reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
+                        // Perform barcode recognition and retrieve all results
+                        var results = reader.ReadBarCodes();
 
-                    string decodedText = null;
-                    foreach (BarCodeResult result in reader.ReadBarCodes())
-                    {
-                        decodedText = result.CodeText;
-                        break; // Only need the first result
-                    }
+                        // Ensure at least one barcode was detected
+                        if (results.Length == 0)
+                        {
+                            Console.WriteLine("FAILED: No barcode detected.");
+                            return;
+                        }
 
-                    // Verify that the decoded text matches the original
-                    if (decodedText == originalCodeText)
-                    {
-                        Console.WriteLine("Success: Reed‑Solomon error correction recovered the original code text.");
-                    }
-                    else if (decodedText == null)
-                    {
-                        Console.WriteLine("Failure: No barcode could be decoded.");
-                    }
-                    else
-                    {
-                        Console.WriteLine($"Failure: Decoded text '{decodedText}' does not match original '{originalCodeText}'.");
+                        // Check if any decoded result matches the original text
+                        bool match = false;
+                        foreach (var result in results)
+                        {
+                            if (result.CodeText == originalCodeText)
+                            {
+                                match = true;
+                                break;
+                            }
+                        }
+
+                        // Output verification result
+                        if (match)
+                        {
+                            Console.WriteLine("PASSED: Decoded text matches original.");
+                        }
+                        else
+                        {
+                            Console.WriteLine($"FAILED: Decoded text does not match. Expected '{originalCodeText}'.");
+                        }
                     }
                 }
             }

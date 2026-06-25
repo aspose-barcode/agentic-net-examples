@@ -4,91 +4,96 @@ using System.IO.Compression;
 using System.Collections.Generic;
 using System.Text.Json;
 using Aspose.BarCode;
-using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
+/// <summary>
+/// Demonstrates reading RM4SCC barcodes from images stored inside a ZIP archive
+/// and outputs the results as formatted JSON.
+/// </summary>
 class Program
 {
-    static void Main()
+    /// <summary>
+    /// Represents a single decoded barcode entry.
+    /// </summary>
+    private class BarcodeInfo
     {
-        // Prepare temporary working folder
-        string workFolder = Path.Combine(Path.GetTempPath(), "Rm4sccDemo");
-        if (!Directory.Exists(workFolder))
+        public string FileName { get; set; }
+        public string CodeTypeName { get; set; }
+        public string CodeText { get; set; }
+        public int Confidence { get; set; }
+        public double ReadingQuality { get; set; }
+        public RectangleF Region { get; set; }
+    }
+
+    /// <summary>
+    /// Entry point of the application.
+    /// Reads barcode images from a ZIP file, decodes them, and prints a JSON summary.
+    /// </summary>
+    /// <param name="args">Command‑line arguments (not used).</param>
+    static void Main(string[] args)
+    {
+        // Path to the ZIP archive containing barcode images
+        string zipPath = "barcodes.zip";
+
+        // Verify that the ZIP file exists before proceeding
+        if (!File.Exists(zipPath))
         {
-            Directory.CreateDirectory(workFolder);
+            Console.WriteLine($"ZIP file not found: {zipPath}");
+            return;
         }
 
-        // Sample RM4SCC code texts
-        string[] sampleCodes = new string[] { "AB12C3", "XYZ789", "LMN456" };
-        List<string> imageFiles = new List<string>();
+        // Collection to hold decoding results
+        var results = new List<BarcodeInfo>();
 
-        // Generate barcode images
-        foreach (string code in sampleCodes)
+        // Open the ZIP archive for reading
+        using (FileStream zipFileStream = new FileStream(zipPath, FileMode.Open, FileAccess.Read))
+        using (ZipArchive archive = new ZipArchive(zipFileStream, ZipArchiveMode.Read))
         {
-            string imagePath = Path.Combine(workFolder, $"{code}.png");
-            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.RM4SCC, code))
+            // Iterate over each entry in the archive (expecting image files)
+            foreach (var entry in archive.Entries)
             {
-                // Optional: set image size
-                generator.Parameters.ImageWidth.Point = 300f;
-                generator.Parameters.ImageHeight.Point = 150f;
-                generator.Save(imagePath);
-            }
-            imageFiles.Add(imagePath);
-        }
+                // Skip directory entries (they have an empty Name)
+                if (string.IsNullOrEmpty(entry.Name))
+                    continue;
 
-        // Create ZIP archive containing the images
-        string zipPath = Path.Combine(workFolder, "barcodes.zip");
-        using (FileStream zipToCreate = new FileStream(zipPath, FileMode.Create))
-        {
-            using (ZipArchive archive = new ZipArchive(zipToCreate, ZipArchiveMode.Update))
-            {
-                foreach (string filePath in imageFiles)
+                // Load the entry's data into a memory stream for processing
+                using (MemoryStream entryStream = new MemoryStream())
                 {
-                    ZipArchiveEntry entry = archive.CreateEntry(Path.GetFileName(filePath));
-                    using (Stream entryStream = entry.Open())
+                    // Copy the entry's raw stream into the memory stream
+                    using (Stream entryOriginal = entry.Open())
                     {
-                        using (FileStream fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read))
-                        {
-                            fileStream.CopyTo(entryStream);
-                        }
+                        entryOriginal.CopyTo(entryStream);
                     }
-                }
-            }
-        }
 
-        // Delete original image files to simulate only having the ZIP
-        foreach (string filePath in imageFiles)
-        {
-            File.Delete(filePath);
-        }
+                    // Reset position to the beginning before reading
+                    entryStream.Position = 0;
 
-        // Prepare list for JSON output
-        var results = new List<object>();
-
-        // Open ZIP and decode each image
-        using (FileStream zipToOpen = new FileStream(zipPath, FileMode.Open, FileAccess.Read))
-        {
-            using (ZipArchive archive = new ZipArchive(zipToOpen, ZipArchiveMode.Read))
-            {
-                foreach (ZipArchiveEntry entry in archive.Entries)
-                {
-                    using (Stream entryStream = entry.Open())
+                    // Create a bitmap from the memory stream
+                    using (Bitmap bitmap = new Bitmap(entryStream))
                     {
-                        using (Bitmap bitmap = new Bitmap(entryStream))
+                        // Initialize a barcode reader configured for RM4SCC type
+                        using (BarCodeReader reader = new BarCodeReader(bitmap, DecodeType.RM4SCC))
                         {
-                            using (BarCodeReader reader = new BarCodeReader(bitmap, DecodeType.RM4SCC))
+                            // Optional: enable checksum validation if desired
+                            // reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
+
+                            // Read all barcodes found in the image
+                            foreach (var result in reader.ReadBarCodes())
                             {
-                                BarCodeResult[] barcodes = reader.ReadBarCodes();
-                                foreach (BarCodeResult barcode in barcodes)
+                                // Populate a BarcodeInfo instance with the decoded data
+                                var info = new BarcodeInfo
                                 {
-                                    results.Add(new
-                                    {
-                                        FileName = entry.Name,
-                                        CodeText = barcode.CodeText,
-                                        Confidence = barcode.Confidence
-                                    });
-                                }
+                                    FileName = entry.Name,
+                                    CodeTypeName = result.CodeTypeName,
+                                    CodeText = result.CodeText,
+                                    Confidence = (int)result.Confidence,
+                                    ReadingQuality = result.ReadingQuality,
+                                    Region = result.Region.Rectangle
+                                };
+
+                                // Add the result to the collection
+                                results.Add(info);
                             }
                         }
                     }
@@ -96,19 +101,11 @@ class Program
             }
         }
 
-        // Serialize results to JSON and output
-        string json = JsonSerializer.Serialize(results, new JsonSerializerOptions { WriteIndented = true });
-        Console.WriteLine(json);
+        // Serialize the results collection to formatted JSON
+        var jsonOptions = new JsonSerializerOptions { WriteIndented = true };
+        string json = JsonSerializer.Serialize(results, jsonOptions);
 
-        // Clean up temporary folder
-        try
-        {
-            File.Delete(zipPath);
-            Directory.Delete(workFolder, true);
-        }
-        catch
-        {
-            // Ignored - cleanup failure should not affect program outcome
-        }
+        // Output the JSON to the console
+        Console.WriteLine(json);
     }
 }

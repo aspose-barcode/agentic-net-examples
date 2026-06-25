@@ -1,93 +1,118 @@
 using System;
 using System.IO;
-using System.Security.Cryptography;
-using Aspose.BarCode;
+using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates generating barcodes, encrypting the images with a simple XOR cipher,
+/// saving them to disk, then decrypting and reading the barcodes back.
+/// </summary>
 class Program
 {
-    // Sample AES key and IV (for demonstration only)
-    private static readonly byte[] AesKey = new byte[32] {
-        0x00,0x01,0x02,0x03,0x04,0x05,0x06,0x07,
-        0x08,0x09,0x0A,0x0B,0x0C,0x0D,0x0E,0x0F,
-        0x10,0x11,0x12,0x13,0x14,0x15,0x16,0x17,
-        0x18,0x19,0x1A,0x1B,0x1C,0x1D,0x1E,0x1F };
-    private static readonly byte[] AesIv = new byte[16] {
-        0xA0,0xA1,0xA2,0xA3,0xA4,0xA5,0xA6,0xA7,
-        0xA8,0xA9,0xAA,0xAB,0xAC,0xAD,0xAE,0xAF };
+    /// <summary>
+    /// Performs a simple XOR transformation on the supplied byte array using the given key.
+    /// This method is used for both encryption and decryption.
+    /// </summary>
+    /// <param name="data">The input byte array to transform.</param>
+    /// <param name="key">The XOR key.</param>
+    /// <returns>A new byte array containing the transformed data.</returns>
+    static byte[] XorTransform(byte[] data, byte key)
+    {
+        byte[] result = new byte[data.Length];
+        for (int i = 0; i < data.Length; i++)
+        {
+            // Apply XOR operation per byte
+            result[i] = (byte)(data[i] ^ key);
+        }
+        return result;
+    }
 
+    /// <summary>
+    /// Entry point of the program. Generates sample barcodes, encrypts them,
+    /// saves to files, then decrypts and reads the barcodes.
+    /// </summary>
     static void Main()
     {
-        // List of encrypted image files to process
-        string[] encryptedFiles = new string[]
+        // Encryption key (example)
+        const byte xorKey = 0xAA;
+
+        // Sample barcode definitions: (symbology, text, output file name)
+        var samples = new (BaseEncodeType type, string text, string file)[]
         {
-            "encrypted1.bin",
-            "encrypted2.bin"
+            (EncodeTypes.Code128, "Sample123", "encrypted1.bin"),
+            (EncodeTypes.QR, "HelloWorld", "encrypted2.bin"),
+            (EncodeTypes.DataMatrix, "DataMatrixTest", "encrypted3.bin")
         };
 
-        foreach (string encFile in encryptedFiles)
+        // -----------------------------------------------------------------
+        // Step 1: Generate sample barcode images, encrypt them and save to files
+        // -----------------------------------------------------------------
+        foreach (var (type, text, filePath) in samples)
         {
-            if (!File.Exists(encFile))
+            // Generate barcode image into a memory stream
+            using (var ms = new MemoryStream())
             {
-                Console.WriteLine($"File not found: {encFile}");
+                using (var generator = new BarcodeGenerator(type, text))
+                {
+                    // Save the barcode as PNG into the memory stream
+                    generator.Save(ms, BarCodeImageFormat.Png);
+                }
+
+                // Encrypt the image bytes using XOR
+                byte[] encryptedBytes = XorTransform(ms.ToArray(), xorKey);
+
+                // Write the encrypted bytes to the specified file
+                File.WriteAllBytes(filePath, encryptedBytes);
+            }
+        }
+
+        // -----------------------------------------------------------------
+        // Step 2: Decrypt each file in memory and decode barcodes
+        // -----------------------------------------------------------------
+        foreach (var (_, _, filePath) in samples)
+        {
+            if (!File.Exists(filePath))
+            {
+                Console.WriteLine($"File not found: {filePath}");
                 continue;
             }
 
-            // Decrypt the file into a memory stream
-            using (MemoryStream decryptedStream = DecryptFileToMemory(encFile))
+            // Read the encrypted bytes from disk
+            byte[] encryptedData = File.ReadAllBytes(filePath);
+
+            // Decrypt the bytes using the same XOR key
+            byte[] decryptedData = XorTransform(encryptedData, xorKey);
+
+            // Load the decrypted image into a Bitmap for barcode reading
+            using (var imageStream = new MemoryStream(decryptedData))
+            using (var bitmap = new Bitmap(imageStream))
+            // Create a BarCodeReader that supports all barcode types
+            using (var reader = new BarCodeReader(bitmap, DecodeType.AllSupportedTypes))
             {
-                // Reset position just in case
-                decryptedStream.Position = 0;
+                // Enable checksum validation (optional but recommended)
+                reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
 
-                // Initialize BarCodeReader with the decrypted image stream
-                using (BarCodeReader reader = new BarCodeReader(decryptedStream, DecodeType.AllSupportedTypes))
+                // Attempt to read all barcodes from the image
+                var results = reader.ReadBarCodes();
+
+                if (results.Length == 0)
                 {
-                    // Read all barcodes from the image
-                    BarCodeResult[] results = reader.ReadBarCodes();
-
-                    if (results.Length == 0)
+                    Console.WriteLine($"No barcode detected in file: {filePath}");
+                }
+                else
+                {
+                    foreach (var result in results)
                     {
-                        Console.WriteLine($"No barcodes found in {encFile}");
-                    }
-                    else
-                    {
-                        Console.WriteLine($"Barcodes in {encFile}:");
-                        foreach (BarCodeResult result in results)
-                        {
-                            Console.WriteLine($"  Type: {result.CodeTypeName}, Text: {result.CodeText}");
-                        }
+                        Console.WriteLine($"File: {filePath}");
+                        Console.WriteLine($"  Type: {result.CodeTypeName}");
+                        Console.WriteLine($"  Text: {result.CodeText}");
+                        Console.WriteLine($"  Confidence: {result.Confidence}");
+                        Console.WriteLine($"  ReadingQuality: {result.ReadingQuality}");
                     }
                 }
             }
         }
-    }
-
-    // Decrypts an encrypted file using AES and returns a MemoryStream containing the plaintext image data
-    private static MemoryStream DecryptFileToMemory(string encryptedFilePath)
-    {
-        // Read all encrypted bytes
-        byte[] encryptedData = File.ReadAllBytes(encryptedFilePath);
-
-        // Prepare streams
-        MemoryStream output = new MemoryStream();
-
-        using (Aes aes = Aes.Create())
-        {
-            aes.Key = AesKey;
-            aes.IV = AesIv;
-            aes.Padding = PaddingMode.PKCS7;
-            aes.Mode = CipherMode.CBC;
-
-            using (MemoryStream input = new MemoryStream(encryptedData))
-            using (CryptoStream cryptoStream = new CryptoStream(input, aes.CreateDecryptor(), CryptoStreamMode.Read))
-            {
-                // Copy decrypted bytes to output stream
-                cryptoStream.CopyTo(output);
-            }
-        }
-
-        // Set position to beginning for subsequent reading
-        output.Position = 0;
-        return output;
     }
 }

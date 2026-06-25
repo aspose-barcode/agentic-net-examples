@@ -1,87 +1,101 @@
 using System;
 using System.IO;
+using System.Linq;
 using Microsoft.Extensions.DependencyInjection;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 namespace AsposeBarcodeDiDemo
 {
     // Service for generating barcodes
     public interface IBarcodeGeneratorService
     {
-        void Generate(string codeText, string filePath);
+        byte[] GenerateBarcode(BaseEncodeType type, string text);
     }
 
     public class BarcodeGeneratorService : IBarcodeGeneratorService
     {
-        public void Generate(string codeText, string filePath)
+        public byte[] GenerateBarcode(BaseEncodeType type, string text)
         {
-            // Create generator with Code128 symbology
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+            // Create a barcode generator with the specified type and text
+            using (var generator = new BarcodeGenerator(type, text))
             {
-                // Set some visual parameters
-                generator.Parameters.Barcode.BarColor = Color.Blue;
-                generator.Parameters.BackColor = Color.White;
-                generator.Parameters.Barcode.XDimension.Point = 2f;
-                generator.Parameters.ImageWidth.Point = 300f;
-                generator.Parameters.ImageHeight.Point = 150f;
+                // Example: set resolution and auto size mode
+                generator.Parameters.Resolution = 300f;
+                generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
 
-                // Save the barcode image
-                generator.Save(filePath);
+                // Save the generated barcode to a memory stream as PNG
+                using (var ms = new MemoryStream())
+                {
+                    generator.Save(ms, BarCodeImageFormat.Png);
+                    // Return the image bytes
+                    return ms.ToArray();
+                }
             }
         }
     }
 
-    // Service for reading barcodes
+    // Service for reading barcodes from an image
     public interface IBarcodeReaderService
     {
-        string Read(string filePath);
+        string[] ReadBarcodes(byte[] imageBytes);
     }
 
     public class BarcodeReaderService : IBarcodeReaderService
     {
-        public string Read(string filePath)
+        public string[] ReadBarcodes(byte[] imageBytes)
         {
-            if (!File.Exists(filePath))
-                throw new FileNotFoundException("Barcode image not found.", filePath);
-
-            // Initialize reader for Code128 decoding
-            using (var reader = new BarCodeReader(filePath, DecodeType.Code128))
+            // Load the image bytes into a memory stream
+            using (var ms = new MemoryStream(imageBytes))
             {
-                var results = reader.ReadBarCodes();
-                if (results.Length > 0)
-                    return results[0].CodeText;
-                return null;
+                // Initialize the barcode reader for all supported types
+                using (var reader = new BarCodeReader(ms, DecodeType.AllSupportedTypes))
+                {
+                    // Read all barcodes found in the image
+                    var results = reader.ReadBarCodes();
+                    // Extract the decoded text from each result
+                    return results.Select(r => r.CodeText).ToArray();
+                }
             }
         }
     }
 
+    /// <summary>
+    /// Demo program showing DI usage for barcode generation and reading.
+    /// </summary>
     class Program
     {
+        /// <summary>
+        /// Entry point of the application.
+        /// </summary>
+        /// <param name="args">Command‑line arguments (not used).</param>
         static void Main(string[] args)
         {
-            // Setup DI container
+            // Set up DI container
             var services = new ServiceCollection();
             services.AddSingleton<IBarcodeGeneratorService, BarcodeGeneratorService>();
             services.AddSingleton<IBarcodeReaderService, BarcodeReaderService>();
             var provider = services.BuildServiceProvider();
 
             // Resolve services
-            var generator = provider.GetRequiredService<IBarcodeGeneratorService>();
-            var reader = provider.GetRequiredService<IBarcodeReaderService>();
+            var generatorService = provider.GetRequiredService<IBarcodeGeneratorService>();
+            var readerService = provider.GetRequiredService<IBarcodeReaderService>();
 
-            // Sample data
-            string codeText = "123ABC456";
-            string filePath = "barcode.png";
+            // Generate a Code128 barcode
+            BaseEncodeType encodeType = EncodeTypes.Code128;
+            string codeText = "1234567890";
+            byte[] barcodeImage = generatorService.GenerateBarcode(encodeType, codeText);
+            Console.WriteLine($"Generated barcode ({encodeType}) with text '{codeText}'.");
 
-            // Generate and read barcode
-            generator.Generate(codeText, filePath);
-            string readText = reader.Read(filePath);
+            // Read the barcode back
+            string[] decodedTexts = readerService.ReadBarcodes(barcodeImage);
+            foreach (var txt in decodedTexts)
+            {
+                Console.WriteLine($"Decoded barcode text: {txt}");
+            }
 
-            Console.WriteLine($"Generated barcode with text: {codeText}");
-            Console.WriteLine($"Read barcode text: {(readText ?? "No barcode detected")}");
+            // End of demo
         }
     }
 }

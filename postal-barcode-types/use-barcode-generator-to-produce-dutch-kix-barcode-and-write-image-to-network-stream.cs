@@ -1,35 +1,38 @@
 using System;
-using System.Net.Sockets;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates generating a Dutch KIX barcode and writing it to a stream.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a Dutch KIX barcode, saves it as PNG to a memory stream,
+    /// and outputs the number of bytes written.
+    /// </summary>
     static void Main()
     {
-        // Sample codetext for Dutch KIX barcode
-        const string codeText = "1234567890";
+        // Sample code text for Dutch KIX barcode (numeric, up to 13 digits)
+        const string codeText = "1234567890123";
 
-        // Connect to a TCP server (example: localhost on port 5000)
-        using (var client = new TcpClient())
+        // Create the barcode generator for Dutch KIX symbology
+        using (var generator = new BarcodeGenerator(EncodeTypes.DutchKIX, codeText))
         {
-            try
+            // Simulate a network stream using a MemoryStream.
+            // In a real scenario this could be a NetworkStream from a TcpClient.
+            using (var networkStream = new MemoryStream())
             {
-                client.Connect("localhost", 5000);
-                using (var networkStream = client.GetStream())
-                {
-                    // Create the barcode generator for Dutch KIX symbology
-                    using (var generator = new BarcodeGenerator(EncodeTypes.DutchKIX, codeText))
-                    {
-                        // Save the generated barcode image directly to the network stream in PNG format
-                        generator.Save(networkStream, BarCodeImageFormat.Png);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Error: " + ex.Message);
+                // Save the generated barcode image directly to the stream in PNG format
+                generator.Save(networkStream, BarCodeImageFormat.Png);
+
+                // Reset the stream position to the beginning for any further processing
+                networkStream.Position = 0;
+
+                // Output the length of the stream (number of bytes written)
+                Console.WriteLine($"Dutch KIX barcode generated. Bytes written to stream: {networkStream.Length}");
             }
         }
     }

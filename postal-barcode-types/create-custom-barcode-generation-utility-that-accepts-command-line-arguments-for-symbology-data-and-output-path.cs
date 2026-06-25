@@ -3,73 +3,73 @@ using System.IO;
 using System.Reflection;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
 
+/// <summary>
+/// Demonstrates generating a barcode image using Aspose.BarCode.
+/// </summary>
 class Program
 {
-    static int Main(string[] args)
+    /// <summary>
+    /// Entry point of the application.
+    /// Accepts optional command‑line arguments: symbology name, data string, and output file path.
+    /// </summary>
+    /// <param name="args">
+    /// args[0] – symbology name (e.g., "Code128")<br/>
+    /// args[1] – data to encode (e.g., "Sample123")<br/>
+    /// args[2] – output file path (e.g., "barcode.png")
+    /// </param>
+    static void Main(string[] args)
     {
-        // Default values
-        string symbologyName = "Code128";
-        string codeText = "123456";
-        string outputPath = "barcode.png";
+        // --------------------------------------------------------------------
+        // Determine input parameters, falling back to defaults if not provided.
+        // --------------------------------------------------------------------
+        string symbologyName = args.Length > 0 ? args[0] : "Code128";
+        string data = args.Length > 1 ? args[1] : "Sample123";
+        string outputPath = args.Length > 2 ? args[2] : "barcode.png";
 
-        // Parse command‑line arguments if provided
-        if (args.Length > 0 && !string.IsNullOrWhiteSpace(args[0]))
-            symbologyName = args[0];
-        if (args.Length > 1 && !string.IsNullOrWhiteSpace(args[1]))
-            codeText = args[1];
-        if (args.Length > 2 && !string.IsNullOrWhiteSpace(args[2]))
-            outputPath = args[2];
-
-        // Resolve symbology name to EncodeTypes static field
-        BaseEncodeType encodeType = ResolveEncodeType(symbologyName);
-        if (encodeType == null)
+        // --------------------------------------------------------------
+        // Ensure the directory for the output file exists; create if needed.
+        // --------------------------------------------------------------
+        string? directory = Path.GetDirectoryName(outputPath);
+        if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
         {
-            Console.Error.WriteLine($"Error: Unknown symbology '{symbologyName}'.");
-            return 1;
+            Directory.CreateDirectory(directory);
         }
+
+        // --------------------------------------------------------------
+        // Resolve the symbology name to the corresponding BaseEncodeType
+        // using reflection on the EncodeTypes class.
+        // --------------------------------------------------------------
+        FieldInfo? field = typeof(EncodeTypes).GetField(symbologyName);
+        if (field == null)
+        {
+            Console.WriteLine($"Unknown symbology: {symbologyName}");
+            return;
+        }
+
+        // Cast the reflected field value to BaseEncodeType.
+        BaseEncodeType encodeType = (BaseEncodeType)field.GetValue(null)!;
 
         try
         {
-            // Create generator, set data and save image
-            using (var generator = new BarcodeGenerator(encodeType, codeText))
+            // --------------------------------------------------------------
+            // Generate the barcode and save it to the specified file.
+            // --------------------------------------------------------------
+            using (var generator = new BarcodeGenerator(encodeType, data))
             {
-                // Ensure the directory for the output file exists
-                string directory = Path.GetDirectoryName(Path.GetFullPath(outputPath));
-                if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
-                    Directory.CreateDirectory(directory);
+                // Optional: set image resolution (dots per inch).
+                generator.Parameters.Resolution = 300f;
 
+                // Save the generated barcode image.
                 generator.Save(outputPath);
             }
 
-            Console.WriteLine($"Barcode saved to '{outputPath}'.");
-            return 0;
-        }
-        catch (BarCodeException ex)
-        {
-            Console.Error.WriteLine($"Barcode generation failed: {ex.Message}");
-            return 2;
+            Console.WriteLine($"Barcode generated: {outputPath}");
         }
         catch (Exception ex)
         {
-            Console.Error.WriteLine($"Unexpected error: {ex.Message}");
-            return 3;
+            // Output any errors that occur during barcode generation.
+            Console.WriteLine($"Error generating barcode: {ex.Message}");
         }
-    }
-
-    // Uses reflection to map a string name to a public static EncodeTypes field.
-    private static BaseEncodeType ResolveEncodeType(string name)
-    {
-        if (string.IsNullOrWhiteSpace(name))
-            return null;
-
-        // EncodeTypes fields are of type SymbologyEncodeType which derives from BaseEncodeType
-        FieldInfo field = typeof(EncodeTypes).GetField(name, BindingFlags.Public | BindingFlags.Static | BindingFlags.IgnoreCase);
-        if (field == null)
-            return null;
-
-        object value = field.GetValue(null);
-        return value as BaseEncodeType;
     }
 }
