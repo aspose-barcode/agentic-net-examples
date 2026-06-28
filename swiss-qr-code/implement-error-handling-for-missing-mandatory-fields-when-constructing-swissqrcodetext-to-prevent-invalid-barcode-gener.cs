@@ -1,66 +1,90 @@
 using System;
-using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.ComplexBarcode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode;
 
-namespace SwissQRExample
+/// <summary>
+/// Demonstrates generation of a Swiss QR code barcode using Aspose.BarCode.
+/// </summary>
+class Program
 {
-    class Program
+    /// <summary>
+    /// Entry point of the application. Constructs a Swiss QR code, validates it,
+    /// generates the barcode image, and saves it to disk.
+    /// </summary>
+    static void Main()
     {
-        static void Main()
+        // Construct SwissQR codetext object which holds all QR bill data
+        var swissQr = new SwissQRCodetext();
+
+        // Populate mandatory fields required for a valid QR bill
+        swissQr.Bill.Creditor.Name = "John Doe";
+        swissQr.Bill.Creditor.CountryCode = "CH";
+        swissQr.Bill.Account = "CH9300762011623852957";
+        swissQr.Bill.Amount = 199.95m;
+        swissQr.Bill.Version = SwissQRBill.QrBillStandardVersion.V2_0;
+
+        try
         {
-            try
-            {
-                // Create SwissQR codetext and populate mandatory fields
-                var swissQRCodetext = new SwissQRCodetext();
-                swissQRCodetext.Bill.Account = "CH9300762011623852957"; // valid IBAN
-                swissQRCodetext.Bill.Creditor.CountryCode = "CH";       // creditor country code
-                swissQRCodetext.Bill.Amount = 199.95m;                  // payment amount
-                swissQRCodetext.Bill.Version = SwissQRBill.QrBillStandardVersion.V2_0;
+            // Validate mandatory fields before attempting barcode generation
+            ValidateSwissQr(swissQr);
 
-                // Validate mandatory fields before generation
-                ValidateSwissQR(swissQRCodetext);
+            // Define output file path and generate the barcode image
+            const string outputPath = "SwissQR.png";
+            using (var generator = new ComplexBarcodeGenerator(swissQr))
+            {
+                // Save the generated barcode as a PNG file
+                generator.Save(outputPath, BarCodeImageFormat.Png);
+            }
 
-                // Generate the SwissQR barcode
-                using (var generator = new ComplexBarcodeGenerator(swissQRCodetext))
-                {
-                    using (var memoryStream = new MemoryStream())
-                    {
-                        generator.Save(memoryStream, BarCodeImageFormat.Png);
-                        File.WriteAllBytes("SwissQR.png", memoryStream.ToArray());
-                        Console.WriteLine("SwissQR barcode generated successfully: SwissQR.png");
-                    }
-                }
-            }
-            catch (ArgumentException ex)
-            {
-                Console.WriteLine($"Validation error: {ex.Message}");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Generation failed: {ex.Message}");
-            }
+            Console.WriteLine($"SwissQR barcode saved to {outputPath}");
         }
-
-        // Checks that all mandatory fields for SwissQR are provided
-        private static void ValidateSwissQR(SwissQRCodetext codetext)
+        // Handle validation errors explicitly
+        catch (ArgumentException ex)
         {
-            if (codetext == null)
-                throw new ArgumentException("SwissQRCodetext instance cannot be null.");
-
-            var bill = codetext.Bill;
-            if (string.IsNullOrWhiteSpace(bill.Account))
-                throw new ArgumentException("Bill.Account (IBAN) is mandatory and cannot be empty.");
-
-            if (string.IsNullOrWhiteSpace(bill.Creditor?.CountryCode))
-                throw new ArgumentException("Bill.Creditor.CountryCode is mandatory and cannot be empty.");
-
-            // Version is an enum; ensure it is set to a defined value
-            if (!Enum.IsDefined(typeof(SwissQRBill.QrBillStandardVersion), bill.Version))
-                throw new ArgumentException("Bill.Version must be a valid SwissQR bill standard version.");
-
-            // Additional mandatory checks can be added here (e.g., creditor name, reference for certain IBAN ranges)
+            Console.WriteLine($"Validation error: {ex.Message}");
         }
+        // Catch any other unexpected exceptions
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Unexpected error: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Validates that all required properties of the SwissQRCodetext instance are set.
+    /// Throws <see cref="ArgumentException"/> if any mandatory field is missing or invalid.
+    /// </summary>
+    /// <param name="swissQr">The SwissQRCodetext object to validate.</param>
+    static void ValidateSwissQr(SwissQRCodetext swissQr)
+    {
+        // Ensure the SwissQRCodetext instance itself is not null
+        if (swissQr == null)
+            throw new ArgumentException("SwissQRCodetext instance cannot be null.");
+
+        var bill = swissQr.Bill;
+        // Ensure the Bill property is not null
+        if (bill == null)
+            throw new ArgumentException("Bill cannot be null.");
+
+        // Creditor name is mandatory
+        if (string.IsNullOrWhiteSpace(bill.Creditor.Name))
+            throw new ArgumentException("Creditor Name is mandatory.");
+
+        // Creditor country code is mandatory
+        if (string.IsNullOrWhiteSpace(bill.Creditor.CountryCode))
+            throw new ArgumentException("Creditor CountryCode is mandatory.");
+
+        // Account number is mandatory
+        if (string.IsNullOrWhiteSpace(bill.Account))
+            throw new ArgumentException("Account is mandatory.");
+
+        // Amount must be a positive value
+        if (bill.Amount <= 0)
+            throw new ArgumentException("Amount must be greater than zero.");
+
+        // Version must be a defined enum value
+        if (!Enum.IsDefined(typeof(SwissQRBill.QrBillStandardVersion), bill.Version))
+            throw new ArgumentException("Bill.Version is mandatory and must be a valid enum value.");
     }
 }

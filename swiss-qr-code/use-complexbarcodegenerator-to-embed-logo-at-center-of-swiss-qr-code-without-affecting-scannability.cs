@@ -1,75 +1,100 @@
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.ComplexBarcode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates generation of a Swiss QR code with an embedded logo using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a Swiss QR barcode, embeds a logo at its centre, and saves the result as a PNG file.
+    /// </summary>
     static void Main()
     {
-        // Prepare Swiss QR bill data (using a known‑valid IBAN and amount)
+        // Output file for the final QR code image and optional logo source file
+        string outputPath = "SwissQR_with_logo.png";
+        string logoPath = "logo.png";
+
+        // --------------------------------------------------------------------
+        // Ensure a placeholder logo exists if the specified logo file is missing
+        // --------------------------------------------------------------------
+        if (!File.Exists(logoPath))
+        {
+            // Create a 100x100 white bitmap and draw the word "Logo" on it
+            using (var placeholder = new Bitmap(100, 100))
+            {
+                using (var g = Graphics.FromImage(placeholder))
+                {
+                    g.Clear(Color.White);
+                    using (var font = new Font("Arial", 12f))
+                    {
+                        g.DrawString("Logo", font, Brushes.Black, new PointF(10f, 40f));
+                    }
+                }
+                // Save the placeholder as a PNG file
+                placeholder.Save(logoPath, ImageFormat.Png);
+            }
+        }
+
+        // --------------------------------------------------------------
+        // Build the Swiss QR code text with required billing information
+        // --------------------------------------------------------------
         var swissQr = new SwissQRCodetext();
+        swissQr.Bill.Creditor.Name = "John Doe";
+        swissQr.Bill.Creditor.CountryCode = "CH";
         swissQr.Bill.Account = "CH9300762011623852957";
         swissQr.Bill.Amount = 199.95m;
         swissQr.Bill.Version = SwissQRBill.QrBillStandardVersion.V2_0;
-        swissQr.Bill.Creditor.CountryCode = "CH";
 
-        // Required creditor fields
-        swissQr.Bill.Creditor.Name = "John Doe";
-        swissQr.Bill.Creditor.AddressLine1 = "Main Street 1";
-        swissQr.Bill.Creditor.PostalCode = "8000";
-        swissQr.Bill.Creditor.Town = "Zurich";
-
-        // Create the complex barcode generator and set high error correction (Level H)
+        // --------------------------------------------------------------
+        // Generate the QR barcode with high error correction (Level H)
+        // --------------------------------------------------------------
         using (var generator = new ComplexBarcodeGenerator(swissQr))
         {
             generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
 
-            // Generate the QR code image
-            using (Bitmap qrBitmap = generator.GenerateBarCodeImage())
+            // Create the barcode image
+            using (var barcodeImage = generator.GenerateBarCodeImage())
             {
-                // Determine logo size (e.g., 20 % of the QR code dimensions)
-                int logoSize = (int)(Math.Min(qrBitmap.Width, qrBitmap.Height) * 0.20f);
-                int logoX = (qrBitmap.Width - logoSize) / 2;
-                int logoY = (qrBitmap.Height - logoSize) / 2;
-                var logoRect = new Rectangle(logoX, logoY, logoSize, logoSize);
-
-                // Draw a simple logo (white circle with a black border) onto the QR code
-                using (Graphics graphics = Graphics.FromImage(qrBitmap))
+                // Load the logo image from file
+                using (var logoImage = new Bitmap(logoPath))
                 {
-                    // Clear the logo area with white to improve contrast
-                    using (var whiteBrush = new SolidBrush(Color.White))
-                    {
-                        graphics.FillEllipse(whiteBrush, logoRect);
-                    }
+                    int barcodeWidth = barcodeImage.Width;
+                    int barcodeHeight = barcodeImage.Height;
 
-                    // Draw the logo border
-                    using (var blackPen = new Pen(Color.Black, 2f))
+                    // ------------------------------------------------------
+                    // Create a new bitmap to hold the combined barcode + logo
+                    // ------------------------------------------------------
+                    using (var finalImage = new Bitmap(barcodeWidth, barcodeHeight))
                     {
-                        graphics.DrawEllipse(blackPen, logoRect);
-                    }
-
-                    // Draw initials inside the logo
-                    using (var font = new Font("Arial", logoSize * 0.4f, FontStyle.Bold))
-                    using (var textBrush = new SolidBrush(Color.Black))
-                    {
-                        var format = new StringFormat
+                        using (var graphics = Graphics.FromImage(finalImage))
                         {
-                            Alignment = StringAlignment.Center,
-                            LineAlignment = StringAlignment.Center
-                        };
-                        graphics.DrawString("AB", font, textBrush, logoRect, format);
+                            // Draw the QR barcode onto the final image
+                            graphics.DrawImage(barcodeImage, 0, 0, barcodeWidth, barcodeHeight);
+
+                            // Calculate logo size (20% of barcode dimensions) and centre position
+                            int logoWidth = (int)(barcodeWidth * 0.2f);
+                            int logoHeight = (int)(barcodeHeight * 0.2f);
+                            int logoX = (barcodeWidth - logoWidth) / 2;
+                            int logoY = (barcodeHeight - logoHeight) / 2;
+
+                            // Draw the logo at the calculated position
+                            graphics.DrawImage(logoImage, new Rectangle(logoX, logoY, logoWidth, logoHeight));
+                        }
+
+                        // Save the combined image as a PNG file
+                        finalImage.Save(outputPath, ImageFormat.Png);
                     }
                 }
-
-                // Save the final image
-                const string outputPath = "SwissQRWithLogo.png";
-                qrBitmap.Save(outputPath, ImageFormat.Png);
-                Console.WriteLine($"Swiss QR Code with embedded logo saved to: {Path.GetFullPath(outputPath)}");
             }
         }
+
+        // Output the full path of the saved image to the console
+        Console.WriteLine($"Swiss QR code with embedded logo saved to: {Path.GetFullPath(outputPath)}");
     }
 }

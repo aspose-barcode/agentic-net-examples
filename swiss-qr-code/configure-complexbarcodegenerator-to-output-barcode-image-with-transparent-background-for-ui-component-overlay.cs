@@ -4,32 +4,42 @@ using Aspose.BarCode;
 using Aspose.BarCode.ComplexBarcode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates generating a Swiss QR code barcode with a transparent background
+/// and saving it as a PNG image.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates the barcode and writes the output file path to the console.
+    /// </summary>
     static void Main()
     {
-        // Prepare SwissQR codetext with mandatory fields
-        var swissQr = new SwissQRCodetext();
-        swissQr.Bill.Creditor.Name = "John Doe";
-        swissQr.Bill.Creditor.CountryCode = "CH";
-        swissQr.Bill.Account = "CH9300762011623852957";
-        swissQr.Bill.Amount = 199.95m;
-        swissQr.Bill.Version = SwissQRBill.QrBillStandardVersion.V2_0;
+        // Define the output file path for the generated barcode image.
+        string outputPath = "transparent_barcode.png";
 
-        // Create ComplexBarcodeGenerator with the codetext
+        // Create and configure the Swiss QR code text with required bill details.
+        var swissQr = new SwissQRCodetext();
+        swissQr.Bill.Creditor.Name = "John Doe";               // Creditor's name
+        swissQr.Bill.Creditor.CountryCode = "CH";             // Creditor's country code (Switzerland)
+        swissQr.Bill.Account = "CH9300762011623852957";       // IBAN account number
+        swissQr.Bill.Amount = 199.95m;                         // Invoice amount
+        swissQr.Bill.Version = SwissQRBill.QrBillStandardVersion.V2_0; // QR bill version
+
+        // Generate the barcode using the configured Swiss QR code text.
         using (var generator = new ComplexBarcodeGenerator(swissQr))
         {
-            // Set transparent background for overlay use
-            generator.Parameters.BackColor = Aspose.Drawing.Color.Transparent;
+            // Set the background color of the barcode to transparent.
+            generator.Parameters.BackColor = Color.Transparent;
 
-            // Optional: set QR error correction level to high
-            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
-
-            // Save the barcode image as PNG (supports transparency)
-            string outputPath = "transparent_swissqr.png";
+            // Save the barcode as a PNG file with the specified output path.
             generator.Save(outputPath, BarCodeImageFormat.Png);
-            Console.WriteLine($"Barcode saved to {Path.GetFullPath(outputPath)}");
         }
+
+        // Inform the user where the barcode image has been saved.
+        Console.WriteLine($"Barcode image saved to: {outputPath}");
     }
 }

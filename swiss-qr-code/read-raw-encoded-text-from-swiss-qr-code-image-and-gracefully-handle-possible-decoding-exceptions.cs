@@ -1,71 +1,73 @@
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.BarCode.ComplexBarcode;
 
-namespace SwissQrCodeReader
+/// <summary>
+/// Demonstrates reading a Swiss QR Code image, extracting the raw encoded text,
+/// and decoding it into a structured Swiss QR Bill object.
+/// </summary>
+class Program
 {
-    class Program
+    /// <summary>
+    /// Entry point of the application.
+    /// </summary>
+    static void Main()
     {
-        static void Main(string[] args)
+        // Path to the Swiss QR Code image file.
+        string imagePath = "SwissQR.png";
+
+        // Verify that the specified image file exists before proceeding.
+        if (!File.Exists(imagePath))
         {
-            // Path to the Swiss QR Code image (adjust as needed)
-            string imagePath = "SwissQR.png";
+            Console.WriteLine($"File not found: {imagePath}");
+            return;
+        }
 
-            // Verify that the file exists before attempting to read
-            if (!File.Exists(imagePath))
+        try
+        {
+            // Initialize a barcode reader configured to decode QR codes.
+            using (var reader = new BarCodeReader(imagePath, DecodeType.QR))
             {
-                Console.WriteLine($"Error: File not found - {imagePath}");
-                return;
-            }
+                // Read all barcodes present in the image.
+                BarCodeResult[] results = reader.ReadBarCodes();
 
-            try
-            {
-                // Initialize the barcode reader for all supported types
-                using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
+                // If no barcodes were detected, inform the user and exit.
+                if (results == null || results.Length == 0)
                 {
-                    // Read all barcodes from the image
-                    BarCodeResult[] results = reader.ReadBarCodes();
+                    Console.WriteLine("No barcode detected in the image.");
+                    return;
+                }
 
-                    if (results.Length == 0)
-                    {
-                        Console.WriteLine("No barcodes were detected in the image.");
-                        return;
-                    }
+                // Assume the first detected barcode corresponds to the Swiss QR Code.
+                var result = results[0];
+                string rawEncodedText = result.CodeText;
+                Console.WriteLine($"Raw encoded text: {rawEncodedText}");
 
-                    foreach (var result in results)
-                    {
-                        Console.WriteLine($"Detected barcode type: {result.CodeTypeName}");
-                        Console.WriteLine($"Raw codetext: {result.CodeText}");
+                // Attempt to decode the raw Swiss QR codetext into a structured object.
+                SwissQRCodetext decoded = ComplexCodetextReader.TryDecodeSwissQR(rawEncodedText);
 
-                        // Attempt to decode Swiss QR specific codetext
-                        SwissQRCodetext decoded = ComplexCodetextReader.TryDecodeSwissQR(result.CodeText);
-
-                        if (decoded != null)
-                        {
-                            // Output some key fields from the decoded Swiss QR bill
-                            Console.WriteLine("Successfully decoded Swiss QR bill:");
-                            Console.WriteLine($"  Account: {decoded.Bill.Account}");
-                            Console.WriteLine($"  Amount: {decoded.Bill.Amount}");
-                            Console.WriteLine($"  Currency: {decoded.Bill.Currency}");
-                            Console.WriteLine($"  Creditor Name: {decoded.Bill.Creditor.Name}");
-                            Console.WriteLine($"  Version: {decoded.Bill.Version}");
-                        }
-                        else
-                        {
-                            Console.WriteLine("The codetext could not be decoded as Swiss QR.");
-                        }
-
-                        Console.WriteLine(); // Blank line between results
-                    }
+                // If decoding fails, notify the user.
+                if (decoded == null)
+                {
+                    Console.WriteLine("Failed to decode Swiss QR codetext.");
+                }
+                else
+                {
+                    // Display selected fields from the decoded Swiss QR Bill.
+                    Console.WriteLine("Decoded Swiss QR Bill:");
+                    Console.WriteLine($"  Account: {decoded.Bill.Account}");
+                    Console.WriteLine($"  Amount: {decoded.Bill.Amount}");
+                    Console.WriteLine($"  Creditor Name: {decoded.Bill.Creditor.Name}");
+                    Console.WriteLine($"  Creditor Country Code: {decoded.Bill.Creditor.CountryCode}");
+                    Console.WriteLine($"  Version: {decoded.Bill.Version}");
                 }
             }
-            catch (Exception ex)
-            {
-                // Gracefully handle any unexpected exceptions during processing
-                Console.WriteLine($"An error occurred while processing the image: {ex.Message}");
-            }
+        }
+        catch (Exception ex)
+        {
+            // Handle any unexpected errors that occur during reading or decoding.
+            Console.WriteLine($"An error occurred: {ex.Message}");
         }
     }
 }

@@ -2,83 +2,108 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Text.Json;
-using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
+/// <summary>
+/// Entry point for the QR code extraction utility.
+/// Scans a folder for image files, extracts QR code text, and writes results to a JSON file.
+/// </summary>
 class Program
 {
-    // Simple model for JSON output
+    /// <summary>
+    /// Simple DTO to hold extracted QR code data.
+    /// </summary>
     private class PaymentInfo
     {
         public string FileName { get; set; }
         public string CodeText { get; set; }
     }
 
+    /// <summary>
+    /// Main method processes command‑line arguments, reads images, extracts QR codes, and writes JSON output.
+    /// </summary>
+    /// <param name="args">
+    /// args[0] – optional input folder path (default: "QRCodes").
+    /// args[1] – optional output JSON file path (default: "paymentDetails.json").
+    /// </param>
     static void Main(string[] args)
     {
-        // Determine input folder (argument or default)
-        string inputFolder = args.Length > 0 ? args[0] : "InputQRCodes";
-        // Ensure the folder exists
+        // Resolve input folder: use first argument if provided, otherwise default.
+        string inputFolder = args.Length > 0 && !string.IsNullOrWhiteSpace(args[0])
+            ? args[0]
+            : "QRCodes";
+
+        // Resolve output JSON file path: use second argument if provided, otherwise default.
+        string outputJsonPath = args.Length > 1 && !string.IsNullOrWhiteSpace(args[1])
+            ? args[1]
+            : "paymentDetails.json";
+
+        // Verify that the input folder exists before proceeding.
         if (!Directory.Exists(inputFolder))
         {
-            Directory.CreateDirectory(inputFolder);
-            // Seed a sample QR code so the example can run end‑to‑end
-            string samplePath = Path.Combine(inputFolder, "sample.png");
-            using (var generator = new BarcodeGenerator(EncodeTypes.QR, "PAYMENT:12345"))
-            {
-                // Set a moderate error correction level
-                generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
-                generator.Save(samplePath);
-            }
+            Console.WriteLine($"Input folder does not exist: {inputFolder}");
+            return;
         }
 
-        // Prepare list to hold extracted payment details
-        var payments = new List<PaymentInfo>();
+        // Define supported image file extensions.
+        string[] extensions = new[] { ".png", ".jpg", ".jpeg", ".bmp", ".gif" };
+        var paymentList = new List<PaymentInfo>();
 
-        // Get image files (png and jpg) from the folder
-        string[] files = Directory.GetFiles(inputFolder, "*.*", SearchOption.TopDirectoryOnly);
-        foreach (string filePath in files)
+        // Enumerate all files in the input folder.
+        foreach (string filePath in Directory.GetFiles(inputFolder))
         {
-            // Simple filter for common image extensions
-            string ext = Path.GetExtension(filePath).ToLowerInvariant();
-            if (ext != ".png" && ext != ".jpg" && ext != ".jpeg" && ext != ".bmp" && ext != ".gif")
+            // Skip files that do not have a supported image extension.
+            if (Array.IndexOf(extensions, Path.GetExtension(filePath).ToLowerInvariant()) < 0)
                 continue;
 
-            // Verify the file still exists
+            // Defensive check: ensure the file still exists.
             if (!File.Exists(filePath))
+            {
+                Console.WriteLine($"File not found (skipped): {filePath}");
                 continue;
+            }
 
             try
             {
-                // Use BarCodeReader to decode QR codes
-                using (var reader = new BarCodeReader(filePath, DecodeType.QR))
+                // Load the image using Aspose.Drawing.Bitmap (IDisposable).
+                using (var bitmap = new Bitmap(filePath))
                 {
-                    // Read all barcodes in the image
-                    foreach (var result in reader.ReadBarCodes())
+                    // Initialize a barcode reader configured for QR codes only.
+                    using (var reader = new BarCodeReader(bitmap, DecodeType.QR))
                     {
-                        payments.Add(new PaymentInfo
+                        // Iterate over all detected QR codes in the image.
+                        foreach (var result in reader.ReadBarCodes())
                         {
-                            FileName = Path.GetFileName(filePath),
-                            CodeText = result.CodeText
-                        });
+                            // Add a new record containing the file name and extracted QR code text.
+                            paymentList.Add(new PaymentInfo
+                            {
+                                FileName = Path.GetFileName(filePath),
+                                CodeText = result.CodeText
+                            });
+                        }
                     }
                 }
             }
             catch (Exception ex)
             {
-                // If a file cannot be processed, write a warning to console and continue
-                Console.WriteLine($"Warning: Could not process '{filePath}'. {ex.Message}");
+                // Log any errors encountered while processing the current file.
+                Console.WriteLine($"Error processing '{filePath}': {ex.Message}");
             }
         }
 
-        // Serialize the collected payment info to JSON
-        string jsonOutput = JsonSerializer.Serialize(payments, new JsonSerializerOptions { WriteIndented = true });
-
-        // Write JSON to output file
-        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "payment_details.json");
-        File.WriteAllText(outputPath, jsonOutput);
-
-        // Inform the user where the result is stored
-        Console.WriteLine($"Payment details written to: {outputPath}");
+        // Serialize the collected payment information to a formatted JSON string.
+        try
+        {
+            var jsonOptions = new JsonSerializerOptions { WriteIndented = true };
+            string json = JsonSerializer.Serialize(paymentList, jsonOptions);
+            File.WriteAllText(outputJsonPath, json);
+            Console.WriteLine($"Successfully wrote {paymentList.Count} record(s) to '{outputJsonPath}'.");
+        }
+        catch (Exception ex)
+        {
+            // Log any errors that occur during JSON serialization or file writing.
+            Console.WriteLine($"Failed to write JSON output: {ex.Message}");
+        }
     }
 }

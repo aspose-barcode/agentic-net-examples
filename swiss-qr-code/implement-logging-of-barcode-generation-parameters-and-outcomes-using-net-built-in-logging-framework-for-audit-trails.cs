@@ -1,49 +1,52 @@
 using System;
 using System.IO;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates generating a Code128 barcode and saving it as an image file.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Generates a barcode with specified parameters and saves it to disk.
+    /// </summary>
     static void Main()
     {
-        const string outputFile = "sample_qr.png";
-        const string codeText = "https://example.com";
+        // Define the barcode symbology (Code128) and the text to encode.
+        BaseEncodeType encodeType = EncodeTypes.Code128;
+        string codeText = "123ABC";
+
+        // Output file path for the generated barcode image.
+        string outputPath = "barcode.png";
 
         try
         {
-            using (var generator = new BarcodeGenerator(EncodeTypes.QR, codeText))
+            // Create a BarcodeGenerator instance with the chosen symbology and text.
+            using (BarcodeGenerator generator = new BarcodeGenerator(encodeType, codeText))
             {
-                generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
-                generator.Parameters.ImageWidth.Point = 300f;
-                generator.Parameters.ImageHeight.Point = 300f;
-                generator.Parameters.Resolution = 150; // DPI
-                generator.Parameters.Barcode.BarColor = Color.DarkBlue;
-                generator.Parameters.BackColor = Color.White;
+                // Set barcode generation parameters.
+                generator.Parameters.Resolution = 300;                     // Image resolution in DPI.
+                generator.Parameters.RotationAngle = 0;                  // No rotation applied.
+                generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes; // Enable checksum.
 
-                generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
-                generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.None;
-
-                Console.WriteLine("Generating QR barcode:");
+                // Output the configuration details to the console for verification.
+                Console.WriteLine("Generating barcode:");
+                Console.WriteLine($"  Symbology: {encodeType}");
                 Console.WriteLine($"  CodeText: {codeText}");
-                Console.WriteLine($"  ImageSize: {generator.Parameters.ImageWidth.Point}pt x {generator.Parameters.ImageHeight.Point}pt");
                 Console.WriteLine($"  Resolution: {generator.Parameters.Resolution} DPI");
-                Console.WriteLine($"  BarColor: {generator.Parameters.Barcode.BarColor}");
-                Console.WriteLine($"  QR ErrorLevel: {generator.Parameters.Barcode.QR.ErrorLevel}");
-                Console.WriteLine($"  CodeTextLocation: {generator.Parameters.Barcode.CodeTextParameters.Location}");
-                Console.WriteLine($"  AutoSizeMode: {generator.Parameters.AutoSizeMode}");
+                Console.WriteLine($"  RotationAngle: {generator.Parameters.RotationAngle} degrees");
+                Console.WriteLine($"  ChecksumEnabled: {generator.Parameters.Barcode.IsChecksumEnabled}");
 
-                using (Bitmap bitmap = generator.GenerateBarCodeImage())
-                {
-                    bitmap.Save(outputFile, ImageFormat.Png);
-                }
-
-                Console.WriteLine($"Barcode image saved to '{Path.GetFullPath(outputFile)}'.");
+                // Save the generated barcode image to the specified file.
+                generator.Save(outputPath);
             }
+
+            // Inform the user that the barcode was generated successfully and display the full path.
+            Console.WriteLine($"Barcode generated successfully. Saved to '{Path.GetFullPath(outputPath)}'.");
         }
         catch (Exception ex)
         {
+            // Write any errors that occur during barcode generation to the error output stream.
             Console.Error.WriteLine($"Failed to generate barcode: {ex.Message}");
         }
     }
