@@ -1,38 +1,61 @@
 using System;
-using Aspose.BarCode.ComplexBarcode;
+using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode.ComplexBarcode;
 
+/// <summary>
+/// Demonstrates generation of a Mailmark 2D barcode using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Creates a Mailmark2DCodetext, configures its fields,
+    /// generates the barcode, and saves it as a PNG file.
+    /// </summary>
     static void Main()
     {
-        // Create Mailmark2DCodetext and assign routing, service, and customer data
-        var mailmark2d = new Mailmark2DCodetext
-        {
-            // Routing / service identifiers (single-character strings)
-            VersionID = "1",
-            InformationTypeID = "0",
-            Class = "1",
-            RTSFlag = "0",
+        // Instantiate a Mailmark2DCodetext object to hold barcode data.
+        var mailmark2d = new Mailmark2DCodetext();
 
-            // Supply chain and item identifiers
-            SupplyChainID = 1234567,
-            ItemID = 7654321,
+        // -------------------------
+        // Routing information
+        // -------------------------
+        // Post code and DPS (Delivery Point Suffix) – note the trailing space is required.
+        mailmark2d.DestinationPostCodeAndDPS = "EF61AH8T ";
 
-            // Destination postcode with DPS (trailing space as required)
-            DestinationPostCodeAndDPS = "EF61AH8T ",
+        // -------------------------
+        // Service / class information
+        // -------------------------
+        mailmark2d.VersionID = "1";               // Version identifier
+        mailmark2d.InformationTypeID = "0";       // Information type identifier
+        mailmark2d.Class = "1";                   // Class of the item
+        mailmark2d.RTSFlag = "0";                 // Return‑to‑sender flag
 
-            // Customer specific content
-            CustomerContent = "CustomerData",
-            CustomerContentEncodeMode = DataMatrixEncodeMode.C40
-        };
+        // -------------------------
+        // Customer data
+        // -------------------------
+        mailmark2d.SupplyChainID = 1234567;       // Supply chain identifier
+        mailmark2d.ItemID = 12345678;             // Unique item identifier
+        mailmark2d.CustomerContent = "CUSTOMER123"; // Optional customer content
+        // Encoding mode for the customer content (C40 is a compact alphanumeric mode).
+        mailmark2d.CustomerContentEncodeMode = DataMatrixEncodeMode.C40;
+        // Determines the size of the DataMatrix barcode; Auto lets the library choose.
+        mailmark2d.DataMatrixType = Mailmark2DType.Auto;
 
-        // Generate and save the Mailmark 2D barcode image
+        // -------------------------
+        // Barcode generation and saving
+        // -------------------------
+        string outputPath = "mailmark2d.png";
+
+        // Use ComplexBarcodeGenerator to create the barcode image.
         using (var generator = new ComplexBarcodeGenerator(mailmark2d))
         {
-            generator.Save("mailmark2d.png");
+            // Save the generated barcode as a PNG file.
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        Console.WriteLine("Mailmark 2D barcode generated successfully.");
+        // Output the full path of the saved file for user confirmation.
+        Console.WriteLine($"Mailmark 2D barcode saved to: {Path.GetFullPath(outputPath)}");
     }
 }

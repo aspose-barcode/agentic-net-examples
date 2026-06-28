@@ -1,16 +1,22 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
+/// <summary>
+/// Demonstrates generating Code128 barcodes for a list of items and saving them as PNG files.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Generates barcodes in parallel and writes them to disk.
+    /// </summary>
     static void Main()
     {
-        // Sample data to encode – in real scenarios this could be thousands of items.
-        List<string> dataSet = new List<string>
+        // Sample dataset of code texts to be encoded as barcodes
+        var data = new List<string>
         {
             "Item001",
             "Item002",
@@ -19,33 +25,36 @@ class Program
             "Item005"
         };
 
-        // Output directory (created if it does not exist).
-        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
+        // Define the output directory for generated barcode images
+        string outputDir = "Barcodes";
+
+        // Ensure the output directory exists; create it if it does not
         if (!Directory.Exists(outputDir))
         {
             Directory.CreateDirectory(outputDir);
         }
 
-        // Parallel generation using TPL.
-        Parallel.ForEach(dataSet, (codeText) =>
+        // Generate barcodes in parallel to improve performance on multi-core systems
+        Parallel.ForEach(data, codeText =>
         {
-            // Each iteration creates its own BarcodeGenerator (IDisposable).
+            // Each parallel task creates its own BarcodeGenerator instance to avoid thread‑safety issues
             using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
             {
-                // Optional: set some parameters (e.g., XDimension, BarHeight).
-                generator.Parameters.Barcode.XDimension.Point = 2f;
-                generator.Parameters.Barcode.BarHeight.Point = 50f;
+                // Set image resolution (dots per inch) for higher quality output
+                generator.Parameters.Resolution = 300f;
 
-                // Build a unique file name.
-                string fileName = $"barcode_{codeText}.png";
-                string filePath = Path.Combine(outputDir, fileName);
+                // Build the full file path for the PNG image
+                string filePath = Path.Combine(outputDir, $"{codeText}.png");
 
-                // Save the barcode image.
+                // Save the generated barcode image to the specified path
                 generator.Save(filePath);
-                Console.WriteLine($"Generated: {filePath}");
+
+                // Log progress to the console
+                Console.WriteLine($"Generated barcode for {codeText} at {filePath}");
             }
         });
 
+        // Indicate that all barcode generation tasks have completed
         Console.WriteLine("All barcodes have been generated.");
     }
 }

@@ -1,55 +1,75 @@
 using System;
+using System.IO;
 using Microsoft.Extensions.DependencyInjection;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 namespace BarcodeDIExample
 {
-    // Service contract for barcode generation
+    // Service interface for barcode generation
     public interface IBarcodeService
     {
-        void GenerateBarcode(string codeText, string outputPath);
+        void GenerateBarcode(BaseEncodeType type, string codeText, string outputPath);
     }
 
-    // Concrete implementation using Aspose.BarCode
+    /// <summary>
+    /// Implementation of <see cref="IBarcodeService"/> using Aspose.BarCode.
+    /// </summary>
     public class BarcodeService : IBarcodeService
     {
-        public void GenerateBarcode(string codeText, string outputPath)
+        /// <summary>
+        /// Generates a barcode image of the specified type and saves it to the given path.
+        /// </summary>
+        /// <param name="type">The barcode encoding type (e.g., Code128).</param>
+        /// <param name="codeText">The text to encode in the barcode.</param>
+        /// <param name="outputPath">The full file path where the barcode image will be saved.</param>
+        public void GenerateBarcode(BaseEncodeType type, string codeText, string outputPath)
         {
-            // Create a barcode generator for Code128 symbology
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+            // Ensure the output directory exists before attempting to save the file
+            string directory = Path.GetDirectoryName(outputPath);
+            if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
             {
-                // Example: set image resolution and background color
-                generator.Parameters.Resolution = 300;
-                generator.Parameters.BackColor = Aspose.Drawing.Color.White;
-                generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
+                Directory.CreateDirectory(directory);
+            }
 
-                // Save the barcode image as PNG
+            // Create a BarcodeGenerator, configure its parameters, and save the image
+            using (var generator = new BarcodeGenerator(type, codeText))
+            {
+                // Example: set a higher resolution for better image quality
+                generator.Parameters.Resolution = 300f;
+
+                // Save the barcode image as PNG to the specified path
                 generator.Save(outputPath);
             }
         }
     }
 
+    /// <summary>
+    /// Entry point of the application demonstrating dependency injection with the barcode service.
+    /// </summary>
     class Program
     {
-        static void Main(string[] args)
+        /// <summary>
+        /// Configures services, resolves the barcode service, and generates a sample barcode.
+        /// </summary>
+        static void Main()
         {
-            // Set up a simple DI container
+            // Set up the dependency injection container
             var services = new ServiceCollection();
             services.AddSingleton<IBarcodeService, BarcodeService>();
-            var provider = services.BuildServiceProvider();
+            var serviceProvider = services.BuildServiceProvider();
 
-            // Resolve the barcode service
-            var barcodeService = provider.GetRequiredService<IBarcodeService>();
+            // Resolve the barcode service from the DI container
+            var barcodeService = serviceProvider.GetRequiredService<IBarcodeService>();
 
-            // Sample data
-            string sampleText = "ABC123456";
-            string outputFile = "sample_barcode.png";
+            // Define the output file path for the generated barcode image
+            string outputFile = Path.Combine(Directory.GetCurrentDirectory(), "code128.png");
 
-            // Generate the barcode
-            barcodeService.GenerateBarcode(sampleText, outputFile);
+            // Generate a Code128 barcode with sample text and save it to the output file
+            barcodeService.GenerateBarcode(EncodeTypes.Code128, "Sample12345", outputFile);
 
-            Console.WriteLine($"Barcode generated and saved to '{outputFile}'.");
+            // Inform the user where the barcode image has been saved
+            Console.WriteLine($"Barcode generated and saved to: {outputFile}");
         }
     }
 }

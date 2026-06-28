@@ -1,48 +1,65 @@
 using System;
 using Aspose.BarCode.ComplexBarcode;
-using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
 
-namespace Mailmark2DExample
+/// <summary>
+/// Demonstrates encoding and decoding of a Mailmark2D codetext using Aspose.BarCode.
+/// </summary>
+class Program
 {
-    class Program
+    /// <summary>
+    /// Entry point of the application. Creates a sample Mailmark2D object, encodes it,
+    /// decodes the resulting string, and prints all fields to the console.
+    /// </summary>
+    static void Main()
     {
-        static void Main()
+        // --------------------------------------------------------------------
+        // 1. Create a sample Mailmark2DCodetext object with known values.
+        // --------------------------------------------------------------------
+        var mailmark2d = new Mailmark2DCodetext
         {
-            // Create a Mailmark2D codetext instance and set required fields
-            Mailmark2DCodetext mailmark2D = new Mailmark2DCodetext();
-            mailmark2D.VersionID = "1";               // Single‑character version identifier
-            mailmark2D.InformationTypeID = "0";       // Information type (routing/service code)
-            mailmark2D.Class = "1";                   // Class of the item
-            mailmark2D.RTSFlag = "0";                 // Return‑to‑sender flag
-            mailmark2D.SupplyChainID = 1234567;       // Example supply chain ID (max 7 digits)
-            mailmark2D.ItemID = 12345678;             // Example item ID (max 8 digits)
-            mailmark2D.DestinationPostCodeAndDPS = "EF61AH8T "; // Known‑valid postcode + DPS
+            VersionID = "1",
+            InformationTypeID = "0",
+            Class = "1",                     // Service code
+            RTSFlag = "0",
+            SupplyChainID = 384224,          // Routing code
+            ItemID = 16563762,
+            DestinationPostCodeAndDPS = "EF61AH8T "
+        };
 
-            // Construct the encoded codetext string
-            string encodedCodetext = mailmark2D.GetConstructedCodetext();
+        // --------------------------------------------------------------------
+        // 2. Construct the encoded codetext string from the object.
+        // --------------------------------------------------------------------
+        string encodedCodetext = mailmark2d.GetConstructedCodetext();
 
-            // Decode the constructed codetext back to a Mailmark2DCodetext object
-            Mailmark2DCodetext decoded = ComplexCodetextReader.TryDecodeMailmark2D(encodedCodetext);
+        // --------------------------------------------------------------------
+        // 3. Decode the codetext back to a Mailmark2DCodetext object.
+        // --------------------------------------------------------------------
+        Mailmark2DCodetext decoded = ComplexCodetextReader.TryDecodeMailmark2D(encodedCodetext);
 
-            if (decoded == null)
-            {
-                Console.WriteLine("Failed to decode the Mailmark2D codetext.");
-                return;
-            }
-
-            // Extract and display individual fields
-            Console.WriteLine("Decoded Mailmark2D fields:");
-            Console.WriteLine($"VersionID            : {decoded.VersionID}");
-            Console.WriteLine($"InformationTypeID    : {decoded.InformationTypeID}   // Routing / Service code");
-            Console.WriteLine($"Class                : {decoded.Class}");
-            Console.WriteLine($"RTSFlag              : {decoded.RTSFlag}");
-            Console.WriteLine($"SupplyChainID        : {decoded.SupplyChainID}");
-            Console.WriteLine($"ItemID               : {decoded.ItemID}");
-            Console.WriteLine($"DestinationPostCodeAndDPS : {decoded.DestinationPostCodeAndDPS}");
-            Console.WriteLine($"ReturnToSenderPostCode     : {decoded.ReturnToSenderPostCode}");
-            Console.WriteLine($"CustomerContent            : {decoded.CustomerContent}");
-            Console.WriteLine($"UPUCountryID               : {decoded.UPUCountryID}");
+        // --------------------------------------------------------------------
+        // 4. Verify decoding succeeded; if not, report the failure and exit.
+        // --------------------------------------------------------------------
+        if (decoded == null)
+        {
+            Console.WriteLine("Failed to decode Mailmark2D codetext.");
+            return;
         }
+
+        // --------------------------------------------------------------------
+        // 5. Extract and display individual fields from the decoded object.
+        // --------------------------------------------------------------------
+        Console.WriteLine("Decoded Mailmark2D fields:");
+        Console.WriteLine($"VersionID: {decoded.VersionID}");
+        Console.WriteLine($"InformationTypeID: {decoded.InformationTypeID}");
+        Console.WriteLine($"Class (Service Code): {decoded.Class}");
+        Console.WriteLine($"RTSFlag: {decoded.RTSFlag}");
+        Console.WriteLine($"SupplyChainID (Routing Code): {decoded.SupplyChainID}");
+        Console.WriteLine($"ItemID: {decoded.ItemID}");
+        Console.WriteLine($"DestinationPostCodeAndDPS: {decoded.DestinationPostCodeAndDPS}");
+        Console.WriteLine($"ReturnToSenderPostCode: {decoded.ReturnToSenderPostCode}");
+        Console.WriteLine($"UPUCountryID: {decoded.UPUCountryID}");
+        Console.WriteLine($"CustomerContent: {decoded.CustomerContent}");
+        Console.WriteLine($"CustomerContentEncodeMode: {decoded.CustomerContentEncodeMode}");
+        Console.WriteLine($"DataMatrixType: {decoded.DataMatrixType}");
     }
 }

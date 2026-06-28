@@ -1,112 +1,135 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using Aspose.BarCode;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.BarCode.ComplexBarcode;
 
+/// <summary>
+/// Reads Mailmark barcodes from image files in a directory and writes the extracted data to a CSV file.
+/// </summary>
 class Program
 {
-    static void Main()
+    /// <summary>
+    /// Application entry point.
+    /// </summary>
+    /// <param name="args">
+    /// Optional command‑line arguments:
+    /// args[0] – input directory containing barcode images (default: "Barcodes").
+    /// args[1] – output CSV file path (default: "output.csv").
+    /// </param>
+    static void Main(string[] args)
     {
-        // Input folder containing Mailmark barcode images
-        string inputFolder = "MailmarkImages";
-        // Output CSV file path
-        string outputCsv = "MailmarkDecoded.csv";
+        // Determine input directory (first argument or default)
+        string inputDirectory = args.Length > 0 ? args[0] : "Barcodes";
 
-        // Ensure the input folder exists
-        if (!Directory.Exists(inputFolder))
+        // Determine output CSV file path (second argument or default)
+        string outputCsvPath = args.Length > 1 ? args[1] : "output.csv";
+
+        // Verify that the input directory exists
+        if (!Directory.Exists(inputDirectory))
         {
-            Directory.CreateDirectory(inputFolder);
-            Console.WriteLine($"Input folder '{inputFolder}' was created. Add barcode images and rerun the program.");
+            Console.WriteLine($"Input directory does not exist: {inputDirectory}");
             return;
         }
 
-        // Get image files (common image extensions)
-        var imageFiles = Directory.GetFiles(inputFolder)
-            .Where(f => f.EndsWith(".png", StringComparison.OrdinalIgnoreCase) ||
-                        f.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) ||
-                        f.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase) ||
-                        f.EndsWith(".bmp", StringComparison.OrdinalIgnoreCase) ||
-                        f.EndsWith(".tif", StringComparison.OrdinalIgnoreCase) ||
-                        f.EndsWith(".tiff", StringComparison.OrdinalIgnoreCase))
-            .ToList();
+        // Prepare CSV lines collection and add header row
+        var csvLines = new List<string>();
+        csvLines.Add("FileName,Format,VersionID,Class,SupplychainID,ItemID,DestinationPostCodePlusDPS,RawCodeText");
 
-        if (imageFiles.Count == 0)
+        // Define supported image file extensions
+        string[] extensions = new[] { ".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff" };
+
+        // Enumerate all files in the input directory
+        var files = Directory.GetFiles(inputDirectory);
+        foreach (var filePath in files)
         {
-            Console.WriteLine($"No image files found in '{inputFolder}'.");
-            return;
-        }
+            // Skip files that do not have a supported image extension
+            if (Array.IndexOf(extensions, Path.GetExtension(filePath).ToLowerInvariant()) < 0)
+                continue;
 
-        // Write CSV header
-        using (var writer = new StreamWriter(outputCsv, false))
-        {
-            writer.WriteLine("FileName,Class,DestinationPostCodePlusDPS,Format,ItemID,SupplychainID,VersionID");
-
-            foreach (var filePath in imageFiles)
+            // Ensure the file actually exists (defensive check)
+            if (!File.Exists(filePath))
             {
-                if (!File.Exists(filePath))
+                Console.WriteLine($"File not found (skipped): {filePath}");
+                continue;
+            }
+
+            // Open a barcode reader for Mailmark type on the current image file
+            using (var reader = new BarCodeReader(filePath, DecodeType.Mailmark))
+            {
+                // Read all barcodes present in the image
+                var results = reader.ReadBarCodes();
+
+                // If no barcodes were found, write an empty CSV entry for the file
+                if (results == null || results.Length == 0)
                 {
-                    Console.WriteLine($"File not found: {filePath}");
+                    csvLines.Add($"{Path.GetFileName(filePath)},,,,,,,");
                     continue;
                 }
 
-                // Read Mailmark barcodes from the image
-                using (var reader = new BarCodeReader(filePath, DecodeType.Mailmark))
+                // Process each detected barcode
+                foreach (var result in results)
                 {
-                    var results = reader.ReadBarCodes();
+                    // Attempt to decode the complex Mailmark codetext into its components
+                    MailmarkCodetext mailmark = ComplexCodetextReader.TryDecodeMailmark(result.CodeText);
 
-                    if (results == null || results.Length == 0)
-                    {
-                        Console.WriteLine($"No Mailmark barcode detected in '{Path.GetFileName(filePath)}'.");
-                        continue;
-                    }
+                    // Extract individual fields, handling possible null values
+                    string format = mailmark?.Format.ToString() ?? "";
+                    string versionId = mailmark?.VersionID.ToString() ?? "";
+                    string classValue = mailmark?.Class ?? "";
+                    string supplychainId = mailmark?.SupplychainID.ToString() ?? "";
+                    string itemId = mailmark?.ItemID.ToString() ?? "";
+                    string destination = mailmark?.DestinationPostCodePlusDPS ?? "";
+                    string rawCode = result.CodeText ?? "";
 
-                    foreach (var result in results)
-                    {
-                        // Decode the complex Mailmark codetext
-                        MailmarkCodetext mailmark = ComplexCodetextReader.TryDecodeMailmark(result.CodeText);
+                    // Build a CSV line with proper escaping for each field
+                    string line = $"{Path.GetFileName(filePath)}," +
+                                  $"{EscapeCsv(format)}," +
+                                  $"{EscapeCsv(versionId)}," +
+                                  $"{EscapeCsv(classValue)}," +
+                                  $"{EscapeCsv(supplychainId)}," +
+                                  $"{EscapeCsv(itemId)}," +
+                                  $"{EscapeCsv(destination)}," +
+                                  $"{EscapeCsv(rawCode)}";
 
-                        if (mailmark != null)
-                        {
-                            // Prepare CSV line with decoded fields
-                            string line = string.Join(",",
-                                EscapeCsv(Path.GetFileName(filePath)),
-                                EscapeCsv(mailmark.Class),
-                                EscapeCsv(mailmark.DestinationPostCodePlusDPS),
-                                EscapeCsv(mailmark.Format.ToString()),
-                                mailmark.ItemID,
-                                mailmark.SupplychainID,
-                                mailmark.VersionID);
-
-                            writer.WriteLine(line);
-                        }
-                        else
-                        {
-                            // If decoding fails, write raw CodeText
-                            string line = string.Join(",",
-                                EscapeCsv(Path.GetFileName(filePath)),
-                                "N/A", "N/A", "N/A", "0", "0", "0");
-                            writer.WriteLine(line);
-                        }
-                    }
+                    csvLines.Add(line);
                 }
             }
         }
 
-        Console.WriteLine($"Decoding completed. Results saved to '{outputCsv}'.");
+        // Attempt to write all collected CSV lines to the output file
+        try
+        {
+            File.WriteAllLines(outputCsvPath, csvLines);
+            Console.WriteLine($"CSV output written to: {outputCsvPath}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to write CSV file: {ex.Message}");
+        }
     }
 
-    // Helper to escape CSV fields containing commas or quotes
+    /// <summary>
+    /// Escapes a CSV field by surrounding it with quotes if it contains commas, quotes, or newlines.
+    /// Internal quotes are doubled per CSV specification.
+    /// </summary>
+    /// <param name="field">The field value to escape.</param>
+    /// <returns>The escaped field string.</returns>
     private static string EscapeCsv(string field)
     {
         if (field == null)
             return "";
+
+        // Check for characters that require quoting
         if (field.Contains(",") || field.Contains("\"") || field.Contains("\n"))
         {
+            // Double any existing quotes and wrap the field in quotes
             string escaped = field.Replace("\"", "\"\"");
             return $"\"{escaped}\"";
         }
+
+        // No escaping needed
         return field;
     }
 }
