@@ -1,31 +1,37 @@
 using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
-class Program
+namespace BarcodeExample
 {
-    static void Main()
+    /// <summary>
+    /// Demonstrates generating a GS1 Code128 barcode using Aspose.BarCode.
+    /// </summary>
+    class Program
     {
-        // Sample GS1 Code 128 data (AI 01 for GTIN)
-        string codeText = "(01)12345678901231";
-
-        using (var generator = new BarcodeGenerator(EncodeTypes.GS1Code128, codeText))
+        /// <summary>
+        /// Entry point of the application. Generates a barcode image and saves it to disk.
+        /// </summary>
+        static void Main()
         {
-            // Enable anti‑aliasing
-            generator.Parameters.UseAntiAlias = true;
+            // Define the GS1 Code128 data (Application Identifier 01 - GTIN)
+            string codeText = "(01)12345678901231";
 
-            // Set colors (will be saved in 24‑bit PNG)
-            generator.Parameters.BackColor = Color.White;
-            generator.Parameters.Barcode.BarColor = Color.Black;
+            // Specify the output file name and location
+            string outputPath = "gs1code128.png";
 
-            // Generate the barcode image
-            using (Bitmap bitmap = generator.GenerateBarCodeImage())
+            // Initialize the barcode generator with GS1 Code128 symbology and the data
+            using (var generator = new BarcodeGenerator(EncodeTypes.GS1Code128, codeText))
             {
-                // Save as PNG (24‑bit color depth)
-                bitmap.Save("gs1code128.png", ImageFormat.Png);
+                // Turn on anti‑aliasing to improve visual quality of the rendered image
+                generator.Parameters.UseAntiAlias = true;
+
+                // Save the generated barcode as a PNG file (default 24‑bit color depth)
+                generator.Save(outputPath);
             }
+
+            // Inform the user where the barcode image was saved
+            Console.WriteLine($"Barcode saved to {outputPath}");
         }
     }
 }

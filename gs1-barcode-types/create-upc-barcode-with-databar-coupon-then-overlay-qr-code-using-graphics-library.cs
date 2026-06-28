@@ -1,55 +1,76 @@
 using System;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates generating a UPC‑A barcode with a DataBar coupon and overlaying a QR code.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Application entry point.
+    /// </summary>
     static void Main()
     {
-        // Output file
-        const string outputPath = "combined.png";
+        // Define the UPC‑A barcode text, including the DataBar coupon segment.
+        const string upcCodeText = "012345678905(8110)106141416543213500110000310123196000";
 
-        // Create UPC‑A with GS1 DataBar coupon barcode
-        using (var upcGenerator = new BarcodeGenerator(EncodeTypes.UpcaGs1DatabarCoupon))
+        // Create a barcode generator for UPC‑A with GS1 DataBar coupon encoding.
+        using (var upcGenerator = new BarcodeGenerator(EncodeTypes.UpcaGs1DatabarCoupon, upcCodeText))
         {
-            upcGenerator.CodeText = "514141100906(8110)106141416543213500110000310123196000";
-            upcGenerator.Parameters.AutoSizeMode = AutoSizeMode.None;
-            upcGenerator.Parameters.Barcode.XDimension.Point = 2f;
-            upcGenerator.Parameters.Barcode.BarHeight.Pixels = 100f;
+            // Set a high resolution to improve image quality.
+            upcGenerator.Parameters.Resolution = 300f;
 
-            // Generate barcode image
-            using (Bitmap upcBitmap = upcGenerator.GenerateBarCodeImage())
+            // Render the UPC‑A barcode to a memory stream.
+            using (var upcStream = new MemoryStream())
             {
-                // Create QR code to overlay
-                using (var qrGenerator = new BarcodeGenerator(EncodeTypes.QR))
+                upcGenerator.Save(upcStream, BarCodeImageFormat.Png);
+                upcStream.Position = 0; // Reset stream position for reading.
+
+                // Load the generated barcode into a bitmap.
+                using (var upcBitmap = new Bitmap(upcStream))
                 {
-                    qrGenerator.CodeText = "https://example.com";
-                    qrGenerator.Parameters.AutoSizeMode = AutoSizeMode.None;
-                    qrGenerator.Parameters.ImageWidth.Pixels = 150f;
-                    qrGenerator.Parameters.ImageHeight.Pixels = 150f;
-                    qrGenerator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
+                    // Define the QR code text (e.g., a URL).
+                    const string qrCodeText = "https://example.com";
 
-                    // Generate QR image
-                    using (Bitmap qrBitmap = qrGenerator.GenerateBarCodeImage())
+                    // Create a barcode generator for a QR code.
+                    using (var qrGenerator = new BarcodeGenerator(EncodeTypes.QR, qrCodeText))
                     {
-                        // Overlay QR onto UPC barcode
-                        using (Graphics graphics = Graphics.FromImage(upcBitmap))
-                        {
-                            const int margin = 10;
-                            int x = upcBitmap.Width - qrBitmap.Width - margin;
-                            int y = upcBitmap.Height - qrBitmap.Height - margin;
-                            graphics.DrawImage(qrBitmap, x, y, qrBitmap.Width, qrBitmap.Height);
-                        }
+                        // Use the same high resolution for consistency.
+                        qrGenerator.Parameters.Resolution = 300f;
 
-                        // Save combined image
-                        upcBitmap.Save(outputPath, ImageFormat.Png);
+                        // Render the QR code to a memory stream.
+                        using (var qrStream = new MemoryStream())
+                        {
+                            qrGenerator.Save(qrStream, BarCodeImageFormat.Png);
+                            qrStream.Position = 0; // Reset stream position for reading.
+
+                            // Load the QR code into a bitmap.
+                            using (var qrBitmap = new Bitmap(qrStream))
+                            {
+                                // Prepare to draw the QR code onto the UPC‑A bitmap.
+                                using (var graphics = Graphics.FromImage(upcBitmap))
+                                {
+                                    // Calculate position: bottom‑right corner with a small margin.
+                                    int margin = 10;
+                                    int x = upcBitmap.Width - qrBitmap.Width - margin;
+                                    int y = upcBitmap.Height - qrBitmap.Height - margin;
+
+                                    // Draw the QR code onto the UPC‑A image.
+                                    graphics.DrawImage(qrBitmap, x, y, qrBitmap.Width, qrBitmap.Height);
+                                }
+
+                                // Save the combined image to disk.
+                                upcBitmap.Save("CombinedBarcode.png", ImageFormat.Png);
+                                Console.WriteLine("Combined barcode saved as CombinedBarcode.png");
+                            }
+                        }
                     }
                 }
             }
         }
-
-        Console.WriteLine($"Combined barcode saved to {outputPath}");
     }
 }

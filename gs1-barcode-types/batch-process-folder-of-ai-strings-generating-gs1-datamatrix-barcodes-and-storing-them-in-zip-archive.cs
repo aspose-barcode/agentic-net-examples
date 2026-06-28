@@ -3,80 +3,99 @@ using System.IO;
 using System.IO.Compression;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Generates GS1 DataMatrix barcodes from AI string files and packages them into a ZIP archive.
+/// </summary>
 class Program
 {
-    static void Main()
+    /// <summary>
+    /// Entry point of the application.
+    /// Accepts optional command‑line arguments: input folder path and output ZIP file path.
+    /// </summary>
+    /// <param name="args">Command‑line arguments.</param>
+    static void Main(string[] args)
     {
-        // Define input and output locations
-        string inputFolder = Path.Combine(Directory.GetCurrentDirectory(), "InputAI");
-        string outputZipPath = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes.zip");
+        // Determine input folder (default: "Input") and output ZIP path (default: "Barcodes.zip")
+        string inputFolder = args.Length > 0 ? args[0] : "Input";
+        string outputZipPath = args.Length > 1 ? args[1] : "Barcodes.zip";
 
-        // Ensure input folder exists
+        // Verify that the input folder exists
         if (!Directory.Exists(inputFolder))
         {
-            Directory.CreateDirectory(inputFolder);
+            Console.WriteLine($"Input folder does not exist: {inputFolder}");
+            return;
         }
 
-        // Seed sample AI strings if folder is empty (up to 5 samples)
-        string[] sampleAi = new[]
+        // Create or overwrite the ZIP archive
+        using (var zipFileStream = new FileStream(outputZipPath, FileMode.Create, FileAccess.ReadWrite))
         {
-            "(01)12345678901231",
-            "(10)ABC123",
-            "(21)9876543210",
-            "(01)95012345678903(10)BATCH01",
-            "(01)95012345678903(21)LOT12345"
-        };
-
-        var txtFiles = Directory.GetFiles(inputFolder, "*.txt");
-        if (txtFiles.Length == 0)
-        {
-            for (int i = 0; i < sampleAi.Length; i++)
+            using (var zipArchive = new ZipArchive(zipFileStream, ZipArchiveMode.Create, leaveOpen: true))
             {
-                string filePath = Path.Combine(inputFolder, $"Sample{i + 1}.txt");
-                File.WriteAllText(filePath, sampleAi[i]);
-            }
-            txtFiles = Directory.GetFiles(inputFolder, "*.txt");
-        }
-
-        // Create ZIP archive for output
-        using (var zipStream = new FileStream(outputZipPath, FileMode.Create))
-        using (var zipArchive = new ZipArchive(zipStream, ZipArchiveMode.Create, leaveOpen: false))
-        {
-            foreach (string file in txtFiles)
-            {
-                // Read AI string from file
-                string codeText = File.ReadAllText(file).Trim();
-                if (string.IsNullOrEmpty(codeText))
+                // Iterate over each file in the input folder
+                foreach (string filePath in Directory.GetFiles(inputFolder))
                 {
-                    continue; // skip empty files
-                }
+                    // Extract file name without extension for later use
+                    string fileName = Path.GetFileNameWithoutExtension(filePath);
+                    string codeText;
 
-                // Generate GS1 DataMatrix barcode
-                using (var generator = new BarcodeGenerator(EncodeTypes.GS1DataMatrix, codeText))
-                {
-                    // Optional: set XDimension for better size control
-                    generator.Parameters.Barcode.XDimension.Point = 2f;
-
-                    // Save barcode to memory stream as PNG
-                    using (var imageStream = new MemoryStream())
+                    // Read the AI string from the file, trimming whitespace
+                    try
                     {
-                        generator.Save(imageStream, BarCodeImageFormat.Png);
-                        imageStream.Position = 0; // reset for reading
+                        codeText = File.ReadAllText(filePath).Trim();
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Failed to read file '{filePath}': {ex.Message}");
+                        continue; // Skip to next file on read error
+                    }
 
-                        // Add image to ZIP archive
-                        string entryName = Path.GetFileNameWithoutExtension(file) + ".png";
-                        var zipEntry = zipArchive.CreateEntry(entryName, CompressionLevel.Optimal);
-                        using (var entryStream = zipEntry.Open())
+                    // Skip empty files
+                    if (string.IsNullOrEmpty(codeText))
+                    {
+                        Console.WriteLine($"File '{filePath}' is empty. Skipping.");
+                        continue;
+                    }
+
+                    // Generate GS1 DataMatrix barcode using Aspose.BarCode
+                    using (var generator = new BarcodeGenerator(EncodeTypes.GS1DataMatrix, codeText))
+                    {
+                        // Set desired resolution (dots per inch)
+                        generator.Parameters.Resolution = 300f;
+
+                        // Render barcode to an in‑memory PNG image
+                        using (var imageStream = new MemoryStream())
                         {
-                            imageStream.CopyTo(entryStream);
+                            try
+                            {
+                                generator.Save(imageStream, BarCodeImageFormat.Png);
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine($"Failed to generate barcode for '{filePath}': {ex.Message}");
+                                continue; // Skip to next file on generation error
+                            }
+
+                            // Reset stream position before copying
+                            imageStream.Position = 0;
+
+                            // Create a new entry in the ZIP archive for the PNG image
+                            var entry = zipArchive.CreateEntry($"{fileName}.png", CompressionLevel.Optimal);
+                            using (var entryStream = entry.Open())
+                            {
+                                // Copy the PNG data into the ZIP entry
+                                imageStream.CopyTo(entryStream);
+                            }
                         }
                     }
+
+                    // Log successful processing of the current file
+                    Console.WriteLine($"Processed '{filePath}' -> '{fileName}.png'");
                 }
             }
         }
 
-        Console.WriteLine($"Barcode images have been saved to '{outputZipPath}'.");
+        // Inform the user that all barcodes have been saved
+        Console.WriteLine($"All barcodes have been saved to '{outputZipPath}'.");
     }
 }

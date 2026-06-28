@@ -2,25 +2,31 @@ using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
+/// <summary>
+/// Demonstrates generating a GS1 Code 128 barcode using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Generates a barcode and saves it as a JPEG file.
+    /// </summary>
     static void Main()
     {
-        // Sample GS1 Code 128 data (AI 01 with a 14‑digit GTIN)
-        const string codeText = "(01)12345678901231";
-
-        // Create a barcode generator for GS1 Code 128
-        using (var generator = new BarcodeGenerator(EncodeTypes.GS1Code128, codeText))
+        // Initialize a barcode generator for GS1 Code 128 with sample GS1 data
+        using (var generator = new BarcodeGenerator(EncodeTypes.GS1Code128, "(01)12345678901231"))
         {
-            // Use interpolation mode so that ImageWidth/ImageHeight control the final size
-            generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
+            // Configure automatic sizing to choose the nearest size that fits the target dimensions
+            generator.Parameters.AutoSizeMode = AutoSizeMode.Nearest;
 
-            // Set the desired image size: 200 × 100 pixels
-            generator.Parameters.ImageWidth.Pixels = 200f;
-            generator.Parameters.ImageHeight.Pixels = 100f;
+            // Set desired image width and height in points (1 point = 1/72 inch)
+            generator.Parameters.ImageWidth.Point = 200f;
+            generator.Parameters.ImageHeight.Point = 100f;
 
-            // Save the barcode as a JPEG file
+            // Save the generated barcode image to a JPEG file
             generator.Save("gs1code128.jpg");
         }
+
+        // Inform the user that the barcode has been generated and saved
+        Console.WriteLine("Barcode generated and saved as gs1code128.jpg");
     }
 }
