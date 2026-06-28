@@ -2,25 +2,30 @@ using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
+/// <summary>
+/// Demonstrates generation of a Planet 2‑state postal barcode using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Generates a Planet barcode and saves it as a PNG file.
+    /// </summary>
     static void Main()
     {
-        // Sample codetext for a Planet 2‑state postal barcode.
-        const string codeText = "1234567890";
+        // Define the barcode text: numeric string with length appropriate for Planet symbology.
+        string codeText = "123456789012";
 
-        // Create a barcode generator for the Planet symbology.
+        // Initialize a BarcodeGenerator for the Planet symbology with the specified text.
         using (var generator = new BarcodeGenerator(EncodeTypes.Planet, codeText))
         {
-            // Set a custom X‑dimension (smallest bar width). Value is in points.
-            generator.Parameters.Barcode.XDimension.Point = 2f;
+            // Configure the XDimension (module width) in points; 2.0 points yields a custom module size.
+            generator.Parameters.Barcode.XDimension.Point = 2.0f;
 
-            // Use default bar height (no explicit setting needed).
-
-            // Save the generated barcode image to a PNG file.
+            // Render and save the barcode image to a PNG file named "planet.png".
             generator.Save("planet.png");
         }
 
-        Console.WriteLine("Planet barcode image saved as 'planet.png'.");
+        // Inform the user that the barcode has been generated.
+        Console.WriteLine("Planet barcode generated: planet.png");
     }
 }

@@ -2,44 +2,60 @@ using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
+/// <summary>
+/// Demonstrates generation of a postal (Postnet) barcode using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Generates a barcode and saves it to a PNG file.
+    /// </summary>
     static void Main()
     {
-        // Sample postal barcode (Postnet) with code text.
-        const string codeText = "12345";
-        // Desired XDimension in points.
-        float xDimensionValue = -2f; // Intentionally invalid for demonstration.
+        // Define the barcode type (Postnet) and the data to encode.
+        BaseEncodeType encodeType = EncodeTypes.Postnet;
+        string codeText = "12345678";
+
+        // Example XDimension value (intentionally set to an invalid value to show error handling).
+        float xDimension = -0.5f;
 
         try
         {
-            ValidateXDimension(xDimensionValue);
+            // Validate the XDimension before using it.
+            ValidateXDimension(xDimension);
 
-            using (var generator = new BarcodeGenerator(EncodeTypes.Postnet, codeText))
+            // Create a barcode generator with the specified type and text.
+            using (var generator = new BarcodeGenerator(encodeType, codeText))
             {
-                // Set a valid XDimension after validation.
-                generator.Parameters.Barcode.XDimension.Point = xDimensionValue;
+                // Apply the validated XDimension to the barcode parameters.
+                generator.Parameters.Barcode.XDimension.Point = xDimension;
 
-                // Save the generated barcode image.
-                string outputPath = "postnet.png";
+                // Define the output file path and save the generated barcode.
+                string outputPath = "postal.png";
                 generator.Save(outputPath);
                 Console.WriteLine($"Barcode saved to {outputPath}");
             }
         }
+        // Handle specific validation errors.
         catch (ArgumentOutOfRangeException ex)
         {
-            Console.WriteLine($"Error: {ex.Message}");
+            Console.WriteLine($"Invalid XDimension: {ex.Message}");
         }
-        catch (BarCodeException ex)
+        // Handle any other unexpected errors.
+        catch (Exception ex)
         {
-            // Handles Aspose.BarCode specific errors.
-            Console.WriteLine($"Barcode generation failed: {ex.Message}");
+            Console.WriteLine($"Error generating barcode: {ex.Message}");
         }
     }
 
+    /// <summary>
+    /// Validates that the XDimension value is greater than zero.
+    /// </summary>
+    /// <param name="value">The XDimension value to validate.</param>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when the value is less than or equal to zero.</exception>
     static void ValidateXDimension(float value)
     {
-        // XDimension must be a positive number.
+        // Ensure XDimension is a positive number.
         if (value <= 0f)
         {
             throw new ArgumentOutOfRangeException(nameof(value), "XDimension must be greater than zero.");

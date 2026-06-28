@@ -1,53 +1,94 @@
 using System;
 using System.IO;
-using System.Text;
+using System.Linq;
 using Aspose.BarCode;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.BarCode.Generation;
 
+/// <summary>
+/// Program that scans PNG images for Planet barcodes and generates a CSV report.
+/// </summary>
 class Program
 {
-    static void Main()
+    /// <summary>
+    /// Entry point of the application.
+    /// Accepts optional command‑line arguments: input directory and output CSV path.
+    /// </summary>
+    /// <param name="args">Command‑line arguments.</param>
+    static void Main(string[] args)
     {
-        string inputFolder = "InputBarcodes";
-        string outputCsv = "PlanetBarcodesReport.csv";
+        // Determine input directory; default to "Barcodes" if not supplied.
+        string inputDirectory = args.Length > 0 ? args[0] : "Barcodes";
 
-        // Ensure the input folder exists; create it if missing and add a sample image.
-        if (!Directory.Exists(inputFolder))
+        // Determine output CSV file path; default to "report.csv" if not supplied.
+        string outputCsvPath = args.Length > 1 ? args[1] : "report.csv";
+
+        // Verify that the input directory exists.
+        if (!Directory.Exists(inputDirectory))
         {
-            Directory.CreateDirectory(inputFolder);
-            string samplePath = Path.Combine(inputFolder, "SamplePlanet.png");
-            using (var generator = new BarcodeGenerator(EncodeTypes.Planet, "1234567890"))
-            {
-                generator.Save(samplePath);
-            }
+            Console.WriteLine($"Input directory does not exist: {inputDirectory}");
+            return;
         }
 
-        var csvBuilder = new StringBuilder();
-        csvBuilder.AppendLine("FileName,BarcodeType,CodeText");
-
-        // Process all PNG files in the folder.
-        string[] pngFiles = Directory.GetFiles(inputFolder, "*.png");
-        foreach (string filePath in pngFiles)
+        // Retrieve all PNG files in the directory and limit processing to the first 10.
+        string[] allPngFiles = Directory.GetFiles(inputDirectory, "*.png");
+        if (allPngFiles.Length == 0)
         {
-            if (!File.Exists(filePath))
-            {
-                continue; // Skip missing files gracefully.
-            }
+            Console.WriteLine($"No PNG files found in directory: {inputDirectory}");
+            return;
+        }
 
-            using (var reader = new BarCodeReader(filePath, DecodeType.Planet))
+        // Take up to 10 files for a safe sample size.
+        var pngFiles = allPngFiles.Take(10).ToArray();
+
+        // Open the CSV file for writing.
+        using (var writer = new StreamWriter(outputCsvPath))
+        {
+            // Write CSV header line.
+            writer.WriteLine("FileName,CodeType,CodeText,Confidence,ReadingQuality");
+
+            // Process each selected PNG file.
+            foreach (string filePath in pngFiles)
             {
-                foreach (var result in reader.ReadBarCodes())
+                // Skip files that cannot be found (defensive check).
+                if (!File.Exists(filePath))
                 {
-                    // Escape double quotes in the code text for CSV compliance.
-                    string safeCodeText = result.CodeText?.Replace("\"", "\"\"");
-                    csvBuilder.AppendLine($"\"{Path.GetFileName(filePath)}\",{result.CodeTypeName},\"{safeCodeText}\"");
+                    Console.WriteLine($"File not found (skipped): {filePath}");
+                    continue;
+                }
+
+                // Create a barcode reader configured for Planet symbology.
+                using (var reader = new BarCodeReader(filePath, DecodeType.Planet))
+                {
+                    // Read all barcodes from the image.
+                    BarCodeResult[] results = reader.ReadBarCodes();
+
+                    // If no barcodes were detected, record this in the CSV.
+                    if (results.Length == 0)
+                    {
+                        writer.WriteLine($"{Path.GetFileName(filePath)},,,No barcode detected,");
+                        Console.WriteLine($"No Planet barcode found in: {filePath}");
+                        continue;
+                    }
+
+                    // Write each detected barcode's details to the CSV.
+                    foreach (var result in results)
+                    {
+                        string line = string.Format(
+                            "{0},{1},{2},{3},{4}",
+                            Path.GetFileName(filePath),
+                            result.CodeTypeName,
+                            result.CodeText,
+                            result.Confidence,
+                            result.ReadingQuality);
+
+                        writer.WriteLine(line);
+                        Console.WriteLine($"Decoded from {Path.GetFileName(filePath)}: {result.CodeText}");
+                    }
                 }
             }
         }
 
-        // Write the CSV report.
-        File.WriteAllText(outputCsv, csvBuilder.ToString(), Encoding.UTF8);
-        Console.WriteLine($"Report generated: {outputCsv}");
+        // Inform the user that the report has been generated.
+        Console.WriteLine($"CSV report generated at: {outputCsvPath}");
     }
 }

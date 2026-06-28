@@ -1,32 +1,40 @@
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
+/// <summary>
+/// Demonstrates generating a POSTNET barcode and exporting its configuration to XML.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Application entry point. Generates a barcode with predefined settings and saves its configuration.
+    /// </summary>
     static void Main()
     {
-        // Define the output configuration file path
-        string configPath = "PostalBarcodeDefaults.xml";
+        // Default barcode parameters
+        const float defaultXDimension = 2f;   // module width in points
+        const float defaultBarHeight = 40f;   // bar height in points
+        const bool defaultFilledBars = true; // bars are filled
 
-        // Create a generator for a postal symbology (Postnet) to access postal parameters
-        using (var generator = new BarcodeGenerator(EncodeTypes.Postnet))
+        // Initialize the barcode generator with POSTNET type and data "12345"
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Postnet, "12345"))
         {
-            // Set default XDimension (smallest bar width) in points
-            generator.Parameters.Barcode.XDimension.Point = 2f;
+            // Set the X dimension (module width)
+            generator.Parameters.Barcode.XDimension.Point = defaultXDimension;
 
-            // Set default BarHeight for 1D barcodes in points
-            generator.Parameters.Barcode.BarHeight.Point = 30f;
+            // Disable auto sizing and set a fixed bar height
+            generator.Parameters.AutoSizeMode = AutoSizeMode.None;
+            generator.Parameters.Barcode.BarHeight.Point = defaultBarHeight;
 
-            // Set default FilledBars behavior (true = bars are filled)
-            generator.Parameters.Barcode.FilledBars = true;
+            // Specify whether the bars should be filled
+            generator.Parameters.Barcode.FilledBars = defaultFilledBars;
 
-            // Export the current settings to an XML configuration file
+            // Build the full path for the XML configuration file
+            string configPath = Path.Combine(Directory.GetCurrentDirectory(), "postal_defaults.xml");
+
+            // Export the current generator settings to the XML file
             generator.ExportToXml(configPath);
         }
-
-        // Inform the user that the configuration file has been created
-        Console.WriteLine($"Configuration file created at: {Path.GetFullPath(configPath)}");
     }
 }

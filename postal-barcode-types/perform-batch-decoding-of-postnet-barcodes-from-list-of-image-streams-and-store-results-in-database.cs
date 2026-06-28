@@ -1,93 +1,89 @@
 using System;
-using System.IO;
 using System.Collections.Generic;
-using Aspose.BarCode;
+using System.IO;
+using System.Text.Json;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
-class Program
+namespace PostnetBatchDecoding
 {
-    static void Main()
+    // Simple DTO to hold decoding results
+    public class DecodedResult
     {
-        // Sample zip codes to encode as Postnet barcodes
-        string[] zipCodes = { "12345", "67890", "24680", "13579", "11223" };
+        public string CodeText { get; set; }
+        public string CodeTypeName { get; set; }
+    }
 
-        // Prepare a list that holds image name and its corresponding stream
-        var barcodeStreams = new List<(string Name, Stream ImageStream)>();
-
-        // Generate Postnet barcode images and store them in memory streams
-        foreach (string zip in zipCodes)
+    /// <summary>
+    /// Demonstrates generating Postnet barcodes, decoding them, and saving results as JSON.
+    /// </summary>
+    class Program
+    {
+        /// <summary>
+        /// Entry point of the application.
+        /// Generates barcode images from sample ZIP codes, decodes them, and writes results to a JSON file.
+        /// </summary>
+        static void Main()
         {
-            // Create a barcode generator for Postnet symbology
-            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Postnet, zip))
+            // Sample Postnet code texts (ZIP codes) to be encoded into barcodes
+            string[] sampleCodes = new string[]
             {
-                // Generate the barcode image as a Bitmap
-                using (Bitmap bitmap = generator.GenerateBarCodeImage())
-                {
-                    // Save bitmap to a memory stream in PNG format
-                    var ms = new MemoryStream();
-                    bitmap.Save(ms, ImageFormat.Png);
-                    ms.Position = 0; // Reset stream position for later reading
+                "12345",
+                "67890",
+                "24680",
+                "13579",
+                "11223"
+            };
 
-                    // Store the stream together with a friendly name
-                    barcodeStreams.Add(( $"Postnet_{zip}.png", ms));
-                }
-            }
-        }
-
-        // Ensure output directory exists
-        string outputDir = Path.Combine(Environment.CurrentDirectory, "Output");
-        if (!Directory.Exists(outputDir))
-        {
-            Directory.CreateDirectory(outputDir);
-        }
-
-        // Path to the simple CSV "database"
-        string csvPath = Path.Combine(outputDir, "DecodedResults.csv");
-
-        // Write CSV header
-        using (var writer = new StreamWriter(csvPath, false))
-        {
-            writer.WriteLine("ImageName,DecodedText");
-        }
-
-        // Batch decode each barcode stream and store results
-        foreach (var (name, stream) in barcodeStreams)
-        {
-            // Ensure the stream is at the beginning
-            stream.Position = 0;
-
-            // Initialize BarCodeReader for Postnet decoding
-            using (BarCodeReader reader = new BarCodeReader(stream, DecodeType.Postnet))
+            // Generate barcode images and keep them as memory streams for later decoding
+            var imageStreams = new List<MemoryStream>();
+            foreach (var code in sampleCodes)
             {
-                // Perform decoding
-                BarCodeResult[] results = reader.ReadBarCodes();
+                // Create a barcode generator for the current code using Postnet symbology
+                using (var generator = new BarcodeGenerator(EncodeTypes.Postnet, code))
+                {
+                    // Save the generated barcode to a memory stream in PNG format
+                    using (var ms = new MemoryStream())
+                    {
+                        generator.Save(ms, BarCodeImageFormat.Png);
+                        ms.Position = 0; // Reset stream position to the beginning
 
-                // If a barcode was found, write its text to the CSV file
-                if (results.Length > 0)
-                {
-                    string decodedText = results[0].CodeText ?? string.Empty;
-                    using (var writer = new StreamWriter(csvPath, true))
-                    {
-                        writer.WriteLine($"{name},{decodedText}");
-                    }
-                }
-                else
-                {
-                    // No barcode detected – still record the entry with empty result
-                    using (var writer = new StreamWriter(csvPath, true))
-                    {
-                        writer.WriteLine($"{name},");
+                        // Store a copy of the stream for later decoding (avoid disposing the original)
+                        var copy = new MemoryStream(ms.ToArray());
+                        imageStreams.Add(copy);
                     }
                 }
             }
 
-            // Dispose the memory stream now that it is no longer needed
-            stream.Dispose();
-        }
+            // Decode each image stream using Postnet symbology
+            var decodedResults = new List<DecodedResult>();
+            foreach (var stream in imageStreams)
+            {
+                // Initialize a barcode reader for the current stream
+                using (var reader = new BarCodeReader(stream, DecodeType.Postnet))
+                {
+                    // Read all barcodes found in the stream
+                    foreach (var result in reader.ReadBarCodes())
+                    {
+                        // Add the decoded information to the results list
+                        decodedResults.Add(new DecodedResult
+                        {
+                            CodeText = result.CodeText,
+                            CodeTypeName = result.CodeTypeName
+                        });
+                    }
+                }
+            }
 
-        Console.WriteLine($"Decoding completed. Results saved to: {csvPath}");
+            // Serialize the decoding results to JSON and write to a file (simulating a database)
+            string outputPath = "decoded_results.json";
+            var jsonOptions = new JsonSerializerOptions { WriteIndented = true };
+            string json = JsonSerializer.Serialize(decodedResults, jsonOptions);
+            File.WriteAllText(outputPath, json);
+
+            // Inform the user about the operation outcome
+            Console.WriteLine($"Decoded {decodedResults.Count} Postnet barcodes. Results saved to '{outputPath}'.");
+        }
     }
 }

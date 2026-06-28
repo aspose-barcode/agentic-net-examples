@@ -1,45 +1,72 @@
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
+/// <summary>
+/// Demonstrates generation and recognition of a Postnet barcode using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a Postnet barcode, saves it to a memory stream, and then reads it back
+    /// while validating the checksum.
+    /// </summary>
     static void Main()
     {
-        // Generate a Postnet barcode image and store it in a memory stream.
-        using (var memoryStream = new MemoryStream())
+        // Sample Postnet code (ZIP+4 + checksum). Example: "12345678"
+        const string postnetCode = "12345678";
+
+        // Create a memory stream to hold the generated barcode image
+        using (var ms = new MemoryStream())
         {
-            // Sample postal code (5 digits). The generator will calculate and append the checksum.
-            using (var generator = new BarcodeGenerator(EncodeTypes.Postnet, "12345"))
+            // Initialize the barcode generator for Postnet encoding with the sample code
+            using (var generator = new BarcodeGenerator(EncodeTypes.Postnet, postnetCode))
             {
-                // Ensure checksum is generated.
-                generator.Parameters.Barcode.IsChecksumEnabled = Aspose.BarCode.Generation.EnableChecksum.Yes;
-                // Save the barcode image to the memory stream in PNG format.
-                generator.Save(memoryStream, BarCodeImageFormat.Png);
+                // Save the generated barcode as a PNG image into the memory stream
+                generator.Save(ms, BarCodeImageFormat.Png);
             }
 
-            // Reset stream position for reading.
-            memoryStream.Position = 0;
+            // Reset the stream position to the beginning so it can be read
+            ms.Position = 0;
 
-            // Decode the barcode from the memory stream.
-            using (var reader = new BarCodeReader(memoryStream, DecodeType.Postnet))
+            // Initialize a barcode reader to decode Postnet barcodes from the memory stream
+            using (var reader = new BarCodeReader(ms, DecodeType.Postnet))
             {
-                // Enable checksum validation during recognition.
+                // Enable checksum validation during the recognition process
                 reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
 
-                foreach (BarCodeResult result in reader.ReadBarCodes())
+                // Perform the barcode recognition
+                var results = reader.ReadBarCodes();
+
+                // If no barcodes were detected, inform the user
+                if (results.Length == 0)
                 {
-                    Console.WriteLine("Decoded CodeText: " + result.CodeText);
+                    Console.WriteLine("No Postnet barcode detected.");
+                }
+                else
+                {
+                    // Iterate through each detected barcode result
+                    foreach (var result in results)
+                    {
+                        // Output the decoded text of the barcode
+                        Console.WriteLine($"Detected CodeText: {result.CodeText}");
 
-                    // For 1D barcodes the checksum is available via Extended.OneD.CheckSum.
-                    string checksum = result.Extended.OneD.CheckSum;
-                    Console.WriteLine("Extracted Checksum: " + (checksum ?? "N/A"));
-
-                    // Verify that the checksum matches the last character of the CodeText (if present).
-                    bool isChecksumValid = !string.IsNullOrEmpty(checksum) &&
-                                           result.CodeText.EndsWith(checksum, StringComparison.Ordinal);
-                    Console.WriteLine("Checksum Valid: " + isChecksumValid);
+                        // For 1D barcodes the checksum value is available in the extended parameters (OneD.CheckSum)
+                        // If the checksum is invalid, the result will be empty or null.
+                        var checksum = result.Extended?.OneD?.CheckSum;
+                        if (!string.IsNullOrEmpty(checksum))
+                        {
+                            Console.WriteLine($"Checksum from barcode: {checksum}");
+                            Console.WriteLine("Checksum validation: SUCCESS");
+                        }
+                        else
+                        {
+                            Console.WriteLine("Checksum validation: FAILED or not applicable");
+                        }
+                    }
                 }
             }
         }

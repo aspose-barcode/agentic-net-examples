@@ -1,35 +1,37 @@
 using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates generating a Swiss Post Parcel barcode using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Generates a barcode image and saves it to a file.
+    /// </summary>
     static void Main()
     {
-        // Sample original identifier for Swiss Post Parcel domestic barcode
-        const string codeText = "12345678901234567890";
+        // Define the original identifier to encode in the barcode.
+        string originalIdentifier = "123456789012";
 
-        // Create the barcode generator for Swiss Post Parcel
-        using (var generator = new BarcodeGenerator(EncodeTypes.SwissPostParcel, codeText))
+        // Specify the output file path for the generated PNG image.
+        string outputPath = "SwissPostParcel.png";
+
+        // Initialize the barcode generator with Swiss Post Parcel symbology and the identifier.
+        using (var generator = new BarcodeGenerator(EncodeTypes.SwissPostParcel, originalIdentifier))
         {
-            // Set custom margins (padding) around the barcode image
-            generator.Parameters.Barcode.Padding.Left.Point = 15f;
-            generator.Parameters.Barcode.Padding.Top.Point = 15f;
-            generator.Parameters.Barcode.Padding.Right.Point = 15f;
-            generator.Parameters.Barcode.Padding.Bottom.Point = 15f;
+            // Configure padding (margin) around the barcode: 20 points on each side.
+            generator.Parameters.Barcode.Padding.Left.Point = 20f;
+            generator.Parameters.Barcode.Padding.Top.Point = 20f;
+            generator.Parameters.Barcode.Padding.Right.Point = 20f;
+            generator.Parameters.Barcode.Padding.Bottom.Point = 20f;
 
-            // Optionally set image size
-            generator.Parameters.ImageWidth.Point = 300f;
-            generator.Parameters.ImageHeight.Point = 150f;
-
-            // Generate the barcode image
-            using (Bitmap bitmap = generator.GenerateBarCodeImage())
-            {
-                // Save the image to a PNG file
-                bitmap.Save("SwissPostParcel.png", ImageFormat.Png);
-            }
+            // Save the generated barcode image to the specified PNG file.
+            generator.Save(outputPath);
         }
+
+        // Inform the user where the barcode image has been saved.
+        Console.WriteLine($"Swiss Post Parcel barcode saved to: {outputPath}");
     }
 }

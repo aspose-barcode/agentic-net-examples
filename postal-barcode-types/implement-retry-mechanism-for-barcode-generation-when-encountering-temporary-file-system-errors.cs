@@ -3,54 +3,107 @@ using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
+/// <summary>
+/// Demonstrates generating a Code128 barcode image with retry logic.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Sets up output paths and initiates barcode generation.
+    /// </summary>
     static void Main()
     {
-        const string outputPath = "barcode.png";
-        const int maxAttempts = 3;
-        int attempt = 0;
-        bool success = false;
+        // Define the folder where barcode images will be saved
+        string outputFolder = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
 
-        while (attempt < maxAttempts && !success)
+        // Ensure the output folder exists
+        if (!Directory.Exists(outputFolder))
         {
-            attempt++;
+            Directory.CreateDirectory(outputFolder);
+        }
+
+        // Full path for the generated barcode image
+        string outputPath = Path.Combine(outputFolder, "code128.png");
+
+        // Text to encode in the barcode
+        string codeText = "123ABC";
+
+        // Specify the barcode symbology (Code128)
+        BaseEncodeType encodeType = EncodeTypes.Code128;
+
+        // Attempt to generate the barcode with up to 3 retries on temporary I/O errors
+        bool success = GenerateBarcodeWithRetry(encodeType, codeText, outputPath, maxAttempts: 3);
+
+        // Inform the user of the result
+        Console.WriteLine(success
+            ? $"Barcode generated successfully at: {outputPath}"
+            : "Failed to generate barcode after multiple attempts.");
+    }
+
+    /// <summary>
+    /// Generates a barcode image and saves it to the specified path.
+    /// Retries the operation when a temporary file system error occurs.
+    /// </summary>
+    /// <param name="type">The barcode symbology.</param>
+    /// <param name="codeText">The text to encode.</param>
+    /// <param name="outputPath">File path where the image will be saved.</param>
+    /// <param name="maxAttempts">Maximum number of attempts.</param>
+    /// <returns>True if the barcode was saved successfully; otherwise false.</returns>
+    static bool GenerateBarcodeWithRetry(BaseEncodeType type, string codeText, string outputPath, int maxAttempts)
+    {
+        // Loop through attempts up to the specified maximum
+        for (int attempt = 1; attempt <= maxAttempts; attempt++)
+        {
             try
             {
-                // Create barcode generator for Code128 with sample text
-                using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
+                // Ensure the directory for the output file exists
+                string directory = Path.GetDirectoryName(outputPath);
+                if (!Directory.Exists(directory))
                 {
-                    // Example of setting a parameter (optional)
-                    generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Blue;
+                    Directory.CreateDirectory(directory);
+                }
 
-                    // Save the barcode image to file
+                // Create and configure the barcode generator
+                using (var generator = new BarcodeGenerator(type, codeText))
+                {
+                    // Enable checksum calculation (optional example setting)
+                    generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
+
+                    // Save the generated barcode image to the output path
                     generator.Save(outputPath);
                 }
 
-                Console.WriteLine($"Barcode generated successfully on attempt {attempt}.");
-                success = true;
+                // Generation succeeded; exit the method
+                return true;
             }
             catch (IOException ioEx)
             {
-                // Temporary file system error, retry
-                Console.WriteLine($"IO error on attempt {attempt}: {ioEx.Message}");
-                if (attempt >= maxAttempts)
+                // Temporary file system error (e.g., file locked, disk busy)
+                Console.WriteLine($"Attempt {attempt} failed due to I/O error: {ioEx.Message}");
+
+                // If this was the last allowed attempt, report failure
+                if (attempt == maxAttempts)
                 {
-                    Console.WriteLine("Maximum retry attempts reached. Operation failed.");
+                    return false;
                 }
+
+                // Otherwise, continue to the next attempt
             }
             catch (BarCodeException bcEx)
             {
-                // Barcode generation specific error, do not retry
+                // Barcode generation specific error – do not retry
                 Console.WriteLine($"Barcode generation error: {bcEx.Message}");
-                break;
+                return false;
             }
             catch (Exception ex)
             {
-                // Unexpected error, do not retry
+                // Unexpected error – do not retry
                 Console.WriteLine($"Unexpected error: {ex.Message}");
-                break;
+                return false;
             }
         }
+
+        // Should not reach here, but return false as a safeguard
+        return false;
     }
 }

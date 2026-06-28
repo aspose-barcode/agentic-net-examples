@@ -1,85 +1,86 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Aspose.BarCode;
-using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
+/// <summary>
+/// Demonstrates batch processing of TIFF images to recognize Australia Post barcodes using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Scans a folder for TIFF files and processes each file in parallel
+    /// to detect Australia Post barcodes, outputting the results to the console.
+    /// </summary>
     static void Main()
     {
-        // Define folder for sample TIFF images
-        string inputFolder = Path.Combine(Directory.GetCurrentDirectory(), "InputTiff");
-        if (!Directory.Exists(inputFolder))
-        {
-            Directory.CreateDirectory(inputFolder);
-        }
+        // Determine the folder that contains the TIFF images (relative to the executable location).
+        string imagesFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Barcodes");
 
-        // Create a few sample Australia Post barcodes if the folder is empty
-        string[] existingFiles = Directory.GetFiles(inputFolder, "*.tif");
-        if (existingFiles.Length == 0)
+        // Verify that the folder exists; otherwise, inform the user and exit.
+        if (!Directory.Exists(imagesFolder))
         {
-            for (int i = 1; i <= 5; i++)
-            {
-                string codeText = $"5912345678ABC{i}";
-                string filePath = Path.Combine(inputFolder, $"Sample{i}.tif");
-                using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, codeText))
-                {
-                    // Set interpreting type to CTable
-                    generator.Parameters.Barcode.AustralianPost.EncodingTable = CustomerInformationInterpretingType.CTable;
-                    // Save as TIFF
-                    generator.Save(filePath, BarCodeImageFormat.Tiff);
-                }
-            }
-        }
-
-        // Get all TIFF files in the folder
-        string[] tiffFiles = Directory.GetFiles(inputFolder, "*.tif");
-        if (tiffFiles.Length == 0)
-        {
-            Console.WriteLine("No TIFF files found to decode.");
+            Console.WriteLine($"Folder not found: {imagesFolder}");
             return;
         }
 
-        // Use a lock for thread‑safe console output
-        object consoleLock = new object();
+        // Retrieve up to 5 TIFF files from the folder for safe batch processing.
+        string[] tiffFiles = Directory.GetFiles(imagesFolder, "*.tif")
+                                      .Take(5)
+                                      .ToArray();
 
-        // Decode images in parallel
+        // If no TIFF files are found, notify the user and exit.
+        if (tiffFiles.Length == 0)
+        {
+            Console.WriteLine("No TIFF files found in the folder.");
+            return;
+        }
+
+        // Process each file concurrently to improve performance.
         Parallel.ForEach(tiffFiles, filePath =>
         {
-            try
+            // Ensure the file still exists before attempting to process it.
+            if (!File.Exists(filePath))
             {
-                using (BarCodeReader reader = new BarCodeReader(filePath, DecodeType.AustraliaPost))
+                lock (Console.Out)
                 {
-                    // Configure decoding settings
+                    Console.WriteLine($"File not found: {filePath}");
+                }
+                return;
+            }
+
+            // Load the image using Aspose.Drawing.Bitmap (implements IDisposable).
+            using (var bitmap = new Bitmap(filePath))
+            {
+                // Create a barcode reader configured for Australia Post barcode type.
+                using (var reader = new BarCodeReader(bitmap, DecodeType.AustraliaPost))
+                {
+                    // Set Australia Post specific decoding options.
                     reader.BarcodeSettings.AustraliaPost.CustomerInformationInterpretingType = CustomerInformationInterpretingType.CTable;
                     reader.BarcodeSettings.AustraliaPost.IgnoreEndingFillingPatternsForCTable = true;
 
-                    BarCodeResult[] results = reader.ReadBarCodes();
-                    lock (consoleLock)
+                    // Perform the barcode recognition.
+                    var results = reader.ReadBarCodes();
+
+                    // Output the results to the console in a thread‑safe manner.
+                    lock (Console.Out)
                     {
                         Console.WriteLine($"File: {Path.GetFileName(filePath)}");
                         if (results.Length == 0)
                         {
-                            Console.WriteLine("  No barcode detected.");
+                            Console.WriteLine("  No barcodes detected.");
                         }
                         else
                         {
-                            foreach (BarCodeResult result in results)
+                            foreach (var result in results)
                             {
-                                Console.WriteLine($"  Type: {result.CodeTypeName}");
-                                Console.WriteLine($"  CodeText: {result.CodeText}");
+                                Console.WriteLine($"  Type: {result.CodeTypeName}, Text: {result.CodeText}");
                             }
                         }
                     }
-                }
-            }
-            catch (Exception ex)
-            {
-                lock (consoleLock)
-                {
-                    Console.WriteLine($"Error processing file '{Path.GetFileName(filePath)}': {ex.Message}");
                 }
             }
         });

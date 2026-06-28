@@ -1,47 +1,59 @@
 using System;
-using System.Text.RegularExpressions;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
 
+/// <summary>
+/// Demonstrates generating a Dutch KIX barcode using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point. Generates a barcode from a numeric string and saves it as PNG.
+    /// </summary>
     static void Main()
     {
-        // Sample numeric input for Dutch KIX barcode
-        string codeText = "1234567890";
+        // Sample numeric input; replace with your own value or command‑line argument.
+        string input = "1234567890123"; // 13 digits; checksum will be added automatically.
 
-        // Validate that the input contains only digits
-        if (!Regex.IsMatch(codeText, @"^\d+$"))
-            throw new ArgumentException("Code text must be numeric for Dutch KIX barcode.");
-
-        // Create the barcode generator for Dutch KIX with the provided code text
-        using (var generator = new BarcodeGenerator(EncodeTypes.DutchKIX, codeText))
+        // Validate that the input contains only digits.
+        if (!IsNumeric(input))
         {
-            // Enable automatic checksum generation
-            generator.Parameters.Barcode.IsChecksumEnabled = Aspose.BarCode.Generation.EnableChecksum.Yes;
+            Console.WriteLine("Error: Code text must be numeric.");
+            return;
+        }
 
-            // Optional: show checksum in human‑readable text
+        // Define the symbology for Dutch KIX.
+        BaseEncodeType symbology = EncodeTypes.DutchKIX;
+
+        // Output file path.
+        string outputPath = "kix.png";
+
+        // Generate the barcode within a using block to ensure proper disposal.
+        using (var generator = new BarcodeGenerator(symbology, input))
+        {
+            // Enable automatic checksum calculation.
+            generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
+
+            // Show the checksum digit in the human‑readable text.
             generator.Parameters.Barcode.ChecksumAlwaysShow = true;
 
-            // Save the generated barcode image
-            string outputPath = "dutchkix.png";
+            // Save the barcode image to the specified path.
             generator.Save(outputPath);
-            Console.WriteLine($"Dutch KIX barcode saved to {outputPath}");
         }
 
-        // Demonstrate recognition with checksum validation enabled
-        using (var reader = new BarCodeReader("dutchkix.png", DecodeType.DutchKIX))
+        // Inform the user where the barcode image was saved.
+        Console.WriteLine($"Dutch KIX barcode saved to {Path.GetFullPath(outputPath)}");
+    }
+
+    // Helper method to ensure the string consists only of digits.
+    static bool IsNumeric(string s)
+    {
+        foreach (char c in s)
         {
-            // Enable checksum validation during recognition
-            reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
-
-            foreach (BarCodeResult result in reader.ReadBarCodes())
-            {
-                Console.WriteLine($"Recognized CodeText: {result.CodeText}");
-                Console.WriteLine($"Checksum: {result.Extended.OneD.CheckSum}");
-                Console.WriteLine($"Value (without checksum): {result.Extended.OneD.Value}");
-            }
+            if (c < '0' || c > '9')
+                return false;
         }
+        return true;
     }
 }

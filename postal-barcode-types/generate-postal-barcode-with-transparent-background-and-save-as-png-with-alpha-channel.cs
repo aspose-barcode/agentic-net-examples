@@ -2,23 +2,35 @@ using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates generating a Postnet barcode and saving it as a PNG with a transparent background.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a Postnet barcode for a sample ZIP code and writes it to a PNG file.
+    /// </summary>
     static void Main()
     {
-        // Create a barcode generator for a postal barcode (Postnet) with sample data.
+        // Define the output file path for the generated barcode image.
+        string outputPath = "postal.png";
+
+        // Initialize a BarcodeGenerator for the Postnet symbology with a sample ZIP code.
         using (var generator = new BarcodeGenerator(EncodeTypes.Postnet, "12345"))
         {
-            // Set the background to transparent so the PNG will contain an alpha channel.
+            // Set the background color to transparent so the PNG retains alpha channel.
             generator.Parameters.BackColor = Color.Transparent;
 
-            // Set the bar (foreground) color if desired (default is black).
-            generator.Parameters.Barcode.BarColor = Color.Black;
+            // Optionally increase the image resolution for higher quality output.
+            generator.Parameters.Resolution = 300f;
 
-            // Save the barcode image as PNG, preserving the transparent background.
-            generator.Save("postal.png");
+            // Save the generated barcode as a PNG file, preserving transparency.
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
+
+        // Inform the user that the barcode has been saved successfully.
+        Console.WriteLine($"Postal barcode saved to {outputPath}");
     }
 }
