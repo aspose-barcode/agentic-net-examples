@@ -1,36 +1,58 @@
 using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates generating a Code16K barcode with configurable quiet zone coefficients.
+/// </summary>
 class Program
 {
-    static void Main()
+    /// <summary>
+    /// Entry point of the application.
+    /// Accepts optional command‑line arguments to set left and right quiet zone coefficients.
+    /// </summary>
+    /// <param name="args">Command‑line arguments: leftCoef rightCoef</param>
+    static void Main(string[] args)
     {
-        // Sample quiet zone coefficients
-        int leftQuietZoneCoef = 15;   // left quiet zone in xDimension units
-        int rightQuietZoneCoef = 5;   // right quiet zone in xDimension units
+        // Default quiet zone coefficients
+        int leftCoef = 10;   // default left quiet zone coefficient
+        int rightCoef = 1;   // default right quiet zone coefficient
 
-        // Create a Code16K barcode generator with sample code text
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code16K, "12345678901234567890"))
+        // Parse optional command‑line arguments: leftCoef rightCoef
+        if (args.Length >= 2)
         {
-            // Apply quiet zone coefficients
-            generator.Parameters.Barcode.Code16K.QuietZoneLeftCoef = leftQuietZoneCoef;
-            generator.Parameters.Barcode.Code16K.QuietZoneRightCoef = rightQuietZoneCoef;
+            // Try to parse left coefficient; fallback to default on failure
+            if (int.TryParse(args[0], out int parsedLeft) && parsedLeft > 0)
+                leftCoef = parsedLeft;
+            else
+                Console.WriteLine($"Invalid left coefficient '{args[0]}', using default {leftCoef}.");
 
-            // Optional: set image size for better preview
-            generator.Parameters.ImageWidth.Point = 300f;
-            generator.Parameters.ImageHeight.Point = 150f;
-
-            // Generate the barcode image
-            using (Bitmap barcodeImage = generator.GenerateBarCodeImage())
-            {
-                // Save preview to file
-                barcodeImage.Save("Code16K_QuietZonePreview.png", ImageFormat.Png);
-            }
+            // Try to parse right coefficient; fallback to default on failure
+            if (int.TryParse(args[1], out int parsedRight) && parsedRight > 0)
+                rightCoef = parsedRight;
+            else
+                Console.WriteLine($"Invalid right coefficient '{args[1]}', using default {rightCoef}.");
         }
 
-        Console.WriteLine("Barcode preview generated: Code16K_QuietZonePreview.png");
+        // Sample Code16K barcode text (must be numeric)
+        const string codeText = "123456789012";
+
+        // Generate the barcode with specified quiet zone coefficients
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code16K, codeText))
+        {
+            // Apply quiet zone coefficients to the generator parameters
+            generator.Parameters.Barcode.Code16K.QuietZoneLeftCoef = leftCoef;
+            generator.Parameters.Barcode.Code16K.QuietZoneRightCoef = rightCoef;
+
+            // Define output file path
+            const string outputPath = "code16k.png";
+
+            // Save the barcode image to a file
+            generator.Save(outputPath);
+
+            // Inform the user about the saved file and used coefficients
+            Console.WriteLine($"Barcode saved to '{outputPath}'.");
+            Console.WriteLine($"QuietZoneLeftCoef = {leftCoef}, QuietZoneRightCoef = {rightCoef}");
+        }
     }
 }

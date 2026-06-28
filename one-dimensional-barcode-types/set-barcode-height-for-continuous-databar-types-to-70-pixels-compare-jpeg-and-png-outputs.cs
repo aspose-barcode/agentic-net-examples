@@ -2,72 +2,74 @@ using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
+using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates generation of various DataBar barcode symbologies
+/// and compares PNG vs JPEG file sizes.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates barcodes, saves them in PNG and JPEG formats,
+    /// and outputs the file size comparison to the console.
+    /// </summary>
     static void Main()
     {
-        // Output folder
-        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "DataBarOutputs");
-        Directory.CreateDirectory(outputDir);
+        // Prepare the output directory where barcode images will be saved.
+        string outputDir = Path.Combine(Environment.CurrentDirectory, "output");
+        if (!Directory.Exists(outputDir))
+        {
+            Directory.CreateDirectory(outputDir);
+        }
 
-        // Define DataBar types to process
+        // Define the set of DataBar symbologies to be generated.
         BaseEncodeType[] dataBarTypes = new BaseEncodeType[]
         {
             EncodeTypes.DatabarOmniDirectional,
             EncodeTypes.DatabarStacked,
             EncodeTypes.DatabarStackedOmniDirectional,
-            EncodeTypes.DatabarExpanded,
-            EncodeTypes.DatabarExpandedStacked,
             EncodeTypes.DatabarLimited,
-            EncodeTypes.DatabarTruncated
+            EncodeTypes.DatabarExpanded,
+            EncodeTypes.DatabarExpandedStacked
         };
 
+        // Iterate over each symbology type.
         foreach (BaseEncodeType type in dataBarTypes)
         {
-            // Choose appropriate sample code text per type
+            // Choose the appropriate codetext based on the symbology.
+            // DatabarLimited requires a different example value.
             string codeText = type == EncodeTypes.DatabarLimited
                 ? "(01)08888888888888"
                 : "(01)12345678901231";
 
-            // Create generator with specified type and code text
+            // Create a barcode generator for the current type and codetext.
             using (var generator = new BarcodeGenerator(type, codeText))
             {
-                // Ensure BarHeight is respected
+                // Disable automatic sizing to enforce a fixed bar height.
                 generator.Parameters.AutoSizeMode = AutoSizeMode.None;
-                // Set barcode bar height to 70 pixels
-                generator.Parameters.Barcode.BarHeight.Pixels = 70f;
+                generator.Parameters.Barcode.BarHeight.Point = 70f;
 
-                // Optional: set a visible bar color
-                generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-
-                // Build file names
-                string typeName = type.TypeName;
-                string jpegPath = Path.Combine(outputDir, $"{typeName}_70px.jpeg");
-                string pngPath = Path.Combine(outputDir, $"{typeName}_70px.png");
-
-                // Save as JPEG
-                generator.Save(jpegPath, BarCodeImageFormat.Jpeg);
-                // Save as PNG
+                // Save the barcode as a PNG image.
+                string pngPath = Path.Combine(outputDir, $"{type}_70px.png");
                 generator.Save(pngPath, BarCodeImageFormat.Png);
-            }
-        }
 
-        // Simple comparison output (file sizes)
-        Console.WriteLine("DataBar barcode generation completed. File size comparison:");
-        foreach (BaseEncodeType type in dataBarTypes)
-        {
-            string typeName = type.TypeName;
-            string jpegPath = Path.Combine(outputDir, $"{typeName}_70px.jpeg");
-            string pngPath = Path.Combine(outputDir, $"{typeName}_70px.png");
+                // Save the barcode as a JPEG image.
+                string jpgPath = Path.Combine(outputDir, $"{type}_70px.jpg");
+                generator.Save(jpgPath, BarCodeImageFormat.Jpeg);
 
-            if (File.Exists(jpegPath) && File.Exists(pngPath))
-            {
-                long jpegSize = new FileInfo(jpegPath).Length;
+                // Retrieve file sizes for comparison.
                 long pngSize = new FileInfo(pngPath).Length;
-                Console.WriteLine($"{typeName}: JPEG = {jpegSize} bytes, PNG = {pngSize} bytes");
+                long jpgSize = new FileInfo(jpgPath).Length;
+
+                // Output the size comparison to the console.
+                Console.WriteLine($"{type}: PNG size = {pngSize} bytes, JPEG size = {jpgSize} bytes");
             }
         }
+
+        // Indicate that the process has completed.
+        Console.WriteLine("Barcode generation completed. Check the 'output' folder.");
     }
 }

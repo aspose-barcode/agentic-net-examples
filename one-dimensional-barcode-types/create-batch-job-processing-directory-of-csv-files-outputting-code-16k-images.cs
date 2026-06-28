@@ -1,62 +1,102 @@
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
+using Aspose.BarCode;
 
+/// <summary>
+/// Entry point for the barcode batch generation utility.
+/// Reads CSV files from an input directory and creates Code 16K barcode images
+/// for each non‑empty line, saving them to an output directory.
+/// </summary>
 class Program
 {
-    static void Main()
+    /// <summary>
+    /// Main method that orchestrates the processing of CSV files and barcode generation.
+    /// </summary>
+    /// <param name="args">
+    /// Optional command‑line arguments:
+    /// args[0] – input directory path (defaults to "InputCsv"),
+    /// args[1] – output directory path (defaults to "Barcodes").
+    /// </param>
+    static void Main(string[] args)
     {
-        // Define input and output directories
-        string inputFolder = Path.Combine(Directory.GetCurrentDirectory(), "InputCsv");
-        string outputFolder = Path.Combine(Directory.GetCurrentDirectory(), "OutputBarcodes");
+        // Determine input directory (use provided argument or fallback to "InputCsv")
+        string inputDir = args.Length > 0 ? args[0] : "InputCsv";
 
-        // Ensure directories exist
-        if (!Directory.Exists(inputFolder))
+        // Determine output directory (use provided argument or fallback to "Barcodes")
+        string outputDir = args.Length > 1 ? args[1] : "Barcodes";
+
+        // Verify that the input directory exists; abort if it does not
+        if (!Directory.Exists(inputDir))
         {
-            Directory.CreateDirectory(inputFolder);
-            // Seed a sample CSV file so the example can run end‑to‑end
-            string sampleCsv = Path.Combine(inputFolder, "Sample1.csv");
-            File.WriteAllText(sampleCsv, "ABC123\nDEF456\nGHI789");
+            Console.WriteLine($"Input directory does not exist: {inputDir}");
+            return;
         }
 
-        if (!Directory.Exists(outputFolder))
-        {
-            Directory.CreateDirectory(outputFolder);
-        }
+        // Ensure the output directory exists (creates it if necessary)
+        Directory.CreateDirectory(outputDir);
 
-        // Get CSV files (limit to a safe number for the demo)
-        string[] csvFiles = Directory.GetFiles(inputFolder, "*.csv");
-        int maxFiles = Math.Min(csvFiles.Length, 5);
+        // Retrieve all CSV files in the input directory
+        string[] csvFiles = Directory.GetFiles(inputDir, "*.csv");
 
-        for (int i = 0; i < maxFiles; i++)
+        // Process each CSV file individually
+        foreach (string csvPath in csvFiles)
         {
-            string csvPath = csvFiles[i];
+            Console.WriteLine($"Processing file: {Path.GetFileName(csvPath)}");
+
+            // Read all lines from the CSV; each line represents barcode text
             string[] lines = File.ReadAllLines(csvPath);
-            int maxLines = Math.Min(lines.Length, 10); // limit rows per file
+            int lineNumber = 0;
 
-            for (int j = 0; j < maxLines; j++)
+            // Iterate through each line, ignoring empty or whitespace‑only entries
+            foreach (string rawLine in lines)
             {
-                string codeText = lines[j].Trim();
+                string codeText = rawLine.Trim();
                 if (string.IsNullOrEmpty(codeText))
-                    continue;
-
-                // Create barcode generator for Code 16K
-                using (var generator = new BarcodeGenerator(EncodeTypes.Code16K))
                 {
-                    generator.CodeText = codeText;
-
-                    // Build output file name: originalFile_rowIndex.png
-                    string outputFileName = $"{Path.GetFileNameWithoutExtension(csvPath)}_Row{j + 1}.png";
-                    string outputPath = Path.Combine(outputFolder, outputFileName);
-
-                    // Save barcode image as PNG
-                    generator.Save(outputPath, BarCodeImageFormat.Png);
+                    continue;
                 }
+
+                lineNumber++;
+
+                // Create a file‑system‑safe fragment from the barcode text
+                string safeCode = MakeFileNameSafe(codeText);
+
+                // Construct a unique image file name using the CSV name, row number, and safe code
+                string imageFileName = $"{Path.GetFileNameWithoutExtension(csvPath)}_Row{lineNumber}_{safeCode}.png";
+                string imagePath = Path.Combine(outputDir, imageFileName);
+
+                // Generate the Code 16K barcode and save it as a PNG image
+                using (var generator = new BarcodeGenerator(EncodeTypes.Code16K, codeText))
+                {
+                    // Optional: adjust aspect ratio if required
+                    // generator.Parameters.Barcode.Code16K.AspectRatio = 1.0f;
+
+                    generator.Save(imagePath);
+                }
+
+                Console.WriteLine($"  Saved barcode for row {lineNumber} to {imageFileName}");
             }
         }
 
-        Console.WriteLine("Barcode generation completed.");
+        Console.WriteLine("Batch processing completed.");
+    }
+
+    /// <summary>
+    /// Converts a string into a file‑system‑safe name by replacing invalid characters
+    /// and truncating the result to a reasonable length.
+    /// </summary>
+    /// <param name="text">The original text to sanitize.</param>
+    /// <returns>A sanitized string suitable for use in a file name.</returns>
+    private static string MakeFileNameSafe(string text)
+    {
+        // Replace each invalid file name character with an underscore
+        foreach (char c in Path.GetInvalidFileNameChars())
+        {
+            text = text.Replace(c, '_');
+        }
+
+        // Truncate to 20 characters to avoid excessively long file names
+        return text.Length > 20 ? text.Substring(0, 20) : text;
     }
 }

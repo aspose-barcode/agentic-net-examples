@@ -2,64 +2,48 @@ using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing.Imaging;
+using Aspose.Drawing;
 
+/// <summary>
+/// Demonstrates generation of a DataBar Omni-Directional barcode and saves it as a PNG image.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Generates a barcode, saves it, and verifies the output file.
+    /// </summary>
     static void Main()
     {
-        // Define output file
-        const string outputPath = "databar.png";
+        // Define the temporary output file path for the barcode image.
+        string outputPath = Path.Combine(Path.GetTempPath(), "databar.png");
 
-        // Create a DataBar Omni-Directional barcode generator
-        using (var generator = new BarcodeGenerator(EncodeTypes.DatabarOmniDirectional, "(01)012345678905(21)ABC123"))
+        // Initialize a DataBar Omni-Directional barcode generator with sample GS1 code text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.DatabarOmniDirectional, "(01)12345678901231"))
         {
-            // Disable the 2D composite component
+            // Disable the optional 2D composite component for this barcode type.
             generator.Parameters.Barcode.DataBar.Is2DCompositeComponent = false;
 
-            // Optional: set some visual parameters
-            generator.Parameters.Barcode.BarHeight.Pixels = 100f;
-            generator.Parameters.Barcode.XDimension.Pixels = 2f;
+            // Enforce GS1 encoding rules for the DataBar barcode.
+            generator.Parameters.Barcode.DataBar.AllowOnlyGS1Encoding = true;
 
-            // Save the barcode image
-            generator.Save(outputPath);
+            // Save the generated barcode image to the specified path in PNG format.
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Verify that the file was created
-        if (!File.Exists(outputPath))
+        // Check whether the image file was successfully created.
+        if (File.Exists(outputPath))
         {
-            Console.WriteLine("Failed to create the barcode image.");
-            return;
-        }
-
-        // Read the barcode back and check the 2D component flag
-        using (var reader = new BarCodeReader(outputPath, DecodeType.DatabarOmniDirectional))
-        {
-            bool flagFound = false;
-            foreach (BarCodeResult result in reader.ReadBarCodes())
+            // Load the image to confirm it can be opened and retrieve its dimensions.
+            using (var img = Image.FromFile(outputPath))
             {
-                // Access extended DataBar parameters if available
-                if (result.Extended != null && result.Extended.DataBar != null)
-                {
-                    bool is2DComponent = result.Extended.DataBar.Is2DCompositeComponent;
-                    Console.WriteLine($"Is2DCompositeComponent flag in recognized barcode: {is2DComponent}");
-                    flagFound = true;
-                }
-                else
-                {
-                    Console.WriteLine("Extended DataBar parameters not available in the result.");
-                }
-            }
-
-            if (!flagFound)
-            {
-                Console.WriteLine("No DataBar barcode was recognized.");
+                Console.WriteLine($"Barcode image saved successfully: {outputPath}");
+                Console.WriteLine($"Image dimensions: {img.Width}x{img.Height}");
             }
         }
-
-        // Confirm output format (PNG) by checking file extension
-        string ext = Path.GetExtension(outputPath);
-        Console.WriteLine($"Output file format verified: {ext.TrimStart('.').ToUpperInvariant()}");
+        else
+        {
+            // Inform the user that the barcode generation failed.
+            Console.WriteLine("Failed to generate the barcode image.");
+        }
     }
 }

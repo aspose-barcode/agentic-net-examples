@@ -1,26 +1,40 @@
 using System;
-using Aspose.BarCode.Generation;
 using Aspose.BarCode;
+using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
+/// <summary>
+/// Demonstrates generating a Code128 barcode using Aspose.BarCode and saving it as a PNG file.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Generates a barcode, configures its appearance, and saves it to disk.
+    /// </summary>
     static void Main()
     {
-        // Create a barcode generator for Code128
+        // Initialize a BarcodeGenerator with Code128 symbology.
         using (var generator = new BarcodeGenerator(EncodeTypes.Code128))
         {
-            // Set the text to encode
-            generator.CodeText = "1234567890";
+            // Set the data to be encoded in the barcode.
+            generator.CodeText = "123ABC";
 
-            // Configure the human‑readable text font: Verdana, Bold, 14 pt
-            var font = generator.Parameters.Barcode.CodeTextParameters.Font;
-            font.FamilyName = "Verdana";
-            font.Size.Point = 14f;
-            font.Style = FontStyle.Bold;
+            // Configure the human‑readable text (the text displayed below the barcode):
+            // - Font family: Verdana
+            // - Font size: 14 points
+            // - Font style: Bold
+            generator.Parameters.Barcode.CodeTextParameters.Font.FamilyName = "Verdana";
+            generator.Parameters.Barcode.CodeTextParameters.Font.Size.Point = 14f;
+            generator.Parameters.Barcode.CodeTextParameters.Font.Style = FontStyle.Bold;
 
-            // Save the barcode image as PNG
-            generator.Save("barcode.png");
-        }
+            // Define the output file path for the generated PNG image.
+            string outputPath = "barcode.png";
+
+            // Save the generated barcode image to the specified file.
+            generator.Save(outputPath);
+
+            // Inform the user that the barcode has been saved.
+            Console.WriteLine($"Barcode saved to {outputPath}");
+        } // The using block disposes the generator and releases resources.
     }
 }

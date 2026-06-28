@@ -1,77 +1,85 @@
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode;
 
+/// <summary>
+/// Generates barcode images from XML configuration files in batch mode.
+/// </summary>
 class Program
 {
-    static void Main()
+    /// <summary>
+    /// Entry point of the application.
+    /// Accepts optional command‑line arguments:
+    /// args[0] – input directory containing XML files (default: "BarcodesConfig").
+    /// args[1] – output directory for generated images (default: inputDir\Output).
+    /// </summary>
+    /// <param name="args">Command‑line arguments.</param>
+    static void Main(string[] args)
     {
-        // Define input and output folders relative to the current directory
-        string inputFolder = Path.Combine(Environment.CurrentDirectory, "InputBarcodes");
-        string outputFolder = Path.Combine(Environment.CurrentDirectory, "OutputBarcodes");
-        string logFile = Path.Combine(outputFolder, "error.log");
+        // Determine input directory: use first argument if provided, otherwise default.
+        string inputDir = args.Length > 0 ? args[0] : "BarcodesConfig";
 
-        // Ensure the directories exist
-        if (!Directory.Exists(inputFolder))
+        // Determine output directory: use second argument if provided, otherwise create "Output" subfolder.
+        string outputDir = args.Length > 1 ? args[1] : Path.Combine(inputDir, "Output");
+
+        // Verify that the input directory exists; abort if it does not.
+        if (!Directory.Exists(inputDir))
         {
-            Directory.CreateDirectory(inputFolder);
-        }
-        if (!Directory.Exists(outputFolder))
-        {
-            Directory.CreateDirectory(outputFolder);
+            Console.WriteLine($"Input directory does not exist: {inputDir}");
+            return;
         }
 
-        // Clear previous log file
-        using (var logClear = new StreamWriter(logFile, false)) { }
+        // Ensure the output directory exists.
+        Directory.CreateDirectory(outputDir);
 
-        // If there are no XML files, create a sample configuration
-        string[] existingXml = Directory.GetFiles(inputFolder, "*.xml");
-        if (existingXml.Length == 0)
+        // Path to the error log file inside the output directory.
+        string logPath = Path.Combine(outputDir, "error.log");
+
+        // Retrieve all XML files from the input directory.
+        string[] xmlFiles = Directory.GetFiles(inputDir, "*.xml");
+
+        // If no XML files are found, inform the user and exit.
+        if (xmlFiles.Length == 0)
         {
-            string sampleXml = Path.Combine(inputFolder, "Sample1.xml");
-            using (var sampleGenerator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
+            Console.WriteLine($"No XML configuration files found in: {inputDir}");
+            return;
+        }
+
+        // Open the log file for appending error messages.
+        using (var logWriter = new StreamWriter(logPath, true))
+        {
+            // Process each XML configuration file.
+            foreach (string xmlFile in xmlFiles)
             {
-                // Export the configuration to XML
-                sampleGenerator.ExportToXml(sampleXml);
-            }
-        }
-
-        // Process each XML configuration file
-        string[] xmlFiles = Directory.GetFiles(inputFolder, "*.xml");
-        foreach (string xmlPath in xmlFiles)
-        {
-            try
-            {
-                // Import generator settings from the XML file
-                using (var generator = BarcodeGenerator.ImportFromXml(xmlPath))
+                try
                 {
-                    // Determine output image path (same name, PNG format)
-                    string outputImage = Path.Combine(outputFolder, Path.GetFileNameWithoutExtension(xmlPath) + ".png");
+                    // Import barcode settings from the XML file.
+                    using (var generator = BarcodeGenerator.ImportFromXml(xmlFile))
+                    {
+                        // Build the output file path with .png extension.
+                        string outputFile = Path.Combine(outputDir, Path.GetFileNameWithoutExtension(xmlFile) + ".png");
 
-                    // Save the generated barcode image
-                    generator.Save(outputImage);
-                    Console.WriteLine($"Generated barcode: {outputImage}");
+                        // Save the generated barcode image.
+                        generator.Save(outputFile);
+
+                        // Inform the user about the successful generation.
+                        Console.WriteLine($"Generated: {outputFile}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // Build a descriptive error message.
+                    string message = $"Error processing '{xmlFile}': {ex.Message}";
+
+                    // Write the error to console and log file with UTC timestamp.
+                    Console.WriteLine(message);
+                    logWriter.WriteLine($"{DateTime.UtcNow:u} {message}");
                 }
             }
-            catch (BarCodeException ex)
-            {
-                // Log Aspose.BarCode specific errors
-                using (var log = new StreamWriter(logFile, true))
-                {
-                    log.WriteLine($"{DateTime.Now}: BarCodeException processing '{xmlPath}': {ex.Message}");
-                }
-                Console.WriteLine($"Error processing '{xmlPath}': {ex.Message}");
-            }
-            catch (Exception ex)
-            {
-                // Log any other unexpected errors
-                using (var log = new StreamWriter(logFile, true))
-                {
-                    log.WriteLine($"{DateTime.Now}: Exception processing '{xmlPath}': {ex.Message}");
-                }
-                Console.WriteLine($"Error processing '{xmlPath}': {ex.Message}");
-            }
         }
+
+        // Indicate that batch processing has finished.
+        Console.WriteLine("Batch processing completed.");
     }
 }

@@ -1,45 +1,54 @@
 using System;
-using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
+/// <summary>
+/// Demonstrates generating a Code128 barcode with a width reduction,
+/// saving it to a file, and then reading it back to verify correctness.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a barcode, saves it, reads it back, and validates the result.
+    /// </summary>
     static void Main()
     {
-        const string filePath = "barcode.png";
+        // Output file path for the generated barcode image
+        const string outputPath = "barcode.png";
 
-        // Create a Code128 barcode with sample text
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+        // Text to encode in the barcode
+        const string codeText = "1234567890";
+
+        // ------------------------------------------------------------
+        // Generate a Code128 barcode with a 30 % width reduction
+        // ------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
         {
-            // Apply a 30‑point bar width reduction (approx. 30 %)
+            // Apply a 30‑point reduction to the bar width (approximately 30 %)
             generator.Parameters.Barcode.BarWidthReduction.Point = 30f;
 
-            // Save the generated barcode image
-            generator.Save(filePath);
+            // Save the generated barcode image to the specified file
+            generator.Save(outputPath);
         }
 
-        // Verify that the barcode can be read by a scanner
-        if (!File.Exists(filePath))
+        // ------------------------------------------------------------
+        // Read the generated barcode and verify its readability
+        // ------------------------------------------------------------
+        using (var reader = new BarCodeReader(outputPath, DecodeType.AllSupportedTypes))
         {
-            Console.WriteLine("Barcode image was not created.");
-            return;
-        }
+            // Attempt to read all barcodes from the image
+            var results = reader.ReadBarCodes();
 
-        using (var reader = new BarCodeReader(filePath, DecodeType.Code128))
-        {
-            bool anyFound = false;
-            foreach (var result in reader.ReadBarCodes())
+            // Check if at least one barcode was read and if it matches the original text
+            if (results.Length > 0 && results[0].CodeText == codeText)
             {
-                Console.WriteLine($"Detected CodeText: {result.CodeText}");
-                Console.WriteLine($"Confidence: {result.Confidence}");
-                anyFound = true;
+                Console.WriteLine("Barcode read successfully: " + results[0].CodeText);
             }
-
-            if (!anyFound)
+            else
             {
-                Console.WriteLine("No barcode detected.");
+                Console.WriteLine("Failed to read the barcode.");
             }
         }
     }

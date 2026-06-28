@@ -3,23 +3,27 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
+/// <summary>
+/// Demonstrates generating a Code128 barcode with a custom background color using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Generates a barcode image and saves it to a file.
+    /// </summary>
     static void Main()
     {
-        // Create a barcode generator for Code128 symbology
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128))
+        // Initialize a BarcodeGenerator for Code128 with the sample text "123456"
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
         {
-            // Set the text to encode
-            generator.CodeText = "Sample123";
-
-            // Apply custom background color LightCoral
+            // Apply a LightCoral background color to match the UI theme
             generator.Parameters.BackColor = Color.LightCoral;
 
-            // Save the barcode image to a file
+            // Save the generated barcode as a PNG file named "barcode.png"
             generator.Save("barcode.png");
         }
 
-        Console.WriteLine("Barcode generated with LightCoral background.");
+        // Inform the user that the barcode has been generated and saved
+        Console.WriteLine("Barcode generated with LightCoral background: barcode.png");
     }
 }

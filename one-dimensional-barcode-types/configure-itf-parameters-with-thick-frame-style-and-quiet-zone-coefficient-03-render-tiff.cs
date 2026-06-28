@@ -1,40 +1,69 @@
 using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates generation of an ITF14 barcode with a thick frame and handling of quiet zone settings.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Generates an ITF14 barcode and saves it as a TIFF image.
+    /// </summary>
     static void Main()
     {
-        // Create a barcode generator for ITF14 with sample code text
-        using (var generator = new BarcodeGenerator(EncodeTypes.ITF14, "123456789012"))
-        {
-            // Configure ITF parameters
-            // Set a thick frame border
-            generator.Parameters.Barcode.ITF.BorderType = ITF14BorderType.Frame;
-            generator.Parameters.Barcode.ITF.BorderThickness.Point = 5f; // thick border
+        // Sample ITF14 code text (must be numeric and have an even number of digits)
+        const string codeText = "123456789012";
 
-            // Set quiet zone coefficient (the property expects an int, minimum 10)
-            // The requested value 0.3 is below the allowed range, so we handle it gracefully.
+        // Initialize the barcode generator for ITF14 symbology using the provided code text
+        using (var generator = new BarcodeGenerator(EncodeTypes.ITF14, codeText))
+        {
+            // ------------------------------------------------------------
+            // Configure barcode appearance
+            // ------------------------------------------------------------
+
+            // Set the border type to a thick frame around the barcode
+            generator.Parameters.Barcode.ITF.BorderType = ITF14BorderType.Frame;
+
+            // Define the thickness of the border (5 points in this example)
+            generator.Parameters.Barcode.ITF.BorderThickness.Point = 5f;
+
+            // ------------------------------------------------------------
+            // Quiet zone handling
+            // ------------------------------------------------------------
+
+            // The API expects an integer quiet zone coefficient >= 10.
+            // The requested value (0.3) is invalid, so we report it without applying.
+            const float requestedQuietZoneCoef = 0.3f;
+            if (requestedQuietZoneCoef < 10f)
+            {
+                Console.WriteLine(
+                    $"Requested quiet zone coefficient {requestedQuietZoneCoef} is invalid. " +
+                    "ITF quiet zone coefficient must be an integer >= 10. Skipping this setting.");
+            }
+            else
+            {
+                // This block would set a valid quiet zone coefficient.
+                generator.Parameters.Barcode.ITF.QuietZoneCoef = (int)requestedQuietZoneCoef;
+            }
+
+            // ------------------------------------------------------------
+            // Save the generated barcode
+            // ------------------------------------------------------------
+
+            const string outputPath = "itf_barcode.tiff";
             try
             {
-                // Attempt to set the coefficient; this will throw if the value is invalid.
-                generator.Parameters.Barcode.ITF.QuietZoneCoef = (int)(0.3 * 100); // 30 as an approximation
+                // Save the barcode image in TIFF format to the specified path
+                generator.Save(outputPath, BarCodeImageFormat.Tiff);
+                Console.WriteLine($"Barcode saved to {outputPath}");
             }
-            catch (ArgumentException ex)
+            catch (Exception ex)
             {
-                Console.WriteLine($"Warning: Unable to set QuietZoneCoef to the requested value. {ex.Message}");
-                // Fallback to the minimum allowed value
-                generator.Parameters.Barcode.ITF.QuietZoneCoef = 10;
+                // Report any errors that occur during the save operation
+                Console.WriteLine($"Failed to save barcode: {ex.Message}");
             }
-
-            // Optional: set colors
-            generator.Parameters.Barcode.BarColor = Color.Black;
-            generator.Parameters.BackColor = Color.White;
-
-            // Save the barcode as a TIFF image
-            generator.Save("itf_barcode.tif");
         }
     }
 }

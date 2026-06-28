@@ -1,31 +1,32 @@
 using System;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
-namespace BarcodeExample
+/// <summary>
+/// Demonstrates generating a Code128 barcode and saving it as a PNG file.
+/// </summary>
+class Program
 {
-    class Program
+    /// <summary>
+    /// Entry point of the application. Generates a barcode and writes it to disk.
+    /// </summary>
+    static void Main()
     {
-        static void Main()
+        // Initialize a BarcodeGenerator with Code128 symbology and the data to encode.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
         {
-            // Create a barcode generator for Code128 symbology
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128))
-            {
-                // Set the text to encode
-                generator.CodeText = "1234567890";
+            // Configure visual appearance: white background and black bars for high contrast.
+            generator.Parameters.BackColor = Color.White;
+            generator.Parameters.Barcode.BarColor = Color.Black;
 
-                // Set foreground (bars) color to black
-                generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
+            // Define the output file path.
+            string outputPath = "barcode.png";
 
-                // Set background color to white
-                generator.Parameters.BackColor = Aspose.Drawing.Color.White;
+            // Save the generated barcode image to the specified file in PNG format.
+            generator.Save(outputPath);
 
-                // Save the barcode image to a file
-                generator.Save("barcode.png");
-            }
-
-            Console.WriteLine("Barcode generated successfully.");
+            // Inform the user where the barcode image was saved.
+            Console.WriteLine($"Barcode saved to {outputPath}");
         }
     }
 }

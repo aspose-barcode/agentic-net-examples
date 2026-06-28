@@ -2,38 +2,40 @@ using System;
 using System.IO;
 using Aspose.BarCode.Generation;
 
+/// <summary>
+/// Demonstrates importing barcode settings from an XML file,
+/// modifying the XDimension, and exporting the updated settings.
+/// </summary>
 class Program
 {
-    static void Main()
+    /// <summary>
+    /// Entry point of the application.
+    /// </summary>
+    /// <param name="args">Command‑line arguments (not used).</param>
+    static void Main(string[] args)
     {
-        // Define input and output XML file paths
-        string inputXml = "barcodeSettings.xml";
-        string outputXml = "barcodeSettings_updated.xml";
+        // Define the input and output XML file paths.
+        string inputPath = "barcodeSettings.xml";
+        string outputPath = "updatedBarcodeSettings.xml";
 
-        // Verify that the input file exists
-        if (!File.Exists(inputXml))
+        // Ensure the input file exists before attempting to load it.
+        if (!File.Exists(inputPath))
         {
-            Console.WriteLine($"Input XML file not found: {inputXml}");
+            Console.WriteLine($"Input file not found: {inputPath}");
             return;
         }
 
-        // Load barcode settings from the XML file
-        using (BarcodeGenerator generator = BarcodeGenerator.ImportFromXml(inputXml))
+        // Import barcode settings from the existing XML file.
+        using (var generator = BarcodeGenerator.ImportFromXml(inputPath))
         {
-            if (generator == null)
-            {
-                Console.WriteLine("Failed to import barcode settings from XML.");
-                return;
-            }
+            // Update the XDimension (module size) to 2.5 points.
+            generator.Parameters.Barcode.XDimension.Point = 2.5f;
 
-            // Modify the XDimension (using Point units as required)
-            generator.Parameters.Barcode.XDimension.Point = 2f; // Set XDimension to 2 points
-
-            // Save the updated settings back to a new XML file
-            bool success = generator.ExportToXml(outputXml);
-            Console.WriteLine(success
-                ? $"Updated XML saved to: {outputXml}"
-                : "Failed to export updated XML.");
+            // Export the modified settings to a new XML file.
+            generator.ExportToXml(outputPath);
         }
+
+        // Inform the user that the operation completed successfully.
+        Console.WriteLine($"Updated barcode settings saved to: {outputPath}");
     }
 }

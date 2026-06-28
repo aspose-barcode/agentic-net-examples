@@ -1,40 +1,63 @@
 using System;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
+/// <summary>
+/// Demonstrates generating a Code 16K barcode with configurable quiet zone coefficients.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Accepts optional command‑line arguments to set the barcode data and quiet zone coefficients.
+    /// </summary>
+    /// <param name="args">
+    /// args[0] – barcode text (default: "12345678901234567890")
+    /// args[1] – left quiet zone coefficient (default: 10)
+    /// args[2] – right quiet zone coefficient (default: 1)
+    /// </param>
     static void Main(string[] args)
     {
-        // Default values
-        string codeText = "1234567890";
-        int leftQuietZone = 10;   // default as per documentation
-        int rightQuietZone = 1;   // default as per documentation
+        // Default values for barcode text and quiet zone coefficients
+        string codeText = "12345678901234567890";
+        int quietZoneLeft = 10;   // default left coefficient
+        int quietZoneRight = 1;   // default right coefficient
+        string outputPath = "code16k.png";
 
         // Parse command‑line arguments if provided
         if (args.Length > 0 && !string.IsNullOrWhiteSpace(args[0]))
+        {
+            // Override barcode text with first argument
             codeText = args[0];
+        }
 
-        if (args.Length > 1 && int.TryParse(args[1], out int leftCoef))
-            leftQuietZone = leftCoef;
+        if (args.Length > 1 && int.TryParse(args[1], out int leftCoef) && leftCoef > 0)
+        {
+            // Override left quiet zone coefficient with second argument
+            quietZoneLeft = leftCoef;
+        }
 
-        if (args.Length > 2 && int.TryParse(args[2], out int rightCoef))
-            rightQuietZone = rightCoef;
+        if (args.Length > 2 && int.TryParse(args[2], out int rightCoef) && rightCoef > 0)
+        {
+            // Override right quiet zone coefficient with third argument
+            quietZoneRight = rightCoef;
+        }
 
-        // Create the barcode generator for Code 16K
+        // Create the barcode generator for Code 16K using the specified text
         using (var generator = new BarcodeGenerator(EncodeTypes.Code16K, codeText))
         {
-            // Set quiet zone coefficients
-            generator.Parameters.Barcode.Code16K.QuietZoneLeftCoef = leftQuietZone;
-            generator.Parameters.Barcode.Code16K.QuietZoneRightCoef = rightQuietZone;
+            // Apply the quiet zone coefficients to the generator's parameters
+            generator.Parameters.Barcode.Code16K.QuietZoneLeftCoef = quietZoneLeft;
+            generator.Parameters.Barcode.Code16K.QuietZoneRightCoef = quietZoneRight;
 
-            // Optional: set a reasonable XDimension to control image size
-            generator.Parameters.Barcode.XDimension.Point = 2f; // 2 points per module
-
-            // Save as PNG
-            string outputFile = "code16k.png";
-            generator.Save(outputFile);
-            Console.WriteLine($"Code 16K barcode saved to '{outputFile}'.");
+            // Save the generated barcode as a PNG file
+            generator.Save(outputPath);
         }
+
+        // Output information about the generated barcode
+        Console.WriteLine($"Code 16K barcode saved to '{Path.GetFullPath(outputPath)}'.");
+        Console.WriteLine($"Data: {codeText}");
+        Console.WriteLine($"QuietZoneLeftCoef: {quietZoneLeft}, QuietZoneRightCoef: {quietZoneRight}");
     }
 }

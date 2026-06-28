@@ -1,45 +1,79 @@
 using System;
 using System.IO;
+using System.Collections.Generic;
 using System.Text.Json;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
+/// <summary>
+/// Generates barcode images from a JSON array of code texts using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Parses JSON, creates output directory,
+    /// generates barcodes, and saves them as JPEG files.
+    /// </summary>
     static void Main()
     {
-        // Sample JSON array of code texts
-        string json = "[\"12345\",\"ABCDEF\",\"987654321\",\"HelloWorld\",\"Test123\"]";
+        // --------------------------------------------------------------------
+        // Sample JSON array of code texts. Replace with actual JSON if needed.
+        // --------------------------------------------------------------------
+        string json = "[\"ABC123\",\"DEF456\",\"GHI789\",\"JKL012\",\"MNO345\"]";
 
-        // Deserialize JSON to string array
-        string[] codeTexts = JsonSerializer.Deserialize<string[]>(json);
-        if (codeTexts == null || codeTexts.Length == 0)
+        // --------------------------------------------------------------
+        // Deserialize the JSON string into a List<string>.
+        // --------------------------------------------------------------
+        List<string> codeTexts;
+        try
         {
-            Console.WriteLine("No code texts found in JSON.");
+            codeTexts = JsonSerializer.Deserialize<List<string>>(json);
+        }
+        catch (Exception ex)
+        {
+            // Output error message if JSON parsing fails and exit.
+            Console.WriteLine($"Failed to parse JSON: {ex.Message}");
             return;
         }
 
-        // Prepare output directory
-        string outputFolder = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
-        if (!Directory.Exists(outputFolder))
+        // --------------------------------------------------------------
+        // Validate that we have at least one code text to process.
+        // --------------------------------------------------------------
+        if (codeTexts == null || codeTexts.Count == 0)
         {
-            Directory.CreateDirectory(outputFolder);
+            Console.WriteLine("No code texts found in the JSON array.");
+            return;
         }
 
-        // Generate a barcode for each code text and save as JPEG
-        for (int i = 0; i < codeTexts.Length; i++)
-        {
-            string code = codeTexts[i];
-            string fileName = $"barcode_{i + 1}.jpg";
-            string filePath = Path.Combine(outputFolder, fileName);
+        // --------------------------------------------------------------
+        // Prepare the output directory for barcode images.
+        // --------------------------------------------------------------
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
+        Directory.CreateDirectory(outputDir);
 
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128))
+        // --------------------------------------------------------------
+        // Iterate over each code text, generate a barcode, and save it.
+        // --------------------------------------------------------------
+        for (int i = 0; i < codeTexts.Count; i++)
+        {
+            string codeText = codeTexts[i];
+            string fileName = $"barcode_{i + 1}.jpeg";
+            string outputPath = Path.Combine(outputDir, fileName);
+
+            // Create a BarcodeGenerator for Code128 with the current text.
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
             {
-                generator.CodeText = code;
-                generator.Save(filePath);
+                // Save the generated barcode as a JPEG image.
+                generator.Save(outputPath, BarCodeImageFormat.Jpeg);
             }
 
-            Console.WriteLine($"Saved barcode for \"{code}\" to \"{filePath}\"");
+            // Inform the user about the saved file.
+            Console.WriteLine($"Saved barcode for \"{codeText}\" to \"{outputPath}\"");
         }
+
+        // --------------------------------------------------------------
+        // Indicate that the barcode generation process has finished.
+        // --------------------------------------------------------------
+        Console.WriteLine("Barcode generation completed.");
     }
 }
