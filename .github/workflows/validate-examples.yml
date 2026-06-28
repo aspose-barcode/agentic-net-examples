@@ -41,6 +41,7 @@ jobs:
           FAILED=0
           TOTAL=0
           PASSED=0
+          FAILED_FILES=""
 
           while IFS= read -r file; do
             [ -z "$file" ] && continue
@@ -58,7 +59,8 @@ jobs:
                 PASSED=$((PASSED+1))
               else
                 echo "::error file=$file::Failed with exit code $EXIT"
-                FAILED=1
+                FAILED=$((FAILED+1))
+                FAILED_FILES="${FAILED_FILES}\n- ${file}"
               fi
             fi
 
@@ -72,4 +74,21 @@ jobs:
           fi
 
           echo "Results: $PASSED/$TOTAL passed"
-          exit $FAILED
+
+          if [ $FAILED -gt 0 ]; then
+            echo ""
+            echo "Failed examples ($FAILED):"
+            printf "%b\n" "$FAILED_FILES"
+            {
+              echo "## ❌ Validation Results: $PASSED/$TOTAL passed"
+              echo ""
+              echo "### Failed Examples"
+              printf "%b\n" "$FAILED_FILES"
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+          {
+            echo "## ✅ Validation Results: $PASSED/$TOTAL passed"
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit 0
