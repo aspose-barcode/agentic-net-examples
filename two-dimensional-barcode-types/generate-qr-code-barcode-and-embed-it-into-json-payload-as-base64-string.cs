@@ -1,36 +1,50 @@
 using System;
 using System.IO;
 using System.Text.Json;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates generating a QR code, encoding it as Base64, and outputting a JSON payload.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a QR code image, converts it to a Base64 string, wraps it in JSON, and writes to console.
+    /// </summary>
     static void Main()
     {
-        // Data to encode in the QR code
-        string data = "https://example.com";
+        // Text to encode in the QR code
+        string qrText = "https://example.com";
 
-        // Generate QR code image and convert it to a Base64 string
-        string base64Image;
-        using (Aspose.BarCode.Generation.BarcodeGenerator generator = new Aspose.BarCode.Generation.BarcodeGenerator(EncodeTypes.QR, data))
+        // Generate QR code image and store it in a memory stream
+        byte[] imageBytes;
+        using (var memoryStream = new MemoryStream())
         {
-            // Set high error correction level (optional)
-            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
-
-            using (MemoryStream ms = new MemoryStream())
+            // Initialize the barcode generator for QR encoding with the specified text
+            using (var generator = new BarcodeGenerator(EncodeTypes.QR, qrText))
             {
-                // Save barcode image to the memory stream in PNG format
-                generator.Save(ms, BarCodeImageFormat.Png);
-                byte[] imageBytes = ms.ToArray();
-                base64Image = Convert.ToBase64String(imageBytes);
+                // Set error correction level (optional, LevelM provides a good balance)
+                generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
+
+                // Save the generated QR code as a PNG image into the memory stream
+                generator.Save(memoryStream, BarCodeImageFormat.Png);
             }
+
+            // Retrieve the image bytes from the memory stream
+            imageBytes = memoryStream.ToArray();
         }
 
-        // Create a simple JSON payload containing the Base64 QR code
-        var payload = new { qrCode = base64Image };
+        // Convert the image bytes to a Base64 string for easy transport in JSON
+        string base64Image = Convert.ToBase64String(imageBytes);
+
+        // Create a simple JSON payload containing the Base64-encoded image
+        var payload = new { barcodeImage = base64Image };
         string json = JsonSerializer.Serialize(payload);
 
-        // Output the JSON payload
+        // Output the JSON payload to the console
         Console.WriteLine(json);
     }
 }

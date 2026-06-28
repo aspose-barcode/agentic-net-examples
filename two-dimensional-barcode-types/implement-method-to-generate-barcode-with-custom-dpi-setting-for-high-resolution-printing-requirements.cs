@@ -1,29 +1,32 @@
 using System;
-using Aspose.BarCode.Generation;
 using Aspose.BarCode;
+using Aspose.BarCode.Generation;
 
+/// <summary>
+/// Demonstrates generating a high‑resolution Code128 barcode and saving it as a PNG file.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Generates a barcode, sets a custom DPI, and saves the image.
+    /// </summary>
     static void Main()
     {
-        // Define output file path
+        // Define the output file path for the generated barcode image.
         const string outputPath = "highres_barcode.png";
 
-        // Create a barcode generator for Code128 with sample text
+        // Initialize a BarcodeGenerator for Code128 with the sample text "1234567890".
         using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            // Set a high resolution (e.g., 300 DPI) for high‑resolution printing
-            generator.Parameters.Resolution = 300f;
+            // Configure the resolution (dots per inch) for high‑resolution output.
+            // Setting this to 300 DPI ensures the barcode is suitable for printing.
+            generator.Parameters.Resolution = 300f; // DPI
 
-            // Optionally, adjust image size to maintain visual dimensions at higher DPI
-            // Here we set width and height in points (1 point = 1/72 inch)
-            generator.Parameters.ImageWidth.Point = 300f;   // approx 4.17 inches wide
-            generator.Parameters.ImageHeight.Point = 100f;  // approx 1.39 inches tall
-
-            // Save the barcode image to the specified file
-            generator.Save(outputPath);
+            // Save the generated barcode as a PNG image to the specified path.
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        Console.WriteLine($"Barcode generated with 300 DPI and saved to '{outputPath}'.");
+        // Inform the user where the barcode image has been saved.
+        Console.WriteLine($"Barcode image saved to: {outputPath}");
     }
 }

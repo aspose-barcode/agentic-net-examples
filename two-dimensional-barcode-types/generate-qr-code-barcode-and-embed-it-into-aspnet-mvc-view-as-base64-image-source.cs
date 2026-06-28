@@ -7,29 +7,35 @@ using Aspose.Drawing.Imaging;
 
 class Program
 {
-    static void Main(string[] args)
+    static void Main()
     {
-        // Text to encode in the QR code
-        const string qrText = "https://example.com";
+        // Text to encode in QR code
+        string codeText = "https://example.com";
 
-        // Generate QR code image
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, qrText))
+        // Create QR code generator with specified text
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, codeText))
         {
             // Set high error correction level
             generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
 
-            // Generate the bitmap
+            // Use interpolation auto-size and define image dimensions
+            generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
+            generator.Parameters.ImageWidth.Point = 300f;
+            generator.Parameters.ImageHeight.Point = 300f;
+
+            // Generate barcode image
             using (Bitmap bitmap = generator.GenerateBarCodeImage())
             {
-                // Save bitmap to memory stream as PNG
+                // Save image to memory stream as PNG
                 using (var ms = new MemoryStream())
                 {
                     bitmap.Save(ms, ImageFormat.Png);
-                    byte[] imageBytes = ms.ToArray();
-                    string base64 = Convert.ToBase64String(imageBytes);
-
-                    // Output HTML img tag with base64 source
-                    Console.WriteLine("<img src=\"data:image/png;base64,{0}\" alt=\"QR Code\" />", base64);
+                    // Convert image bytes to Base64 string
+                    string base64 = Convert.ToBase64String(ms.ToArray());
+                    // Build data URI for embedding in MVC view
+                    string imgSrc = $"data:image/png;base64,{base64}";
+                    // Output the data URI (can be copied into a view)
+                    Console.WriteLine(imgSrc);
                 }
             }
         }

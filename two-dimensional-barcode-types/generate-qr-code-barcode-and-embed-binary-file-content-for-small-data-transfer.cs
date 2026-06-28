@@ -2,49 +2,64 @@ using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
+using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing.Imaging;
 
-namespace BarcodeExample
+/// <summary>
+/// Demonstrates generating a QR code from binary data and reading it back using Aspose.BarCode.
+/// </summary>
+class Program
 {
-    class Program
+    /// <summary>
+    /// Entry point of the application. Generates a QR code from a binary file, saves it, and reads it back.
+    /// </summary>
+    static void Main()
     {
-        static void Main(string[] args)
+        // Define file paths for the binary source and the generated QR image.
+        string binaryFilePath = "sample.bin";
+        string qrImagePath = "qr_binary.png";
+
+        // Ensure a small binary file exists; create one with sample data if missing.
+        if (!File.Exists(binaryFilePath))
         {
-            // Determine binary data source: file path from arguments or sample bytes
-            byte[] binaryData;
-            if (args.Length > 0 && File.Exists(args[0]))
-            {
-                binaryData = File.ReadAllBytes(args[0]);
-            }
-            else
-            {
-                // Sample binary payload for demonstration
-                binaryData = new byte[] { 0xDE, 0xAD, 0xBE, 0xEF };
-            }
-
-            string outputFile = "qr_binary.png";
-
-            // Create QR Code generator
-            using (var generator = new BarcodeGenerator(EncodeTypes.QR))
-            {
-                // Use high error correction level for better data recovery
-                generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
-
-                // Embed binary data directly into the QR code
-                generator.SetCodeText(binaryData);
-
-                // Hide human‑readable text (optional)
-                generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.None;
-
-                // Generate the barcode image and save it
-                using (Bitmap bitmap = generator.GenerateBarCodeImage())
-                {
-                    bitmap.Save(outputFile, ImageFormat.Png);
-                }
-            }
-
-            Console.WriteLine($"QR code saved to {outputFile}");
+            byte[] sampleData = new byte[] { 0x01, 0x02, 0x03, 0x04, 0x05 };
+            File.WriteAllBytes(binaryFilePath, sampleData);
         }
+
+        // Read the entire binary content into a byte array.
+        byte[] fileBytes = File.ReadAllBytes(binaryFilePath);
+
+        // Generate a QR code that embeds the binary payload.
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR))
+        {
+            // Set the binary data as the code text for the QR code.
+            generator.SetCodeText(fileBytes);
+
+            // Use a high error correction level to improve robustness of the QR code.
+            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
+
+            // Save the generated QR code as a PNG image.
+            generator.Save(qrImagePath, BarCodeImageFormat.Png);
+        }
+
+        // Read and decode the QR code image to verify the embedded data.
+        using (var reader = new BarCodeReader(qrImagePath, DecodeType.QR))
+        {
+            var results = reader.ReadBarCodes();
+
+            // Iterate through all decoded results (typically one for this example).
+            foreach (var result in results)
+            {
+                // Output the length of the decoded text.
+                Console.WriteLine($"Decoded CodeText Length: {result.CodeText.Length}");
+
+                // Convert the decoded string back to bytes (UTF-8) and display as hexadecimal.
+                byte[] decodedBytes = System.Text.Encoding.UTF8.GetBytes(result.CodeText);
+                Console.WriteLine("Decoded Bytes (hex): " + BitConverter.ToString(decodedBytes));
+            }
+        }
+
+        // Inform the user where the QR code image has been saved.
+        Console.WriteLine($"QR code image saved to: {qrImagePath}");
     }
 }

@@ -2,37 +2,48 @@ using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates generating a DotCode barcode and returning its Base64 representation.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point. Generates a DotCode barcode from sample text and prints its Base64 string.
+    /// </summary>
     static void Main()
     {
-        // Simulated request payload
-        string codeText = "Hello DotCode!";
-        string base64 = GenerateDotCodeBase64(codeText);
-        Console.WriteLine(base64);
+        // Sample codetext for the DotCode barcode
+        string codeText = "Hello DotCode";
+
+        // Generate the barcode and obtain its Base64 representation
+        string base64Image = GenerateDotCodeBase64(codeText);
+
+        // Output the Base64 string (can be used client‑side for rendering)
+        Console.WriteLine(base64Image);
     }
 
     static string GenerateDotCodeBase64(string codeText)
     {
-        using (var generator = new BarcodeGenerator(EncodeTypes.DotCode, codeText))
+        // MemoryStream will hold the generated PNG image
+        using (var memoryStream = new MemoryStream())
         {
-            // Set encode mode (optional, default is Auto)
-            generator.Parameters.Barcode.DotCode.DotCodeEncodeMode = DotCodeEncodeMode.Auto;
-
-            // Generate the barcode image
-            using (Bitmap bitmap = generator.GenerateBarCodeImage())
+            // Create a BarcodeGenerator for DotCode symbology
+            using (var generator = new BarcodeGenerator(EncodeTypes.DotCode, codeText))
             {
-                using (var ms = new MemoryStream())
-                {
-                    // Save image to memory stream in PNG format
-                    bitmap.Save(ms, ImageFormat.Png);
-                    // Convert image bytes to Base64 string
-                    return Convert.ToBase64String(ms.ToArray());
-                }
+                // Optional: configure DotCode specific parameters here
+                // generator.Parameters.Barcode.DotCode.ECIEncoding = ECIEncodings.UTF8;
+
+                // Save the barcode image to the memory stream in PNG format
+                generator.Save(memoryStream, BarCodeImageFormat.Png);
             }
+
+            // Reset stream position before reading
+            memoryStream.Position = 0;
+
+            // Convert the image bytes to a Base64 string
+            byte[] imageBytes = memoryStream.ToArray();
+            return Convert.ToBase64String(imageBytes);
         }
     }
 }

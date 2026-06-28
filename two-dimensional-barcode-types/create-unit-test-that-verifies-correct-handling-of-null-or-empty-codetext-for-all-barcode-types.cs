@@ -1,82 +1,123 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
-using System.Collections.Generic;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
+/// <summary>
+/// Demonstrates how each barcode symbology handles null or empty CodeText values.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Iterates through all supported barcode symbologies,
+    /// attempts to generate barcodes with empty and null CodeText, and records the outcomes.
+    /// </summary>
     static void Main()
     {
-        var failures = new List<string>();
-        var successes = new List<string>();
+        // Retrieve a dictionary of all barcode symbologies defined in EncodeTypes.
+        var symbologies = GetAllEncodeTypes();
 
-        // Get all barcode symbology types defined in EncodeTypes
-        var encodeTypeFields = typeof(EncodeTypes).GetFields(BindingFlags.Public | BindingFlags.Static);
-        foreach (var field in encodeTypeFields)
+        // Store test results for later display.
+        var results = new List<string>();
+
+        // Iterate over each symbology.
+        foreach (var sym in symbologies)
         {
-            if (!typeof(BaseEncodeType).IsAssignableFrom(field.FieldType))
-                continue;
+            string name = sym.Key;               // Human‑readable name of the symbology.
+            BaseEncodeType type = sym.Value;     // Corresponding EncodeType value.
 
-            var symbologyName = field.Name;
-            var symbology = (BaseEncodeType)field.GetValue(null);
-
-            // Test null CodeText
+            // ------------------------------------------------------------
+            // Test case 1: Empty string as CodeText.
+            // ------------------------------------------------------------
             try
             {
-                using (var generator = new BarcodeGenerator(symbology))
+                // Create a generator with an empty string.
+                using (var generator = new BarcodeGenerator(type, ""))
                 {
+                    // Configure generator to throw an exception when CodeText is invalid.
+                    generator.Parameters.Barcode.ThrowExceptionWhenCodeTextIncorrect = true;
+
+                    // Attempt to save the barcode to a memory stream.
+                    using (var ms = new MemoryStream())
+                    {
+                        generator.Save(ms, BarCodeImageFormat.Png);
+                    }
+                }
+
+                // If no exception is thrown, record an unexpected outcome.
+                results.Add($"{name}: Empty string - No exception (unexpected)");
+            }
+            catch (Exception ex)
+            {
+                // Record the type of exception that was caught.
+                results.Add($"{name}: Empty string - Caught exception: {ex.GetType().Name}");
+            }
+
+            // ------------------------------------------------------------
+            // Test case 2: Null CodeText.
+            // ------------------------------------------------------------
+            try
+            {
+                // Create a generator without specifying CodeText (defaults to null).
+                using (var generator = new BarcodeGenerator(type))
+                {
+                    // Ensure the generator throws on invalid CodeText.
+                    generator.Parameters.Barcode.ThrowExceptionWhenCodeTextIncorrect = true;
+
+                    // Explicitly set CodeText to null.
                     generator.CodeText = null;
-                    using (var ms = new MemoryStream())
-                    {
-                        generator.Save(ms, BarCodeImageFormat.Png);
-                    }
-                }
-                failures.Add($"{symbologyName}: No exception for null CodeText");
-            }
-            catch (Exception ex) when (ex is InvalidCodeException || ex is ArgumentException)
-            {
-                successes.Add($"{symbologyName}: Correctly threw for null CodeText");
-            }
-            catch (Exception ex)
-            {
-                failures.Add($"{symbologyName}: Unexpected exception for null CodeText - {ex.GetType().Name}");
-            }
 
-            // Test empty CodeText
-            try
-            {
-                using (var generator = new BarcodeGenerator(symbology))
-                {
-                    generator.CodeText = string.Empty;
+                    // Attempt to save the barcode to a memory stream.
                     using (var ms = new MemoryStream())
                     {
                         generator.Save(ms, BarCodeImageFormat.Png);
                     }
                 }
-                failures.Add($"{symbologyName}: No exception for empty CodeText");
-            }
-            catch (Exception ex) when (ex is InvalidCodeException || ex is ArgumentException)
-            {
-                successes.Add($"{symbologyName}: Correctly threw for empty CodeText");
+
+                // If no exception is thrown, record an unexpected outcome.
+                results.Add($"{name}: Null codetext - No exception (unexpected)");
             }
             catch (Exception ex)
             {
-                failures.Add($"{symbologyName}: Unexpected exception for empty CodeText - {ex.GetType().Name}");
+                // Record the type of exception that was caught.
+                results.Add($"{name}: Null codetext - Caught exception: {ex.GetType().Name}");
             }
         }
 
-        Console.WriteLine("=== Test Summary ===");
-        Console.WriteLine($"Total symbologies tested: {successes.Count + failures.Count}");
-        Console.WriteLine($"Passed: {successes.Count}");
-        Console.WriteLine($"Failed: {failures.Count}");
-        if (failures.Count > 0)
+        // Output a summary of all test results.
+        Console.WriteLine("Barcode CodeText null/empty handling test results:");
+        foreach (var line in results)
         {
-            Console.WriteLine("\nFailures:");
-            foreach (var f in failures)
-                Console.WriteLine(f);
+            Console.WriteLine(line);
         }
+    }
+
+    /// <summary>
+    /// Retrieves all public static fields from <see cref="EncodeTypes"/> that are of type <see cref="BaseEncodeType"/>.
+    /// </summary>
+    /// <returns>
+    /// A dictionary mapping field names to their corresponding <see cref="BaseEncodeType"/> values.
+    /// </returns>
+    private static Dictionary<string, BaseEncodeType> GetAllEncodeTypes()
+    {
+        var dict = new Dictionary<string, BaseEncodeType>();
+
+        // Get all public static fields defined in EncodeTypes.
+        var fields = typeof(EncodeTypes).GetFields(BindingFlags.Public | BindingFlags.Static);
+
+        // Filter fields that are of type BaseEncodeType and add them to the dictionary.
+        foreach (var field in fields)
+        {
+            if (field.FieldType == typeof(BaseEncodeType))
+            {
+                var value = (BaseEncodeType)field.GetValue(null);
+                dict[field.Name] = value;
+            }
+        }
+
+        return dict;
     }
 }

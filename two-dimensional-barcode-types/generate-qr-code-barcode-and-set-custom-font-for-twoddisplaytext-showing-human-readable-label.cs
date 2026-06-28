@@ -1,35 +1,38 @@
 using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 
-namespace BarcodeExample
+/// <summary>
+/// Demonstrates generating a QR code image using Aspose.BarCode library.
+/// </summary>
+class Program
 {
-    class Program
+    /// <summary>
+    /// Entry point of the application. Generates a QR code with custom label and saves it as a PNG file.
+    /// </summary>
+    static void Main()
     {
-        static void Main()
+        // Define the output file path for the generated QR code image.
+        string outputPath = "qr.png";
+
+        // Initialize a QR code generator with the desired encode type and data.
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "SampleData"))
         {
-            // Create a QR Code generator with sample data
-            using (var generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
-            {
-                // Set QR error correction level to high
-                generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
+            // Set the QR error correction level to Medium (LevelM) to balance data capacity and resilience.
+            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
 
-                // Set custom font for the human‑readable text (TwoDDisplayText)
-                generator.Parameters.Barcode.CodeTextParameters.Font.FamilyName = "Arial";
-                generator.Parameters.Barcode.CodeTextParameters.Font.Size.Point = 12f;
-                generator.Parameters.Barcode.CodeTextParameters.Font.Style = FontStyle.Bold;
+            // Specify custom human‑readable text that will appear below the QR code instead of the raw codetext.
+            generator.Parameters.Barcode.CodeTextParameters.TwoDDisplayText = "My QR Label";
 
-                // Set the text that will be displayed instead of the codetext in the QR image
-                generator.Parameters.Barcode.CodeTextParameters.TwoDDisplayText = "My QR Label";
+            // Configure the font properties for the displayed human‑readable text.
+            generator.Parameters.Barcode.CodeTextParameters.Font.FamilyName = "Arial";
+            generator.Parameters.Barcode.CodeTextParameters.Font.Size.Point = 14f;
 
-                // Optionally adjust image size
-                generator.Parameters.ImageWidth.Point = 300f;
-                generator.Parameters.ImageHeight.Point = 300f;
-
-                // Save the barcode image
-                generator.Save("qr_custom.png");
-            }
+            // Save the generated QR code image to the specified path in PNG format.
+            generator.Save(outputPath);
         }
+
+        // Inform the user where the QR code image has been saved.
+        Console.WriteLine($"QR code image saved to: {outputPath}");
     }
 }

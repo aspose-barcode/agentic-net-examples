@@ -1,72 +1,101 @@
 using System;
 using System.IO;
+using System.Collections.Generic;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Pdf;
+using Aspose.Drawing;
 
+/// <summary>
+/// Demonstrates generating QR code images with Aspose.BarCode,
+/// storing them in memory, and assembling them into a PDF portfolio
+/// using Aspose.Pdf.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates up to four QR code images, adds each to a separate PDF page,
+    /// and saves the resulting PDF to a temporary directory.
+    /// </summary>
     static void Main()
     {
-        // Prepare QR code texts
-        string[] qrTexts = { "First QR Code", "Second QR Code", "Third QR Code" };
-        string[] imageFiles = new string[qrTexts.Length];
+        // --------------------------------------------------------------------
+        // Prepare output directory and PDF file path
+        // --------------------------------------------------------------------
+        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodes");
+        Directory.CreateDirectory(outputDir);
+        string pdfPath = Path.Combine(outputDir, "QrBarcodesPortfolio.pdf");
 
-        // Generate QR code images
-        for (int i = 0; i < qrTexts.Length; i++)
+        // --------------------------------------------------------------------
+        // Generate QR code images and keep them in memory streams
+        // --------------------------------------------------------------------
+        List<MemoryStream> barcodeStreams = new List<MemoryStream>();
+
+        // Evaluation version of Aspose.BarCode allows up to 4 barcodes
+        for (int i = 1; i <= 4; i++)
         {
-            string fileName = $"qr{i + 1}.png";
-            imageFiles[i] = fileName;
+            string codeText = $"Sample QR {i}";
+            var stream = new MemoryStream();
 
-            using (var generator = new BarcodeGenerator(EncodeTypes.QR))
+            // Create a QR code generator for the current text
+            using (var generator = new BarcodeGenerator(EncodeTypes.QR, codeText))
             {
-                generator.CodeText = qrTexts[i];
-                // Set high error correction level
+                // Use the highest error correction level (Level H)
                 generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
-                // Optional: define module size
-                generator.Parameters.Barcode.XDimension.Point = 2f;
-                // Save as PNG
-                generator.Save(fileName, BarCodeImageFormat.Png);
+
+                // Set foreground (barcode) and background colors
+                generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
+                generator.Parameters.BackColor = Aspose.Drawing.Color.White;
+
+                // Save the generated QR code as PNG directly into the memory stream
+                generator.Save(stream, BarCodeImageFormat.Png);
             }
+
+            // Reset stream position so it can be read later
+            stream.Position = 0;
+            barcodeStreams.Add(stream);
         }
 
-        // Create PDF portfolio and add each QR code as a separate page
+        // --------------------------------------------------------------------
+        // Create a PDF document and add each QR code image as a separate page
+        // --------------------------------------------------------------------
         using (var pdfDoc = new Document())
         {
-            for (int i = 0; i < imageFiles.Length; i++)
+            foreach (var imgStream in barcodeStreams)
             {
-                // Ensure we do not exceed the limit of 4 pages per collection
-                if (i >= 4) break;
+                // Add a new page to the PDF
+                var page = pdfDoc.Pages.Add();
 
-                using (var page = pdfDoc.Pages.Add())
+                // Create an Aspose.Pdf.Image object that reads from the memory stream
+                var pdfImage = new Aspose.Pdf.Image
                 {
-                    // Add the QR code image to the page
-                    var img = new Image
-                    {
-                        ImageStream = new FileStream(imageFiles[i], FileMode.Open, FileAccess.Read)
-                    };
-                    // Center the image on the page
-                    img.FixWidth = 200;
-                    img.FixHeight = 200;
-                    img.HorizontalAlignment = HorizontalAlignment.Center;
-                    img.VerticalAlignment = VerticalAlignment.Center;
-                    page.Paragraphs.Add(img);
-                }
+                    ImageStream = imgStream,
+                    // Define a fixed size for the QR code image
+                    FixWidth = 200.0,
+                    FixHeight = 200.0,
+                    // Center the image horizontally and vertically on the page
+                    HorizontalAlignment = Aspose.Pdf.HorizontalAlignment.Center,
+                    VerticalAlignment = Aspose.Pdf.VerticalAlignment.Center
+                };
+
+                // Add the image to the page's paragraph collection
+                page.Paragraphs.Add(pdfImage);
             }
 
-            // Save the PDF portfolio
-            pdfDoc.Save("BarcodesPortfolio.pdf");
+            // Save the assembled PDF portfolio to the specified path
+            pdfDoc.Save(pdfPath);
         }
 
-        // Optional cleanup of temporary image files
-        foreach (var file in imageFiles)
+        // --------------------------------------------------------------------
+        // Clean up: dispose all memory streams now that the PDF is saved
+        // --------------------------------------------------------------------
+        foreach (var s in barcodeStreams)
         {
-            if (File.Exists(file))
-            {
-                try { File.Delete(file); } catch { /* ignore */ }
-            }
+            s.Dispose();
         }
 
-        Console.WriteLine("PDF portfolio with QR codes has been created successfully.");
+        // Inform the user where the PDF was created
+        Console.WriteLine($"QR code PDF portfolio created at: {pdfPath}");
     }
 }

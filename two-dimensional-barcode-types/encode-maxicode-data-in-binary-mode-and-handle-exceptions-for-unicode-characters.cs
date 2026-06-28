@@ -1,46 +1,53 @@
 using System;
-using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates generation of MaxiCode barcodes using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Executes two examples: one with valid ASCII data and one with Unicode data that triggers an exception.
+    /// </summary>
     static void Main()
     {
-        // Valid ASCII data – should be encoded without error.
-        EncodeAndSave("ABC123", "maxicode_binary_ascii.png");
+        // Example 1: valid ASCII data in Binary mode
+        GenerateMaxiCode("Hello, World!", "maxicode_binary_ascii.png");
 
-        // Unicode data – Binary mode does not support Unicode, expect an exception.
-        EncodeAndSave("テスト", "maxicode_binary_unicode.png");
+        // Example 2: Unicode data in Binary mode – should raise an exception
+        GenerateMaxiCode("犬", "maxicode_binary_unicode.png");
     }
 
-    static void EncodeAndSave(string text, string outputPath)
+    /// <summary>
+    /// Generates a MaxiCode barcode with the specified data and saves it to the given file path.
+    /// </summary>
+    /// <param name="data">The text to encode in the barcode.</param>
+    /// <param name="outputPath">The file path where the barcode image will be saved.</param>
+    static void GenerateMaxiCode(string data, string outputPath)
     {
-        try
+        // Create a barcode generator configured for MaxiCode
+        using (var generator = new BarcodeGenerator(EncodeTypes.MaxiCode))
         {
-            // Create a MaxiCode generator.
-            using (var generator = new BarcodeGenerator(EncodeTypes.MaxiCode))
+            // Assign the data to be encoded
+            generator.CodeText = data;
+
+            // Set encoding mode to Binary (required for this example)
+            generator.Parameters.Barcode.MaxiCode.MaxiCodeEncodeMode = MaxiCodeEncodeMode.Binary;
+
+            try
             {
-                // Set the code text.
-                generator.CodeText = text;
-
-                // Switch to Binary mode (throws if Unicode characters are present).
-                generator.Parameters.Barcode.MaxiCode.MaxiCodeEncodeMode = MaxiCodeEncodeMode.Binary;
-
-                // Save the barcode image to a memory stream.
-                using (var ms = new MemoryStream())
-                {
-                    generator.Save(ms, BarCodeImageFormat.Png);
-                    File.WriteAllBytes(outputPath, ms.ToArray());
-                }
-
-                Console.WriteLine($"Barcode saved to '{outputPath}'.");
+                // Save the generated barcode as a PNG image
+                generator.Save(outputPath, BarCodeImageFormat.Png);
+                Console.WriteLine($"Barcode saved to {outputPath}");
             }
-        }
-        catch (Exception ex)
-        {
-            // Handle the exception that occurs when Unicode characters are not allowed.
-            Console.WriteLine($"Failed to encode '{text}' in Binary mode: {ex.Message}");
+            catch (Exception ex)
+            {
+                // Output error details (e.g., Unicode characters not allowed in Binary mode)
+                Console.WriteLine($"Failed to generate barcode for data \"{data}\": {ex.Message}");
+            }
         }
     }
 }

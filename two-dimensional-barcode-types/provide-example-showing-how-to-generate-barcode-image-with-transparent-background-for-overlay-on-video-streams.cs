@@ -1,29 +1,38 @@
 using System;
-using Aspose.BarCode.Generation;
 using Aspose.BarCode;
+using Aspose.BarCode.Generation;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates generating a QR code barcode with a transparent background using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Generates a QR code image with a transparent background and saves it as PNG.
+    /// </summary>
     static void Main()
     {
-        // Create a barcode generator for Code128 with sample text
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
-        {
-            // Set the foreground (bars) color
-            generator.Parameters.Barcode.BarColor = Color.Blue;
+        // Define the output file path for the generated barcode image.
+        string outputPath = "transparent_barcode.png";
 
-            // Make the background transparent so the image can be overlaid on video
+        // Initialize a BarcodeGenerator for a QR code with the specified data.
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
+        {
+            // Configure the barcode appearance.
+
+            // Set the background color to transparent so the image can be overlaid on other media.
             generator.Parameters.BackColor = Color.Transparent;
 
-            // Optional: define image size (in points) if needed
-            generator.Parameters.ImageWidth.Point = 200f;
-            generator.Parameters.ImageHeight.Point = 80f;
+            // Set the foreground (bar) color; default is black, but we set it explicitly for clarity.
+            generator.Parameters.Barcode.BarColor = Color.Black;
 
-            // Save the barcode as PNG (supports alpha channel)
-            generator.Save("barcode.png");
+            // Save the barcode as a PNG file, which supports transparency.
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        Console.WriteLine("Barcode image with transparent background saved as 'barcode.png'.");
+        // Inform the user where the barcode image has been saved.
+        Console.WriteLine($"Barcode image saved to: {outputPath}");
     }
 }

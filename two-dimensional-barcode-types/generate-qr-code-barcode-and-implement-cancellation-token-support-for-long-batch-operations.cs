@@ -1,80 +1,92 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
+using Aspose.BarCode.BarCodeRecognition;
 
-class Program
+namespace BarcodeBatchDemo
 {
-    static async Task Main(string[] args)
+    /// <summary>
+    /// Demonstrates batch generation of QR codes with cancellation support.
+    /// </summary>
+    class Program
     {
-        // Prepare a small batch of sample texts.
-        List<string> samples = new List<string>
+        /// <summary>
+        /// Entry point of the application. Generates a batch of QR codes and handles cancellation.
+        /// </summary>
+        /// <param name="args">Command‑line arguments (not used).</param>
+        static async Task Main(string[] args)
         {
-            "Sample 1",
-            "Sample 2",
-            "Sample 3",
-            "Sample 4",
-            "Sample 5"
-        };
+            // Define a list of sample QR code texts.
+            var qrTexts = new List<string>
+            {
+                "https://example.com/1",
+                "https://example.com/2",
+                "https://example.com/3",
+                "https://example.com/4",
+                "https://example.com/5"
+            };
 
-        // Output folder.
-        string outputFolder = Path.Combine(Directory.GetCurrentDirectory(), "QrOutput");
-        if (!Directory.Exists(outputFolder))
-        {
-            Directory.CreateDirectory(outputFolder);
+            // Create a cancellation token source that will cancel after 3 seconds.
+            using (var cts = new CancellationTokenSource())
+            {
+                cts.CancelAfter(3000);
+                try
+                {
+                    // Generate the QR codes asynchronously, respecting the cancellation token.
+                    await GenerateQrBatchAsync(qrTexts, cts.Token);
+                    Console.WriteLine("Batch processing completed.");
+                }
+                catch (OperationCanceledException)
+                {
+                    // Handle the case where the operation was cancelled.
+                    Console.WriteLine("Batch processing was cancelled.");
+                }
+            }
         }
 
-        using (CancellationTokenSource cts = new CancellationTokenSource())
+        /// <summary>
+        /// Generates QR code images for each text in the provided list.
+        /// </summary>
+        /// <param name="texts">The collection of strings to encode as QR codes.</param>
+        /// <param name="token">Cancellation token to observe.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
+        private static async Task GenerateQrBatchAsync(List<string> texts, CancellationToken token)
         {
-            // Cancel after a short delay to demonstrate cancellation support.
-            Task cancelTask = Task.Delay(500).ContinueWith(_ => cts.Cancel());
+            // Ensure the output directory exists; create it if it does not.
+            string outputDir = "QrOutput";
+            if (!Directory.Exists(outputDir))
+                Directory.CreateDirectory(outputDir);
 
-            try
+            int index = 0;
+            // Iterate over each text item to generate a corresponding QR code.
+            foreach (var text in texts)
             {
-                await GenerateQrBatchAsync(samples, outputFolder, cts.Token);
+                // Throw if cancellation has been requested before processing the next item.
+                token.ThrowIfCancellationRequested();
+
+                // Create a new barcode generator for a QR code with the current text.
+                using (var generator = new BarcodeGenerator(EncodeTypes.QR, text))
+                {
+                    // Configure QR error correction level to Medium (Level M).
+                    generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
+                    // Set the image resolution to 300 DPI.
+                    generator.Parameters.Resolution = 300f;
+                    // Build the file path for the output image.
+                    string filePath = Path.Combine(outputDir, $"qr_{index + 1}.png");
+                    // Save the generated QR code image to disk.
+                    generator.Save(filePath);
+                    Console.WriteLine($"Saved QR code {index + 1} to {filePath}");
+                }
+
+                index++;
+
+                // Simulate a short processing delay, respecting cancellation.
+                await Task.Delay(500, token);
             }
-            catch (OperationCanceledException)
-            {
-                Console.WriteLine("Batch operation was cancelled.");
-            }
-
-            await cancelTask; // Ensure the cancel task completes.
-        }
-
-        Console.WriteLine("Program finished.");
-    }
-
-    private static async Task GenerateQrBatchAsync(List<string> texts, string folder, CancellationToken token)
-    {
-        int index = 0;
-        foreach (string text in texts)
-        {
-            token.ThrowIfCancellationRequested();
-
-            string filePath = Path.Combine(folder, $"qr_{index + 1}.png");
-
-            using (var generator = new BarcodeGenerator(EncodeTypes.QR))
-            {
-                // Set the data to encode.
-                generator.CodeText = text;
-
-                // Set high error correction level.
-                generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
-
-                // Save the QR code image.
-                generator.Save(filePath);
-            }
-
-            Console.WriteLine($"Generated QR code {index + 1}: {filePath}");
-
-            index++;
-
-            // Simulate asynchronous work without blocking.
-            await Task.Yield();
         }
     }
 }

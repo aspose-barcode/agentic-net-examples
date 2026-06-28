@@ -4,50 +4,62 @@ using System.IO;
 using System.Text;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates batch generation of QR codes and returns their Base64 representations.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Simple request model representing an API payload for QR code generation.
+    /// </summary>
+    class QrRequest
+    {
+        public string CodeText { get; set; }
+    }
+
+    /// <summary>
+    /// Entry point of the application. Generates QR codes for a set of requests and prints Base64 strings.
+    /// </summary>
     static void Main()
     {
-        // Simulated API request payload: list of texts to encode as QR codes
-        List<string> requestPayload = new List<string>
+        // Prepare a sample batch of QR code generation requests.
+        var requests = new List<QrRequest>
         {
-            "https://example.com/1",
-            "https://example.com/2",
-            "https://example.com/3",
-            "https://example.com/4",
-            "https://example.com/5"
+            new QrRequest { CodeText = "https://example.com/1" },
+            new QrRequest { CodeText = "Hello World!" },
+            new QrRequest { CodeText = "1234567890" },
+            new QrRequest { CodeText = "Aspose.BarCode QR Demo" },
+            new QrRequest { CodeText = "Base64 Test" }
         };
 
-        // Process each request and collect Base64 strings
-        List<string> base64Responses = new List<string>();
+        // List to hold the Base64-encoded QR code images.
+        var base64Results = new List<string>();
 
-        foreach (string text in requestPayload)
+        // Iterate over each request and generate the corresponding QR code.
+        foreach (var request in requests)
         {
-            // Create QR code generator
-            using (var generator = new BarcodeGenerator(EncodeTypes.QR))
+            // Create a barcode generator for QR type with the provided text.
+            using (var generator = new BarcodeGenerator(EncodeTypes.QR, request.CodeText))
             {
-                // Set the data to encode
-                generator.CodeText = text;
+                // Set error correction level (optional, here using Level M).
+                generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
 
-                // Set high error correction level
-                generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
-
-                // Save barcode to a memory stream in PNG format
-                using (var memoryStream = new MemoryStream())
+                // Save the generated QR code to a memory stream in PNG format.
+                using (var ms = new MemoryStream())
                 {
-                    generator.Save(memoryStream, BarCodeImageFormat.Png);
-                    byte[] imageBytes = memoryStream.ToArray();
+                    generator.Save(ms, BarCodeImageFormat.Png);
+                    // Convert the image bytes to a Base64 string.
+                    byte[] imageBytes = ms.ToArray();
                     string base64 = Convert.ToBase64String(imageBytes);
-                    base64Responses.Add(base64);
+                    // Store the result for later output.
+                    base64Results.Add(base64);
                 }
             }
         }
 
-        // Output the Base64 strings (simulating API response)
-        Console.WriteLine("Generated QR Code Base64 strings:");
-        foreach (string base64 in base64Responses)
+        // Output the Base64 strings (simulating an API response).
+        foreach (var base64 in base64Results)
         {
             Console.WriteLine(base64);
         }

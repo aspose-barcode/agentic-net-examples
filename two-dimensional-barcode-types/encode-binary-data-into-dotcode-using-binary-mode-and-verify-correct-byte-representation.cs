@@ -1,69 +1,96 @@
 using System;
 using System.IO;
 using System.Text;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.BarCode;
 
+/// <summary>
+/// Demonstrates encoding and decoding binary data using DotCode barcode in Binary mode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a DotCode barcode from binary data, reads it back, and verifies integrity.
+    /// </summary>
     static void Main()
     {
-        // Binary data to encode
-        byte[] originalData = new byte[] { 0x01, 0x02, 0xFF, 0x00, 0xAB };
+        // Sample binary data to encode
+        byte[] originalData = new byte[] { 0x01, 0x02, 0xFF, 0x00, 0xAB, 0x7E, 0x20 };
 
-        // Output file path
-        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "dotcode.png");
+        // Path for the generated barcode image (temporary folder)
+        string imagePath = Path.Combine(Path.GetTempPath(), "dotcode_binary.png");
 
-        // Create DotCode barcode with binary mode
+        // -------------------------------------------------
+        // Generate DotCode barcode in Binary mode
+        // -------------------------------------------------
         using (var generator = new BarcodeGenerator(EncodeTypes.DotCode))
         {
-            // Set raw bytes as codetext
+            // Set raw byte data as the code text (binary payload)
             generator.SetCodeText(originalData);
 
-            // Use Binary encode mode
+            // Configure the barcode to use Binary encoding mode
             generator.Parameters.Barcode.DotCode.DotCodeEncodeMode = DotCodeEncodeMode.Binary;
 
-            // Save the barcode image
-            generator.Save(outputPath);
+            // Save the generated barcode image to the temporary path
+            generator.Save(imagePath);
         }
 
-        // Verify by reading the barcode back
-        if (!File.Exists(outputPath))
+        // -------------------------------------------------
+        // Verify the barcode by reading it back
+        // -------------------------------------------------
+        using (var reader = new BarCodeReader(imagePath, DecodeType.DotCode))
         {
-            Console.WriteLine("Failed to create barcode image.");
-            return;
-        }
+            // Read all barcodes found in the image
+            var results = reader.ReadBarCodes();
 
-        using (var reader = new BarCodeReader(outputPath, DecodeType.DotCode))
-        {
-            bool matchFound = false;
-            foreach (BarCodeResult result in reader.ReadBarCodes())
+            // If no barcode is detected, report and exit
+            if (results.Length == 0)
             {
-                // Convert the decoded string back to bytes using ISO-8859-1 (one-to-one mapping)
-                byte[] decodedBytes = Encoding.GetEncoding("ISO-8859-1").GetBytes(result.CodeText);
-
-                // Compare with original data
-                if (decodedBytes.Length == originalData.Length)
-                {
-                    matchFound = true;
-                    for (int i = 0; i < decodedBytes.Length; i++)
-                    {
-                        if (decodedBytes[i] != originalData[i])
-                        {
-                            matchFound = false;
-                            break;
-                        }
-                    }
-                }
-
-                Console.WriteLine($"Decoded CodeText: {result.CodeText}");
-                Console.WriteLine($"Verification result: {(matchFound ? "Success" : "Failure")}");
+                Console.WriteLine("No barcode detected.");
+                return;
             }
 
-            if (!matchFound)
+            // Assume the first result corresponds to the barcode we generated
+            var decodedText = results[0].CodeText ?? string.Empty;
+
+            // Convert the decoded string back to bytes using ISO-8859-1 encoding
+            // (ISO-8859-1 provides a one-to-one mapping for byte values 0‑255)
+            byte[] decodedData = Encoding.GetEncoding("ISO-8859-1").GetBytes(decodedText);
+
+            // Compare original and decoded byte arrays for equality
+            bool isEqual = originalData.Length == decodedData.Length;
+            if (isEqual)
             {
-                Console.WriteLine("No matching barcode found or data mismatch.");
+                for (int i = 0; i < originalData.Length; i++)
+                {
+                    if (originalData[i] != decodedData[i])
+                    {
+                        isEqual = false;
+                        break;
+                    }
+                }
+            }
+
+            // Output verification result
+            Console.WriteLine(isEqual
+                ? "Success: Decoded data matches original binary data."
+                : "Failure: Decoded data does not match original binary data.");
+        }
+
+        // -------------------------------------------------
+        // Clean up the temporary image file
+        // -------------------------------------------------
+        if (File.Exists(imagePath))
+        {
+            try
+            {
+                File.Delete(imagePath);
+            }
+            catch
+            {
+                // Ignore any cleanup errors (e.g., file in use)
             }
         }
     }

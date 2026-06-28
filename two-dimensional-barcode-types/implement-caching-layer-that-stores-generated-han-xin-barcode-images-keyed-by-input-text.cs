@@ -3,93 +3,81 @@ using System.Collections.Generic;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
-namespace HanXinBarcodeCacheDemo
+/// <summary>
+/// Demonstrates generating Han Xin barcodes with caching.
+/// </summary>
+class Program
 {
-    // Simple in‑memory cache for barcode images keyed by the encoded text.
-    internal static class BarcodeCache
+    /// <summary>
+    /// Simple in‑memory cache mapping barcode text to the file path of the generated image.
+    /// </summary>
+    private static readonly Dictionary<string, string> _barcodeCache = new Dictionary<string, string>(StringComparer.Ordinal);
+
+    /// <summary>
+    /// Entry point of the application. Generates barcodes for a set of sample texts,
+    /// reusing cached images when possible, and writes the file locations to the console.
+    /// </summary>
+    static void Main()
     {
-        // Stores PNG image bytes for each unique code text.
-        private static readonly Dictionary<string, byte[]> _cache = new Dictionary<string, byte[]>(StringComparer.Ordinal);
-
-        // Returns cached image bytes or generates a new barcode, caches it and returns the bytes.
-        public static byte[] GetOrAdd(string codeText)
+        // Define sample texts to encode as Han Xin barcodes.
+        var texts = new[]
         {
-            if (codeText == null) throw new ArgumentNullException(nameof(codeText));
+            "HelloWorld",
+            "Aspose123",
+            "HanXinBarcode",
+            "HelloWorld" // duplicate to demonstrate caching
+        };
 
-            if (_cache.TryGetValue(codeText, out var cachedBytes))
-            {
-                return cachedBytes;
-            }
+        // Determine the output directory and ensure it exists.
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
+        if (!Directory.Exists(outputDir))
+        {
+            Directory.CreateDirectory(outputDir);
+        }
 
-            // Generate Han Xin barcode image.
-            using (var generator = new BarcodeGenerator(EncodeTypes.HanXin, codeText))
-            {
-                // Optional: set image size or other parameters here if needed.
-                using (var bitmap = generator.GenerateBarCodeImage())
-                {
-                    using (var ms = new MemoryStream())
-                    {
-                        // Save as PNG into memory.
-                        bitmap.Save(ms, ImageFormat.Png);
-                        var imageBytes = ms.ToArray();
-                        _cache[codeText] = imageBytes;
-                        return imageBytes;
-                    }
-                }
-            }
+        // Process each text, generating or retrieving the barcode image.
+        foreach (var text in texts)
+        {
+            string imagePath = GetOrCreateBarcode(text, outputDir);
+            Console.WriteLine($"Barcode for \"{text}\" saved at: {imagePath}");
         }
     }
 
-    internal class Program
+    /// <summary>
+    /// Retrieves a cached barcode image path for the specified text, or creates a new
+    /// barcode image, saves it to the output directory, caches the path, and returns it.
+    /// </summary>
+    /// <param name="codeText">The text to encode in the barcode.</param>
+    /// <param name="outputDirectory">The directory where the barcode image will be saved.</param>
+    /// <returns>The full file path of the generated or cached barcode image.</returns>
+    private static string GetOrCreateBarcode(string codeText, string outputDirectory)
     {
-        // Sanitizes a string to be safe for file names.
-        private static string SanitizeFileName(string text)
+        // Check if the barcode for this text is already cached.
+        if (_barcodeCache.TryGetValue(codeText, out string cachedPath))
         {
-            foreach (var c in Path.GetInvalidFileNameChars())
-            {
-                text = text.Replace(c, '_');
-            }
-            return text;
+            // Return the existing cached image path.
+            return cachedPath;
         }
 
-        static void Main()
+        // Create a unique, safe file name for the new barcode image.
+        string safeFileName = $"{Guid.NewGuid():N}.png";
+        string fullPath = Path.Combine(outputDirectory, safeFileName);
+
+        // Configure the barcode generator for Han Xin symbology.
+        BaseEncodeType encodeType = EncodeTypes.HanXin;
+        using (var generator = new BarcodeGenerator(encodeType, codeText))
         {
-            // Sample texts to encode.
-            var samples = new[]
-            {
-                "1234567890ABCDEFGabcdefg,Han Xin Code",
-                "ΑΒΓΔΕ",
-                "abcd АБВ ıntəˈnæʃənəl テスト 안녕하세요 테스트 테스트",
-                "https://www.example.com/search=test",
-                @"\gb180302b:漄\gb180304b:㐁\region1:全\region2:螅\numeric:123\text:qwe\unicode:ıntəˈnæʃənəl"
-            };
+            // Optional: set the error correction level for Han Xin.
+            generator.Parameters.Barcode.HanXin.ErrorLevel = HanXinErrorLevel.L2;
 
-            // Ensure output directory exists.
-            var outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
-            if (!Directory.Exists(outputDir))
-            {
-                Directory.CreateDirectory(outputDir);
-            }
-
-            // Process each sample, using the cache.
-            for (int i = 0; i < samples.Length; i++)
-            {
-                var text = samples[i];
-                var imageBytes = BarcodeCache.GetOrAdd(text);
-
-                // Write PNG file.
-                var safeName = SanitizeFileName(text);
-                var filePath = Path.Combine(outputDir, $"barcode_{i + 1}_{safeName}.png");
-                using (var fs = new FileStream(filePath, FileMode.Create, FileAccess.Write))
-                {
-                    fs.Write(imageBytes, 0, imageBytes.Length);
-                }
-            }
-
-            // Program completes without waiting for user input.
+            // Save the generated barcode as a PNG file.
+            generator.Save(fullPath, BarCodeImageFormat.Png);
         }
+
+        // Cache the newly created image path for future reuse.
+        _barcodeCache[codeText] = fullPath;
+        return fullPath;
     }
 }

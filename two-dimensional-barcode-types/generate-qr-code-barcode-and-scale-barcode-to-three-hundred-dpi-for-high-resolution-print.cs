@@ -1,25 +1,33 @@
 using System;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
-namespace BarcodeExample
+/// <summary>
+/// Demonstrates generating a QR code image using Aspose.BarCode.
+/// </summary>
+class Program
 {
-    class Program
+    /// <summary>
+    /// Entry point of the application. Generates a QR code and saves it as a PNG file.
+    /// </summary>
+    static void Main()
     {
-        static void Main()
+        // Define the output file name and path
+        string outputPath = "qr_300dpi.png";
+
+        // Initialize the barcode generator for QR code with the desired text
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
         {
-            // Create a QR Code generator with sample text.
-            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
-            {
-                // Set the resolution to 300 DPI for high‑resolution output.
-                generator.Parameters.Resolution = 300f;
+            // Set image resolution to 300 DPI for high‑resolution output
+            generator.Parameters.Resolution = 300f;
 
-                // Optional: increase error correction level for better readability.
-                generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
+            // Configure QR code error correction level to high (Level H)
+            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
 
-                // Save the generated QR Code image.
-                generator.Save("qr_300dpi.png");
-            }
+            // Save the generated QR code image to the specified path
+            generator.Save(outputPath);
         }
+
+        // Inform the user where the QR code image was saved
+        Console.WriteLine($"QR Code saved to {outputPath}");
     }
 }

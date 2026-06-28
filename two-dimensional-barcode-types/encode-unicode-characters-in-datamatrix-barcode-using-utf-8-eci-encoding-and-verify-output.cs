@@ -3,36 +3,77 @@ using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates generating a DataMatrix barcode with Unicode (Japanese + emoji) content,
+/// saving it as a PNG image, and then reading it back to verify the encoded text.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a barcode, saves it, and verifies it by decoding.
+    /// </summary>
     static void Main()
     {
-        // Unicode text to encode
-        const string unicodeText = "犬Right狗";
+        // Unicode text to encode (Japanese greeting + Earth emoji)
+        string unicodeText = "こんにちは世界 🌍";
 
-        // Output file path
-        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "datamatrix.png");
+        // Destination file path for the generated barcode image
+        string imagePath = "datamatrix.png";
 
-        // Create DataMatrix barcode with UTF‑8 ECI encoding
+        // ------------------------------------------------------------
+        // Generate a DataMatrix barcode with UTF-8 ECI encoding
+        // ------------------------------------------------------------
         using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, unicodeText))
         {
-            // Set ECI encoding to UTF‑8 (used when EncodeMode is Auto)
+            // Specify that the barcode should use UTF-8 encoding (ECI)
             generator.Parameters.Barcode.DataMatrix.ECIEncoding = ECIEncodings.UTF8;
 
-            // Save the barcode image
-            generator.Save(outputPath, BarCodeImageFormat.Png);
+            // Save the generated barcode as a PNG file
+            generator.Save(imagePath, BarCodeImageFormat.Png);
         }
 
-        // Verify the barcode by reading it back
-        using (var reader = new BarCodeReader(outputPath, DecodeType.DataMatrix))
+        // ------------------------------------------------------------
+        // Verify that the barcode image was created successfully
+        // ------------------------------------------------------------
+        if (!File.Exists(imagePath))
         {
-            // Ensure the reader detects encoding for Unicode characters
-            reader.BarcodeSettings.DetectEncoding = true;
+            Console.WriteLine($"Error: Barcode image not found at '{imagePath}'.");
+            return;
+        }
 
-            foreach (BarCodeResult result in reader.ReadBarCodes())
+        // ------------------------------------------------------------
+        // Read and decode the barcode from the saved image
+        // ------------------------------------------------------------
+        using (var reader = new BarCodeReader(imagePath, DecodeType.DataMatrix))
+        {
+            // Attempt to read all barcodes present in the image
+            var results = reader.ReadBarCodes();
+
+            // If no barcodes were detected, inform the user
+            if (results.Length == 0)
             {
-                Console.WriteLine("Decoded CodeText: " + result.CodeText);
+                Console.WriteLine("No barcode detected.");
+                return;
+            }
+
+            // Iterate through each detected barcode (should be only one in this case)
+            foreach (var result in results)
+            {
+                // Output the decoded text
+                Console.WriteLine($"Decoded CodeText: {result.CodeText}");
+
+                // Compare the decoded text with the original Unicode string
+                if (result.CodeText == unicodeText)
+                {
+                    Console.WriteLine("Verification succeeded: decoded text matches original.");
+                }
+                else
+                {
+                    Console.WriteLine("Verification failed: decoded text does not match original.");
+                }
             }
         }
     }

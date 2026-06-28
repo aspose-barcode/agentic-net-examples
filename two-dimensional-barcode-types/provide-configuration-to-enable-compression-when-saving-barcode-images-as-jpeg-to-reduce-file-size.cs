@@ -1,48 +1,31 @@
 using System;
-using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates generating a Code128 barcode and saving it as a compressed JPEG image.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Creates a barcode, applies compression settings, and saves the image.
+    /// </summary>
     static void Main()
     {
-        // Create a barcode generator for Code128 with sample text
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "12345"))
+        // Initialize a barcode generator for Code128 format with the sample text "1234567890".
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            // Generate the barcode image as a Bitmap
-            using (Bitmap bitmap = generator.GenerateBarCodeImage())
-            {
-                // Prepare output file stream
-                using (var fileStream = new FileStream("barcode_compressed.jpg", FileMode.Create, FileAccess.Write))
-                {
-                    // Locate the JPEG encoder
-                    ImageCodecInfo jpegEncoder = null;
-                    foreach (var codec in ImageCodecInfo.GetImageEncoders())
-                    {
-                        if (codec.FormatID == ImageFormat.Jpeg.Guid)
-                        {
-                            jpegEncoder = codec;
-                            break;
-                        }
-                    }
+            // Set the image resolution to 72 DPI to reduce the output file size.
+            generator.Parameters.Resolution = 72f;
 
-                    if (jpegEncoder == null)
-                    {
-                        throw new InvalidOperationException("JPEG encoder not found.");
-                    }
+            // Disable anti-aliasing; this further reduces the JPEG size at the cost of visual smoothness.
+            generator.Parameters.UseAntiAlias = false;
 
-                    // Set JPEG quality to 50 (range 0-100, lower = higher compression)
-                    using (var encoderParams = new EncoderParameters(1))
-                    {
-                        encoderParams.Param[0] = new EncoderParameter(Encoder.Quality, 50L);
-                        // Save the bitmap with compression settings
-                        bitmap.Save(fileStream, jpegEncoder, encoderParams);
-                    }
-                }
-            }
+            // Save the generated barcode as a JPEG file using the compression settings defined above.
+            generator.Save("barcode_compressed.jpg");
+
+            // Inform the user that the barcode has been saved with the applied compression.
+            Console.WriteLine("Barcode saved as 'barcode_compressed.jpg' with compression settings.");
         }
     }
 }

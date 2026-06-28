@@ -4,28 +4,46 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.ComplexBarcode;
 
+/// <summary>
+/// Demonstrates generation of a MaxiCode barcode and saves it as a lossless TIFF file.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Generates a MaxiCode barcode and writes it to disk.
+    /// </summary>
     static void Main()
     {
-        // Output file path
-        string outputFile = "maxicode.tif";
+        // Define the output file name (saved in the current working directory)
+        string outputPath = "maxicode.tiff";
 
-        // Create standard MaxiCode codetext (Mode 4) with a simple message
-        var maxiCodeCodetext = new MaxiCodeStandardCodetext();
-        maxiCodeCodetext.Mode = MaxiCodeMode.Mode4;
-        maxiCodeCodetext.Message = "Test message";
+        // Resolve the full directory path for the output file
+        string outputDir = Path.GetDirectoryName(Path.GetFullPath(outputPath));
 
-        // Generate the MaxiCode barcode and save as lossless TIFF
-        using (var generator = new ComplexBarcodeGenerator(maxiCodeCodetext))
+        // Ensure the target directory exists; create it if it does not
+        if (!Directory.Exists(outputDir))
         {
-            // Set high resolution for printing (e.g., 300 DPI)
-            generator.Parameters.Resolution = 300;
-
-            // Save the barcode as TIFF (lossless compression)
-            generator.Save(outputFile, BarCodeImageFormat.Tiff);
+            Directory.CreateDirectory(outputDir);
         }
 
-        Console.WriteLine($"MaxiCode barcode saved to: {Path.GetFullPath(outputFile)}");
+        // Prepare the MaxiCode data: Mode 4 with a simple textual message
+        var maxiCodeCodetext = new MaxiCodeStandardCodetext
+        {
+            Mode = MaxiCodeMode.Mode4,
+            Message = "Sample MaxiCode Message"
+        };
+
+        // Generate the barcode using the complex barcode generator
+        using (var generator = new ComplexBarcodeGenerator(maxiCodeCodetext))
+        {
+            // Set a high resolution (e.g., 300 DPI) suitable for printing
+            generator.Parameters.Resolution = 300f;
+
+            // Save the generated barcode as a TIFF image with lossless compression
+            generator.Save(outputPath, BarCodeImageFormat.Tiff);
+        }
+
+        // Inform the user where the barcode image has been saved
+        Console.WriteLine($"MaxiCode barcode saved to: {Path.GetFullPath(outputPath)}");
     }
 }

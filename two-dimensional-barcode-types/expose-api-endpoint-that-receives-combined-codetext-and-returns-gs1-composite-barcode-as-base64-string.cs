@@ -1,37 +1,48 @@
 using System;
 using System.IO;
+using System.Text;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
+/// <summary>
+/// Demonstrates generation of a GS1 Composite barcode and outputs the image as a Base64 string.
+/// </summary>
 class Program
 {
-    static void Main()
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a GS1 Composite barcode using provided or default data,
+    /// configures its components, and writes the PNG image as a Base64 string to the console.
+    /// </summary>
+    /// <param name="args">Command‑line arguments; the first argument can specify the combined code text.</param>
+    static void Main(string[] args)
     {
-        // Simulated request payload: combined CodeText for GS1 Composite barcode
-        string linearPart = "(01)03212345678906";
-        string twoDPart = "(21)A1B2C3D4E5F6G7H8";
-        string combinedCodeText = $"{linearPart}|{twoDPart}";
+        // Determine the combined code text for the GS1 Composite barcode.
+        // Expected format: linear part | two‑dimensional part, separated by '|'.
+        // Example: "(01)03212345678906|(21)A1B2C3D4E5F6G7H8"
+        string combinedCodeText = args.Length > 0 ? args[0] : "(01)03212345678906|(21)A1B2C3D4E5F6G7H8";
 
-        // Create barcode generator for GS1 Composite Bar
+        // Create a barcode generator for the GS1 Composite Bar type with the combined code text.
         using (var generator = new BarcodeGenerator(EncodeTypes.GS1CompositeBar, combinedCodeText))
         {
-            // Configure linear and 2D component types
+            // Set the linear component to GS1‑Code128.
             generator.Parameters.Barcode.GS1CompositeBar.LinearComponentType = EncodeTypes.GS1Code128;
+
+            // Set the 2D component to Composite Component Type A (CC_A).
             generator.Parameters.Barcode.GS1CompositeBar.TwoDComponentType = TwoDComponentType.CC_A;
 
-            // Set dimensions (using float literals with 'f')
-            generator.Parameters.Barcode.XDimension.Pixels = 3f;
-            generator.Parameters.Barcode.BarHeight.Pixels = 100f;
+            // Optional additional settings for visual appearance.
+            generator.Parameters.Barcode.Pdf417.AspectRatio = 3f;          // Aspect ratio for PDF417 component (if used)
+            generator.Parameters.Barcode.XDimension.Pixels = 3f;          // Width of a single module (pixel size)
+            generator.Parameters.Barcode.BarHeight.Pixels = 100f;        // Height of the linear component (pixel size)
 
-            // Generate image into a memory stream as PNG
-            using (var memoryStream = new MemoryStream())
+            // Render the barcode to a memory stream in PNG format.
+            using (var ms = new MemoryStream())
             {
-                generator.Save(memoryStream, BarCodeImageFormat.Png);
-                byte[] imageBytes = memoryStream.ToArray();
-
-                // Convert image bytes to Base64 string (simulated API response)
-                string base64Result = Convert.ToBase64String(imageBytes);
-                Console.WriteLine(base64Result);
+                generator.Save(ms, BarCodeImageFormat.Png);               // Save barcode image to stream
+                byte[] imageBytes = ms.ToArray();                         // Retrieve byte array from stream
+                string base64 = Convert.ToBase64String(imageBytes);       // Convert image bytes to Base64 string
+                Console.WriteLine(base64);                                // Output Base64 string to console
             }
         }
     }

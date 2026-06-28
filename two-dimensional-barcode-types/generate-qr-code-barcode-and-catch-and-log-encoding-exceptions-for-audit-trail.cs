@@ -3,50 +3,56 @@ using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
+/// <summary>
+/// Demonstrates generating a QR code image and handling errors with audit logging.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Generates a QR code and saves it to a file.
+    /// </summary>
     static void Main()
     {
-        // Sample data to encode
-        const string codeText = "Hello World";
+        // Define the data to encode in the QR code.
+        string codeText = "https://example.com";
 
-        // Output file for the QR code image
-        const string outputFile = "qr.png";
-
-        // Audit log file
-        const string logFile = "audit.log";
+        // Define file paths for the generated image and the audit log.
+        string imagePath = "qr.png";
+        string logPath = "audit.log";
 
         try
         {
-            // Create QR Code generator with the specified text
-            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, codeText))
+            // Initialize the QR code generator with the specified data.
+            using (var generator = new BarcodeGenerator(EncodeTypes.QR, codeText))
             {
-                // Set high error correction level
-                generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
+                // Set the QR code error correction level (optional).
+                generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
 
-                // Save the generated QR Code image
-                generator.Save(outputFile);
+                // Save the generated QR code image to the specified path.
+                generator.Save(imagePath);
             }
 
-            // Log successful generation
-            File.AppendAllText(logFile, $"{DateTime.UtcNow:u} - QR code generated successfully: {outputFile}{Environment.NewLine}");
-        }
-        catch (BarCodeException ex)
-        {
-            // Log encoding exception details for audit trail
-            string message = $"{DateTime.UtcNow:u} - BarCodeException: {ex.Message}{Environment.NewLine}{ex.StackTrace}{Environment.NewLine}";
-            File.AppendAllText(logFile, message);
-
-            // Optionally inform the user
-            Console.WriteLine("Failed to generate QR code. See audit log for details.");
+            // Inform the user that the QR code was generated successfully.
+            Console.WriteLine($"QR code generated successfully: {imagePath}");
         }
         catch (Exception ex)
         {
-            // Log any other unexpected exceptions
-            string message = $"{DateTime.UtcNow:u} - Unexpected exception: {ex.Message}{Environment.NewLine}{ex.StackTrace}{Environment.NewLine}";
-            File.AppendAllText(logFile, message);
+            // Build a detailed log entry with timestamp, error message, and stack trace.
+            string logEntry = $"[{DateTime.UtcNow:O}] Error generating QR code: {ex.Message}{Environment.NewLine}{ex.StackTrace}{Environment.NewLine}";
 
-            Console.WriteLine("An unexpected error occurred. See audit log for details.");
+            try
+            {
+                // Append the log entry to the audit log file.
+                File.AppendAllText(logPath, logEntry);
+            }
+            catch
+            {
+                // If writing to the log fails, fall back to console output.
+                Console.WriteLine("Failed to write to audit log.");
+            }
+
+            // Notify the user that an error occurred and refer them to the audit log.
+            Console.WriteLine("An error occurred while generating the QR code. See audit log for details.");
         }
     }
 }

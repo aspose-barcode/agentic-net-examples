@@ -5,63 +5,60 @@ using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates generating a QR code with a transparent background and overlaying it onto a base image.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// </summary>
     static void Main()
     {
-        // QR code content
-        const string qrText = "https://example.com";
+        // Define file paths for the generated QR code and the final combined image.
+        string qrPath = "qr.png";
+        string combinedPath = "combined.png";
 
-        // Paths
-        const string baseImagePath = "background.jpg";
-        const string outputPath = "qr_overlay.png";
-
-        // Create QR code generator with transparent background
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, qrText))
+        // ------------------------------------------------------------
+        // 1. Generate a QR code with a transparent background.
+        // ------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
         {
-            // Set QR error correction level (optional)
-            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
+            // Set the background color of the QR code to transparent.
+            generator.Parameters.BackColor = Color.Transparent;
 
-            // Set image size (pixels)
-            generator.Parameters.ImageWidth.Pixels = 300f;
-            generator.Parameters.ImageHeight.Pixels = 300f;
-
-            // Transparent background
-            generator.Parameters.BackColor = Aspose.Drawing.Color.Transparent;
-
-            // Optional: set bar (foreground) color
-            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-
-            // Generate QR code bitmap
-            using (Bitmap qrBitmap = generator.GenerateBarCodeImage())
-            {
-                // If a background image exists, overlay the QR code onto it
-                if (File.Exists(baseImagePath))
-                {
-                    using (Bitmap baseImage = new Bitmap(baseImagePath))
-                    {
-                        // Determine position (bottom‑right corner with 10‑pixel margin)
-                        int x = Math.Max(0, baseImage.Width - qrBitmap.Width - 10);
-                        int y = Math.Max(0, baseImage.Height - qrBitmap.Height - 10);
-
-                        using (Graphics graphics = Graphics.FromImage(baseImage))
-                        {
-                            // Draw QR code onto the base image preserving transparency
-                            graphics.DrawImage(qrBitmap, x, y, qrBitmap.Width, qrBitmap.Height);
-                        }
-
-                        // Save the combined image
-                        baseImage.Save(outputPath, ImageFormat.Png);
-                    }
-                }
-                else
-                {
-                    // No background image – save QR code alone
-                    qrBitmap.Save(outputPath, ImageFormat.Png);
-                }
-            }
+            // Save the QR code as a PNG file (PNG supports transparency).
+            generator.Save(qrPath, BarCodeImageFormat.Png);
         }
 
-        Console.WriteLine($"QR code image saved to '{outputPath}'.");
+        // ------------------------------------------------------------
+        // 2. Create a base image (white canvas) and overlay the QR code onto it.
+        // ------------------------------------------------------------
+        using (var baseBitmap = new Bitmap(400, 400, PixelFormat.Format32bppArgb))
+        {
+            // Obtain a Graphics object to draw on the base bitmap.
+            using (var graphics = Graphics.FromImage(baseBitmap))
+            {
+                // Fill the entire canvas with white color.
+                graphics.Clear(Color.White);
+
+                // Load the previously generated QR code image.
+                using (var qrImage = Image.FromFile(qrPath))
+                {
+                    // Define the destination rectangle where the QR code will be drawn.
+                    var destRect = new Rectangle(100, 100, 200, 200);
+
+                    // Draw the QR code onto the base canvas within the specified rectangle.
+                    graphics.DrawImage(qrImage, destRect);
+                }
+            }
+
+            // Save the resulting combined image as a PNG file.
+            baseBitmap.Save(combinedPath, ImageFormat.Png);
+        }
+
+        // Output the full paths of the generated files for user reference.
+        Console.WriteLine($"QR code saved to: {Path.GetFullPath(qrPath)}");
+        Console.WriteLine($"Combined image saved to: {Path.GetFullPath(combinedPath)}");
     }
 }

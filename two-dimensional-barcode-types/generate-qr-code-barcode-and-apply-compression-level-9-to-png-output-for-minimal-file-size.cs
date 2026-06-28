@@ -1,46 +1,35 @@
 using System;
 using System.IO;
-using System.Linq;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates generating a QR code image using Aspose.BarCode and saving it to disk.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Generates a QR code for a sample URL and writes it as a PNG file.
+    /// </summary>
     static void Main()
     {
-        // Create a QR code generator with sample text
+        // Determine the full path for the output PNG file in the application's base directory.
+        string outputPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "qr.png");
+
+        // Initialize a QR code generator with the desired content (sample URL).
         using (var generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
         {
-            // Optional: set high error correction level
+            // Configure the QR code to use the highest error correction level (Level H).
             generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
 
-            // Generate the barcode image as a bitmap
-            using (Bitmap bitmap = generator.GenerateBarCodeImage())
-            {
-                // Prepare output file stream
-                using (var fileStream = new FileStream("qr.png", FileMode.Create, FileAccess.Write))
-                {
-                    // Find PNG encoder
-                    ImageCodecInfo pngEncoder = ImageCodecInfo.GetImageEncoders()
-                        .FirstOrDefault(enc => enc.FormatID == ImageFormat.Png.Guid);
-
-                    if (pngEncoder != null)
-                    {
-                        // Set compression level to 9 (maximum compression)
-                        EncoderParameters encoderParams = new EncoderParameters(1);
-                        encoderParams.Param[0] = new EncoderParameter(Encoder.Compression, 9L);
-
-                        // Save bitmap with compression settings
-                        bitmap.Save(fileStream, pngEncoder, encoderParams);
-                    }
-                    else
-                    {
-                        // Fallback: save without explicit compression settings
-                        bitmap.Save(fileStream, ImageFormat.Png);
-                    }
-                }
-            }
+            // Persist the generated QR code as a PNG image to the specified path.
+            generator.Save(outputPath);
         }
+
+        // Inform the user where the QR code image has been saved.
+        Console.WriteLine($"QR Code saved to: {outputPath}");
+
+        // Note about PNG compression: Aspose.BarCode does not provide a direct API to adjust compression.
+        Console.WriteLine("Note: Aspose.BarCode does not expose an API to set PNG compression level. The image is saved with the library's default compression.");
     }
 }

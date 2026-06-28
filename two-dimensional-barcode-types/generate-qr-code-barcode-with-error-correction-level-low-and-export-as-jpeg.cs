@@ -1,26 +1,33 @@
 using System;
+using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
-namespace BarcodeExample
+/// <summary>
+/// Demonstrates generating a QR Code image using Aspose.BarCode and saving it as a JPEG file.
+/// </summary>
+class Program
 {
-    class Program
+    /// <summary>
+    /// Entry point of the application. Generates a QR Code with low error correction level and saves it.
+    /// </summary>
+    /// <param name="args">Command-line arguments (not used).</param>
+    static void Main(string[] args)
     {
-        static void Main()
+        // Determine the output file path; the file will be saved in the current working directory.
+        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "qr_low.jpg");
+
+        // Initialize a QR Code generator with the desired text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Sample QR Code"))
         {
-            // Output file path
-            string outputFile = "qr_low_error_correction.jpeg";
+            // Configure the QR Code to use the lowest error correction level (Level L).
+            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelL;
 
-            // Create a QR code generator with sample text
-            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
-            {
-                // Set error correction level to low (LevelL)
-                generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelL;
-
-                // Save the barcode as a JPEG image
-                generator.Save(outputFile, BarCodeImageFormat.Jpeg);
-            }
-
-            Console.WriteLine($"QR code saved to {outputFile}");
+            // Render and save the QR Code as a JPEG image to the specified path.
+            generator.Save(outputPath, BarCodeImageFormat.Jpeg);
         }
+
+        // Inform the user where the QR Code image has been saved.
+        Console.WriteLine($"QR Code saved to: {outputPath}");
     }
 }

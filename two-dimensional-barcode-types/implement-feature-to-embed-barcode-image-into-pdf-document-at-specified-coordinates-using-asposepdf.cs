@@ -3,51 +3,63 @@ using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Pdf;
+using Aspose.Pdf.Text;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates generating a Code128 barcode, embedding it into a PDF,
+/// and saving the resulting document to disk.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a barcode, embeds it in a PDF, and writes the PDF file.
+    /// </summary>
     static void Main()
     {
-        // Output PDF file path
-        string pdfPath = "BarcodeDocument.pdf";
-
-        // Generate barcode image into a memory stream
-        using (var barcodeStream = new MemoryStream())
+        // Create a barcode generator for Code128 with the specified data.
+        using (var barcodeGenerator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
-            {
-                // Optional visual settings
-                generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-                generator.Parameters.BackColor = Aspose.Drawing.Color.White;
+            // Optional: configure barcode appearance (size, colors, etc.) here.
 
-                // Save barcode as PNG to the stream
-                generator.Save(barcodeStream, BarCodeImageFormat.Png);
+            // Store the generated barcode image in a memory stream.
+            using (var barcodeStream = new MemoryStream())
+            {
+                // Save the barcode as a PNG image into the memory stream.
+                barcodeGenerator.Save(barcodeStream, BarCodeImageFormat.Png);
+                // Reset stream position to the beginning for reading.
                 barcodeStream.Position = 0;
-            }
 
-            // Create a new PDF document and embed the barcode image
-            using (var pdfDoc = new Aspose.Pdf.Document())
-            {
-                // Add a page to the document
-                var page = pdfDoc.Pages.Add();
+                // Create a new PDF document to hold the barcode image.
+                using (var pdfDocument = new Document())
+                {
+                    // Add a blank page to the PDF.
+                    var page = pdfDocument.Pages.Add();
 
-                // Define placement rectangle (points)
-                float llx = 100f;   // lower-left X
-                float lly = 500f;   // lower-left Y
-                float width = 200f; // desired width
-                float height = 100f; // desired height
-                float urx = llx + width; // upper-right X
-                float ury = lly + height; // upper-right Y
+                    // Create an Aspose.Pdf.Image object and configure its source and layout.
+                    var pdfImage = new Aspose.Pdf.Image
+                    {
+                        // Use the barcode image stream as the image source.
+                        ImageStream = barcodeStream,
+                        // Set the displayed width and height of the image (in points).
+                        FixWidth = 200.0,
+                        FixHeight = 100.0,
+                        // Position the image on the page: 100 points from the left, 500 points from the top.
+                        Margin = new MarginInfo { Left = 100.0, Top = 500.0 }
+                    };
 
-                // Add the barcode image at the specified coordinates
-                page.AddImage(barcodeStream, new Aspose.Pdf.Rectangle(llx, lly, urx, ury));
+                    // Add the configured image to the page's paragraph collection.
+                    page.Paragraphs.Add(pdfImage);
 
-                // Save the PDF document
-                pdfDoc.Save(pdfPath);
+                    // Save the PDF document to a file on disk.
+                    pdfDocument.Save("BarcodeEmbedded.pdf");
+                }
             }
         }
 
-        Console.WriteLine("PDF created at: " + Path.GetFullPath(pdfPath));
+        // Inform the user that the PDF was created successfully.
+        Console.WriteLine("PDF with embedded barcode created successfully.");
     }
 }

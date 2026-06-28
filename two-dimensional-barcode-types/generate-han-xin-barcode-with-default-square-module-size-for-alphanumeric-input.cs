@@ -2,20 +2,34 @@ using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
+/// <summary>
+/// Demonstrates generating a Han Xin barcode using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Generates a Han Xin barcode from a sample text and saves it as a PNG file.
+    /// </summary>
     static void Main()
     {
-        // Alphanumeric text to encode
+        // Define the alphanumeric text that will be encoded into the barcode.
         string codeText = "ABC123XYZ";
 
-        // Create a barcode generator for Han Xin symbology with the given text
+        // Initialize the barcode generator with Han Xin symbology and the provided text.
+        // The generator implements IDisposable, so we use a using block to ensure resources are released.
         using (var generator = new BarcodeGenerator(EncodeTypes.HanXin, codeText))
         {
-            // Default settings already use square modules, so no additional configuration is required
+            // No additional configuration is required for the default square module size.
+            // Han Xin automatically selects the appropriate version based on the payload length.
 
-            // Save the generated barcode image to a file
-            generator.Save("hanxin.png");
+            // Specify the output file path for the generated barcode image.
+            string outputPath = "hanxin.png";
+
+            // Save the barcode image to the specified path in PNG format.
+            generator.Save(outputPath);
+
+            // Inform the user that the barcode has been saved successfully.
+            Console.WriteLine($"Han Xin barcode saved to: {outputPath}");
         }
     }
 }

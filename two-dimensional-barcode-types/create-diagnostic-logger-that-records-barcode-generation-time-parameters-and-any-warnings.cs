@@ -1,117 +1,96 @@
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.Reflection;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
-namespace BarcodeDiagnosticLogger
+/// <summary>
+/// Simple logger that appends timestamped messages to a text file.
+/// </summary>
+class DiagnosticLogger
 {
-    // Simple logger that writes messages to a log file.
-    internal static class Logger
+    // Path to the log file (relative to the executable directory)
+    private static readonly string LogFilePath = "barcode_log.txt";
+
+    /// <summary>
+    /// Appends a message with a UTC timestamp to the log file.
+    /// </summary>
+    /// <param name="message">The message to log.</param>
+    public static void Log(string message)
     {
-        private static readonly string LogFilePath = "barcode_log.txt";
-
-        public static void LogInfo(string message)
-        {
-            WriteLog("INFO", message);
-        }
-
-        public static void LogWarning(string message)
-        {
-            WriteLog("WARN", message);
-        }
-
-        public static void LogError(string message)
-        {
-            WriteLog("ERROR", message);
-        }
-
-        private static void WriteLog(string level, string message)
-        {
-            string entry = $"{DateTime.UtcNow:O} [{level}] {message}";
-            try
-            {
-                File.AppendAllText(LogFilePath, entry + Environment.NewLine);
-            }
-            catch
-            {
-                // If logging fails, fallback to console.
-                Console.WriteLine(entry);
-            }
-        }
+        // Build log entry with ISO 8601 timestamp
+        string entry = $"{DateTime.UtcNow:O} - {message}";
+        // Append entry followed by a newline
+        File.AppendAllText(LogFilePath, entry + Environment.NewLine);
     }
+}
 
-    internal class Program
+/// <summary>
+/// Demonstrates barcode generation using Aspose.BarCode and logs diagnostic information.
+/// </summary>
+class Program
+{
+    /// <summary>
+    /// Entry point of the application. Generates a barcode, saves it, and logs details.
+    /// </summary>
+    static void Main()
     {
-        // Generates a barcode, logs diagnostic information and saves the image.
-        private static void GenerateBarcode(string symbologyName, string codeText, string outputFile)
+        // Define barcode symbology and data to encode
+        BaseEncodeType encodeType = EncodeTypes.Code128;
+        string codeText = "123ABC456";
+
+        // Log the start of the barcode generation process
+        DiagnosticLogger.Log($"Starting barcode generation. Symbology: {encodeType}, CodeText: \"{codeText}\"");
+
+        // Initialize a stopwatch to measure generation time
+        var stopwatch = new Stopwatch();
+        stopwatch.Start();
+
+        try
         {
-            // Resolve symbology name to EncodeTypes static field using reflection.
-            FieldInfo field = typeof(EncodeTypes).GetField(symbologyName, BindingFlags.Public | BindingFlags.Static);
-            if (field == null)
+            // Create a BarcodeGenerator with the specified type and text
+            using (var generator = new BarcodeGenerator(encodeType, codeText))
             {
-                Logger.LogWarning($"Symbology '{symbologyName}' not found. Skipping generation.");
-                return;
-            }
+                // ----- Configure generation parameters -----
+                generator.Parameters.Resolution = 300f;                     // DPI
+                generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
+                generator.Parameters.ImageWidth.Point = 300f;              // Width in points
+                generator.Parameters.ImageHeight.Point = 150f;             // Height in points
+                generator.Parameters.RotationAngle = 0f;                   // No rotation
+                generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
+                generator.Parameters.Barcode.BarColor = Color.Black;      // Bar color
+                generator.Parameters.BackColor = Color.White;             // Background color
 
-            BaseEncodeType encodeType = (BaseEncodeType)field.GetValue(null);
-            Stopwatch sw = new Stopwatch();
+                // Save the generated barcode image to a PNG file
+                string outputPath = "barcode.png";
+                generator.Save(outputPath);
+                DiagnosticLogger.Log($"Barcode saved to \"{outputPath}\".");
 
-            try
-            {
-                using (var generator = new BarcodeGenerator(encodeType, codeText))
-                {
-                    // Example of setting some parameters.
-                    generator.Parameters.ImageWidth.Point = 300f;
-                    generator.Parameters.ImageHeight.Point = 150f;
-                    generator.Parameters.Resolution = 96;
-                    generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-                    generator.Parameters.BackColor = Aspose.Drawing.Color.White;
-
-                    sw.Start();
-                    using (Bitmap bitmap = generator.GenerateBarCodeImage())
-                    {
-                        sw.Stop();
-                        // Save the image.
-                        bitmap.Save(outputFile, ImageFormat.Png);
-                    }
-
-                    // Log diagnostic details.
-                    Logger.LogInfo($"Generated '{symbologyName}' barcode.");
-                    Logger.LogInfo($"CodeText: {codeText}");
-                    Logger.LogInfo($"OutputFile: {outputFile}");
-                    Logger.LogInfo($"GenerationTimeMs: {sw.ElapsedMilliseconds}");
-                    Logger.LogInfo($"ImageWidthPt: {generator.Parameters.ImageWidth.Point}");
-                    Logger.LogInfo($"ImageHeightPt: {generator.Parameters.ImageHeight.Point}");
-                    Logger.LogInfo($"ResolutionDpi: {generator.Parameters.Resolution}");
-                }
-            }
-            catch (Exception ex)
-            {
-                sw.Stop();
-                Logger.LogError($"Failed to generate '{symbologyName}' barcode. Exception: {ex.Message}");
+                // ----- Log the selected parameters for traceability -----
+                DiagnosticLogger.Log($"Resolution: {generator.Parameters.Resolution} DPI");
+                DiagnosticLogger.Log($"AutoSizeMode: {generator.Parameters.AutoSizeMode}");
+                DiagnosticLogger.Log($"ImageWidth: {generator.Parameters.ImageWidth.Point} pt");
+                DiagnosticLogger.Log($"ImageHeight: {generator.Parameters.ImageHeight.Point} pt");
+                DiagnosticLogger.Log($"RotationAngle: {generator.Parameters.RotationAngle}°");
+                DiagnosticLogger.Log($"ChecksumEnabled: {generator.Parameters.Barcode.IsChecksumEnabled}");
+                DiagnosticLogger.Log($"BarColor: {generator.Parameters.Barcode.BarColor}");
+                DiagnosticLogger.Log($"BackColor: {generator.Parameters.BackColor}");
             }
         }
-
-        private static void Main()
+        catch (Exception ex)
         {
-            // Ensure the log file starts fresh.
-            try
-            {
-                if (File.Exists("barcode_log.txt"))
-                    File.Delete("barcode_log.txt");
-            }
-            catch { /* ignore */ }
-
-            // Sample barcodes to generate.
-            GenerateBarcode("Code128", "ABC123456", "code128.png");
-            GenerateBarcode("QR", "https://example.com", "qr.png");
-            GenerateBarcode("DataMatrix", "SampleDataMatrix", "datamatrix.png");
-
-            Logger.LogInfo("Barcode generation completed.");
+            // Log any warnings or errors that occur during generation
+            DiagnosticLogger.Log($"Warning/Error during barcode generation: {ex.GetType().Name} - {ex.Message}");
         }
+        finally
+        {
+            // Stop the stopwatch and log elapsed time
+            stopwatch.Stop();
+            DiagnosticLogger.Log($"Barcode generation elapsed time: {stopwatch.ElapsedMilliseconds} ms");
+        }
+
+        // Inform the user that the process is complete
+        Console.WriteLine("Barcode generation completed. See \"barcode_log.txt\" for details.");
     }
 }

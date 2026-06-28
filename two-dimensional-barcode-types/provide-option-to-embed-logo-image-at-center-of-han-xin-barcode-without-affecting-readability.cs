@@ -4,61 +4,71 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
+using Aspose.Drawing.Drawing2D;
 
+/// <summary>
+/// Demonstrates generating a Han Xin barcode, creating a simple logo,
+/// and overlaying the logo onto the barcode image.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a barcode, creates a red circular logo, merges them,
+    /// and saves the final image to a temporary location.
+    /// </summary>
     static void Main()
     {
-        // Paths for the output barcode and the logo image.
-        string outputPath = "HanXinWithLogo.png";
-        string logoPath = "logo.png";
+        // Define temporary file paths for the barcode and the final image with logo.
+        string barcodePath = Path.Combine(Path.GetTempPath(), "hanxin_barcode.png");
+        string finalPath   = Path.Combine(Path.GetTempPath(), "hanxin_barcode_with_logo.png");
+        string codeText    = "HanXin Sample Text";
 
-        // Verify that the logo file exists.
-        if (!File.Exists(logoPath))
+        // Generate the Han Xin barcode and save it as a PNG file.
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.HanXin, codeText))
         {
-            Console.WriteLine($"Logo file not found: {logoPath}");
-            return;
+            // Set error correction level to L2.
+            generator.Parameters.Barcode.HanXin.ErrorLevel = HanXinErrorLevel.L2;
+            // Use interpolation for auto-sizing to improve image quality.
+            generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
+            // Save the generated barcode image.
+            generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        // Create a Han Xin barcode generator with sample text.
-        using (var generator = new BarcodeGenerator(EncodeTypes.HanXin, "SampleHanXinCode"))
+        // Create a simple red circular logo of size 80x80 pixels.
+        using (Bitmap logo = new Bitmap(80, 80))
         {
-            // Optional visual settings.
-            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-            generator.Parameters.BackColor = Aspose.Drawing.Color.White;
-
-            // Generate the barcode image.
-            using (Bitmap barcodeBitmap = generator.GenerateBarCodeImage())
+            using (Graphics gLogo = Graphics.FromImage(logo))
             {
-                // Load the logo image.
-                using (Bitmap logoBitmap = (Bitmap)Image.FromFile(logoPath))
+                // Ensure the background is transparent.
+                gLogo.Clear(Color.Transparent);
+                // Draw a solid red ellipse (circle) filling the bitmap.
+                using (SolidBrush brush = new SolidBrush(Color.Red))
                 {
-                    // Determine the size of the logo (e.g., 20% of barcode width).
-                    float logoScale = 0.2f;
-                    int logoWidth = (int)(barcodeBitmap.Width * logoScale);
-                    int logoHeight = (int)(logoBitmap.Height * logoScale);
-
-                    // Calculate the position to center the logo.
-                    int logoX = (barcodeBitmap.Width - logoWidth) / 2;
-                    int logoY = (barcodeBitmap.Height - logoHeight) / 2;
-
-                    // Draw the logo onto the barcode.
-                    using (Graphics graphics = Graphics.FromImage(barcodeBitmap))
-                    {
-                        // High quality rendering.
-                        graphics.InterpolationMode = Aspose.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
-                        graphics.SmoothingMode = Aspose.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-
-                        // Draw the logo with scaling.
-                        graphics.DrawImage(logoBitmap, logoX, logoY, logoWidth, logoHeight);
-                    }
-
-                    // Save the combined image.
-                    barcodeBitmap.Save(outputPath, ImageFormat.Png);
+                    gLogo.FillEllipse(brush, 0, 0, 80, 80);
                 }
+            }
+
+            // Load the previously saved barcode image.
+            using (Bitmap barcodeImage = new Bitmap(barcodePath))
+            {
+                using (Graphics graphics = Graphics.FromImage(barcodeImage))
+                {
+                    // Calculate coordinates to center the logo on the barcode.
+                    int x = (barcodeImage.Width  - logo.Width)  / 2;
+                    int y = (barcodeImage.Height - logo.Height) / 2;
+                    // Use high-quality bicubic interpolation for smoother rendering.
+                    graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                    // Draw the logo onto the barcode image at the calculated position.
+                    graphics.DrawImage(logo, x, y, logo.Width, logo.Height);
+                }
+
+                // Save the combined image (barcode with logo) as a PNG file.
+                barcodeImage.Save(finalPath, ImageFormat.Png);
             }
         }
 
-        Console.WriteLine($"Barcode with embedded logo saved to: {outputPath}");
+        // Output the location of the final image.
+        Console.WriteLine($"Barcode with logo saved to: {finalPath}");
     }
 }

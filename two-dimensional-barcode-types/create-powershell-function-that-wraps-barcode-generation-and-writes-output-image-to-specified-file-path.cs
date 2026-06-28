@@ -1,67 +1,86 @@
 using System;
 using System.IO;
+using System.Reflection;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
-class Program
+namespace BarcodeGeneratorApp
 {
-    static void Main(string[] args)
+    /// <summary>
+    /// Entry point for the Barcode Generator console application.
+    /// </summary>
+    class Program
     {
-        // Default values
-        string symbologyName = "Code128";
-        string codeText = "1234567890";
-        string outputPath = "barcode.png";
-
-        // Parse command‑line arguments if provided
-        if (args.Length >= 1 && !string.IsNullOrWhiteSpace(args[0]))
-            symbologyName = args[0];
-        if (args.Length >= 2 && !string.IsNullOrWhiteSpace(args[1]))
-            codeText = args[1];
-        if (args.Length >= 3 && !string.IsNullOrWhiteSpace(args[2]))
-            outputPath = args[2];
-
-        // Resolve symbology name to EncodeTypes member via reflection (allowed)
-        var encodeTypeField = typeof(EncodeTypes).GetField(symbologyName);
-        if (encodeTypeField == null)
+        /// <summary>
+        /// Application entry point. Parses optional command‑line arguments and generates a barcode.
+        /// </summary>
+        /// <param name="args">
+        /// Optional arguments:
+        /// 0 - symbology name (e.g., "Code128")
+        /// 1 - text to encode
+        /// 2 - output file path
+        /// </param>
+        static void Main(string[] args)
         {
-            Console.Error.WriteLine($"Unsupported symbology: {symbologyName}");
-            Environment.Exit(1);
-        }
-        var encodeType = (BaseEncodeType)encodeTypeField.GetValue(null);
+            // Default values for symbology, text, and output file
+            string symbologyName = "Code128";
+            string codeText = "123ABC";
+            string outputPath = "barcode.png";
 
-        // Ensure output directory exists
-        string directory = Path.GetDirectoryName(Path.GetFullPath(outputPath));
-        if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
-        {
+            // Override defaults with command‑line arguments if they are provided and not empty
+            if (args.Length >= 1 && !string.IsNullOrWhiteSpace(args[0]))
+                symbologyName = args[0];
+            if (args.Length >= 2 && !string.IsNullOrWhiteSpace(args[1]))
+                codeText = args[1];
+            if (args.Length >= 3 && !string.IsNullOrWhiteSpace(args[2]))
+                outputPath = args[2];
+
             try
             {
-                Directory.CreateDirectory(directory);
+                // Generate the barcode image and save it to the specified path
+                GenerateBarcode(symbologyName, codeText, outputPath);
+                // Inform the user where the file was saved
+                Console.WriteLine($"Barcode saved to: {Path.GetFullPath(outputPath)}");
             }
             catch (Exception ex)
             {
-                Console.Error.WriteLine($"Failed to create directory '{directory}': {ex.Message}");
-                Environment.Exit(1);
+                // Output any errors that occurred during generation
+                Console.WriteLine($"Error: {ex.Message}");
             }
         }
 
-        // Generate and save the barcode
-        try
+        /// <summary>
+        /// Generates a barcode image using Aspose.BarCode and saves it to the specified file.
+        /// </summary>
+        /// <param name="symbologyName">Name of the barcode symbology (e.g., "Code128", "QR").</param>
+        /// <param name="codeText">Text to encode.</param>
+        /// <param name="outputPath">File path where the image will be saved.</param>
+        static void GenerateBarcode(string symbologyName, string codeText, string outputPath)
         {
+            // Resolve the symbology name to a BaseEncodeType via reflection (EncodeTypes is a static class)
+            FieldInfo field = typeof(EncodeTypes).GetField(symbologyName);
+            if (field == null)
+                throw new ArgumentException($"Unknown symbology: {symbologyName}");
+
+            // Retrieve the actual encode type value from the field
+            BaseEncodeType encodeType = (BaseEncodeType)field.GetValue(null);
+            if (encodeType == null)
+                throw new ArgumentException($"Failed to obtain encode type for symbology: {symbologyName}");
+
+            // Ensure the output directory exists; create it if necessary
+            string directory = Path.GetDirectoryName(outputPath);
+            if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+                Directory.CreateDirectory(directory);
+
+            // Create a barcode generator, configure it, and save the image
             using (var generator = new BarcodeGenerator(encodeType, codeText))
             {
-                // Example of setting a simple parameter (optional)
-                generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-                generator.Parameters.BackColor = Aspose.Drawing.Color.White;
+                // Example: set resolution (optional, 300 DPI)
+                generator.Parameters.Resolution = 300f;
 
-                // Save the image; format inferred from file extension
+                // Save the barcode as PNG (default format) to the specified path
                 generator.Save(outputPath);
             }
-
-            Console.WriteLine($"Barcode saved to '{outputPath}'.");
-        }
-        catch (Exception ex)
-        {
-            Console.Error.WriteLine($"Error generating barcode: {ex.Message}");
-            Environment.Exit(1);
         }
     }
 }

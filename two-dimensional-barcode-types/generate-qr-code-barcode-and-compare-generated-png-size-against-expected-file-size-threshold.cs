@@ -2,46 +2,65 @@ using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode.BarCodeRecognition;
 
+/// <summary>
+/// Demonstrates generating a QR code image, verifying its file size,
+/// and cleaning up the generated file using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a QR code, checks its size against a threshold,
+    /// and optionally deletes the created file.
+    /// </summary>
     static void Main()
     {
-        // Output file path
-        string outputPath = "qr.png";
+        // Define the temporary output file path for the QR code image.
+        string outputPath = Path.Combine(Path.GetTempPath(), "qr_code.png");
 
-        // Expected maximum file size in bytes
-        long sizeThreshold = 5000;
+        // Expected maximum file size in bytes (5 KB).
+        const long sizeThreshold = 5000L;
 
-        // Generate QR Code with high error correction level
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
+        // Create a QR code generator with the desired content.
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
         {
-            // Set QR error correction to Level H
-            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
+            // Optional: set error correction level if desired.
+            // generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
 
-            // Save as PNG
-            generator.Save(outputPath);
+            // Save the generated QR code as a PNG file.
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Verify that the file was created
+        // Verify that the QR code image file was successfully created.
         if (!File.Exists(outputPath))
         {
-            Console.WriteLine("QR code generation failed: file not found.");
+            Console.WriteLine("Failed to generate the QR code image.");
             return;
         }
 
-        // Get the generated file size
-        long fileSize = new FileInfo(outputPath).Length;
-        Console.WriteLine($"Generated QR code size: {fileSize} bytes.");
+        // Retrieve the actual file size of the generated image.
+        long actualSize = new FileInfo(outputPath).Length;
 
-        // Compare against the threshold
-        if (fileSize <= sizeThreshold)
+        // Compare the actual size with the defined threshold and report the result.
+        if (actualSize <= sizeThreshold)
         {
-            Console.WriteLine("File size is within the expected threshold.");
+            Console.WriteLine($"Success: QR code image size ({actualSize} bytes) is within the threshold ({sizeThreshold} bytes).");
         }
         else
         {
-            Console.WriteLine("File size exceeds the expected threshold.");
+            Console.WriteLine($"Warning: QR code image size ({actualSize} bytes) exceeds the threshold ({sizeThreshold} bytes).");
+        }
+
+        // Attempt to delete the generated file; ignore any errors that occur during cleanup.
+        try
+        {
+            File.Delete(outputPath);
+        }
+        catch
+        {
+            // Cleanup errors are intentionally ignored.
         }
     }
 }

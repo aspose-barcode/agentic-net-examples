@@ -4,64 +4,121 @@ using System.Text.Json;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
+/// <summary>
+/// Generates DataMatrix barcodes from a JSON array of strings.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Accepts optional command‑line arguments:
+    /// 0 – path to a JSON file containing an array of strings (default: "sample.json").
+    /// 1 – output folder for generated PNG files (default: "Barcodes").
+    /// </summary>
+    /// <param name="args">Command‑line arguments.</param>
     static void Main(string[] args)
     {
-        // Determine input JSON file and output folder (fallback to defaults)
-        string inputJsonPath = args.Length > 0 ? args[0] : "input.json";
-        string outputFolder = args.Length > 1 ? args[1] : "output";
+        // Determine JSON input path (first argument) or use default.
+        string jsonPath = args.Length > 0 ? args[0] : "sample.json";
 
-        // Ensure the output directory exists
+        // Determine output folder (second argument) or use default.
+        string outputFolder = args.Length > 1 ? args[1] : "Barcodes";
+
+        // If the JSON file does not exist, create a sample file and exit.
+        if (!File.Exists(jsonPath))
+        {
+            Console.WriteLine($"JSON file not found: {jsonPath}");
+
+            // Create a small sample JSON array to demonstrate functionality.
+            string[] sampleData = new[] { "ABC123", "HelloWorld", "DataMatrix2026" };
+            string sampleJson = JsonSerializer.Serialize(
+                sampleData,
+                new JsonSerializerOptions { WriteIndented = true });
+
+            File.WriteAllText(jsonPath, sampleJson);
+            Console.WriteLine($"Sample JSON file created at {jsonPath}. Rerun the program to generate barcodes.");
+            return;
+        }
+
+        // Read the entire JSON file content.
+        string jsonContent = File.ReadAllText(jsonPath);
+        string[] codeTexts;
+
+        // Attempt to deserialize the JSON array into a string[].
+        try
+        {
+            codeTexts = JsonSerializer.Deserialize<string[]>(jsonContent);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to parse JSON: {ex.Message}");
+            return;
+        }
+
+        // Validate that we have at least one code text to process.
+        if (codeTexts == null || codeTexts.Length == 0)
+        {
+            Console.WriteLine("JSON array is empty. No barcodes to generate.");
+            return;
+        }
+
+        // Ensure the output directory exists.
         if (!Directory.Exists(outputFolder))
         {
             Directory.CreateDirectory(outputFolder);
         }
 
-        // If the input JSON file does not exist, create a small sample file
-        if (!File.Exists(inputJsonPath))
+        // Retrieve the BaseEncodeType for DataMatrix using reflection.
+        var field = typeof(EncodeTypes).GetField(nameof(EncodeTypes.DataMatrix));
+        if (field == null)
         {
-            string[] sampleData = new[] { "ABC123", "HelloWorld", "DataMatrix1", "1234567890", "SampleText" };
-            string sampleJson = JsonSerializer.Serialize(sampleData, new JsonSerializerOptions { WriteIndented = true });
-            File.WriteAllText(inputJsonPath, sampleJson);
-            Console.WriteLine($"Sample input file created at '{inputJsonPath}'.");
-        }
-
-        // Read and deserialize the JSON array
-        string jsonContent = File.ReadAllText(inputJsonPath);
-        string[] codeTexts;
-        try
-        {
-            codeTexts = JsonSerializer.Deserialize<string[]>(jsonContent);
-            if (codeTexts == null)
-                throw new JsonException("Deserialized array is null.");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Failed to parse JSON file: {ex.Message}");
+            Console.WriteLine("EncodeTypes.DataMatrix not found.");
             return;
         }
+        BaseEncodeType encodeType = (BaseEncodeType)field.GetValue(null);
 
-        // Process each codetext and generate a DataMatrix barcode
-        for (int i = 0; i < codeTexts.Length; i++)
+        int index = 0;
+        // Iterate over each text value and generate a barcode.
+        foreach (var text in codeTexts)
         {
-            string text = codeTexts[i];
-            string fileName = $"barcode_{i}.png";
-            string outputPath = Path.Combine(outputFolder, fileName);
-
-            // Create and configure the barcode generator
-            using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, text))
+            // Skip null, empty, or whitespace-only entries.
+            if (string.IsNullOrWhiteSpace(text))
             {
-                // Optional: set image resolution or size if needed
-                // generator.Parameters.Resolution = 300; // DPI
-
-                // Save the barcode image
-                generator.Save(outputPath);
+                Console.WriteLine($"Skipping empty code text at index {index}.");
+                index++;
+                continue;
             }
 
-            Console.WriteLine($"Saved barcode for '{text}' to '{outputPath}'.");
+            // Create a file‑system‑safe filename based on the text.
+            string safeFileName = GetSafeFileName(text);
+            string outputPath = Path.Combine(outputFolder, $"{index:D4}_{safeFileName}.png");
+
+            // Generate the DataMatrix barcode and save it as PNG.
+            using (var generator = new BarcodeGenerator(encodeType, text))
+            {
+                // Optional: set any DataMatrix‑specific parameters here if needed.
+                generator.Save(outputPath, BarCodeImageFormat.Png);
+            }
+
+            Console.WriteLine($"Generated DataMatrix barcode for \"{text}\" at {outputPath}");
+            index++;
+        }
+    }
+
+    /// <summary>
+    /// Replaces characters that are invalid in file names with an underscore
+    /// and truncates the result to a reasonable length.
+    /// </summary>
+    /// <param name="input">Original string to sanitize.</param>
+    /// <returns>A file‑system‑safe string.</returns>
+    private static string GetSafeFileName(string input)
+    {
+        foreach (char c in Path.GetInvalidFileNameChars())
+        {
+            input = input.Replace(c, '_');
         }
 
-        Console.WriteLine("Batch barcode generation completed.");
+        // Limit length to avoid overly long filenames (max 50 characters).
+        return input.Length > 50 ? input.Substring(0, 50) : input;
     }
 }

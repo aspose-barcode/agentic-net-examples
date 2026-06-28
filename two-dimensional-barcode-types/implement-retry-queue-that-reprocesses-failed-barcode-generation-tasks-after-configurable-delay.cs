@@ -4,110 +4,123 @@ using System.IO;
 using System.Threading.Tasks;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
-namespace BarcodeRetryDemo
+/// <summary>
+/// Demonstrates barcode generation with retry logic.
+/// </summary>
+class Program
 {
-    // Represents a single barcode generation request.
+    // Configuration constants
+    private const int MaxRetryAttempts = 3;          // maximum number of retries per task
+    private const int RetryDelayMilliseconds = 2000; // delay before each retry batch
+
+    // Simple DTO for a barcode generation request
     class BarcodeTask
     {
-        public BaseEncodeType EncodeType { get; }
-        public string CodeText { get; }
-        public string OutputPath { get; }
-
-        public BarcodeTask(BaseEncodeType encodeType, string codeText, string outputPath)
-        {
-            EncodeType = encodeType ?? throw new ArgumentNullException(nameof(encodeType));
-            CodeText = codeText ?? throw new ArgumentNullException(nameof(codeText));
-            OutputPath = outputPath ?? throw new ArgumentNullException(nameof(outputPath));
-        }
+        public BaseEncodeType Symbology { get; set; }
+        public string CodeText { get; set; }
+        public string OutputPath { get; set; }
+        public int Attempt { get; set; } = 0;
     }
 
-    class Program
+    /// <summary>
+    /// Application entry point. Creates barcode tasks, processes them,
+    /// and retries failed tasks up to a configured limit.
+    /// </summary>
+    static async Task Main()
     {
-        // Configurable retry settings.
-        private const int MaxRetryAttempts = 3;
-        private const int RetryDelayMilliseconds = 500; // 0.5 second delay between retries.
-
-        static async Task Main()
+        // Sample tasks (in a real scenario these could come from a database, file, etc.)
+        var tasks = new List<BarcodeTask>
         {
-            // Sample tasks – some are intentionally invalid to trigger failures.
-            var tasks = new List<BarcodeTask>
-            {
-                new BarcodeTask(EncodeTypes.Code128, "VALID123", "code128_valid.png"),
-                new BarcodeTask(EncodeTypes.Code128, "INVALID@@@", "code128_invalid.png"), // will fail
-                new BarcodeTask(EncodeTypes.QR, "https://example.com", "qr_valid.png")
-            };
+            new BarcodeTask { Symbology = EncodeTypes.Code128, CodeText = "VALID123", OutputPath = "code128_1.png" },
+            new BarcodeTask { Symbology = EncodeTypes.EAN13,   CodeText = "1234567890128", OutputPath = "ean13.png" }, // valid checksum
+            new BarcodeTask { Symbology = EncodeTypes.EAN13,   CodeText = "1234567890123", OutputPath = "ean13_invalid.png" } // invalid checksum – will fail
+        };
 
-            // Queue for tasks that need to be retried.
-            var retryQueue = new Queue<(BarcodeTask task, int attempt)>();
+        // Queue that holds tasks needing a retry
+        var retryQueue = new List<BarcodeTask>();
 
-            // Initial processing.
-            foreach (var task in tasks)
+        // First pass: attempt each task once
+        foreach (var task in tasks)
+        {
+            bool success = await TryGenerateAsync(task);
+            if (!success)
             {
-                try
+                // Increment attempt count and queue for retry if limit not reached
+                task.Attempt++;
+                if (task.Attempt <= MaxRetryAttempts)
                 {
-                    GenerateAndSaveBarcode(task);
-                    Console.WriteLine($"Generated: {task.OutputPath}");
+                    retryQueue.Add(task);
                 }
-                catch (BarCodeException ex)
+                else
                 {
-                    Console.WriteLine($"Failed (will retry): {task.OutputPath} – {ex.Message}");
-                    retryQueue.Enqueue((task, 1));
+                    Console.WriteLine($"Task gave up after {MaxRetryAttempts} attempts: {task.CodeText}");
                 }
             }
+        }
 
-            // Process retries with delay.
-            while (retryQueue.Count > 0)
+        // Process retries in batches until the queue is empty or attempts are exhausted
+        while (retryQueue.Count > 0)
+        {
+            Console.WriteLine($"Waiting {RetryDelayMilliseconds} ms before retrying {retryQueue.Count} failed task(s)...");
+            await Task.Delay(RetryDelayMilliseconds);
+
+            // Capture current batch and clear the queue for new failures
+            var currentBatch = new List<BarcodeTask>(retryQueue);
+            retryQueue.Clear();
+
+            foreach (var task in currentBatch)
             {
-                var (task, attempt) = retryQueue.Dequeue();
-
-                // Wait before retrying.
-                await Task.Delay(RetryDelayMilliseconds);
-
-                try
+                bool success = await TryGenerateAsync(task);
+                if (!success)
                 {
-                    GenerateAndSaveBarcode(task);
-                    Console.WriteLine($"Retry succeeded: {task.OutputPath}");
-                }
-                catch (BarCodeException ex)
-                {
-                    Console.WriteLine($"Retry {attempt} failed: {task.OutputPath} – {ex.Message}");
-                    if (attempt < MaxRetryAttempts)
+                    // Increment attempt count and re‑queue if attempts remain
+                    task.Attempt++;
+                    if (task.Attempt <= MaxRetryAttempts)
                     {
-                        // Enqueue for another attempt.
-                        retryQueue.Enqueue((task, attempt + 1));
+                        retryQueue.Add(task);
                     }
                     else
                     {
-                        Console.WriteLine($"Giving up on: {task.OutputPath}");
+                        Console.WriteLine($"Task gave up after {MaxRetryAttempts} attempts: {task.CodeText}");
                     }
                 }
             }
-
-            Console.WriteLine("Processing complete.");
         }
 
-        // Generates a barcode image and saves it to the specified path.
-        private static void GenerateAndSaveBarcode(BarcodeTask task)
+        Console.WriteLine("All processing completed.");
+    }
+
+    // Attempts to generate a barcode; returns true on success, false on failure.
+    private static async Task<bool> TryGenerateAsync(BarcodeTask task)
+    {
+        try
         {
-            // Ensure the output directory exists.
-            var directory = Path.GetDirectoryName(task.OutputPath);
+            // Ensure the output directory exists
+            string directory = Path.GetDirectoryName(task.OutputPath);
             if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
             {
                 Directory.CreateDirectory(directory);
             }
 
-            // Use a using block for the disposable BarcodeGenerator.
-            using (var generator = new BarcodeGenerator(task.EncodeType, task.CodeText))
+            // Generate and save the barcode image
+            using (var generator = new BarcodeGenerator(task.Symbology, task.CodeText))
             {
-                // Example of setting a property – bar color.
-                generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-
-                // Save directly; this method handles image generation internally.
-                generator.Save(task.OutputPath, BarCodeImageFormat.Png);
+                // Example of setting a simple property (optional)
+                generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
+                generator.Save(task.OutputPath);
             }
+
+            Console.WriteLine($"Generated barcode: {task.OutputPath}");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            // Log the error; in a real app you might log to a file or monitoring system
+            Console.WriteLine($"Error generating barcode (Attempt {task.Attempt + 1}): {ex.Message}");
+            // Simulate asynchronous work (e.g., logging) to keep the method async
+            await Task.Yield();
+            return false;
         }
     }
 }

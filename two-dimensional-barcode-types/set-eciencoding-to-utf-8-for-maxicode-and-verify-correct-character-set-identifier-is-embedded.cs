@@ -1,41 +1,61 @@
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.BarCode;
 
+/// <summary>
+/// Demonstrates generating a MaxiCode barcode with UTF-8 ECI encoding,
+/// saving it to a file, and then reading it back to verify the content.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a MaxiCode barcode containing Unicode text, saves it,
+    /// and reads it back to display the decoded value.
+    /// </summary>
     static void Main()
     {
-        // Sample codetext containing Unicode characters
-        string codetext = "犬Right狗";
+        // Unicode text that requires UTF-8 encoding (Japanese greeting)
+        string codeText = "こんにちは";
 
-        // Create a MaxiCode generator with the sample codetext
-        using (var generator = new BarcodeGenerator(EncodeTypes.MaxiCode, codetext))
+        // Determine the full path for the output image file
+        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "maxicode.png");
+
+        // Create a barcode generator for MaxiCode with the specified text
+        using (var generator = new BarcodeGenerator(EncodeTypes.MaxiCode, codeText))
         {
-            // Set ECI encoding to UTF‑8 (character set identifier will be embedded)
+            // Configure the generator to use UTF-8 ECI encoding
             generator.Parameters.Barcode.MaxiCode.ECIEncoding = ECIEncodings.UTF8;
 
-            // Save the generated barcode to a memory stream
-            using (var memoryStream = new MemoryStream())
+            // Save the generated barcode image to the file system
+            generator.Save(outputPath);
+        }
+
+        // Inform the user where the barcode image was saved
+        Console.WriteLine($"MaxiCode generated with ECIEncoding=UTF-8 at: {outputPath}");
+
+        // Verify the generated barcode by reading it back, if the file exists
+        if (File.Exists(outputPath))
+        {
+            // Initialize a barcode reader for MaxiCode format
+            using (var reader = new BarCodeReader(outputPath, DecodeType.MaxiCode))
             {
-                generator.Save(memoryStream, BarCodeImageFormat.Png);
-                memoryStream.Position = 0;
+                // Read all barcodes found in the image
+                var results = reader.ReadBarCodes();
 
-                // Decode the barcode from the memory stream
-                using (var reader = new BarCodeReader(memoryStream, DecodeType.AllSupportedTypes))
+                // Output each decoded text to the console
+                foreach (var result in results)
                 {
-                    var results = reader.ReadBarCodes();
-                    foreach (var result in results)
-                    {
-                        Console.WriteLine($"Decoded Text: {result.CodeText}");
-                    }
+                    Console.WriteLine("Decoded CodeText: " + result.CodeText);
                 }
-
-                // Verify that the generator's ECI encoding is set to UTF‑8
-                Console.WriteLine($"ECI Encoding set on generator: {generator.Parameters.Barcode.MaxiCode.ECIEncoding}");
             }
+        }
+        else
+        {
+            // Notify the user that the image file was not created
+            Console.WriteLine("Failed to generate the barcode image.");
         }
     }
 }
