@@ -2,41 +2,47 @@ using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.ComplexBarcode;
+using Aspose.BarCode.Generation;
+using Aspose.Drawing;
 
-namespace MailmarkExample
+/// <summary>
+/// Demo program that generates a Mailmark barcode using Aspose.BarCode.
+/// </summary>
+class Program
 {
-    class Program
+    /// <summary>
+    /// Entry point. Generates a Mailmark barcode image and saves it to the current directory.
+    /// </summary>
+    static void Main()
     {
-        static void Main()
+        // Create a MailmarkCodetext instance with the required fields.
+        var mailmark = new MailmarkCodetext
         {
-            // Create Mailmark codetext with required fields
-            var mailmark = new MailmarkCodetext
-            {
-                Format = 4,
-                VersionID = 1,
-                Class = "0",
-                SupplychainID = 384224,
-                ItemID = 16563762,
-                DestinationPostCodePlusDPS = "EF61AH8T "
-            };
+            Format = 4,               // 4-state format
+            VersionID = 1,
+            Class = "0",              // string property
+            SupplychainID = 384224,
+            ItemID = 16563762,
+            DestinationPostCodePlusDPS = "EF61AH8T " // trailing spaces are part of the format
+        };
 
-            // Generate the Mailmark barcode
-            using (var generator = new ComplexBarcodeGenerator(mailmark))
-            {
-                // Ensure a positive bar height (required for Mailmark)
-                generator.Parameters.Barcode.BarHeight.Point = 5f;
+        // Build the full path for the output PNG file in the current directory.
+        string outputPath = Path.Combine(Environment.CurrentDirectory, "mailmark.png");
 
-                // Set custom padding (white space) around the symbol
-                generator.Parameters.Barcode.Padding.Left.Point = 10f;
-                generator.Parameters.Barcode.Padding.Top.Point = 10f;
-                generator.Parameters.Barcode.Padding.Right.Point = 10f;
-                generator.Parameters.Barcode.Padding.Bottom.Point = 10f;
+        // Use ComplexBarcodeGenerator to create the barcode with custom padding.
+        using (var generator = new ComplexBarcodeGenerator(mailmark))
+        {
+            // Set padding on all sides (in points) to add white space around the barcode.
+            generator.Parameters.Barcode.Padding.Left.Point = 30f;
+            generator.Parameters.Barcode.Padding.Top.Point = 30f;
+            generator.Parameters.Barcode.Padding.Right.Point = 30f;
+            generator.Parameters.Barcode.Padding.Bottom.Point = 30f;
 
-                // Save the barcode image to a file
-                string outputPath = "mailmark.png";
-                generator.Save(outputPath);
-                Console.WriteLine($"Mailmark barcode saved to {Path.GetFullPath(outputPath)}");
-            }
+            // Save the generated barcode image as a PNG file.
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
+
+        // Inform the user where the barcode image was saved.
+        Console.WriteLine($"Mailmark barcode saved to: {outputPath}");
     }
 }

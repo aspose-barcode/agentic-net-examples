@@ -1,109 +1,141 @@
 using System;
 using System.IO;
+using System.Collections.Generic;
 using Aspose.BarCode.ComplexBarcode;
-using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
 
+/// <summary>
+/// Entry point for the Mailmark barcode generation utility.
+/// Reads input data from a CSV file (or uses sample data) and creates PNG barcode images.
+/// </summary>
 class Program
 {
-    static void Main()
+    /// <summary>
+    /// Main method that orchestrates reading input, generating barcodes, and saving output files.
+    /// </summary>
+    /// <param name="args">
+    /// Command‑line arguments:
+    /// args[0] – optional path to the CSV input file.
+    /// args[1] – optional output directory for generated PNG files.
+    /// </param>
+    static void Main(string[] args)
     {
-        // Define input and output folders
-        string inputFolder = Path.Combine(Directory.GetCurrentDirectory(), "InputCsv");
-        string outputFolder = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
+        // Determine CSV input path and output directory from command‑line arguments
+        string csvPath = args.Length > 0 ? args[0] : string.Empty;
+        string outputDir = args.Length > 1 ? args[1] : string.Empty;
 
-        // Ensure folders exist
-        if (!Directory.Exists(inputFolder))
-        {
-            Directory.CreateDirectory(inputFolder);
-        }
-        if (!Directory.Exists(outputFolder))
-        {
-            Directory.CreateDirectory(outputFolder);
-        }
+        // Collection that will hold all Mailmark records to process
+        List<MailmarkCodetext> records = new List<MailmarkCodetext>();
 
-        // Seed a sample CSV file if none exist (safe sample of 5 rows)
-        string csvPath = Path.Combine(inputFolder, "sample.csv");
-        if (!File.Exists(csvPath))
+        // If a CSV path is supplied and the file exists, read records from it
+        if (!string.IsNullOrWhiteSpace(csvPath) && File.Exists(csvPath))
         {
-            string[] sampleLines = new string[]
+            try
             {
-                //VersionID,Class,SupplychainID,ItemID,DestinationPostCodePlusDPS
-                "1,0,384224,16563762,EF61AH8T ",
-                "1,1,384224,16563763,EF61AH8T ",
-                "1,2,384224,16563764,EF61AH8T ",
-                "1,3,384224,16563765,EF61AH8T ",
-                "1,5,384224,16563766,EF61AH8T "
-            };
-            File.WriteAllLines(csvPath, sampleLines);
-        }
+                // Read each line of the CSV file
+                foreach (var line in File.ReadAllLines(csvPath))
+                {
+                    // Skip empty lines
+                    if (string.IsNullOrWhiteSpace(line)) continue;
 
-        // Read CSV rows
-        string[] rows = File.ReadAllLines(csvPath);
-        int index = 0;
-        foreach (string row in rows)
-        {
-            if (string.IsNullOrWhiteSpace(row))
-                continue;
+                    // Split the line into comma‑separated parts
+                    var parts = line.Split(',');
 
-            string[] parts = row.Split(',');
-            if (parts.Length != 5)
+                    // Ensure the line has at least the required number of columns
+                    if (parts.Length < 6) continue;
+
+                    // Trim whitespace from each column value
+                    for (int i = 0; i < parts.Length; i++) parts[i] = parts[i].Trim();
+
+                    // Parse numeric fields; if any parsing fails, skip the line
+                    if (!int.TryParse(parts[0], out int format)) continue;
+                    if (!int.TryParse(parts[1], out int versionId)) continue;
+                    string classStr = parts[2]; // class is a string value
+                    if (!int.TryParse(parts[3], out int supplyChainId)) continue;
+                    if (!int.TryParse(parts[4], out int itemId)) continue;
+                    string destination = parts[5]; // destination postcode plus DPS
+
+                    // Create a MailmarkCodetext instance from the parsed values
+                    var mailmark = new MailmarkCodetext
+                    {
+                        Format = format,
+                        VersionID = versionId,
+                        Class = classStr,
+                        SupplychainID = supplyChainId,
+                        ItemID = itemId,
+                        DestinationPostCodePlusDPS = destination
+                    };
+
+                    // Add the record to the collection
+                    records.Add(mailmark);
+                }
+            }
+            catch (Exception ex)
             {
-                Console.WriteLine($"Skipping invalid row {index + 1}: incorrect number of columns.");
-                index++;
-                continue;
+                Console.WriteLine($"Error reading CSV file: {ex.Message}");
+                return;
+            }
+        }
+        else
+        {
+            // No valid CSV supplied – generate a set of 5 sample records
+            for (int i = 0; i < 5; i++)
+            {
+                var sample = new MailmarkCodetext
+                {
+                    Format = 4,
+                    VersionID = 1,
+                    Class = "0",
+                    SupplychainID = 384224,
+                    ItemID = 16563762 + i,
+                    DestinationPostCodePlusDPS = "EF61AH8T "
+                };
+                records.Add(sample);
             }
 
-            // Parse fields
-            if (!int.TryParse(parts[0].Trim(), out int versionId) ||
-                !int.TryParse(parts[2].Trim(), out int supplyChainId) ||
-                !int.TryParse(parts[3].Trim(), out int itemId))
+            // If no output directory was provided, use a temporary folder
+            if (string.IsNullOrWhiteSpace(outputDir))
             {
-                Console.WriteLine($"Skipping row {index + 1}: numeric parsing failed.");
-                index++;
-                continue;
+                outputDir = Path.Combine(Path.GetTempPath(), "MailmarkBarcodes");
             }
+        }
 
-            string classValue = parts[1].Trim();
-            string destination = parts[4].Trim();
+        // Ensure the output directory exists (creates it if necessary)
+        try
+        {
+            Directory.CreateDirectory(outputDir);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to create output directory '{outputDir}': {ex.Message}");
+            return;
+        }
 
-            // Validate DestinationPostCodePlusDPS length (must be 9 characters)
-            if (destination.Length != 9)
+        // Iterate over each Mailmark record and generate a PNG barcode image
+        int index = 1;
+        foreach (var mailmark in records)
+        {
+            // Build the output file name and full path
+            string fileName = $"mailmark_{index}.png";
+            string outputPath = Path.Combine(outputDir, fileName);
+
+            try
             {
-                Console.WriteLine($"Skipping row {index + 1}: DestinationPostCodePlusDPS must be 9 characters.");
-                index++;
-                continue;
+                // Use ComplexBarcodeGenerator to create and save the barcode image
+                using (var generator = new ComplexBarcodeGenerator(mailmark))
+                {
+                    generator.Save(outputPath);
+                }
+
+                Console.WriteLine($"Generated: {outputPath}");
             }
-
-            // Build Mailmark codetext
-            MailmarkCodetext mailmark = new MailmarkCodetext
+            catch (Exception ex)
             {
-                Format = 4,                     // 4‑state format
-                VersionID = versionId,
-                Class = classValue,
-                SupplychainID = supplyChainId,
-                ItemID = itemId,
-                DestinationPostCodePlusDPS = destination
-            };
-
-            // Generate barcode image
-            using (var generator = new ComplexBarcodeGenerator(mailmark))
-            {
-                // Set a positive non‑zero bar height
-                generator.Parameters.Barcode.BarHeight.Point = 0.5f;
-
-                // Optional: set resolution if desired
-                generator.Parameters.Resolution = 300;
-
-                // Save as PNG
-                string outFile = Path.Combine(outputFolder, $"Mailmark_{index + 1}.png");
-                generator.Save(outFile, BarCodeImageFormat.Png);
-                Console.WriteLine($"Generated barcode {outFile}");
+                Console.WriteLine($"Failed to generate barcode for record {index}: {ex.Message}");
             }
 
             index++;
         }
 
-        Console.WriteLine("Processing completed.");
+        Console.WriteLine("Batch processing completed.");
     }
 }

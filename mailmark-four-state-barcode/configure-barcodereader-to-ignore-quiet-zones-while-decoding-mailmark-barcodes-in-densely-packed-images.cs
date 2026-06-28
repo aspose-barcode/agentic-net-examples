@@ -3,42 +3,63 @@ using System.IO;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.BarCode.ComplexBarcode;
-using Aspose.Drawing;
+using Aspose.BarCode;
 using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates generation and recognition of a Mailmark barcode using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Generates a Mailmark barcode, saves it to a memory stream,
+    /// and then reads it back using <see cref="BarCodeReader"/>.
+    /// </summary>
     static void Main()
     {
-        // Prepare Mailmark codetext (4‑state)
+        // Create a sample Mailmark codetext object with valid data
         var mailmark = new MailmarkCodetext
         {
-            Format = 4,                         // 4‑state format
+            Format = 4,                 // 4-state (unspecified/default)
             VersionID = 1,
-            Class = "0",
+            Class = "0",                // Test class
             SupplychainID = 384224,
             ItemID = 16563762,
-            DestinationPostCodePlusDPS = "EF61AH8T "
+            DestinationPostCodePlusDPS = "EF61AH8T " // Valid postcode+DP
         };
 
-        // Generate Mailmark barcode image into a memory stream
+        // Generate a Mailmark barcode image using ComplexBarcodeGenerator
         using (var generator = new ComplexBarcodeGenerator(mailmark))
-        using (var memory = new MemoryStream())
+        using (var ms = new MemoryStream())
         {
-            generator.Save(memory, BarCodeImageFormat.Png);
-            memory.Position = 0;
+            // Save the generated barcode to the memory stream in PNG format
+            generator.Save(ms, BarCodeImageFormat.Png);
+            // Reset stream position to the beginning for reading
+            ms.Position = 0;
 
-            // Read the barcode, configuring quality settings to improve detection
-            // (quiet‑zone handling is internal; there is no public API to ignore it)
-            using (var reader = new BarCodeReader(memory, DecodeType.Mailmark))
+            // Initialize BarCodeReader for Mailmark symbology
+            using (var reader = new BarCodeReader(ms, DecodeType.Mailmark))
             {
-                reader.QualitySettings.Deconvolution = DeconvolutionMode.Fast;
+                // Configure quality settings to improve detection
+                // Allow recognition of potentially damaged barcodes
                 reader.QualitySettings.AllowIncorrectBarcodes = true;
+                // Use fast deconvolution to enhance detection in dense images
+                reader.QualitySettings.Deconvolution = DeconvolutionMode.Fast;
 
-                foreach (var result in reader.ReadBarCodes())
+                // Read barcodes from the image
+                var results = reader.ReadBarCodes();
+
+                // Output detection results
+                if (results.Length == 0)
                 {
-                    Console.WriteLine($"Detected Type: {result.CodeTypeName}");
-                    Console.WriteLine($"Decoded Text : {result.CodeText}");
+                    Console.WriteLine("No Mailmark barcode detected.");
+                }
+                else
+                {
+                    foreach (var result in results)
+                    {
+                        Console.WriteLine($"Detected Mailmark barcode: {result.CodeText}");
+                    }
                 }
             }
         }

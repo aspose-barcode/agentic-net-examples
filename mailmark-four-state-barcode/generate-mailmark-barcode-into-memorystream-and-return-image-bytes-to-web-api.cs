@@ -1,42 +1,45 @@
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.ComplexBarcode;
-using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates generation of a Mailmark barcode using Aspose.BarCode and outputs it as a Base64 string.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Creates a Mailmark codetext, generates the barcode, and writes the image bytes as Base64 to the console.
+    /// </summary>
     static void Main()
     {
-        // Create Mailmark codetext with required fields
+        // Initialize Mailmark codetext with sample data required for a valid barcode
         var mailmark = new MailmarkCodetext
         {
-            Format = 4,               // 4‑state format
-            VersionID = 1,
-            Class = "0",
-            SupplychainID = 384224,
-            ItemID = 16563762,
-            DestinationPostCodePlusDPS = "EF61AH8T "
+            Format = 4,                     // 4‑state format identifier
+            VersionID = 1,                  // Version identifier
+            Class = "0",                    // Class as a string (required by the API)
+            SupplychainID = 384224,         // Supply chain identifier
+            ItemID = 16563762,              // Item identifier
+            DestinationPostCodePlusDPS = "EF61AH8T " // 9‑character postcode plus DP suffix
         };
 
-        // Generate the complex Mailmark barcode
-        using (ComplexBarcodeGenerator generator = new ComplexBarcodeGenerator(mailmark))
+        // Use ComplexBarcodeGenerator to create the barcode image in memory
+        using (var generator = new ComplexBarcodeGenerator(mailmark))
         {
-            // Set a positive bar height
-            generator.Parameters.Barcode.BarHeight.Point = 10f;
-
-            // Set image size (required for complex barcode generation)
-            generator.Parameters.ImageWidth.Point = 300f;
-            generator.Parameters.ImageHeight.Point = 150f;
-
-            // Save barcode image to a memory stream as PNG
-            using (MemoryStream memoryStream = new MemoryStream())
+            // MemoryStream holds the generated PNG image data
+            using (var ms = new MemoryStream())
             {
-                generator.Save(memoryStream, BarCodeImageFormat.Png);
-                byte[] imageBytes = memoryStream.ToArray();
+                // Save the barcode to the stream in PNG format
+                generator.Save(ms, BarCodeImageFormat.Png);
 
-                // Output the size of the generated image bytes
-                Console.WriteLine($"Generated Mailmark barcode image bytes: {imageBytes.Length}");
+                // Convert the stream contents to a byte array
+                byte[] barcodeBytes = ms.ToArray();
+
+                // Output the image bytes as a Base64 string (simulating an API response)
+                Console.WriteLine(Convert.ToBase64String(barcodeBytes));
             }
         }
     }
