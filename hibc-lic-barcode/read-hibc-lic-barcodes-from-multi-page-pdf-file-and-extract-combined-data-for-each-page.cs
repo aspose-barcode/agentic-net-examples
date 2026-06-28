@@ -1,132 +1,94 @@
 using System;
 using System.IO;
-using Aspose.BarCode;
+using System.Text;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.BarCode.ComplexBarcode;
 using Aspose.Pdf;
-using Aspose.Pdf.Devices;
+using Aspose.Pdf.Facades;
 
+/// <summary>
+/// Demonstrates how to extract HIBC barcodes from each page of a PDF file using Aspose libraries.
+/// </summary>
 class Program
 {
-    static void Main()
+    /// <summary>
+    /// Entry point of the application.
+    /// Accepts an optional command‑line argument specifying the PDF file path.
+    /// </summary>
+    /// <param name="args">Command‑line arguments; the first argument may be a PDF file path.</param>
+    static void Main(string[] args)
     {
-        // Path to the multi‑page PDF file (adjust as needed)
-        string pdfPath = "input.pdf";
+        // Determine the PDF file path: use the first argument if supplied, otherwise default to "sample.pdf".
+        string pdfPath = args.Length > 0 ? args[0] : "sample.pdf";
 
+        // Verify that the file exists before proceeding.
         if (!File.Exists(pdfPath))
         {
             Console.WriteLine($"File not found: {pdfPath}");
             return;
         }
 
-        // Load PDF document
-        using (var pdfDocument = new Document(pdfPath))
+        // Open the PDF document for reading.
+        using (var pdfDoc = new Document(pdfPath))
         {
-            int pageCount = pdfDocument.Pages.Count;
-            Console.WriteLine($"Processing PDF with {pageCount} page(s).");
-
-            // Iterate through each page
-            for (int pageNumber = 1; pageNumber <= pageCount; pageNumber++)
+            // Initialize a PdfConverter to render PDF pages as images.
+            using (var pdfConverter = new PdfConverter(pdfDoc))
             {
-                Console.WriteLine($"\n--- Page {pageNumber} ---");
+                // Enable barcode optimization to improve detection performance.
+                pdfConverter.RenderingOptions.BarcodeOptimization = true;
 
-                // Render page to PNG image in memory
-                using (var imageStream = new MemoryStream())
+                // Process each page in the PDF.
+                for (int pageNumber = 1; pageNumber <= pdfDoc.Pages.Count; pageNumber++)
                 {
-                    var resolution = new Resolution(300);
-                    var pngDevice = new PngDevice(resolution);
-                    pngDevice.Process(pdfDocument.Pages[pageNumber], imageStream);
-                    imageStream.Position = 0;
+                    // Configure the converter to render only the current page.
+                    pdfConverter.StartPage = pageNumber;
+                    pdfConverter.EndPage = pageNumber;
+                    pdfConverter.DoConvert();
 
-                    // Read all barcodes on the page
-                    using (var reader = new BarCodeReader(imageStream, DecodeType.AllSupportedTypes))
+                    // Store the rendered page image in a memory stream.
+                    using (var pageStream = new MemoryStream())
                     {
-                        bool hibcFound = false;
+                        pdfConverter.GetNextImage(pageStream);
+                        pageStream.Position = 0; // Reset stream position for reading.
 
-                        foreach (BarCodeResult result in reader.ReadBarCodes())
+                        // Use BarCodeReader to detect all supported barcodes in the image.
+                        using (var reader = new BarCodeReader(pageStream, DecodeType.AllSupportedTypes))
                         {
-                            // Attempt to decode HIBC LIC complex codetext
-                            var complex = ComplexCodetextReader.TryDecodeHIBCLIC(result.CodeText);
-                            if (complex == null)
-                                continue; // Not a HIBC LIC barcode
+                            var results = reader.ReadBarCodes();
+                            var sb = new StringBuilder();
 
-                            hibcFound = true;
-                            Console.WriteLine($"Barcode Type: {result.CodeTypeName}");
-                            Console.WriteLine($"Raw CodeText: {result.CodeText}");
-
-                            // Handle combined, primary, or secondary codetext
-                            switch (complex)
+                            // Examine each detected barcode.
+                            foreach (var result in results)
                             {
-                                case HIBCLICCombinedCodetext combined:
-                                    PrintCombinedData(combined);
-                                    break;
-                                case HIBCLICPrimaryDataCodetext primary:
-                                    PrintPrimaryData(primary);
-                                    break;
-                                case HIBCLICSecondaryAndAdditionalDataCodetext secondary:
-                                    PrintSecondaryData(secondary);
-                                    break;
-                                default:
-                                    Console.WriteLine("Unsupported HIBC LIC codetext type.");
-                                    break;
-                            }
-                        }
+                                // Process only barcodes whose type name contains "HIBC".
+                                if (result.CodeTypeName != null && result.CodeTypeName.Contains("HIBC"))
+                                {
+                                    // Attempt to decode complex HIBC LIC data for richer information.
+                                    var hibc = ComplexCodetextReader.TryDecodeHIBCLIC(result.CodeText);
+                                    if (hibc != null)
+                                    {
+                                        sb.Append(result.CodeText);
+                                        sb.Append(" (decoded)");
+                                    }
+                                    else
+                                    {
+                                        sb.Append(result.CodeText);
+                                    }
 
-                        if (!hibcFound)
-                        {
-                            Console.WriteLine("No HIBC LIC barcode detected on this page.");
+                                    sb.Append("; ");
+                                }
+                            }
+
+                            // Prepare output: either the concatenated HIBC data or a not‑found message.
+                            string combinedData = sb.Length > 0
+                                ? sb.ToString().TrimEnd(' ', ';')
+                                : "No HIBC barcodes found";
+
+                            Console.WriteLine($"Page {pageNumber}: {combinedData}");
                         }
                     }
                 }
             }
-        }
-    }
-
-    static void PrintCombinedData(HIBCLICCombinedCodetext combined)
-    {
-        Console.WriteLine("=== Combined Data ===");
-        if (combined.PrimaryData != null)
-        {
-            Console.WriteLine($"Product or Catalog Number: {combined.PrimaryData.ProductOrCatalogNumber}");
-            Console.WriteLine($"Labeler Identification Code: {combined.PrimaryData.LabelerIdentificationCode}");
-            Console.WriteLine($"Unit of Measure ID: {combined.PrimaryData.UnitOfMeasureID}");
-        }
-
-        if (combined.SecondaryAndAdditionalData != null)
-        {
-            var sec = combined.SecondaryAndAdditionalData;
-            Console.WriteLine($"Expiry Date: {sec.ExpiryDate}");
-            Console.WriteLine($"Expiry Date Format: {sec.ExpiryDateFormat}");
-            Console.WriteLine($"Quantity: {sec.Quantity}");
-            Console.WriteLine($"Lot Number: {sec.LotNumber}");
-            Console.WriteLine($"Serial Number: {sec.SerialNumber}");
-            Console.WriteLine($"Date of Manufacture: {sec.DateOfManufacture}");
-        }
-    }
-
-    static void PrintPrimaryData(HIBCLICPrimaryDataCodetext primary)
-    {
-        Console.WriteLine("=== Primary Data ===");
-        if (primary.Data != null)
-        {
-            Console.WriteLine($"Product or Catalog Number: {primary.Data.ProductOrCatalogNumber}");
-            Console.WriteLine($"Labeler Identification Code: {primary.Data.LabelerIdentificationCode}");
-            Console.WriteLine($"Unit of Measure ID: {primary.Data.UnitOfMeasureID}");
-        }
-    }
-
-    static void PrintSecondaryData(HIBCLICSecondaryAndAdditionalDataCodetext secondary)
-    {
-        Console.WriteLine("=== Secondary and Additional Data ===");
-        if (secondary.Data != null)
-        {
-            var sec = secondary.Data;
-            Console.WriteLine($"Expiry Date: {sec.ExpiryDate}");
-            Console.WriteLine($"Expiry Date Format: {sec.ExpiryDateFormat}");
-            Console.WriteLine($"Quantity: {sec.Quantity}");
-            Console.WriteLine($"Lot Number: {sec.LotNumber}");
-            Console.WriteLine($"Serial Number: {sec.SerialNumber}");
-            Console.WriteLine($"Date of Manufacture: {sec.DateOfManufacture}");
         }
     }
 }

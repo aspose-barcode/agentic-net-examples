@@ -1,43 +1,42 @@
 using System;
-using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
+using Aspose.BarCode.ComplexBarcode;
 
+/// <summary>
+/// Demonstrates creation of a HIBC Code128 LIC barcode, rotation, and saving as JPEG.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Prepares primary data, generates the barcode, rotates it, and saves the image.
+    /// </summary>
     static void Main()
     {
-        // Output file path
-        string outputPath = "HIBC_LIC_Rotated.jpg";
-
-        // Create a HIBC Code128 LIC barcode generator with sample code text
-        using (var generator = new BarcodeGenerator(EncodeTypes.HIBCCode128LIC, "A12345"))
+        // Prepare primary data for HIBC Code128 LIC barcode
+        var primaryCodetext = new HIBCLICPrimaryDataCodetext
         {
-            // Generate the barcode image
-            using (Bitmap original = generator.GenerateBarCodeImage())
+            BarcodeType = EncodeTypes.HIBCCode128LIC,
+            Data = new PrimaryData
             {
-                // Rotate the image 90 degrees clockwise
-                // After rotation width and height are swapped
-                using (Bitmap rotated = new Bitmap(original.Height, original.Width))
-                {
-                    using (Graphics g = Graphics.FromImage(rotated))
-                    {
-                        // Move origin to the bottom-left corner before rotating
-                        g.TranslateTransform(0, original.Height);
-                        // Rotate -90 degrees (clockwise)
-                        g.RotateTransform(-90);
-                        // Draw the original image onto the rotated canvas
-                        g.DrawImage(original, 0, 0, original.Width, original.Height);
-                    }
-
-                    // Save the rotated image as JPEG
-                    rotated.Save(outputPath, ImageFormat.Jpeg);
-                }
+                ProductOrCatalogNumber = "12345",      // Product or catalog number
+                LabelerIdentificationCode = "A999",   // Labeler identification code
+                UnitOfMeasureID = 1                    // Unit of measure identifier
             }
+        };
+
+        // Create a ComplexBarcodeGenerator with the prepared data
+        using (var generator = new ComplexBarcodeGenerator(primaryCodetext))
+        {
+            // Set rotation angle to 90 degrees (clockwise)
+            generator.Parameters.RotationAngle = 90f;
+
+            // Save the generated barcode as a JPEG file
+            generator.Save("hibc_code128_lic.jpg");
         }
 
-        Console.WriteLine($"Barcode saved to {Path.GetFullPath(outputPath)}");
+        // Inform the user that the barcode image has been saved
+        Console.WriteLine("Barcode image saved as hibc_code128_lic.jpg");
     }
 }

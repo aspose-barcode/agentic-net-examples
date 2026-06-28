@@ -3,102 +3,96 @@ using System.IO;
 using System.Collections.Generic;
 using Aspose.BarCode;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
-namespace BatchDecodeHIBC
+/// <summary>
+/// Program that scans multi‑frame TIFF files for HIBC LIC barcodes and writes results to a CSV file.
+/// </summary>
+class Program
 {
-    class Program
+    /// <summary>
+    /// Entry point of the application.
+    /// Accepts optional command‑line arguments: input folder path and output CSV file path.
+    /// </summary>
+    /// <param name="args">Command‑line arguments.</param>
+    static void Main(string[] args)
     {
-        static void Main(string[] args)
+        // Determine input folder and output CSV file from arguments or use defaults.
+        string inputFolder = args.Length > 0 ? args[0] : "InputTiff";
+        string outputCsv   = args.Length > 1 ? args[1] : "Barcodes.csv";
+
+        // Verify that the input folder exists before proceeding.
+        if (!Directory.Exists(inputFolder))
         {
-            // Define input folder (relative to the executable) and output CSV file
-            string inputFolder = Path.Combine(Directory.GetCurrentDirectory(), "InputTiff");
-            string outputCsv = Path.Combine(Directory.GetCurrentDirectory(), "HIBC_DecodeResults.csv");
+            Console.WriteLine($"Input folder does not exist: {inputFolder}");
+            return;
+        }
 
-            // Ensure the input folder exists
-            if (!Directory.Exists(inputFolder))
+        // Open the CSV writer; overwrite any existing file.
+        using (var writer = new StreamWriter(outputCsv, false))
+        {
+            // Write CSV header.
+            writer.WriteLine("FileName,FrameIndex,BarcodeType,CodeText");
+
+            // Collect all TIFF files (both .tif and .tiff) from the input folder.
+            var tiffFiles = new List<string>();
+            tiffFiles.AddRange(Directory.GetFiles(inputFolder, "*.tif"));
+            tiffFiles.AddRange(Directory.GetFiles(inputFolder, "*.tiff"));
+
+            // Process each TIFF file individually.
+            foreach (var filePath in tiffFiles)
             {
-                Directory.CreateDirectory(inputFolder);
-                Console.WriteLine($"Input folder created at: {inputFolder}");
-                Console.WriteLine("Place TIFF images containing HIBC LIC barcodes into this folder and rerun the program.");
-                return;
-            }
-
-            // Get TIFF files (limit to first 10 for safety)
-            string[] tiffFiles = Directory.GetFiles(inputFolder, "*.tif");
-            if (tiffFiles.Length == 0)
-            {
-                Console.WriteLine("No TIFF files found in the input folder.");
-                return;
-            }
-
-            // Prepare list to hold CSV rows
-            List<string> csvLines = new List<string>();
-            csvLines.Add("FileName,BarcodeType,CodeText"); // Header
-
-            // Process each TIFF file
-            int processedCount = 0;
-            foreach (string filePath in tiffFiles)
-            {
-                if (processedCount >= 10) break; // safety limit
-                if (!File.Exists(filePath))
-                {
-                    Console.WriteLine($"File not found (skipped): {filePath}");
-                    continue;
-                }
-
                 try
                 {
-                    // Initialize BarCodeReader for all supported types
-                    using (BarCodeReader reader = new BarCodeReader(filePath, DecodeType.AllSupportedTypes))
+                    // Load the multi‑frame TIFF using Aspose.Drawing.
+                    using (var image = Image.FromFile(filePath))
                     {
-                        // Read all barcodes in the image
-                        BarCodeResult[] results = reader.ReadBarCodes();
+                        // Use the Time dimension to access frames.
+                        var frameDimension = FrameDimension.Time;
+                        int frameCount = image.GetFrameCount(frameDimension);
 
-                        if (results.Length == 0)
+                        // Iterate through each frame in the TIFF.
+                        for (int frameIndex = 0; frameIndex < frameCount; frameIndex++)
                         {
-                            // No barcode found – record empty entry
-                            string line = $"{Path.GetFileName(filePath)},,";
-                            csvLines.Add(line);
-                        }
-                        else
-                        {
-                            // Record each detected barcode
-                            foreach (BarCodeResult result in results)
+                            // Select the current frame for processing.
+                            image.SelectActiveFrame(frameDimension, frameIndex);
+
+                            // Export the selected frame to a memory stream in PNG format (compatible with the barcode reader).
+                            using (var ms = new MemoryStream())
                             {
-                                // Escape commas and quotes in code text
-                                string escapedCodeText = result.CodeText?.Replace("\"", "\"\"") ?? string.Empty;
-                                if (escapedCodeText.Contains(",") || escapedCodeText.Contains("\""))
-                                {
-                                    escapedCodeText = $"\"{escapedCodeText}\"";
-                                }
+                                image.Save(ms, ImageFormat.Png);
+                                ms.Position = 0; // Reset stream position for reading.
 
-                                string line = $"{Path.GetFileName(filePath)},{result.CodeTypeName},{escapedCodeText}";
-                                csvLines.Add(line);
+                                // Initialize the barcode reader to decode only HIBC LIC symbologies.
+                                using (var reader = new BarCodeReader(
+                                    ms,
+                                    DecodeType.HIBCAztecLIC,
+                                    DecodeType.HIBCCode128LIC,
+                                    DecodeType.HIBCDataMatrixLIC,
+                                    DecodeType.HIBCQRLIC))
+                                {
+                                    // Read all barcodes found in the current frame.
+                                    foreach (var result in reader.ReadBarCodes())
+                                    {
+                                        // Build a CSV line with file name, frame index, barcode type, and decoded text.
+                                        string line = $"{Path.GetFileName(filePath)},{frameIndex},{result.CodeTypeName},{result.CodeText}";
+                                        writer.WriteLine(line);
+                                    }
+                                }
                             }
                         }
                     }
                 }
                 catch (Exception ex)
                 {
-                    // Record error information in CSV
-                    string errorInfo = $"Error: {ex.Message}".Replace("\"", "\"\"");
-                    string line = $"{Path.GetFileName(filePath)},Error,\"{errorInfo}\"";
-                    csvLines.Add(line);
-                }
-
-                processedCount++;
-            }
-
-            // Write all collected lines to the CSV file
-            using (StreamWriter writer = new StreamWriter(outputCsv, false))
-            {
-                foreach (string line in csvLines)
-                {
-                    writer.WriteLine(line);
+                    // Log any errors and continue processing remaining files.
+                    Console.WriteLine($"Error processing file '{filePath}': {ex.Message}");
                 }
             }
-
-            Console.WriteLine($"Decoding completed. Results saved to: {outputCsv}");
         }
+
+        // Inform the user that processing is complete.
+        Console.WriteLine($"Decoding completed. Results saved to '{outputCsv}'.");
     }
 }

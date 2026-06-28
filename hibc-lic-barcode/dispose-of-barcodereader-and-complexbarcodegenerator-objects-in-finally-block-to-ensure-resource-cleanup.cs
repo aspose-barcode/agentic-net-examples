@@ -4,44 +4,66 @@ using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.BarCode.ComplexBarcode;
 
+/// <summary>
+/// Demonstrates generation and recognition of a Mailmark complex barcode using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a Mailmark barcode, saves it to a memory stream, and then reads it back.
+    /// </summary>
     static void Main()
     {
-        ComplexBarcodeGenerator generator = null;
-        BarCodeReader reader = null;
-        var memoryStream = new MemoryStream();
+        // Prepare Mailmark codetext with required fields
+        var mailmark = new MailmarkCodetext
+        {
+            Format = 4,
+            VersionID = 1,
+            Class = "0",
+            SupplychainID = 384224,
+            ItemID = 16563762,
+            DestinationPostCodePlusDPS = "EF61AH8T "
+        };
+
+        ComplexBarcodeGenerator generator = null; // Will hold the barcode generator instance
+        BarCodeReader reader = null;               // Will hold the barcode reader instance
 
         try
         {
-            // Prepare SwissQR codetext with mandatory fields
-            var swissQr = new SwissQRCodetext();
-            swissQr.Bill.Creditor.Name = "John Doe";
-            swissQr.Bill.Creditor.CountryCode = "CH";
-            swissQr.Bill.Account = "CH9300762011623852957";
-            swissQr.Bill.Amount = 199.95m;
-            swissQr.Bill.Version = SwissQRBill.QrBillStandardVersion.V2_0;
-
-            // Generate the complex barcode and save to a memory stream
-            generator = new ComplexBarcodeGenerator(swissQr);
-            generator.Save(memoryStream, BarCodeImageFormat.Png);
-
-            // Reset stream position for reading
-            memoryStream.Position = 0;
-
-            // Read the barcode from the generated image
-            reader = new BarCodeReader(memoryStream, DecodeType.QR);
-            foreach (var result in reader.ReadBarCodes())
+            // Generate barcode image into a memory stream
+            using (var ms = new MemoryStream())
             {
-                Console.WriteLine($"Decoded text: {result.CodeText}");
+                // Initialize generator with the prepared Mailmark codetext
+                generator = new ComplexBarcodeGenerator(mailmark);
+
+                // Save the generated barcode as PNG into the memory stream
+                generator.Save(ms, BarCodeImageFormat.Png);
+
+                // Reset stream position to the beginning for reading
+                ms.Position = 0;
+
+                // Initialize reader to decode all supported barcode types from the stream
+                reader = new BarCodeReader(ms, DecodeType.AllSupportedTypes);
+
+                // Read all barcodes found in the stream
+                var results = reader.ReadBarCodes();
+
+                // Output each detected barcode's codetext to the console
+                foreach (var result in results)
+                {
+                    Console.WriteLine($"Detected CodeText: {result.CodeText}");
+                }
             }
         }
         finally
         {
-            // Ensure resources are released
-            if (reader != null) reader.Dispose();
-            if (generator != null) generator.Dispose();
-            memoryStream.Dispose();
+            // Ensure proper disposal of resources even if an exception occurs
+            if (reader != null)
+                reader.Dispose();
+
+            if (generator != null)
+                generator.Dispose();
         }
     }
 }

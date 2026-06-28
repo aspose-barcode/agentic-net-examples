@@ -1,44 +1,55 @@
 using System;
 using System.IO;
-using Aspose.BarCode;
+using System.Net;
+using System.Net.Http;
+using System.Net.Http.Headers;
 using Aspose.BarCode.ComplexBarcode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates generation of a HIBC QR LIC barcode and preparation of an HTTP response containing the image.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a barcode, writes it to a memory stream, and creates a mock HTTP response with the image data.
+    /// </summary>
     static void Main()
     {
-        // Simulated HTTP response stream
-        using (var responseStream = new MemoryStream())
+        // Create HIBC QR LIC codetext with minimal secondary data (lot number only).
+        var hibcCodetext = new HIBCLICSecondaryAndAdditionalDataCodetext
         {
-            // Prepare complex codetext for HIBC LIC QR with secondary data
-            var complexCodetext = new HIBCLICSecondaryAndAdditionalDataCodetext();
-            complexCodetext.BarcodeType = EncodeTypes.HIBCQRLIC;
-            complexCodetext.LinkCharacter = 'L';
-            complexCodetext.Data = new SecondaryAndAdditionalData
+            BarcodeType = EncodeTypes.HIBCQRLIC,
+            LinkCharacter = '+',
+            Data = new SecondaryAndAdditionalData
             {
-                LotNumber = "LOT123",
-                SerialNumber = "SERIAL123",
-                ExpiryDate = DateTime.Now,
-                ExpiryDateFormat = HIBCLICDateFormat.MMDDYY,
-                Quantity = 30,
-                DateOfManufacture = DateTime.Now
-            };
-
-            // Generate the barcode image and write it to the response stream
-            using (var generator = new ComplexBarcodeGenerator(complexCodetext))
-            {
-                // Set QR error correction level (optional)
-                generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
-
-                // Save directly to the simulated HTTP response stream as PNG
-                generator.Save(responseStream, BarCodeImageFormat.Png);
+                LotNumber = "LOT123"
             }
+        };
 
-            // At this point, responseStream contains the PNG image.
-            // For demonstration, output the size of the generated image.
-            Console.WriteLine($"Generated HIBC QR LIC barcode image size: {responseStream.Length} bytes");
+        // Use ComplexBarcodeGenerator to render the barcode into a PNG image stored in a memory stream.
+        using (var generator = new ComplexBarcodeGenerator(hibcCodetext))
+        using (var ms = new MemoryStream())
+        {
+            // Save the generated barcode image to the memory stream.
+            generator.Save(ms, BarCodeImageFormat.Png);
+            // Reset stream position to the beginning before reading.
+            ms.Position = 0;
+            // Extract the image bytes from the stream.
+            byte[] imageBytes = ms.ToArray();
+
+            // Create a mock HTTP response containing the PNG image.
+            using (var response = new HttpResponseMessage(HttpStatusCode.OK))
+            {
+                // Set the response content to the image byte array.
+                response.Content = new ByteArrayContent(imageBytes);
+                // Specify the MIME type for PNG images.
+                response.Content.Headers.ContentType = new MediaTypeHeaderValue("image/png");
+                // Output a diagnostic message indicating the response size.
+                Console.WriteLine($"HTTP response prepared with {imageBytes.Length} bytes of PNG image.");
+            }
         }
     }
 }

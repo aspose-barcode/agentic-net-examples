@@ -4,35 +4,40 @@ using Aspose.BarCode.Generation;
 using Aspose.BarCode.ComplexBarcode;
 using Aspose.Drawing;
 
+/// <summary>
+/// Demonstrates generation of a HIBC QR LIC barcode using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Generates a HIBC QR LIC barcode and saves it as an image file.
+    /// </summary>
     static void Main()
     {
-        // Prepare complex codetext for HIBC QR LIC barcode (secondary data example)
-        var complexCodetext = new HIBCLICSecondaryAndAdditionalDataCodetext();
-        complexCodetext.BarcodeType = EncodeTypes.HIBCQRLIC;
-        complexCodetext.LinkCharacter = 'L';
-        complexCodetext.Data = new SecondaryAndAdditionalData
+        // Prepare primary HIBC LIC data with product details and labeler code.
+        var primaryCodetext = new HIBCLICPrimaryDataCodetext
         {
-            LotNumber = "LOT123",
-            SerialNumber = "SERIAL123",
-            ExpiryDate = DateTime.Now,
-            ExpiryDateFormat = HIBCLICDateFormat.MMDDYY,
-            Quantity = 30,
-            DateOfManufacture = DateTime.Now
+            BarcodeType = EncodeTypes.HIBCQRLIC,
+            Data = new PrimaryData
+            {
+                ProductOrCatalogNumber = "12345",   // Product or catalog identifier
+                LabelerIdentificationCode = "A999", // Labeler identification code
+                UnitOfMeasureID = 1                 // Unit of measure identifier
+            }
         };
 
-        // Generate the barcode with high‑contrast colors
-        using (var generator = new ComplexBarcodeGenerator(complexCodetext))
+        // Create a ComplexBarcodeGenerator using the prepared primary data.
+        using (var generator = new ComplexBarcodeGenerator(primaryCodetext))
         {
-            // Set foreground (bars) to black and background to white
-            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-            generator.Parameters.BackColor = Aspose.Drawing.Color.White;
+            // Configure visual appearance: white background and black bars.
+            generator.Parameters.BackColor = Color.White;
+            generator.Parameters.Barcode.BarColor = Color.Black;
 
-            // Save the barcode image as PNG
-            generator.Save("hibcqrlic.png");
+            // Save the generated barcode image to a PNG file.
+            generator.Save("hibc_qr.png");
         }
 
-        Console.WriteLine("HIBC QR LIC barcode generated: hibcqrlic.png");
+        // Inform the user that the barcode has been generated.
+        Console.WriteLine("Barcode generated: hibc_qr.png");
     }
 }
