@@ -4,62 +4,73 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
-using Aspose.Drawing.Drawing2D;
 
+/// <summary>
+/// Demonstrates generating a QR code with an embedded logo using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Generates a QR code, embeds a logo, and saves the result.
+    /// </summary>
     static void Main()
     {
-        // Text to encode in the QR code
-        string qrText = "https://example.com";
-
-        // Path to the logo image that will be placed at the center of the QR code
+        // Paths for the logo image and the output QR code image
         string logoPath = "logo.png";
-
-        // Output file for the final image
         string outputPath = "qr_with_logo.png";
 
-        // Create a QR code generator with high error correction level
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, qrText))
+        // Text to encode in the QR code
+        string codeText = "https://example.com";
+
+        // Verify that the logo file exists before proceeding
+        if (!File.Exists(logoPath))
         {
-            // Use Level H error correction to keep the QR readable after adding a logo
+            Console.WriteLine($"Logo file not found: {logoPath}");
+            return;
+        }
+
+        // Create a QR code generator with the specified text
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, codeText))
+        {
+            // Set a high error correction level to allow for logo overlay
             generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
 
+            // Optional: set image resolution (dots per inch)
+            generator.Parameters.Resolution = 300f;
+
             // Generate the QR code image
-            using (var qrImage = generator.GenerateBarCodeImage())
+            using (var barcodeImage = generator.GenerateBarCodeImage())
             {
-                // If the logo file exists, overlay it onto the QR code
-                if (File.Exists(logoPath))
+                // Load the logo image from file
+                using (var logoImage = new Bitmap(logoPath))
                 {
-                    using (var logoImage = new Bitmap(logoPath))
+                    // Calculate maximum logo dimensions (20% of QR code size)
+                    int logoMaxWidth = (int)(barcodeImage.Width * 0.2f);
+                    int logoMaxHeight = (int)(barcodeImage.Height * 0.2f);
+
+                    // Compute scaling ratio to preserve logo aspect ratio
+                    double ratio = Math.Min((double)logoMaxWidth / logoImage.Width,
+                                            (double)logoMaxHeight / logoImage.Height);
+                    int logoWidth = (int)(logoImage.Width * ratio);
+                    int logoHeight = (int)(logoImage.Height * ratio);
+
+                    // Determine top-left coordinates to center the logo on the QR code
+                    int posX = (barcodeImage.Width - logoWidth) / 2;
+                    int posY = (barcodeImage.Height - logoHeight) / 2;
+
+                    // Draw the resized logo onto the QR code image
+                    using (var graphics = Graphics.FromImage(barcodeImage))
                     {
-                        // Define the maximum size of the logo (20% of QR dimensions)
-                        int maxLogoWidth = (int)(qrImage.Width * 0.2f);
-                        int maxLogoHeight = (int)(qrImage.Height * 0.2f);
-
-                        // Preserve the logo's aspect ratio
-                        int logoWidth = logoImage.Width;
-                        int logoHeight = logoImage.Height;
-                        float scale = Math.Min((float)maxLogoWidth / logoWidth, (float)maxLogoHeight / logoHeight);
-                        logoWidth = (int)(logoWidth * scale);
-                        logoHeight = (int)(logoHeight * scale);
-
-                        // Calculate position to center the logo
-                        int posX = (qrImage.Width - logoWidth) / 2;
-                        int posY = (qrImage.Height - logoHeight) / 2;
-
-                        // Draw the logo onto the QR code image
-                        using (var graphics = Graphics.FromImage(qrImage))
-                        {
-                            graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
-                            graphics.DrawImage(logoImage, posX, posY, logoWidth, logoHeight);
-                        }
+                        graphics.DrawImage(logoImage, posX, posY, logoWidth, logoHeight);
                     }
-                }
 
-                // Save the final image with the logo (or just the QR code if logo missing)
-                qrImage.Save(outputPath, ImageFormat.Png);
+                    // Save the combined image to the specified output path in PNG format
+                    barcodeImage.Save(outputPath, ImageFormat.Png);
+                }
             }
         }
+
+        // Inform the user that the process completed successfully
+        Console.WriteLine($"QR code with logo saved to {outputPath}");
     }
 }

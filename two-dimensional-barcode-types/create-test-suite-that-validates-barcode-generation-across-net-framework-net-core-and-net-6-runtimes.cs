@@ -1,92 +1,110 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates barcode generation, saving, and validation using Aspose.BarCode.
+/// </summary>
 class Program
 {
-    static void Main()
+    /// <summary>
+    /// Generates a barcode image, saves it to the specified file, and validates that the saved image
+    /// contains the expected encoded text.
+    /// </summary>
+    /// <param name="encodeType">The type of barcode to generate.</param>
+    /// <param name="codeText">The text to encode in the barcode.</param>
+    /// <param name="fileName">The full path where the barcode image will be saved.</param>
+    static void GenerateAndValidate(BaseEncodeType encodeType, string codeText, string fileName)
     {
-        // Prepare output folder
-        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
-        if (!Directory.Exists(outputDir))
+        try
         {
-            Directory.CreateDirectory(outputDir);
-        }
-
-        // Define test cases: symbology, code text, optional file name suffix
-        var testCases = new List<(BaseEncodeType type, string codeText, string suffix)>
-        {
-            (EncodeTypes.Code128, "ABC123456", "code128"),
-            (EncodeTypes.QR, "https://example.com", "qr"),
-            (EncodeTypes.EAN13, "5901234123457", "ean13"),
-            (EncodeTypes.Pdf417, "PDF417 Sample Text", "pdf417"),
-            (EncodeTypes.DataMatrix, "DataMatrix123", "datamatrix")
-        };
-
-        int passed = 0;
-        int failed = 0;
-
-        foreach (var (type, codeText, suffix) in testCases)
-        {
-            string filePath = Path.Combine(outputDir, $"{suffix}.png");
-
-            // Generate barcode
-            using (BarcodeGenerator generator = new BarcodeGenerator(type, codeText))
+            // Ensure the output directory exists before attempting to save the file.
+            string directory = Path.GetDirectoryName(fileName);
+            if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
             {
-                // Common settings
-                generator.Parameters.AutoSizeMode = AutoSizeMode.None;
+                Directory.CreateDirectory(directory);
+            }
+
+            // Create a barcode generator, configure image size, and save the barcode image.
+            using (var generator = new BarcodeGenerator(encodeType, codeText))
+            {
+                // Set a modest image size for consistency across different barcode types.
                 generator.Parameters.ImageWidth.Point = 300f;
                 generator.Parameters.ImageHeight.Point = 150f;
-                generator.Parameters.Resolution = 96f;
-
-                // 1D specific: set bar height
-                if (type == EncodeTypes.Code128 || type == EncodeTypes.EAN13)
-                {
-                    generator.Parameters.Barcode.BarHeight.Point = 50f;
-                }
-
-                // Save image
-                generator.Save(filePath);
+                generator.Save(fileName);
             }
 
-            // Verify by reading back
-            try
+            // Verify that the file was successfully created.
+            if (!File.Exists(fileName))
             {
-                using (BarCodeReader reader = new BarCodeReader(filePath, DecodeType.AllSupportedTypes))
-                {
-                    bool matchFound = false;
-                    foreach (BarCodeResult result in reader.ReadBarCodes())
-                    {
-                        if (result.CodeText == codeText)
-                        {
-                            matchFound = true;
-                            break;
-                        }
-                    }
+                Console.WriteLine($"[FAIL] File not created: {fileName}");
+                return;
+            }
 
-                    if (matchFound)
+            // Read the saved barcode image and attempt to decode it.
+            using (var reader = new BarCodeReader(fileName, DecodeType.AllSupportedTypes))
+            {
+                var results = reader.ReadBarCodes();
+
+                // If no barcodes were detected, report failure.
+                if (results.Length == 0)
+                {
+                    Console.WriteLine($"[FAIL] No barcode detected in {Path.GetFileName(fileName)}");
+                    return;
+                }
+
+                // Check whether any decoded barcode matches the original text.
+                bool matchFound = false;
+                foreach (var result in results)
+                {
+                    if (result.CodeText == codeText)
                     {
-                        Console.WriteLine($"[PASS] {suffix}: generated and verified successfully.");
-                        passed++;
-                    }
-                    else
-                    {
-                        Console.WriteLine($"[FAIL] {suffix}: decoded text does not match.");
-                        failed++;
+                        matchFound = true;
+                        break;
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"[ERROR] {suffix}: exception during verification - {ex.Message}");
-                failed++;
+
+                // Output the validation result.
+                if (matchFound)
+                {
+                    Console.WriteLine($"[PASS] {Path.GetFileName(fileName)} - Type: {encodeType.GetType().Name}, CodeText: \"{codeText}\"");
+                }
+                else
+                {
+                    Console.WriteLine($"[FAIL] {Path.GetFileName(fileName)} - Expected \"{codeText}\", but got different value.");
+                }
             }
         }
+        catch (Exception ex)
+        {
+            // Report any unexpected errors that occur during generation or validation.
+            Console.WriteLine($"[ERROR] {Path.GetFileName(fileName)} - {ex.Message}");
+        }
+    }
 
-        Console.WriteLine($"Test Summary: Passed = {passed}, Failed = {failed}");
+    /// <summary>
+    /// Application entry point. Executes a series of barcode generation and validation tests.
+    /// </summary>
+    static void Main()
+    {
+        // Define a small set of barcode types, associated text, and output file paths for testing.
+        var tests = new (BaseEncodeType type, string text, string file)[]
+        {
+            (EncodeTypes.Code128, "Test123ABC", "Barcodes/Code128.png"),
+            (EncodeTypes.QR, "https://example.com", "Barcodes/QR.png"),
+            (EncodeTypes.DataMatrix, "DM12345", "Barcodes/DataMatrix.png"),
+            (EncodeTypes.Pdf417, "PDF417 Sample Text", "Barcodes/Pdf417.png"),
+            (EncodeTypes.EAN13, "1234567890128", "Barcodes/EAN13.png")
+        };
+
+        // Iterate over each test case, generating and validating the corresponding barcode.
+        foreach (var (type, text, file) in tests)
+        {
+            GenerateAndValidate(type, text, file);
+        }
+
+        Console.WriteLine("Barcode generation and validation completed.");
     }
 }

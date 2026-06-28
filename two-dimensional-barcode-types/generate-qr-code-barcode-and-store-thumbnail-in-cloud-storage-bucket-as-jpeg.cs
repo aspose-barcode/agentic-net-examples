@@ -2,60 +2,45 @@ using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates generating a QR code thumbnail image using Aspose.BarCode.
+/// The image is saved locally; in production it could be uploaded to cloud storage.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a QR code, resizes it for thumbnail use, and saves it as a JPEG file.
+    /// </summary>
     static void Main()
     {
-        // Data to encode in the QR code
-        string codeText = "https://example.com";
+        // Define the text to encode in the QR code.
+        string qrText = "https://example.com";
 
-        // Local file path for the thumbnail image
-        string localPath = "qr_thumbnail.jpg";
+        // Build the full path for the output JPEG file in the current directory.
+        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "qr_thumbnail.jpg");
 
-        // Create and configure the QR code generator
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, codeText))
+        // Create a BarcodeGenerator for QR encoding with the specified text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, qrText))
         {
-            // Use interpolation auto‑size mode and set image dimensions
+            // Configure auto‑size mode to use interpolation for smoother scaling.
             generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
-            generator.Parameters.ImageWidth.Point = 200f;
-            generator.Parameters.ImageHeight.Point = 200f;
 
-            // QR specific settings
-            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
+            // Set the desired thumbnail dimensions (200 points width and height).
+            generator.Parameters.ImageWidth.Point = 200f;   // Width in points
+            generator.Parameters.ImageHeight.Point = 200f;  // Height in points
 
-            // Visual appearance
-            generator.Parameters.Barcode.BarColor = Color.Black;
-            generator.Parameters.BackColor = Color.White;
-
-            // Generate the image into a memory stream as JPEG
-            using (var ms = new MemoryStream())
-            {
-                generator.Save(ms, BarCodeImageFormat.Jpeg);
-                ms.Position = 0;
-
-                // Save locally
-                File.WriteAllBytes(localPath, ms.ToArray());
-
-                // Real cloud upload (commented out – SDK not available in the runner)
-                // Example for Azure Blob Storage:
-                // var blobClient = new BlobClient(connectionString, containerName, blobName);
-                // blobClient.Upload(ms);
-                // Example for AWS S3:
-                // var s3Client = new AmazonS3Client(accessKey, secretKey, RegionEndpoint.USEast1);
-                // var putRequest = new PutObjectRequest
-                // {
-                //     BucketName = bucketName,
-                //     Key = objectKey,
-                //     InputStream = ms,
-                //     ContentType = "image/jpeg"
-                // };
-                // s3Client.PutObjectAsync(putRequest).Wait();
-            }
+            // Save the generated QR code directly as a JPEG image.
+            generator.Save(outputPath, BarCodeImageFormat.Jpeg);
         }
 
-        Console.WriteLine($"QR code thumbnail saved to '{localPath}'.");
+        // Inform the user where the thumbnail was saved.
+        Console.WriteLine($"QR code thumbnail saved to: {outputPath}");
+
+        // Note: In a production environment, the file at 'outputPath' would be uploaded
+        // to a cloud storage bucket using the appropriate SDK (e.g., AWS S3, Azure Blob,
+        // Google Cloud Storage). This example uses local file I/O for simplicity.
     }
 }

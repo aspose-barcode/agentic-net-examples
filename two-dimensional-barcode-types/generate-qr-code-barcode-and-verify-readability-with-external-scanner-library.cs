@@ -4,73 +4,63 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates generating a QR code, saving it to a memory stream,
+/// and then reading it back using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a QR code, writes it to a memory stream,
+    /// and reads it back to verify its contents.
+    /// </summary>
     static void Main()
     {
-        // Define file name for the generated QR code
-        string qrFile = "qr.png";
+        // Text to encode in the QR code.
+        string qrText = "Hello Aspose QR Code";
 
-        // Create QR code generator with sample text
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
+        // Create a memory stream to hold the generated QR code image.
+        using (var ms = new MemoryStream())
         {
-            // Set QR error correction level to high
-            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
-
-            // Define image size (300x300 points)
-            generator.Parameters.ImageWidth.Point = 300f;
-            generator.Parameters.ImageHeight.Point = 300f;
-
-            // Save the QR code image to file
-            generator.Save(qrFile);
-        }
-
-        // Verify that the file was created
-        if (!File.Exists(qrFile))
-        {
-            Console.WriteLine("Failed to create QR code image.");
-            return;
-        }
-
-        // Read and recognize the QR code from the saved image
-        using (var reader = new BarCodeReader(qrFile, DecodeType.QR))
-        {
-            // Use normal quality settings
-            reader.QualitySettings = QualitySettings.NormalQuality;
-
-            bool found = false;
-            foreach (BarCodeResult result in reader.ReadBarCodes())
+            // Initialize the barcode generator for QR codes with the specified text.
+            using (var generator = new BarcodeGenerator(EncodeTypes.QR, qrText))
             {
-                found = true;
-                Console.WriteLine("Detected Barcode Type: " + result.CodeTypeName);
-                Console.WriteLine("Decoded Text: " + result.CodeText);
-                Console.WriteLine("Confidence: " + result.Confidence);
-                // Check if confidence indicates strong recognition
-                if (result.Confidence == BarCodeConfidence.Strong)
+                // Set the QR code error correction level (optional).
+                generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
+
+                // Save the generated QR code as a PNG image into the memory stream.
+                generator.Save(ms, BarCodeImageFormat.Png);
+            }
+
+            // Reset the stream position to the beginning for reading.
+            ms.Position = 0;
+
+            // Initialize a barcode reader to decode QR codes from the memory stream.
+            using (var reader = new BarCodeReader(ms, DecodeType.QR))
+            {
+                // Attempt to read all barcodes present in the stream.
+                var results = reader.ReadBarCodes();
+
+                // If no barcodes were detected, inform the user.
+                if (results.Length == 0)
                 {
-                    Console.WriteLine("QR code read successfully with strong confidence.");
+                    Console.WriteLine("No QR code detected.");
                 }
                 else
                 {
-                    Console.WriteLine("QR code read with lower confidence.");
+                    // Iterate through each detected barcode and display its details.
+                    foreach (var result in results)
+                    {
+                        Console.WriteLine($"Detected QR Code Type: {result.CodeTypeName}");
+                        Console.WriteLine($"Decoded Text: {result.CodeText}");
+                        Console.WriteLine($"Confidence: {result.Confidence}");
+                        Console.WriteLine($"Reading Quality: {result.ReadingQuality}");
+                    }
                 }
             }
-
-            if (!found)
-            {
-                Console.WriteLine("No QR code detected in the image.");
-            }
-        }
-
-        // Clean up generated file (optional)
-        try
-        {
-            File.Delete(qrFile);
-        }
-        catch
-        {
-            // Ignore any errors during cleanup
         }
     }
 }

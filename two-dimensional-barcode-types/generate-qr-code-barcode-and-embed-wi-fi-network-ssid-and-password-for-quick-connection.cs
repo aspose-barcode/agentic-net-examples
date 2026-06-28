@@ -1,36 +1,44 @@
 using System;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing; // Required for color definitions if needed
 
-namespace WifiQrCodeGenerator
+/// <summary>
+/// Demonstrates generating a Wi‑Fi QR code using Aspose.BarCode.
+/// </summary>
+class Program
 {
-    class Program
+    /// <summary>
+    /// Entry point of the application. Generates a QR code containing Wi‑Fi credentials and saves it as a PNG file.
+    /// </summary>
+    static void Main()
     {
-        static void Main()
+        // Define Wi‑Fi network details
+        string ssid = "MyNetworkSSID";
+        string password = "MySecretPassword";
+        string authentication = "WPA"; // Options: WEP, WPA, nopass
+
+        // Build the Wi‑Fi QR code payload string in the required format
+        string wifiPayload = $"WIFI:T:{authentication};S:{ssid};P:{password};;";
+
+        // Determine the output file path (saved in the executable's directory)
+        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "wifi_qr.png");
+
+        // Initialize the QR code generator with the payload
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, wifiPayload))
         {
-            // Wi‑Fi connection details
-            string ssid = "MyNetwork";
-            string password = "MyPassword";
-            string authType = "WPA"; // WPA, WEP or nopass
+            // Set a high error correction level to improve readability under adverse conditions
+            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
 
-            // Wi‑Fi QR format: WIFI:T:<auth>;S:<ssid>;P:<password>;;
-            string wifiCode = $"WIFI:T:{authType};S:{ssid};P:{password};;";
+            // Increase the image resolution for a sharper PNG output
+            generator.Parameters.Resolution = 300f;
 
-            // Create QR code generator with the Wi‑Fi data
-            using (Aspose.BarCode.Generation.BarcodeGenerator generator = new Aspose.BarCode.Generation.BarcodeGenerator(Aspose.BarCode.Generation.EncodeTypes.QR, wifiCode))
-            {
-                // High error correction for better scanning reliability
-                generator.Parameters.Barcode.QR.ErrorLevel = Aspose.BarCode.Generation.QRErrorLevel.LevelH;
-
-                // Set image size (optional)
-                generator.Parameters.ImageWidth.Point = 300f;
-                generator.Parameters.ImageHeight.Point = 300f;
-
-                // Save the QR code image
-                generator.Save("wifi_qr.png");
-            }
-
-            Console.WriteLine("Wi‑Fi QR code generated: wifi_qr.png");
+            // Save the generated QR code image to the specified path
+            generator.Save(outputPath);
         }
+
+        // Inform the user where the QR code image has been saved
+        Console.WriteLine($"Wi‑Fi QR code generated and saved to: {outputPath}");
     }
 }

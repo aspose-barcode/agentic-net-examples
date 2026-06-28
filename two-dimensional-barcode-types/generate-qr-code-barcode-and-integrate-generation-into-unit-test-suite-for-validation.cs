@@ -5,50 +5,68 @@ using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
-namespace BarcodeQrUnitTest
+/// <summary>
+/// Demonstrates generating a QR code, saving it to a file, and then reading it back to verify the content.
+/// </summary>
+class Program
 {
-    class Program
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a QR code, saves it as an image, and validates the encoded text.
+    /// </summary>
+    static void Main()
     {
-        static void Main()
+        const string codeText = "Hello Aspose";   // Text to encode in the QR code
+        const string imagePath = "qr.png";       // Output file path for the QR code image
+
+        // -------------------------------------------------
+        // Generate QR Code
+        // -------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, codeText))
         {
-            // Define the QR code text and output file path
-            string qrText = "https://www.example.com";
-            string outputFile = Path.Combine(Environment.CurrentDirectory, "qr_test.png");
+            // Optional: set error correction level to Medium (Level M)
+            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
 
-            // Generate QR code image
-            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR))
-            {
-                generator.CodeText = qrText;
-                // Set high error correction level
-                generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
-                // Save the generated QR code to a PNG file
-                generator.Save(outputFile);
-            }
+            // Save the generated QR code image to the specified path
+            generator.Save(imagePath);
+        }
 
-            // Validate the generated QR code by reading it back
-            if (!File.Exists(outputFile))
+        // -------------------------------------------------
+        // Verify that the image file was created successfully
+        // -------------------------------------------------
+        if (!File.Exists(imagePath))
+        {
+            Console.WriteLine($"Failed to create barcode image at '{imagePath}'.");
+            return;
+        }
+
+        // -------------------------------------------------
+        // Read and validate the QR Code from the saved image
+        // -------------------------------------------------
+        using (var reader = new BarCodeReader(imagePath, DecodeType.QR))
+        {
+            // Attempt to read all barcodes present in the image
+            var results = reader.ReadBarCodes();
+
+            // If no barcodes were detected, report and exit
+            if (results.Length == 0)
             {
-                Console.WriteLine("Failed to generate QR code image.");
+                Console.WriteLine("No barcode detected.");
                 return;
             }
 
-            bool validationPassed = false;
-            using (BarCodeReader reader = new BarCodeReader(outputFile, DecodeType.QR))
-            {
-                foreach (BarCodeResult result in reader.ReadBarCodes())
-                {
-                    if (result != null && result.CodeText == qrText)
-                    {
-                        validationPassed = true;
-                        break;
-                    }
-                }
-            }
+            // Retrieve the decoded text from the first detected barcode
+            var decodedText = results[0].CodeText;
 
-            // Output validation result
-            Console.WriteLine(validationPassed
-                ? "QR code generation and validation succeeded."
-                : "QR code validation failed.");
+            // Compare the decoded text with the original input and report the outcome
+            if (decodedText == codeText)
+            {
+                Console.WriteLine("Test passed: decoded text matches original.");
+            }
+            else
+            {
+                Console.WriteLine($"Test failed: expected '{codeText}', got '{decodedText}'.");
+            }
         }
     }
 }

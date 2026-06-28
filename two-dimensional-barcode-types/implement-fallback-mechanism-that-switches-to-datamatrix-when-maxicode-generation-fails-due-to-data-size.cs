@@ -2,56 +2,80 @@ using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode.BarCodeRecognition;
 using Aspose.BarCode.ComplexBarcode;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates generating a MaxiCode barcode and falling back to DataMatrix if needed.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Generates a MaxiCode barcode with sample data,
+    /// and if generation fails, falls back to generating a DataMatrix barcode.
+    /// </summary>
     static void Main()
     {
-        // Sample data that may be too large for MaxiCode
-        string data = new string('A', 500); // 500 characters
+        // Prepare sample data that exceeds typical MaxiCode capacity.
+        string longData = new string('A', 200);
 
-        // Attempt to generate MaxiCode (Mode 4)
+        // Attempt to generate a MaxiCode (Mode 2) using ComplexBarcodeGenerator.
         try
         {
-            MaxiCodeStandardCodetext maxiCodetext = new MaxiCodeStandardCodetext();
-            maxiCodetext.Mode = MaxiCodeMode.Mode4;
-            maxiCodetext.Message = data;
-
-            using (ComplexBarcodeGenerator complexGenerator = new ComplexBarcodeGenerator(maxiCodetext))
+            // Configure MaxiCode parameters.
+            var maxiCode = new MaxiCodeCodetextMode2
             {
-                // Optional: set image resolution
-                complexGenerator.Parameters.Resolution = 300;
-                // Save MaxiCode image
-                string maxiPath = "maxicode.png";
-                complexGenerator.Save(maxiPath, BarCodeImageFormat.Png);
-                Console.WriteLine($"MaxiCode generated successfully: {maxiPath}");
-                return; // Success, no need for fallback
+                PostalCode = "524032140", // Required 9‑digit postal code for Mode 2.
+                CountryCode = 56,
+                ServiceCategory = 999,
+                // Place the long data in the standard second message field.
+                SecondMessage = new MaxiCodeStandardSecondMessage { Message = longData }
+            };
+
+            // Create a generator for the configured MaxiCode.
+            using (var complexGenerator = new ComplexBarcodeGenerator(maxiCode))
+            {
+                // Generate the barcode image.
+                using (var image = complexGenerator.GenerateBarCodeImage())
+                {
+                    // Save the image to a PNG file via a memory stream.
+                    using (var ms = new MemoryStream())
+                    {
+                        image.Save(ms, ImageFormat.Png);
+                        File.WriteAllBytes("maxicode.png", ms.ToArray());
+                    }
+                }
             }
+
+            Console.WriteLine("MaxiCode generated successfully: maxicode.png");
         }
         catch (Exception ex)
         {
+            // Generation failed (e.g., data too large). Log the error and fall back.
             Console.WriteLine($"MaxiCode generation failed: {ex.Message}");
-            Console.WriteLine("Falling back to DataMatrix.");
-        }
+            Console.WriteLine("Falling back to DataMatrix...");
 
-        // Fallback to DataMatrix
-        try
-        {
-            using (BarcodeGenerator dmGenerator = new BarcodeGenerator(EncodeTypes.DataMatrix, data))
+            try
             {
-                // Example of setting a DataMatrix version fallback (optional)
-                dmGenerator.Parameters.Barcode.DataMatrix.DataMatrixVersion = DataMatrixVersion.ECC200_144x144;
-                dmGenerator.Parameters.Resolution = 300;
-                string dmPath = "datamatrix.png";
-                dmGenerator.Save(dmPath, BarCodeImageFormat.Png);
-                Console.WriteLine($"DataMatrix generated as fallback: {dmPath}");
+                // Generate a DataMatrix barcode with the same data.
+                using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, longData))
+                {
+                    // Optional: set a specific DataMatrix version if desired.
+                    // generator.Parameters.Barcode.DataMatrix.DataMatrixVersion = DataMatrixVersion.ECC200_20x20;
+
+                    // Save the DataMatrix image directly to a file.
+                    generator.Save("datamatrix.png");
+                }
+
+                Console.WriteLine("DataMatrix generated successfully: datamatrix.png");
             }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"DataMatrix generation also failed: {ex.Message}");
+            catch (Exception fallbackEx)
+            {
+                // Log any errors that occur during the fallback generation.
+                Console.WriteLine($"DataMatrix generation also failed: {fallbackEx.Message}");
+            }
         }
     }
 }

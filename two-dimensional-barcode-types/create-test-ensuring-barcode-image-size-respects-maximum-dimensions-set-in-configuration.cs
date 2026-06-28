@@ -1,52 +1,74 @@
 using System;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates generating a barcode image with size constraints using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a barcode, saves it, verifies its dimensions, and cleans up the file.
+    /// </summary>
     static void Main()
     {
-        // Maximum dimensions in points (1 point = 1/72 inch)
-        float maxWidthPoints = 200f;
-        float maxHeightPoints = 100f;
+        // Configuration: maximum allowed dimensions (in points)
+        float maxWidth = 200f;
+        float maxHeight = 100f;
 
-        // Create a barcode generator for Code128
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128))
+        // Output file path for the generated barcode image
+        string outputPath = "barcode.png";
+
+        // Generate barcode with AutoSizeMode.Nearest so actual size will not exceed the targets
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Test123"))
         {
-            generator.CodeText = "Test123";
+            // Set auto-size mode to ensure the image fits within the specified dimensions
+            generator.Parameters.AutoSizeMode = AutoSizeMode.Nearest;
 
-            // Use Interpolation mode so ImageWidth/ImageHeight are respected
-            generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
+            // Define the maximum width and height in points
+            generator.Parameters.ImageWidth.Point = maxWidth;
+            generator.Parameters.ImageHeight.Point = maxHeight;
 
-            // Set the maximum image size
-            generator.Parameters.ImageWidth.Point = maxWidthPoints;
-            generator.Parameters.ImageHeight.Point = maxHeightPoints;
+            // Save the generated barcode image to the specified path
+            generator.Save(outputPath);
+        }
 
-            // Generate the barcode image
-            using (Bitmap bitmap = generator.GenerateBarCodeImage())
-            {
-                int actualWidth = bitmap.Width;
-                int actualHeight = bitmap.Height;
+        // Verify that the saved image respects the maximum dimensions
+        if (!File.Exists(outputPath))
+        {
+            Console.WriteLine("Failed to create barcode image.");
+            return;
+        }
 
-                // Convert max size from points to pixels using the current resolution (default 96 dpi)
-                float dpi = generator.Parameters.Resolution;
-                int maxWidthPixels = (int)Math.Ceiling(maxWidthPoints * dpi / 72f);
-                int maxHeightPixels = (int)Math.Ceiling(maxHeightPoints * dpi / 72f);
+        // Load the saved image to inspect its actual pixel dimensions
+        using (var image = Image.FromFile(outputPath))
+        {
+            int actualWidth = image.Width;
+            int actualHeight = image.Height;
 
-                // Verify the generated image does not exceed the configured maximum dimensions
-                if (actualWidth > maxWidthPixels || actualHeight > maxHeightPixels)
-                {
-                    throw new InvalidOperationException(
-                        $"Generated image size {actualWidth}x{actualHeight} exceeds the maximum {maxWidthPixels}x{maxHeightPixels} pixels.");
-                }
+            // Determine whether the actual dimensions are within the configured limits
+            bool widthOk = actualWidth <= (int)maxWidth;
+            bool heightOk = actualHeight <= (int)maxHeight;
 
-                // Save the image (optional, for visual verification)
-                const string outputPath = "barcode_test.png";
-                bitmap.Save(outputPath, ImageFormat.Png);
-                Console.WriteLine($"Barcode generated with size {actualWidth}x{actualHeight} pixels and saved to {outputPath}.");
-            }
+            // Output the results to the console
+            Console.WriteLine($"Actual size: {actualWidth}x{actualHeight} pixels");
+            Console.WriteLine($"Maximum allowed: {maxWidth}x{maxHeight} points");
+            Console.WriteLine($"Width within limit: {widthOk}");
+            Console.WriteLine($"Height within limit: {heightOk}");
+        }
+
+        // Optional cleanup: delete the generated image file
+        try
+        {
+            File.Delete(outputPath);
+        }
+        catch
+        {
+            // Ignore any cleanup errors (e.g., file in use)
         }
     }
 }

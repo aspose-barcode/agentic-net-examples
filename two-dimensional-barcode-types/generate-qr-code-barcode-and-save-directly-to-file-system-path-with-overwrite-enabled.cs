@@ -3,29 +3,32 @@ using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
+/// <summary>
+/// Demonstrates generating a QR code image using Aspose.BarCode and saving it to disk.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Generates a QR code and writes it to a PNG file.
+    /// </summary>
     static void Main()
     {
-        // Define the output file path
-        string outputPath = Path.Combine(Environment.CurrentDirectory, "qr_code.png");
+        // Build the full path for the output PNG file in the current working directory.
+        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "qr_code.png");
 
-        // Ensure any existing file is removed to allow overwrite
-        if (File.Exists(outputPath))
+        // Initialize the barcode generator for QR codes.
+        // The using statement ensures the generator is disposed after use.
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR))
         {
-            File.Delete(outputPath);
-        }
+            // Set the data to be encoded in the QR code.
+            generator.CodeText = "https://example.com";
 
-        // Create a QR Code generator with the desired text
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
-        {
-            // Optional: set high error correction level
-            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
-
-            // Save the barcode image directly to the file system
+            // Save the generated QR code image to the specified path.
+            // If the file already exists, it will be overwritten.
             generator.Save(outputPath);
         }
 
-        Console.WriteLine($"QR Code saved to: {outputPath}");
+        // Inform the user where the QR code image has been saved.
+        Console.WriteLine($"QR code saved to: {outputPath}");
     }
 }

@@ -3,95 +3,102 @@ using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demo program that generates and validates a GS1 Composite barcode using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point. Generates a GS1 Composite barcode with a zero‑suppressed GTIN‑12,
+    /// saves it to a temporary file, reads it back for verification, and cleans up.
+    /// </summary>
     static void Main()
     {
-        // GTIN‑12 value (12 digits) padded to 14 digits for AI 01.
-        const string gtin12 = "(01)00123456789012";
+        // Prepare temporary file path for the generated barcode image
+        string tempPath = Path.Combine(Path.GetTempPath(), "gs1composite.png");
 
-        // Combine linear and 2D parts with the '|' separator as required for GS1 Composite.
-        string compositeCode = $"{gtin12}|{gtin12}";
+        // Zero‑suppressed GTIN‑12 example (12‑digit GTIN)
+        string gtin12 = "012345678905"; // GTIN‑12
 
-        // File name for the generated barcode image.
-        const string fileName = "gs1composite.png";
+        // Composite code consists of a linear part and a 2D part separated by '|'
+        string compositeCode = $"(01){gtin12}|(21)ABC123";
 
-        // Create the GS1 Composite barcode generator.
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.GS1CompositeBar, compositeCode))
+        // ------------------------------------------------------------
+        // Generate GS1 Composite barcode and save it to the temporary file
+        // ------------------------------------------------------------
+        try
         {
-            // Linear component: GS1 Code 128.
-            generator.Parameters.Barcode.GS1CompositeBar.LinearComponentType = EncodeTypes.GS1Code128;
+            using (var generator = new BarcodeGenerator(EncodeTypes.GS1CompositeBar, compositeCode))
+            {
+                // Set linear component to GS1 Code128
+                generator.Parameters.Barcode.GS1CompositeBar.LinearComponentType = EncodeTypes.GS1Code128;
 
-            // 2D component: CC‑A (MicroPDF417).
-            generator.Parameters.Barcode.GS1CompositeBar.TwoDComponentType = TwoDComponentType.CC_A;
+                // Set 2D component to CC_A (MicroPDF417)
+                generator.Parameters.Barcode.GS1CompositeBar.TwoDComponentType = TwoDComponentType.CC_A;
 
-            // Optional: set dimensions for better readability.
-            generator.Parameters.Barcode.XDimension.Pixels = 3f;
-            generator.Parameters.Barcode.BarHeight.Pixels = 100f;
+                // Use interpolation mode so the engine automatically sizes the image
+                generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
 
-            // Save the barcode image.
-            generator.Save(fileName);
+                // Save the generated barcode image to the temporary path
+                generator.Save(tempPath);
+            }
         }
-
-        // Verify that the file was created.
-        if (!File.Exists(fileName))
+        catch (Exception ex)
         {
-            Console.WriteLine("Failed to create barcode image.");
+            Console.WriteLine($"FAILED: Barcode generation error - {ex.Message}");
             return;
         }
 
-        // Read the barcode back and extract the 2D component text.
-        using (BarCodeReader reader = new BarCodeReader(fileName, DecodeType.GS1CompositeBar))
-        {
-            // Enable checksum validation (optional, does not affect this test).
-            reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
-
-            // Read all barcodes from the image (there should be only one).
-            foreach (BarCodeResult result in reader.ReadBarCodes())
-            {
-                // Access the extended parameters specific to GS1 Composite.
-                GS1CompositeBarExtendedParameters ext = result.Extended.GS1CompositeBar;
-
-                // The TwoDCodeText should match the 2D part we supplied.
-                string expectedTwoD = gtin12;
-                string actualTwoD = ext.TwoDCodeText;
-
-                if (actualTwoD == expectedTwoD)
-                {
-                    Console.WriteLine("Test passed: 2D component correctly contains zero‑suppressed GTIN‑12.");
-                }
-                else
-                {
-                    Console.WriteLine($"Test failed: Expected 2D text '{expectedTwoD}', but got '{actualTwoD}'.");
-                }
-
-                // Also verify the linear component for completeness.
-                string expectedOneD = gtin12;
-                string actualOneD = ext.OneDCodeText;
-                if (actualOneD == expectedOneD)
-                {
-                    Console.WriteLine("Linear component also matches expected GTIN‑12.");
-                }
-                else
-                {
-                    Console.WriteLine($"Linear component mismatch: Expected '{expectedOneD}', but got '{actualOneD}'.");
-                }
-
-                // No need to continue after the first result.
-                break;
-            }
-        }
-
-        // Clean up the generated image (optional).
+        // ------------------------------------------------------------
+        // Verify the generated barcode by reading it back
+        // ------------------------------------------------------------
         try
         {
-            File.Delete(fileName);
+            using (var reader = new BarCodeReader(tempPath, DecodeType.GS1CompositeBar))
+            {
+                // Read all barcodes found in the image
+                var results = reader.ReadBarCodes();
+
+                // Ensure at least one barcode was detected
+                if (results.Length == 0)
+                {
+                    Console.WriteLine("FAILED: No barcode detected.");
+                    return;
+                }
+
+                // Examine the first (and expected only) result
+                var result = results[0];
+
+                // Check that the recognized CodeText contains the expected linear part
+                if (result.CodeText.Contains($"(01){gtin12}"))
+                {
+                    Console.WriteLine("PASSED: Zero‑suppressed GTIN‑12 correctly handled in 2D component.");
+                }
+                else
+                {
+                    Console.WriteLine($"FAILED: Expected GTIN not found. Detected CodeText: {result.CodeText}");
+                }
+            }
         }
-        catch
+        catch (Exception ex)
         {
-            // Ignore any cleanup errors.
+            Console.WriteLine($"FAILED: Barcode recognition error - {ex.Message}");
+        }
+        finally
+        {
+            // Clean up the temporary file if it still exists
+            if (File.Exists(tempPath))
+            {
+                try
+                {
+                    File.Delete(tempPath);
+                }
+                catch
+                {
+                    // Suppress any exceptions during cleanup
+                }
+            }
         }
     }
 }

@@ -2,34 +2,41 @@ using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
 
-namespace BarcodeExample
+/// <summary>
+/// Demonstrates generating a QR code image and outputting it as a Base64 string.
+/// </summary>
+class Program
 {
-    class Program
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a QR code for a sample URL, encodes the image to Base64, and writes it to the console.
+    /// </summary>
+    static void Main()
     {
-        static void Main()
+        // Sample QR code text (the data to encode in the QR code)
+        string codeText = "https://example.com";
+
+        // Initialize a QR Code generator with the specified text
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, codeText))
         {
-            // Sample data to encode in the QR Code
-            const string codeText = "https://example.com";
+            // Set the QR code error correction level to high (Level H)
+            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
 
-            // Create a QR Code generator with the specified text
-            using (var generator = new BarcodeGenerator(EncodeTypes.QR, codeText))
+            // Create a memory stream to hold the generated PNG image
+            using (var memoryStream = new MemoryStream())
             {
-                // Optional: set error correction level (e.g., Medium)
-                generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
+                // Save the QR code image into the memory stream in PNG format
+                generator.Save(memoryStream, BarCodeImageFormat.Png);
 
-                // Generate the barcode image into a memory stream (PNG format)
-                using (var memoryStream = new MemoryStream())
-                {
-                    generator.Save(memoryStream, BarCodeImageFormat.Png);
+                // Retrieve the image bytes from the memory stream
+                byte[] imageBytes = memoryStream.ToArray();
 
-                    // Reset stream position if further processing is needed
-                    memoryStream.Position = 0;
+                // Convert the image bytes to a Base64 string (simulating a web response)
+                string base64Image = Convert.ToBase64String(imageBytes);
 
-                    // For demonstration, output the size of the generated image
-                    Console.WriteLine($"QR Code PNG generated, size: {memoryStream.Length} bytes");
-                }
+                // Output the Base64 string to the console
+                Console.WriteLine(base64Image);
             }
         }
     }

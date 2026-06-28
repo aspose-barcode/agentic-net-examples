@@ -5,59 +5,79 @@ using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
+/// <summary>
+/// Demonstrates generating a Code128 barcode, saving it to a temporary file,
+/// decoding it back, and verifying the result using Aspose.BarCode.
+/// </summary>
 class Program
 {
-    static void Main(string[] args)
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a barcode, decodes it, compares with original text, and cleans up.
+    /// </summary>
+    static void Main()
     {
-        // Data to encode
-        const string originalData = "Test12345";
+        // Define the text that will be encoded into the barcode.
+        const string originalText = "Test12345";
 
-        // Temporary file path for the barcode image
-        string tempFile = Path.Combine(Path.GetTempPath(), "barcode_test.png");
+        // Build a temporary file path for the barcode image.
+        string tempImagePath = Path.Combine(Path.GetTempPath(), "temp_barcode.png");
 
-        // Generate and save the barcode image
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, originalData))
+        // ------------------------------------------------------------
+        // Generate the barcode image using Aspose.BarCode.
+        // ------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, originalText))
         {
-            // Save as PNG
-            generator.Save(tempFile, BarCodeImageFormat.Png);
+            // Set image resolution (dots per inch) – optional but improves quality.
+            generator.Parameters.Resolution = 300f;
+
+            // Save the generated barcode as a PNG file.
+            generator.Save(tempImagePath, BarCodeImageFormat.Png);
         }
 
-        // Verify the image file was created
-        if (!File.Exists(tempFile))
+        // Verify that the image file was successfully created.
+        if (!File.Exists(tempImagePath))
         {
-            Console.WriteLine("Error: Barcode image was not created.");
+            Console.WriteLine("Failed to create barcode image.");
             return;
         }
 
-        // Decode the barcode image and verify the data
-        using (var reader = new BarCodeReader(tempFile, DecodeType.Code128))
+        // ------------------------------------------------------------
+        // Decode the barcode.
+        // In a real project you might use a different library (e.g., ZXing.Net).
+        // Here we use Aspose.BarCode for simplicity.
+        // ------------------------------------------------------------
+        string decodedText = null;
+        using (var reader = new BarCodeReader(tempImagePath, DecodeType.AllSupportedTypes))
         {
-            bool decodedSuccessfully = false;
-
+            // Read all barcodes found in the image; we expect only one.
             foreach (BarCodeResult result in reader.ReadBarCodes())
             {
-                if (result.CodeText == originalData)
-                {
-                    decodedSuccessfully = true;
-                    Console.WriteLine("Success: Decoded barcode matches original data: " + result.CodeText);
-                    break;
-                }
-            }
-
-            if (!decodedSuccessfully)
-            {
-                Console.WriteLine("Failure: Decoded data does not match the original.");
+                decodedText = result.CodeText;
+                break; // Stop after the first barcode.
             }
         }
 
-        // Clean up the temporary file
+        // Compare the decoded text with the original text and output the result.
+        if (decodedText == originalText)
+        {
+            Console.WriteLine("Success: Decoded text matches original.");
+        }
+        else
+        {
+            Console.WriteLine($"Failure: Decoded text '{decodedText ?? "null"}' does not match original '{originalText}'.");
+        }
+
+        // ------------------------------------------------------------
+        // Clean up: delete the temporary barcode image file.
+        // ------------------------------------------------------------
         try
         {
-            File.Delete(tempFile);
+            File.Delete(tempImagePath);
         }
         catch
         {
-            // Ignored - cleanup failure should not affect test outcome
+            // Suppress any exceptions during cleanup.
         }
     }
 }

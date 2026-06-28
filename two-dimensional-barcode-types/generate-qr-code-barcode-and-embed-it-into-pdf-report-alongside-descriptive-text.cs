@@ -1,68 +1,69 @@
 using System;
 using System.IO;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 using Aspose.Pdf;
 using Aspose.Pdf.Text;
+using Aspose.Drawing;
 
+/// <summary>
+/// Generates a PDF report containing a QR code image.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Creates a QR code, embeds it in a PDF, and saves the file.
+    /// </summary>
     static void Main()
     {
-        // Text to encode in the QR code
-        const string qrText = "https://example.com";
+        // Define the output PDF file name.
+        const string pdfPath = "Report.pdf";
 
-        // Create QR code generator
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, qrText))
+        // Create a memory stream to hold the generated QR code image.
+        using (MemoryStream barcodeStream = new MemoryStream())
         {
-            // Set high error correction level
-            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
-
-            // Define image size using unit members
-            generator.Parameters.ImageWidth.Point = 200f;
-            generator.Parameters.ImageHeight.Point = 200f;
-
-            // Generate barcode image
-            using (Bitmap barcodeBitmap = generator.GenerateBarCodeImage())
+            // Generate a QR code for the specified URL.
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
             {
-                // Save barcode to a memory stream in PNG format
-                using (var imageStream = new MemoryStream())
+                // Set the QR code error correction level to high.
+                generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
+
+                // Save the QR code as a PNG image into the memory stream.
+                generator.Save(barcodeStream, BarCodeImageFormat.Png);
+            }
+
+            // Reset the stream position to the beginning before reading.
+            barcodeStream.Position = 0;
+
+            // Create a new PDF document.
+            using (Document pdfDoc = new Document())
+            {
+                // Add a new page to the PDF.
+                Page page = pdfDoc.Pages.Add();
+
+                // Create a text fragment to label the QR code.
+                TextFragment text = new TextFragment("QR Code for Example")
                 {
-                    barcodeBitmap.Save(imageStream, ImageFormat.Png);
-                    imageStream.Position = 0;
+                    // Position the text near the top-left corner of the page.
+                    Position = new Position(50, 750)
+                };
+                page.Paragraphs.Add(text);
 
-                    // Create PDF document
-                    using (var pdfDoc = new Document())
-                    {
-                        // Add a page
-                        Page page = pdfDoc.Pages.Add();
+                // Create an image object that uses the QR code stream.
+                Aspose.Pdf.Image pdfImage = new Aspose.Pdf.Image
+                {
+                    ImageStream = barcodeStream,
+                    // Set the displayed size of the QR code image.
+                    FixWidth = 200,
+                    FixHeight = 200
+                };
+                page.Paragraphs.Add(pdfImage);
 
-                        // Insert QR code image
-                        var pdfImage = new Aspose.Pdf.Image
-                        {
-                            ImageStream = imageStream,
-                            FixWidth = 200,
-                            FixHeight = 200,
-                            Margin = new MarginInfo(0, 0, 0, 0)
-                        };
-                        page.Paragraphs.Add(pdfImage);
-
-                        // Add descriptive text below the image
-                        var text = new TextFragment("This QR code links to example.com")
-                        {
-                            // Position the text a bit lower on the page
-                            Position = new Position(0, 250),
-                            Margin = new MarginInfo(0, 0, 10, 0)
-                        };
-                        page.Paragraphs.Add(text);
-
-                        // Save the PDF report
-                        pdfDoc.Save("Report.pdf");
-                    }
-                }
+                // Save the PDF document to the specified file path.
+                pdfDoc.Save(pdfPath);
             }
         }
+
+        // Output the full path of the generated PDF file.
+        Console.WriteLine($"PDF report generated: {Path.GetFullPath(pdfPath)}");
     }
 }

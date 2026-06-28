@@ -1,33 +1,44 @@
 using System;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
+/// <summary>
+/// Demonstrates generating a QR code image using Aspose.BarCode and saving it to a file.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Application entry point. Generates a QR code and writes it to <c>qr.png</c>.
+    /// </summary>
     static void Main()
     {
-        // Output file path
+        // Define the output file path for the QR code image.
         string outputPath = "qr.png";
 
-        // Create QR Code generator with sample text
+        // Ensure the directory for the output file exists.
+        string directory = Path.GetDirectoryName(outputPath);
+        if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+        {
+            Directory.CreateDirectory(directory);
+        }
+
+        // Initialize a QR code generator with the desired text.
         using (var generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
         {
-            // Set high error correction level for robustness
-            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
-
-            // Ensure maximum contrast: black bars on white background
+            // Configure barcode appearance: black bars on a white background.
             generator.Parameters.Barcode.BarColor = Color.Black;
             generator.Parameters.BackColor = Color.White;
 
-            // Define image size (300x300 points)
-            generator.Parameters.ImageWidth.Point = 300f;
-            generator.Parameters.ImageHeight.Point = 300f;
+            // Set the highest error correction level (Level H) for better resilience.
+            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
 
-            // Save the QR Code image
+            // Save the generated QR code as a PNG image to the specified path.
             generator.Save(outputPath);
         }
 
-        Console.WriteLine($"QR Code saved to '{outputPath}'.");
+        // Inform the user where the QR code image has been saved.
+        Console.WriteLine($"QR code image saved to: {outputPath}");
     }
 }

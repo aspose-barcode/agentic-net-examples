@@ -1,29 +1,39 @@
 using System;
 using System.Diagnostics;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
+/// <summary>
+/// Demonstrates generating a Code128 barcode image using Aspose.BarCode and measures execution time.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Generates a barcode, saves it to a file, and logs the elapsed time.
+    /// </summary>
     static void Main()
     {
-        // Prepare barcode data
-        const string codeText = "1234567890";
-        const string outputFile = "barcode.png";
+        // Define the file path where the generated barcode image will be saved.
+        string outputPath = "barcode.png";
 
-        // Start measuring time
+        // Start a stopwatch to measure how long the barcode generation takes.
         Stopwatch stopwatch = Stopwatch.StartNew();
 
-        // Generate barcode inside a using block to ensure proper disposal
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128))
+        // Create a BarcodeGenerator instance for Code128 encoding with the data "123456".
+        // The using statement ensures the generator is disposed properly after use.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
         {
-            generator.CodeText = codeText;
-            generator.Save(outputFile);
+            // Save the generated barcode image to the specified output path.
+            generator.Save(outputPath);
         }
 
-        // Stop timer
+        // Stop the stopwatch now that barcode generation is complete.
         stopwatch.Stop();
 
-        // Log duration to the application log (console used here)
-        Console.WriteLine($"Barcode generation completed in {stopwatch.ElapsedMilliseconds} ms. Saved to '{outputFile}'.");
+        // Output the elapsed time in milliseconds to the console.
+        Console.WriteLine($"Barcode generation completed in {stopwatch.ElapsedMilliseconds} ms.");
+
+        // Inform the user where the barcode image has been saved.
+        Console.WriteLine($"Barcode saved to: {outputPath}");
     }
 }

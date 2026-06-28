@@ -2,29 +2,39 @@ using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates generating a QR code image using Aspose.BarCode and outputting it as a Base64 string.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a QR code, encodes the image to Base64, and writes it to the console.
+    /// </summary>
     static void Main()
     {
-        // Simulate an ASP.NET Core HttpResponse body stream
-        using (var responseStream = new MemoryStream())
+        // NOTE: Full ASP.NET Core integration cannot be demonstrated in this console snippet.
+        // The core barcode generation logic is shown below, and the resulting PNG image
+        // is output as a Base64 string, which could be written to an HTTP response in a real web app.
+
+        // Create a QR Code generator with sample text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
         {
-            // Create a QR Code generator
-            using (var generator = new BarcodeGenerator(EncodeTypes.QR))
+            // Optional: set error correction level to Medium.
+            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
+
+            // Save the barcode image to a memory stream in PNG format.
+            using (var ms = new MemoryStream())
             {
-                // Set the data to encode
-                generator.CodeText = "https://example.com";
+                generator.Save(ms, BarCodeImageFormat.Png);
+                byte[] imageBytes = ms.ToArray();
 
-                // Configure QR error correction level (high)
-                generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
-
-                // Save the barcode image directly to the simulated response stream as PNG
-                generator.Save(responseStream, BarCodeImageFormat.Png);
+                // Convert the image bytes to a Base64 string (simulating HTTP response content).
+                string base64Image = Convert.ToBase64String(imageBytes);
+                Console.WriteLine(base64Image);
             }
-
-            // Example output: display the size of the generated image
-            Console.WriteLine($"Generated QR code image size: {responseStream.Length} bytes");
         }
     }
 }

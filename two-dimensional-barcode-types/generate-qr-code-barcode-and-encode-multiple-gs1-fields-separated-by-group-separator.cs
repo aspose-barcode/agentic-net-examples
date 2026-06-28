@@ -1,32 +1,43 @@
 using System;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
+/// <summary>
+/// Demonstrates generating a GS1 QR code using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Generates a GS1 QR code with sample data and saves it as an image file.
+    /// </summary>
     static void Main()
     {
-        // Build GS1 QR codetext with multiple AI fields separated by the GS (group separator) character.
-        var builder = new QrExtCodetextBuilder();
-        builder.AddFNC1FirstPosition(); // Insert FNC1 at the first position for GS1 QR.
-        builder.AddPlainCodetext("(01)01234567890123"); // GTIN
-        builder.AddFNC1GroupSeparator(); // GS separator
-        builder.AddPlainCodetext("(21)ABC123"); // Serial number
-        builder.AddFNC1GroupSeparator();
-        builder.AddPlainCodetext("(10)LOT987"); // Batch/lot number
+        // Sample GS1 fields
+        string gtin = "12345678901231"; // (01) GTIN
+        string lot = "LOT123";          // (10) Lot number
+        string serial = "SER456";       // (21) Serial number
 
-        string gs1Codetext = builder.GetExtendedCodetext();
+        // Group separator (ASCII 29) for GS1 QR
+        string gs = ((char)29).ToString();
 
-        // Generate QR code with GS1 extended mode.
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR))
+        // Construct GS1 QR codetext with parentheses for AI and group separator between fields
+        string codeText = $"(01){gtin}(10){lot}{gs}(21){serial}";
+
+        // Determine output file path in the current directory
+        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "gs1qr.png");
+
+        // Generate QR Code with GS1 encoding
+        using (var generator = new BarcodeGenerator(EncodeTypes.GS1QR, codeText))
         {
-            generator.CodeText = gs1Codetext;
-            generator.Parameters.Barcode.QR.EncodeMode = QREncodeMode.Extended;
+            // Set QR error correction level (optional, Level M provides a good balance)
             generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
-            // Optional: set visible text without control characters.
-            generator.Parameters.Barcode.CodeTextParameters.TwoDDisplayText = "GS1 QR Example";
 
-            generator.Save("gs1qr.png");
+            // Save the generated barcode image to the specified path
+            generator.Save(outputPath);
         }
+
+        // Inform the user where the QR code image was saved
+        Console.WriteLine($"GS1 QR code saved to: {outputPath}");
     }
 }

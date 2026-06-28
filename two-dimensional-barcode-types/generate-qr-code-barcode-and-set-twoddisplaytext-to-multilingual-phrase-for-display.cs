@@ -1,25 +1,37 @@
 using System;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode;
 
-namespace BarcodeExample
+/// <summary>
+/// Demonstrates generating a multilingual QR code using Aspose.BarCode.
+/// </summary>
+class Program
 {
-    class Program
+    /// <summary>
+    /// Entry point of the application. Generates a QR code with multilingual display text and saves it as a PNG file.
+    /// </summary>
+    static void Main()
     {
-        static void Main()
+        // Define the output file name (saved in the same folder as the executable)
+        string outputPath = "qr_multilingual.png";
+
+        // Initialize a QR code generator within a using block to ensure proper disposal
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR))
         {
-            // Create a QR code generator with sample codetext
-            using (var generator = new BarcodeGenerator(EncodeTypes.QR, "SampleData"))
-            {
-                // Set multilingual display text for the QR code
-                generator.Parameters.Barcode.CodeTextParameters.TwoDDisplayText = "こんにちは世界 🌍";
+            // Set the data to be encoded in the QR code
+            generator.CodeText = "SampleData123";
 
-                // Set error correction level (optional)
-                generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
+            // Set the human‑readable text displayed beneath the QR code (multilingual)
+            generator.Parameters.Barcode.CodeTextParameters.TwoDDisplayText = "Hello 世界 مرحبا";
 
-                // Save the generated QR code image
-                generator.Save("qr_multilingual.png");
-            }
+            // Optionally adjust the QR error correction level (default is LevelL)
+            // generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
+
+            // Save the generated QR code image as a PNG file
+            generator.Save(outputPath);
         }
+
+        // Inform the user where the QR code image was saved
+        Console.WriteLine($"QR code saved to: {outputPath}");
     }
 }

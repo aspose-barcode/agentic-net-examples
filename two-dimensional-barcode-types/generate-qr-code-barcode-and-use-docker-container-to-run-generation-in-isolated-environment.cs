@@ -1,89 +1,53 @@
 using System;
-using System.Diagnostics;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
-namespace BarcodeDockerDemo
+/// <summary>
+/// Demonstrates generating a QR code image using Aspose.BarCode and outputs its Base64 string.
+/// </summary>
+class Program
 {
-    class Program
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a QR code, saves it as a PNG file, and prints its Base64 representation.
+    /// </summary>
+    static void Main()
     {
-        static void Main(string[] args)
+        // Determine the full path for the output QR code image (qr.png) in the current directory.
+        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "qr.png");
+
+        // Create a BarcodeGenerator for a QR code with the specified data.
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
         {
-            // If the program is executed inside Docker, generate the QR code.
-            if (Array.Exists(args, a => a.Equals("--docker", StringComparison.OrdinalIgnoreCase)))
-            {
-                GenerateQrCode();
-                return;
-            }
+            // Configure the QR code to use the highest error correction level (Level H).
+            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
 
-            // Otherwise, launch a Docker container that runs this program with the "--docker" flag.
-            try
-            {
-                string exeDirectory = AppDomain.CurrentDomain.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar);
-                string dockerImage = "mcr.microsoft.com/dotnet/sdk:6.0";
+            // Set the image resolution to 300 DPI for higher quality output.
+            generator.Parameters.Resolution = 300f;
 
-                // Build the Docker command:
-                //   docker run --rm -v "<host_dir>:/app" -w /app <image> dotnet run -- --docker
-                string arguments = $"run --rm -v \"{exeDirectory}:/app\" -w /app {dockerImage} dotnet run -- --docker";
-
-                using (var process = new Process())
-                {
-                    process.StartInfo.FileName = "docker";
-                    process.StartInfo.Arguments = arguments;
-                    process.StartInfo.UseShellExecute = false;
-                    process.StartInfo.RedirectStandardOutput = true;
-                    process.StartInfo.RedirectStandardError = true;
-
-                    process.Start();
-
-                    // Forward Docker output to console.
-                    string output = process.StandardOutput.ReadToEnd();
-                    string error = process.StandardError.ReadToEnd();
-
-                    process.WaitForExit();
-
-                    Console.WriteLine(output);
-                    if (!string.IsNullOrWhiteSpace(error))
-                    {
-                        Console.Error.WriteLine(error);
-                    }
-
-                    if (process.ExitCode != 0)
-                    {
-                        Console.Error.WriteLine($"Docker process exited with code {process.ExitCode}.");
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.Error.WriteLine($"Failed to run Docker container: {ex.Message}");
-            }
+            // Save the generated QR code as a PNG file at the specified output path.
+            generator.Save(outputPath);
         }
 
-        private static void GenerateQrCode()
+        // Check whether the QR code image file was successfully created.
+        if (File.Exists(outputPath))
         {
-            // Define output file path.
-            string outputPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "qr.png");
+            // Read the image bytes from the file.
+            byte[] imageBytes = File.ReadAllBytes(outputPath);
 
-            // Create QR code generator with QR symbology.
-            using (var generator = new BarcodeGenerator(EncodeTypes.QR))
-            {
-                // Set the text to encode.
-                generator.CodeText = "https://example.com";
+            // Convert the image bytes to a Base64-encoded string.
+            string base64 = Convert.ToBase64String(imageBytes);
 
-                // Set high error correction level.
-                generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
-
-                // Optionally adjust image size.
-                generator.Parameters.ImageWidth.Point = 300f;
-                generator.Parameters.ImageHeight.Point = 300f;
-
-                // Save the barcode image.
-                generator.Save(outputPath);
-            }
-
-            Console.WriteLine($"QR code generated at: {outputPath}");
+            // Output the file location and its Base64 representation to the console.
+            Console.WriteLine("QR code generated at: " + outputPath);
+            Console.WriteLine("Base64 representation:");
+            Console.WriteLine(base64);
+        }
+        else
+        {
+            // Inform the user that the QR code generation failed.
+            Console.WriteLine("Failed to generate QR code.");
         }
     }
 }

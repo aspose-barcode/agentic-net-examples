@@ -2,80 +2,127 @@ using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates generation of a DotCode barcode with custom padding,
+/// then validates that the padding is reflected in the resulting image.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a barcode, reads its dimensions, and verifies padding.
+    /// </summary>
     static void Main()
     {
-        // Prepare output directory
-        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Output");
-        if (!Directory.Exists(outputDir))
+        // --------------------------------------------------------------------
+        // Define test parameters
+        // --------------------------------------------------------------------
+        const string codeText = "123456";          // Text to encode in the barcode
+        const float paddingPoints = 20f;           // Desired margin (padding) in points
+        const string outputPath = "dotcode_test.png"; // Output image file name
+
+        // --------------------------------------------------------------------
+        // Generate DotCode barcode with the specified padding
+        // --------------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.DotCode, codeText))
         {
-            Directory.CreateDirectory(outputDir);
+            // Apply uniform padding (margin) on all four sides
+            generator.Parameters.Barcode.Padding.Left.Point   = paddingPoints;
+            generator.Parameters.Barcode.Padding.Top.Point    = paddingPoints;
+            generator.Parameters.Barcode.Padding.Right.Point  = paddingPoints;
+            generator.Parameters.Barcode.Padding.Bottom.Point = paddingPoints;
+
+            // Save the generated barcode image as PNG
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Paths for the generated images
-        string defaultPath = Path.Combine(outputDir, "dotcode_default.png");
-        string paddedPath = Path.Combine(outputDir, "dotcode_padded.png");
-
-        // -----------------------------------------------------------------
-        // Generate DotCode barcode with default padding
-        // -----------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.DotCode, "1234567890"))
+        // --------------------------------------------------------------------
+        // Load the generated image to obtain its pixel dimensions
+        // --------------------------------------------------------------------
+        int imageWidthPixels;
+        int imageHeightPixels;
+        using (var bitmap = new Bitmap(outputPath))
         {
-            // Use default settings (padding = 5pt on each side)
-            generator.Save(defaultPath, BarCodeImageFormat.Png);
+            imageWidthPixels  = bitmap.Width;
+            imageHeightPixels = bitmap.Height;
         }
 
-        // Load the default image to get its dimensions
-        int defaultWidth, defaultHeight;
-        using (var defaultImage = (Bitmap)Image.FromFile(defaultPath))
+        // --------------------------------------------------------------------
+        // Recognize the barcode to retrieve its bounding box (region) within the image
+        // --------------------------------------------------------------------
+        RectangleF barcodeRegion;
+        using (var reader = new BarCodeReader(outputPath, DecodeType.DotCode))
         {
-            defaultWidth = defaultImage.Width;
-            defaultHeight = defaultImage.Height;
+            var results = reader.ReadBarCodes();
+            if (results.Length == 0)
+            {
+                Console.WriteLine("Failed to read the generated DotCode barcode.");
+                return;
+            }
+
+            // Region.Rectangle provides the bounding box in points
+            barcodeRegion = results[0].Region.Rectangle;
         }
 
-        // -----------------------------------------------------------------
-        // Generate DotCode barcode with increased padding (margin)
-        // -----------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.DotCode, "1234567890"))
+        // --------------------------------------------------------------------
+        // Retrieve the resolution (DPI) used during generation (default is 96 DPI)
+        // --------------------------------------------------------------------
+        float resolutionDpi;
+        using (var gen = new BarcodeGenerator(EncodeTypes.DotCode, codeText))
         {
-            // Increase padding to 20 points on each side
-            generator.Parameters.Barcode.Padding.Left.Point = 20f;
-            generator.Parameters.Barcode.Padding.Top.Point = 20f;
-            generator.Parameters.Barcode.Padding.Right.Point = 20f;
-            generator.Parameters.Barcode.Padding.Bottom.Point = 20f;
-
-            generator.Save(paddedPath, BarCodeImageFormat.Png);
+            resolutionDpi = gen.Parameters.Resolution;
         }
 
-        // Load the padded image to get its dimensions
-        int paddedWidth, paddedHeight;
-        using (var paddedImage = (Bitmap)Image.FromFile(paddedPath))
-        {
-            paddedWidth = paddedImage.Width;
-            paddedHeight = paddedImage.Height;
-        }
+        // --------------------------------------------------------------------
+        // Convert padding from points to pixels (1 point = 1/72 inch)
+        // --------------------------------------------------------------------
+        float pointsToPixels      = resolutionDpi / 72f;
+        float expectedPaddingPixels = paddingPoints * pointsToPixels;
 
-        // -----------------------------------------------------------------
-        // Simple assertions to verify that padding increased the image size
-        // -----------------------------------------------------------------
-        bool widthIncreased = paddedWidth > defaultWidth;
-        bool heightIncreased = paddedHeight > defaultHeight;
+        // --------------------------------------------------------------------
+        // Calculate actual padding based on image size and barcode region size
+        // --------------------------------------------------------------------
+        float actualHorizontalPadding = (imageWidthPixels  - barcodeRegion.Width)  / 2f;
+        float actualVerticalPadding   = (imageHeightPixels - barcodeRegion.Height) / 2f;
 
-        if (widthIncreased && heightIncreased)
+        // Allow a small tolerance due to rounding errors
+        const float tolerance = 1.0f;
+
+        bool horizontalOk = Math.Abs(actualHorizontalPadding - expectedPaddingPixels) <= tolerance;
+        bool verticalOk   = Math.Abs(actualVerticalPadding   - expectedPaddingPixels) <= tolerance;
+
+        // --------------------------------------------------------------------
+        // Output verification results
+        // --------------------------------------------------------------------
+        Console.WriteLine($"Image size (pixels): {imageWidthPixels}x{imageHeightPixels}");
+        Console.WriteLine($"Barcode region size (points): {barcodeRegion.Width}x{barcodeRegion.Height}");
+        Console.WriteLine($"Resolution (dpi): {resolutionDpi}");
+        Console.WriteLine($"Expected padding (pixels): {expectedPaddingPixels:F2}");
+        Console.WriteLine($"Actual horizontal padding (pixels): {actualHorizontalPadding:F2}");
+        Console.WriteLine($"Actual vertical padding (pixels): {actualVerticalPadding:F2}");
+
+        if (horizontalOk && verticalOk)
         {
-            Console.WriteLine("PASS: Padding (margin) correctly increased the surrounding whitespace.");
-            Console.WriteLine($"Default size: {defaultWidth}x{defaultHeight}");
-            Console.WriteLine($"Padded size: {paddedWidth}x{paddedHeight}");
+            Console.WriteLine("PASS: DotCode margin property correctly influences surrounding whitespace.");
         }
         else
         {
-            Console.WriteLine("FAIL: Padding did not affect the image size as expected.");
-            Console.WriteLine($"Default size: {defaultWidth}x{defaultHeight}");
-            Console.WriteLine($"Padded size: {paddedWidth}x{paddedHeight}");
+            Console.WriteLine("FAIL: Margin influence does not match expected values.");
+        }
+
+        // --------------------------------------------------------------------
+        // Clean up the generated file
+        // --------------------------------------------------------------------
+        try
+        {
+            File.Delete(outputPath);
+        }
+        catch
+        {
+            // Ignore any cleanup errors
         }
     }
 }

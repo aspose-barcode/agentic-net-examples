@@ -2,42 +2,76 @@ using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing;
 
+/// <summary>
+/// Demonstrates generating a barcode image with optional rotation based on external metadata.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Reads rotation metadata, generates a barcode, and saves it to a temporary file.
+    /// </summary>
     static void Main()
     {
-        // Path to the metadata file that contains the desired rotation angle (in degrees)
-        const string metadataFile = "metadata.txt";
+        // Define the path where the generated barcode image will be saved.
+        string outputPath = Path.Combine(Path.GetTempPath(), "rotated_barcode.png");
 
-        // Default rotation angle
+        // Path to a simulated orientation metadata source (e.g., a text file containing a degree value).
+        string orientationFile = Path.Combine(Path.GetTempPath(), "orientation.txt");
+
+        // Default rotation angle (no rotation) in degrees.
         float rotationAngle = 0f;
 
-        // Read the rotation angle from the metadata file if it exists
-        if (File.Exists(metadataFile))
+        // Check if the orientation metadata file exists.
+        if (File.Exists(orientationFile))
         {
-            string content = File.ReadAllText(metadataFile).Trim();
-            if (!float.TryParse(content, out rotationAngle))
+            try
             {
-                Console.WriteLine("Invalid rotation angle in metadata file. Using default angle 0.");
-                rotationAngle = 0f;
+                // Read the file content and trim any whitespace.
+                string content = File.ReadAllText(orientationFile).Trim();
+
+                // Attempt to parse the content as an integer angle.
+                if (int.TryParse(content, out int angle))
+                {
+                    // Accept only standard rotation angles for reliable scanning.
+                    if (angle == 0 || angle == 90 || angle == 180 || angle == 270)
+                    {
+                        rotationAngle = (float)angle;
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Unsupported rotation angle '{angle}'. Using default 0°.");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine($"Failed to parse rotation angle from '{orientationFile}'. Using default 0°.");
+                }
+            }
+            catch (Exception ex)
+            {
+                // Handle any errors that occur while reading the file.
+                Console.WriteLine($"Error reading orientation metadata: {ex.Message}. Using default 0°.");
             }
         }
         else
         {
-            Console.WriteLine("Metadata file not found. Using default rotation angle 0.");
+            // Inform the user that the metadata file was not found.
+            Console.WriteLine($"Orientation metadata file not found at '{orientationFile}'. Using default 0°.");
         }
 
-        // Create a barcode generator for Code128 with sample code text
+        // Generate the barcode using the determined rotation angle.
         using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123ABC"))
         {
-            // Apply the rotation angle read from metadata
+            // Apply the rotation angle to the barcode parameters.
             generator.Parameters.RotationAngle = rotationAngle;
 
-            // Save the rotated barcode image
-            const string outputFile = "barcode.png";
-            generator.Save(outputFile);
-            Console.WriteLine($"Barcode saved to '{outputFile}' with rotation angle {rotationAngle} degrees.");
+            // Save the generated barcode image to the specified output path.
+            generator.Save(outputPath);
         }
+
+        // Output the location of the saved barcode image.
+        Console.WriteLine($"Barcode image saved to: {outputPath}");
     }
 }

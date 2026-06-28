@@ -2,61 +2,82 @@ using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
+using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Pdf;
+using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates generating a QR code, verifying it, and embedding it into a PDF using Aspose libraries.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a QR code image, reads it back for verification, and creates a PDF containing the QR code.
+    /// </summary>
     static void Main()
     {
-        // Define output directory
-        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Output");
-        if (!Directory.Exists(outputDir))
-        {
-            Directory.CreateDirectory(outputDir);
-        }
-
-        // QR code content
+        // QR code content to encode
         string qrContent = "https://example.com";
 
-        // Generate QR code image
-        string qrImagePath = Path.Combine(outputDir, "qr.png");
+        // File paths for the generated QR image and the resulting PDF
+        string qrImagePath = "qr.png";
+        string pdfPath = "qr_document.pdf";
+
+        // -------------------------------------------------
+        // 1. Generate QR code image and save as PNG file
+        // -------------------------------------------------
         using (var generator = new BarcodeGenerator(EncodeTypes.QR, qrContent))
         {
-            // Set QR error correction level to High
+            // Use the highest error correction level to improve readability
             generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
 
-            // Use automatic encoding mode
-            generator.Parameters.Barcode.QR.EncodeMode = QREncodeMode.Auto;
-
-            // Set image size (300 points = 4.17 inches)
-            generator.Parameters.ImageWidth.Point = 300f;
-            generator.Parameters.ImageHeight.Point = 300f;
-
-            // Set resolution to 300 DPI
-            generator.Parameters.Resolution = 300;
-
-            // Set colors
-            generator.Parameters.Barcode.BarColor = Color.Black;
-            generator.Parameters.BackColor = Color.White;
-
-            // Save QR code image
-            generator.Save(qrImagePath);
+            // Save the generated QR code directly to a PNG file
+            generator.Save(qrImagePath, BarCodeImageFormat.Png);
         }
 
-        // Create a simple README file describing the workflow
-        string readmePath = Path.Combine(outputDir, "README.txt");
-        string readmeContent = @"QR Code Generation Workflow
---------------------------------
-1. Define the content to encode (e.g., a URL).
-2. Create a BarcodeGenerator instance with EncodeTypes.QR.
-3. Configure QR parameters:
-   - Error correction level (LevelH for high reliability).
-   - Encoding mode (Auto).
-   - Image dimensions and resolution.
-   - Bar and background colors.
-4. Save the generated image to a file (qr.png).
-5. Use the generated QR code image as needed (e.g., embed in documents).";
+        Console.WriteLine($"QR code image saved to: {qrImagePath}");
 
-        File.WriteAllText(readmePath, readmeContent);
+        // -------------------------------------------------
+        // 2. Read the generated QR code to verify it works
+        // -------------------------------------------------
+        using (var reader = new BarCodeReader(qrImagePath, DecodeType.QR))
+        {
+            // Iterate through all detected barcodes (should be only one)
+            foreach (var result in reader.ReadBarCodes())
+            {
+                Console.WriteLine($"Detected QR code text: {result.CodeText}");
+            }
+        }
+
+        // -------------------------------------------------
+        // 3. Create a PDF document and embed the QR code image
+        // -------------------------------------------------
+        // Open the PNG image file as a stream; keep it open until the PDF is saved
+        using (var imageStream = new FileStream(qrImagePath, FileMode.Open, FileAccess.Read))
+        {
+            // Aspose.Pdf.Document does not implement IDisposable, so we instantiate it without using
+            var pdfDocument = new Document();
+
+            // Add a new page to the PDF
+            var page = pdfDocument.Pages.Add();
+
+            // Create an image object for the PDF and assign the image stream
+            var pdfImage = new Aspose.Pdf.Image
+            {
+                ImageStream = imageStream,
+                // Set the displayed size of the image in points (1 point = 1/72 inch)
+                FixWidth = 200.0,
+                FixHeight = 200.0
+            };
+
+            // Insert the image into the page's paragraph collection
+            page.Paragraphs.Add(pdfImage);
+
+            // Save the PDF document to the specified path
+            pdfDocument.Save(pdfPath);
+        }
+
+        Console.WriteLine($"PDF document with embedded QR code saved to: {pdfPath}");
     }
 }

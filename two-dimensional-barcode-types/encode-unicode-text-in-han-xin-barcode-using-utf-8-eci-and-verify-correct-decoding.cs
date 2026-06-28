@@ -1,55 +1,67 @@
 using System;
 using System.IO;
+using System.Text;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
+/// <summary>
+/// Demonstrates generating a Han Xin barcode with UTF‑8 ECI encoding,
+/// then reading and verifying the encoded text from the generated image.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a barcode, decodes it, and validates the result.
+    /// </summary>
     static void Main()
     {
-        const string originalText = "Unicode test: こんにちは世界 🌍";
-        const string barcodeFile = "hanxin.png";
+        // Sample Unicode text containing characters from different scripts
+        string originalText = "Hello, 世界! Привет! مرحبا!";
 
-        if (File.Exists(barcodeFile))
+        // Create a barcode generator for Han Xin symbology with the original text
+        using (var generator = new BarcodeGenerator(EncodeTypes.HanXin, originalText))
         {
-            File.Delete(barcodeFile);
-        }
-
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.HanXin, originalText))
-        {
+            // Configure Han Xin specific parameters:
+            // - Use ECI (Extended Channel Interpretation) mode
+            // - Set the ECI encoding to UTF‑8 to support Unicode characters
             generator.Parameters.Barcode.HanXin.EncodeMode = HanXinEncodeMode.ECI;
             generator.Parameters.Barcode.HanXin.ECIEncoding = ECIEncodings.UTF8;
-            generator.Save(barcodeFile);
-        }
 
-        if (!File.Exists(barcodeFile))
-        {
-            Console.WriteLine("Failed to create barcode image.");
-            return;
-        }
-
-        using (BarCodeReader reader = new BarCodeReader(barcodeFile, DecodeType.HanXin))
-        {
-            BarCodeResult[] results = reader.ReadBarCodes();
-
-            if (results.Length == 0)
+            // Save the generated barcode image to a memory stream in PNG format
+            using (var ms = new MemoryStream())
             {
-                Console.WriteLine("No barcode detected.");
-                return;
-            }
+                generator.Save(ms, BarCodeImageFormat.Png);
+                ms.Position = 0; // Reset stream position for reading
 
-            string decodedText = results[0].CodeText;
+                // Initialize a barcode reader to decode Han Xin barcodes from the stream
+                using (var reader = new BarCodeReader(ms, DecodeType.HanXin))
+                {
+                    // Read all barcodes found in the image
+                    var results = reader.ReadBarCodes();
 
-            if (decodedText == originalText)
-            {
-                Console.WriteLine("Success: Decoded text matches original.");
-            }
-            else
-            {
-                Console.WriteLine("Failure: Decoded text does not match.");
-                Console.WriteLine("Original: " + originalText);
-                Console.WriteLine("Decoded : " + decodedText);
+                    // If no barcodes were detected, inform the user and exit
+                    if (results.Length == 0)
+                    {
+                        Console.WriteLine("No barcode detected.");
+                        return;
+                    }
+
+                    // Assuming only one barcode was generated, take the first result
+                    var result = results[0];
+                    Console.WriteLine($"Decoded CodeText: {result.CodeText}");
+
+                    // Verify that the decoded text matches the original input
+                    if (result.CodeText == originalText)
+                    {
+                        Console.WriteLine("Success: Decoded text matches the original.");
+                    }
+                    else
+                    {
+                        Console.WriteLine("Failure: Decoded text does not match the original.");
+                    }
+                }
             }
         }
     }

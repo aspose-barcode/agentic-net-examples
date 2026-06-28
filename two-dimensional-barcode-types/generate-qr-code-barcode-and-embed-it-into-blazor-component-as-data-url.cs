@@ -2,46 +2,42 @@ using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates generating a QR code with Aspose.BarCode and converting it to a data URL.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Generates a QR code, encodes it as a Base64 data URL, and writes it to the console.
+    /// </summary>
     static void Main()
     {
         // Text to encode in the QR code
-        string qrText = "https://example.com";
+        const string codeText = "Hello, Aspose QR!";
+
+        // Variable to hold the resulting data URL
+        string dataUrl;
 
         // Create a QR code generator with the specified text
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, qrText))
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, codeText))
         {
-            // Set QR error correction level (optional)
+            // Optional: set error correction level (e.g., Medium)
             generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
 
-            // Generate the barcode image as a bitmap
-            using (Bitmap bitmap = generator.GenerateBarCodeImage())
+            // Save the barcode image to a memory stream in PNG format
+            using (var ms = new MemoryStream())
             {
-                // Save the bitmap to a memory stream in PNG format
-                using (var memoryStream = new MemoryStream())
-                {
-                    bitmap.Save(memoryStream, ImageFormat.Png);
-                    byte[] imageBytes = memoryStream.ToArray();
+                generator.Save(ms, BarCodeImageFormat.Png);
+                byte[] imageBytes = ms.ToArray();
 
-                    // Convert the image bytes to a Base64 data URL
-                    string base64 = Convert.ToBase64String(imageBytes);
-                    string dataUrl = $"data:image/png;base64,{base64}";
-
-                    // Create a simple Blazor component that displays the QR code
-                    string componentContent = $@"@code {{
-    private string qrDataUrl = ""{dataUrl}"";
-}}
-
-<img src=""@qrDataUrl"" alt=""QR Code"" />";
-
-                    // Write the component to a .razor file
-                    File.WriteAllText("QrComponent.razor", componentContent);
-                }
+                // Convert the image bytes to a Base64 string and build the data URL
+                string base64 = Convert.ToBase64String(imageBytes);
+                dataUrl = $"data:image/png;base64,{base64}";
             }
         }
+
+        // Output the data URL; it can be used directly in a Blazor component's <img src="..."/>
+        Console.WriteLine(dataUrl);
     }
 }

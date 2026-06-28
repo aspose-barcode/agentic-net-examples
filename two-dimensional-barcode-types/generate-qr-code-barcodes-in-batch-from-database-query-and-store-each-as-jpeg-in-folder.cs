@@ -1,73 +1,66 @@
 using System;
-using System.IO;
 using System.Collections.Generic;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 
-namespace BarcodeBatchExample
+/// <summary>
+/// Demonstrates batch generation of QR code images using Aspose.BarCode.
+/// </summary>
+class Program
 {
-    class Program
+    /// <summary>
+    /// Entry point of the application. Generates QR codes from a predefined list and saves them as JPEG files.
+    /// </summary>
+    static void Main()
     {
-        static void Main()
+        // Simulated data source: list of URLs to encode as QR codes.
+        List<string> qrData = new List<string>
         {
-            // Define output folder
-            string outputFolder = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
-            if (!Directory.Exists(outputFolder))
-            {
-                Directory.CreateDirectory(outputFolder);
-            }
+            "https://example.com/item/1",
+            "https://example.com/item/2",
+            "https://example.com/item/3",
+            "https://example.com/item/4",
+            "https://example.com/item/5"
+        };
 
-            // Simulated database query result - replace with actual DB call
-            List<string> records = GetSampleData();
+        // Determine the output directory relative to the current working directory.
+        string outputFolder = Path.Combine(Directory.GetCurrentDirectory(), "QrCodes");
 
-            // Process each record and generate QR code
-            foreach (var text in records)
-            {
-                // Build safe file name
-                string safeFileName = GetSafeFileName(text);
-                string filePath = Path.Combine(outputFolder, safeFileName + ".jpeg");
-
-                // Create barcode generator for QR code with the current text
-                using (var generator = new BarcodeGenerator(EncodeTypes.QR, text))
-                {
-                    // Set QR error correction level (optional)
-                    generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
-
-                    // Optionally set colors
-                    generator.Parameters.Barcode.BarColor = Color.Black;
-                    generator.Parameters.BackColor = Color.White;
-
-                    // Save as JPEG
-                    generator.Save(filePath, BarCodeImageFormat.Jpeg);
-                }
-            }
-
-            Console.WriteLine($"Generated {records.Count} QR codes in folder: {outputFolder}");
+        // Ensure the output directory exists; create it if necessary.
+        if (!Directory.Exists(outputFolder))
+        {
+            Directory.CreateDirectory(outputFolder);
         }
 
-        // Returns a list of sample strings; replace with real DB query logic
-        static List<string> GetSampleData()
+        int index = 1; // Counter for naming files sequentially.
+
+        // Iterate over each text value and generate a corresponding QR code image.
+        foreach (string codeText in qrData)
         {
-            return new List<string>
+            // Initialize a QR code generator with the current text.
+            using (var generator = new BarcodeGenerator(EncodeTypes.QR, codeText))
             {
-                "https://example.com/item/1",
-                "https://example.com/item/2",
-                "https://example.com/item/3",
-                "https://example.com/item/4",
-                "https://example.com/item/5"
-            };
+                // Set a high error correction level to improve readability under adverse conditions.
+                generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
+
+                // Construct the file name using a zero‑padded index (e.g., qr_001.jpg).
+                string fileName = $"qr_{index:D3}.jpg";
+
+                // Combine the folder path and file name to obtain the full output path.
+                string outputPath = Path.Combine(outputFolder, fileName);
+
+                // Save the generated QR code as a JPEG image.
+                generator.Save(outputPath, BarCodeImageFormat.Jpeg);
+
+                // Log the successful creation of the file.
+                Console.WriteLine($"Saved QR code {index} to: {outputPath}");
+            }
+
+            index++; // Increment the counter for the next file.
         }
 
-        // Generates a file‑system safe name from the text
-        static string GetSafeFileName(string text)
-        {
-            foreach (char c in Path.GetInvalidFileNameChars())
-            {
-                text = text.Replace(c, '_');
-            }
-            // Limit length to avoid overly long paths
-            return text.Length > 50 ? text.Substring(0, 50) : text;
-        }
+        // Indicate that the batch process has finished.
+        Console.WriteLine("Batch QR code generation completed.");
     }
 }

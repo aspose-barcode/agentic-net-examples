@@ -1,27 +1,43 @@
 using System;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
-namespace BarcodeResolutionDemo
+/// <summary>
+/// Demonstrates generating a Code128 barcode image using Aspose.BarCode.
+/// </summary>
+class Program
 {
-    class Program
+    /// <summary>
+    /// Entry point of the application. Generates a barcode image and saves it to disk.
+    /// </summary>
+    static void Main()
     {
-        static void Main()
+        // Define the output file name for the generated barcode image.
+        string outputPath = "barcode_300dpi.png";
+
+        // Determine the directory part of the output path.
+        string directory = Path.GetDirectoryName(outputPath);
+        // If a directory is specified and it does not exist, create it.
+        if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
         {
-            // Create a barcode generator for Code128 with sample text.
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
-            {
-                // Set the image resolution to 300 DPI for print quality.
-                generator.Parameters.Resolution = 300f;
-
-                // Optional: define image size when AutoSizeMode is not set to None.
-                generator.Parameters.AutoSizeMode = AutoSizeMode.None;
-                generator.Parameters.ImageWidth.Point = 300f;
-                generator.Parameters.ImageHeight.Point = 150f;
-
-                // Save the barcode image to a PNG file.
-                generator.Save("barcode_300dpi.png");
-            }
+            Directory.CreateDirectory(directory);
         }
+
+        // Initialize a BarcodeGenerator for Code128 symbology with the desired text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123ABC"))
+        {
+            // Set the image resolution to 300 DPI for high‑quality output.
+            generator.Parameters.Resolution = 300f;
+
+            // Disable auto‑size mode to keep default dimensions.
+            generator.Parameters.AutoSizeMode = AutoSizeMode.None;
+
+            // Save the generated barcode image to the specified file path.
+            generator.Save(outputPath);
+        }
+
+        // Output the full path of the saved barcode image to the console.
+        Console.WriteLine($"Barcode image saved to: {Path.GetFullPath(outputPath)}");
     }
 }

@@ -1,45 +1,40 @@
 using System;
 using System.IO;
-using System.Text;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
-namespace BarcodeToBase64Demo
+/// <summary>
+/// Demonstrates generating a Code128 barcode, converting it to a Base64 string, and outputting it.
+/// </summary>
+class Program
 {
-    class Program
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a barcode, encodes it as PNG, converts to Base64, and writes to console.
+    /// </summary>
+    static void Main()
     {
-        static void Main()
+        // Specify the barcode symbology and the text to encode.
+        BaseEncodeType encodeType = EncodeTypes.Code128;
+        string codeText = "Sample123";
+
+        // Create a BarcodeGenerator instance with the defined type and text.
+        using (var generator = new BarcodeGenerator(encodeType, codeText))
         {
-            // Sample barcode text and type
-            const string barcodeText = "123ABC";
-            const string outputFileName = "barcode.png";
-
-            // Generate barcode image
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, barcodeText))
+            // Use a memory stream to hold the generated PNG image.
+            using (var ms = new MemoryStream())
             {
-                // Optionally customize parameters here
-                // e.g., generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Blue;
+                // Save the barcode image to the memory stream in PNG format.
+                generator.Save(ms, BarCodeImageFormat.Png);
 
-                // Create bitmap
-                using (Bitmap bitmap = generator.GenerateBarCodeImage())
-                {
-                    // Save to a memory stream in PNG format
-                    using (var ms = new MemoryStream())
-                    {
-                        bitmap.Save(ms, ImageFormat.Png);
-                        byte[] imageBytes = ms.ToArray();
+                // Reset stream position to the beginning before reading.
+                ms.Position = 0;
 
-                        // Convert to Base64 string
-                        string base64 = Convert.ToBase64String(imageBytes);
+                // Convert the image bytes from the memory stream to a Base64 string.
+                string base64 = Convert.ToBase64String(ms.ToArray());
 
-                        // Output HTML img tag with embedded Base64 data
-                        Console.WriteLine("<img src=\"data:image/png;base64,{0}\" alt=\"Barcode\" />", base64);
-
-                        // Also save the image to a file for verification (optional)
-                        File.WriteAllBytes(outputFileName, imageBytes);
-                    }
-                }
+                // Write the Base64 string to the console (suitable for embedding in HTML as a data URI).
+                Console.WriteLine(base64);
             }
         }
     }

@@ -2,28 +2,35 @@ using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
+/// <summary>
+/// Demonstrates generation of a Han Xin barcode using Aspose.BarCode.
+/// The barcode is automatically sized to a square version suitable for the payload.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Generates a Han Xin barcode and saves it as an image file.
+    /// </summary>
     static void Main()
     {
-        // Sample payload that benefits from a larger symbol size
-        string payload = "This is a longer text payload intended to demonstrate a larger Han Xin barcode generation.";
+        // Define the text to encode in the barcode.
+        string codeText = "This is a sample payload that requires a larger Han Xin barcode.";
+        // Define the output file path for the generated barcode image.
+        string outputPath = "hanxin.png";
 
-        // Create a Han Xin barcode generator with the payload
-        using (var generator = new BarcodeGenerator(EncodeTypes.HanXin, payload))
+        // Create a BarcodeGenerator for Han Xin type with the specified payload.
+        using (var generator = new BarcodeGenerator(EncodeTypes.HanXin, codeText))
         {
-            // Han Xin supports only square symbols. Rectangular shapes or custom row/column
-            // configurations are not available. The version is set to Auto so the library
-            // selects the appropriate square size based on the payload length.
-            generator.Parameters.Barcode.HanXin.Version = HanXinVersion.Auto; // Han Xin supports square formats only
+            // Han Xin supports only square symbols; let the generator select the optimal square version.
+            generator.Parameters.Barcode.HanXin.Version = HanXinVersion.Auto;
 
-            // Optional: set error correction level (L2 provides moderate recovery)
-            generator.Parameters.Barcode.HanXin.ErrorLevel = HanXinErrorLevel.L2;
-
-            // Save the generated barcode image
-            generator.Save("HanXin.png");
+            // Save the generated barcode image to the specified path.
+            generator.Save(outputPath);
         }
 
-        Console.WriteLine("Han Xin barcode generated and saved as HanXin.png");
+        // Inform the user where the barcode image was saved.
+        Console.WriteLine($"Han Xin barcode saved to '{outputPath}'.");
+        // Reminder about the limitation of rectangular shapes for Han Xin.
+        Console.WriteLine("Note: Rectangular shape with specific rows and columns is not supported for Han Xin.");
     }
 }

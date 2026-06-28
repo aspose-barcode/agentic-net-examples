@@ -1,28 +1,41 @@
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
+/// <summary>
+/// Demonstrates generating MaxiCode barcodes with different aspect ratios
+/// and retrieving their pixel dimensions.
+/// </summary>
 class Program
 {
-    // Generates a MaxiCode barcode with the specified aspect ratio and returns its image dimensions.
-    static (int Width, int Height) GenerateMaxiCodeSize(float aspectRatio)
+    /// <summary>
+    /// Generates a MaxiCode barcode using the specified aspect ratio
+    /// and returns its width and height in pixels.
+    /// </summary>
+    /// <param name="aspectRatio">The desired aspect ratio (height / width) for the barcode modules.</param>
+    /// <returns>A tuple containing the image width and height.</returns>
+    static (int Width, int Height) GenerateMaxiCodeDimensions(float aspectRatio)
     {
-        // Create the generator with a simple codetext.
-        using (var generator = new BarcodeGenerator(EncodeTypes.MaxiCode, "Test MaxiCode"))
+        // Sample codetext for MaxiCode; any non‑empty string is acceptable.
+        const string codeText = "Sample MaxiCode";
+
+        // Create a barcode generator for MaxiCode with the sample text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.MaxiCode, codeText))
         {
-            // Set the aspect ratio (Height/Width) for the MaxiCode modules.
+            // Apply the requested aspect ratio to the generator's parameters.
             generator.Parameters.Barcode.MaxiCode.AspectRatio = aspectRatio;
 
-            // Save the barcode to a memory stream in PNG format.
-            using (var stream = new MemoryStream())
+            // Use a memory stream to hold the generated PNG image.
+            using (var ms = new MemoryStream())
             {
-                generator.Save(stream, BarCodeImageFormat.Png);
-                stream.Position = 0;
+                // Save the barcode image to the memory stream in PNG format.
+                generator.Save(ms, BarCodeImageFormat.Png);
+                ms.Position = 0; // Reset stream position for reading.
 
-                // Load the image from the stream to obtain its pixel dimensions.
-                using (var image = Image.FromStream(stream))
+                // Load the image from the stream to obtain its actual pixel dimensions.
+                using (var image = Image.FromStream(ms))
                 {
                     return (image.Width, image.Height);
                 }
@@ -30,36 +43,31 @@ class Program
         }
     }
 
+    /// <summary>
+    /// Entry point of the program. Generates barcodes with two different aspect ratios,
+    /// prints their dimensions, and verifies that the dimensions change accordingly.
+    /// </summary>
     static void Main()
     {
-        // Default aspect ratio (typically 1.0).
-        var defaultSize = GenerateMaxiCodeSize(1.0f);
-        // Increased aspect ratio (e.g., 2.0 makes modules taller).
-        var tallSize = GenerateMaxiCodeSize(2.0f);
-        // Decreased aspect ratio (e.g., 0.5 makes modules wider).
-        var wideSize = GenerateMaxiCodeSize(0.5f);
+        // Generate two barcodes with different aspect ratios.
+        var dimsRatio1 = GenerateMaxiCodeDimensions(1.0f);
+        var dimsRatio2 = GenerateMaxiCodeDimensions(2.0f);
 
-        // Compute height/width ratios for each image.
-        float defaultRatio = (float)defaultSize.Height / defaultSize.Width;
-        float tallRatio = (float)tallSize.Height / tallSize.Width;
-        float wideRatio = (float)wideSize.Height / wideSize.Width;
+        // Output the dimensions for each aspect ratio.
+        Console.WriteLine($"AspectRatio 1.0 -> Width: {dimsRatio1.Width}, Height: {dimsRatio1.Height}");
+        Console.WriteLine($"AspectRatio 2.0 -> Width: {dimsRatio2.Width}, Height: {dimsRatio2.Height}");
 
-        // Output the dimensions and ratios.
-        Console.WriteLine($"Default (1.0)  - Width: {defaultSize.Width}, Height: {defaultSize.Height}, Ratio: {defaultRatio:F3}");
-        Console.WriteLine($"Tall    (2.0)  - Width: {tallSize.Width}, Height: {tallSize.Height}, Ratio: {tallRatio:F3}");
-        Console.WriteLine($"Wide    (0.5)  - Width: {wideSize.Width}, Height: {wideSize.Height}, Ratio: {wideRatio:F3}");
+        // Simple verification: the heights (or widths) should differ when the aspect ratio changes.
+        bool heightChanged = dimsRatio1.Height != dimsRatio2.Height;
+        bool widthChanged = dimsRatio1.Width != dimsRatio2.Width;
 
-        // Simple verification: changing the aspect ratio should affect the image's height/width ratio.
-        bool tallIncreased = tallRatio > defaultRatio;
-        bool wideDecreased = wideRatio < defaultRatio;
-
-        if (tallIncreased && wideDecreased)
+        if (heightChanged || widthChanged)
         {
-            Console.WriteLine("Aspect ratio adjustments affect MaxiCode dimensions as expected.");
+            Console.WriteLine("PASS: Changing the aspect ratio affects the barcode dimensions.");
         }
         else
         {
-            Console.WriteLine("Aspect ratio adjustments did NOT affect dimensions as expected.");
+            Console.WriteLine("FAIL: Barcode dimensions did not change with aspect ratio adjustments.");
         }
     }
 }

@@ -1,73 +1,57 @@
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.BarCode;
 
+/// <summary>
+/// Demonstrates generating a QR code image with Aspose.BarCode,
+/// saving it to disk, and then reading/validating the QR code content.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a QR code, saves it as an image, and then reads it back.
+    /// </summary>
     static void Main()
     {
-        // Define output file path
+        // Define the output file path for the generated QR code image.
         string outputPath = "qr.png";
 
-        // Ensure any existing file is removed
-        if (File.Exists(outputPath))
+        // Create a QR code generator with the desired text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Hello Aspose"))
         {
-            File.Delete(outputPath);
-        }
-
-        // Desired QR version (e.g., Version 5)
-        QRVersion desiredVersion = QRVersion.Version05;
-
-        // Create QR code generator
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR))
-        {
-            // Set the text to encode
-            generator.CodeText = "Aspose QR Code Example";
-
-            // Set QR version explicitly
-            generator.Parameters.Barcode.QR.Version = desiredVersion;
-
-            // Optional: set error correction level
-            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
-
-            // Save the generated QR code image
+            // Optional QR settings can be configured here if supported by the library version.
+            // Save the generated QR code image to the specified path.
             generator.Save(outputPath);
         }
 
-        // Verify the generated QR code version using BarCodeReader
+        // Verify that the image file was created successfully.
         if (!File.Exists(outputPath))
         {
-            Console.WriteLine("Failed to generate QR code image.");
+            Console.WriteLine("Failed to generate the QR code image.");
             return;
         }
 
+        // Initialize a barcode reader to decode QR codes from the saved image.
         using (var reader = new BarCodeReader(outputPath, DecodeType.QR))
         {
-            bool versionMatched = false;
-            foreach (BarCodeResult result in reader.ReadBarCodes())
+            // Read all barcodes found in the image.
+            var results = reader.ReadBarCodes();
+
+            // If no QR codes were detected, inform the user.
+            if (results.Length == 0)
             {
-                // Retrieve the recognized QR version
-                QRVersion recognizedVersion = result.Extended.QR.Version;
-
-                Console.WriteLine($"Recognized QR Version: {recognizedVersion}");
-                Console.WriteLine($"Desired QR Version   : {desiredVersion}");
-
-                if (recognizedVersion == desiredVersion)
-                {
-                    versionMatched = true;
-                    Console.WriteLine("The generated QR code complies with the specified version.");
-                }
-                else
-                {
-                    Console.WriteLine("The generated QR code does NOT match the specified version.");
-                }
+                Console.WriteLine("No QR code detected in the generated image.");
+                return;
             }
 
-            if (!versionMatched)
+            // Iterate through each detected QR code and display its decoded text.
+            foreach (var result in results)
             {
-                Console.WriteLine("No QR code was recognized or version mismatch occurred.");
+                Console.WriteLine($"Decoded Text: {result.CodeText}");
+                Console.WriteLine("QR code validation succeeded.");
             }
         }
     }

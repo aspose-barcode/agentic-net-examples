@@ -4,69 +4,72 @@ using System.Reflection;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
+/// <summary>
+/// Demonstrates generating a barcode image using Aspose.BarCode based on command‑line arguments.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Accepts optional arguments: symbology name, code text, and output file path.
+    /// Generates the specified barcode and saves it to the given location.
+    /// </summary>
+    /// <param name="args">
+    /// args[0] – symbology name (e.g., "Code128").
+    /// args[1] – text to encode in the barcode.
+    /// args[2] – output file path for the generated image.
+    /// </param>
     static void Main(string[] args)
     {
-        // Default values
-        string symbologyName = "Code128";
-        string codeText = "123456";
-        string outputPath = "barcode.png";
+        // Determine symbology, text, and output path, using defaults when arguments are missing.
+        string symbologyName = args.Length > 0 ? args[0] : "Code128";
+        string codeText = args.Length > 1 ? args[1] : "Sample123";
+        string outputPath = args.Length > 2 ? args[2] : "barcode.png";
 
-        // Parse command‑line arguments if provided
-        if (args.Length > 0 && !string.IsNullOrWhiteSpace(args[0]))
-            symbologyName = args[0];
-        if (args.Length > 1 && !string.IsNullOrWhiteSpace(args[1]))
-            codeText = args[1];
-        if (args.Length > 2 && !string.IsNullOrWhiteSpace(args[2]))
-            outputPath = args[2];
-
-        // Resolve symbology name to EncodeTypes field via reflection
-        FieldInfo field = typeof(EncodeTypes).GetField(symbologyName, BindingFlags.Public | BindingFlags.Static);
+        // Resolve the symbology name to a BaseEncodeType enum value via reflection.
+        FieldInfo field = typeof(EncodeTypes).GetField(symbologyName,
+            BindingFlags.Public | BindingFlags.Static | BindingFlags.IgnoreCase);
         if (field == null)
         {
-            Console.WriteLine($"Error: Unknown barcode type '{symbologyName}'.");
+            Console.WriteLine($"Unknown barcode type: {symbologyName}");
             return;
         }
 
-        if (!(field.GetValue(null) is BaseEncodeType encodeType))
+        // Retrieve the enum value from the reflected field.
+        BaseEncodeType encodeType = (BaseEncodeType)field.GetValue(null);
+        if (encodeType == null)
         {
-            Console.WriteLine($"Error: Unable to obtain EncodeTypes for '{symbologyName}'.");
+            Console.WriteLine($"Failed to obtain encode type for: {symbologyName}");
             return;
         }
 
-        // Ensure output directory exists
-        string directory = Path.GetDirectoryName(outputPath);
-        if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+        // Ensure the directory for the output file exists; create it if necessary.
+        try
         {
-            try
+            string directory = Path.GetDirectoryName(Path.GetFullPath(outputPath));
+            if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
             {
                 Directory.CreateDirectory(directory);
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error creating directory '{directory}': {ex.Message}");
-                return;
-            }
-        }
-
-        // Generate and save the barcode
-        try
-        {
-            using (var generator = new BarcodeGenerator(encodeType, codeText))
-            {
-                generator.Save(outputPath);
-            }
-
-            Console.WriteLine($"Barcode saved to '{outputPath}'.");
-        }
-        catch (BarCodeException ex)
-        {
-            Console.WriteLine($"Barcode generation failed: {ex.Message}");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Unexpected error: {ex.Message}");
+            Console.WriteLine($"Error preparing output directory: {ex.Message}");
+            return;
+        }
+
+        // Create a barcode generator, generate the image, and save it to the specified path.
+        using (var generator = new BarcodeGenerator(encodeType, codeText))
+        {
+            try
+            {
+                generator.Save(outputPath);
+                Console.WriteLine($"Barcode saved to: {outputPath}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error generating barcode: {ex.Message}");
+            }
         }
     }
 }
