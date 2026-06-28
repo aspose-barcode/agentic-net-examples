@@ -3,9 +3,9 @@
   "platform": "net",
   "framework": "net9.0",
   "package_version": "26.5.0",
-  "total_examples": 1127,
+  "total_examples": 1129,
   "total_categories": 21,
-  "last_updated": "2026-06-23",
+  "last_updated": "2026-06-28",
   "categories": [
     {
       "name": "barcode-appearance-customization",
@@ -643,7 +643,7 @@
     {
       "name": "barcode-text-customization",
       "display_name": "Barcode Text Customization",
-      "file_count": 29,
+      "file_count": 31,
       "all_files": [
         "adjust-gap-between-barcode-and-its-text-to-4-points-for-high-density-qr-codes.cs",
         "align-barcode-text-left-for-series-of-upc-barcodes-by-setting-textalignmentleft.cs",
@@ -652,6 +652,7 @@
         "apply-fontmodeauto-to-barcode-text-so-library-automatically-calculates-optimal-font-size-for-each-symbol.cs",
         "batch-generate-qr-codes-with-custom-texts-from-csv-file-applying-unique-font-sizes-per-row.cs",
         "center-align-barcode-text-for-collection-of-ean-13-barcodes-by-setting-codetextparametersalignment-to-textalignmentcente.cs",
+        "centeralign-barcode-text-for-collection-of-ean-13-barcodes-by-setting-codetextparametersalignment-to-textalignmentcenter.cs",
         "compare-rendering-performance-between-fontmodeauto-and-manually-specified-fonts-for-large-batches-of-qr-codes.cs",
         "create-barcodes-where-both-main-text-and-bottom-caption-are-visible-each-aligned-left-for-consistency.cs",
         "define-barcode-text-font-as-arial-size-6-regular-style-for-all-generated-code39-symbols.cs",
@@ -667,6 +668,7 @@
         "place-barcode-text-above-datamatrix-symbols-by-assigning-codetextparameterslocation-textlocationabove.cs",
         "replace-displayed-text-of-qr-code-with-custom-url-by-setting-codetextparameterstext.cs",
         "right-align-barcode-text-for-itf-14-barcodes-by-setting-codetextparametersalignment-textalignmentright.cs",
+        "rightalign-barcode-text-for-itf-14-barcodes-by-setting-codetextparametersalignment-textalignmentright.cs",
         "serialize-barcode-text-and-caption-settings-to-json-then-reload-them-to-recreate-identical-barcode-appearances.cs",
         "set-barcode-text-location-to-below-for-pdf417-barcodes-using-default-textlocationbelow-setting.cs",
         "set-barcode-text-spacing-to-25-pixels-for-batch-of-aztec-barcodes-to-improve-readability.cs",
