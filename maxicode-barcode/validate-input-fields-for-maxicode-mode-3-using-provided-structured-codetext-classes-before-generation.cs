@@ -4,74 +4,96 @@ using System.Text.RegularExpressions;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.ComplexBarcode;
-using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates generation of a MaxiCode Mode 3 barcode using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Generates a MaxiCode Mode 3 barcode and saves it as a PNG file.
+    /// </summary>
     static void Main()
     {
-        // Create a sample MaxiCode Mode 3 codetext
-        var maxiCode = new MaxiCodeCodetextMode3
+        // Sample input values for MaxiCode Mode 3
+        string postalCode = "B1050A"; // 6 alphanumeric characters
+        int countryCode = 56;         // 3‑digit numeric code
+        int serviceCategory = 999;    // 3‑digit numeric code
+        string secondMessageText = "Test message";
+
+        try
         {
-            PostalCode = "B1050A",          // 6 alphanumeric characters
-            CountryCode = 56,               // 3‑digit country code
-            ServiceCategory = 999           // 3‑digit service category
-        };
+            // Validate the input fields before barcode generation
+            ValidateMaxiCodeMode3(postalCode, countryCode, serviceCategory, secondMessageText);
 
-        // Use a standard second message
-        var secondMessage = new MaxiCodeStandardSecondMessage
-        {
-            Message = "Sample message"
-        };
-        maxiCode.SecondMessage = secondMessage;
-
-        // Validate fields before generation
-        ValidateMaxiCodeMode3(maxiCode);
-
-        // Generate the barcode and save to a PNG file
-        using (var generator = new ComplexBarcodeGenerator(maxiCode))
-        {
-            generator.GenerateBarCodeImage();
-
-            using (var ms = new MemoryStream())
+            // Build the structured codetext object required by ComplexBarcodeGenerator
+            var codetext = new MaxiCodeCodetextMode3
             {
-                generator.Save(ms, BarCodeImageFormat.Png);
-                File.WriteAllBytes("maxicode_mode3.png", ms.ToArray());
-            }
-        }
+                PostalCode = postalCode,
+                CountryCode = countryCode,
+                ServiceCategory = serviceCategory,
+                SecondMessage = new MaxiCodeStandardSecondMessage { Message = secondMessageText }
+            };
 
-        Console.WriteLine("MaxiCode Mode 3 barcode generated successfully.");
+            // Determine a temporary file path for the output PNG image
+            string outputPath = Path.Combine(Path.GetTempPath(), "maxicode_mode3.png");
+
+            // Generate the barcode and save it directly to the file system
+            using (var generator = new ComplexBarcodeGenerator(codetext))
+            {
+                // ComplexBarcodeGenerator supports the same Save method as BarcodeGenerator
+                generator.Save(outputPath, BarCodeImageFormat.Png);
+            }
+
+            Console.WriteLine($"MaxiCode Mode 3 barcode generated successfully: {outputPath}");
+        }
+        catch (ArgumentException ex)
+        {
+            // Handle validation errors
+            Console.WriteLine($"Input validation error: {ex.Message}");
+        }
+        catch (Exception ex)
+        {
+            // Handle any unexpected errors
+            Console.WriteLine($"Unexpected error: {ex.Message}");
+        }
     }
 
-    static void ValidateMaxiCodeMode3(MaxiCodeCodetextMode3 codetext)
+    /// <summary>
+    /// Validates the input parameters for a MaxiCode Mode 3 barcode.
+    /// Throws <see cref="ArgumentException"/> if any parameter is invalid.
+    /// </summary>
+    /// <param name="postalCode">Six‑character alphanumeric postal code.</param>
+    /// <param name="countryCode">Three‑digit numeric country code (0‑999).</param>
+    /// <param name="serviceCategory">Three‑digit numeric service category (0‑999).</param>
+    /// <param name="secondMessage">Secondary message text; must not be empty.</param>
+    static void ValidateMaxiCodeMode3(string postalCode, int countryCode, int serviceCategory, string secondMessage)
     {
-        if (codetext == null)
-            throw new ArgumentNullException(nameof(codetext));
-
         // PostalCode must be exactly 6 alphanumeric characters
-        if (string.IsNullOrEmpty(codetext.PostalCode) ||
-            !Regex.IsMatch(codetext.PostalCode, @"^[A-Za-z0-9]{6}$"))
+        if (string.IsNullOrWhiteSpace(postalCode) ||
+            postalCode.Length != 6 ||
+            !Regex.IsMatch(postalCode, @"^[A-Za-z0-9]{6}$"))
         {
-            throw new ArgumentException("PostalCode must be exactly 6 alphanumeric characters for MaxiCode Mode 3.");
+            throw new ArgumentException("PostalCode must be exactly 6 alphanumeric characters.");
         }
 
-        // CountryCode must be a 3‑digit number (0‑999)
-        if (codetext.CountryCode < 0 || codetext.CountryCode > 999)
+        // CountryCode must be between 0 and 999 (inclusive)
+        if (countryCode < 0 || countryCode > 999)
         {
-            throw new ArgumentOutOfRangeException(nameof(codetext.CountryCode), "CountryCode must be between 0 and 999.");
+            throw new ArgumentException("CountryCode must be a 3‑digit number between 0 and 999.");
         }
 
-        // ServiceCategory must be a 3‑digit number (0‑999)
-        if (codetext.ServiceCategory < 0 || codetext.ServiceCategory > 999)
+        // ServiceCategory must be between 0 and 999 (inclusive)
+        if (serviceCategory < 0 || serviceCategory > 999)
         {
-            throw new ArgumentOutOfRangeException(nameof(codetext.ServiceCategory), "ServiceCategory must be between 0 and 999.");
+            throw new ArgumentException("ServiceCategory must be a 3‑digit number between 0 and 999.");
         }
 
-        // SecondMessage must be provided
-        if (codetext.SecondMessage == null)
+        // SecondMessage must be provided and not consist solely of whitespace
+        if (string.IsNullOrWhiteSpace(secondMessage))
         {
-            throw new ArgumentException("SecondMessage cannot be null for MaxiCode Mode 3.");
+            throw new ArgumentException("SecondMessage cannot be empty.");
         }
     }
 }

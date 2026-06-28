@@ -3,30 +3,42 @@ using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
+/// <summary>
+/// Demonstrates generating a MaxiCode barcode and outputting its Base64 representation.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a MaxiCode barcode from sample text, encodes it as PNG,
+    /// converts the image to a Base64 string, and writes it to the console.
+    /// </summary>
     static void Main()
     {
-        // Sample codetext for the MaxiCode barcode
-        string codeText = "Test message";
+        // Sample data to encode in the MaxiCode barcode
+        const string codeText = "Test MaxiCode";
 
-        // Create a MaxiCode barcode generator with the specified codetext
-        using (var generator = new BarcodeGenerator(EncodeTypes.MaxiCode, codeText))
+        // Resolve the MaxiCode symbology as a BaseEncodeType
+        BaseEncodeType encodeType = EncodeTypes.MaxiCode;
+
+        // Create a memory stream to hold the generated barcode image
+        using (var memoryStream = new MemoryStream())
         {
-            // Optional: set a specific MaxiCode mode (e.g., Mode4)
-            generator.Parameters.Barcode.MaxiCode.Mode = MaxiCodeMode.Mode4;
-
-            // Save the generated barcode image to a memory stream in PNG format
-            using (var memoryStream = new MemoryStream())
+            // Initialize the barcode generator with the specified type and text
+            using (var generator = new BarcodeGenerator(encodeType, codeText))
             {
+                // Save the generated barcode as a PNG image into the memory stream
                 generator.Save(memoryStream, BarCodeImageFormat.Png);
-
-                // Convert the image bytes to a Base64 string for JSON embedding
-                string base64String = Convert.ToBase64String(memoryStream.ToArray());
-
-                // Output the Base64 string
-                Console.WriteLine(base64String);
             }
+
+            // Reset stream position to the beginning before reading its contents
+            memoryStream.Position = 0;
+
+            // Convert the image bytes from the stream to a Base64-encoded string
+            string base64 = Convert.ToBase64String(memoryStream.ToArray());
+
+            // Output the Base64 string (e.g., for embedding in JSON)
+            Console.WriteLine(base64);
         }
     }
 }

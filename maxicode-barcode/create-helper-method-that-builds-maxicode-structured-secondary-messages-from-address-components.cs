@@ -1,58 +1,94 @@
 using System;
-using Aspose.BarCode.ComplexBarcode;
+using System.Collections.Generic;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode.ComplexBarcode;
+using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
-namespace MaxiCodeHelperDemo
+/// <summary>
+/// Demonstrates building a MaxiCode structured secondary message and generating a MaxiCode barcode.
+/// </summary>
+class Program
 {
-    class Program
+    /// <summary>
+    /// Builds a structured secondary message for MaxiCode from address components.
+    /// </summary>
+    /// <param name="addressLines">List of address lines (max 3 lines are typical for MaxiCode).</param>
+    /// <param name="city">City name.</param>
+    /// <param name="state">State abbreviation.</param>
+    /// <param name="year">Two‑digit year (0‑99).</param>
+    /// <returns>A <see cref="MaxiCodeStructuredSecondMessage"/> populated with the provided data.</returns>
+    static MaxiCodeStructuredSecondMessage BuildMaxiCodeStructuredMessage(
+        IList<string> addressLines,
+        string city,
+        string state,
+        int year)
     {
-        static void Main()
+        // Validate input parameters.
+        if (addressLines == null) throw new ArgumentNullException(nameof(addressLines));
+        if (addressLines.Count == 0) throw new ArgumentException("At least one address line is required.", nameof(addressLines));
+        if (string.IsNullOrWhiteSpace(city)) throw new ArgumentException("City is required.", nameof(city));
+        if (string.IsNullOrWhiteSpace(state)) throw new ArgumentException("State is required.", nameof(state));
+        if (year < 0 || year > 99) throw new ArgumentOutOfRangeException(nameof(year), "Year must be between 0 and 99.");
+
+        var secondMessage = new MaxiCodeStructuredSecondMessage();
+
+        // Add address lines.
+        foreach (var line in addressLines)
         {
-            // Build a structured second message from address components
-            var secondMessage = BuildStructuredSecondMessage(
-                line1: "634 ALPHA DRIVE",
-                line2: "PITTSBURGH",
-                line3: "PA",
-                year: 99);
+            secondMessage.Add(line);
+        }
 
-            // Prepare MaxiCode codetext for Mode 2 (postal info + structured second message)
-            var maxiCodeCodetext = new MaxiCodeCodetextMode2
-            {
-                PostalCode = "524032140",   // 9‑digit US postal code
-                CountryCode = 056,          // USA
-                ServiceCategory = 999
-            };
-            maxiCodeCodetext.SecondMessage = secondMessage;
+        // Add city, state and year as separate identifiers.
+        secondMessage.Add(city);
+        secondMessage.Add(state);
+        secondMessage.Year = year;
 
-            // Generate and save the MaxiCode barcode image
-            using (var generator = new ComplexBarcodeGenerator(maxiCodeCodetext))
+        return secondMessage;
+    }
+
+    /// <summary>
+    /// Entry point of the program. Generates a MaxiCode barcode and saves it as a PNG file.
+    /// </summary>
+    static void Main()
+    {
+        // Sample address components.
+        var addressLines = new List<string>
+        {
+            "634 ALPHA DRIVE",
+            "PITTSBURGH"
+        };
+        string city = "PA";
+        string state = "US";
+        int year = 99; // Two‑digit year.
+
+        // Build the structured second message using the helper method.
+        var structuredMessage = BuildMaxiCodeStructuredMessage(addressLines, city, state, year);
+
+        // Configure MaxiCode codetext (Mode 2 example).
+        var maxiCodeCodetext = new MaxiCodeCodetextMode2
+        {
+            PostalCode = "524032140",   // 9‑digit US postal code.
+            CountryCode = 056,          // Example country code.
+            ServiceCategory = 999,      // Example service category.
+            SecondMessage = structuredMessage
+        };
+
+        // Generate the MaxiCode barcode using ComplexBarcodeGenerator.
+        using (var complexGenerator = new ComplexBarcodeGenerator(maxiCodeCodetext))
+        {
+            // Optional: set a human‑readable text displayed below the barcode.
+            complexGenerator.Parameters.Barcode.CodeTextParameters.TwoDDisplayText = "Sample MaxiCode";
+
+            // Generate the barcode image.
+            using (var image = complexGenerator.GenerateBarCodeImage())
             {
-                generator.GenerateBarCodeImage();
-                generator.Save("maxicode.png");
+                // Save the image as PNG.
+                image.Save("maxicode.png", ImageFormat.Png);
             }
-
-            Console.WriteLine("MaxiCode barcode generated and saved as 'maxicode.png'.");
         }
 
-        /// <summary>
-        /// Creates a MaxiCodeStructuredSecondMessage and populates it with address lines and year.
-        /// </summary>
-        /// <param name="line1">First address line (e.g., street).</param>
-        /// <param name="line2">Second address line (e.g., city).</param>
-        /// <param name="line3">Third address line (e.g., state or region).</param>
-        /// <param name="year">Two‑digit year value.</param>
-        /// <returns>Configured MaxiCodeStructuredSecondMessage instance.</returns>
-        static MaxiCodeStructuredSecondMessage BuildStructuredSecondMessage(string line1, string line2, string line3, int year)
-        {
-            var message = new MaxiCodeStructuredSecondMessage();
-            if (!string.IsNullOrEmpty(line1))
-                message.Add(line1);
-            if (!string.IsNullOrEmpty(line2))
-                message.Add(line2);
-            if (!string.IsNullOrEmpty(line3))
-                message.Add(line3);
-            message.Year = year;
-            return message;
-        }
+        Console.WriteLine("MaxiCode barcode generated: maxicode.png");
     }
 }

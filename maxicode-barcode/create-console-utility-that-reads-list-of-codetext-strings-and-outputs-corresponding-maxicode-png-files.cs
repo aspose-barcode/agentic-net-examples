@@ -1,49 +1,61 @@
 using System;
 using System.IO;
-using Aspose.BarCode.ComplexBarcode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode;
+using Aspose.BarCode.ComplexBarcode;
 
+/// <summary>
+/// Demonstrates generating MaxiCode barcodes using Aspose.BarCode and saving them as PNG files.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Generates a series of MaxiCode barcodes from sample text strings.
+    /// </summary>
     static void Main()
     {
-        // Sample list of codetext strings to be encoded as MaxiCode barcodes.
+        // Define a sample list of codetext strings to encode as MaxiCode barcodes.
         string[] codetexts = new string[]
         {
             "Sample message 1",
-            "Another test message",
-            "MaxiCode demo text",
-            "Hello World!",
-            "Aspose.BarCode"
+            "Sample message 2",
+            "Sample message 3",
+            "Sample message 4",
+            "Sample message 5"
         };
 
-        // Output directory (current folder). Ensure it exists.
-        string outputDir = Directory.GetCurrentDirectory();
+        // Specify the output directory for generated PNG files.
+        string outputDir = "MaxiCodeOutput";
 
+        // Create the output directory if it does not already exist.
+        if (!Directory.Exists(outputDir))
+        {
+            Directory.CreateDirectory(outputDir);
+        }
+
+        // Iterate over each codetext string and generate a corresponding MaxiCode barcode.
         for (int i = 0; i < codetexts.Length; i++)
         {
-            // Create a standard MaxiCode codetext for Mode 4 (data only).
-            var maxiCodeCodetext = new MaxiCodeStandardCodetext
+            // Retrieve the current text to encode.
+            string text = codetexts[i];
+
+            // Configure a standard MaxiCode (Mode 4) which encodes only the message.
+            var maxiCode = new MaxiCodeStandardCodetext
             {
                 Mode = MaxiCodeMode.Mode4,
-                Message = codetexts[i]
+                Message = text
             };
 
-            // Generate the barcode image using ComplexBarcodeGenerator.
-            using (var generator = new ComplexBarcodeGenerator(maxiCodeCodetext))
-            {
-                generator.GenerateBarCodeImage();
+            // Build the full file path for the output PNG file.
+            string filePath = Path.Combine(outputDir, $"maxicode_{i + 1}.png");
 
-                // Save the image to a PNG file via a MemoryStream.
-                using (var memoryStream = new MemoryStream())
-                {
-                    generator.Save(memoryStream, BarCodeImageFormat.Png);
-                    string filePath = Path.Combine(outputDir, $"maxicode_{i + 1}.png");
-                    File.WriteAllBytes(filePath, memoryStream.ToArray());
-                    Console.WriteLine($"Saved: {filePath}");
-                }
+            // Generate the barcode image and save it to the specified file.
+            using (var generator = new ComplexBarcodeGenerator(maxiCode))
+            {
+                generator.Save(filePath, BarCodeImageFormat.Png);
             }
+
+            // Output a confirmation message to the console.
+            Console.WriteLine($"Generated: {filePath}");
         }
     }
 }
