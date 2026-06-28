@@ -1,61 +1,94 @@
 using System;
 using System.IO;
 using Aspose.BarCode;
-using Aspose.BarCode.ComplexBarcode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.BarCode.ComplexBarcode;
+using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates generation and verification of a Swiss QR payment barcode using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a Swiss QR code, reads it back, and validates the encoded data.
+    /// </summary>
     static void Main()
     {
-        // Prepare Swiss QR bill data
-        var swissCodetext = new SwissQRCodetext();
-        swissCodetext.Bill.Account = "CH9300762011623852957";
-        swissCodetext.Bill.Amount = 199.95m;
-        swissCodetext.Bill.Version = SwissQRBill.QrBillStandardVersion.V2_0;
-        swissCodetext.Bill.Creditor.CountryCode = "CH";
-        swissCodetext.Bill.Creditor.Name = "Creditor Ltd.";
-        swissCodetext.Bill.Creditor.Street = "Main Street 1";
-        swissCodetext.Bill.Creditor.PostalCode = "8000";
-        swissCodetext.Bill.Creditor.Town = "Zurich";
+        // ------------------------------------------------------------
+        // 1. Prepare Swiss QR payment data
+        // ------------------------------------------------------------
+        var swissQr = new SwissQRCodetext();
+        swissQr.Bill.Creditor.Name = "John Doe";
+        swissQr.Bill.Creditor.CountryCode = "CH";
+        swissQr.Bill.Account = "CH9300762011623852957";
+        swissQr.Bill.Amount = 199.95m;
+        swissQr.Bill.Version = SwissQRBill.QrBillStandardVersion.V2_0;
 
-        // Create generator with the complex codetext
-        using (var generator = new ComplexBarcodeGenerator(swissCodetext))
+        // ------------------------------------------------------------
+        // 2. Build the expected codetext string for later comparison
+        // ------------------------------------------------------------
+        string expectedCodetext = swissQr.GetConstructedCodetext();
+
+        // ------------------------------------------------------------
+        // 3. Generate QR code image using ComplexBarcodeGenerator
+        // ------------------------------------------------------------
+        using (var generator = new ComplexBarcodeGenerator(swissQr))
         {
-            // Set QR error correction level to high
-            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
-
-            // Generate barcode image into a memory stream (no file I/O)
             using (var ms = new MemoryStream())
             {
+                // Save the generated QR code as PNG into the memory stream
                 generator.Save(ms, BarCodeImageFormat.Png);
-                // Reset stream position for potential further use
-                ms.Position = 0;
+                ms.Position = 0; // Reset stream position for reading
+
+                // ------------------------------------------------------------
+                // 4. Recognize the QR code from the generated image
+                // ------------------------------------------------------------
+                using (var reader = new BarCodeReader(ms, DecodeType.QR))
+                {
+                    var results = reader.ReadBarCodes();
+
+                    // Ensure at least one barcode was detected
+                    if (results.Length == 0)
+                    {
+                        Console.WriteLine("FAIL: No barcode detected.");
+                        return;
+                    }
+
+                    var result = results[0];
+                    string recognizedCodetext = result.CodeText;
+
+                    // ------------------------------------------------------------
+                    // 5. Verify that the recognized codetext matches the expected one
+                    // ------------------------------------------------------------
+                    if (recognizedCodetext == expectedCodetext)
+                    {
+                        Console.WriteLine("PASS: Recognized QR code matches expected codetext.");
+                    }
+                    else
+                    {
+                        Console.WriteLine("FAIL: Mismatch in QR code data.");
+                        Console.WriteLine($"Expected: {expectedCodetext}");
+                        Console.WriteLine($"Actual  : {recognizedCodetext}");
+                    }
+
+                    // ------------------------------------------------------------
+                    // 6. Additional verification using ComplexCodetextReader
+                    // ------------------------------------------------------------
+                    var decoded = ComplexCodetextReader.TryDecodeSwissQR(recognizedCodetext);
+                    if (decoded != null && decoded.GetConstructedCodetext() == expectedCodetext)
+                    {
+                        Console.WriteLine("PASS: ComplexCodetextReader successfully decoded the QR code.");
+                    }
+                    else
+                    {
+                        Console.WriteLine("FAIL: ComplexCodetextReader could not decode the QR code correctly.");
+                    }
+                }
             }
-
-            // Retrieve the constructed codetext from the generator
-            string constructed = swissCodetext.GetConstructedCodetext();
-
-            // Decode the codetext back to a SwissQRCodetext instance
-            SwissQRCodetext decoded = ComplexCodetextReader.TryDecodeSwissQR(constructed);
-            if (decoded == null)
-                throw new Exception("Failed to decode Swiss QR codetext.");
-
-            // Verify that key fields match the original data
-            if (decoded.Bill.Account != swissCodetext.Bill.Account)
-                throw new Exception("Account mismatch.");
-            if (decoded.Bill.Amount != swissCodetext.Bill.Amount)
-                throw new Exception("Amount mismatch.");
-            if (decoded.Bill.Version != swissCodetext.Bill.Version)
-                throw new Exception("Version mismatch.");
-            if (decoded.Bill.Creditor.CountryCode != swissCodetext.Bill.Creditor.CountryCode)
-                throw new Exception("Creditor country code mismatch.");
-            if (decoded.Bill.Creditor.Name != swissCodetext.Bill.Creditor.Name)
-                throw new Exception("Creditor name mismatch.");
-
-            // Simple success message
-            Console.WriteLine("All Swiss QR bill fields verified successfully.");
         }
     }
 }

@@ -1,18 +1,27 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using Aspose.BarCode.ComplexBarcode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.BarCode.ComplexBarcode;
 
+/// <summary>
+/// Demonstrates benchmarking of QR code decoding at various image resolutions
+/// using Aspose.BarCode library. Generates a Swiss QR bill barcode, decodes it,
+/// and reports the decoding time for each DPI setting.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Generates a Swiss QR barcode at multiple
+    /// resolutions, decodes it, and prints timing and content information.
+    /// </summary>
     static void Main()
     {
-        // Define resolutions (DPI) to test
-        float[] resolutions = { 72f, 150f, 300f, 600f };
+        // Define different image resolutions (dots per inch) to benchmark.
+        int[] resolutions = { 72, 150, 300, 600 };
 
-        // Prepare Swiss QR bill data (same for all images)
+        // Prepare sample Swiss QR bill data (must be valid for generation).
         var swissQr = new SwissQRCodetext();
         swissQr.Bill.Creditor.Name = "John Doe";
         swissQr.Bill.Creditor.CountryCode = "CH";
@@ -20,41 +29,53 @@ class Program
         swissQr.Bill.Amount = 199.95m;
         swissQr.Bill.Version = SwissQRBill.QrBillStandardVersion.V2_0;
 
-        Console.WriteLine("Benchmark: Decoding Swiss QR Code images at various resolutions");
-        Console.WriteLine();
-
-        foreach (float dpi in resolutions)
+        // Iterate over each resolution, generate, decode, and report results.
+        foreach (int dpi in resolutions)
         {
-            // Generate barcode image at specified resolution
+            // Generate Swiss QR barcode image at the specified resolution.
             using (var generator = new ComplexBarcodeGenerator(swissQr))
             {
-                generator.Parameters.Resolution = dpi;
+                generator.Parameters.Resolution = (float)dpi;
 
-                using (var imageStream = new MemoryStream())
+                // Store the generated image in a memory stream.
+                using (var ms = new MemoryStream())
                 {
-                    generator.Save(imageStream, BarCodeImageFormat.Png);
-                    imageStream.Position = 0; // Reset for reading
+                    generator.Save(ms, BarCodeImageFormat.Png);
+                    ms.Position = 0; // Reset stream position for reading.
 
-                    // Measure decoding time
+                    // Start timing the decoding process.
                     var stopwatch = Stopwatch.StartNew();
 
-                    using (var reader = new BarCodeReader(imageStream, DecodeType.AllSupportedTypes))
+                    // Decode the barcode from the memory stream.
+                    using (var reader = new BarCodeReader(ms, DecodeType.QR))
                     {
-                        // Read all barcodes (there should be one Swiss QR)
-                        foreach (var result in reader.ReadBarCodes())
-                        {
-                            // Access result to ensure decoding occurs
-                            var codeText = result.CodeText;
-                        }
-                    }
+                        var results = reader.ReadBarCodes();
 
-                    stopwatch.Stop();
-                    Console.WriteLine($"Resolution: {dpi} DPI - Decode time: {stopwatch.ElapsedMilliseconds} ms");
+                        // Stop timing after decoding completes.
+                        stopwatch.Stop();
+
+                        // Output resolution and decoding duration.
+                        Console.WriteLine($"Resolution: {dpi} DPI");
+                        Console.WriteLine($"Decoding time: {stopwatch.ElapsedMilliseconds} ms");
+
+                        // Iterate over all detected barcodes (should be one in this case).
+                        foreach (var result in results)
+                        {
+                            Console.WriteLine($"  Detected type: {result.CodeTypeName}");
+                            Console.WriteLine($"  CodeText: {result.CodeText}");
+
+                            // Decode the complex codetext to verify Swiss QR content.
+                            var decoded = ComplexCodetextReader.TryDecodeSwissQR(result.CodeText);
+                            if (decoded != null)
+                            {
+                                Console.WriteLine($"  Decoded Bill Amount: {decoded.Bill.Amount}");
+                            }
+                        }
+
+                        Console.WriteLine(); // Blank line for readability between resolutions.
+                    }
                 }
             }
         }
-
-        Console.WriteLine();
-        Console.WriteLine("Benchmark completed.");
     }
 }

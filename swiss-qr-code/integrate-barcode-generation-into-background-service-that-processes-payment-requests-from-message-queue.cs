@@ -3,63 +3,69 @@ using System.Collections.Generic;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates generating Code128 barcodes for a list of payment requests using Aspose.BarCode.
+/// </summary>
 class Program
 {
-    // Simple payment request model
+    /// <summary>
+    /// Simple payment request model containing a transaction identifier and an amount.
+    /// </summary>
     class PaymentRequest
     {
-        public string Id { get; set; }
+        public string TransactionId { get; set; }
         public decimal Amount { get; set; }
-        public string Payee { get; set; }
     }
 
+    /// <summary>
+    /// Entry point of the application. Generates barcode images for sample payment requests.
+    /// </summary>
     static void Main()
     {
-        // Simulated queue of payment requests
-        var requests = new List<PaymentRequest>
+        // Sample payment requests simulating messages from a queue
+        var paymentRequests = new List<PaymentRequest>
         {
-            new PaymentRequest { Id = "REQ001", Amount = 123.45m, Payee = "Alice" },
-            new PaymentRequest { Id = "REQ002", Amount = 67.89m, Payee = "Bob" },
-            new PaymentRequest { Id = "REQ003", Amount = 250.00m, Payee = "Charlie" }
+            new PaymentRequest { TransactionId = "TXN001", Amount = 123.45m },
+            new PaymentRequest { TransactionId = "TXN002", Amount = 67.89m },
+            new PaymentRequest { TransactionId = "TXN003", Amount = 250.00m },
+            new PaymentRequest { TransactionId = "TXN004", Amount = 5.99m },
+            new PaymentRequest { TransactionId = "TXN005", Amount = 99.99m }
         };
 
-        // Output folder for generated barcodes
-        string outputFolder = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
-        if (!Directory.Exists(outputFolder))
+        // Determine output directory for generated barcode images
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
+
+        // Ensure the output directory exists
+        if (!Directory.Exists(outputDir))
         {
-            Directory.CreateDirectory(outputFolder);
+            Directory.CreateDirectory(outputDir);
         }
 
-        // Process each request and generate a QR code barcode
-        foreach (var request in requests)
+        // Process each payment request and generate a corresponding barcode image
+        foreach (var request in paymentRequests)
         {
-            // Encode payment details into a QR code string
-            string codeText = $"{request.Id}|{request.Amount:F2}|{request.Payee}";
+            // Use Code128 symbology; encode the transaction ID as the barcode value
+            BaseEncodeType encodeType = EncodeTypes.Code128;
 
-            // Create barcode generator for QR code
-            using (var generator = new BarcodeGenerator(EncodeTypes.QR, codeText))
+            // Build the full file path for the barcode image (e.g., barcode_TXN001.png)
+            string barcodePath = Path.Combine(outputDir, $"barcode_{request.TransactionId}.png");
+
+            // Generate and save the barcode using Aspose.BarCode
+            using (var generator = new BarcodeGenerator(encodeType, request.TransactionId))
             {
-                // Set high error correction level
-                generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
+                // Optional: set resolution for better image quality (dots per inch)
+                generator.Parameters.Resolution = 300f;
 
-                // Define image size (points)
-                generator.Parameters.ImageWidth.Point = 300f;
-                generator.Parameters.ImageHeight.Point = 300f;
-
-                // Set resolution (dpi)
-                generator.Parameters.Resolution = 300;
-
-                // Optional: set foreground and background colors
-                generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-                generator.Parameters.BackColor = Aspose.Drawing.Color.White;
-
-                // Save barcode as PNG file
-                string filePath = Path.Combine(outputFolder, $"barcode_{request.Id}.png");
-                generator.Save(filePath, BarCodeImageFormat.Png);
-                Console.WriteLine($"Generated barcode for request {request.Id} at {filePath}");
+                // Save the barcode image as a PNG file
+                generator.Save(barcodePath);
             }
+
+            // Log the successful generation of the barcode
+            Console.WriteLine($"Generated barcode for Transaction {request.TransactionId} (Amount: {request.Amount:C}) at: {barcodePath}");
         }
+
+        // Indicate that all barcodes have been processed
+        Console.WriteLine("All barcodes have been generated.");
     }
 }
