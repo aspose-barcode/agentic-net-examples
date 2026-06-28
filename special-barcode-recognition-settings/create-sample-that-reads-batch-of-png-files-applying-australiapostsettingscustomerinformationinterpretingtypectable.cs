@@ -1,59 +1,54 @@
 using System;
 using System.IO;
-using Aspose.BarCode;
-using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
+using Aspose.BarCode;
+using Aspose.BarCode.BarCodeRecognition;
 
+/// <summary>
+/// Demonstrates reading Australia Post barcodes from a set of PNG files using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Processes each PNG file, reads barcodes, and prints results.
+    /// </summary>
     static void Main()
     {
-        // Folder that contains PNG barcode images
-        string inputFolder = Path.Combine(Environment.CurrentDirectory, "InputBarcodes");
-        if (!Directory.Exists(inputFolder))
+        // Define the list of PNG files to be processed.
+        string[] pngFiles = new string[]
         {
-            Directory.CreateDirectory(inputFolder);
-        }
+            "barcode1.png",
+            "barcode2.png",
+            "barcode3.png"
+        };
 
-        // If the folder is empty, generate a few sample Australia Post barcodes with CTable interpreting type
-        string[] existingPngs = Directory.GetFiles(inputFolder, "*.png");
-        if (existingPngs.Length == 0)
+        // Iterate over each file path in the array.
+        foreach (string filePath in pngFiles)
         {
-            string[] sampleTexts = { "5912345678ABCde", "5912345678XYZ", "5912345678#123" };
-            for (int i = 0; i < sampleTexts.Length; i++)
+            // Verify that the file exists before attempting to process it.
+            if (!File.Exists(filePath))
             {
-                string filePath = Path.Combine(inputFolder, $"Sample{i + 1}.png");
-                using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, sampleTexts[i]))
-                {
-                    // Apply CTable interpreting type
-                    generator.Parameters.Barcode.AustralianPost.EncodingTable = CustomerInformationInterpretingType.CTable;
-                    // Save as PNG
-                    generator.Save(filePath, BarCodeImageFormat.Png);
-                }
-            }
-        }
-
-        // Process each PNG file in the folder
-        string[] pngFiles = Directory.GetFiles(inputFolder, "*.png");
-        foreach (string pngFile in pngFiles)
-        {
-            if (!File.Exists(pngFile))
-            {
-                Console.WriteLine($"File not found: {pngFile}");
-                continue;
+                Console.WriteLine($"File not found: {filePath}");
+                continue; // Skip to the next file if the current one is missing.
             }
 
-            using (BarCodeReader reader = new BarCodeReader(pngFile, DecodeType.AustraliaPost))
+            // Load the image from the file into a Bitmap object.
+            using (Bitmap bitmap = new Bitmap(filePath))
             {
-                // Set interpreting type for decoding
-                reader.BarcodeSettings.AustraliaPost.CustomerInformationInterpretingType = CustomerInformationInterpretingType.CTable;
-
-                foreach (BarCodeResult result in reader.ReadBarCodes())
+                // Create a BarCodeReader configured to decode Australia Post barcodes.
+                using (BarCodeReader reader = new BarCodeReader(bitmap, DecodeType.AustraliaPost))
                 {
-                    Console.WriteLine($"File: {Path.GetFileName(pngFile)}");
-                    Console.WriteLine($"  BarCode Type: {result.CodeType}");
-                    Console.WriteLine($"  BarCode CodeText: {result.CodeText}");
+                    // Set the customer information interpreting type to CTable.
+                    reader.BarcodeSettings.AustraliaPost.CustomerInformationInterpretingType = CustomerInformationInterpretingType.CTable;
+
+                    // Read all barcodes found in the image.
+                    foreach (var result in reader.ReadBarCodes())
+                    {
+                        // Output the file name and barcode details to the console.
+                        Console.WriteLine($"File: {filePath}");
+                        Console.WriteLine($"Barcode Type: {result.CodeTypeName}");
+                        Console.WriteLine($"Code Text: {result.CodeText}");
+                    }
                 }
             }
         }

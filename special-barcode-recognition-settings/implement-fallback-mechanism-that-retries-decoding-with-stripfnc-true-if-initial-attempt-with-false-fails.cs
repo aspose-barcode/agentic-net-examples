@@ -3,58 +3,78 @@ using System.IO;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
+/// <summary>
+/// Demonstrates generating a Code128 barcode, saving it to a file,
+/// and then attempting to read it with different StripFNC settings.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a barcode image, verifies its existence,
+    /// and tries to decode it using Aspose.BarCode with fallback logic.
+    /// </summary>
     static void Main()
     {
-        string imagePath = Path.Combine(Directory.GetCurrentDirectory(), "sample.png");
+        const string imagePath = "barcode.png";
 
-        // Ensure barcode image exists
+        // ------------------------------------------------------------
+        // Generate a sample barcode image and save it to disk.
+        // ------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+        {
+            generator.Save(imagePath);
+        }
+
+        // Verify that the barcode image was successfully created.
         if (!File.Exists(imagePath))
         {
-            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.GS1Code128, "(02)04006664241007(37)1(400)7019590754"))
+            Console.WriteLine("Barcode image not found.");
+            return;
+        }
+
+        bool decoded = false; // Tracks whether decoding succeeded.
+
+        // ------------------------------------------------------------
+        // First decoding attempt: use default StripFNC = false.
+        // ------------------------------------------------------------
+        using (var reader = new BarCodeReader(imagePath, DecodeType.Code128))
+        {
+            reader.BarcodeSettings.StripFNC = false; // Explicitly set to false for clarity.
+            var results = reader.ReadBarCodes();
+
+            if (results.Length > 0)
             {
-                generator.Save(imagePath);
+                decoded = true; // Mark as successfully decoded.
+                foreach (var result in results)
+                {
+                    Console.WriteLine($"Decoded (first attempt): {result.CodeText}");
+                }
             }
         }
 
-        // First attempt without stripping FNC characters
-        BarCodeResult[] results = DecodeBarcode(imagePath, stripFnc: false);
-
-        // If no results, retry with StripFNC enabled
-        if (results == null || results.Length == 0)
+        // ------------------------------------------------------------
+        // Fallback decoding attempt: enable StripFNC if first attempt failed.
+        // ------------------------------------------------------------
+        if (!decoded)
         {
-            Console.WriteLine("No barcode detected without StripFNC. Retrying with StripFNC enabled...");
-            results = DecodeBarcode(imagePath, stripFnc: true);
-        }
-
-        // Output results
-        if (results != null && results.Length > 0)
-        {
-            foreach (BarCodeResult result in results)
+            using (var fallbackReader = new BarCodeReader(imagePath, DecodeType.Code128))
             {
-                Console.WriteLine($"Code Type: {result.CodeTypeName}");
-                Console.WriteLine($"Code Text: {result.CodeText}");
+                fallbackReader.BarcodeSettings.StripFNC = true; // Enable StripFNC for fallback.
+                var fallbackResults = fallbackReader.ReadBarCodes();
+
+                if (fallbackResults.Length > 0)
+                {
+                    foreach (var result in fallbackResults)
+                    {
+                        Console.WriteLine($"Decoded (fallback with StripFNC): {result.CodeText}");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("Failed to decode barcode even after fallback.");
+                }
             }
-        }
-        else
-        {
-            Console.WriteLine("Barcode could not be decoded.");
-        }
-    }
-
-    private static BarCodeResult[] DecodeBarcode(string filePath, bool stripFnc)
-    {
-        if (!File.Exists(filePath))
-        {
-            Console.WriteLine($"File not found: {filePath}");
-            return null;
-        }
-
-        using (BarCodeReader reader = new BarCodeReader(filePath, DecodeType.Code128))
-        {
-            reader.BarcodeSettings.StripFNC = stripFnc;
-            return reader.ReadBarCodes();
         }
     }
 }

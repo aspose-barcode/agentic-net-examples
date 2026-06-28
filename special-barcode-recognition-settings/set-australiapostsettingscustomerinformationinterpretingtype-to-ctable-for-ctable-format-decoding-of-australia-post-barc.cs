@@ -3,56 +3,45 @@ using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
+/// <summary>
+/// Demonstrates generation and reading of an Australia Post barcode using the CTable interpreting type.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Generates a barcode, saves it to a memory stream,
+    /// then reads and decodes it using the same interpreting type.
+    /// </summary>
     static void Main()
     {
-        // Sample code text for Australia Post barcode
-        const string codeText = "5912345678ABCde";
-
-        // Validate customer information for CTable (A-Z, a-z, 0-9, space, #)
-        if (!IsValidCTable(codeText))
+        // Create a barcode generator for Australia Post format with sample data.
+        using (var generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, "5912345678AB"))
         {
-            Console.WriteLine("Warning: Code text contains characters not allowed for CTable interpreting type.");
-            return;
-        }
+            // Configure the generator to use the CTable encoding table.
+            generator.Parameters.Barcode.AustralianPost.AustralianPostEncodingTable = CustomerInformationInterpretingType.CTable;
 
-        // Generate Australia Post barcode with CTable interpreting type
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, codeText))
-        {
-            generator.Parameters.Barcode.AustralianPost.EncodingTable = CustomerInformationInterpretingType.CTable;
-
-            // Save barcode image
-            const string imagePath = "AustraliaPostCTable.png";
-            generator.Save(imagePath, BarCodeImageFormat.Png);
-            Console.WriteLine($"Barcode image saved to {Path.GetFullPath(imagePath)}");
-
-            // Recognize the barcode and set decoding interpreting type to CTable
-            using (Bitmap bitmap = generator.GenerateBarCodeImage())
-            using (BarCodeReader reader = new BarCodeReader(bitmap, DecodeType.AustraliaPost))
+            // Prepare a memory stream to hold the generated barcode image.
+            using (var ms = new MemoryStream())
             {
-                reader.BarcodeSettings.AustraliaPost.CustomerInformationInterpretingType = CustomerInformationInterpretingType.CTable;
+                // Save the generated barcode as a PNG image into the memory stream.
+                generator.Save(ms, BarCodeImageFormat.Png);
+                // Reset stream position to the beginning for reading.
+                ms.Position = 0;
 
-                foreach (BarCodeResult result in reader.ReadBarCodes())
+                // Initialize a barcode reader to decode the image from the memory stream.
+                using (var reader = new BarCodeReader(ms, DecodeType.AustraliaPost))
                 {
-                    Console.WriteLine($"Detected Type: {result.CodeType}");
-                    Console.WriteLine($"Detected Text: {result.CodeText}");
+                    // Set the reader to interpret customer information using the CTable type.
+                    reader.BarcodeSettings.AustraliaPost.CustomerInformationInterpretingType = CustomerInformationInterpretingType.CTable;
+
+                    // Iterate through all decoded barcodes and output their text.
+                    foreach (var result in reader.ReadBarCodes())
+                    {
+                        Console.WriteLine("Decoded CodeText: " + result.CodeText);
+                    }
                 }
             }
         }
-    }
-
-    // Helper method to validate CTable allowed characters
-    static bool IsValidCTable(string text)
-    {
-        foreach (char ch in text)
-        {
-            if (char.IsLetterOrDigit(ch) || ch == ' ' || ch == '#')
-                continue;
-            return false;
-        }
-        return true;
     }
 }

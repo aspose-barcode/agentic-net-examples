@@ -4,49 +4,54 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates generation and reading of an Australia Post barcode using Aspose.BarCode with
+/// CustomerInformationInterpretingType set to Other.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a barcode, saves it to a file, verifies the file, and then reads the barcode back.
+    /// </summary>
     static void Main()
     {
-        // Sample code text for Australia Post barcode (customer information part is empty, using Other interpreting type)
-        const string codeText = "59123456780123012301230123";
-        const string outputPath = "AustraliaPost.png";
+        // Define sample barcode text (valid length for "Other" interpreting type) and output image path.
+        string codeText = "59123456780123012301230123";
+        string imagePath = "AustraliaPost.png";
 
-        // Create the barcode generator for Australia Post symbology
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, codeText))
+        // ---------- Barcode Generation ----------
+        // Create a BarcodeGenerator for Australia Post format with the specified text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, codeText))
         {
-            // Explicitly set the interpreting type to Other (default is Other, but we set it for clarity)
-            generator.Parameters.Barcode.AustralianPost.EncodingTable = CustomerInformationInterpretingType.Other;
+            // Configure the generator to interpret customer information as "Other".
+            generator.Parameters.Barcode.AustralianPost.AustralianPostEncodingTable = CustomerInformationInterpretingType.Other;
 
-            // Generate the barcode image
-            using (Bitmap bitmap = generator.GenerateBarCodeImage())
-            {
-                // Save the image to a file
-                bitmap.Save(outputPath, ImageFormat.Png);
-            }
+            // Save the generated barcode image to the specified file.
+            generator.Save(imagePath);
         }
 
-        // Verify that the image file was created
-        if (!File.Exists(outputPath))
+        // ---------- Verify Image Creation ----------
+        // Ensure the barcode image file was successfully created.
+        if (!File.Exists(imagePath))
         {
-            Console.WriteLine($"Failed to create barcode image at '{outputPath}'.");
+            Console.WriteLine("Failed to create barcode image.");
             return;
         }
 
-        // Load the saved image and decode it with custom settings
-        using (Bitmap bitmap = (Bitmap)Image.FromFile(outputPath))
-        using (BarCodeReader reader = new BarCodeReader(bitmap, DecodeType.AustraliaPost))
+        // ---------- Barcode Reading ----------
+        // Initialize a BarCodeReader for the saved image, specifying Australia Post decode type.
+        using (var reader = new BarCodeReader(imagePath, DecodeType.AustraliaPost))
         {
-            // Set the decoding interpreting type to Other for custom decoding
+            // Set the decoding interpreting type to match the generation setting.
             reader.BarcodeSettings.AustraliaPost.CustomerInformationInterpretingType = CustomerInformationInterpretingType.Other;
 
-            // Read all barcodes from the image
-            foreach (BarCodeResult result in reader.ReadBarCodes())
+            // Iterate through all detected barcodes and output their type and text.
+            foreach (var result in reader.ReadBarCodes())
             {
-                Console.WriteLine($"BarCode Type: {result.CodeType}");
-                Console.WriteLine($"BarCode CodeText: {result.CodeText}");
+                Console.WriteLine("BarCode Type: " + result.CodeType);
+                Console.WriteLine("BarCode CodeText: " + result.CodeText);
             }
         }
     }

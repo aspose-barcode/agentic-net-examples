@@ -4,52 +4,70 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates generation and recognition of Australia Post barcodes using NTable interpreting type.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Generates sample TIFF files with Australia Post barcodes,
+    /// then reads and decodes them applying the NTable interpreting type.
+    /// </summary>
     static void Main()
     {
-        string inputFolder = Path.Combine(Directory.GetCurrentDirectory(), "InputTiff");
-        if (!Directory.Exists(inputFolder))
+        // ------------------------------------------------------------
+        // Prepare an array of TIFF file names to be created in the current directory.
+        // ------------------------------------------------------------
+        string[] tiffFiles = new string[5];
+        for (int i = 0; i < tiffFiles.Length; i++)
         {
-            Directory.CreateDirectory(inputFolder);
+            tiffFiles[i] = $"AustraliaPost_{i + 1}.tif";
         }
 
-        // Create sample TIFF files if none exist
-        string[] tiffFiles = Directory.GetFiles(inputFolder, "*.tif");
-        if (tiffFiles.Length == 0)
+        // ------------------------------------------------------------
+        // Generate sample Australia Post barcodes and save each as a TIFF file.
+        // ------------------------------------------------------------
+        for (int i = 0; i < tiffFiles.Length; i++)
         {
-            for (int i = 1; i <= 3; i++)
+            // Create a simple numeric code text for the barcode.
+            string codeText = $"5912345678{i}";
+
+            // Initialize the barcode generator with Australia Post encoding.
+            using (var generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, codeText))
             {
-                string samplePath = Path.Combine(inputFolder, $"Sample{i}.tif");
-                using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, $"591234567{i}"))
-                {
-                    // Use NTable interpreting type for customer information
-                    generator.Parameters.Barcode.AustralianPost.EncodingTable = CustomerInformationInterpretingType.NTable;
-                    generator.Save(samplePath, BarCodeImageFormat.Tiff);
-                }
+                // Set the interpreting type to NTable for generation.
+                generator.Parameters.Barcode.AustralianPost.AustralianPostEncodingTable = CustomerInformationInterpretingType.NTable;
+
+                // Save the generated barcode image as a TIFF file.
+                generator.Save(tiffFiles[i], BarCodeImageFormat.Tiff);
             }
-            tiffFiles = Directory.GetFiles(inputFolder, "*.tif");
         }
 
-        // Process each TIFF image
-        foreach (string filePath in tiffFiles)
+        // ------------------------------------------------------------
+        // Read each generated TIFF file and decode the barcode using NTable interpreting type.
+        // ------------------------------------------------------------
+        foreach (var filePath in tiffFiles)
         {
+            // Verify that the file exists before attempting to read it.
             if (!File.Exists(filePath))
             {
                 Console.WriteLine($"File not found: {filePath}");
                 continue;
             }
 
-            using (BarCodeReader reader = new BarCodeReader(filePath, DecodeType.AustraliaPost))
+            // Initialize the barcode reader for Australia Post type.
+            using (var reader = new BarCodeReader(filePath, DecodeType.AustraliaPost))
             {
-                // Apply NTable interpreting type for recognition
+                // Apply NTable interpreting type for recognition.
                 reader.BarcodeSettings.AustraliaPost.CustomerInformationInterpretingType = CustomerInformationInterpretingType.NTable;
 
+                // Iterate through all detected barcodes in the image.
                 foreach (var result in reader.ReadBarCodes())
                 {
                     Console.WriteLine($"File: {Path.GetFileName(filePath)}");
-                    Console.WriteLine($"  Barcode Type: {result.CodeType}");
+                    Console.WriteLine($"  Detected Type: {result.CodeTypeName}");
                     Console.WriteLine($"  Code Text: {result.CodeText}");
                 }
             }

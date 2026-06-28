@@ -5,61 +5,84 @@ using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
+/// <summary>
+/// Demonstrates generating GS1 Code128 barcodes, saving them as images,
+/// and reading them back while stripping FNC characters.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates sample barcode images, reads them, and outputs original and stripped code texts.
+    /// </summary>
     static void Main()
     {
-        // Define input folder for images
-        string inputFolder = Path.Combine(Directory.GetCurrentDirectory(), "InputImages");
-        if (!Directory.Exists(inputFolder))
+        // Determine a temporary directory to store generated barcode images.
+        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodes");
+        if (!Directory.Exists(outputDir))
         {
-            Directory.CreateDirectory(inputFolder);
+            // Create the directory if it does not already exist.
+            Directory.CreateDirectory(outputDir);
         }
 
-        // Seed sample images if folder is empty (up to 3 samples)
-        string[] existingFiles = Directory.GetFiles(inputFolder, "*.png");
-        if (existingFiles.Length == 0)
+        // Sample code texts that include GS1 Application Identifiers (AIs) and potential FNC characters.
+        string[] sampleCodeTexts = new string[]
         {
-            for (int i = 1; i <= 3; i++)
+            "(01)12345678901231(21)ABC123",          // Typical GS1 format without explicit FNC.
+            "(02)04006664241007(37)1(400)7019590754", // Contains groups that resemble FNC characters.
+            "(10)123456(17)210101(21)XYZ",           // Multiple AI groups.
+        };
+
+        // Array to hold the file paths of the generated barcode images.
+        string[] imagePaths = new string[sampleCodeTexts.Length];
+
+        // Generate a barcode image for each sample text.
+        for (int i = 0; i < sampleCodeTexts.Length; i++)
+        {
+            // Construct a unique file name for each barcode image.
+            string filePath = Path.Combine(outputDir, $"barcode_{i}.png");
+
+            // Create a BarcodeGenerator for GS1 Code128 using the current sample text.
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.GS1Code128, sampleCodeTexts[i]))
             {
-                string samplePath = Path.Combine(inputFolder, $"Sample{i}.png");
-                using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.GS1Code128, "(02)04006664241007(37)1(400)7019590754"))
-                {
-                    generator.Save(samplePath);
-                }
+                // Save the generated barcode as a PNG image.
+                generator.Save(filePath);
             }
+
+            // Store the generated image path for later processing.
+            imagePaths[i] = filePath;
         }
 
-        // Get all image files (png, jpg, jpeg, bmp) in the folder
-        string[] imageFiles = Directory.GetFiles(inputFolder, "*.*", SearchOption.TopDirectoryOnly);
-        foreach (string filePath in imageFiles)
+        // Iterate over each generated image to read and process the barcode.
+        foreach (string imagePath in imagePaths)
         {
-            string extension = Path.GetExtension(filePath).ToLowerInvariant();
-            if (extension != ".png" && extension != ".jpg" && extension != ".jpeg" && extension != ".bmp")
-                continue; // skip non‑image files
-
-            if (!File.Exists(filePath))
-                continue; // safety check
-
-            // Read barcodes from the image with StripFNC enabled
-            using (BarCodeReader reader = new BarCodeReader(filePath, DecodeType.Code128))
+            // Verify that the image file exists before attempting to read it.
+            if (!File.Exists(imagePath))
             {
-                // Enable stripping of FNC characters
+                Console.WriteLine($"File not found: {imagePath}");
+                continue;
+            }
+
+            // Initialize a BarCodeReader to decode all supported barcode types from the image.
+            using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
+            {
+                // Enable automatic stripping of FNC characters from the decoded text.
                 reader.BarcodeSettings.StripFNC = true;
 
-                BarCodeResult[] results = reader.ReadBarCodes();
-                if (results.Length == 0)
+                // Read all barcodes present in the image.
+                foreach (var result in reader.ReadBarCodes())
                 {
-                    Console.WriteLine($"No barcodes found in file: {Path.GetFileName(filePath)}");
-                }
-                else
-                {
-                    foreach (BarCodeResult result in results)
-                    {
-                        Console.WriteLine($"File: {Path.GetFileName(filePath)} | Type: {result.CodeTypeName} | CodeText: {result.CodeText}");
-                    }
+                    // Output the image name and the decoded texts.
+                    Console.WriteLine($"Image: {Path.GetFileName(imagePath)}");
+                    Console.WriteLine($"Original CodeText: {result.CodeText}");
+                    // Since StripFNC is true, the CodeText already has FNC characters removed.
+                    Console.WriteLine($"Stripped CodeText: {result.CodeText}");
+                    Console.WriteLine();
                 }
             }
         }
+
+        // Optional cleanup: delete the generated barcode images.
+        // foreach (var path in imagePaths) { File.Delete(path); }
     }
 }

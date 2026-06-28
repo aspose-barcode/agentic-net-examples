@@ -1,84 +1,126 @@
 using System;
-using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
-using Aspose.BarCode.Common;
+using Aspose.BarCode;
+using Aspose.Drawing;
 
-namespace ProcessorSettingsDemo
+namespace BarcodeProcessorDemo
 {
-    // Wrapper class to encapsulate ProcessorSettings configuration
-    public static class ProcessorSettingsWrapper
+    /// <summary>
+    /// Holds common barcode generation settings and provides helper methods to apply them.
+    /// </summary>
+    public class ProcessorSettings
     {
-        // Enable usage of all processor cores
-        public static void EnableAllCores()
+        // Symbology to use (e.g., EncodeTypes.Code128).
+        public BaseEncodeType Symbology { get; set; } = EncodeTypes.Code128;
+
+        // Text to encode.
+        public string CodeText { get; set; } = "Sample123";
+
+        // Optional bar height (in points). Applies to 1D barcodes when AutoSizeMode is None.
+        public float? BarHeight { get; set; }
+
+        // Optional X-dimension (module width) in points.
+        public float? XDimension { get; set; }
+
+        // Optional checksum enable/disable.
+        public EnableChecksum? ChecksumEnabled { get; set; }
+
+        // Optional image width/height when using AutoSizeMode.Interpolation or Nearest.
+        public float? ImageWidth { get; set; }
+        public float? ImageHeight { get; set; }
+
+        // Optional auto-size mode.
+        public AutoSizeMode? AutoSizeMode { get; set; }
+
+        // Optional colors.
+        public Color? BarColor { get; set; }
+        public Color? BackColor { get; set; }
+
+        /// <summary>
+        /// Applies the stored settings to an existing <see cref="BarcodeGenerator"/> instance.
+        /// </summary>
+        /// <param name="generator">The generator to configure.</param>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="generator"/> is null.</exception>
+        public void Apply(BarcodeGenerator generator)
         {
-            BarCodeReader.ProcessorSettings.UseAllCores = true;
+            if (generator == null) throw new ArgumentNullException(nameof(generator));
+
+            // Set the text to encode.
+            generator.CodeText = CodeText;
+
+            // Apply optional numeric settings if they have values.
+            if (BarHeight.HasValue)
+                generator.Parameters.Barcode.BarHeight.Point = BarHeight.Value;
+
+            if (XDimension.HasValue)
+                generator.Parameters.Barcode.XDimension.Point = XDimension.Value;
+
+            if (ChecksumEnabled.HasValue)
+                generator.Parameters.Barcode.IsChecksumEnabled = ChecksumEnabled.Value;
+
+            if (ImageWidth.HasValue)
+                generator.Parameters.ImageWidth.Point = ImageWidth.Value;
+
+            if (ImageHeight.HasValue)
+                generator.Parameters.ImageHeight.Point = ImageHeight.Value;
+
+            // Apply optional enum settings.
+            if (AutoSizeMode.HasValue)
+                generator.Parameters.AutoSizeMode = AutoSizeMode.Value;
+
+            // Apply optional color settings.
+            if (BarColor.HasValue)
+                generator.Parameters.Barcode.BarColor = BarColor.Value;
+
+            if (BackColor.HasValue)
+                generator.Parameters.BackColor = BackColor.Value;
         }
 
-        // Configure to use a specific number of cores
-        public static void UseSpecificCores(int coreCount)
+        /// <summary>
+        /// Creates a new <see cref="BarcodeGenerator"/> with the configured symbology and applies all settings.
+        /// </summary>
+        /// <returns>A configured <see cref="BarcodeGenerator"/> instance.</returns>
+        public BarcodeGenerator CreateGenerator()
         {
-            if (coreCount < 1)
-                throw new ArgumentOutOfRangeException(nameof(coreCount), "Core count must be at least 1.");
-
-            BarCodeReader.ProcessorSettings.UseAllCores = false;
-            BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount = coreCount;
-        }
-
-        // Set the maximum number of additional threads allowed for processing
-        public static void SetMaxAdditionalThreads(int maxThreads)
-        {
-            if (maxThreads < 0)
-                throw new ArgumentOutOfRangeException(nameof(maxThreads), "Maximum threads cannot be negative.");
-
-            BarCodeReader.ProcessorSettings.MaxAdditionalAllowedThreads = maxThreads;
+            // Initialise generator with the selected symbology and code text.
+            var generator = new BarcodeGenerator(Symbology, CodeText);
+            // Apply all optional settings.
+            Apply(generator);
+            return generator;
         }
     }
 
     class Program
     {
+        /// <summary>
+        /// Entry point of the demo application. Generates a QR code using predefined settings.
+        /// </summary>
         static void Main()
         {
-            // Configure processor settings using the wrapper
-            int halfCores = Math.Max(1, Environment.ProcessorCount / 2);
-            ProcessorSettingsWrapper.UseSpecificCores(halfCores);
-            ProcessorSettingsWrapper.SetMaxAdditionalThreads(Environment.ProcessorCount * 2);
-
-            // Define a temporary file path for the generated barcode image
-            string barcodePath = Path.Combine(Directory.GetCurrentDirectory(), "sample_barcode.png");
-
-            // Generate a simple Code128 barcode and save it to the file
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Demo123"))
+            // Define reusable processor settings.
+            var settings = new ProcessorSettings
             {
-                generator.Save(barcodePath);
-            }
+                Symbology = EncodeTypes.QR,
+                CodeText = "https://example.com",
+                XDimension = 2f,
+                ImageWidth = 300f,
+                ImageHeight = 300f,
+                AutoSizeMode = AutoSizeMode.Interpolation,
+                BarColor = Color.DarkBlue,
+                BackColor = Color.White
+            };
 
-            // Verify that the barcode image was created
-            if (!File.Exists(barcodePath))
+            // Generate barcode using the wrapper.
+            using (var generator = settings.CreateGenerator())
             {
-                Console.WriteLine("Failed to create barcode image.");
-                return;
-            }
+                // Define output file path.
+                string outputPath = "barcode.png";
 
-            // Read the barcode using BarCodeReader with the configured processor settings
-            using (var reader = new BarCodeReader(barcodePath, DecodeType.Code128))
-            {
-                foreach (var result in reader.ReadBarCodes())
-                {
-                    Console.WriteLine($"Detected Type: {result.CodeTypeName}");
-                    Console.WriteLine($"Code Text: {result.CodeText}");
-                }
-            }
+                // Save the generated barcode image.
+                generator.Save(outputPath);
 
-            // Clean up the temporary barcode image
-            try
-            {
-                File.Delete(barcodePath);
-            }
-            catch
-            {
-                // Ignored - cleanup failure should not affect program flow
+                // Inform the user where the file was saved.
+                Console.WriteLine($"Barcode saved to {outputPath}");
             }
         }
     }

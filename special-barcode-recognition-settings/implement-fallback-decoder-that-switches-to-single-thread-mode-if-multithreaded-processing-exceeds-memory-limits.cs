@@ -1,66 +1,82 @@
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
+/// <summary>
+/// Demonstrates barcode generation and reading with fallback from multithreaded to single‑threaded processing.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Generates a sample barcode image if missing and attempts to read it.
+    /// </summary>
     static void Main()
     {
-        const string imagePath = "sample.png";
+        const string imagePath = "sample_barcode.png";
 
-        // Ensure a barcode image exists for the demo
+        // Ensure a barcode image exists; generate one if it does not.
         if (!File.Exists(imagePath))
         {
-            GenerateSampleBarcode(imagePath);
+            // Create a barcode generator for Code128 with sample data.
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
+            {
+                // Save the generated barcode to the specified path.
+                generator.Save(imagePath);
+                Console.WriteLine($"Generated barcode image: {imagePath}");
+            }
         }
 
-        // Try multithreaded decoding first
-        BarCodeReader.ProcessorSettings.UseAllCores = true;
-        BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount = Math.Max(1, Environment.ProcessorCount / 2);
-        BarCodeReader.ProcessorSettings.MaxAdditionalAllowedThreads = Environment.ProcessorCount * 2;
+        // Read the barcode using multithreaded processing, with fallback to single‑threaded if needed.
+        ReadWithFallback(imagePath);
+    }
 
+    static void ReadWithFallback(string imagePath)
+    {
+        // Verify that the image file exists before attempting to read.
+        if (!File.Exists(imagePath))
+        {
+            Console.WriteLine($"Image file not found: {imagePath}");
+            return;
+        }
+
+        // Attempt to decode using all available processor cores.
         try
         {
-            DecodeBarcodes(imagePath);
+            // Configure the reader to use all cores.
+            BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount = Environment.ProcessorCount;
+
+            // Initialize the barcode reader for all supported decode types.
+            using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
+            {
+                // Iterate through all detected barcodes and output their type and text.
+                foreach (var result in reader.ReadBarCodes())
+                {
+                    Console.WriteLine($"[Multi] Type: {result.CodeTypeName}, Text: {result.CodeText}");
+                }
+            }
         }
         catch (OutOfMemoryException)
         {
-            // Fallback to single‑thread mode when memory limit is hit
-            Console.WriteLine("Out of memory detected. Switching to single‑thread mode.");
+            // If memory limits are hit, fall back to single‑threaded decoding.
+            Console.WriteLine("Memory limit exceeded during multithreaded decoding. Switching to single‑thread mode.");
 
-            BarCodeReader.ProcessorSettings.UseAllCores = false;
+            // Restrict processing to a single core.
             BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount = 1;
-            BarCodeReader.ProcessorSettings.MaxAdditionalAllowedThreads = 0;
 
-            // Retry decoding with the new settings
-            DecodeBarcodes(imagePath);
-        }
-    }
-
-    // Generates a simple Code128 barcode image
-    private static void GenerateSampleBarcode(string path)
-    {
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Demo123"))
-        {
-            generator.Save(path);
-        }
-    }
-
-    // Performs barcode decoding and prints results
-    private static void DecodeBarcodes(string path)
-    {
-        using (var reader = new BarCodeReader(path, DecodeType.Code128, DecodeType.QR))
-        {
-            // Optional: set a timeout to avoid hanging on very large images
-            reader.Timeout = 5000;
-
-            foreach (var result in reader.ReadBarCodes())
+            // Re‑initialize the reader in single‑thread mode.
+            using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
             {
-                Console.WriteLine($"Type: {result.CodeTypeName}, Text: {result.CodeText}");
+                foreach (var result in reader.ReadBarCodes())
+                {
+                    Console.WriteLine($"[Single] Type: {result.CodeTypeName}, Text: {result.CodeText}");
+                }
             }
+        }
+        catch (Exception ex)
+        {
+            // Handle any other exceptions that may occur during decoding.
+            Console.WriteLine($"Decoding failed: {ex.Message}");
         }
     }
 }

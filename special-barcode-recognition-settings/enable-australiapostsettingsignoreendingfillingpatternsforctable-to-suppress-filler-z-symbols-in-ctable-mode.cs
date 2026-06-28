@@ -2,41 +2,50 @@ using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
+/// <summary>
+/// Demonstrates generation and recognition of an Australia Post barcode using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a barcode, saves it to a file, then reads it back and displays the results.
+    /// </summary>
     static void Main()
     {
-        // Sample Australia Post barcode text (customer information part)
-        const string codeText = "5912345678AB";
+        // Define the output file path for the generated barcode image.
+        string imagePath = "australia_post.png";
 
-        // Create barcode generator for Australia Post symbology
-        using (var generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, codeText))
+        // -------------------------------------------------
+        // Generate an Australia Post barcode with CTable interpreting type.
+        // -------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, "5912345678AB"))
         {
-            // Use CTable interpreting type for customer information
-            generator.Parameters.Barcode.AustralianPost.EncodingTable = CustomerInformationInterpretingType.CTable;
+            // Configure the generator to use the CTable encoding table.
+            generator.Parameters.Barcode.AustralianPost.AustralianPostEncodingTable = CustomerInformationInterpretingType.CTable;
 
-            // Generate barcode image in memory
-            using (Bitmap image = generator.GenerateBarCodeImage())
+            // Save the generated barcode image to the specified file.
+            generator.Save(imagePath);
+        }
+
+        // -------------------------------------------------
+        // Recognize the previously generated barcode.
+        // Enable ignoring ending filling patterns for CTable.
+        // -------------------------------------------------
+        using (var reader = new BarCodeReader(imagePath, DecodeType.AustraliaPost))
+        {
+            // Set the decoding interpreting type to CTable.
+            reader.BarcodeSettings.AustraliaPost.CustomerInformationInterpretingType = CustomerInformationInterpretingType.CTable;
+
+            // Enable the flag to ignore filler "z" symbols at the end of the barcode.
+            reader.BarcodeSettings.AustraliaPost.IgnoreEndingFillingPatternsForCTable = true;
+
+            // Iterate through all detected barcodes and output their details.
+            foreach (var result in reader.ReadBarCodes())
             {
-                // Set up reader with Australia Post decoding settings
-                using (var reader = new BarCodeReader(image, DecodeType.AustraliaPost))
-                {
-                    // Apply same interpreting type and enable ignoring filler patterns
-                    reader.BarcodeSettings.AustraliaPost.CustomerInformationInterpretingType = CustomerInformationInterpretingType.CTable;
-                    reader.BarcodeSettings.AustraliaPost.IgnoreEndingFillingPatternsForCTable = true;
-
-                    // Read and display results
-                    foreach (BarCodeResult result in reader.ReadBarCodes())
-                    {
-                        Console.WriteLine("BarCode Type: " + result.CodeType);
-                        Console.WriteLine("BarCode CodeText: " + result.CodeText);
-                    }
-                }
-
-                // Optionally save the generated image to verify visually
-                image.Save("AustraliaPost.png", Aspose.Drawing.Imaging.ImageFormat.Png);
+                Console.WriteLine($"BarCode Type: {result.CodeType}");
+                Console.WriteLine($"BarCode CodeText: {result.CodeText}");
             }
         }
     }
