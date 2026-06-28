@@ -6,30 +6,43 @@ using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
+/// <summary>
+/// Demonstrates generating a barcode, storing it in memory, and reading it back using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Configures thread pool, creates a barcode image in memory, and reads it back.
+    /// </summary>
     static void Main()
     {
-        // Adjust ThreadPool settings
-        // Set minimum worker threads to 2, completion port threads to 0
-        ThreadPool.SetMinThreads(2, 0);
-        // Set maximum worker threads to 8, completion port threads to 0
-        ThreadPool.SetMaxThreads(8, 0);
+        // Configure the thread pool to have a minimum of 2 worker and I/O threads,
+        // and a maximum of 8 worker and I/O threads.
+        ThreadPool.SetMinThreads(2, 2);
+        ThreadPool.SetMaxThreads(8, 8);
 
-        // Generate a sample barcode image (Code128)
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
+        // Use a memory stream to hold the generated barcode image.
+        using (var ms = new MemoryStream())
         {
-            // Generate the barcode as a bitmap
-            using (Bitmap bitmap = generator.GenerateBarCodeImage())
+            // Create a barcode generator for Code128 with the data "123456".
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
             {
-                // Read the barcode from the generated bitmap
-                using (BarCodeReader reader = new BarCodeReader(bitmap, DecodeType.Code128))
+                // Save the generated barcode as a PNG image into the memory stream.
+                generator.Save(ms, BarCodeImageFormat.Png);
+            }
+
+            // Reset the stream position to the beginning before reading.
+            ms.Position = 0;
+
+            // Initialize a barcode reader that can decode all supported barcode types,
+            // using the memory stream that contains the PNG image.
+            using (var reader = new BarCodeReader(ms, DecodeType.AllSupportedTypes))
+            {
+                // Iterate through all detected barcodes and output their type and text.
+                foreach (var result in reader.ReadBarCodes())
                 {
-                    foreach (var result in reader.ReadBarCodes())
-                    {
-                        Console.WriteLine("BarCode Type: " + result.CodeTypeName);
-                        Console.WriteLine("BarCode CodeText: " + result.CodeText);
-                    }
+                    Console.WriteLine($"Type: {result.CodeTypeName}, Text: {result.CodeText}");
                 }
             }
         }

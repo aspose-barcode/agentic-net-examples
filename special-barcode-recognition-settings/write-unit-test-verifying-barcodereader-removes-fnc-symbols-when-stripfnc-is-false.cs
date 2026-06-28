@@ -1,75 +1,91 @@
 using System;
 using System.IO;
-using Aspose.BarCode;
+using System.Linq;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates generation and recognition of a GS1 Code128 barcode,
+/// showing the effect of the StripFNC setting on FNC1 characters.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a barcode, reads it twice with different StripFNC settings,
+    /// and outputs verification results to the console.
+    /// </summary>
     static void Main()
     {
-        // Sample GS1-128 code with FNC1 separators (parentheses)
-        const string originalCodeText = "(02)04006664241007(37)1(400)7019590754";
+        // Sample GS1 Code128 text containing Application Identifiers.
+        const string codeText = "(02)04006664241007(37)1(400)7019590754";
 
-        // Generate barcode image into a memory stream
+        // Create a memory stream to hold the generated barcode image.
         using (var ms = new MemoryStream())
         {
-            using (var generator = new BarcodeGenerator(EncodeTypes.GS1Code128, originalCodeText))
+            // Generate the barcode image using Aspose.BarCode.
+            using (var generator = new BarcodeGenerator(EncodeTypes.GS1Code128, codeText))
             {
+                // Save the barcode as PNG (any format works for recognition).
                 generator.Save(ms, BarCodeImageFormat.Png);
             }
 
-            // Ensure the stream is ready for reading
+            // Reset stream position to the beginning for reading.
             ms.Position = 0;
 
-            // ---------- Test with StripFNC = false (FNC characters should remain) ----------
-            using (var reader = new BarCodeReader(ms, DecodeType.Code128))
+            // ---------- First read: StripFNC = false ----------
+            // FNC characters should be retained in the decoded text.
+            string codeWithoutStrip;
+            using (var reader = new BarCodeReader(ms, DecodeType.GS1Code128))
             {
+                // Configure reader to keep FNC characters.
                 reader.BarcodeSettings.StripFNC = false;
-                var results = reader.ReadBarCodes();
-                if (results.Length == 0)
-                {
-                    Console.WriteLine("FAIL: No barcode detected (StripFNC = false).");
-                    return;
-                }
 
-                var codeText = results[0].CodeText;
-                if (codeText.Contains("(") && codeText.Contains(")"))
-                {
-                    Console.WriteLine("PASS: StripFNC = false retains FNC characters.");
-                }
-                else
-                {
-                    Console.WriteLine("FAIL: StripFNC = false removed FNC characters unexpectedly.");
-                    return;
-                }
+                // Read the first barcode found (there should be only one).
+                var result = reader.ReadBarCodes().FirstOrDefault();
+
+                // Extract the decoded text, or use empty string if none.
+                codeWithoutStrip = result?.CodeText ?? string.Empty;
             }
 
-            // Reset stream position for the second read
+            // Reset stream position again for the second read.
             ms.Position = 0;
 
-            // ---------- Test with StripFNC = true (FNC characters should be removed) ----------
-            using (var reader = new BarCodeReader(ms, DecodeType.Code128))
+            // ---------- Second read: StripFNC = true ----------
+            // FNC characters should be removed from the decoded text.
+            string codeWithStrip;
+            using (var reader = new BarCodeReader(ms, DecodeType.GS1Code128))
             {
+                // Configure reader to strip FNC characters.
                 reader.BarcodeSettings.StripFNC = true;
-                var results = reader.ReadBarCodes();
-                if (results.Length == 0)
-                {
-                    Console.WriteLine("FAIL: No barcode detected (StripFNC = true).");
-                    return;
-                }
 
-                var codeText = results[0].CodeText;
-                if (!codeText.Contains("(") && !codeText.Contains(")"))
-                {
-                    Console.WriteLine("PASS: StripFNC = true correctly removes FNC characters.");
-                }
-                else
-                {
-                    Console.WriteLine("FAIL: StripFNC = true did not remove FNC characters.");
-                }
+                // Read the first barcode found.
+                var result = reader.ReadBarCodes().FirstOrDefault();
+
+                // Extract the decoded text, or use empty string if none.
+                codeWithStrip = result?.CodeText ?? string.Empty;
+            }
+
+            // The FNC1 character is represented by char value 241 in Aspose.BarCode.
+            char fncChar = (char)241;
+
+            // Determine whether the unstripped result contains the FNC1 character.
+            bool containsFnc = codeWithoutStrip.Contains(fncChar.ToString());
+
+            // Output verification information to the console.
+            Console.WriteLine("CodeText with StripFNC = false: " + codeWithoutStrip);
+            Console.WriteLine("Contains FNC1 character: " + containsFnc);
+            Console.WriteLine("CodeText with StripFNC = true : " + codeWithStrip);
+            Console.WriteLine("CodeTexts are different: " + (codeWithoutStrip != codeWithStrip));
+
+            // Simple assertion to confirm expected behavior.
+            if (containsFnc && codeWithoutStrip != codeWithStrip)
+            {
+                Console.WriteLine("Test passed: FNC characters are retained when StripFNC is false and removed when true.");
+            }
+            else
+            {
+                Console.WriteLine("Test failed: Unexpected StripFNC behavior.");
             }
         }
     }

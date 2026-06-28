@@ -1,73 +1,66 @@
 using System;
-using System.IO;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading.Tasks;
-using System.Threading;
+using Aspose.BarCode;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.BarCode.Common;
 
+/// <summary>
+/// Entry point for the barcode processing application.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Main method that processes image files to read barcodes in parallel.
+    /// </summary>
+    /// <param name="args">Optional list of image file paths to process.</param>
     static void Main(string[] args)
     {
-        // Sample image paths – replace with real paths or pass via command line
-        List<string> imagePaths = new List<string>
-        {
-            @"sample1.png",
-            @"sample2.png",
-            @"sample3.png",
-            @"sample4.png",
-            @"sample5.png"
-        };
+        // Determine the list of image paths: use command‑line arguments if provided,
+        // otherwise fall back to a predefined set of sample images.
+        List<string> imagePaths = args.Length > 0
+            ? new List<string>(args)
+            : new List<string>
+            {
+                "image1.png",
+                "image2.png",
+                "image3.png",
+                "image4.png",
+                "image5.png"
+            };
 
-        // If arguments are provided, use them as image paths
-        if (args.Length > 0)
-        {
-            imagePaths.Clear();
-            imagePaths.AddRange(args);
-        }
+        // Set the maximum degree of parallelism to the number of logical processors.
+        int maxDegree = Environment.ProcessorCount;
+        var parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = maxDegree };
 
-        // Configure processor settings for barcode recognition
-        BarCodeReader.ProcessorSettings.MaxAdditionalAllowedThreads = Environment.ProcessorCount;
-        BarCodeReader.ProcessorSettings.UseAllCores = false;
-        BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount = Math.Max(1, Environment.ProcessorCount / 2);
-
-        // Parallel processing options – limit degree of parallelism to available cores
-        ParallelOptions parallelOptions = new ParallelOptions
-        {
-            MaxDegreeOfParallelism = Environment.ProcessorCount
-        };
-
-        // Process each image in parallel
+        // Process each image file in parallel.
         Parallel.ForEach(imagePaths, parallelOptions, path =>
         {
+            // Verify that the file exists before attempting to read it.
             if (!File.Exists(path))
             {
                 Console.WriteLine($"File not found: {path}");
                 return;
             }
 
-            try
+            // Create a barcode reader for the current image, supporting all barcode types.
+            using (BarCodeReader reader = new BarCodeReader(path, DecodeType.AllSupportedTypes))
             {
-                using (BarCodeReader reader = new BarCodeReader(path))
+                try
                 {
-                    // Optional: set a timeout to avoid hanging on large images
-                    reader.Timeout = 5000; // milliseconds
-
-                    foreach (var result in reader.ReadBarCodes())
+                    // Iterate through all detected barcodes in the image.
+                    foreach (BarCodeResult result in reader.ReadBarCodes())
                     {
-                        Console.WriteLine($"{Path.GetFileName(path)}: {result.CodeText} ({result.CodeTypeName})");
-                    }
-
-                    if (reader.FoundCount == 0)
-                    {
-                        Console.WriteLine($"{Path.GetFileName(path)}: No barcodes detected.");
+                        Console.WriteLine($"File: {path}");
+                        Console.WriteLine($"  Barcode Type : {result.CodeTypeName}");
+                        Console.WriteLine($"  Code Text    : {result.CodeText}");
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error processing {path}: {ex.Message}");
+                catch (Exception ex)
+                {
+                    // Log any errors that occur during barcode processing.
+                    Console.WriteLine($"Error processing {path}: {ex.Message}");
+                }
             }
         });
     }

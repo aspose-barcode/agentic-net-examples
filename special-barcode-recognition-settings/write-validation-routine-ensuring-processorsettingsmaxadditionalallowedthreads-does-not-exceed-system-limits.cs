@@ -1,49 +1,66 @@
 using System;
-using System.Threading;
-using Aspose.BarCode;
 using Aspose.BarCode.BarCodeRecognition;
 
+/// <summary>
+/// Demonstrates validation and configuration of the maximum number of additional threads
+/// used by Aspose.BarCode's barcode processing engine.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Validates and sets the maximum number of additional threads for barcode processing.
+    /// </summary>
+    /// <param name="requestedThreads">The desired number of additional threads.</param>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// Thrown when <paramref name="requestedThreads"/> is negative or exceeds the system limit.
+    /// </exception>
+    static void SetMaxAdditionalAllowedThreads(int requestedThreads)
+    {
+        // Calculate a reasonable system limit (e.g., 4 times the logical processor count).
+        int systemLimit = Environment.ProcessorCount * 4;
+
+        // Ensure the requested thread count is not negative.
+        if (requestedThreads < 0)
+            throw new ArgumentOutOfRangeException(
+                nameof(requestedThreads),
+                "Thread count cannot be negative.");
+
+        // Ensure the requested thread count does not exceed the calculated system limit.
+        if (requestedThreads > systemLimit)
+            throw new ArgumentOutOfRangeException(
+                nameof(requestedThreads),
+                $"Thread count exceeds system limit of {systemLimit} threads.");
+
+        // Apply the validated value to the Aspose.BarCode processor settings.
+        BarCodeReader.ProcessorSettings.MaxAdditionalAllowedThreads = requestedThreads;
+
+        // Inform the user of the successful configuration.
+        Console.WriteLine($"ProcessorSettings.MaxAdditionalAllowedThreads set to {requestedThreads}");
+    }
+
+    /// <summary>
+    /// Entry point demonstrating thread count validation.
+    /// </summary>
     static void Main()
     {
-        // Determine the maximum number of worker threads allowed by the ThreadPool
-        ThreadPool.GetMaxThreads(out int maxWorkerThreads, out int maxCompletionPortThreads);
-
-        // Example requested value for additional threads
-        int requestedAdditionalThreads = Environment.ProcessorCount * 3; // sample value
-
+        // Attempt to set a valid thread count and handle any validation errors.
         try
         {
-            ValidateMaxAdditionalAllowedThreads(requestedAdditionalThreads, maxWorkerThreads);
-            // Apply the validated setting
-            BarCodeReader.ProcessorSettings.MaxAdditionalAllowedThreads = requestedAdditionalThreads;
-            Console.WriteLine($"ProcessorSettings.MaxAdditionalAllowedThreads set to {requestedAdditionalThreads}.");
+            SetMaxAdditionalAllowedThreads(8);
         }
         catch (ArgumentOutOfRangeException ex)
         {
-            Console.WriteLine($"Error: {ex.Message}");
+            Console.WriteLine($"Validation error: {ex.Message}");
         }
 
-        // Display current setting
-        int currentSetting = BarCodeReader.ProcessorSettings.MaxAdditionalAllowedThreads;
-        Console.WriteLine($"Current MaxAdditionalAllowedThreads: {currentSetting}");
-        Console.WriteLine($"System max worker threads: {maxWorkerThreads}");
-    }
-
-    static void ValidateMaxAdditionalAllowedThreads(int requested, int systemMaxWorkerThreads)
-    {
-        if (requested < 0)
+        // Attempt to set an invalid thread count (exceeds limit) and handle the error.
+        try
         {
-            throw new ArgumentOutOfRangeException(nameof(requested), "Requested thread count cannot be negative.");
+            SetMaxAdditionalAllowedThreads(1000);
         }
-
-        // Ensure the requested additional threads do not exceed the system's max worker threads
-        if (requested > systemMaxWorkerThreads)
+        catch (ArgumentOutOfRangeException ex)
         {
-            throw new ArgumentOutOfRangeException(
-                nameof(requested),
-                $"Requested thread count ({requested}) exceeds the system's maximum worker threads ({systemMaxWorkerThreads}).");
+            Console.WriteLine($"Validation error: {ex.Message}");
         }
     }
 }

@@ -1,71 +1,66 @@
 using System;
 using System.IO;
-using System.Linq;
-using System.Collections.Generic;
 using System.Threading.Tasks;
-using Aspose.BarCode;
+using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
+using Aspose.BarCode;
 
+/// <summary>
+/// Sample program demonstrating barcode generation and reading using Aspose.BarCode.
+/// </summary>
 class Program
 {
-    static void Main(string[] args)
+    /// <summary>
+    /// Entry point. Generates sample barcodes, reads them in parallel, and cleans up temporary files.
+    /// </summary>
+    static void Main()
     {
-        // Determine folder containing images (first argument or default)
-        string imagesFolder = args.Length > 0 ? args[0] : "SampleImages";
+        // Create a temporary folder for sample barcode images
+        string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodesSample");
+        Directory.CreateDirectory(tempFolder);
 
-        if (!Directory.Exists(imagesFolder))
+        // Generate sample barcode images (CODE001 to CODE005)
+        for (int i = 1; i <= 5; i++)
         {
-            Console.WriteLine($"Folder not found: {imagesFolder}");
-            return;
-        }
+            string codeText = $"CODE{i:D3}";
+            string imagePath = Path.Combine(tempFolder, $"barcode{i}.png");
 
-        // Get up to 10 image files of common formats
-        var imageFiles = Directory.GetFiles(imagesFolder)
-            .Where(f => f.EndsWith(".png", StringComparison.OrdinalIgnoreCase) ||
-                        f.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) ||
-                        f.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase) ||
-                        f.EndsWith(".bmp", StringComparison.OrdinalIgnoreCase) ||
-                        f.EndsWith(".tif", StringComparison.OrdinalIgnoreCase) ||
-                        f.EndsWith(".tiff", StringComparison.OrdinalIgnoreCase))
-            .Take(10)
-            .ToList();
-
-        if (imageFiles.Count == 0)
-        {
-            Console.WriteLine("No image files found to process.");
-            return;
-        }
-
-        // Enable multithreaded processing using all cores
-        BarCodeReader.ProcessorSettings.UseAllCores = true;
-        // Optionally limit additional threads (example)
-        BarCodeReader.ProcessorSettings.MaxAdditionalAllowedThreads = Environment.ProcessorCount * 2;
-
-        // Process images in parallel
-        ParallelOptions parallelOptions = new ParallelOptions
-        {
-            MaxDegreeOfParallelism = Environment.ProcessorCount
-        };
-
-        Parallel.ForEach(imageFiles, parallelOptions, filePath =>
-        {
-            if (!File.Exists(filePath))
+            // Use BarcodeGenerator to create a Code128 barcode and save it as PNG
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
             {
-                Console.WriteLine($"File not found: {filePath}");
-                return;
+                generator.Save(imagePath);
             }
+        }
 
-            using (var reader = new BarCodeReader(filePath))
+        // Configure the barcode reader to use all available processor cores (default behavior)
+        BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount = Environment.ProcessorCount;
+
+        // Retrieve all generated PNG files from the temporary folder
+        string[] imageFiles = Directory.GetFiles(tempFolder, "*.png");
+
+        // Process each image in parallel to read barcodes
+        Parallel.ForEach(imageFiles, filePath =>
+        {
+            // Initialize a reader that supports all barcode types
+            using (var reader = new BarCodeReader(filePath, DecodeType.AllSupportedTypes))
             {
-                // Read all barcodes in the image
+                // Iterate through all detected barcodes in the image
                 foreach (var result in reader.ReadBarCodes())
                 {
-                    Console.WriteLine($"{Path.GetFileName(filePath)} - Type: {result.CodeTypeName}, Text: {result.CodeText}");
+                    // Output file name, barcode type, and decoded text to the console
+                    Console.WriteLine($"File: {Path.GetFileName(filePath)} | Type: {result.CodeTypeName} | Text: {result.CodeText}");
                 }
             }
         });
 
-        Console.WriteLine("Barcode scanning completed.");
+        // Cleanup temporary files (optional). Errors are ignored to avoid crashing the program.
+        try
+        {
+            Directory.Delete(tempFolder, true);
+        }
+        catch
+        {
+            // Ignored
+        }
     }
 }

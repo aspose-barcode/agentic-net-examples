@@ -4,57 +4,88 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
+/// <summary>
+/// Demonstrates generation and reading of GS1 Code128 barcodes with FNC1 characters using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates sample barcode images, saves them to a folder, and then reads them back,
+    /// displaying barcode type and text (including FNC characters) to the console.
+    /// </summary>
     static void Main()
     {
-        string inputFolder = Path.Combine(Directory.GetCurrentDirectory(), "InputImages");
-        if (!Directory.Exists(inputFolder))
+        // --------------------------------------------------------------------
+        // Prepare output folder for barcode images
+        // --------------------------------------------------------------------
+        string folderPath = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
+        if (!Directory.Exists(folderPath))
         {
-            Directory.CreateDirectory(inputFolder);
+            // Create the folder if it does not exist
+            Directory.CreateDirectory(folderPath);
         }
 
-        // Seed sample barcode images if none exist
-        string[] existingFiles = Directory.GetFiles(inputFolder, "*.png");
-        if (existingFiles.Length == 0)
+        // --------------------------------------------------------------------
+        // Define sample barcode texts containing GS1 Application Identifiers
+        // --------------------------------------------------------------------
+        string[] sampleTexts = new string[]
         {
-            string[] sampleTexts = new[]
-            {
-                "(02)04006664241007(37)1(400)7019590754",
-                "(01)12345678901231(10)ABC123",
-                "(01)98765432109876(21)XYZ789"
-            };
+            "(01)12345678901231(10)ABC",      // GTIN and batch number
+            "(01)98765432109876(21)XYZ123",   // GTIN and serial number
+            "(01)55555555555555(17)210101"    // GTIN and expiration date
+        };
 
-            for (int i = 0; i < sampleTexts.Length; i++)
+        // --------------------------------------------------------------------
+        // Generate barcode images for each sample text
+        // --------------------------------------------------------------------
+        for (int i = 0; i < sampleTexts.Length; i++)
+        {
+            // Build file name for the current barcode image
+            string filePath = Path.Combine(folderPath, $"sample{i + 1}.png");
+
+            // Create a barcode generator configured for GS1 Code128
+            using (var generator = new BarcodeGenerator(EncodeTypes.GS1Code128, sampleTexts[i]))
             {
-                string filePath = Path.Combine(inputFolder, $"Sample{i + 1}.png");
-                using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.GS1Code128, sampleTexts[i]))
-                {
-                    generator.Save(filePath);
-                }
+                // Save the generated barcode as a PNG file
+                generator.Save(filePath);
             }
         }
 
-        // Process up to 5 images
-        string[] imageFiles = Directory.GetFiles(inputFolder, "*.png");
-        int maxFiles = Math.Min(imageFiles.Length, 5);
-        for (int i = 0; i < maxFiles; i++)
+        // --------------------------------------------------------------------
+        // Retrieve all generated PNG images from the folder
+        // --------------------------------------------------------------------
+        string[] imageFiles = Directory.GetFiles(folderPath, "*.png");
+        if (imageFiles.Length == 0)
         {
-            string file = imageFiles[i];
-            if (!File.Exists(file))
+            Console.WriteLine("No barcode images found to process.");
+            return;
+        }
+
+        // --------------------------------------------------------------------
+        // Read each barcode image and output its details
+        // --------------------------------------------------------------------
+        foreach (string imagePath in imageFiles)
+        {
+            if (!File.Exists(imagePath))
             {
-                Console.WriteLine($"File not found: {file}");
+                // Skip missing files (should not happen, but guard against it)
+                Console.WriteLine($"File not found: {imagePath}");
                 continue;
             }
 
-            using (BarCodeReader reader = new BarCodeReader(file, DecodeType.Code128))
+            // Initialize a barcode reader for all supported types
+            using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
             {
-                // Keep FNC characters in the result
+                // Preserve FNC characters in the decoded text
                 reader.BarcodeSettings.StripFNC = false;
 
-                foreach (BarCodeResult result in reader.ReadBarCodes())
+                // Iterate through all detected barcodes in the image
+                foreach (var result in reader.ReadBarCodes())
                 {
-                    Console.WriteLine($"File: {Path.GetFileName(file)} | Type: {result.CodeTypeName} | Text: {result.CodeText}");
+                    Console.WriteLine($"File: {Path.GetFileName(imagePath)}");
+                    Console.WriteLine($"  Type: {result.CodeTypeName}");
+                    Console.WriteLine($"  CodeText (with FNC): {result.CodeText}");
                 }
             }
         }

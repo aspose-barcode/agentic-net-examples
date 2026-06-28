@@ -1,81 +1,117 @@
 using System;
 using System.IO;
+using System.Collections.Generic;
 using System.Threading.Tasks;
+using Aspose.BarCode;
+using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Pdf;
 using Aspose.Pdf.Facades;
-using Aspose.BarCode.BarCodeRecognition;
 
+/// <summary>
+/// Demonstrates how to read barcodes from PDF files using Aspose.BarCode and Aspose.Pdf.
+/// </summary>
 class Program
 {
-    static void Main()
+    /// <summary>
+    /// Entry point of the application.
+    /// Processes a list of PDF files (provided via command‑line arguments or a default list),
+    /// renders each page to an image, and extracts any barcodes found on the pages.
+    /// </summary>
+    /// <param name="args">Optional PDF file paths passed as command‑line arguments.</param>
+    static void Main(string[] args)
     {
-        // Enable full core usage for barcode recognition
-        BarCodeReader.ProcessorSettings.UseAllCores = true;
-
-        string inputFolder = "InputPdfs";
-
-        // Ensure the input folder exists
-        if (!Directory.Exists(inputFolder))
+        // ----------------------------------------------------------------------
+        // Prepare the list of PDF files to process.
+        // ----------------------------------------------------------------------
+        // Default sample files – replace with your own paths or pass as command‑line arguments.
+        List<string> pdfFiles = new List<string>
         {
-            Console.WriteLine($"Input folder \"{inputFolder}\" does not exist.");
-            return;
+            "sample1.pdf",
+            "sample2.pdf",
+            "sample3.pdf"
+        };
+
+        // If arguments are provided, treat them as PDF paths (fallback to the sample list if none).
+        if (args.Length > 0)
+        {
+            pdfFiles = new List<string>(args);
         }
 
-        // Get PDF files (limit to a safe number for demo)
-        string[] pdfFiles = Directory.GetFiles(inputFolder, "*.pdf");
-        if (pdfFiles.Length == 0)
-        {
-            Console.WriteLine("No PDF files found in the input folder.");
-            return;
-        }
+        // Limit processing to a safe number of files for the runner (max 3).
+        int maxFiles = Math.Min(3, pdfFiles.Count);
+        pdfFiles = pdfFiles.GetRange(0, maxFiles);
 
-        // Process each PDF file in parallel
+        // ----------------------------------------------------------------------
+        // Configure barcode reader to utilize all available processor cores.
+        // ----------------------------------------------------------------------
+        BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount = Environment.ProcessorCount;
+
+        // ----------------------------------------------------------------------
+        // Process each PDF file in parallel.
+        // ----------------------------------------------------------------------
         Parallel.ForEach(pdfFiles, pdfPath =>
         {
+            // Verify that the file exists before attempting to process it.
+            if (!File.Exists(pdfPath))
+            {
+                Console.WriteLine($"File not found: {pdfPath}");
+                return;
+            }
+
             try
             {
-                ProcessPdf(pdfPath);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error processing \"{Path.GetFileName(pdfPath)}\": {ex.Message}");
-            }
-        });
-    }
-
-    static void ProcessPdf(string pdfPath)
-    {
-        // Load the PDF document
-        using (var pdfDoc = new Document(pdfPath))
-        {
-            int pageCount = pdfDoc.Pages.Count;
-            for (int pageNumber = 1; pageNumber <= pageCount; pageNumber++)
-            {
-                // Create a converter for the current page
-                using (var pdfConverter = new PdfConverter(pdfDoc))
+                // Load the PDF document.
+                using (var pdfDoc = new Document(pdfPath))
                 {
-                    pdfConverter.RenderingOptions.BarcodeOptimization = true;
-                    pdfConverter.StartPage = pageNumber;
-                    pdfConverter.EndPage = pageNumber;
-                    pdfConverter.DoConvert();
-
-                    // Render the page to an image stream
-                    using (var imageStream = new MemoryStream())
+                    // Create a converter for rendering PDF pages to images.
+                    using (var pdfConverter = new PdfConverter(pdfDoc))
                     {
-                        pdfConverter.GetNextImage(imageStream);
-                        imageStream.Position = 0;
+                        // Enable barcode optimization during rendering.
+                        pdfConverter.RenderingOptions.BarcodeOptimization = true;
 
-                        // Read barcodes from the image stream
-                        using (var reader = new BarCodeReader(imageStream, DecodeType.AllSupportedTypes))
+                        // Process each page sequentially (page rendering is not thread‑safe per document).
+                        for (int pageNumber = 1; pageNumber <= pdfDoc.Pages.Count; pageNumber++)
                         {
-                            foreach (var result in reader.ReadBarCodes())
+                            // Set the page range to a single page for conversion.
+                            pdfConverter.StartPage = pageNumber;
+                            pdfConverter.EndPage = pageNumber;
+
+                            // Perform the conversion for the current page.
+                            pdfConverter.DoConvert();
+
+                            // Retrieve the rendered image into a memory stream.
+                            using (var imageStream = new MemoryStream())
                             {
-                                Console.WriteLine($"File: {Path.GetFileName(pdfPath)} | Page: {pageNumber} | Type: {result.CodeTypeName} | Text: {result.CodeText}");
+                                pdfConverter.GetNextImage(imageStream);
+                                imageStream.Position = 0; // Reset stream position for reading.
+
+                                // Recognize barcodes from the rendered page image.
+                                using (var reader = new BarCodeReader(imageStream, DecodeType.AllSupportedTypes))
+                                {
+                                    // Optional: use a higher quality preset for better detection.
+                                    reader.QualitySettings = QualitySettings.HighQuality;
+
+                                    // Iterate over all detected barcodes.
+                                    foreach (var result in reader.ReadBarCodes())
+                                    {
+                                        Console.WriteLine($"PDF: {Path.GetFileName(pdfPath)} | Page: {pageNumber}");
+                                        Console.WriteLine($"  Type: {result.CodeTypeName}");
+                                        Console.WriteLine($"  Text: {result.CodeText}");
+                                        Console.WriteLine($"  Confidence: {result.Confidence}");
+                                        Console.WriteLine($"  ReadingQuality: {result.ReadingQuality}");
+                                        Console.WriteLine();
+                                    }
+                                }
                             }
                         }
                     }
                 }
             }
-        }
+            catch (Exception ex)
+            {
+                // Log any errors that occur while processing the current PDF.
+                Console.WriteLine($"Error processing '{pdfPath}': {ex.Message}");
+            }
+        });
     }
 }

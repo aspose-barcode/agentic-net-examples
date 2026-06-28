@@ -4,54 +4,83 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
+/// <summary>
+/// Demonstrates generating a GS1 Code128 barcode with FNC characters,
+/// then reading it back with different StripFNC settings.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a barcode image, reads it with StripFNC on/off,
+    /// outputs the results, and cleans up the temporary file.
+    /// </summary>
     static void Main()
     {
-        // Define a temporary file for the barcode image
-        string imagePath = Path.Combine(Path.GetTempPath(), "gs1code128.png");
+        // --------------------------------------------------------------------
+        // Prepare a temporary file path for the barcode image
+        // --------------------------------------------------------------------
+        string tempDir = Path.GetTempPath();
+        string barcodePath = Path.Combine(tempDir, "sample_barcode.png");
 
-        // Create a GS1 Code128 barcode that contains FNC characters (AI delimiters)
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.GS1Code128, "(02)04006664241007(37)1(400)7019590754"))
+        // --------------------------------------------------------------------
+        // Generate a GS1 Code128 barcode that contains FNC characters
+        // --------------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(
+            EncodeTypes.GS1Code128,
+            "(02)04006664241007(37)1(400)7019590754"))
         {
-            generator.Save(imagePath);
+            // Save the barcode image to the file system
+            generator.Save(barcodePath);
         }
 
-        // Verify that the image was created
-        if (!File.Exists(imagePath))
+        // --------------------------------------------------------------------
+        // Verify that the barcode image was created successfully
+        // --------------------------------------------------------------------
+        if (!File.Exists(barcodePath))
         {
-            Console.WriteLine("Failed to create barcode image.");
+            Console.WriteLine($"Failed to create barcode image at '{barcodePath}'.");
             return;
         }
 
-        // Decode with StripFNC disabled (retain FNC symbols)
-        using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.GS1Code128))
+        // --------------------------------------------------------------------
+        // Perform two decoding runs: one with StripFNC disabled, one with it enabled
+        // --------------------------------------------------------------------
+        bool[] stripFncOptions = new bool[] { false, true };
+        foreach (bool stripFnc in stripFncOptions)
         {
-            reader.BarcodeSettings.StripFNC = false;
-            foreach (BarCodeResult result in reader.ReadBarCodes())
+            using (var reader = new BarCodeReader(barcodePath, DecodeType.AllSupportedTypes))
             {
-                Console.WriteLine("StripFNC disabled - CodeText: " + result.CodeText);
+                // Configure whether FNC symbols should be stripped from the decoded text
+                reader.BarcodeSettings.StripFNC = stripFnc;
+
+                // Read all barcodes from the image
+                BarCodeResult[] results = reader.ReadBarCodes();
+
+                // Log the outcome of each decoding operation
+                foreach (var result in results)
+                {
+                    Console.WriteLine($"StripFNC: {stripFnc}, CodeText: {result.CodeText}");
+                }
+
+                // If no barcodes were found, indicate that as well
+                if (results.Length == 0)
+                {
+                    Console.WriteLine($"StripFNC: {stripFnc}, no barcode detected.");
+                }
             }
         }
 
-        // Decode with StripFNC enabled (strip FNC symbols)
-        using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.GS1Code128))
-        {
-            reader.BarcodeSettings.StripFNC = true;
-            foreach (BarCodeResult result in reader.ReadBarCodes())
-            {
-                Console.WriteLine("StripFNC enabled  - CodeText: " + result.CodeText);
-            }
-        }
-
+        // --------------------------------------------------------------------
         // Clean up the temporary image file
+        // --------------------------------------------------------------------
         try
         {
-            File.Delete(imagePath);
+            File.Delete(barcodePath);
         }
         catch
         {
-            // Ignore any errors during cleanup
+            // Ignored – file deletion failure is non‑critical for this demo
         }
     }
 }

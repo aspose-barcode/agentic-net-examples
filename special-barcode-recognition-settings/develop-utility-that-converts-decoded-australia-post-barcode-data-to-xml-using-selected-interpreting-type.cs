@@ -5,63 +5,64 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates generation, reading, and XML export of an Australia Post barcode using Aspose.BarCode.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a barcode, reads it back, and writes the result to an XML file.
+    /// </summary>
     static void Main()
     {
-        // Sample data for Australia Post barcode
-        const string barcodeData = "5912345678ABCde";
-        const CustomerInformationInterpretingType interpretingType = CustomerInformationInterpretingType.CTable;
+        // Sample Australia Post barcode data
+        string barcodeData = "5912345678AB";
 
-        // File names
-        const string imagePath = "AustraliaPost.png";
-        const string xmlPath = "AustraliaPost.xml";
+        // Choose the interpreting type for customer information (CTable, NTable, Other)
+        CustomerInformationInterpretingType interpretingType = CustomerInformationInterpretingType.CTable;
 
-        // Generate the barcode image
+        // Create a barcode generator for Australia Post format
         using (var generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, barcodeData))
         {
-            // Set interpreting type for customer information
+            // Apply the selected interpreting type to the generator settings
             generator.Parameters.Barcode.AustralianPost.AustralianPostEncodingTable = interpretingType;
 
-            // Save the image to a file
-            generator.Save(imagePath, BarCodeImageFormat.Png);
-        }
-
-        // Verify that the image was created
-        if (!File.Exists(imagePath))
-        {
-            Console.WriteLine($"Failed to create barcode image at '{imagePath}'.");
-            return;
-        }
-
-        // Decode the barcode and build XML
-        using (var image = (Bitmap)Image.FromFile(imagePath))
-        using (var reader = new BarCodeReader(image, DecodeType.AustraliaPost))
-        {
-            // Apply the same interpreting type used during generation
-            reader.BarcodeSettings.AustraliaPost.CustomerInformationInterpretingType = interpretingType;
-
-            // Prepare XML root
-            var root = new XElement("AustraliaPostBarcode",
-                new XElement("InterpretingType", interpretingType.ToString()));
-
-            // Read all detected barcodes (should be one)
-            foreach (BarCodeResult result in reader.ReadBarCodes())
+            // Generate the barcode image in memory
+            using (Bitmap barcodeImage = generator.GenerateBarCodeImage())
             {
-                // Add decoded information to XML
-                root.Add(new XElement("CodeText", result.CodeText));
-                root.Add(new XElement("Symbology", result.CodeType));
+                // Initialize a reader to decode the generated barcode image
+                using (var reader = new BarCodeReader(barcodeImage, DecodeType.AustraliaPost))
+                {
+                    // Ensure the reader uses the same interpreting type as the generator
+                    reader.BarcodeSettings.AustraliaPost.CustomerInformationInterpretingType = interpretingType;
+
+                    // Iterate over all decoded barcode results (should be one in this case)
+                    foreach (var result in reader.ReadBarCodes())
+                    {
+                        // Build an XML document representing the barcode data and interpreting type
+                        XDocument xmlDoc = new XDocument(
+                            new XElement("AustraliaPostBarcode",
+                                new XElement("CodeText", result.CodeText),
+                                new XElement("InterpretingType", interpretingType.ToString())
+                            )
+                        );
+
+                        // Output the XML document to the console
+                        Console.WriteLine(xmlDoc);
+
+                        // Define the output file path for the XML
+                        string xmlPath = "AustraliaPostBarcode.xml";
+
+                        // Save the XML document to disk
+                        xmlDoc.Save(xmlPath);
+
+                        // Inform the user where the XML file was saved
+                        Console.WriteLine($"XML saved to {Path.GetFullPath(xmlPath)}");
+                    }
+                }
             }
-
-            // Save XML to file
-            var doc = new XDocument(root);
-            doc.Save(xmlPath);
         }
-
-        // Output result paths
-        Console.WriteLine($"Barcode image saved to: {Path.GetFullPath(imagePath)}");
-        Console.WriteLine($"Decoded XML saved to: {Path.GetFullPath(xmlPath)}");
     }
 }

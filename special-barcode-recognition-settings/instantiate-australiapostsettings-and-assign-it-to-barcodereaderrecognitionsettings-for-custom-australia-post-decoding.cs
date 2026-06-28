@@ -1,55 +1,49 @@
 using System;
-using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
-namespace AustraliaPostDemo
+/// <summary>
+/// Demonstrates generation and recognition of an Australia Post barcode using Aspose.BarCode.
+/// </summary>
+class Program
 {
-    // Simple implementation of the customer information decoder interface
-    class SimpleAustraliaPostDecoder : AustraliaPostCustomerInformationDecoder
+    /// <summary>
+    /// Entry point of the application.
+    /// Generates a barcode, then reads it back and prints the results.
+    /// </summary>
+    static void Main()
     {
-        public string Decode(string customerInformationField)
-        {
-            // For demonstration, just return the raw field prefixed
-            return $"Decoded:{customerInformationField}";
-        }
-    }
+        // Sample Australia Post barcode text to encode.
+        string codeText = "5912345678AB";
 
-    class Program
-    {
-        static void Main()
+        // Create a barcode generator for Australia Post format with the specified text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, codeText))
         {
-            // Sample Australia Post barcode text (customer information part included)
-            const string barcodeText = "5912345678AB";
+            // Optional: set the encoding table for generation (CTable in this case).
+            generator.Parameters.Barcode.AustralianPost.AustralianPostEncodingTable = CustomerInformationInterpretingType.CTable;
 
-            // Generate the barcode image
-            using (var generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, barcodeText))
+            // Generate the barcode image as a Bitmap.
+            using (Bitmap image = generator.GenerateBarCodeImage())
             {
-                // Use CTable interpreting type for generation
-                generator.Parameters.Barcode.AustralianPost.AustralianPostEncodingTable = CustomerInformationInterpretingType.CTable;
-
-                using (var image = generator.GenerateBarCodeImage())
+                // Initialize a barcode reader for the generated image, specifying Australia Post decoding.
+                using (var reader = new BarCodeReader(image, DecodeType.AustraliaPost))
                 {
-                    // Create a reader for the generated image, specifying AustraliaPost decoding
-                    using (var reader = new BarCodeReader(image, DecodeType.AustraliaPost))
+                    // Access and customize Australia Post specific decoding settings.
+                    var australiaPostSettings = reader.BarcodeSettings.AustraliaPost;
+                    // Use NTable for interpreting customer information during decoding.
+                    australiaPostSettings.CustomerInformationInterpretingType = CustomerInformationInterpretingType.NTable;
+                    // Ignore ending filling patterns when using CTable encoding.
+                    australiaPostSettings.IgnoreEndingFillingPatternsForCTable = true;
+
+                    // Perform barcode recognition and iterate over all detected results.
+                    foreach (var result in reader.ReadBarCodes())
                     {
-                        // Obtain the AustraliaPostSettings instance from the reader
-                        AustraliaPostSettings settings = reader.BarcodeSettings.AustraliaPost;
-
-                        // Assign a custom decoder
-                        settings.CustomerInformationDecoder = new SimpleAustraliaPostDecoder();
-
-                        // Optionally change interpreting type for recognition
-                        settings.CustomerInformationInterpretingType = CustomerInformationInterpretingType.NTable;
-
-                        // Read barcodes
-                        foreach (BarCodeResult result in reader.ReadBarCodes())
-                        {
-                            Console.WriteLine($"BarCode Type: {result.CodeType}");
-                            Console.WriteLine($"BarCode CodeText: {result.CodeText}");
-                        }
+                        // Output the type of barcode detected.
+                        Console.WriteLine($"Detected Type: {result.CodeType}");
+                        // Output the decoded text of the barcode.
+                        Console.WriteLine($"Code Text: {result.CodeText}");
                     }
                 }
             }

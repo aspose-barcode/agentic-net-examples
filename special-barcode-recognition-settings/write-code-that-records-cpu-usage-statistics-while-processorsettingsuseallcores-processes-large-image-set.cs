@@ -1,89 +1,124 @@
 using System;
-using System.IO;
-using System.Diagnostics;
 using System.Collections.Generic;
-using Aspose.BarCode.BarCodeRecognition;
+using System.Diagnostics;
+using System.IO;
 using Aspose.BarCode;
-using Aspose.Drawing;
+using Aspose.BarCode.Generation;
+using Aspose.BarCode.BarCodeRecognition;
 
+/// <summary>
+/// Demonstrates generating barcode images, reading them, and measuring CPU usage.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application.
+    /// </summary>
     static void Main()
     {
-        // Directory containing sample images
-        string imagesDir = "Images";
-
-        if (!Directory.Exists(imagesDir))
+        // --------------------------------------------------------------------
+        // Prepare a temporary directory for barcode images
+        // --------------------------------------------------------------------
+        string tempDir = Path.Combine(Path.GetTempPath(), "AsposeBarCodeSample");
+        if (!Directory.Exists(tempDir))
         {
-            Console.WriteLine($"Images directory \"{imagesDir}\" not found.");
-            return;
+            Directory.CreateDirectory(tempDir);
         }
 
-        // Collect image files (limit to common formats)
-        var supportedExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        // --------------------------------------------------------------------
+        // Generate a small set of barcode images (5 items)
+        // --------------------------------------------------------------------
+        List<string> imagePaths = new List<string>();
+        for (int i = 0; i < 5; i++)
         {
-            ".png", ".jpg", ".jpeg", ".bmp", ".tiff"
-        };
+            // Build the full file path for the current barcode image
+            string filePath = Path.Combine(tempDir, $"barcode_{i}.png");
 
-        var allFiles = Directory.GetFiles(imagesDir);
-        var imageFiles = new List<string>();
-        foreach (var file in allFiles)
-        {
-            if (supportedExtensions.Contains(Path.GetExtension(file)))
-                imageFiles.Add(file);
-        }
-
-        if (imageFiles.Count == 0)
-        {
-            Console.WriteLine("No image files found in the directory.");
-            return;
-        }
-
-        // Process a safe sample size (max 5 images)
-        int filesToProcess = Math.Min(5, imageFiles.Count);
-
-        // Enable multi‑core processing for BarCodeReader
-        BarCodeReader.ProcessorSettings.UseAllCores = true;
-        BarCodeReader.ProcessorSettings.MaxAdditionalAllowedThreads = Environment.ProcessorCount * 2;
-
-        Process currentProcess = Process.GetCurrentProcess();
-        TimeSpan totalCpuTime = TimeSpan.Zero;
-        var totalStopwatch = Stopwatch.StartNew();
-
-        for (int i = 0; i < filesToProcess; i++)
-        {
-            string filePath = imageFiles[i];
-            Console.WriteLine($"Processing \"{Path.GetFileName(filePath)}\"");
-
-            TimeSpan cpuBefore = currentProcess.TotalProcessorTime;
-            var wallStopwatch = Stopwatch.StartNew();
-
-            using (var bitmap = new Bitmap(filePath))
-            using (var reader = new BarCodeReader())
+            // Create a barcode generator for Code128 with a unique text value
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, $"CODE{i}"))
             {
-                // Load image into the reader
-                reader.SetBarCodeImage(bitmap);
+                // Enable checksum calculation for the barcode
+                generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
 
-                // Read all barcodes in the image
-                foreach (var result in reader.ReadBarCodes())
-                {
-                    Console.WriteLine($"  Type: {result.CodeTypeName}, Text: {result.CodeText}");
-                }
+                // Save the generated barcode image to disk
+                generator.Save(filePath);
             }
 
-            wallStopwatch.Stop();
-            TimeSpan cpuAfter = currentProcess.TotalProcessorTime;
-            TimeSpan cpuUsed = cpuAfter - cpuBefore;
-            totalCpuTime += cpuUsed;
-
-            Console.WriteLine($"  Wall time: {wallStopwatch.Elapsed.TotalSeconds:F2}s, CPU time: {cpuUsed.TotalSeconds:F2}s");
+            // Store the path for later processing
+            imagePaths.Add(filePath);
         }
 
-        totalStopwatch.Stop();
+        // --------------------------------------------------------------------
+        // Enable multi‑core processing for barcode reading
+        // --------------------------------------------------------------------
+        BarCodeReader.ProcessorSettings.UseAllCores = true;
 
-        Console.WriteLine();
-        Console.WriteLine($"Processed {filesToProcess} image(s).");
-        Console.WriteLine($"Total wall time: {totalStopwatch.Elapsed.TotalSeconds:F2}s");
-        Console.WriteLine($"Total CPU time: {totalCpuTime.TotalSeconds:F2}s");
+        // --------------------------------------------------------------------
+        // Record CPU usage before processing
+        // --------------------------------------------------------------------
+        Process currentProcess = Process.GetCurrentProcess();
+        TimeSpan cpuStart = currentProcess.TotalProcessorTime;
+
+        // --------------------------------------------------------------------
+        // Process each image and read barcodes
+        // --------------------------------------------------------------------
+        foreach (string path in imagePaths)
+        {
+            // Verify that the file exists before attempting to read it
+            if (!File.Exists(path))
+            {
+                Console.WriteLine($"File not found: {path}");
+                continue;
+            }
+
+            // Initialize a barcode reader for all supported types
+            using (var reader = new BarCodeReader(path, DecodeType.AllSupportedTypes))
+            {
+                // Iterate through all detected barcodes in the image
+                foreach (var result in reader.ReadBarCodes())
+                {
+                    Console.WriteLine(
+                        $"Image: {Path.GetFileName(path)} | Type: {result.CodeTypeName} | Text: {result.CodeText}");
+                }
+            }
+        }
+
+        // --------------------------------------------------------------------
+        // Record CPU usage after processing
+        // --------------------------------------------------------------------
+        currentProcess.Refresh();
+        TimeSpan cpuEnd = currentProcess.TotalProcessorTime;
+
+        // --------------------------------------------------------------------
+        // Compute and display CPU time consumed
+        // --------------------------------------------------------------------
+        TimeSpan cpuUsed = cpuEnd - cpuStart;
+        Console.WriteLine(
+            $"CPU time used for processing {imagePaths.Count} images: {cpuUsed.TotalMilliseconds} ms");
+
+        // --------------------------------------------------------------------
+        // Clean up temporary files
+        // --------------------------------------------------------------------
+        foreach (string path in imagePaths)
+        {
+            try
+            {
+                File.Delete(path);
+            }
+            catch
+            {
+                // Ignore any deletion errors (e.g., file in use)
+            }
+        }
+
+        // Attempt to delete the temporary directory
+        try
+        {
+            Directory.Delete(tempDir);
+        }
+        catch
+        {
+            // Ignore any deletion errors (e.g., directory not empty)
+        }
     }
 }

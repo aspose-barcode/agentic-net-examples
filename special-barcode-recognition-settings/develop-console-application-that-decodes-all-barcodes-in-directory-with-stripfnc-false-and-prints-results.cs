@@ -1,72 +1,75 @@
 using System;
 using System.IO;
-using System.Linq;
 using Aspose.BarCode;
-using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
+/// <summary>
+/// Scans a directory for image files and reads any barcodes using Aspose.BarCode.
+/// </summary>
 class Program
 {
-    static void Main()
+    /// <summary>
+    /// Entry point of the application.
+    /// </summary>
+    /// <param name="args">Optional command‑line arguments. The first argument, if present, specifies the directory to scan.</param>
+    static void Main(string[] args)
     {
-        // Define the folder that contains barcode images
-        string inputFolder = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
+        // Determine the directory to scan: use first argument or fallback to a sample folder.
+        string directoryPath = args.Length > 0 ? args[0] : "Barcodes";
 
-        // Ensure the folder exists
-        if (!Directory.Exists(inputFolder))
+        // Verify that the directory exists before proceeding.
+        if (!Directory.Exists(directoryPath))
         {
-            Directory.CreateDirectory(inputFolder);
+            Console.WriteLine($"Directory not found: {directoryPath}");
+            return;
         }
 
-        // Get image files (common formats) from the folder
-        string[] imageFiles = Directory.GetFiles(inputFolder)
-            .Where(f => f.EndsWith(".png", StringComparison.OrdinalIgnoreCase) ||
-                        f.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) ||
-                        f.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase) ||
-                        f.EndsWith(".bmp", StringComparison.OrdinalIgnoreCase) ||
-                        f.EndsWith(".tif", StringComparison.OrdinalIgnoreCase) ||
-                        f.EndsWith(".tiff", StringComparison.OrdinalIgnoreCase))
-            .ToArray();
+        // Define the set of image file extensions that will be processed.
+        string[] extensions = new[] { ".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff" };
 
-        // If the folder is empty, create a sample barcode image so the example runs end‑to‑end
-        if (imageFiles.Length == 0)
+        // Retrieve all files in the target directory.
+        string[] files = Directory.GetFiles(directoryPath);
+        if (files.Length == 0)
         {
-            string samplePath = Path.Combine(inputFolder, "sample.png");
-            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
-            {
-                generator.Save(samplePath);
-            }
-            imageFiles = new[] { samplePath };
+            Console.WriteLine($"No files found in directory: {directoryPath}");
+            return;
         }
 
-        // Process each image file
-        foreach (string filePath in imageFiles)
+        // Iterate over each file and attempt barcode detection on supported image types.
+        foreach (string filePath in files)
         {
+            // Skip files whose extensions are not in the supported list.
+            if (Array.IndexOf(extensions, Path.GetExtension(filePath).ToLowerInvariant()) < 0)
+                continue;
+
+            // Double‑check that the file still exists (it may have been removed concurrently).
             if (!File.Exists(filePath))
             {
                 Console.WriteLine($"File not found: {filePath}");
                 continue;
             }
 
-            // Initialize the reader for all supported barcode types
-            using (BarCodeReader reader = new BarCodeReader(filePath, DecodeType.AllSupportedTypes))
+            // Create a barcode reader for the current image, configured to detect all supported types.
+            using (var reader = new BarCodeReader(filePath, DecodeType.AllSupportedTypes))
             {
-                // Ensure FNC characters are not stripped
+                // Ensure that FNC characters are preserved in the decoded text.
                 reader.BarcodeSettings.StripFNC = false;
 
-                // Read all barcodes in the image
+                // Perform the barcode detection.
                 BarCodeResult[] results = reader.ReadBarCodes();
 
+                // If no barcodes were found, report and move to the next file.
                 if (results.Length == 0)
                 {
-                    Console.WriteLine($"No barcodes detected in file: {Path.GetFileName(filePath)}");
+                    Console.WriteLine($"No barcodes detected in: {Path.GetFileName(filePath)}");
+                    continue;
                 }
-                else
+
+                // Output the detected barcodes for the current image.
+                Console.WriteLine($"Barcodes in {Path.GetFileName(filePath)}:");
+                foreach (var result in results)
                 {
-                    foreach (BarCodeResult result in results)
-                    {
-                        Console.WriteLine($"File: {Path.GetFileName(filePath)} | Type: {result.CodeTypeName} | Text: {result.CodeText}");
-                    }
+                    Console.WriteLine($"  Type: {result.CodeTypeName}, Text: {result.CodeText}");
                 }
             }
         }
