@@ -61,7 +61,6 @@ See the root [agents.md](../agents.md) for repository-wide conventions and bound
 | [develop-console-utility-that-reads-json-configuration-file-to-produce-multiple-barcode-types-in-batch.cs](./develop-console-utility-that-reads-json-configuration-file-to-produce-multiple-barcode-types-in-batch.cs) | `BarCodeReader` | Develop a console utility that reads a JSON configuration file to produce multiple barcode... |
 | [develop-function-that-returns-barcode-dimensions-width-height-in-pixels-after-generation.cs](./develop-function-that-returns-barcode-dimensions-width-height-in-pixels-after-generation.cs) | `BarcodeGenerator` | Develop a function that returns barcode dimensions (width, height) in pixels after generat... |
 | [develop-microservice-that-receives-json-payload-and-returns-generated-gs1-composite-barcode-as-png.cs](./develop-microservice-that-receives-json-payload-and-returns-generated-gs1-composite-barcode-as-png.cs) | `GS1CompositeBarParameters`, `BarcodeGenerator` | Develop a microservice that receives JSON payload and returns generated GS1 Composite barc... |
-| [develop-restful-endpoint-that-accepts-multipart-form-data-and-returns-generated-barcode-image-stream.cs](./develop-restful-endpoint-that-accepts-multipart-form-data-and-returns-generated-barcode-image-stream.cs) |  |  |
 | [develop-restful-endpoint-that-accepts-multipart-formdata-and-returns-generated-barcode-image-stream.cs](./develop-restful-endpoint-that-accepts-multipart-formdata-and-returns-generated-barcode-image-stream.cs) | `BarcodeGenerator` | Develop a RESTful endpoint that accepts multipart/form-data and returns generated barcode ... |
 | [develop-reusable-component-that-abstracts-barcode-generation-for-maxicode-datamatrix-and-gs1-composite-types.cs](./develop-reusable-component-that-abstracts-barcode-generation-for-maxicode-datamatrix-and-gs1-composite-types.cs) | `GS1CompositeBarParameters`, `DataMatrixParameters`, `BarcodeGenerator` | Develop a reusable component that abstracts barcode generation for MaxiCode, DataMatrix, a... |
 | [develop-sample-azure-function-that-generates-gs1-composite-barcode-from-http-request-payload.cs](./develop-sample-azure-function-that-generates-gs1-composite-barcode-from-http-request-payload.cs) | `GS1CompositeBarParameters`, `BarcodeGenerator` | Develop a sample Azure Function that generates GS1 Composite barcode from HTTP request pay... |
@@ -195,7 +194,6 @@ See the root [agents.md](../agents.md) for repository-wide conventions and bound
 | [implement-feature-to-automatically-rotate-generated-barcode-image-to-match-specified-orientation-metadata.cs](./implement-feature-to-automatically-rotate-generated-barcode-image-to-match-specified-orientation-metadata.cs) | `BarcodeGenerator` | Implement feature to automatically rotate generated barcode image to match specified orien... |
 | [implement-feature-to-embed-barcode-image-into-excel-worksheet-cell-using-epplus-library.cs](./implement-feature-to-embed-barcode-image-into-excel-worksheet-cell-using-epplus-library.cs) |  | Implement feature to embed barcode image into Excel worksheet cell using EPPlus library. |
 | [implement-feature-to-embed-barcode-image-into-pdf-document-at-specified-coordinates-using-asposepdf.cs](./implement-feature-to-embed-barcode-image-into-pdf-document-at-specified-coordinates-using-asposepdf.cs) |  | Implement feature to embed barcode image into PDF document at specified coordinates using ... |
-| [implement-feature-to-embed-barcode-image-into-pdf-document-at-specified-coordinates-using-itextsharp.cs](./implement-feature-to-embed-barcode-image-into-pdf-document-at-specified-coordinates-using-itextsharp.cs) |  |  |
 | [implement-logging-of-barcode-generation-duration-using-stopwatch-and-output-to-application-log.cs](./implement-logging-of-barcode-generation-duration-using-stopwatch-and-output-to-application-log.cs) | `BarcodeGenerator` | Implement logging of barcode generation duration using Stopwatch and output to application... |
 | [implement-logging-of-maxicode-generation-parameters-including-mode-aspect-ratio-and-encoding-mode.cs](./implement-logging-of-maxicode-generation-parameters-including-mode-aspect-ratio-and-encoding-mode.cs) | `BarcodeGenerator` | Implement logging of MaxiCode generation parameters, including mode, aspect ratio, and enc... |
 | [implement-method-that-returns-datamatrix-barcode-as-byte-array-for-embedding-in-pdf-documents.cs](./implement-method-that-returns-datamatrix-barcode-as-byte-array-for-embedding-in-pdf-documents.cs) | `DataMatrixParameters` | Implement method that returns DataMatrix barcode as byte array for embedding in PDF docume... |
@@ -247,7 +245,7 @@ See the root [agents.md](../agents.md) for repository-wide conventions and bound
 | [write-unit-tests-to-verify-aspect-ratio-adjustments-affect-maxicode-barcode-dimensions-as-expected.cs](./write-unit-tests-to-verify-aspect-ratio-adjustments-affect-maxicode-barcode-dimensions-as-expected.cs) | `Unit` | Write unit tests to verify aspect ratio adjustments affect MaxiCode barcode dimensions as ... |
 
 ## Category Statistics
-- Total examples: 216
+- Total examples: 214
 - Failed: 0
 - Pass rate: 100.0%
 
@@ -268,5 +266,5 @@ See the root [agents.md](../agents.md) for repository-wide conventions and bound
 All tasks passed ✅
 
 <!-- AUTOGENERATED:START -->
-Updated: 2026-06-28 | Examples: 216
+Updated: 2026-06-29 | Examples: 214
 <!-- AUTOGENERATED:END -->

@@ -32,7 +32,6 @@ See the root [agents.md](../agents.md) for repository-wide conventions and bound
 | [apply-different-fonts-to-main-text-and-caption-by-setting-codetextparametersfont-and-captionparametersfont-separately.cs](./apply-different-fonts-to-main-text-and-caption-by-setting-codetextparametersfont-and-captionparametersfont-separately.cs) | `CaptionParameters`, `FontUnit` | Apply different fonts to main text and caption by setting CodetextParameters.Font and Capt... |
 | [apply-fontmodeauto-to-barcode-text-so-library-automatically-calculates-optimal-font-size-for-each-symbol.cs](./apply-fontmodeauto-to-barcode-text-so-library-automatically-calculates-optimal-font-size-for-each-symbol.cs) | `FontUnit` | Apply FontMode.Auto to barcode text so the library automatically calculates optimal font s... |
 | [batch-generate-qr-codes-with-custom-texts-from-csv-file-applying-unique-font-sizes-per-row.cs](./batch-generate-qr-codes-with-custom-texts-from-csv-file-applying-unique-font-sizes-per-row.cs) | `QrParameters`, `FontUnit`, `BarcodeGenerator` | Batch generate QR codes with custom texts from a CSV file, applying unique font sizes per ... |
-| [center-align-barcode-text-for-collection-of-ean-13-barcodes-by-setting-codetextparametersalignment-to-textalignmentcente.cs](./center-align-barcode-text-for-collection-of-ean-13-barcodes-by-setting-codetextparametersalignment-to-textalignmentcente.cs) |  |  |
 | [centeralign-barcode-text-for-collection-of-ean-13-barcodes-by-setting-codetextparametersalignment-to-textalignmentcenter.cs](./centeralign-barcode-text-for-collection-of-ean-13-barcodes-by-setting-codetextparametersalignment-to-textalignmentcenter.cs) |  | Center-align barcode text for a collection of EAN‑13 barcodes by setting CodetextParameter... |
 | [compare-rendering-performance-between-fontmodeauto-and-manually-specified-fonts-for-large-batches-of-qr-codes.cs](./compare-rendering-performance-between-fontmodeauto-and-manually-specified-fonts-for-large-batches-of-qr-codes.cs) | `QrParameters` | Compare rendering performance between FontMode.Auto and manually specified fonts for large... |
 | [create-barcodes-where-both-main-text-and-bottom-caption-are-visible-each-aligned-left-for-consistency.cs](./create-barcodes-where-both-main-text-and-bottom-caption-are-visible-each-aligned-left-for-consistency.cs) | `CaptionParameters` | Create barcodes where both main text and bottom caption are visible, each aligned left for... |
@@ -48,7 +47,6 @@ See the root [agents.md](../agents.md) for repository-wide conventions and bound
 | [integrate-barcode-text-customization-into-aspnet-mvc-view-allowing-end-users-to-toggle-visibility-and-alignment.cs](./integrate-barcode-text-customization-into-aspnet-mvc-view-allowing-end-users-to-toggle-visibility-and-alignment.cs) |  | Integrate barcode text customization into an ASP.NET MVC view, allowing end users to toggl... |
 | [place-barcode-text-above-datamatrix-symbols-by-assigning-codetextparameterslocation-textlocationabove.cs](./place-barcode-text-above-datamatrix-symbols-by-assigning-codetextparameterslocation-textlocationabove.cs) | `DataMatrixParameters` | Place barcode text above DataMatrix symbols by assigning CodetextParameters.Location = Tex... |
 | [replace-displayed-text-of-qr-code-with-custom-url-by-setting-codetextparameterstext.cs](./replace-displayed-text-of-qr-code-with-custom-url-by-setting-codetextparameterstext.cs) | `QrParameters` | Replace displayed text of a QR code with a custom URL by setting CodetextParameters.Text. |
-| [right-align-barcode-text-for-itf-14-barcodes-by-setting-codetextparametersalignment-textalignmentright.cs](./right-align-barcode-text-for-itf-14-barcodes-by-setting-codetextparametersalignment-textalignmentright.cs) |  |  |
 | [rightalign-barcode-text-for-itf-14-barcodes-by-setting-codetextparametersalignment-textalignmentright.cs](./rightalign-barcode-text-for-itf-14-barcodes-by-setting-codetextparametersalignment-textalignmentright.cs) |  | Right-align barcode text for ITF‑14 barcodes by setting CodetextParameters.Alignment = Tex... |
 | [serialize-barcode-text-and-caption-settings-to-json-then-reload-them-to-recreate-identical-barcode-appearances.cs](./serialize-barcode-text-and-caption-settings-to-json-then-reload-them-to-recreate-identical-barcode-appearances.cs) | `CaptionParameters` | Serialize barcode text and caption settings to JSON, then reload them to recreate identica... |
 | [set-barcode-text-location-to-below-for-pdf417-barcodes-using-default-textlocationbelow-setting.cs](./set-barcode-text-location-to-below-for-pdf417-barcodes-using-default-textlocationbelow-setting.cs) | `Pdf417Parameters` | Set barcode text location to below for PDF417 barcodes, using the default TextLocation.Bel... |
@@ -59,7 +57,7 @@ See the root [agents.md](../agents.md) for repository-wide conventions and bound
 | [write-unit-tests-that-verify-toggling-codetextparametersvisible-correctly-shows-and-hides-main-barcode-text.cs](./write-unit-tests-that-verify-toggling-codetextparametersvisible-correctly-shows-and-hides-main-barcode-text.cs) | `Unit` | Write unit tests that verify toggling CodetextParameters.Visible correctly shows and hides... |
 
 ## Category Statistics
-- Total examples: 31
+- Total examples: 29
 - Failed: 0
 - Pass rate: 100.0%
 
@@ -76,5 +74,5 @@ See the root [agents.md](../agents.md) for repository-wide conventions and bound
 All tasks passed ✅
 
 <!-- AUTOGENERATED:START -->
-Updated: 2026-06-28 | Examples: 31
+Updated: 2026-06-29 | Examples: 29
 <!-- AUTOGENERATED:END -->

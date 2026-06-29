@@ -3,9 +3,9 @@
   "platform": "net",
   "framework": "net9.0",
   "package_version": "26.5.0",
-  "total_examples": 1129,
+  "total_examples": 1124,
   "total_categories": 21,
-  "last_updated": "2026-06-28",
+  "last_updated": "2026-06-29",
   "categories": [
     {
       "name": "barcode-appearance-customization",
@@ -114,7 +114,7 @@
     {
       "name": "barcode-color-customization",
       "display_name": "Barcode Color Customization",
-      "file_count": 29,
+      "file_count": 28,
       "all_files": [
         "apply-custom-text-color-to-barcode-while-leaving-bar-and-background-colors-at-defaults.cs",
         "apply-different-custom-colors-to-same-barcode-type-and-compare-visual-differences-programmatically.cs",
@@ -137,7 +137,6 @@
         "set-background-color-to-light-gray-and-bar-color-to-dark-gray-for-pdf417-barcode.cs",
         "set-background-color-to-transparent-and-generate-png-with-alpha-channel-for-overlay-use.cs",
         "set-caption-position-to-top-and-apply-custom-caption-color-before-saving-as-png.cs",
-        "use-colorfromname-to-set-caption-color-to-purple-for-upc-barcode.cs",
         "use-colorfromname-to-set-caption-color-to-purple-for-upca-barcode.cs",
         "use-custom-systemdrawingcolorfromargb-value-for-semi-transparent-bar-color-and-generate-png.cs",
         "use-loop-to-generate-barcodes-with-alternating-background-colors-while-keeping-bar-color-constant.cs",
@@ -284,7 +283,7 @@
     {
       "name": "barcode-recognition-basics",
       "display_name": "Barcode Recognition Basics",
-      "file_count": 76,
+      "file_count": 75,
       "all_files": [
         "access-barcoderesultreadingquality-for-each-datamatrix-barcode-and-store-numeric-value-in-database.cs",
         "access-foundbarcodes-collection-after-recognition-to-count-unique-barcodes-and-display-their-positions.cs",
@@ -301,7 +300,6 @@
         "compare-recognition-quality-of-qr-codes-captured-under-different-lighting-conditions-by-analyzing-readingquality-values.cs",
         "configure-barcodesettingschecksumvalidation-to-on-for-both-obligatory-and-optional-checksum-symbologies-in-single-read-o.cs",
         "configure-barcodesettingschecksumvalidation-to-on-for-optional-symbologies-like-code-39-before-reading.cs",
-        "configure-multydecodetype-to-include-upc-upc-e-and-ean-8-for-comprehensive-retail-barcode-scanning.cs",
         "configure-multydecodetype-to-include-upca-upce-and-ean8-for-comprehensive-retail-barcode-scanning.cs",
         "configure-multydecodetype-with-code128-and-datamatrix-then-recognize-both-types-in-single-image.cs",
         "configure-qualitysettings-for-reed-solomon-error-correction-when-reading-datamatrix-barcodes-that-support-it.cs",
@@ -643,7 +641,7 @@
     {
       "name": "barcode-text-customization",
       "display_name": "Barcode Text Customization",
-      "file_count": 31,
+      "file_count": 29,
       "all_files": [
         "adjust-gap-between-barcode-and-its-text-to-4-points-for-high-density-qr-codes.cs",
         "align-barcode-text-left-for-series-of-upc-barcodes-by-setting-textalignmentleft.cs",
@@ -651,7 +649,6 @@
         "apply-different-fonts-to-main-text-and-caption-by-setting-codetextparametersfont-and-captionparametersfont-separately.cs",
         "apply-fontmodeauto-to-barcode-text-so-library-automatically-calculates-optimal-font-size-for-each-symbol.cs",
         "batch-generate-qr-codes-with-custom-texts-from-csv-file-applying-unique-font-sizes-per-row.cs",
-        "center-align-barcode-text-for-collection-of-ean-13-barcodes-by-setting-codetextparametersalignment-to-textalignmentcente.cs",
         "centeralign-barcode-text-for-collection-of-ean-13-barcodes-by-setting-codetextparametersalignment-to-textalignmentcenter.cs",
         "compare-rendering-performance-between-fontmodeauto-and-manually-specified-fonts-for-large-batches-of-qr-codes.cs",
         "create-barcodes-where-both-main-text-and-bottom-caption-are-visible-each-aligned-left-for-consistency.cs",
@@ -667,7 +664,6 @@
         "integrate-barcode-text-customization-into-aspnet-mvc-view-allowing-end-users-to-toggle-visibility-and-alignment.cs",
         "place-barcode-text-above-datamatrix-symbols-by-assigning-codetextparameterslocation-textlocationabove.cs",
         "replace-displayed-text-of-qr-code-with-custom-url-by-setting-codetextparameterstext.cs",
-        "right-align-barcode-text-for-itf-14-barcodes-by-setting-codetextparametersalignment-textalignmentright.cs",
         "rightalign-barcode-text-for-itf-14-barcodes-by-setting-codetextparametersalignment-textalignmentright.cs",
         "serialize-barcode-text-and-caption-settings-to-json-then-reload-them-to-recreate-identical-barcode-appearances.cs",
         "set-barcode-text-location-to-below-for-pdf417-barcodes-using-default-textlocationbelow-setting.cs",
@@ -1341,7 +1337,7 @@
     {
       "name": "two-dimensional-barcode-types",
       "display_name": "Two Dimensional Barcode Types",
-      "file_count": 215,
+      "file_count": 214,
       "all_files": [
         "allow-users-to-select-linear-component-type-via-configuration-file-and-generate-corresponding-gs1-composite-barcode.cs",
         "benchmark-generation-speed-of-dotcode-barcodes-using-different-encoding-modes-in-parallel.cs",
@@ -1375,7 +1371,7 @@
         "develop-console-utility-that-reads-json-configuration-file-to-produce-multiple-barcode-types-in-batch.cs",
         "develop-function-that-returns-barcode-dimensions-width-height-in-pixels-after-generation.cs",
         "develop-microservice-that-receives-json-payload-and-returns-generated-gs1-composite-barcode-as-png.cs",
-        "develop-restful-endpoint-that-accepts-multipart-form-data-and-returns-generated-barcode-image-stream.cs",
+        "develop-restful-endpoint-that-accepts-multipart-formdata-and-returns-generated-barcode-image-stream.cs",
         "develop-reusable-component-that-abstracts-barcode-generation-for-maxicode-datamatrix-and-gs1-composite-types.cs",
         "develop-sample-azure-function-that-generates-gs1-composite-barcode-from-http-request-payload.cs",
         "develop-sample-visual-studio-plugin-that-previews-generated-barcode-based-on-current-code-file-content.cs",
@@ -1508,7 +1504,6 @@
         "implement-feature-to-automatically-rotate-generated-barcode-image-to-match-specified-orientation-metadata.cs",
         "implement-feature-to-embed-barcode-image-into-excel-worksheet-cell-using-epplus-library.cs",
         "implement-feature-to-embed-barcode-image-into-pdf-document-at-specified-coordinates-using-asposepdf.cs",
-        "implement-feature-to-embed-barcode-image-into-pdf-document-at-specified-coordinates-using-itextsharp.cs",
         "implement-logging-of-barcode-generation-duration-using-stopwatch-and-output-to-application-log.cs",
         "implement-logging-of-maxicode-generation-parameters-including-mode-aspect-ratio-and-encoding-mode.cs",
         "implement-method-that-returns-datamatrix-barcode-as-byte-array-for-embedding-in-pdf-documents.cs",
