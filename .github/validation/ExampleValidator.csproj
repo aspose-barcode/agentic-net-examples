@@ -7,10 +7,10 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Aspose.BarCode" Version="26.5.0" />
-    <PackageReference Include="Aspose.Cells" Version="26.4.0" />
-    <PackageReference Include="Aspose.PDF.Drawing" Version="26.4.0" />
-    <PackageReference Include="Aspose.Slides.NET" Version="26.4.0" />
-    <PackageReference Include="Aspose.Words" Version="26.4.0" />
+    <PackageReference Include="Aspose.BarCode" Version="26.6.0" />
+    <PackageReference Include="Aspose.Cells" Version="26.6.0" />
+    <PackageReference Include="Aspose.PDF.Drawing" Version="26.5.0" />
+    <PackageReference Include="Aspose.Slides.NET6.CrossPlatform" Version="26.6.0" />
+    <PackageReference Include="Aspose.Words" Version="26.6.0" />
   </ItemGroup>
 </Project>
