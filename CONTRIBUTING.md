@@ -7,10 +7,10 @@ This repository is **mostly generated** by the Aspose.BarCode Examples Generator
 ## How to Add or Fix a Standalone `.cs` Example
 
 1. **Locate the right category folder.** Categories are kebab-case, e.g. `barcode-generation/`. Pick the folder that best matches the API surface your example exercises.
-2. **Create a single self-contained `.cs` file** in that folder. The filename must be kebab-case and end in `.cs`. The file must compile and run as a standalone .NET 9 console application.
+2. **Create a single self-contained `.cs` file** in that folder. The filename must be kebab-case and end in `.cs`. The file must compile and run as a standalone .NET 10.0 console application.
 3. **Match the existing code style.** Use the patterns demonstrated in neighbouring examples:
    - `using` blocks with curly braces for all `IDisposable` types (never `using var`)
-   - `Aspose.Drawing` for all drawing types — never `System.Drawing` (unavailable on .NET 9)
+   - `Aspose.Drawing` for all drawing types — never `System.Drawing` (unavailable on .NET 10.0)
    - Always use the `.Barcode.` sub-object for barcode parameters: `generator.Parameters.Barcode.XDimension`, not `generator.Parameters.XDimension`
    - `Console.WriteLine` for success output, `Console.Error.WriteLine` for errors
 4. **Do not include a `.csproj`.** The validation workflow synthesises one using the package version from `index.json` — shipping a `.csproj` per example would conflict.
@@ -34,7 +34,7 @@ Before opening a PR, validate that the example builds and runs against the pinne
 ```bash
 # From any working directory
 mkdir /tmp/barcode-validate && cd /tmp/barcode-validate
-dotnet new console --framework net9.0
+dotnet new console --framework net10.0
 cp /path/to/your-example.cs Program.cs
 dotnet add package Aspose.BarCode --version 26.6.0
 dotnet build --nologo /p:WarningLevel=0

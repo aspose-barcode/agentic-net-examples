@@ -2,7 +2,7 @@
 name: aspose-barcode-examples
 description: AI-friendly C# code examples for Aspose.BarCode for .NET
 language: csharp
-framework: net9.0
+framework: net10.0
 package: Aspose.BarCode
 ---
 
@@ -240,7 +240,7 @@ index.json
 ## Command Reference
 
 ```bash
-dotnet new console -n ExampleProject --framework net9.0
+dotnet new console -n ExampleProject --framework net10.0
 dotnet add package Aspose.BarCode
 dotnet build --configuration Release --verbosity minimal
 dotnet run
@@ -251,7 +251,7 @@ dotnet run
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Aspose.BarCode" Version="26.6.0" />

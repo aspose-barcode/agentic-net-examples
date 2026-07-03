@@ -17,7 +17,7 @@
   ],
   "output_formats": [
     "C# source file (.cs)",
-    "standalone .NET 9 console application"
+    "standalone .NET 10.0 console application"
   ],
   "agent_instructions": "./agents.md",
   "example_index": "./index.json",

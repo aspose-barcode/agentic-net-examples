@@ -1,7 +1,7 @@
 # Barcode Reading Properties — Aspose.BarCode for .NET C# Examples
 
 [![NuGet](https://img.shields.io/nuget/v/Aspose.BarCode?label=Aspose.BarCode)](https://www.nuget.org/packages/Aspose.BarCode/)
-[![.NET](https://img.shields.io/badge/.NET-9.0-blue)](https://dotnet.microsoft.com/)
+[![.NET](https://img.shields.io/badge/.NET-10.0-blue)](https://dotnet.microsoft.com/)
 [![Examples](https://img.shields.io/badge/examples-50-green)](./)
 
 Standalone, build-validated C# code examples for **Barcode Reading Properties** using
