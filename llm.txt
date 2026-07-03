@@ -1,6 +1,6 @@
 # Aspose.BarCode for .NET Examples
 
-> Build-validated, standalone C# console examples for Aspose.BarCode for .NET 26.5.0.
+> Build-validated, standalone C# console examples for Aspose.BarCode for .NET 26.6.0.
 
 - Examples: 1124
 - Categories: 21

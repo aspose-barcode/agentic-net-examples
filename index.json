@@ -2,10 +2,10 @@
   "product": "Aspose.BarCode",
   "platform": "net",
   "framework": "net9.0",
-  "package_version": "26.5.0",
+  "package_version": "26.6.0",
   "total_examples": 1124,
   "total_categories": 21,
-  "last_updated": "2026-06-29",
+  "last_updated": "2026-07-03",
   "categories": [
     {
       "name": "barcode-appearance-customization",

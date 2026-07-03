@@ -1,0 +1,136 @@
+{
+  "schema_version": "0.1",
+  "name": "Aspose.BarCode for .NET Examples Agent",
+  "description": "Provides 1124 build-validated, standalone C# code examples for barcode generation and recognition using Aspose.BarCode for .NET. Covers 1D, 2D, postal, and special barcode types across 21 categories.",
+  "capabilities": [
+    "Generate C# examples for 1D barcodes (Code128, Code39, EAN, UPC, ITF, Codabar, and 50+ symbologies)",
+    "Generate C# examples for 2D barcodes (QR Code, DataMatrix, PDF417, Aztec, MaxiCode, GS1 DataBar)",
+    "Generate C# examples for postal barcodes (Mailmark 4-state and 2D, USPS, Australia Post)",
+    "Generate C# examples for special barcodes (HIBC LIC, Swiss QR Code, PatchCode)",
+    "Generate C# examples for barcode recognition and reading from images, PDFs, and streams",
+    "Generate C# examples for PDF integration (image embed and interactive ButtonField)",
+    "Generate C# examples for image customization (colors, resolution, padding, rotation, X-dimension)",
+    "Generate C# examples for batch processing and XML configuration export/import"
+  ],
+  "input_formats": [
+    "natural language task description"
+  ],
+  "output_formats": [
+    "C# source file (.cs)",
+    "standalone .NET 9 console application"
+  ],
+  "agent_instructions": "./agents.md",
+  "example_index": "./index.json",
+  "categories": [
+    {
+      "slug": "barcode-appearance-customization",
+      "display_name": "Barcode Appearance Customization",
+      "example_count": 30
+    },
+    {
+      "slug": "barcode-checksum-control",
+      "display_name": "Barcode Checksum Control",
+      "example_count": 30
+    },
+    {
+      "slug": "barcode-color-customization",
+      "display_name": "Barcode Color Customization",
+      "example_count": 28
+    },
+    {
+      "slug": "barcode-configuration-serialization",
+      "display_name": "Barcode Configuration Serialization",
+      "example_count": 30
+    },
+    {
+      "slug": "barcode-reading-properties",
+      "display_name": "Barcode Reading Properties",
+      "example_count": 50
+    },
+    {
+      "slug": "barcode-recognition-basics",
+      "display_name": "Barcode Recognition Basics",
+      "example_count": 75
+    },
+    {
+      "slug": "barcode-recognition-performance",
+      "display_name": "Barcode Recognition Performance",
+      "example_count": 81
+    },
+    {
+      "slug": "barcode-recognition-xml-serialization",
+      "display_name": "Barcode Recognition XML Serialization",
+      "example_count": 35
+    },
+    {
+      "slug": "barcode-saving-and-export",
+      "display_name": "Barcode Saving and Export",
+      "example_count": 30
+    },
+    {
+      "slug": "barcode-size-and-resolution",
+      "display_name": "Barcode Size and Resolution",
+      "example_count": 34
+    },
+    {
+      "slug": "barcode-text-customization",
+      "display_name": "Barcode Text Customization",
+      "example_count": 29
+    },
+    {
+      "slug": "gs1-barcode-types",
+      "display_name": "GS1 Barcode Types",
+      "example_count": 34
+    },
+    {
+      "slug": "hibc-lic-barcode",
+      "display_name": "HIBC LIC Barcode",
+      "example_count": 35
+    },
+    {
+      "slug": "mailmark-four-state-barcode",
+      "display_name": "Mailmark Four State Barcode",
+      "example_count": 29
+    },
+    {
+      "slug": "mailmark-two-dimensional-barcode",
+      "display_name": "Mailmark Two Dimensional Barcode",
+      "example_count": 34
+    },
+    {
+      "slug": "maxicode-barcode",
+      "display_name": "MaxiCode Barcode",
+      "example_count": 34
+    },
+    {
+      "slug": "one-dimensional-barcode-types",
+      "display_name": "One Dimensional Barcode Types",
+      "example_count": 126
+    },
+    {
+      "slug": "postal-barcode-types",
+      "display_name": "Postal Barcode Types",
+      "example_count": 90
+    },
+    {
+      "slug": "special-barcode-recognition-settings",
+      "display_name": "Special Barcode Recognition Settings",
+      "example_count": 48
+    },
+    {
+      "slug": "swiss-qr-code",
+      "display_name": "Swiss QR Code",
+      "example_count": 28
+    },
+    {
+      "slug": "two-dimensional-barcode-types",
+      "display_name": "Two Dimensional Barcode Types",
+      "example_count": 214
+    }
+  ],
+  "total_examples": 1124,
+  "package_version": "26.6.0",
+  "documentation_url": "https://docs.aspose.com/barcode/net/",
+  "api_reference": "https://reference.aspose.com/barcode/net/",
+  "nuget": "https://www.nuget.org/packages/Aspose.BarCode/"
+}
