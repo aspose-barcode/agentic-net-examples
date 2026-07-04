@@ -1,3 +1,8 @@
+// Title: Demonstrate AutoSizeMode effects on barcode image generation
+// Description: Shows how different AutoSizeMode settings affect the size of a generated Code128 barcode and logs the resulting dimensions.
+// Prompt: Implement a feature that logs the chosen AutoSizeMode and resulting image dimensions for each generated barcode.
+// Tags: barcode, autosizemode, code128, image generation, logging
+
 using System;
 using System.IO;
 using Aspose.BarCode;
@@ -6,122 +11,56 @@ using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generation of barcodes with different <see cref="AutoSizeMode"/> settings
-/// and logs the resulting image dimensions.
+/// Generates Code128 barcodes using different AutoSizeMode settings and logs image dimensions.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Creates an output directory and generates three sample barcodes.
+    /// Entry point. Generates barcodes for each AutoSizeMode, saves them, and logs dimensions.
     /// </summary>
     static void Main()
     {
-        // Ensure the output folder exists
+        // Sample barcode text to encode
+        const string codeText = "1234567890";
+
+        // Output directory for generated images; ensure it exists
         string outputDir = "Barcodes";
-        if (!Directory.Exists(outputDir))
-        {
-            Directory.CreateDirectory(outputDir);
-        }
+        Directory.CreateDirectory(outputDir);
 
-        // Example 1: Code128 with AutoSizeMode.None (fixed bar height)
-        GenerateAndLog(
-            EncodeTypes.Code128,
-            "ABC123",
+        // Define the AutoSizeMode variations to test
+        AutoSizeMode[] modes = new AutoSizeMode[]
+        {
             AutoSizeMode.None,
-            barHeight: 40f,
-            outputDir: outputDir,
-            fileName: "code128_none.png");
-
-        // Example 2: Code39FullASCII with AutoSizeMode.Nearest (nearest size fit)
-        GenerateAndLog(
-            EncodeTypes.Code39FullASCII,
-            "CODE39FULL",
             AutoSizeMode.Nearest,
-            width: 200f,
-            height: 100f,
-            outputDir: outputDir,
-            fileName: "code39_nearest.png");
+            AutoSizeMode.Interpolation
+        };
 
-        // Example 3: QR with AutoSizeMode.Interpolation (interpolated size fit)
-        GenerateAndLog(
-            EncodeTypes.QR,
-            "https://example.com",
-            AutoSizeMode.Interpolation,
-            width: 250f,
-            height: 250f,
-            outputDir: outputDir,
-            fileName: "qr_interpolation.png");
-    }
-
-    /// <summary>
-    /// Generates a barcode image using the specified parameters, saves it to disk,
-    /// and writes information about the generated image to the console.
-    /// </summary>
-    /// <param name="encodeType">The barcode symbology to use.</param>
-    /// <param name="codeText">The text to encode in the barcode.</param>
-    /// <param name="autoSizeMode">The auto‑size mode that determines how the image size is calculated.</param>
-    /// <param name="width">Optional target image width (used for Nearest and Interpolation modes).</param>
-    /// <param name="height">Optional target image height (used for Nearest and Interpolation modes).</param>
-    /// <param name="barHeight">Optional bar height (used when AutoSizeMode is None).</param>
-    /// <param name="outputDir">Directory where the image will be saved.</param>
-    /// <param name="fileName">File name for the saved image.</param>
-    static void GenerateAndLog(
-        BaseEncodeType encodeType,
-        string codeText,
-        AutoSizeMode autoSizeMode,
-        float? width = null,
-        float? height = null,
-        float? barHeight = null,
-        string outputDir = "",
-        string fileName = "")
-    {
-        // Combine directory and file name to get the full path
-        string filePath = Path.Combine(outputDir, fileName);
-
-        // Create and configure the barcode generator
-        using (var generator = new BarcodeGenerator(encodeType, codeText))
+        // Iterate through each mode, generate a barcode, and log its size
+        foreach (AutoSizeMode mode in modes)
         {
-            // Apply the selected auto‑size mode
-            generator.Parameters.AutoSizeMode = autoSizeMode;
+            // Create and configure the barcode generator for the current mode
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+            {
+                generator.Parameters.AutoSizeMode = mode;
 
-            // Configure size based on the chosen AutoSizeMode
-            if (autoSizeMode == AutoSizeMode.Nearest || autoSizeMode == AutoSizeMode.Interpolation)
-            {
-                // For size‑based modes, set explicit image dimensions if provided
-                if (width.HasValue && height.HasValue)
+                // For modes other than None, specify a target image size (in points)
+                if (mode != AutoSizeMode.None)
                 {
-                    generator.Parameters.ImageWidth.Point = width.Value;
-                    generator.Parameters.ImageHeight.Point = height.Value;
-                }
-            }
-            else // AutoSizeMode.None
-            {
-                // For fixed‑size mode, set the bar height if supplied
-                if (barHeight.HasValue)
-                {
-                    generator.Parameters.Barcode.BarHeight.Point = barHeight.Value;
+                    generator.Parameters.ImageWidth.Point = 300f;
+                    generator.Parameters.ImageHeight.Point = 150f;
                 }
 
-                // Example XDimension setting (optional, controls bar width)
-                generator.Parameters.Barcode.XDimension.Point = 2f;
+                // Build the file path and save the barcode image as PNG
+                string filePath = Path.Combine(outputDir, $"{mode}.png");
+                generator.Save(filePath, BarCodeImageFormat.Png);
+
+                // Load the saved image to obtain its actual dimensions
+                using (var image = (Bitmap)Image.FromFile(filePath))
+                {
+                    // Log the AutoSizeMode used and the resulting image width x height
+                    Console.WriteLine($"AutoSizeMode: {mode}, Image Size: {image.Width}x{image.Height}");
+                }
             }
-
-            // Save the generated barcode image to the specified file
-            generator.Save(filePath, BarCodeImageFormat.Png);
-        }
-
-        // Load the saved image to obtain its actual dimensions
-        using (var image = Image.FromFile(filePath))
-        {
-            int actualWidth = image.Width;
-            int actualHeight = image.Height;
-
-            // Output details to the console
-            Console.WriteLine($"Symbology: {encodeType.TypeName}");
-            Console.WriteLine($"AutoSizeMode: {autoSizeMode}");
-            Console.WriteLine($"Saved Image: {filePath}");
-            Console.WriteLine($"Actual Dimensions: {actualWidth}x{actualHeight}");
-            Console.WriteLine(new string('-', 40));
         }
     }
 }

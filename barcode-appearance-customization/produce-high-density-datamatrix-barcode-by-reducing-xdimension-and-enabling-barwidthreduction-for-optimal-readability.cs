@@ -1,38 +1,51 @@
+// Title: High‑density DataMatrix barcode generation
+// Description: Demonstrates creating a DataMatrix barcode with reduced XDimension and bar‑width reduction for optimal readability.
+// Prompt: Produce a high‑density DataMatrix barcode by reducing XDimension and enabling BarWidthReduction for optimal readability.
+// Tags: datamatrix, barcode, highdensity, xdimension, barwidthreduction, imageoutput, aspose.barcode
+
 using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a DataMatrix barcode and saving it as a PNG image.
+/// Example program that generates a high‑density DataMatrix barcode
+/// by adjusting XDimension and enabling BarWidthReduction.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a DataMatrix barcode with specific
-    /// parameters and writes the resulting image to disk.
+    /// Entry point. Generates and saves a DataMatrix barcode image.
     /// </summary>
     static void Main()
     {
-        // Define the output file path for the generated barcode image.
-        string outputPath = "datamatrix.png";
+        // Sample data to encode
+        const string codeText = "HighDensityDataMatrix123";
 
-        // Initialize a BarcodeGenerator for DataMatrix encoding with sample data.
-        using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, "SampleDataMatrix12345"))
+        // Create a DataMatrix barcode generator with the specified text
+        using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, codeText))
         {
-            // Reduce the module (dot) size to increase barcode density.
-            generator.Parameters.Barcode.XDimension.Point = 0.5f;
+            // Use interpolation mode to control size via image dimensions
+            generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
 
-            // Apply bar width reduction to compensate for potential ink spread.
+            // Set desired image dimensions (points) – adjust as needed
+            generator.Parameters.ImageWidth.Point = 300f;
+            generator.Parameters.ImageHeight.Point = 300f;
+
+            // Reduce XDimension for higher barcode density (smaller modules)
+            generator.Parameters.Barcode.XDimension.Point = 0.5f; // small module size
+
+            // Enable bar width reduction to compensate for ink spread
             generator.Parameters.Barcode.BarWidthReduction.Point = 0.1f;
 
-            // Set a high resolution (dots per inch) for better image quality.
-            generator.Parameters.Resolution = 300f;
+            // Optional: set barcode bar color (black by default)
+            generator.Parameters.Barcode.BarColor = Color.Black;
 
-            // Save the generated barcode as a PNG file at the specified path.
-            generator.Save(outputPath);
+            // Save the generated barcode image to a file
+            generator.Save("datamatrix_high_density.png");
         }
 
-        // Inform the user that the barcode has been saved successfully.
-        Console.WriteLine($"DataMatrix barcode saved to {outputPath}");
+        // Inform the user that the barcode has been generated
+        Console.WriteLine("DataMatrix barcode generated: datamatrix_high_density.png");
     }
 }

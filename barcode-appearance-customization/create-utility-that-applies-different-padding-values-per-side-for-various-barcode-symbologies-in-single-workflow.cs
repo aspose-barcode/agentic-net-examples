@@ -1,62 +1,80 @@
+// Title: Barcode padding demonstration per symbology
+// Description: Shows how to apply custom padding values on each side for different barcode types using Aspose.BarCode.
+// Prompt: Create a utility that applies different padding values per side for various barcode symbologies in a single workflow.
+// Tags: barcode symbology, padding, aspose.barcode, image output, csharp
+
 using System;
-using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generating barcodes with per‑side padding using Aspose.BarCode.
+/// Demonstrates applying side‑specific padding to various barcode symbologies.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates sample barcodes with specified padding and saves them as PNG files.
+    /// Entry point. Generates sample barcodes with custom padding and saves them as PNG files.
     /// </summary>
     static void Main()
     {
-        // Define sample barcodes with their symbology name, code text and per‑side padding (in points)
-        var samples = new (string SymName, string CodeText, float Left, float Top, float Right, float Bottom)[]
+        // Example 1: Code128 with custom padding (left/right 5pt, top/bottom 10pt)
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "CODE128_SAMPLE"))
         {
-            ("Code128", "ABC123456", 5f, 10f, 5f, 10f),
-            ("QR", "https://example.com", 20f, 20f, 20f, 20f),
-            ("DataMatrix", "DataMatrixSample", 2f, 2f, 2f, 2f),
-            ("Pdf417", "PDF417 Sample Text", 15f, 5f, 15f, 5f)
-        };
+            // Set individual padding values in points
+            generator.Parameters.Barcode.Padding.Left.Point   = 5f;
+            generator.Parameters.Barcode.Padding.Top.Point    = 10f;
+            generator.Parameters.Barcode.Padding.Right.Point  = 5f;
+            generator.Parameters.Barcode.Padding.Bottom.Point = 10f;
 
-        // Iterate over each sample definition
-        foreach (var sample in samples)
-        {
-            // Resolve symbology name to BaseEncodeType via reflection
-            var field = typeof(EncodeTypes).GetField(sample.SymName);
-            if (field == null)
-            {
-                // If the symbology is not found, report and skip this entry
-                Console.WriteLine($"Symbology '{sample.SymName}' not found. Skipping.");
-                continue;
-            }
-
-            // Retrieve the enum value representing the barcode type
-            var encodeType = (BaseEncodeType)field.GetValue(null);
-
-            // Create a barcode generator for the resolved type and supplied code text
-            using (var generator = new BarcodeGenerator(encodeType, sample.CodeText))
-            {
-                // Apply per‑side padding (points) to the barcode
-                generator.Parameters.Barcode.Padding.Left.Point = sample.Left;
-                generator.Parameters.Barcode.Padding.Top.Point = sample.Top;
-                generator.Parameters.Barcode.Padding.Right.Point = sample.Right;
-                generator.Parameters.Barcode.Padding.Bottom.Point = sample.Bottom;
-
-                // Optional: define image size to ensure enough space for padding
-                generator.Parameters.ImageWidth.Point = 300f;
-                generator.Parameters.ImageHeight.Point = 150f;
-
-                // Build the output file name and save the barcode image
-                string fileName = $"{sample.SymName}_Padded.png";
-                generator.Save(fileName);
-
-                // Inform the user about the generated file and its padding values
-                Console.WriteLine($"Generated {fileName} with padding L:{sample.Left} T:{sample.Top} R:{sample.Right} B:{sample.Bottom}");
-            }
+            // Save the generated barcode image
+            generator.Save("code128.png");
         }
+
+        // Example 2: QR Code with uniform small padding (2pt on all sides)
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "QR_SAMPLE"))
+        {
+            generator.Parameters.Barcode.Padding.Left.Point   = 2f;
+            generator.Parameters.Barcode.Padding.Top.Point    = 2f;
+            generator.Parameters.Barcode.Padding.Right.Point  = 2f;
+            generator.Parameters.Barcode.Padding.Bottom.Point = 2f;
+
+            generator.Save("qr.png");
+        }
+
+        // Example 3: DataMatrix with no padding (tight fit)
+        using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, "DATAMATRIX_SAMPLE"))
+        {
+            generator.Parameters.Barcode.Padding.Left.Point   = 0f;
+            generator.Parameters.Barcode.Padding.Top.Point    = 0f;
+            generator.Parameters.Barcode.Padding.Right.Point  = 0f;
+            generator.Parameters.Barcode.Padding.Bottom.Point = 0f;
+
+            generator.Save("datamatrix.png");
+        }
+
+        // Example 4: PDF417 with asymmetric padding (left/right 8pt, top/bottom 4pt)
+        using (var generator = new BarcodeGenerator(EncodeTypes.Pdf417, "PDF417_SAMPLE"))
+        {
+            generator.Parameters.Barcode.Padding.Left.Point   = 8f;
+            generator.Parameters.Barcode.Padding.Top.Point    = 4f;
+            generator.Parameters.Barcode.Padding.Right.Point  = 8f;
+            generator.Parameters.Barcode.Padding.Bottom.Point = 4f;
+
+            generator.Save("pdf417.png");
+        }
+
+        // Example 5: Aztec with distinct side padding (left/right 3pt, top/bottom 6pt)
+        using (var generator = new BarcodeGenerator(EncodeTypes.Aztec, "AZTEC_SAMPLE"))
+        {
+            generator.Parameters.Barcode.Padding.Left.Point   = 3f;
+            generator.Parameters.Barcode.Padding.Top.Point    = 6f;
+            generator.Parameters.Barcode.Padding.Right.Point  = 3f;
+            generator.Parameters.Barcode.Padding.Bottom.Point = 6f;
+
+            generator.Save("aztec.png");
+        }
+
+        // Inform the user that generation is complete
+        Console.WriteLine("Barcodes generated with custom padding.");
     }
 }

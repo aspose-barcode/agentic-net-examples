@@ -1,37 +1,45 @@
+// Title: PDF417 Barcode Generation with Bar Width Reduction
+// Description: Demonstrates generating a dense PDF417 barcode, applying bar‑width reduction to improve readability at 600 dpi, and saving it as PNG.
+// Prompt: Enable BarWidthReduction to improve readability of dense PDF417 barcodes at 600 dpi output.
+// Tags: pdf417, barcode, bar width reduction, resolution, png, aspose.barcode
+
 using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generating a dense PDF417 barcode and saving it as a PNG image.
+/// Example program that creates a PDF417 barcode with bar‑width reduction enabled.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a PDF417 barcode with high resolution
-    /// and bar width reduction, then saves it to a file.
+    /// Entry point. Generates a dense PDF417 barcode, configures high‑resolution settings,
+    /// enables bar‑width reduction, and saves the result as a PNG file.
     /// </summary>
     static void Main()
     {
-        // Define the text to encode in the PDF417 barcode.
-        string codeText = "This is a sample PDF417 barcode with a relatively long text to make it dense and test bar width reduction.";
-        // Define the output file path for the generated PNG image.
+        // Define the barcode content – dense data benefits most from bar‑width reduction.
+        string codeText = "Sample PDF417 dense data for testing bar width reduction.";
+        // Output file path.
         string outputPath = "pdf417.png";
 
-        // Initialize the barcode generator for PDF417 with the specified text.
+        // Create a BarcodeGenerator for PDF417 with the specified text.
         using (var generator = new BarcodeGenerator(EncodeTypes.Pdf417, codeText))
         {
-            // Set a high resolution (600 DPI) to improve image quality.
-            generator.Parameters.Resolution = 600f;
+            // Set the image resolution to 600 dpi for high‑quality output.
+            generator.Parameters.Resolution = 600;
 
-            // Reduce bar width slightly to compensate for ink spread in dense barcodes.
-            generator.Parameters.Barcode.BarWidthReduction.Point = 0.1f;
+            // Reduce the bar width by 0.2 points to compensate for ink spread at high DPI.
+            generator.Parameters.Barcode.BarWidthReduction.Point = 0.2f;
 
-            // Save the generated barcode as a PNG file at the specified path.
+            // Use interpolation mode so the barcode size is controlled via image dimensions.
+            generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
+
+            // Save the generated barcode image as a PNG file.
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user that the barcode has been saved.
+        // Inform the user where the barcode image was saved.
         Console.WriteLine($"PDF417 barcode saved to {outputPath}");
     }
 }
