@@ -1,127 +1,99 @@
+// Title: Load multiple barcode configurations from a single XML file
+// Description: Demonstrates storing several barcode generator settings in one XML file and generating each barcode sequentially.
+// Prompt: Use a single XML file to store an array of barcode configurations and load them sequentially.
+// Tags: barcode, xml, configuration, generation, aspose.barcode, png
+
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Xml.Serialization;
+using System.Text;
+using System.Xml;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing;
 
-namespace BarcodeBatchFromXml
+/// <summary>
+/// Example program that reads an array of barcode configurations from a single XML file
+/// and generates each barcode as a separate PNG image.
+/// </summary>
+class Program
 {
-    // Simple DTO for a single barcode configuration
-    public class BarcodeConfig
-    {
-        public string Symbology { get; set; }
-        public string CodeText { get; set; }
-    }
-
-    // Container for an array of configurations
-    [XmlRoot("BarcodeConfigurations")]
-    public class BarcodeConfigCollection
-    {
-        [XmlElement("BarcodeConfig")]
-        public List<BarcodeConfig> Items { get; set; } = new List<BarcodeConfig>();
-    }
-
     /// <summary>
-    /// Entry point for the barcode batch generation application.
+    /// Entry point of the application. Creates a sample XML file if missing,
+    /// loads each <c>BarcodeGenerator</c> configuration, and saves the resulting images.
     /// </summary>
-    class Program
+    static void Main()
     {
-        /// <summary>
-        /// Main method that orchestrates loading configurations, generating barcodes, and handling errors.
-        /// </summary>
-        static void Main()
+        // Path to the XML file that holds multiple barcode configurations.
+        const string xmlFilePath = "barcodes.xml";
+
+        // If the XML file does not exist, create it with a few sample configurations.
+        if (!File.Exists(xmlFilePath))
         {
-            const string xmlPath = "barcodeConfigs.xml";
-
-            // Ensure the XML file exists; if not, create a sample file
-            if (!File.Exists(xmlPath))
+            // Prepare the first sample barcode generator (Code128).
+            using (var gen1 = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
             {
-                CreateSampleXml(xmlPath);
-                Console.WriteLine($"Sample configuration file created at '{Path.GetFullPath(xmlPath)}'.");
-            }
+                gen1.Parameters.Barcode.BarColor = Color.Blue;
 
-            // Load configurations from XML
-            BarcodeConfigCollection configCollection = LoadConfigurations(xmlPath);
-            if (configCollection == null || configCollection.Items.Count == 0)
-            {
-                Console.WriteLine("No barcode configurations found.");
-                return;
-            }
-
-            // Process each configuration sequentially
-            int index = 1;
-            foreach (var cfg in configCollection.Items)
-            {
-                // Resolve symbology name to BaseEncodeType via reflection
-                var field = typeof(EncodeTypes).GetField(cfg.Symbology);
-                if (field == null)
+                // Export the first generator's configuration to XML.
+                using (var ms1 = new MemoryStream())
                 {
-                    Console.WriteLine($"[#{index}] Unknown symbology '{cfg.Symbology}'. Skipping.");
-                    index++;
-                    continue;
-                }
+                    gen1.ExportToXml(ms1);
+                    string xml1 = Encoding.UTF8.GetString(ms1.ToArray());
 
-                // Cast the reflected value to the appropriate enum type
-                var encodeType = (BaseEncodeType)field.GetValue(null);
-                string outputFile = $"barcode_{index}_{cfg.Symbology}.png";
-
-                try
-                {
-                    // Generate the barcode using Aspose.BarCode
-                    using (var generator = new BarcodeGenerator(encodeType, cfg.CodeText))
+                    // Prepare the second sample barcode generator (QR).
+                    using (var gen2 = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
                     {
-                        // Example: enable checksum (optional)
-                        generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
+                        gen2.Parameters.Barcode.BarColor = Color.Green;
 
-                        // Save the barcode image to a PNG file
-                        generator.Save(outputFile);
+                        // Export the second generator's configuration to XML.
+                        using (var ms2 = new MemoryStream())
+                        {
+                            gen2.ExportToXml(ms2);
+                            string xml2 = Encoding.UTF8.GetString(ms2.ToArray());
+
+                            // Combine both <BarcodeGenerator> fragments under a single root element.
+                            string combinedXml = $"<Barcodes>{xml1}{xml2}</Barcodes>";
+
+                            // Write the combined XML to the file system.
+                            File.WriteAllText(xmlFilePath, combinedXml, Encoding.UTF8);
+                        }
                     }
-
-                    Console.WriteLine($"[#{index}] Generated '{outputFile}' for symbology '{cfg.Symbology}'.");
                 }
-                catch (Exception ex)
-                {
-                    // Report any errors that occur during generation
-                    Console.WriteLine($"[#{index}] Error generating barcode: {ex.Message}");
-                }
-
-                index++;
             }
         }
 
-        // Creates a sample XML file with a few barcode configurations
-        private static void CreateSampleXml(string path)
-        {
-            var sample = new BarcodeConfigCollection();
-            sample.Items.Add(new BarcodeConfig { Symbology = "Code128", CodeText = "Sample123" });
-            sample.Items.Add(new BarcodeConfig { Symbology = "QR", CodeText = "https://example.com" });
-            sample.Items.Add(new BarcodeConfig { Symbology = "DataMatrix", CodeText = "DM12345" });
+        // Load the combined XML file into an XmlDocument.
+        var doc = new XmlDocument();
+        doc.Load(xmlFilePath);
 
-            var serializer = new XmlSerializer(typeof(BarcodeConfigCollection));
-            using (var stream = new FileStream(path, FileMode.Create, FileAccess.Write))
-            {
-                serializer.Serialize(stream, sample);
-            }
+        // Select each <BarcodeGenerator> node from the document.
+        var generatorNodes = doc.SelectNodes("//BarcodeGenerator");
+        if (generatorNodes == null || generatorNodes.Count == 0)
+        {
+            Console.WriteLine("No barcode configurations found in the XML file.");
+            return;
         }
 
-        // Deserializes the XML file into a collection of configurations
-        private static BarcodeConfigCollection LoadConfigurations(string path)
+        // Iterate over each configuration node and generate the corresponding barcode image.
+        int index = 1;
+        foreach (XmlNode node in generatorNodes)
         {
-            try
+            // Convert the node back to its XML representation.
+            string nodeXml = node.OuterXml;
+
+            // Load the configuration into a new BarcodeGenerator instance.
+            using (var ms = new MemoryStream(Encoding.UTF8.GetBytes(nodeXml)))
+            using (var generator = BarcodeGenerator.ImportFromXml(ms))
             {
-                var serializer = new XmlSerializer(typeof(BarcodeConfigCollection));
-                using (var stream = new FileStream(path, FileMode.Open, FileAccess.Read))
-                {
-                    return (BarcodeConfigCollection)serializer.Deserialize(stream);
-                }
+                // Define the output file name for the generated barcode.
+                string outputFile = $"barcode_{index}.png";
+
+                // Save the barcode image as PNG.
+                generator.Save(outputFile);
+                Console.WriteLine($"Generated barcode saved to: {outputFile}");
             }
-            catch (Exception ex)
-            {
-                // Log deserialization errors and return null to indicate failure
-                Console.WriteLine($"Failed to load configurations: {ex.Message}");
-                return null;
-            }
+
+            index++;
         }
     }
 }

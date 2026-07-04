@@ -1,54 +1,62 @@
+// Title: Export BarcodeGenerator State to XML
+// Description: Demonstrates how to export the configuration of an Aspose.BarCode BarcodeGenerator to an XML string for persistence or inspection.
+// Prompt: Create a utility method that accepts a BarcodeGenerator, exports its state to XML, and returns the XML string.
+// Tags: barcode symbology, export, xml, aspose.barcode, utility
+
 using System;
 using System.IO;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates exporting a <see cref="BarcodeGenerator"/> configuration to an XML string.
+/// Example program that creates a barcode, modifies its appearance,
+/// and exports the generator's state to an XML string.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Exports the state of a <see cref="BarcodeGenerator"/> to an XML string.
+    /// Entry point of the application.
     /// </summary>
-    /// <param name="generator">The barcode generator whose configuration will be exported.</param>
-    /// <returns>An XML representation of the generator's parameters.</returns>
-    static string ExportGeneratorToXml(BarcodeGenerator generator)
+    static void Main()
     {
-        // Use a memory stream to hold the XML data.
-        using (var memoryStream = new MemoryStream())
+        // Initialize a BarcodeGenerator for Code128 with sample data
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
         {
-            // Export the generator's parameters to the stream.
-            generator.ExportToXml(memoryStream);
-            // Reset the stream position to the beginning for reading.
-            memoryStream.Position = 0;
-            // Read the entire XML content from the stream.
-            using (var reader = new StreamReader(memoryStream))
-            {
-                return reader.ReadToEnd();
-            }
+            // Set the barcode color to blue (demonstrates property modification)
+            generator.Parameters.Barcode.BarColor = Color.Blue;
+
+            // Export the current generator configuration to an XML string
+            string xml = ExportGeneratorToXml(generator);
+
+            // Write the resulting XML to the console
+            Console.WriteLine(xml);
         }
     }
 
     /// <summary>
-    /// Entry point of the application. Creates a barcode generator, configures it,
-    /// exports its state to XML, and writes the XML to the console.
+    /// Exports the state of the provided <see cref="BarcodeGenerator"/> to an XML string.
     /// </summary>
-    static void Main()
+    /// <param name="generator">The barcode generator whose configuration will be exported.</param>
+    /// <returns>An XML string representing the generator's current state.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when the export operation fails.</exception>
+    static string ExportGeneratorToXml(BarcodeGenerator generator)
     {
-        // Create a sample barcode generator with Code128 symbology and sample data.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
+        // Use a memory stream as the destination for the XML data
+        using (var memoryStream = new MemoryStream())
         {
-            // Configure a few visual parameters.
-            generator.Parameters.Barcode.BarColor = Color.Blue;
-            generator.Parameters.Barcode.XDimension.Point = 2f;
+            // Perform the export; the method returns true on success
+            bool exported = generator.ExportToXml(memoryStream);
+            if (!exported)
+                throw new InvalidOperationException("Failed to export barcode generator to XML.");
 
-            // Export the generator's state to XML.
-            string xml = ExportGeneratorToXml(generator);
+            // Reset the stream position to the beginning before reading
+            memoryStream.Position = 0;
 
-            // Output the exported XML to the console.
-            Console.WriteLine("Exported XML:");
-            Console.WriteLine(xml);
+            // Read the entire XML content from the memory stream
+            using (var reader = new StreamReader(memoryStream))
+            {
+                return reader.ReadToEnd();
+            }
         }
     }
 }

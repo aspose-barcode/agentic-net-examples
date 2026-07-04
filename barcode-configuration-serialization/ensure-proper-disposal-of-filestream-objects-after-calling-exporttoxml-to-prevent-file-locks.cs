@@ -1,39 +1,44 @@
+// Title: Export and Import Barcode Generator Settings via XML
+// Description: Demonstrates exporting a BarcodeGenerator's configuration to an XML file and re-importing it to generate a barcode image.
+// Prompt: Ensure proper disposal of FileStream objects after calling ExportToXml to prevent file locks.
+// Tags: barcode, code128, export, xml, import, aspose.barcode, filestream
+
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generating a Code128 barcode, saving it as an image,
-/// and exporting the generator settings to an XML file using Aspose.BarCode.
+/// Example program that shows how to export a barcode generator's settings to XML,
+/// import them back, and create a barcode image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Application entry point.
-    /// Generates a barcode, saves the image, and exports settings to XML.
+    /// Entry point of the example. Executes the export/import workflow.
     /// </summary>
     static void Main()
     {
-        // Define output file paths for the barcode image and XML settings.
-        string imagePath = "barcode.png";
-        string xmlPath = "barcode.xml";
-
-        // Initialize a BarcodeGenerator for Code128 with the desired data.
+        // Initialize a BarcodeGenerator with Code128 symbology and sample data.
         using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            // Save the generated barcode as a PNG image.
-            generator.Save(imagePath);
-
             // Export the generator's configuration to an XML file.
-            // The FileStream is wrapped in a using block to ensure proper disposal.
-            using (var stream = new FileStream(xmlPath, FileMode.Create, FileAccess.Write))
+            // The FileStream is wrapped in a using block to guarantee disposal.
+            using (var writeStream = new FileStream("barcode.xml", FileMode.Create, FileAccess.Write, FileShare.None))
             {
-                generator.ExportToXml(stream);
-            } // The FileStream is disposed here, releasing the file handle.
-        } // The BarcodeGenerator is disposed here, releasing any unmanaged resources.
+                generator.ExportToXml(writeStream);
+            }
 
-        // Inform the user that the operation completed successfully.
-        Console.WriteLine("Barcode image and XML exported successfully.");
+            // Open the previously created XML file for reading.
+            using (var readStream = new FileStream("barcode.xml", FileMode.Open, FileAccess.Read, FileShare.Read))
+            {
+                // Import a new BarcodeGenerator instance from the XML configuration.
+                using (var importedGenerator = BarcodeGenerator.ImportFromXml(readStream))
+                {
+                    // Save the barcode generated from the imported settings as a PNG image.
+                    importedGenerator.Save("barcode.png");
+                }
+            }
+        }
     }
 }
