@@ -1,84 +1,79 @@
+// Title: Demonstrate checksum validation for mandatory and optional symbologies in a single read
+// Description: This example generates an EAN13 barcode (mandatory checksum) and a Code39 barcode (optional checksum), combines them, and reads both with checksum validation turned on.
+// Prompt: Configure BarcodeSettings.ChecksumValidation to On for both obligatory and optional checksum symbologies in a single read operation.
+// Tags: barcode symbology, checksum validation, read operation, aspose.barcode, csharp
+
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating two different barcodes, combining them into a single image,
-/// and then reading back the barcodes from the combined image.
+/// Sample program that creates two barcodes, merges them into a single image,
+/// and reads them back with checksum validation enabled for both mandatory
+/// and optional checksum symbologies.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
+    /// Entry point. Generates barcodes, combines them, and performs a single read
+    /// operation with <c>ChecksumValidation</c> set to <c>On</c>.
     /// </summary>
     static void Main()
     {
-        // ------------------------------------------------------------
-        // 1. Generate the first barcode (EAN13) which requires a checksum.
-        // ------------------------------------------------------------
-        using (var generatorEan = new BarcodeGenerator(EncodeTypes.EAN13, "1234567890128"))
+        // Generate first barcode (EAN13) – checksum is mandatory
+        using (var eanGenerator = new BarcodeGenerator(EncodeTypes.EAN13, "1234567890128"))
         {
-            using (var eanImage = generatorEan.GenerateBarCodeImage())
+            using (var eanStream = new MemoryStream())
             {
-                // ------------------------------------------------------------
-                // 2. Generate the second barcode (Code39) where the checksum is optional.
-                // ------------------------------------------------------------
-                using (var generatorCode39 = new BarcodeGenerator(EncodeTypes.Code39FullASCII, "CODE39"))
+                eanGenerator.Save(eanStream, BarCodeImageFormat.Png);
+                eanStream.Position = 0;
+
+                // Generate second barcode (Code39) – checksum is optional
+                using (var code39Generator = new BarcodeGenerator(EncodeTypes.Code39, "CODE39"))
                 {
-                    using (var code39Image = generatorCode39.GenerateBarCodeImage())
+                    using (var code39Stream = new MemoryStream())
                     {
-                        // ------------------------------------------------------------
-                        // 3. Combine the two barcode images side by side with padding.
-                        // ------------------------------------------------------------
-                        int padding = 20;
-                        int combinedWidth = eanImage.Width + code39Image.Width + padding;
-                        int combinedHeight = Math.Max(eanImage.Height, code39Image.Height);
+                        code39Generator.Save(code39Stream, BarCodeImageFormat.Png);
+                        code39Stream.Position = 0;
 
-                        using (var combinedBitmap = new Bitmap(combinedWidth, combinedHeight))
+                        // Load both images from the memory streams
+                        using (var eanImage = new Bitmap(eanStream))
+                        using (var code39Image = new Bitmap(code39Stream))
                         {
-                            using (var graphics = Graphics.FromImage(combinedBitmap))
+                            // Create a combined image (side by side)
+                            int combinedWidth = eanImage.Width + code39Image.Width;
+                            int combinedHeight = Math.Max(eanImage.Height, code39Image.Height);
+                            using (var combinedImage = new Bitmap(combinedWidth, combinedHeight))
                             {
-                                // Fill background with white.
-                                graphics.Clear(Color.White);
-                                // Draw the first barcode at the left.
-                                graphics.DrawImage(eanImage, 0, 0);
-                                // Draw the second barcode to the right of the first, separated by padding.
-                                graphics.DrawImage(code39Image, eanImage.Width + padding, 0);
-                            }
-
-                            // ------------------------------------------------------------
-                            // 4. Save the combined image to a memory stream (optional, for demo purposes).
-                            // ------------------------------------------------------------
-                            using (var ms = new MemoryStream())
-                            {
-                                combinedBitmap.Save(ms, Aspose.Drawing.Imaging.ImageFormat.Png);
-                                ms.Position = 0; // Reset stream position for reading.
-
-                                // ------------------------------------------------------------
-                                // 5. Read barcodes from the combined image.
-                                // ------------------------------------------------------------
-                                using (var reader = new BarCodeReader(new Bitmap(ms), DecodeType.AllSupportedTypes))
+                                using (var graphics = Graphics.FromImage(combinedImage))
                                 {
-                                    // Enable checksum validation for all supported symbologies.
+                                    graphics.DrawImage(eanImage, 0, 0);
+                                    graphics.DrawImage(code39Image, eanImage.Width, 0);
+                                }
+
+                                // Read both barcodes in a single operation with checksum validation enabled
+                                using (var reader = new BarCodeReader(combinedImage, DecodeType.EAN13, DecodeType.Code39))
+                                {
+                                    // Enable checksum validation for all symbologies (mandatory and optional)
                                     reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
 
-                                    // Iterate through all detected barcodes.
+                                    // Iterate through detected barcodes and output details
                                     foreach (var result in reader.ReadBarCodes())
                                     {
-                                        Console.WriteLine($"Detected Type: {result.CodeTypeName}");
-                                        Console.WriteLine($"CodeText: {result.CodeText}");
+                                        Console.WriteLine("Detected Type: " + result.CodeTypeName);
+                                        Console.WriteLine("CodeText: " + result.CodeText);
 
-                                        // For 1D barcodes, display the numeric value and checksum if available.
-                                        if (result.Extended?.OneD != null)
+                                        // For 1D barcodes, checksum info is available in Extended.OneD
+                                        if (result.Extended.OneD != null)
                                         {
-                                            Console.WriteLine($"Value: {result.Extended.OneD.Value}");
-                                            Console.WriteLine($"Checksum: {result.Extended.OneD.CheckSum}");
+                                            Console.WriteLine("Value: " + result.Extended.OneD.Value);
+                                            Console.WriteLine("Checksum: " + result.Extended.OneD.CheckSum);
                                         }
 
-                                        Console.WriteLine(new string('-', 40));
+                                        Console.WriteLine();
                                     }
                                 }
                             }

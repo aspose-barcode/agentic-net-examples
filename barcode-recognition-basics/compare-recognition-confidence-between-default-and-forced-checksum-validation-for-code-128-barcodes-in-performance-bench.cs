@@ -1,115 +1,71 @@
+// Title: Code128 checksum validation confidence comparison
+// Description: Demonstrates how to generate a Code 128 barcode, then reads it twice—once with default checksum validation and once with forced checksum validation—to compare the confidence values returned by the recognizer.
+// Prompt: Compare recognition confidence between default and forced checksum validation for Code 128 barcodes in a performance benchmark.
+// Tags: code128, checksum validation, confidence, performance benchmark, aspose.barcode, barcode generation, barcode recognition
+
 using System;
 using System.IO;
-using System.Diagnostics;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.BarCode.BarCodeRecognition; // for ChecksumValidation enum
 
 /// <summary>
-/// Demonstrates generating Code128 barcodes, recognizing them, and benchmarking
-/// the impact of checksum validation settings using Aspose.BarCode.
+/// Example program that generates a Code128 barcode, then reads it using default and forced checksum validation
+/// to illustrate the difference in recognition confidence values.
 /// </summary>
 class Program
 {
     /// <summary>
     /// Entry point of the application.
-    /// Generates sample barcode images, runs recognition with default and forced
-    /// checksum validation, reports confidence and timing, and cleans up temporary files.
+    /// Generates a barcode image, verifies its creation, and performs two recognition passes:
+    /// one with default checksum handling and another with checksum validation forced on.
     /// </summary>
     static void Main()
     {
-        // Define sample texts to encode as Code128 barcodes
-        string[] samples = new string[]
+        // Define the file name for the generated barcode image
+        const string imagePath = "code128.png";
+
+        // ------------------------------------------------------------
+        // Generate a Code128 barcode with sample data and save it to disk
+        // ------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            "1234567890",
-            "ABCDEFGHIJ",
-            "CODE128TEST",
-            "9876543210",
-            "A1B2C3D4E5"
-        };
-
-        // Create a temporary directory for storing generated barcode images
-        string tempDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
-        if (!Directory.Exists(tempDir))
-            Directory.CreateDirectory(tempDir);
-
-        Console.WriteLine("Generating barcode images...");
-
-        // Generate a PNG image for each sample text
-        string[] imagePaths = new string[samples.Length];
-        for (int i = 0; i < samples.Length; i++)
-        {
-            string filePath = Path.Combine(tempDir, $"barcode_{i}.png");
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, samples[i]))
-            {
-                // Save the barcode image to the temporary file
-                generator.Save(filePath);
-            }
-            imagePaths[i] = filePath;
+            // Save the barcode image to the specified path
+            generator.Save(imagePath);
         }
 
-        Console.WriteLine("Starting recognition benchmark...");
-
-        // Iterate over each generated image and benchmark recognition
-        for (int i = 0; i < imagePaths.Length; i++)
+        // ------------------------------------------------------------
+        // Verify that the image file was successfully created
+        // ------------------------------------------------------------
+        if (!File.Exists(imagePath))
         {
-            string path = imagePaths[i];
-            Console.WriteLine($"\nSample {i + 1}: {samples[i]}");
-
-            // ---------- Default checksum validation (no explicit setting) ----------
-            double defaultConfidence = 0;
-            long defaultTicks = 0;
-            using (var readerDefault = new BarCodeReader(path, DecodeType.Code128))
-            {
-                var sw = Stopwatch.StartNew(); // Start timing
-                foreach (var result in readerDefault.ReadBarCodes())
-                {
-                    // Capture the confidence of the last read result
-                    defaultConfidence = (double)result.Confidence;
-                }
-                sw.Stop(); // Stop timing
-                defaultTicks = sw.ElapsedTicks;
-            }
-
-            // ---------- Forced checksum validation (ChecksumValidation.On) ----------
-            double forcedConfidence = 0;
-            long forcedTicks = 0;
-            using (var readerForced = new BarCodeReader(path, DecodeType.Code128))
-            {
-                // Enable checksum validation explicitly
-                readerForced.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
-                var sw = Stopwatch.StartNew(); // Start timing
-                foreach (var result in readerForced.ReadBarCodes())
-                {
-                    // Capture the confidence of the last read result
-                    forcedConfidence = (double)result.Confidence;
-                }
-                sw.Stop(); // Stop timing
-                forcedTicks = sw.ElapsedTicks;
-            }
-
-            // Output benchmark results for the current sample
-            Console.WriteLine($"Default Validation - Confidence: {defaultConfidence}, Time (ticks): {defaultTicks}");
-            Console.WriteLine($"Forced Validation  - Confidence: {forcedConfidence}, Time (ticks): {forcedTicks}");
+            Console.WriteLine($"Error: Barcode image '{imagePath}' was not created.");
+            return;
         }
 
-        // ---------- Cleanup temporary files ----------
-        try
+        // ------------------------------------------------------------
+        // Read the barcode using default checksum validation (no explicit setting)
+        // ------------------------------------------------------------
+        using (var readerDefault = new BarCodeReader(imagePath, DecodeType.Code128))
         {
-            foreach (var file in imagePaths)
+            foreach (var result in readerDefault.ReadBarCodes())
             {
-                if (File.Exists(file))
-                    File.Delete(file);
+                Console.WriteLine($"Default Validation Confidence: {result.Confidence}");
             }
-            if (Directory.Exists(tempDir))
-                Directory.Delete(tempDir);
-        }
-        catch
-        {
-            // Ignore any errors that occur during cleanup
         }
 
-        Console.WriteLine("\nBenchmark completed.");
+        // ------------------------------------------------------------
+        // Read the same barcode with forced checksum validation (ChecksumValidation.On)
+        // ------------------------------------------------------------
+        using (var readerForced = new BarCodeReader(imagePath, DecodeType.Code128))
+        {
+            // Enable forced checksum validation
+            readerForced.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
+
+            foreach (var result in readerForced.ReadBarCodes())
+            {
+                Console.WriteLine($"Forced Validation Confidence: {result.Confidence}");
+            }
+        }
     }
 }

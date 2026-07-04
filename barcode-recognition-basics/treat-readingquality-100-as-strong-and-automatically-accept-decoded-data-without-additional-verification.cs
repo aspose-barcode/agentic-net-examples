@@ -1,67 +1,69 @@
+// Title: QR Code Generation and Strong Quality Barcode Reading
+// Description: Generates a QR code, reads it back, and automatically accepts data when reading quality is 100, demonstrating quality-based validation.
+// Prompt: Treat ReadingQuality 100 as strong and automatically accept the decoded data without additional verification.
+// Tags: qr, barcode, generation, recognition, readingquality, console
+
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a QR code barcode, saving it to a file,
-/// reading it back, and displaying the detection results.
+/// Demonstrates creating a QR code, reading it, and handling strong reading quality automatically.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a QR code, reads it, outputs confidence information,
-    /// and cleans up the temporary image file.
+    /// Entry point of the example. Generates a QR code, reads it, and processes results based on reading quality.
     /// </summary>
     static void Main()
     {
         // Define a temporary file path for the generated barcode image
-        string imagePath = Path.Combine(Directory.GetCurrentDirectory(), "sample_barcode.png");
+        string imagePath = Path.Combine(Path.GetTempPath(), "sample_barcode.png");
 
-        // Generate a QR code barcode with the text "Hello World" and save it to the file
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Hello World"))
+        // Generate a QR code barcode with known content
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "StrongQualityTest"))
         {
+            // Save the barcode image to the temporary file
             generator.Save(imagePath);
         }
 
-        // Verify that the image file was successfully created
+        // Verify that the image file was created
         if (!File.Exists(imagePath))
         {
             Console.WriteLine("Failed to create barcode image.");
             return;
         }
 
-        // Read the barcode from the image using all supported decode types
+        // Read the barcode from the generated image
         using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
         {
-            // Iterate through all detected barcodes in the image
+            // Iterate through all detected barcodes
             foreach (var result in reader.ReadBarCodes())
             {
-                // Retrieve the reading quality (confidence) of the detection
-                double quality = result.ReadingQuality; // ReadingQuality is a double
+                double readingQuality = result.ReadingQuality;
 
-                // If quality is 100, treat it as strong confidence and accept automatically
-                if (quality == 100.0)
+                // Treat ReadingQuality of 100 as strong and accept automatically
+                if (readingQuality == 100.0)
                 {
-                    Console.WriteLine($"Accepted (Strong confidence): {result.CodeText}");
+                    Console.WriteLine($"Accepted (Strong Quality): {result.CodeText}");
                 }
                 else
                 {
-                    Console.WriteLine($"Detected (Quality {quality}): {result.CodeText}");
+                    Console.WriteLine($"Detected (Quality {readingQuality}): {result.CodeText}");
                 }
             }
         }
 
-        // Attempt to delete the temporary image file; ignore any errors during cleanup
+        // Clean up the temporary image file
         try
         {
             File.Delete(imagePath);
         }
         catch
         {
-            // No action needed if deletion fails
+            // Ignore any errors during cleanup
         }
     }
 }

@@ -1,49 +1,62 @@
+// Title: QR Code Generation, Reading, and Confidence Logging
+// Description: Generates a QR code image, reads it back, extracts the confidence level, and writes the value to a diagnostics file.
+// Prompt: Retrieve BarCodeResult.Confidence after reading a QR code and log the enumeration to a diagnostics file.
+// Tags: qr, barcode, confidence, diagnostics, generation, recognition, aspose
+
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a QR code, reading it, and logging the confidence level.
+/// Demonstrates how to generate a QR code, read it, retrieve the confidence level,
+/// and log the result to a diagnostics file using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a QR code, reads it back, and writes the confidence value to a file and console.
+    /// Entry point of the example. Generates a QR code, reads it, and logs the confidence.
     /// </summary>
     static void Main()
     {
-        // Sample QR code text to encode
-        const string qrText = "https://example.com";
+        const string imagePath = "qr.png";
+        const string diagnosticsPath = "diagnostics.txt";
 
-        // Create a barcode generator for QR type with the specified text
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, qrText))
+        // ------------------------------------------------------------
+        // Generate a QR code image and save it to disk.
+        // ------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Sample QR Text"))
         {
-            // Generate the QR code image as a bitmap in memory
-            using (Bitmap qrBitmap = generator.GenerateBarCodeImage())
+            // Set a moderate error correction level (optional).
+            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
+
+            // Save the generated QR code as a PNG file.
+            generator.Save(imagePath, BarCodeImageFormat.Png);
+        }
+
+        // ------------------------------------------------------------
+        // Verify that the QR code image was successfully created.
+        // ------------------------------------------------------------
+        if (!File.Exists(imagePath))
+        {
+            // Log an error message if the image file is missing.
+            File.WriteAllText(diagnosticsPath, "Error: QR code image was not created." + Environment.NewLine);
+            return;
+        }
+
+        // ------------------------------------------------------------
+        // Read the QR code from the image and retrieve the confidence level.
+        // ------------------------------------------------------------
+        using (var reader = new BarCodeReader(imagePath, DecodeType.QR))
+        {
+            foreach (var result in reader.ReadBarCodes())
             {
-                // Initialize a reader to decode QR codes from the generated bitmap
-                using (var reader = new BarCodeReader(qrBitmap, DecodeType.QR))
-                {
-                    // Iterate through all detected barcodes (should be one in this case)
-                    foreach (var result in reader.ReadBarCodes())
-                    {
-                        // Retrieve the confidence level of the detection
-                        BarCodeConfidence confidence = result.Confidence;
+                // Build a log entry containing the confidence enumeration value.
+                string logEntry = $"Confidence: {result.Confidence}";
 
-                        // Write the confidence value to a diagnostics file (overwrites existing file)
-                        using (var writer = new StreamWriter("diagnostics.txt", false))
-                        {
-                            writer.WriteLine($"Confidence: {confidence}");
-                        }
-
-                        // Also output the confidence value to the console for demonstration
-                        Console.WriteLine($"Confidence: {confidence}");
-                    }
-                }
+                // Append the confidence information to the diagnostics file.
+                File.AppendAllText(diagnosticsPath, logEntry + Environment.NewLine);
             }
         }
     }

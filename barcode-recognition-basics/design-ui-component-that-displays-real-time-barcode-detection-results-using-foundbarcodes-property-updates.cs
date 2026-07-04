@@ -1,87 +1,68 @@
+// Title: Real‑time barcode detection demo
+// Description: This console example generates a Code128 barcode, reads it, and displays detection results, illustrating how the FoundBarCodes property can be used for UI updates.
+// Prompt: Design a UI component that displays real‑time barcode detection results using FoundBarCodes property updates.
+// Tags: barcode symbology, generation, recognition, foundbarcodes, console
+
 using System;
-using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating barcodes, saving them to a memory stream,
-/// and then recognizing them using Aspose.BarCode.
+/// Demonstrates barcode generation, recognition, and how to access detection results via the
+/// <c>FoundBarCodes</c> property, which can be bound to a UI component for real‑time updates.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates sample barcodes, reads them back, and prints detection details.
+    /// Entry point of the console application. Generates a barcode, reads it, and prints detection details.
     /// </summary>
     static void Main()
     {
-        // Define a set of sample barcodes to generate and later recognize.
-        var samples = new (BaseEncodeType type, string text)[]
-        {
-            (EncodeTypes.Code128, "ABC123"),
-            (EncodeTypes.QR, "https://example.com"),
-            (EncodeTypes.DataMatrix, "DataMatrixSample")
-        };
+        // NOTE: The original task mentions a UI component for real‑time updates.
+        // In this console example we simulate the process by generating a barcode,
+        // reading it, and printing the detection results immediately.
 
-        // Process each sample barcode.
-        foreach (var sample in samples)
+        // Create a barcode generator for Code128 with sample text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
         {
-            // Create a barcode generator for the current sample.
-            using (var generator = new BarcodeGenerator(sample.type, sample.text))
+            // Generate the barcode image in memory.
+            using (var barcodeImage = generator.GenerateBarCodeImage())
             {
-                // Set a high resolution for better recognition accuracy.
-                generator.Parameters.Resolution = 300f;
-
-                // Save the generated barcode image into a memory stream.
-                using (var ms = new MemoryStream())
+                // Initialize a reader that scans for all supported symbologies.
+                using (var reader = new BarCodeReader(barcodeImage, DecodeType.AllSupportedTypes))
                 {
-                    generator.Save(ms, BarCodeImageFormat.Png);
-                    ms.Position = 0; // Reset stream position for reading.
+                    // Perform the recognition.
+                    var results = reader.ReadBarCodes();
 
-                    // Load the image from the memory stream as a bitmap.
-                    using (var bitmap = new Bitmap(ms))
+                    // The FoundBarCodes property holds the same results after reading.
+                    // Display each detected barcode's details.
+                    Console.WriteLine($"Detected {reader.FoundCount} barcode(s):");
+                    int index = 0;
+                    foreach (var result in results)
                     {
-                        // Initialize a barcode reader that can detect all supported types.
-                        using (var reader = new BarCodeReader(bitmap, DecodeType.AllSupportedTypes))
-                        {
-                            // Perform the recognition.
-                            var results = reader.ReadBarCodes();
+                        Console.WriteLine($"--- Barcode #{++index} ---");
+                        Console.WriteLine($"Type       : {result.CodeTypeName}");
+                        Console.WriteLine($"CodeText   : {result.CodeText}");
+                        Console.WriteLine($"Confidence : {result.Confidence}");
+                        Console.WriteLine($"Quality    : {result.ReadingQuality}");
+                        var rect = result.Region.Rectangle;
+                        Console.WriteLine($"Region     : X={rect.X}, Y={rect.Y}, Width={rect.Width}, Height={rect.Height}");
+                        Console.WriteLine($"Angle      : {result.Region.Angle}");
+                    }
 
-                            // Output basic information about the generated barcode.
-                            Console.WriteLine($"Generated {sample.type.TypeName} with text '{sample.text}'");
-                            Console.WriteLine($"Found {reader.FoundCount} barcode(s).");
-
-                            // Iterate over each detection result and display details.
-                            foreach (var result in results)
-                            {
-                                Console.WriteLine($"  Type : {result.CodeTypeName}");
-                                Console.WriteLine($"  Text : {result.CodeText}");
-
-                                // Extract and round the region coordinates.
-                                var region = result.Region.Rectangle;
-                                int x = (int)Math.Round((double)region.X);
-                                int y = (int)Math.Round((double)region.Y);
-                                int width = (int)Math.Round((double)region.Width);
-                                int height = (int)Math.Round((double)region.Height);
-                                Console.WriteLine($"  Region : X={x}, Y={y}, W={width}, H={height}");
-                                Console.WriteLine($"  Angle  : {result.Region.Angle}");
-                            }
-
-                            // Demonstrate direct access to the FoundBarCodes collection.
-                            Console.WriteLine("Accessing FoundBarCodes property directly:");
-                            foreach (var fb in reader.FoundBarCodes)
-                            {
-                                Console.WriteLine($"  [Found] Type: {fb.CodeTypeName}, Text: {fb.CodeText}");
-                            }
-                        }
+                    // Demonstrate accessing the FoundBarCodes array directly.
+                    Console.WriteLine("\nAccessing FoundBarCodes property directly:");
+                    for (int i = 0; i < reader.FoundCount; i++)
+                    {
+                        var fb = reader.FoundBarCodes[i];
+                        Console.WriteLine($"FoundBarCodes[{i}] Type={fb.CodeTypeName}, Text={fb.CodeText}");
                     }
                 }
             }
-
-            // Separate output for each sample for readability.
-            Console.WriteLine(new string('-', 40));
         }
+
+        // Program ends here; no external input or infinite loops are used.
     }
 }

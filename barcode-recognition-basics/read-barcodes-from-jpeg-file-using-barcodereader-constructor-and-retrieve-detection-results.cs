@@ -1,64 +1,49 @@
+// Title: Read Barcodes from JPEG using BarCodeReader
+// Description: Demonstrates how to load a JPEG image, detect all supported barcodes, and output their type, text, and location.
+// Prompt: Read barcodes from a JPEG file using BarCodeReader constructor and retrieve detection results.
+// Tags: barcode, read, jpeg, aspose, barcodereader, detection, console
+
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates barcode detection in an image using Aspose.BarCode.
+/// Example program that reads all supported barcodes from a JPEG image
+/// and prints their type, decoded text, and bounding region to the console.
 /// </summary>
 class Program
 {
     /// <summary>
     /// Entry point of the application.
-    /// Scans the specified image (or a default image) for barcodes and prints details to the console.
     /// </summary>
-    /// <param name="args">Command‑line arguments; the first argument may specify the image path.</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Determine the image file to process: use first argument if provided, otherwise default to "sample.jpg".
-        string imagePath = args.Length > 0 ? args[0] : "sample.jpg";
+        // Path to the JPEG image containing barcodes.
+        const string imagePath = "sample.jpg";
 
-        // Ensure the image file exists before attempting to read it.
+        // Verify that the file exists before attempting to read it.
         if (!File.Exists(imagePath))
         {
             Console.WriteLine($"File not found: {imagePath}");
             return;
         }
 
-        // Initialize a BarCodeReader to scan the image for all supported barcode types.
+        // Initialize the BarCodeReader for all supported barcode types.
+        // The using statement ensures the reader is disposed properly.
         using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
         {
-            // Perform barcode recognition and retrieve all results.
-            BarCodeResult[] results = reader.ReadBarCodes();
-
-            // If no barcodes were detected, inform the user and exit.
-            if (results.Length == 0)
+            // Iterate through all detected barcodes in the image.
+            foreach (var result in reader.ReadBarCodes())
             {
-                Console.WriteLine("No barcodes detected.");
-                return;
-            }
+                // Output the barcode type (symbology) and the decoded text.
+                Console.WriteLine($"BarCode Type: {result.CodeTypeName}");
+                Console.WriteLine($"BarCode Text: {result.CodeText}");
 
-            // Iterate over each detected barcode and output its properties.
-            foreach (var result in results)
-            {
-                Console.WriteLine($"BarCode Type   : {result.CodeTypeName}");
-                Console.WriteLine($"BarCode Text   : {result.CodeText}");
-                Console.WriteLine($"Confidence     : {result.Confidence}");
-                Console.WriteLine($"ReadingQuality : {result.ReadingQuality}");
-
-                // Extract the region rectangle that defines the barcode's location in the image.
+                // Retrieve and display the bounding rectangle of the detected barcode.
                 var rect = result.Region.Rectangle;
-                int x = (int)Math.Round((double)rect.X);
-                int y = (int)Math.Round((double)rect.Y);
-                int width = (int)Math.Round((double)rect.Width);
-                int height = (int)Math.Round((double)rect.Height);
-                Console.WriteLine($"Region (px)    : X={x}, Y={y}, Width={width}, Height={height}");
+                Console.WriteLine($"Region - X:{rect.X}, Y:{rect.Y}, Width:{rect.Width}, Height:{rect.Height}");
 
-                // Retrieve the orientation angle of the barcode.
-                double angle = result.Region.Angle;
-                Console.WriteLine($"Orientation    : {angle} degrees");
-                Console.WriteLine();
+                Console.WriteLine(); // Blank line for readability between results.
             }
         }
     }

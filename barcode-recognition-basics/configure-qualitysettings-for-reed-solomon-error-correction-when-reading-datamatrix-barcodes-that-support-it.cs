@@ -1,58 +1,69 @@
+// Title: Reading DataMatrix with Reed‑Solomon Error Correction
+// Description: Demonstrates configuring QualitySettings for Reed‑Solomon error correction when reading DataMatrix barcodes, improving detection of damaged codes.
+// Prompt: Configure QualitySettings for Reed‑Solomon error correction when reading DataMatrix barcodes that support it.
+// Tags: datamatrix, read, qualitysettings, reed-solomon, error-correction, aspose.barcode
+
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a DataMatrix barcode, storing it in memory,
-/// and then recognizing it using Aspose.BarCode.
+/// Example program that generates a DataMatrix barcode, saves it as an image,
+/// and then reads it back using QualitySettings configured for Reed‑Solomon error correction.
 /// </summary>
 class Program
 {
     /// <summary>
     /// Entry point of the application.
-    /// Generates a DataMatrix barcode, saves it to a memory stream,
-    /// loads it into a bitmap, and reads the barcode using a high‑quality
-    /// recognition configuration.
+    /// Generates a DataMatrix barcode, saves it, and reads it with high‑quality settings.
     /// </summary>
     static void Main()
     {
-        // Define the text to encode in the DataMatrix barcode.
-        const string codeText = "HelloWorld";
+        // Define the output image file path
+        string imagePath = "datamatrix.png";
 
-        // Create a barcode generator for DataMatrix with the specified text.
-        using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, codeText))
+        // -------------------------------------------------
+        // Generate a DataMatrix barcode and save it as PNG
+        // -------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, "SampleData"))
         {
-            // Save the generated barcode to a memory stream in PNG format.
-            using (var ms = new MemoryStream())
+            // Set optional image dimensions (in points)
+            generator.Parameters.ImageWidth.Point = 200f;
+            generator.Parameters.ImageHeight.Point = 200f;
+
+            // Save the generated barcode image to the specified path
+            generator.Save(imagePath, BarCodeImageFormat.Png);
+        }
+
+        // -------------------------------------------------
+        // Verify that the barcode image was successfully created
+        // -------------------------------------------------
+        if (!File.Exists(imagePath))
+        {
+            Console.WriteLine($"Error: Barcode image not found at '{imagePath}'.");
+            return;
+        }
+
+        // -------------------------------------------------
+        // Read the DataMatrix barcode with Reed‑Solomon error correction enabled
+        // -------------------------------------------------
+        using (var reader = new BarCodeReader(imagePath, DecodeType.DataMatrix))
+        {
+            // Apply a high‑quality preset to improve detection of damaged barcodes
+            reader.QualitySettings = QualitySettings.HighQuality;
+
+            // Allow reading of barcodes that may have incorrect checksums or damaged data
+            reader.QualitySettings.AllowIncorrectBarcodes = true;
+
+            // Perform the recognition and output details for each detected barcode
+            foreach (var result in reader.ReadBarCodes())
             {
-                generator.Save(ms, BarCodeImageFormat.Png);
-                ms.Position = 0; // Reset stream position to the beginning for reading.
-
-                // Load the PNG image from the memory stream into a Bitmap object.
-                using (var bitmap = new Bitmap(ms))
-                {
-                    // Initialize a barcode reader for the bitmap, limiting decoding to DataMatrix.
-                    using (var reader = new BarCodeReader(bitmap, DecodeType.DataMatrix))
-                    {
-                        // Set the reader to use the highest quality preset for robust decoding.
-                        reader.QualitySettings = QualitySettings.MaxQuality;
-
-                        // Enable fast deconvolution to improve detection of damaged codes.
-                        reader.QualitySettings.Deconvolution = DeconvolutionMode.Fast;
-
-                        // Iterate through all detected barcodes and output their details.
-                        foreach (var result in reader.ReadBarCodes())
-                        {
-                            Console.WriteLine($"Detected Type: {result.CodeTypeName}");
-                            Console.WriteLine($"Decoded Text: {result.CodeText}");
-                            Console.WriteLine($"Confidence: {result.Confidence}");
-                            Console.WriteLine($"Reading Quality: {result.ReadingQuality}");
-                        }
-                    }
-                }
+                Console.WriteLine($"Detected Type: {result.CodeTypeName}");
+                Console.WriteLine($"Code Text: {result.CodeText}");
+                Console.WriteLine($"Confidence: {result.Confidence}");
+                Console.WriteLine($"Reading Quality: {result.ReadingQuality}");
             }
         }
     }

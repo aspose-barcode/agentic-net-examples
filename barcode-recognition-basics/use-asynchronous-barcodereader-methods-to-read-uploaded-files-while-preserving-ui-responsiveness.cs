@@ -1,3 +1,8 @@
+// Title: Asynchronous barcode reading demo
+// Description: Demonstrates using Aspose.BarCode's asynchronous pattern to read a barcode image without blocking the UI thread.
+// Prompt: Use asynchronous BarCodeReader methods to read uploaded files while preserving UI responsiveness.
+// Tags: barcode symbology, asynchronous operation, console output, aspose.barcode, barcodereader
+
 using System;
 using System.IO;
 using System.Threading.Tasks;
@@ -6,54 +11,47 @@ using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates asynchronous barcode generation and recognition using Aspose.BarCode.
+/// Sample console application that reads a barcode image asynchronously.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a sample barcode image if missing,
-    /// then reads and displays any barcodes found in the image asynchronously.
+    /// Entry point. Generates a sample barcode if needed and reads it asynchronously.
     /// </summary>
-    /// <param name="args">Command‑line arguments (not used).</param>
     static async Task Main(string[] args)
     {
-        // Define the path for the sample barcode image.
-        string imagePath = "sample.png";
+        // Path to the barcode image file
+        const string imagePath = "sample.png";
 
-        // Generate a barcode image if it does not already exist.
+        // Ensure the barcode image exists; generate a sample if missing
         if (!File.Exists(imagePath))
         {
-            // Create a barcode generator for Code128 with the text "AsyncDemo".
+            // Create a simple Code128 barcode and save it
             using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "AsyncDemo"))
             {
-                // Save the generated barcode to the specified file.
                 generator.Save(imagePath);
             }
         }
 
-        // Verify the file exists before attempting to read it.
-        if (!File.Exists(imagePath))
-        {
-            Console.WriteLine($"File not found: {imagePath}");
-            return;
-        }
-
-        // Asynchronously read barcodes from the image to avoid blocking the UI thread.
+        // Asynchronously read barcodes from the image to keep the UI thread responsive
         BarCodeResult[] results = await Task.Run(() =>
         {
-            // Initialize a barcode reader that supports all barcode types.
+            // Initialize the reader for all supported symbologies
             using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
             {
-                // Read and return all barcodes found in the image.
+                // Perform the synchronous read operation (wrapped in Task.Run for asynchrony)
                 return reader.ReadBarCodes();
             }
         });
 
-        // Output the detected barcode information to the console.
+        // Process and display the detection results
         foreach (var result in results)
         {
-            Console.WriteLine($"BarCode Type: {result.CodeTypeName}");
-            Console.WriteLine($"BarCode Text: {result.CodeText}");
+            Console.WriteLine($"Detected Type: {result.CodeTypeName}");
+            Console.WriteLine($"Decoded Text: {result.CodeText}");
+            Console.WriteLine($"Confidence: {result.Confidence}");
+            Console.WriteLine($"Reading Quality: {result.ReadingQuality}");
+            Console.WriteLine();
         }
     }
 }

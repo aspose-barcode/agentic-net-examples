@@ -1,68 +1,68 @@
+// Title: EAN13 Barcode Generation and Recognition with Checksum Validation Disabled
+// Description: This example generates a valid EAN13 barcode image, then reads it with checksum validation turned off to demonstrate false‑positive detection.
+// Prompt: Generate a barcode with BarcodeGenerator, then read it using ChecksumValidation.Off to observe false positive detections.
+// Tags: ean13, barcode generation, barcode recognition, checksumvalidation, off, aspnet, c#
+
 using System;
+using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a Code39 barcode, then reading it with checksum validation
-/// turned off and on using Aspose.BarCode library.
+/// Demonstrates how to generate an EAN13 barcode and read it with checksum validation disabled,
+/// which can lead to false‑positive detections.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a barcode image, then reads it twice to show the effect of checksum validation.
+    /// Entry point of the example. Generates a barcode image, verifies its creation,
+    /// and then reads it with <see cref="ChecksumValidation.Off"/> to show the effect on detection.
     /// </summary>
     static void Main()
     {
-        const string imagePath = "barcode.png";
+        // Path where the generated barcode image will be saved
+        string barcodePath = "barcode.png";
 
         // ------------------------------------------------------------
-        // Generate a Code39 barcode and save it to a file.
+        // Generate an EAN13 barcode with a valid code text (includes correct checksum)
         // ------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code39FullASCII, "ABC123"))
+        using (var generator = new BarcodeGenerator(EncodeTypes.EAN13, "1234567890128"))
         {
-            // No special checksum settings; Code39 checksum is optional.
-            generator.Save(imagePath);
+            // Save the generated barcode image to the specified file
+            generator.Save(barcodePath);
         }
 
         // ------------------------------------------------------------
-        // Read the barcode with checksum validation turned OFF.
-        // This allows the reader to return results even if the checksum is missing or incorrect.
+        // Verify that the barcode image was successfully created
         // ------------------------------------------------------------
-        using (var reader = new BarCodeReader(imagePath, DecodeType.Code39))
+        if (!File.Exists(barcodePath))
         {
-            // Disable checksum validation to allow possible false positives.
+            Console.WriteLine($"Failed to create barcode image at '{barcodePath}'.");
+            return;
+        }
+
+        // ------------------------------------------------------------
+        // Read the barcode with checksum validation turned OFF (false positive detection)
+        // ------------------------------------------------------------
+        using (var reader = new BarCodeReader(barcodePath, DecodeType.EAN13))
+        {
+            // Disable checksum validation to allow detection of potentially invalid barcodes
             reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.Off;
 
-            // Iterate through all detected barcodes.
+            // Perform recognition and iterate over all detected barcodes
             foreach (var result in reader.ReadBarCodes())
             {
-                Console.WriteLine("Read with ChecksumValidation.Off");
-                Console.WriteLine($"Code Text : {result.CodeText}");
-                // For Code39, checksum may be empty; display if available.
-                Console.WriteLine($"Checksum  : {result.Extended.OneD.CheckSum}");
-                Console.WriteLine($"Confidence: {result.Confidence}");
-                Console.WriteLine();
-            }
-        }
+                // Output the raw code text detected in the barcode
+                Console.WriteLine($"Detected CodeText: {result.CodeText}");
 
-        // ------------------------------------------------------------
-        // For comparison, read the same barcode with checksum validation ON.
-        // ------------------------------------------------------------
-        using (var reader = new BarCodeReader(imagePath, DecodeType.Code39))
-        {
-            // Enable checksum validation; only barcodes with a valid checksum will be returned.
-            reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
+                // Extended data for 1D barcodes: separate value and checksum components
+                Console.WriteLine($"Value: {result.Extended.OneD.Value}");
+                Console.WriteLine($"Checksum: {result.Extended.OneD.CheckSum}");
 
-            // Iterate through all detected barcodes.
-            foreach (var result in reader.ReadBarCodes())
-            {
-                Console.WriteLine("Read with ChecksumValidation.On");
-                Console.WriteLine($"Code Text : {result.CodeText}");
-                Console.WriteLine($"Checksum  : {result.Extended.OneD.CheckSum}");
+                // Additional quality metrics provided by the recognizer
                 Console.WriteLine($"Confidence: {result.Confidence}");
-                Console.WriteLine();
+                Console.WriteLine($"ReadingQuality: {result.ReadingQuality}");
             }
         }
     }

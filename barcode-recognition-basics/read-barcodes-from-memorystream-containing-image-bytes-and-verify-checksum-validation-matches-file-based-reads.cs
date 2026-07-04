@@ -1,126 +1,78 @@
+// Title: Read and compare EAN13 barcode checksum from file and MemoryStream
+// Description: Demonstrates generating an EAN13 barcode, saving it to a file and a MemoryStream, then reading both sources with checksum validation to ensure they match.
+// Prompt: Read barcodes from a MemoryStream containing image bytes and verify checksum validation matches file‑based reads.
+// Tags: ean13, checksum, memorystream, file, barcode, generation, recognition, aspose
+
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates generating an EAN13 barcode, saving it to memory and a temporary file,
-/// then reading it back with checksum validation using Aspose.BarCode.
+/// Demonstrates barcode generation, saving, and checksum validation using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a barcode, reads it from a stream and a file, and compares the results.
+    /// Entry point. Generates an EAN13 barcode, saves it to a file and MemoryStream, then reads both with checksum validation and compares results.
     /// </summary>
     static void Main()
     {
-        // --------------------------------------------------------------------
-        // 1. Prepare a valid EAN13 code (13 digits, includes checksum)
-        // --------------------------------------------------------------------
-        string ean13Code = "1234567890128"; // valid EAN13 with checksum
+        // Sample EAN13 barcode with a valid checksum
+        const string codeText = "1234567890128";
+        const string filePath = "barcode.png";
 
-        // --------------------------------------------------------------------
-        // 2. Generate the barcode image and store it in both a MemoryStream
-        //    and a temporary file for later reading.
-        // --------------------------------------------------------------------
-        byte[] imageBytes;
-        string tempFilePath = Path.Combine(Path.GetTempPath(), "sample_ean13.png");
-
-        using (var generator = new BarcodeGenerator(EncodeTypes.EAN13, ean13Code))
+        // Generate the barcode image and save it to a file and a memory stream
+        using (var generator = new BarcodeGenerator(EncodeTypes.EAN13, codeText))
         {
-            // Save the barcode to a MemoryStream
-            using (var ms = new MemoryStream())
+            // Save the generated barcode to a PNG file
+            generator.Save(filePath, BarCodeImageFormat.Png);
+
+            // Save the generated barcode to a MemoryStream
+            using (var memoryStream = new MemoryStream())
             {
-                generator.Save(ms, BarCodeImageFormat.Png);
-                imageBytes = ms.ToArray(); // capture the byte array for later use
-            }
+                generator.Save(memoryStream, BarCodeImageFormat.Png);
+                memoryStream.Position = 0; // Reset stream position for reading
 
-            // Also save the barcode to a temporary file (file‑based read)
-            generator.Save(tempFilePath, BarCodeImageFormat.Png);
-        }
-
-        // --------------------------------------------------------------------
-        // 3. Local function: read barcode from a byte array (MemoryStream) with
-        //    checksum validation enabled.
-        // --------------------------------------------------------------------
-        string ReadFromStream(byte[] bytes)
-        {
-            using (var ms = new MemoryStream(bytes))
-            using (var reader = new BarCodeReader(ms, DecodeType.EAN13))
-            {
-                // Enable checksum validation to ensure the code is correct
-                reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
-
-                // Return the first decoded barcode text, or null if none found
-                foreach (var result in reader.ReadBarCodes())
+                // Read barcode from file with checksum validation enabled
+                using (var fileReader = new BarCodeReader(filePath, DecodeType.EAN13))
                 {
-                    return result.CodeText;
+                    fileReader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
+                    BarCodeResult fileResult = GetFirstResult(fileReader);
+
+                    // Read barcode from memory stream with the same checksum setting
+                    using (var streamReader = new BarCodeReader(memoryStream, DecodeType.EAN13))
+                    {
+                        streamReader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
+                        BarCodeResult streamResult = GetFirstResult(streamReader);
+
+                        // Verify that both reads produce identical code text and checksum
+                        bool match = fileResult != null && streamResult != null &&
+                                     fileResult.CodeText == streamResult.CodeText &&
+                                     fileResult.Extended.OneD.CheckSum == streamResult.Extended.OneD.CheckSum;
+
+                        Console.WriteLine($"Checksum validation match: {match}");
+                        if (fileResult != null)
+                        {
+                            Console.WriteLine($"File read - CodeText: {fileResult.CodeText}, CheckSum: {fileResult.Extended.OneD.CheckSum}");
+                        }
+                        if (streamResult != null)
+                        {
+                            Console.WriteLine($"MemoryStream read - CodeText: {streamResult.CodeText}, CheckSum: {streamResult.Extended.OneD.CheckSum}");
+                        }
+                    }
                 }
-
-                return null;
             }
         }
+    }
 
-        // --------------------------------------------------------------------
-        // 4. Local function: read barcode from a file with checksum validation.
-        // --------------------------------------------------------------------
-        string ReadFromFile(string filePath)
+    // Helper to obtain the first detected barcode result
+    private static BarCodeResult GetFirstResult(BarCodeReader reader)
+    {
+        foreach (var result in reader.ReadBarCodes())
         {
-            if (!File.Exists(filePath))
-            {
-                Console.WriteLine($"File not found: {filePath}");
-                return null;
-            }
-
-            using (var reader = new BarCodeReader(filePath, DecodeType.EAN13))
-            {
-                // Enable checksum validation
-                reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
-
-                // Return the first decoded barcode text, or null if none found
-                foreach (var result in reader.ReadBarCodes())
-                {
-                    return result.CodeText;
-                }
-
-                return null;
-            }
+            return result;
         }
-
-        // --------------------------------------------------------------------
-        // 5. Perform the reads from both sources
-        // --------------------------------------------------------------------
-        string codeFromStream = ReadFromStream(imageBytes);
-        string codeFromFile = ReadFromFile(tempFilePath);
-
-        // --------------------------------------------------------------------
-        // 6. Output the results and verify that both reads match
-        // --------------------------------------------------------------------
-        Console.WriteLine($"Code read from MemoryStream: {(codeFromStream ?? "None")}");
-        Console.WriteLine($"Code read from file: {(codeFromFile ?? "None")}");
-
-        if (codeFromStream != null && codeFromStream == codeFromFile)
-        {
-            Console.WriteLine("Checksum validation results match between stream and file reads.");
-        }
-        else
-        {
-            Console.WriteLine("Mismatch in checksum validation results.");
-        }
-
-        // --------------------------------------------------------------------
-        // 7. Clean up the temporary file
-        // --------------------------------------------------------------------
-        try
-        {
-            if (File.Exists(tempFilePath))
-                File.Delete(tempFilePath);
-        }
-        catch
-        {
-            // Ignore any cleanup errors (e.g., file in use)
-        }
+        return null;
     }
 }

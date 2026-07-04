@@ -1,74 +1,84 @@
+// Title: Barcode Reader Demo with Confidence and Quality Metrics
+// Description: Demonstrates generating a QR code, reading it with Aspose.BarCode, and returning confidence and quality metrics as JSON.
+// Prompt: Integrate BarCodeReader into an ASP.NET Core API endpoint that returns confidence and quality metrics in JSON.
+// Tags: barcode symbology, reading, json output, aspnet core, confidence, quality, aspose.barcode
+
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
+using Aspose.BarCode; // Required for BarCodeConfidence enum
 
 /// <summary>
-/// Demonstrates generating a barcode, reading it, and outputting the results as JSON.
+/// Demonstrates barcode generation, reading, and JSON output of confidence and quality metrics.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the console application.
-    /// Generates a barcode image in memory, reads it, and prints detection results in JSON format.
+    /// Entry point that generates a QR code, reads it, and prints metrics as JSON.
     /// </summary>
     static void Main()
     {
-        // NOTE: Full ASP.NET Core integration cannot be demonstrated in this console snippet.
-        // The core barcode reading logic is shown below, and the results are printed as JSON.
+        // NOTE: The original request was for an ASP.NET Core API endpoint.
+        // The snippet runner environment only supports a console application,
+        // so we demonstrate the core barcode reading logic here and output JSON to the console.
 
-        // Generate a sample barcode image in memory.
-        using (var imageStream = new MemoryStream())
+        // Path for the temporary barcode image.
+        string imagePath = "sample.png";
+
+        // Generate a sample QR barcode image with the text "12345".
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "12345"))
         {
-            // Create a barcode generator for Code128 with sample text.
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
-            {
-                // Save the generated barcode as PNG into the memory stream.
-                generator.Save(imageStream, BarCodeImageFormat.Png);
-                // Reset stream position to the beginning for reading.
-                imageStream.Position = 0;
-            }
+            generator.Save(imagePath);
+        }
 
-            // Load the image from the memory stream into a Bitmap (Aspose.Drawing).
-            using (var bitmap = new Bitmap(imageStream))
+        // Verify that the image file was created successfully.
+        if (!File.Exists(imagePath))
+        {
+            Console.WriteLine($"Error: Barcode image file '{imagePath}' was not found.");
+            return;
+        }
+
+        // Prepare a list to hold barcode information including confidence and quality.
+        var resultsInfo = new List<BarcodeInfo>();
+
+        // Initialize the barcode reader for all supported types.
+        using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
+        {
+            // Apply normal quality settings for reading.
+            reader.QualitySettings = QualitySettings.NormalQuality;
+
+            // Iterate over all detected barcodes in the image.
+            foreach (var result in reader.ReadBarCodes())
             {
-                // Initialize a barcode reader that detects all supported barcode types.
-                using (var reader = new BarCodeReader(bitmap, DecodeType.AllSupportedTypes))
+                // Map the raw result to a simple DTO for JSON serialization.
+                var info = new BarcodeInfo
                 {
-                    // Use the highest quality preset to improve detection accuracy.
-                    reader.QualitySettings = QualitySettings.MaxQuality;
-
-                    // Read all barcodes present in the image.
-                    BarCodeResult[] results = reader.ReadBarCodes();
-
-                    // Prepare a list of simple objects for JSON serialization.
-                    var output = new List<object>();
-                    foreach (var result in results)
-                    {
-                        // Create an anonymous object containing relevant barcode information.
-                        var info = new
-                        {
-                            CodeText = result.CodeText,
-                            Confidence = result.Confidence.ToString(),
-                            ReadingQuality = result.ReadingQuality,
-                            Angle = result.Region.Angle
-                        };
-                        output.Add(info);
-                    }
-
-                    // Serialize the results to formatted JSON and write to the console.
-                    string json = JsonSerializer.Serialize(
-                        output,
-                        new JsonSerializerOptions { WriteIndented = true });
-
-                    Console.WriteLine(json);
-                }
+                    CodeTypeName = result.CodeTypeName,
+                    CodeText = result.CodeText,
+                    Confidence = result.Confidence.ToString(),
+                    ReadingQuality = result.ReadingQuality
+                };
+                resultsInfo.Add(info);
             }
         }
+
+        // Serialize the collected barcode information to formatted JSON.
+        var jsonOptions = new JsonSerializerOptions { WriteIndented = true };
+        string json = JsonSerializer.Serialize(resultsInfo, jsonOptions);
+
+        // Output the JSON to the console.
+        Console.WriteLine(json);
+    }
+
+    // Simple DTO for JSON serialization of barcode metrics.
+    private class BarcodeInfo
+    {
+        public string CodeTypeName { get; set; }
+        public string CodeText { get; set; }
+        public string Confidence { get; set; }
+        public double ReadingQuality { get; set; }
     }
 }

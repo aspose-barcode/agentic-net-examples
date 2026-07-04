@@ -1,67 +1,46 @@
+// Title: EAN13 Barcode Generation and Recognition Example
+// Description: Demonstrates generating an EAN13 barcode image and using BarCodeReader with DecodeType set to EAN13 to detect only European Article Number barcodes.
+// Prompt: Use BarCodeReader with DecodeType set to EAN13 to exclusively detect European Article Number barcodes.
+// Tags: barcode symbology, ean13, generation, recognition, aspose.barcode, console
+
 using System;
-using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating an EAN13 barcode, saving it to a file,
-/// reading the barcode back, and cleaning up the generated image.
+/// Example program that generates an EAN13 barcode and reads it using <see cref="BarCodeReader"/> configured for EAN13 only.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a barcode image, decodes it, and then deletes the image file.
+    /// Entry point. Generates a barcode image, configures the reader, and outputs detected barcode information.
     /// </summary>
     static void Main()
     {
-        // Define the file path for the generated barcode image.
-        string imagePath = "ean13.png";
-
-        // ------------------------------------------------------------
-        // Generate a sample EAN13 barcode (13 digits, including checksum)
-        // ------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.EAN13, "1234567890128"))
+        // Generate a sample EAN13 barcode image
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.EAN13, "123456789012"))
         {
-            // Save the generated barcode image to the specified path.
-            generator.Save(imagePath);
-        }
-
-        // ------------------------------------------------------------
-        // Verify that the image file was successfully created.
-        // ------------------------------------------------------------
-        if (!File.Exists(imagePath))
-        {
-            Console.WriteLine($"Failed to create barcode image at {imagePath}");
-            return;
-        }
-
-        // ------------------------------------------------------------
-        // Read the barcode from the image using DecodeType.EAN13,
-        // which restricts detection to EAN13 barcodes only.
-        // ------------------------------------------------------------
-        using (var reader = new BarCodeReader(imagePath, DecodeType.EAN13))
-        {
-            // Iterate through all detected barcodes (should be only one).
-            foreach (var result in reader.ReadBarCodes())
+            using (Bitmap barcodeImage = generator.GenerateBarCodeImage())
             {
-                // Output the type and text of the detected barcode.
-                Console.WriteLine($"Detected Type: {result.CodeTypeName}");
-                Console.WriteLine($"Code Text: {result.CodeText}");
-            }
-        }
+                // Initialize the reader and configure it to detect only EAN13 barcodes
+                using (BarCodeReader reader = new BarCodeReader())
+                {
+                    // Restrict decoding to EAN13 symbology
+                    reader.BarCodeReadType = DecodeType.EAN13;
 
-        // ------------------------------------------------------------
-        // Clean up: delete the generated image file.
-        // ------------------------------------------------------------
-        try
-        {
-            File.Delete(imagePath);
-        }
-        catch
-        {
-            // Suppress any exceptions that occur during cleanup.
+                    // Provide the generated image to the reader
+                    reader.SetBarCodeImage(barcodeImage);
+
+                    // Perform recognition and output results
+                    foreach (BarCodeResult result in reader.ReadBarCodes())
+                    {
+                        Console.WriteLine("Detected Type: " + result.CodeTypeName);
+                        Console.WriteLine("Detected CodeText: " + result.CodeText);
+                    }
+                }
+            }
         }
     }
 }

@@ -1,105 +1,96 @@
+// Title: Folder Monitoring Barcode Reader
+// Description: Demonstrates reading barcode images from a folder and logging quality metrics for each detected barcode.
+// Prompt: Develop a Windows service that monitors a folder, reads incoming barcode images, and logs quality metrics.
+// Tags: barcode symbology, reading, console, aspose.barcode, folder monitoring
+
 using System;
 using System.IO;
-using System.Collections.Generic;
+using Aspose.BarCode;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates how to read barcodes from image files in a specified folder using Aspose.BarCode.
+/// Simple console application that scans a folder for barcode images,
+/// reads any barcodes using Aspose.BarCode, and logs quality metrics.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Scans a folder for supported image files,
-    /// reads any barcodes found, and outputs details to the console.
+    /// Entry point. Accepts an optional folder path argument, processes up to five image files,
+    /// and writes barcode type, text, reading quality, and confidence to the console.
     /// </summary>
-    static void Main()
+    /// <param name="args">Command‑line arguments; first argument may specify the folder to monitor.</param>
+    static void Main(string[] args)
     {
-        // Define the folder that contains barcode images (modify as needed).
-        string inputFolder = "Barcodes";
+        // Determine the folder to monitor. Use a default if not provided.
+        string folderPath = args.Length > 0 ? args[0] : "Barcodes";
 
-        // Verify that the input folder exists before proceeding.
-        if (!Directory.Exists(inputFolder))
+        // Verify that the folder exists before proceeding.
+        if (!Directory.Exists(folderPath))
         {
-            Console.WriteLine($"Folder not found: {inputFolder}");
+            Console.WriteLine($"Folder not found: {folderPath}");
             return;
         }
 
-        // List of supported image file extensions.
-        string[] extensions = new[] { ".png", ".jpg", ".jpeg", ".bmp", ".gif" };
-        List<string> imageFiles = new List<string>();
-
-        // Collect all files in the folder that match the supported extensions.
-        foreach (string file in Directory.GetFiles(inputFolder))
+        // Define supported image extensions and collect up to five matching files.
+        string[] supportedExtensions = new[] { ".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff", ".gif" };
+        string[] allFiles = Directory.GetFiles(folderPath);
+        var imageFiles = new System.Collections.Generic.List<string>();
+        foreach (var file in allFiles)
         {
-            if (Array.Exists(extensions, e => e.Equals(Path.GetExtension(file), StringComparison.OrdinalIgnoreCase)))
+            if (imageFiles.Count >= 5) break; // Limit to five files.
+            if (Array.Exists(supportedExtensions, ext => ext.Equals(Path.GetExtension(file), StringComparison.OrdinalIgnoreCase)))
             {
                 imageFiles.Add(file);
             }
         }
 
-        // If no supported image files were found, inform the user and exit.
+        // If no supported images were found, inform the user and exit.
         if (imageFiles.Count == 0)
         {
-            Console.WriteLine("No barcode image files found.");
+            Console.WriteLine("No barcode image files found in the folder.");
             return;
         }
 
         // Process each image file individually.
-        foreach (string imagePath in imageFiles)
+        foreach (var imagePath in imageFiles)
         {
-            // Ensure the file still exists (it could have been removed after the initial scan).
+            // Ensure the file still exists before attempting to read it.
             if (!File.Exists(imagePath))
             {
                 Console.WriteLine($"File not found: {imagePath}");
                 continue;
             }
 
-            Console.WriteLine($"Processing: {Path.GetFileName(imagePath)}");
+            Console.WriteLine($"Processing file: {Path.GetFileName(imagePath)}");
 
-            // Load the image into a bitmap object.
-            using (var bitmap = new Bitmap(imagePath))
+            // Create a barcode reader for the image, enabling all supported decode types.
+            using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
             {
-                // Initialize the barcode reader for all supported barcode types.
-                using (var reader = new BarCodeReader(bitmap, DecodeType.AllSupportedTypes))
+                // Apply normal quality settings for reading.
+                reader.QualitySettings = QualitySettings.NormalQuality;
+
+                // Attempt to read all barcodes present in the image.
+                var results = reader.ReadBarCodes();
+
+                // If no barcodes were detected, report and continue to the next file.
+                if (results == null || results.Length == 0)
                 {
-                    // Optional: set the quality preset to normal.
-                    reader.QualitySettings = QualitySettings.NormalQuality;
+                    Console.WriteLine("  No barcodes detected.");
+                    continue;
+                }
 
-                    // Read all barcodes present in the image.
-                    BarCodeResult[] results = reader.ReadBarCodes();
-
-                    // If no barcodes were detected, report and continue to the next image.
-                    if (results.Length == 0)
-                    {
-                        Console.WriteLine("  No barcodes detected.");
-                        continue;
-                    }
-
-                    // Output details for each detected barcode.
-                    foreach (var result in results)
-                    {
-                        // Basic barcode information.
-                        Console.WriteLine($"  Type: {result.CodeTypeName}");
-                        Console.WriteLine($"  CodeText: {result.CodeText}");
-
-                        // Quality metrics provided by the reader.
-                        Console.WriteLine($"  Confidence: {result.Confidence}");
-                        Console.WriteLine($"  ReadingQuality: {result.ReadingQuality}");
-
-                        // Region of the barcode within the image.
-                        var rect = result.Region.Rectangle;
-                        int x = (int)Math.Round((double)rect.X);
-                        int y = (int)Math.Round((double)rect.Y);
-                        int width = (int)Math.Round((double)rect.Width);
-                        int height = (int)Math.Round((double)rect.Height);
-                        Console.WriteLine($"  Region: X={x}, Y={y}, Width={width}, Height={height}");
-                    }
+                // Log quality metrics for each detected barcode.
+                foreach (var result in results)
+                {
+                    Console.WriteLine($"  Type: {result.CodeTypeName}");
+                    Console.WriteLine($"  CodeText: {result.CodeText}");
+                    Console.WriteLine($"  ReadingQuality: {result.ReadingQuality}%");
+                    Console.WriteLine($"  Confidence: {result.Confidence}");
                 }
             }
         }
 
-        // Indicate that processing of all images is complete.
+        // Indicate that processing of all files has completed.
         Console.WriteLine("Processing completed.");
     }
 }

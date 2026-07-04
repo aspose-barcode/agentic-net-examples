@@ -1,115 +1,102 @@
+// Title: Barcode generation and recognition with configurable settings
+// Description: Demonstrates generating an EAN13 barcode, reading it, and using a JSON configuration file to toggle DetectEncoding and ChecksumValidation without recompiling.
+// Prompt: Implement a configuration file allowing toggling DetectEncoding and ChecksumValidation values without recompiling the application.
+// Tags: barcode, ean13, generation, recognition, configuration, json
+
 using System;
 using System.IO;
 using System.Text.Json;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Represents application configuration settings for barcode reading.
+/// Represents the configurable settings for barcode reading.
 /// </summary>
 class Config
 {
-    // Determines whether the reader should attempt to detect character encoding.
+    /// <summary>
+    /// Gets or sets a value indicating whether the reader should attempt to detect the encoding of the barcode.
+    /// </summary>
     public bool DetectEncoding { get; set; } = true;
 
-    // Specifies the checksum validation mode (e.g., Default, Enabled, Disabled).
-    public string ChecksumValidation { get; set; } = "Default";
+    /// <summary>
+    /// Gets or sets the checksum validation mode for the barcode reader.
+    /// </summary>
+    public ChecksumValidation ChecksumValidation { get; set; } = ChecksumValidation.Default;
 }
 
 /// <summary>
-/// Main program class that demonstrates barcode generation and reading using Aspose.BarCode.
+/// Entry point of the application that generates a sample barcode, reads it, and applies configuration settings.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
+    /// Main method that orchestrates barcode generation, configuration loading, and barcode reading.
     /// </summary>
     static void Main()
     {
-        const string configPath = "config.json";          // Path to optional JSON configuration file
-        const string barcodePath = "sample_barcode.png";  // Path where the sample barcode image will be saved
+        // Path to the JSON configuration file.
+        const string configPath = "barcodeConfig.json";
 
-        // Load configuration from file or fall back to default values
-        Config config = LoadConfig(configPath);
-
-        // Generate a sample Code128 barcode image for demonstration purposes
-        GenerateSampleBarcode(barcodePath);
-
-        // Initialize a barcode reader for the generated image, targeting Code128 symbology
-        using (var reader = new BarCodeReader(barcodePath, DecodeType.Code128))
+        // Load configuration from file or create a default one if the file does not exist.
+        Config config;
+        if (File.Exists(configPath))
         {
-            // Apply the DetectEncoding setting from the configuration
+            try
+            {
+                // Read JSON content.
+                string json = File.ReadAllText(configPath);
+                // Deserialize JSON into Config object (case-insensitive).
+                config = JsonSerializer.Deserialize<Config>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new Config();
+            }
+            catch
+            {
+                // If deserialization fails, fall back to default configuration.
+                config = new Config();
+            }
+        }
+        else
+        {
+            // Create a new default configuration and persist it to disk.
+            config = new Config();
+            string defaultJson = JsonSerializer.Serialize(config, new JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText(configPath, defaultJson);
+        }
+
+        // Path to the sample barcode image.
+        const string imagePath = "sample.png";
+
+        // Generate a sample EAN13 barcode image if it does not already exist.
+        if (!File.Exists(imagePath))
+        {
+            using (var generator = new BarcodeGenerator(EncodeTypes.EAN13, "1234567890128"))
+            {
+                generator.Save(imagePath);
+            }
+        }
+
+        // Initialize the barcode reader with the desired decode type.
+        using (var reader = new BarCodeReader(imagePath, DecodeType.EAN13))
+        {
+            // Apply configuration values to the reader's settings.
             reader.BarcodeSettings.DetectEncoding = config.DetectEncoding;
+            reader.BarcodeSettings.ChecksumValidation = config.ChecksumValidation;
 
-            // Attempt to parse and apply the ChecksumValidation setting from the configuration
-            if (Enum.TryParse<ChecksumValidation>(config.ChecksumValidation, true, out var checksumVal))
+            // Iterate through all detected barcodes.
+            foreach (BarCodeResult result in reader.ReadBarCodes())
             {
-                reader.BarcodeSettings.ChecksumValidation = checksumVal;
-            }
-            else
-            {
-                // If parsing fails, inform the user and use the default validation mode
-                Console.WriteLine($"Invalid ChecksumValidation value '{config.ChecksumValidation}'. Using default.");
-                reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.Default;
-            }
+                Console.WriteLine($"CodeText: {result.CodeText}");
 
-            // Perform barcode recognition and output details for each detected barcode
-            foreach (var result in reader.ReadBarCodes())
-            {
-                Console.WriteLine($"Detected Type: {result.CodeTypeName}");
-                Console.WriteLine($"Code Text: {result.CodeText}");
-                Console.WriteLine($"Checksum Validation: {reader.BarcodeSettings.ChecksumValidation}");
-                Console.WriteLine($"Detect Encoding: {reader.BarcodeSettings.DetectEncoding}");
+                // For 1D barcodes, checksum information is available in the extended data.
+                if (result.Extended?.OneD != null)
+                {
+                    Console.WriteLine($"Checksum: {result.Extended.OneD.CheckSum}");
+                }
             }
         }
-    }
 
-    /// <summary>
-    /// Loads configuration settings from a JSON file. Returns default settings if the file is missing or invalid.
-    /// </summary>
-    /// <param name="path">The file path to the JSON configuration.</param>
-    /// <returns>A <see cref="Config"/> instance populated with settings.</returns>
-    static Config LoadConfig(string path)
-    {
-        // If the configuration file does not exist, use default settings
-        if (!File.Exists(path))
-        {
-            Console.WriteLine($"Configuration file '{path}' not found. Using default settings.");
-            return new Config();
-        }
-
-        try
-        {
-            // Read the entire JSON content
-            string json = File.ReadAllText(path);
-
-            // Deserialize JSON into a Config object
-            var cfg = JsonSerializer.Deserialize<Config>(json);
-            if (cfg == null)
-                throw new InvalidOperationException("Deserialized config is null.");
-
-            return cfg;
-        }
-        catch (Exception ex)
-        {
-            // On any error, log the issue and fall back to defaults
-            Console.WriteLine($"Failed to load configuration: {ex.Message}");
-            Console.WriteLine("Using default settings.");
-            return new Config();
-        }
-    }
-
-    /// <summary>
-    /// Generates a sample Code128 barcode image and saves it to the specified path.
-    /// </summary>
-    /// <param name="outputPath">The file path where the barcode image will be saved.</param>
-    static void GenerateSampleBarcode(string outputPath)
-    {
-        // Create a barcode generator with the desired symbology and data
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890128"))
-        {
-            // Save the generated barcode image to the provided file path
-            generator.Save(outputPath);
-        }
+        // Indicate that processing has completed.
+        Console.WriteLine("Barcode processing completed.");
     }
 }

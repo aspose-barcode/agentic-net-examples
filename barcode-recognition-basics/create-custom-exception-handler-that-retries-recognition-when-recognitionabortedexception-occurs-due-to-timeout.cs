@@ -1,3 +1,8 @@
+// Title: Barcode generation and recognition with retry on timeout
+// Description: Demonstrates creating a Code128 barcode, saving it, and recognizing it with a custom retry handler for RecognitionAbortedException caused by timeout.
+// Prompt: Create a custom exception handler that retries recognition when RecognitionAbortedException occurs due to timeout.
+// Tags: barcode, code128, recognition, retry, timeout, aspose.barcodes, aspose.drawing
+
 using System;
 using System.IO;
 using Aspose.BarCode;
@@ -6,97 +11,81 @@ using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates barcode generation and recognition with retry logic.
+/// Example program that generates a barcode image and attempts to recognize it,
+/// retrying when a timeout aborts the recognition.
 /// </summary>
 class Program
 {
-    // Maximum number of recognition attempts
-    const int MaxRetryAttempts = 3;
-
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a sample barcode image and attempts to recognize it with retry logic.
+    /// Entry point. Generates a barcode, saves it, then reads it with retry logic for timeout exceptions.
     /// </summary>
     static void Main()
     {
-        // Define the path for the generated barcode image
-        string imagePath = "sample_barcode.png";
+        // Path for the temporary barcode image
+        string imagePath = "sample.png";
 
-        // Generate a simple Code128 barcode and save it to the specified path
-        GenerateSampleBarcode(imagePath);
-
-        // Attempt to recognize the barcode, retrying up to the maximum attempts
-        RecognizeWithRetry(imagePath, MaxRetryAttempts);
-    }
-
-    // Generates a simple Code128 barcode and saves it to the specified path
-    static void GenerateSampleBarcode(string outputPath)
-    {
-        // Create a barcode generator for Code128 with the given data
+        // Create a simple Code128 barcode and save it to a file
         using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            // Save the generated barcode image using default settings
-            generator.Save(outputPath);
+            generator.Save(imagePath, BarCodeImageFormat.Png);
         }
-    }
 
-    // Tries to recognize barcodes from an image, retrying on timeout-related exceptions
-    static void RecognizeWithRetry(string imagePath, int maxAttempts)
-    {
-        // Verify that the image file exists before attempting recognition
+        // Verify that the image was created
         if (!File.Exists(imagePath))
         {
-            Console.WriteLine($"Error: File '{imagePath}' does not exist.");
+            Console.WriteLine($"Error: Barcode image was not created at '{imagePath}'.");
             return;
         }
 
-        int attempt = 0;
+        const int maxRetries = 3; // Maximum number of recognition attempts
+        int attempt = 0;          // Current attempt counter
+        bool success = false;    // Flag indicating successful recognition
 
-        // Loop until successful recognition or maximum attempts reached
-        while (attempt < maxAttempts)
+        // Retry loop for barcode recognition
+        while (attempt < maxRetries && !success)
         {
             attempt++;
-
             try
             {
-                // Initialize the barcode reader for all supported types
-                using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
+                // Initialize the reader without an image
+                using (var reader = new BarCodeReader())
                 {
-                    // Set a timeout (milliseconds) to simulate a timeout scenario
-                    reader.Timeout = 5000; // 5 seconds
+                    // Set a short timeout to trigger RecognitionAbortedException on delay
+                    reader.Timeout = 500; // milliseconds
 
-                    // Iterate through all detected barcodes in the image
-                    foreach (var result in reader.ReadBarCodes())
+                    // Load the barcode image into the reader
+                    using (var bitmap = new Bitmap(imagePath))
                     {
-                        Console.WriteLine($"Attempt {attempt}: Detected barcode type: {result.CodeTypeName}");
-                        Console.WriteLine($"Attempt {attempt}: Code text: {result.CodeText}");
+                        reader.SetBarCodeImage(bitmap);
+
+                        // Perform recognition and output each detected result
+                        foreach (var result in reader.ReadBarCodes())
+                        {
+                            Console.WriteLine($"Attempt {attempt}: Detected barcode type '{result.CodeTypeName}' with text '{result.CodeText}'.");
+                        }
                     }
                 }
 
-                // Recognition succeeded; exit the retry loop
-                break;
+                // If we reach this point, recognition succeeded
+                success = true;
+            }
+            catch (RecognitionAbortedException ex)
+            {
+                // Recognition timed out – log and retry
+                Console.WriteLine($"Attempt {attempt}: Recognition aborted due to timeout. Retrying... ({ex.Message})");
             }
             catch (Exception ex)
             {
-                // Determine if the exception is related to a timeout
-                if (ex.Message != null && ex.Message.IndexOf("timeout", StringComparison.OrdinalIgnoreCase) >= 0)
-                {
-                    Console.WriteLine($"Attempt {attempt}: Recognition timed out. Retrying...");
-                    // Continue to the next retry attempt
-                }
-                else
-                {
-                    // An unexpected error occurred; report and stop retrying
-                    Console.WriteLine($"Attempt {attempt}: Unexpected error: {ex.Message}");
-                    break;
-                }
+                // Any other unexpected exception stops the retry loop
+                Console.WriteLine($"Attempt {attempt}: Unexpected error: {ex.Message}");
+                break;
             }
         }
 
-        // If the loop exited because the maximum attempts were exhausted, inform the user
-        if (attempt == maxAttempts)
+        // Final status message if all attempts failed
+        if (!success)
         {
-            Console.WriteLine("Maximum retry attempts reached. Recognition failed.");
+            Console.WriteLine("Failed to recognize the barcode after multiple attempts.");
         }
     }
 }

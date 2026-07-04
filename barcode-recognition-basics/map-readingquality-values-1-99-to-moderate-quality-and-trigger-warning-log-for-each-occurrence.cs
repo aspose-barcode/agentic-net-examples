@@ -1,69 +1,61 @@
+// Title: Barcode Generation, Reading, and Quality Mapping
+// Description: Generates a Code128 barcode, reads it, and maps reading quality values 1‑99 to moderate quality, logging a warning for each occurrence.
+// Prompt: Map ReadingQuality values 1‑99 to moderate quality and trigger a warning log for each occurrence.
+// Tags: barcode, generation, recognition, readingquality, warning, console
+
 using System;
 using System.IO;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a barcode image, reading it, and evaluating the reading quality.
+/// Demonstrates barcode generation, recognition, and mapping of ReadingQuality values to moderate quality with warning logs.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a temporary barcode, reads it, logs quality information, and cleans up.
+    /// Entry point of the example. Generates a barcode, reads it, and processes the reading quality.
     /// </summary>
-    /// <param name="args">Command‑line arguments (not used).</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // --------------------------------------------------------------------
-        // 1. Generate a temporary barcode image and save it to the system temp folder.
-        // --------------------------------------------------------------------
-        string tempImagePath = Path.Combine(Path.GetTempPath(), "sample_barcode.png");
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
+        // Generate a sample barcode and store it in a memory stream
+        using (var ms = new MemoryStream())
         {
-            // Save the barcode as a PNG file.
-            generator.Save(tempImagePath);
-        }
-
-        // Verify that the image was created successfully.
-        if (!File.Exists(tempImagePath))
-        {
-            Console.WriteLine("Failed to generate the barcode image.");
-            return;
-        }
-
-        // --------------------------------------------------------------------
-        // 2. Read the barcode from the generated image and evaluate its ReadingQuality.
-        // --------------------------------------------------------------------
-        using (var reader = new BarCodeReader(tempImagePath, DecodeType.AllSupportedTypes))
-        {
-            // Iterate over all detected barcodes in the image.
-            foreach (var result in reader.ReadBarCodes())
+            // Create a barcode generator for Code128 with sample text
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
             {
-                double readingQuality = result.ReadingQuality;
+                // Save the generated barcode as PNG into the memory stream
+                generator.Save(ms, BarCodeImageFormat.Png);
+            }
 
-                // Output the decoded text and its quality metric.
-                Console.WriteLine($"CodeText: {result.CodeText}");
-                Console.WriteLine($"ReadingQuality: {readingQuality}");
+            // Reset stream position before reading the image
+            ms.Position = 0;
 
-                // Values 1‑99 indicate moderate quality; log a warning for this range.
-                if (readingQuality >= 1 && readingQuality <= 99)
+            // Load the image from the memory stream into a Bitmap (Aspose.Drawing)
+            using (var bitmap = new Bitmap(ms))
+            {
+                // Create a reader that detects all supported barcode types
+                using (var reader = new BarCodeReader(bitmap, DecodeType.AllSupportedTypes))
                 {
-                    Console.WriteLine($"Warning: ReadingQuality {readingQuality} is moderate.");
+                    // Iterate through each detected barcode result
+                    foreach (var result in reader.ReadBarCodes())
+                    {
+                        // Output basic barcode information
+                        Console.WriteLine($"Barcode Type: {result.CodeTypeName}");
+                        Console.WriteLine($"Code Text: {result.CodeText}");
+                        Console.WriteLine($"Reading Quality: {result.ReadingQuality}");
+
+                        // Map ReadingQuality values 1‑99 to moderate quality and log a warning
+                        if (result.ReadingQuality >= 1 && result.ReadingQuality <= 99)
+                        {
+                            Console.WriteLine($"Warning: ReadingQuality {result.ReadingQuality} is considered moderate.");
+                        }
+
+                        Console.WriteLine(); // Blank line for readability between results
+                    }
                 }
             }
-        }
-
-        // --------------------------------------------------------------------
-        // 3. Clean up the temporary barcode image file.
-        // --------------------------------------------------------------------
-        try
-        {
-            File.Delete(tempImagePath);
-        }
-        catch
-        {
-            // Suppress any exceptions that occur during cleanup.
         }
     }
 }

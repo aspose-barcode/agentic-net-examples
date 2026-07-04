@@ -1,102 +1,104 @@
+// Title: Barcode Confidence Distribution Report
+// Description: Generates sample barcodes, reads them, and reports the count of each confidence level across the scanned set.
+// Prompt: Generate a report summarizing the distribution of Confidence enumerations across a large dataset of scanned barcodes.
+// Tags: barcode symbology, confidence analysis, report, aspose.barcode, c#
+
 using System;
 using System.Collections.Generic;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating various barcode types, recognizing them,
-/// and reporting the confidence levels of the recognition results.
+/// Demonstrates how to generate barcodes, recognize them, and summarize the distribution
+/// of <see cref="BarCodeConfidence"/> values across the scanned images.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates sample barcodes, reads them back, and prints a confidence distribution.
+    /// Entry point of the example. Generates sample barcodes, reads them,
+    /// aggregates confidence levels, outputs a summary, and cleans up temporary files.
     /// </summary>
     static void Main()
     {
         // --------------------------------------------------------------------
-        // 1. Prepare sample barcode data (symbology and code text)
+        // 1. Prepare a small set of sample barcodes with expected confidence levels.
         // --------------------------------------------------------------------
-        var samples = new List<(BaseEncodeType encode, string text)>
+        var samples = new (BaseEncodeType type, string text, string file)[]
         {
-            (EncodeTypes.Code128, "ABC123456"),
-            (EncodeTypes.QR, "https://example.com"),
-            (EncodeTypes.Code39FullASCII, "CODE39*"),
-            (EncodeTypes.DataMatrix, "DM12345"),
-            (EncodeTypes.Pdf417, "PDF417 Sample Text")
+            (EncodeTypes.Code128, "12345", "code128.png"),   // expected Moderate confidence
+            (EncodeTypes.QR, "12345", "qr.png"),           // expected Strong confidence
+            (EncodeTypes.EAN13, "5901234123457", "ean13.png") // expected Strong confidence (EAN13 has checksum)
         };
 
         // --------------------------------------------------------------------
-        // 2. Generate barcode images and store them in memory streams
+        // 2. Generate barcode images from the sample data.
         // --------------------------------------------------------------------
-        var barcodeStreams = new List<MemoryStream>();
-
-        foreach (var sample in samples)
+        foreach (var (type, text, file) in samples)
         {
-            // Create a generator for the current barcode type and text
-            using (var generator = new BarcodeGenerator(sample.encode, sample.text))
+            using (var generator = new BarcodeGenerator(type, text))
             {
-                // Save the generated barcode as PNG into a memory stream
-                var ms = new MemoryStream();
-                generator.Save(ms, BarCodeImageFormat.Png);
-                ms.Position = 0; // Reset stream position for later reading
-                barcodeStreams.Add(ms);
+                // Save the generated barcode to a PNG file.
+                generator.Save(file);
             }
         }
 
         // --------------------------------------------------------------------
-        // 3. Initialize counters for each confidence level
+        // 3. Initialize a dictionary to hold the count of each confidence level.
         // --------------------------------------------------------------------
-        var confidenceCounts = new Dictionary<BarCodeConfidence, int>
-        {
-            { BarCodeConfidence.None, 0 },
-            { BarCodeConfidence.Moderate, 0 },
-            { BarCodeConfidence.Strong, 0 }
-        };
+        var confidenceCounts = new Dictionary<BarCodeConfidence, int>();
 
         // --------------------------------------------------------------------
-        // 4. Recognize each barcode image and tally confidence levels
+        // 4. Recognize each generated image and collect confidence values.
         // --------------------------------------------------------------------
-        foreach (var stream in barcodeStreams)
+        foreach (var (_, _, file) in samples)
         {
-            // Ensure the stream is positioned at the beginning before reading
-            stream.Position = 0;
+            if (!File.Exists(file))
+            {
+                Console.WriteLine($"Warning: file '{file}' not found, skipping.");
+                continue;
+            }
 
-            // Use BarCodeReader to decode all supported barcode types
-            using (var reader = new BarCodeReader(stream, DecodeType.AllSupportedTypes))
+            using (var reader = new BarCodeReader(file, DecodeType.AllSupportedTypes))
             {
                 foreach (var result in reader.ReadBarCodes())
                 {
                     var confidence = result.Confidence;
 
-                    // Increment the appropriate counter if the confidence level exists in the dictionary
+                    // Increment the count for the observed confidence level.
                     if (confidenceCounts.ContainsKey(confidence))
-                    {
-                        confidenceCounts[confidence]++;
-                    }
+                        confidenceCounts[confidence] += 1;
+                    else
+                        confidenceCounts[confidence] = 1;
                 }
             }
         }
 
         // --------------------------------------------------------------------
-        // 5. Output a summary of the confidence distribution
+        // 5. Output the confidence distribution summary to the console.
         // --------------------------------------------------------------------
         Console.WriteLine("Barcode Confidence Distribution:");
-        foreach (var kvp in confidenceCounts)
+        foreach (BarCodeConfidence level in Enum.GetValues(typeof(BarCodeConfidence)))
         {
-            Console.WriteLine($"{kvp.Key}: {kvp.Value}");
+            confidenceCounts.TryGetValue(level, out int count);
+            Console.WriteLine($"{level}: {count}");
         }
 
         // --------------------------------------------------------------------
-        // 6. Clean up memory streams
+        // 6. Clean up generated files (optional).
         // --------------------------------------------------------------------
-        foreach (var ms in barcodeStreams)
+        foreach (var (_, _, file) in samples)
         {
-            ms.Dispose();
+            try
+            {
+                if (File.Exists(file))
+                    File.Delete(file);
+            }
+            catch
+            {
+                // Ignore any cleanup errors.
+            }
         }
     }
 }

@@ -1,99 +1,86 @@
+// Title: Batch Barcode Reader with Confidence and ReadingQuality
+// Description: Demonstrates reading multiple barcode images from a network share and retrieving confidence and reading quality metrics for each detected barcode.
+// Prompt: Batch read multiple barcode images from a network share, capturing Confidence and ReadingQuality for each file.
+// Tags: barcode, batch, confidence, readingquality, aspose, csharp, network-share
+
 using System;
 using System.IO;
-using System.Collections.Generic;
+using System.Linq;
 using Aspose.BarCode.BarCodeRecognition;
 
-/// <summary>
-/// Demonstrates barcode detection using Aspose.BarCode on a set of image files.
-/// </summary>
-class Program
+namespace BarcodeBatchReader
 {
-    // Maximum number of files to process in this demo (safe for the runner)
-    private const int MaxFilesToProcess = 5;
-
     /// <summary>
-    /// Entry point of the application. Scans a folder for barcode images and prints detection results.
+    /// Entry point for the batch barcode reading example.
     /// </summary>
-    /// <param name="args">Optional command‑line arguments. The first argument can specify the folder path.</param>
-    static void Main(string[] args)
+    class Program
     {
-        // Determine the folder containing barcode images.
-        // If a command‑line argument is provided, use it; otherwise fall back to a sample folder.
-        string folderPath = args.Length > 0
-            ? args[0]
-            : Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
-
-        // Verify that the folder exists before proceeding.
-        if (!Directory.Exists(folderPath))
+        /// <summary>
+        /// Scans a network share for up to five barcode images, reads each barcode,
+        /// and prints its type, text, confidence, and reading quality.
+        /// </summary>
+        static void Main()
         {
-            Console.WriteLine($"Folder not found: {folderPath}");
-            return;
-        }
+            // Path to the network share containing barcode images.
+            // Adjust the UNC path as needed for your environment.
+            string folderPath = @"\\networkshare\barcodes";
 
-        // Define supported image extensions for barcode detection.
-        string[] supportedExtensions = new[] { ".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff" };
-        List<string> imageFiles = new List<string>();
-
-        // Collect image files up to the defined maximum.
-        foreach (string file in Directory.GetFiles(folderPath))
-        {
-            // Check if the file extension matches one of the supported types.
-            if (Array.Exists(supportedExtensions, ext => ext.Equals(Path.GetExtension(file), StringComparison.OrdinalIgnoreCase)))
+            // Verify that the folder exists before proceeding.
+            if (!Directory.Exists(folderPath))
             {
-                imageFiles.Add(file);
-                if (imageFiles.Count >= MaxFilesToProcess)
-                    break; // limit to a safe sample size
-            }
-        }
-
-        // If no supported images were found, inform the user and exit.
-        if (imageFiles.Count == 0)
-        {
-            Console.WriteLine("No barcode image files found in the specified folder.");
-            return;
-        }
-
-        // Process each image file individually.
-        foreach (string imagePath in imageFiles)
-        {
-            // Ensure the file still exists (it could have been removed after enumeration).
-            if (!File.Exists(imagePath))
-            {
-                Console.WriteLine($"File not found: {imagePath}");
-                continue;
+                Console.WriteLine($"Folder not found: {folderPath}");
+                return;
             }
 
-            try
+            // Define the set of image file extensions that will be processed.
+            string[] supportedExtensions = { ".png", ".jpg", ".jpeg", ".bmp", ".gif" };
+
+            // Retrieve up to 5 image files that match the supported extensions.
+            string[] files = Directory.GetFiles(folderPath)
+                .Where(f => supportedExtensions.Contains(Path.GetExtension(f), StringComparer.OrdinalIgnoreCase))
+                .Take(5)
+                .ToArray();
+
+            // If no matching files are found, inform the user and exit.
+            if (files.Length == 0)
             {
-                // Create a reader for the current image, detecting all supported symbologies.
-                using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
+                Console.WriteLine("No barcode image files found in the specified folder.");
+                return;
+            }
+
+            // Process each discovered image file.
+            foreach (string filePath in files)
+            {
+                // Double‑check that the file still exists (it could have been removed).
+                if (!File.Exists(filePath))
                 {
-                    // Read all barcodes present in the image.
+                    Console.WriteLine($"File not found: {filePath}");
+                    continue;
+                }
+
+                // Create a BarCodeReader for the current file, using all supported symbologies.
+                using (var reader = new BarCodeReader(filePath, DecodeType.AllSupportedTypes))
+                {
+                    // Perform the barcode recognition operation.
                     BarCodeResult[] results = reader.ReadBarCodes();
 
                     // If no barcodes were detected, report and move to the next file.
                     if (results.Length == 0)
                     {
-                        Console.WriteLine($"No barcodes detected in file: {Path.GetFileName(imagePath)}");
+                        Console.WriteLine($"No barcode detected in file: {Path.GetFileName(filePath)}");
                         continue;
                     }
 
                     // Output details for each detected barcode.
-                    foreach (BarCodeResult result in results)
+                    foreach (var result in results)
                     {
-                        Console.WriteLine($"File: {Path.GetFileName(imagePath)}");
-                        Console.WriteLine($"  Type            : {result.CodeTypeName}");
-                        Console.WriteLine($"  CodeText        : {result.CodeText}");
-                        Console.WriteLine($"  Confidence      : {result.Confidence}");
-                        Console.WriteLine($"  ReadingQuality  : {result.ReadingQuality}");
-                        Console.WriteLine();
+                        Console.WriteLine($"File: {Path.GetFileName(filePath)}");
+                        Console.WriteLine($"  Type: {result.CodeTypeName}");
+                        Console.WriteLine($"  Text: {result.CodeText}");
+                        Console.WriteLine($"  Confidence: {result.Confidence}");
+                        Console.WriteLine($"  ReadingQuality: {result.ReadingQuality}");
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                // Report any errors that occur while processing the current file.
-                Console.WriteLine($"Error processing file '{Path.GetFileName(imagePath)}': {ex.Message}");
             }
         }
     }
