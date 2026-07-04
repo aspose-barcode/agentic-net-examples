@@ -1,3 +1,8 @@
+// Title: Clone BarcodeGenerator configuration via XML export/import
+// Description: Demonstrates exporting a BarcodeGenerator's settings to XML and importing them into a new instance, effectively cloning the configuration.
+// Prompt: Chain ExportToXml and ImportFromXml calls to clone a BarcodeGenerator configuration into a new object.
+// Tags: barcode symbology, configuration cloning, xml, export, import, aspose.barcodes, generation
+
 using System;
 using System.IO;
 using Aspose.BarCode;
@@ -5,52 +10,53 @@ using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates exporting a barcode generator's configuration to XML,
-/// importing it back, and saving both original and cloned barcode images.
+/// Example program that shows how to clone a BarcodeGenerator configuration
+/// by exporting it to XML and then importing it into a new generator instance.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
+    /// Entry point of the application. Performs the export, import, and image generation steps.
     /// </summary>
     static void Main()
     {
-        // Define file paths for the temporary files used in the demo.
-        string xmlPath = "barcode_config.xml";      // Path for the exported XML configuration.
-        string originalImagePath = "original.png";  // Path for the original barcode image.
-        string clonedImagePath = "cloned.png";      // Path for the cloned barcode image.
+        // Define file paths for the temporary XML configuration and the output images
+        string xmlPath = Path.Combine(Directory.GetCurrentDirectory(), "barcodeConfig.xml");
+        string originalImagePath = Path.Combine(Directory.GetCurrentDirectory(), "original.png");
+        string clonedImagePath = Path.Combine(Directory.GetCurrentDirectory(), "cloned.png");
 
-        // --------------------------------------------------------------------
-        // Create and configure the original barcode generator.
-        // --------------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
+        // Create and configure the original barcode generator
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
         {
-            // Set visual properties of the barcode.
-            generator.Parameters.Barcode.BarColor = Color.Blue;   // Barcode color.
-            generator.Parameters.Barcode.XDimension.Point = 2f; // Module width.
-            generator.Parameters.Resolution = 300f;              // Image resolution (dpi).
+            // Set some non-default parameters to demonstrate cloning
+            generator.Parameters.Barcode.BarColor = Color.Blue;
+            generator.Parameters.Barcode.XDimension.Point = 2f;
+            generator.Parameters.ImageWidth.Point = 300f;
+            generator.Parameters.ImageHeight.Point = 150f;
+            generator.Parameters.Resolution = 150;
 
-            // Save the generated barcode image to a file.
+            // Save the original barcode image to file
             generator.Save(originalImagePath);
 
-            // Export the current generator configuration to an XML file.
+            // Export the current configuration to an XML file for later import
             generator.ExportToXml(xmlPath);
         }
 
-        // --------------------------------------------------------------------
-        // Import the configuration from the XML file and create a cloned generator.
-        // --------------------------------------------------------------------
-        using (var clonedGenerator = BarcodeGenerator.ImportFromXml(xmlPath))
+        // Import the configuration from the XML file into a new generator instance
+        using (BarcodeGenerator clonedGenerator = BarcodeGenerator.ImportFromXml(xmlPath))
         {
-            // Save the barcode image generated from the imported configuration.
+            // Save the cloned barcode image (should be identical to the original)
             clonedGenerator.Save(clonedImagePath);
         }
 
-        // --------------------------------------------------------------------
-        // Output the locations of the generated files to the console.
-        // --------------------------------------------------------------------
-        Console.WriteLine($"Original barcode saved to: {Path.GetFullPath(originalImagePath)}");
-        Console.WriteLine($"Cloned barcode saved to: {Path.GetFullPath(clonedImagePath)}");
-        Console.WriteLine($"Configuration exported to: {Path.GetFullPath(xmlPath)}");
+        // Clean up the temporary XML file used for cloning
+        if (File.Exists(xmlPath))
+        {
+            File.Delete(xmlPath);
+        }
+
+        // Output the locations of the generated images for verification
+        Console.WriteLine("Original barcode saved to: " + originalImagePath);
+        Console.WriteLine("Cloned barcode saved to: " + clonedImagePath);
     }
 }

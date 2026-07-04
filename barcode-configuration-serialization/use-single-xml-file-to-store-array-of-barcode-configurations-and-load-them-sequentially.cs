@@ -1,127 +1,91 @@
+// Title: Generate Multiple Barcodes from XML Configuration
+// Description: Loads barcode settings from a single XML file and generates corresponding barcode images sequentially.
+// Prompt: Use a single XML file to store an array of barcode configurations and load them sequentially.
+// Tags: barcode, symbology, xml, generation, aspose.barcode, image output
+
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Xml.Serialization;
+using System.Xml.Linq;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
-namespace BarcodeBatchFromXml
+/// <summary>
+/// Demonstrates loading barcode configurations from an XML file and generating barcode images.
+/// </summary>
+class Program
 {
-    // Simple DTO for a single barcode configuration
-    public class BarcodeConfig
-    {
-        public string Symbology { get; set; }
-        public string CodeText { get; set; }
-    }
-
-    // Container for an array of configurations
-    [XmlRoot("BarcodeConfigurations")]
-    public class BarcodeConfigCollection
-    {
-        [XmlElement("BarcodeConfig")]
-        public List<BarcodeConfig> Items { get; set; } = new List<BarcodeConfig>();
-    }
-
     /// <summary>
-    /// Entry point for the barcode batch generation application.
+    /// Entry point. Reads the XML, creates barcodes, and saves them as PNG files.
     /// </summary>
-    class Program
+    static void Main()
     {
-        /// <summary>
-        /// Main method that orchestrates loading configurations, generating barcodes, and handling errors.
-        /// </summary>
-        static void Main()
+        // Path to the XML file that contains barcode configurations
+        const string xmlPath = "barcodes.xml";
+
+        // Verify that the XML file exists before proceeding
+        if (!File.Exists(xmlPath))
         {
-            const string xmlPath = "barcodeConfigs.xml";
+            Console.WriteLine($"XML file not found: {Path.GetFullPath(xmlPath)}");
+            return;
+        }
 
-            // Ensure the XML file exists; if not, create a sample file
-            if (!File.Exists(xmlPath))
+        // Load the XML document into memory
+        XDocument doc = XDocument.Load(xmlPath);
+
+        // Expect a root element <Barcodes> with multiple <Barcode> child elements
+        var barcodeElements = doc.Root?.Elements("Barcode");
+        if (barcodeElements == null)
+        {
+            Console.WriteLine("No <Barcode> elements found in the XML.");
+            return;
+        }
+
+        // Ensure the output directory exists (creates it if missing)
+        string outputDir = "GeneratedBarcodes";
+        Directory.CreateDirectory(outputDir);
+
+        int index = 1;
+        // Iterate over each <Barcode> element and generate the corresponding image
+        foreach (var elem in barcodeElements)
+        {
+            // Extract the symbology name (EncodeType) and the text to encode (CodeText)
+            string symbologyName = (string)elem.Element("EncodeType");
+            string codeText = (string)elem.Element("CodeText");
+
+            // Validate required fields
+            if (string.IsNullOrWhiteSpace(symbologyName) || string.IsNullOrWhiteSpace(codeText))
             {
-                CreateSampleXml(xmlPath);
-                Console.WriteLine($"Sample configuration file created at '{Path.GetFullPath(xmlPath)}'.");
-            }
-
-            // Load configurations from XML
-            BarcodeConfigCollection configCollection = LoadConfigurations(xmlPath);
-            if (configCollection == null || configCollection.Items.Count == 0)
-            {
-                Console.WriteLine("No barcode configurations found.");
-                return;
-            }
-
-            // Process each configuration sequentially
-            int index = 1;
-            foreach (var cfg in configCollection.Items)
-            {
-                // Resolve symbology name to BaseEncodeType via reflection
-                var field = typeof(EncodeTypes).GetField(cfg.Symbology);
-                if (field == null)
-                {
-                    Console.WriteLine($"[#{index}] Unknown symbology '{cfg.Symbology}'. Skipping.");
-                    index++;
-                    continue;
-                }
-
-                // Cast the reflected value to the appropriate enum type
-                var encodeType = (BaseEncodeType)field.GetValue(null);
-                string outputFile = $"barcode_{index}_{cfg.Symbology}.png";
-
-                try
-                {
-                    // Generate the barcode using Aspose.BarCode
-                    using (var generator = new BarcodeGenerator(encodeType, cfg.CodeText))
-                    {
-                        // Example: enable checksum (optional)
-                        generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
-
-                        // Save the barcode image to a PNG file
-                        generator.Save(outputFile);
-                    }
-
-                    Console.WriteLine($"[#{index}] Generated '{outputFile}' for symbology '{cfg.Symbology}'.");
-                }
-                catch (Exception ex)
-                {
-                    // Report any errors that occur during generation
-                    Console.WriteLine($"[#{index}] Error generating barcode: {ex.Message}");
-                }
-
+                Console.WriteLine($"Skipping entry #{index}: missing EncodeType or CodeText.");
                 index++;
+                continue;
             }
-        }
 
-        // Creates a sample XML file with a few barcode configurations
-        private static void CreateSampleXml(string path)
-        {
-            var sample = new BarcodeConfigCollection();
-            sample.Items.Add(new BarcodeConfig { Symbology = "Code128", CodeText = "Sample123" });
-            sample.Items.Add(new BarcodeConfig { Symbology = "QR", CodeText = "https://example.com" });
-            sample.Items.Add(new BarcodeConfig { Symbology = "DataMatrix", CodeText = "DM12345" });
+            // Resolve the symbology name to a BaseEncodeType value using reflection
+            var field = typeof(EncodeTypes).GetField(symbologyName);
+            if (field == null)
+            {
+                Console.WriteLine($"Unknown symbology '{symbologyName}' in entry #{index}.");
+                index++;
+                continue;
+            }
 
-            var serializer = new XmlSerializer(typeof(BarcodeConfigCollection));
-            using (var stream = new FileStream(path, FileMode.Create, FileAccess.Write))
-            {
-                serializer.Serialize(stream, sample);
-            }
-        }
+            BaseEncodeType encodeType = (BaseEncodeType)field.GetValue(null);
 
-        // Deserializes the XML file into a collection of configurations
-        private static BarcodeConfigCollection LoadConfigurations(string path)
-        {
-            try
+            // Create the barcode generator with the resolved type and text
+            using (var generator = new BarcodeGenerator(encodeType, codeText))
             {
-                var serializer = new XmlSerializer(typeof(BarcodeConfigCollection));
-                using (var stream = new FileStream(path, FileMode.Open, FileAccess.Read))
-                {
-                    return (BarcodeConfigCollection)serializer.Deserialize(stream);
-                }
+                // Set common visual parameters (optional)
+                generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
+                generator.Parameters.BackColor = Aspose.Drawing.Color.White;
+                generator.Parameters.Resolution = 300; // DPI
+
+                // Build the output file path and save the barcode as PNG
+                string outputPath = Path.Combine(outputDir, $"barcode_{index}.png");
+                generator.Save(outputPath);
+                Console.WriteLine($"Generated barcode #{index}: {outputPath}");
             }
-            catch (Exception ex)
-            {
-                // Log deserialization errors and return null to indicate failure
-                Console.WriteLine($"Failed to load configurations: {ex.Message}");
-                return null;
-            }
+
+            index++;
         }
     }
 }

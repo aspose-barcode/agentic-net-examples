@@ -1,56 +1,62 @@
+// Title: Serialize BarcodeGenerator with Multi-line Text
+// Description: Demonstrates exporting a BarcodeGenerator containing multi-line CodeText to XML and verifying that line breaks are retained after importing.
+// Prompt: Serialize a BarcodeGenerator with multi‑line text and verify line breaks are preserved after import.
+// Tags: barcode, code128, serialization, xml, multiline, aspnet.barcode
+
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates exporting a barcode generator to XML and importing it back,
-/// preserving multi‑line text with Windows line breaks.
+/// Example program that shows how to serialize a <see cref="BarcodeGenerator"/> with multi‑line text,
+/// export its settings to XML, and confirm that line breaks are preserved after re‑importing.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
+    /// Entry point of the example. Performs the export/import cycle and validates line‑break preservation.
     /// </summary>
     static void Main()
     {
-        // Define multi‑line text containing Windows style line breaks (\r\n)
-        string multiLineText = "Line1\r\nLine2\r\nLine3";
+        // Define temporary file paths for the XML settings and the optional PNG image.
+        string xmlPath = "barcode.xml";
+        string imagePath = "barcode.png";
 
-        // Build a temporary file path for the XML serialization output
-        string xmlPath = Path.Combine(Path.GetTempPath(), "barcode.xml");
+        // Original multi‑line text to be encoded in the barcode.
+        string originalText = "Line1\r\nLine2\r\nLine3";
 
-        // Create a barcode generator for Code128, assign the multi‑line text,
-        // and export its configuration to an XML file.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128))
+        // Create a BarcodeGenerator for Code128 and assign the multi‑line CodeText.
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128))
         {
-            generator.CodeText = multiLineText;
+            generator.CodeText = originalText;
+
+            // Save a visual representation of the barcode (optional, for verification).
+            generator.Save(imagePath);
+
+            // Export the generator's configuration, including the CodeText, to an XML file.
             generator.ExportToXml(xmlPath);
         }
 
-        // Verify that the XML file was successfully created.
+        // Ensure the XML file was created before attempting to import it.
         if (!File.Exists(xmlPath))
         {
-            Console.WriteLine("Failed to create XML file.");
+            Console.WriteLine("Error: XML file was not created.");
             return;
         }
 
-        // Import a new barcode generator instance from the previously saved XML file.
-        using (var importedGenerator = BarcodeGenerator.ImportFromXml(xmlPath))
+        // Import the generator settings from the XML file.
+        using (BarcodeGenerator importedGenerator = BarcodeGenerator.ImportFromXml(xmlPath))
         {
-            // Check whether the imported CodeText matches the original multi‑line text.
-            bool lineBreaksPreserved = importedGenerator.CodeText == multiLineText;
-            Console.WriteLine("Line breaks preserved: " + lineBreaksPreserved);
-        }
+            // Retrieve the CodeText from the imported generator.
+            string importedText = importedGenerator.CodeText;
 
-        // Attempt to delete the temporary XML file; ignore any exceptions that may occur.
-        try
-        {
-            File.Delete(xmlPath);
-        }
-        catch
-        {
-            // Cleanup errors are intentionally ignored.
+            // Verify that the line breaks in the imported text match the original.
+            bool isPreserved = importedText == originalText;
+
+            Console.WriteLine("Line breaks preserved: " + isPreserved);
+            Console.WriteLine("Imported CodeText:");
+            Console.WriteLine(importedText);
         }
     }
 }

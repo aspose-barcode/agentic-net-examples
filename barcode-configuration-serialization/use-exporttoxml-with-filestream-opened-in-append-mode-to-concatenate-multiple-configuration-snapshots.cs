@@ -1,54 +1,62 @@
+// Title: Export Multiple Barcode Configurations to a Single XML File
+// Description: Demonstrates using ExportToXml with a FileStream opened in Append mode to concatenate several barcode configuration snapshots into one XML document.
+// Prompt: Use ExportToXml with a FileStream opened in Append mode to concatenate multiple configuration snapshots.
+// Tags: barcode, export, xml, configuration, append, aspose.barcode, c#
+
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates exporting multiple barcode configurations to a single XML file using Aspose.BarCode.
+/// Example program that creates several barcode generators,
+/// modifies a property, and appends each generator's configuration
+/// to a single XML file using <c>ExportToXml</c>.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Creates barcode configurations and appends their XML representations to a file.
+    /// Entry point. Generates barcode configurations and concatenates
+    /// their XML representations into <c>config.xml</c>.
     /// </summary>
-    /// <param name="args">Command‑line arguments (not used).</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Define a few barcode configurations to export.
-        var configurations = new (BaseEncodeType Type, string CodeText)[]
-        {
-            (EncodeTypes.Code128, "SampleCode128"),
-            (EncodeTypes.QR, "SampleQR"),
-            (EncodeTypes.DataMatrix, "SampleDataMatrix")
-        };
+        // Path of the XML file that will hold all concatenated configuration snapshots
+        const string xmlFilePath = "config.xml";
 
-        // Path of the XML file that will hold the exported configurations.
-        string xmlFilePath = "barcodeConfigurations.xml";
-
-        // Ensure the XML file exists by creating an empty file if it does not.
-        using (var initStream = new FileStream(xmlFilePath, FileMode.Create, FileAccess.Write, FileShare.None))
+        // Ensure the file exists; create an empty file if it does not
+        if (!File.Exists(xmlFilePath))
         {
-            // No content needed; the using block creates the file and then disposes the stream.
+            using (var createStream = new FileStream(xmlFilePath, FileMode.Create, FileAccess.Write, FileShare.None))
+            {
+                // Empty file created – no content needed at this point
+            }
         }
 
-        // Export each configuration to the same XML file using Append mode.
-        foreach (var config in configurations)
-        {
-            // Initialize a barcode generator with the specified type and code text.
-            using (var generator = new BarcodeGenerator(config.Type, config.CodeText))
-            {
-                // Example of setting a parameter (optional): enable checksum calculation.
-                generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
+        // Sample barcode texts to be used for generating configurations
+        string[] codeTexts = { "ABC123", "DEF456", "GHI789" };
 
-                // Open the XML file in Append mode and write the current configuration.
+        // Iterate over each sample text, generate a barcode, and export its configuration
+        foreach (string text in codeTexts)
+        {
+            // Initialize a barcode generator with Code128 symbology and the current text
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, text))
+            {
+                // Example of customizing a generator property (set barcode bar color to blue)
+                generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Blue;
+
+                // Open the XML file in Append mode so each configuration is added sequentially
                 using (var stream = new FileStream(xmlFilePath, FileMode.Append, FileAccess.Write, FileShare.None))
                 {
-                    generator.ExportToXml(stream);
+                    // Export the current generator's configuration to the XML stream
+                    bool exported = generator.ExportToXml(stream);
+                    Console.WriteLine($"Exported configuration for '{text}': {exported}");
                 }
             }
         }
 
-        // Inform the user about the successful export.
-        Console.WriteLine($"Exported {configurations.Length} barcode configurations to '{xmlFilePath}'.");
+        // Inform the user that all configurations have been successfully concatenated
+        Console.WriteLine("All configurations have been concatenated to " + xmlFilePath);
     }
 }

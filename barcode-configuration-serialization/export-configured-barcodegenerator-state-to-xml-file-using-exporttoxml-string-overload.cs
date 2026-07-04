@@ -1,44 +1,37 @@
+// Title: Export BarcodeGenerator Configuration to XML
+// Description: Demonstrates exporting a configured BarcodeGenerator's state to an XML file using the ExportToXml(string) overload. Useful for persisting barcode settings.
+// Prompt: Export a configured BarcodeGenerator state to an XML file using ExportToXml(string) overload.
+// Tags: barcode, code128, export, xml, aspose.barcode, configuration
+
 using System;
-using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates exporting a barcode configuration to an XML file using Aspose.BarCode.
+/// Example program that configures a BarcodeGenerator and exports its settings to an XML file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a Code128 barcode, configures its appearance,
-    /// and exports the configuration to an XML file.
+    /// Entry point of the application. Configures a Code128 barcode and saves the generator state to XML.
     /// </summary>
     static void Main()
     {
-        // Determine the full path for the XML file in the current working directory.
-        string xmlPath = Path.Combine(Directory.GetCurrentDirectory(), "barcode_config.xml");
-
-        // Initialize a BarcodeGenerator for Code128 with the sample text "Sample123".
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
+        // Initialize a BarcodeGenerator with Code128 symbology and sample text
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            // Enable checksum calculation and always display it.
-            generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
-            generator.Parameters.Barcode.ChecksumAlwaysShow = true;
+            // Set visual parameters for the barcode
+            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.DarkBlue; // Dark blue bars
+            generator.Parameters.Barcode.XDimension.Point = 2f;                    // Width of the smallest bar unit
+            generator.Parameters.Barcode.BarHeight.Point = 40f;                   // Height of the barcode
 
-            // Set visual appearance: blue barcode on a white background.
-            generator.Parameters.Barcode.BarColor = Color.Blue;
-            generator.Parameters.BackColor = Color.White;
+            // Export the current generator configuration to an XML file
+            bool exported = generator.ExportToXml("barcodeConfig.xml");
 
-            // Define the output resolution (dots per inch).
-            generator.Parameters.Resolution = 300f;
-
-            // Export the configured barcode generator state to the specified XML file.
-            bool success = generator.ExportToXml(xmlPath);
-
-            // Inform the user whether the export succeeded.
-            Console.WriteLine(success
-                ? $"Barcode configuration exported successfully to '{xmlPath}'."
-                : $"Failed to export barcode configuration to '{xmlPath}'.");
+            // Inform the user whether the export succeeded
+            Console.WriteLine(exported
+                ? "Barcode configuration exported successfully."
+                : "Failed to export barcode configuration.");
         }
     }
 }
