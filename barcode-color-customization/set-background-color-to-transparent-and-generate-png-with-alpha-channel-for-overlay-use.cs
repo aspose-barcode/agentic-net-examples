@@ -1,36 +1,32 @@
+// Title: Generate Transparent PNG Barcode
+// Description: Creates a Code128 barcode with a transparent background and saves it as a PNG file preserving the alpha channel for overlay use.
+// Prompt: Set the background color to transparent and generate a PNG with alpha channel for overlay use.
+// Tags: code128, barcode, transparent background, png, alpha channel, aspose.barcode, aspose.drawing
+
 using System;
-using Aspose.BarCode.Generation;
 using Aspose.BarCode;
+using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a Code128 barcode and saving it as a PNG with a transparent background.
+/// Demonstrates how to generate a barcode with a transparent background and save it as a PNG image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a barcode, configures its appearance, and writes it to a file.
+    /// Entry point of the application. Generates a Code128 barcode with a transparent background and saves it as a PNG.
     /// </summary>
     static void Main()
     {
-        // Define the file path where the generated barcode image will be saved.
-        string outputPath = "barcode_overlay.png";
-
-        // Initialize a BarcodeGenerator for Code128 symbology with the desired text.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
+        // Initialize a barcode generator for Code128 symbology with the sample text "Sample".
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample"))
         {
-            // Set the image background to transparent so the PNG can be overlaid on other graphics.
+            // Configure the barcode to have a transparent background.
             generator.Parameters.BackColor = Color.Transparent;
 
-            // Set the barcode (foreground) color to black. Adjust as needed.
-            generator.Parameters.Barcode.BarColor = Color.Black;
-
-            // Save the barcode image in PNG format, which supports an alpha channel for transparency.
-            generator.Save(outputPath, BarCodeImageFormat.Png);
+            // Save the generated barcode as a PNG file.
+            // PNG format retains the alpha channel, making the background truly transparent.
+            generator.Save("transparent_barcode.png");
         }
-
-        // Inform the user that the image has been saved.
-        Console.WriteLine($"Barcode image saved to: {outputPath}");
     }
 }

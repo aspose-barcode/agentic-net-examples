@@ -1,72 +1,83 @@
+// Title: Generate a Code128 barcode with custom foreground and background colors
+// Description: Demonstrates creating a barcode image with blue bars on a yellow background, then verifies the colors and reads the barcode.
+// Prompt: Generate a barcode with custom colors and then read back the image to confirm color values.
+// Tags: code128, barcode generation, custom colors, png, aspose.barcode, aspose.drawing, barcode recognition
+
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a Code128 barcode with custom foreground and background colors,
-/// saving it to a file, and verifying the colors by inspecting pixel data.
+/// Example program that creates a barcode with custom colors, verifies pixel colors, and reads the barcode back.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a barcode image, saves it, and validates the custom colors.
+    /// Entry point. Generates the barcode, checks colors, and decodes the barcode.
     /// </summary>
     static void Main()
     {
-        // Define the output file path for the generated barcode image.
-        string imagePath = "barcode_custom.png";
+        // Define the output file path for the barcode image
+        string filePath = "custom_color_barcode.png";
 
-        // Create a BarcodeGenerator for Code128 with the specified data.
+        // Create a barcode generator using Code128 symbology and the desired code text
         using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            // Set the barcode (foreground) color to blue.
+            // Set custom foreground (bar) color to blue
             generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Blue;
-
-            // Set the background color to yellow.
+            // Set custom background color to yellow
             generator.Parameters.BackColor = Aspose.Drawing.Color.Yellow;
 
-            // Save the generated barcode image to the specified file.
-            generator.Save(imagePath);
+            // Adjust image size to ensure bars are clearly visible
+            generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
+            generator.Parameters.ImageWidth.Point = 300f;
+            generator.Parameters.ImageHeight.Point = 150f;
+
+            // Save the generated barcode as a PNG file
+            generator.Save(filePath, BarCodeImageFormat.Png);
         }
 
-        // Ensure the image file was successfully created.
-        if (!File.Exists(imagePath))
+        // Verify that the barcode image file was successfully created
+        if (!File.Exists(filePath))
         {
-            Console.WriteLine("Barcode image was not created.");
+            Console.WriteLine("Failed to create barcode image.");
             return;
         }
 
-        // Load the saved image for pixel-level color verification.
-        using (var bitmap = new Bitmap(imagePath))
+        // Load the saved image for pixel color verification
+        using (var bitmap = new Bitmap(filePath))
         {
-            // Retrieve the top-left pixel, which should represent the background color.
+            // Retrieve the background color from the top-left pixel (expected to be background)
             Aspose.Drawing.Color bgPixel = bitmap.GetPixel(0, 0);
-            bool bgMatches = bgPixel.Equals(Aspose.Drawing.Color.Yellow);
 
-            // Determine a point near the image center, likely part of a barcode bar.
-            int cx = bitmap.Width / 2;
-            int cy = bitmap.Height / 2;
+            // Retrieve the bar color from the center of the image (likely a bar)
+            int centerX = bitmap.Width / 2;
+            int centerY = bitmap.Height / 2;
+            Aspose.Drawing.Color barPixel = bitmap.GetPixel(centerX, centerY);
 
-            // Retrieve the pixel at the center point, which should be the foreground color.
-            Aspose.Drawing.Color fgPixel = bitmap.GetPixel(cx, cy);
-            bool fgMatches = fgPixel.Equals(Aspose.Drawing.Color.Blue);
+            // Define the expected colors for comparison
+            Aspose.Drawing.Color expectedBg = Aspose.Drawing.Color.Yellow;
+            Aspose.Drawing.Color expectedBar = Aspose.Drawing.Color.Blue;
 
-            // Output the results of the color checks.
-            Console.WriteLine($"Background pixel at (0,0): {bgPixel} (expected Yellow) - Match: {bgMatches}");
-            Console.WriteLine($"Foreground pixel at ({cx},{cy}): {fgPixel} (expected Blue) - Match: {fgMatches}");
+            // Output the actual and expected background colors with match status
+            Console.WriteLine($"Background pixel at (0,0): {bgPixel}");
+            Console.WriteLine($"Expected background: {expectedBg} - {(bgPixel.ToArgb() == expectedBg.ToArgb() ? "Match" : "Mismatch")}");
 
-            // Report overall verification status.
-            if (bgMatches && fgMatches)
+            // Output the actual and expected bar colors with match status
+            Console.WriteLine($"Bar pixel at ({centerX},{centerY}): {barPixel}");
+            Console.WriteLine($"Expected bar color: {expectedBar} - {(barPixel.ToArgb() == expectedBar.ToArgb() ? "Match" : "Mismatch")}");
+        }
+
+        // Read the barcode from the image to confirm the encoded text
+        using (var reader = new BarCodeReader(filePath, DecodeType.Code128))
+        {
+            foreach (var result in reader.ReadBarCodes())
             {
-                Console.WriteLine("Custom colors confirmed successfully.");
-            }
-            else
-            {
-                Console.WriteLine("Color verification failed.");
+                Console.WriteLine($"Detected barcode type: {result.CodeTypeName}");
+                Console.WriteLine($"Detected codetext: {result.CodeText}");
             }
         }
     }

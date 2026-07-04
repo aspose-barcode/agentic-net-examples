@@ -1,24 +1,28 @@
+// Title: Gradient Barcode with Alternating Bar Colors
+// Description: Demonstrates creating a Code128 barcode and saving multiple images, each with a different bar color to achieve a gradient effect.
+// Prompt: Create a barcode with a gradient effect by alternating bar colors across multiple saves.
+// Tags: barcode, code128, gradient, alternating colors, png, aspose.barcode, aspose.drawing
+
 using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating Code128 barcodes with different bar colors using Aspose.BarCode.
+/// Demonstrates generating a Code128 barcode with alternating bar colors and saving each variation as a PNG image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a set of barcode images, each with a distinct bar color.
+    /// Entry point. Generates barcode images with different bar colors to simulate a gradient effect.
     /// </summary>
     static void Main()
     {
-        // Sample barcode data to encode.
+        // Define the barcode text to encode
         const string codeText = "1234567890";
 
-        // Define an array of colors to apply to the barcode bars.
-        Color[] colors = new Color[]
+        // Define the set of colors that will be applied to the barcode bars
+        Color[] barColors = new Color[]
         {
             Color.Red,
             Color.Green,
@@ -27,31 +31,32 @@ class Program
             Color.Purple
         };
 
-        // Iterate over each color, generate a barcode, and save it to a PNG file.
-        for (int i = 0; i < colors.Length; i++)
+        // Initialize a barcode generator for the Code128 symbology
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
         {
-            // Construct a unique file name for the current barcode image.
-            string fileName = $"barcode_{i + 1}.png";
+            // Configure image size using interpolation mode for better scaling
+            generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
+            generator.Parameters.ImageWidth.Point = 300f;
+            generator.Parameters.ImageHeight.Point = 150f;
 
-            // Create a BarcodeGenerator for Code128 with the specified text.
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+            // Loop through each color, apply it, and save the resulting image
+            for (int i = 0; i < barColors.Length; i++)
             {
-                // Apply the current color to the barcode bars.
-                generator.Parameters.Barcode.BarColor = colors[i];
+                // Set the current bar color
+                generator.Parameters.Barcode.BarColor = barColors[i];
 
-                // Optionally set a modest image size (width and height in points).
-                generator.Parameters.ImageWidth.Point = 300f;
-                generator.Parameters.ImageHeight.Point = 150f;
+                // Build a unique file name for each image
+                string fileName = $"barcode_{i + 1}.png";
 
-                // Save the generated barcode image as a PNG file.
+                // Save the barcode image in PNG format
                 generator.Save(fileName, BarCodeImageFormat.Png);
 
-                // Output a confirmation message to the console.
-                Console.WriteLine($"Saved {fileName} with color {colors[i].Name}");
+                // Output status to the console
+                Console.WriteLine($"Saved {fileName} with bar color {barColors[i].Name}");
             }
         }
 
-        // Indicate that all barcode images have been generated.
-        Console.WriteLine("All barcodes generated.");
+        // Indicate that all barcode images have been generated
+        Console.WriteLine("Barcode generation with alternating colors completed.");
     }
 }

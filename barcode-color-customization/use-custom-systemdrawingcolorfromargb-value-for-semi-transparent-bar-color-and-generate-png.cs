@@ -1,34 +1,37 @@
+// Title: Generate a semi‑transparent Code128 barcode and save as PNG
+// Description: Demonstrates setting a custom semi‑transparent bar color using Color.FromArgb and exporting the barcode to a PNG file.
+// Prompt: Use a custom System.Drawing.Color.FromArgb value for semi‑transparent bar color and generate PNG.
+// Tags: barcode, code128, color, transparency, png, aspose.barcode, aspose.drawing, generation
+
 using System;
-using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a semi‑transparent barcode image using Aspose.BarCode.
+/// Example program that creates a Code128 barcode with a semi‑transparent bar color and saves it as a PNG image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a Code128 barcode with a semi‑transparent red color
-    /// and saves it as a PNG file.
+    /// Entry point of the application. Generates the barcode and writes it to disk.
     /// </summary>
     static void Main()
     {
-        // Define the output file name (saved in the current working directory)
-        string outputPath = "semiTransparentBarcode.png";
+        // Define the output file path for the generated PNG image
+        const string outputPath = "barcode.png";
 
-        // Initialize the barcode generator with Code128 symbology and the data to encode
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
+        // Initialize the barcode generator with Code128 symbology and sample text
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
         {
-            // Configure the barcode bar color to be semi‑transparent red (alpha = 128)
-            generator.Parameters.Barcode.BarColor = Color.FromArgb(128, 255, 0, 0);
+            // Set a semi‑transparent blue bar color (alpha 128, red 0, green 0, blue 255)
+            generator.Parameters.Barcode.BarColor = Color.FromArgb(128, 0, 0, 255);
 
-            // Render and save the barcode image in PNG format
-            generator.Save(outputPath, BarCodeImageFormat.Png);
+            // Save the barcode image as a PNG file at the specified path
+            generator.Save(outputPath);
         }
 
-        // Output the full path of the saved barcode image to the console
-        Console.WriteLine($"Barcode saved to: {Path.GetFullPath(outputPath)}");
+        // Output a confirmation message with the location of the saved file
+        Console.WriteLine($"Barcode saved to {outputPath}");
     }
 }
