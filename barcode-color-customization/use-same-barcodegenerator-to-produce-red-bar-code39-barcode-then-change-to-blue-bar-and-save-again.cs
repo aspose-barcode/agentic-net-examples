@@ -1,42 +1,35 @@
+// Title: Generate Code39 barcode with red and blue bars
+// Description: Demonstrates creating a Code39 barcode, saving it with a red bar color, then changing to blue and saving again.
+// Prompt: Use the same BarcodeGenerator to produce a red‑bar Code39 barcode, then change to blue‑bar and save again.
+// Tags: barcode, code39, color, generation, png, aspose.barcode, aspose.drawing
+
 using System;
-using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating Code39 barcodes with different bar colors using Aspose.BarCode.
+/// Example program that generates a Code39 barcode in two colors.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates two PNG barcode images: one with red bars and one with blue bars,
-    /// and saves them to the current working directory.
+    /// Entry point. Generates a Code39 barcode, saves it with red bars, then with blue bars.
     /// </summary>
     static void Main()
     {
-        // Determine the directory where the executable is running.
-        string outputDir = Directory.GetCurrentDirectory();
-
-        // Build full file paths for the output images.
-        string redPath = Path.Combine(outputDir, "code39_red.png");
-        string bluePath = Path.Combine(outputDir, "code39_blue.png");
-
-        // Create a barcode generator for Code39FullASCII with the data "123ABC".
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code39FullASCII, "123ABC"))
+        // Initialize the barcode generator with Code39 symbology and sample text
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code39, "ABC-123"))
         {
-            // Set bar color to red and save the image.
+            // Set the bar color to red
             generator.Parameters.Barcode.BarColor = Color.Red;
-            generator.Save(redPath, BarCodeImageFormat.Png);
+            // Save the barcode image as PNG
+            generator.Save("code39_red.png");
 
-            // Change bar color to blue and save the second image.
+            // Change the bar color to blue
             generator.Parameters.Barcode.BarColor = Color.Blue;
-            generator.Save(bluePath, BarCodeImageFormat.Png);
+            // Save the barcode image again with the new color
+            generator.Save("code39_blue.png");
         }
-
-        // Output the locations of the generated files to the console.
-        Console.WriteLine($"Red barcode saved to: {redPath}");
-        Console.WriteLine($"Blue barcode saved to: {bluePath}");
     }
 }

@@ -1,32 +1,36 @@
+// Title: Resetting Barcode Background Color
+// Description: Demonstrates how to change a barcode's background color to gray, save it, then reset the background to the default white and save again.
+// Prompt: Reset the barcode background to default white after previously setting it to gray.
+// Tags: barcode symbology, background reset, png output, aspose.barcode, aspose.drawing
+
 using System;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating Code128 barcodes with different background colors using Aspose.BarCode.
+/// Example program that shows how to modify and then reset a barcode's background color.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates two barcode images: one with a gray background and one with the default white background.
+    /// Generates two barcode images: one with a gray background and another with the default white background.
     /// </summary>
     static void Main()
     {
-        // Initialize a BarcodeGenerator for Code128 format with the sample text "123456".
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
+        // Create a barcode generator for a Code128 barcode with the value "12345"
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "12345"))
         {
-            // Configure the generator to use a gray background.
+            // Set the background color to gray and save the first image
             generator.Parameters.BackColor = Color.Gray;
-            // Save the barcode image with the gray background to a PNG file.
             generator.Save("barcode_gray.png");
 
-            // Change the background color back to white (default).
+            // Reset the background color to the default white and save the second image
             generator.Parameters.BackColor = Color.White;
-            // Save the barcode image with the white background to a separate PNG file.
             generator.Save("barcode_white.png");
         }
 
-        // Output a confirmation message to the console.
-        Console.WriteLine("Barcodes generated successfully.");
+        // Inform the user that the barcode images have been created
+        Console.WriteLine("Barcodes generated: barcode_gray.png (gray background), barcode_white.png (white background).");
     }
 }

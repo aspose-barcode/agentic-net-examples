@@ -1,3 +1,8 @@
+// Title: Batch barcode generation with alternating colors
+// Description: Demonstrates creating PNG barcodes from a list of strings, alternating bar colors for visual distinction.
+// Prompt: Create a batch process that reads a list of strings and outputs PNG barcodes with alternating colors.
+// Tags: barcode symbology, batch processing, png output, aspose.barcode, aspose.drawing
+
 using System;
 using System.IO;
 using Aspose.BarCode;
@@ -5,57 +10,54 @@ using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating Code128 barcodes with alternating bar colors
-/// and saving them as PNG files using Aspose.BarCode.
+/// Generates PNG barcodes for a predefined list of strings, alternating bar colors between blue and red.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a set of barcodes from a predefined string array,
-    /// applies alternating colors, and writes the images to disk.
+    /// Entry point. Iterates over sample values, creates a barcode for each, and saves it as a PNG file.
     /// </summary>
     static void Main()
     {
-        // Sample list of strings to encode into barcodes
-        string[] data = new string[] { "ABC123", "DEF456", "GHI789", "JKL012", "MNO345" };
-
-        // Define the output directory for barcode images
-        string outputDir = "Barcodes";
-
-        // Ensure the output directory exists; create it if it does not
-        if (!Directory.Exists(outputDir))
+        // Define a sample list of strings to encode as barcodes
+        string[] values = new string[]
         {
-            Directory.CreateDirectory(outputDir);
-        }
+            "Sample001",
+            "Sample002",
+            "Sample003",
+            "Sample004",
+            "Sample005"
+        };
 
-        // Iterate over each string and generate a barcode with alternating bar colors
-        for (int i = 0; i < data.Length; i++)
+        // Determine the output directory (current working folder)
+        string outputDir = Directory.GetCurrentDirectory();
+
+        // Process each string in the list
+        for (int i = 0; i < values.Length; i++)
         {
-            // Current text to encode
-            string text = data[i];
+            // Choose bar color: even index -> Blue, odd index -> Red
+            Aspose.Drawing.Color barColor = (i % 2 == 0) ? Aspose.Drawing.Color.Blue : Aspose.Drawing.Color.Red;
 
-            // Choose bar color: black for even indices, red for odd indices
-            Aspose.Drawing.Color barColor = (i % 2 == 0) ? Aspose.Drawing.Color.Black : Aspose.Drawing.Color.Red;
-
-            // Initialize the barcode generator with Code128 symbology and the text
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, text))
+            // Initialize the barcode generator for Code128 symbology with the current value
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, values[i]))
             {
-                // Apply the selected bar color
+                // Apply the selected bar color to the barcode
                 generator.Parameters.Barcode.BarColor = barColor;
 
-                // Set the background color to white
-                generator.Parameters.BackColor = Aspose.Drawing.Color.White;
+                // Optional: customize image dimensions if required
+                // generator.Parameters.ImageWidth.Point = 300f;
+                // generator.Parameters.ImageHeight.Point = 150f;
 
-                // Construct the file path for the PNG image
-                string filePath = Path.Combine(outputDir, $"barcode_{i + 1}.png");
+                // Construct a unique file name for the output PNG
+                string fileName = $"barcode_{i + 1}.png";
+                string filePath = Path.Combine(outputDir, fileName);
 
-                // Save the generated barcode image to the specified path
+                // Save the generated barcode image as a PNG file
                 generator.Save(filePath);
-
-                // Output a confirmation message to the console
-                Console.WriteLine($"Saved barcode for \"{text}\" to {filePath}");
             }
+
+            // Inform the user that the barcode has been generated
+            Console.WriteLine($"Generated barcode for \"{values[i]}\" as {i + 1}.png");
         }
     }
 }

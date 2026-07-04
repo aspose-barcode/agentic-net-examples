@@ -1,40 +1,40 @@
+// Title: Barcode Generation with Top Caption and Custom Color
+// Description: Demonstrates creating a Code128 barcode, placing a caption above it, applying a custom color, and saving as PNG.
+// Prompt: Set the caption position to top and apply a custom caption color before saving as PNG.
+// Tags: barcode, code128, caption, top, color, png, aspose.barcode, aspose.drawing
+
 using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a Code128 barcode with a caption placed above it
-/// and saving the result as a PNG file.
+/// Example program that generates a Code128 barcode with a top caption
+/// and a custom caption color, then saves the image as a PNG file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Creates a barcode, configures its caption,
-    /// saves the image, and writes a confirmation to the console.
+    /// Entry point of the application.
     /// </summary>
     static void Main()
     {
-        // Initialize a barcode generator for Code128 using the sample text "123456"
+        // Initialize a barcode generator for Code128 with the sample text "123456"
         using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
         {
-            // Enable the caption that appears above the barcode
+            // Enable and configure a caption positioned above the barcode (top)
             generator.Parameters.CaptionAbove.Visible = true;
-
-            // Set the caption text and its color
             generator.Parameters.CaptionAbove.Text = "Top Caption";
-            generator.Parameters.CaptionAbove.TextColor = Color.Red;
 
-            // Optional: configure the caption's font family, size, and alignment
+            // Apply a custom color to the caption text (Blue)
+            generator.Parameters.CaptionAbove.TextColor = Color.Blue;
+
+            // Optional: customize the caption font (Arial, 12pt)
             generator.Parameters.CaptionAbove.Font.FamilyName = "Arial";
             generator.Parameters.CaptionAbove.Font.Size.Point = 12f;
-            generator.Parameters.CaptionAbove.Alignment = TextAlignment.Center;
 
-            // Save the generated barcode image as a PNG file named "barcode.png"
-            generator.Save("barcode.png");
+            // Save the generated barcode image as a PNG file
+            generator.Save("barcode_with_top_caption.png");
         }
-
-        // Inform the user that the barcode has been saved
-        Console.WriteLine("Barcode saved as barcode.png");
     }
 }

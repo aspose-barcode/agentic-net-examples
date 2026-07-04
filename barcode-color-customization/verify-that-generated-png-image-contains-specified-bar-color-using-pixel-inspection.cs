@@ -1,69 +1,85 @@
+// Title: Barcode generation with custom bar color and verification
+// Description: Demonstrates creating a Code128 barcode PNG with a blue bar color and verifies the color by inspecting pixels.
+// Prompt: Verify that the generated PNG image contains the specified bar color using pixel inspection.
+// Tags: barcode, code128, color, png, verification, aspose.barcode, aspose.drawing
+
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a Code128 barcode with a custom bar color,
-/// saving it as a PNG file, and verifying that the specified color appears in the image.
+/// Generates a Code128 barcode with a custom bar color, saves it as a PNG,
+/// and verifies that the specified color appears in the resulting image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a barcode, saves it, and checks for the presence of the specified bar color.
+    /// Entry point of the example. Performs barcode generation, saving, and color verification.
     /// </summary>
     static void Main()
     {
-        // Define the full path for the output PNG file.
-        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "barcode.png");
+        // --------------------------------------------------------------------
+        // Define output file path
+        // --------------------------------------------------------------------
+        string outputPath = "barcode.png";
 
-        // Create a barcode generator for Code128 with the data "1234567890".
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+        // --------------------------------------------------------------------
+        // Desired bar color (blue)
+        // --------------------------------------------------------------------
+        Color barColor = Color.Blue;
+
+        // --------------------------------------------------------------------
+        // Generate barcode with the specified bar color and save as PNG
+        // --------------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
         {
-            // Set the barcode's bar color to blue.
-            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Blue;
-
-            // Save the generated barcode image as a PNG file.
-            generator.Save(outputPath, BarCodeImageFormat.Png);
+            generator.Parameters.Barcode.BarColor = barColor;
+            generator.Save(outputPath);
         }
 
-        // Ensure the barcode image file was created successfully.
+        // --------------------------------------------------------------------
+        // Verify that the generated image file exists
+        // --------------------------------------------------------------------
         if (!File.Exists(outputPath))
         {
-            Console.WriteLine("Error: Barcode image was not created.");
+            Console.WriteLine("Barcode image file was not created.");
             return;
         }
 
-        // Flag to indicate whether the target color was found in the image.
+        // --------------------------------------------------------------------
+        // Scan the image pixel by pixel to find the expected bar color
+        // --------------------------------------------------------------------
         bool colorFound = false;
-
-        // Load the saved image for pixel inspection.
-        using (var bitmap = new Bitmap(outputPath))
+        using (var image = Image.FromFile(outputPath) as Bitmap)
         {
-            // Iterate over each pixel until the blue color is found.
-            for (int y = 0; y < bitmap.Height && !colorFound; y++)
+            if (image == null)
             {
-                for (int x = 0; x < bitmap.Width && !colorFound; x++)
-                {
-                    // Retrieve the color of the current pixel.
-                    Color pixelColor = bitmap.GetPixel(x, y);
+                Console.WriteLine("Failed to load the barcode image as a bitmap.");
+                return;
+            }
 
-                    // Compare the pixel's ARGB value with the target blue color.
-                    if (pixelColor.ToArgb() == Aspose.Drawing.Color.Blue.ToArgb())
+            // Iterate over each pixel until the color is found
+            for (int y = 0; y < image.Height && !colorFound; y++)
+            {
+                for (int x = 0; x < image.Width && !colorFound; x++)
+                {
+                    // Compare the pixel's ARGB value with the expected bar color's ARGB value
+                    if (image.GetPixel(x, y).ToArgb() == barColor.ToArgb())
                     {
-                        colorFound = true; // Blue color detected.
+                        colorFound = true;
                     }
                 }
             }
         }
 
-        // Output the verification result to the console.
+        // --------------------------------------------------------------------
+        // Output verification result
+        // --------------------------------------------------------------------
         Console.WriteLine(colorFound
-            ? "Success: The barcode image contains the specified bar color."
-            : "Failure: The specified bar color was not found in the barcode image.");
+            ? "Verification succeeded: bar color is present in the image."
+            : "Verification failed: bar color not found in the image.");
     }
 }

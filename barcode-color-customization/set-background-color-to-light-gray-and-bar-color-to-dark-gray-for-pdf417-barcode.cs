@@ -1,33 +1,34 @@
+// Title: PDF417 Barcode with Custom Colors
+// Description: Demonstrates setting background and bar colors for a PDF417 barcode and saving it as a PNG image.
+// Prompt: Set the background color to light gray and bar color to dark gray for a PDF417 barcode.
+// Tags: pdf417, barcode, color, png, aspose.barcode, aspose.drawing
+
 using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a PDF417 barcode using Aspose.BarCode and saving it as a PNG file.
+/// Example program that generates a PDF417 barcode with custom background and bar colors.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a PDF417 barcode with sample text,
-    /// customizes its colors, saves it to a file, and writes a confirmation to the console.
+    /// Entry point. Creates a PDF417 barcode, applies custom colors, and saves it as a PNG file.
     /// </summary>
     static void Main()
     {
-        // Initialize a BarcodeGenerator for PDF417 format with the desired text.
+        // Initialize a barcode generator for PDF417 with sample text
         using (var generator = new BarcodeGenerator(EncodeTypes.Pdf417, "Sample PDF417 Text"))
         {
-            // Configure the background color of the barcode image to light gray.
+            // Apply a light gray background to the barcode image
             generator.Parameters.BackColor = Color.LightGray;
 
-            // Configure the foreground (bar) color of the barcode to dark gray.
+            // Apply a dark gray color to the barcode bars (foreground)
             generator.Parameters.Barcode.BarColor = Color.DarkGray;
 
-            // Save the generated barcode image as a PNG file named "pdf417.png".
-            generator.Save("pdf417.png");
+            // Persist the generated barcode to a PNG file
+            generator.Save("pdf417_custom_colors.png");
         }
-
-        // Output a message indicating successful generation and location of the file.
-        Console.WriteLine("PDF417 barcode generated: pdf417.png");
     }
 }
