@@ -1,56 +1,65 @@
+// Title: Code128 checksum verification in BMP image
+// Description: Demonstrates how to read Code128 barcodes from a BMP file and display their checksum status.
+// Prompt: Check 1D barcode checksum status for Code128 barcodes detected in a BMP file.
+// Tags: code128, checksum, barcode, bmp, aspose.barcode, console
+
 using System;
 using System.IO;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates how to read Code128 barcodes from a BMP image using Aspose.BarCode.
+/// Example program that reads Code128 barcodes from a BMP image and reports checksum information.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Reads a BMP image, detects Code128 barcodes, and displays their details.
+    /// Entry point. Loads the image, reads barcodes, and prints type, text, and checksum status.
     /// </summary>
     static void Main()
     {
-        // Path to the BMP image containing Code128 barcodes.
-        const string imagePath = "barcode.bmp";
+        // Path to the BMP image containing barcodes
+        string imagePath = "barcode.bmp";
 
-        // Verify that the file exists before attempting to read it.
+        // Verify that the file exists before attempting to load it
         if (!File.Exists(imagePath))
         {
             Console.WriteLine($"File not found: {imagePath}");
             return;
         }
 
-        // Initialize a BarCodeReader that scans only for Code128 barcodes.
-        using (var reader = new BarCodeReader(imagePath, DecodeType.Code128))
+        // Load the image as a bitmap (ensures proper disposal with using)
+        using (Bitmap bitmap = new Bitmap(imagePath))
         {
-            // Enable checksum validation during barcode recognition.
-            reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
-
-            // Iterate through all detected barcodes in the image.
-            foreach (var result in reader.ReadBarCodes())
+            // Initialize the barcode reader for Code128 symbology
+            using (BarCodeReader reader = new BarCodeReader(bitmap, DecodeType.Code128))
             {
-                // Output the type of the detected barcode (e.g., Code128).
-                Console.WriteLine($"Detected barcode type: {result.CodeTypeName}");
+                // Enable checksum validation (optional, ensures checksum is checked)
+                reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
 
-                // Output the decoded text of the barcode.
-                Console.WriteLine($"Code text: {result.CodeText}");
-
-                // For 1D barcodes, retrieve the checksum value from the extended data.
-                // If the checksum string is empty, the checksum could not be determined.
-                string checksum = result.Extended.OneD.CheckSum;
-                if (!string.IsNullOrEmpty(checksum))
+                // Iterate through all detected barcodes in the image
+                foreach (BarCodeResult result in reader.ReadBarCodes())
                 {
-                    Console.WriteLine($"Checksum: {checksum} (valid)");
-                }
-                else
-                {
-                    Console.WriteLine("Checksum: not available or invalid");
-                }
+                    // Output the detected barcode type (e.g., Code128)
+                    Console.WriteLine($"Detected Barcode Type: {result.CodeTypeName}");
 
-                Console.WriteLine(); // Blank line between results for readability.
+                    // Output the decoded text of the barcode
+                    Console.WriteLine($"Code Text: {result.CodeText}");
+
+                    // Retrieve checksum from extended parameters (if available)
+                    string checksum = result.Extended.OneD?.CheckSum;
+                    if (!string.IsNullOrEmpty(checksum))
+                    {
+                        Console.WriteLine($"Checksum: {checksum}");
+                    }
+                    else
+                    {
+                        Console.WriteLine("Checksum: not available");
+                    }
+
+                    // Add a blank line for readability between results
+                    Console.WriteLine();
+                }
             }
         }
     }

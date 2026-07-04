@@ -1,3 +1,8 @@
+// Title: Capture barcode region as rectangle and convert to absolute pixel coordinates
+// Description: Demonstrates generating a Code128 barcode, reading it, and extracting the bounding rectangle in pixel units.
+// Prompt: Capture barcode region as a rectangle object and convert coordinates to absolute pixel values.
+// Tags: barcode symbology, barcode generation, barcode recognition, rectangle, pixel coordinates, aspose.barcode, aspose.drawing
+
 using System;
 using System.IO;
 using Aspose.BarCode;
@@ -6,58 +11,57 @@ using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates how to read barcodes from an image using Aspose.BarCode.
+/// Demonstrates barcode generation, recognition, and extraction of the barcode region as pixel coordinates.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Loads an image, detects barcodes, and prints their details.
+    /// Entry point. Generates a barcode image, reads it, and prints the barcode type, text, and region rectangle in pixels.
     /// </summary>
     static void Main()
     {
-        // Path to the image that contains one or more barcodes.
+        // Define output image path
         string imagePath = "barcode.png";
 
-        // Verify that the specified file exists before attempting to load it.
+        // Create a simple Code128 barcode and save it to a file
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
+        {
+            generator.Save(imagePath);
+        }
+
+        // Verify that the image file was created successfully
         if (!File.Exists(imagePath))
         {
-            Console.WriteLine($"File not found: {imagePath}");
+            Console.WriteLine($"Error: Barcode image not found at '{imagePath}'.");
             return;
         }
 
-        // Load the image into a Bitmap object (wrapped in a using statement for proper disposal).
+        // Load the generated barcode image using Aspose.Drawing
         using (var bitmap = new Bitmap(imagePath))
         {
-            // Initialize a barcode reader that can decode all supported barcode types.
+            // Initialize the reader for all supported barcode types
             using (var reader = new BarCodeReader(bitmap, DecodeType.AllSupportedTypes))
             {
-                // Attempt to read all barcodes present in the image.
-                BarCodeResult[] results = reader.ReadBarCodes();
+                // Perform recognition and retrieve all detected barcodes
+                var results = reader.ReadBarCodes();
 
-                // If no barcodes were found, inform the user and exit.
+                // If no barcodes were detected, inform the user and exit
                 if (results.Length == 0)
                 {
-                    Console.WriteLine("No barcodes detected.");
+                    Console.WriteLine("No barcode detected.");
                     return;
                 }
 
-                // Iterate through each detected barcode and output its details.
+                // Process each detected barcode
                 foreach (var result in results)
                 {
-                    // Retrieve the region rectangle (floating‑point coordinates) of the barcode.
-                    var regionRect = result.Region.Rectangle;
+                    // Region.Rectangle provides the bounding box in absolute pixel coordinates
+                    var rect = result.Region.Rectangle;
 
-                    // Convert the floating‑point rectangle to integer pixel values (rounded).
-                    int x = (int)Math.Round((double)regionRect.X);
-                    int y = (int)Math.Round((double)regionRect.Y);
-                    int width = (int)Math.Round((double)regionRect.Width);
-                    int height = (int)Math.Round((double)regionRect.Height);
-
-                    // Display barcode type, decoded text, and its location within the image.
-                    Console.WriteLine($"Barcode Type: {result.CodeType}");
-                    Console.WriteLine($"Code Text   : {result.CodeText}");
-                    Console.WriteLine($"Region (pixels) - X:{x}, Y:{y}, Width:{width}, Height:{height}");
-                    Console.WriteLine();
+                    // Output the barcode details and its region rectangle
+                    Console.WriteLine($"Barcode Type: {result.CodeTypeName}");
+                    Console.WriteLine($"Code Text: {result.CodeText}");
+                    Console.WriteLine($"Region (pixels): X={rect.X:F0}, Y={rect.Y:F0}, Width={rect.Width:F0}, Height={rect.Height:F0}");
                 }
             }
         }

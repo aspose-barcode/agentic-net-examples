@@ -1,74 +1,75 @@
+// Title: Read DataBar Expanded barcode fields from JPEG
+// Description: Demonstrates loading a JPEG image, recognizing a GS1 DataBar Expanded barcode, and extracting its data fields and numeric values.
+// Prompt: Read DataBar expanded data fields and numeric values from a JPEG image.
+// Tags: databar expanded, barcode recognition, jpeg, numeric extraction, aspose.barcode, aspose.drawing
+
 using System;
 using System.IO;
 using System.Text.RegularExpressions;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates reading GS1 DataBar Expanded barcodes from an image file
-/// and extracting Application Identifier (AI) fields using regular expressions.
+/// Example program that reads GS1 DataBar Expanded barcodes from a JPEG image
+/// and extracts numeric values from the decoded text.
 /// </summary>
 class Program
 {
     /// <summary>
     /// Entry point of the application.
-    /// Reads a JPEG image, detects DataBar Expanded barcodes, and parses AI/value pairs.
+    /// Loads the image, performs barcode recognition, and prints extracted data.
     /// </summary>
     static void Main()
     {
-        // Path to the JPEG image containing the GS1 DataBar Expanded barcode
+        // Path to the JPEG image containing a GS1 DataBar Expanded barcode.
         string imagePath = "databar_expanded.jpg";
 
-        // Verify that the image file exists before attempting to read it
+        // Verify that the image file exists before attempting to load it.
         if (!File.Exists(imagePath))
         {
-            Console.WriteLine($"Image file not found: {imagePath}");
+            Console.WriteLine($"File not found: {imagePath}");
             return;
         }
 
-        // Initialize a BarCodeReader configured for the DataBar Expanded symbology
-        using (var reader = new BarCodeReader(imagePath, DecodeType.DatabarExpanded))
+        // Load the image as a bitmap using Aspose.Drawing.
+        using (var bitmap = new Bitmap(imagePath))
         {
-            // Attempt to read all barcodes present in the image
-            BarCodeResult[] results = reader.ReadBarCodes();
-
-            // If no barcodes were detected, inform the user and exit
-            if (results.Length == 0)
+            // Initialize a BarCodeReader to detect only DataBar Expanded barcodes.
+            using (var reader = new BarCodeReader(bitmap, DecodeType.DatabarExpanded))
             {
-                Console.WriteLine("No barcodes were detected.");
-                return;
-            }
+                // Execute the recognition process.
+                BarCodeResult[] results = reader.ReadBarCodes();
 
-            // Regular expression to extract Application Identifier (AI) and its numeric value
-            // Example CodeText: "(01)12345678901231(10)ABC123"
-            Regex aiRegex = new Regex(@"\((\d{2,4})\)(\d+)", RegexOptions.Compiled);
-
-            // Process each detected barcode result
-            foreach (BarCodeResult result in results)
-            {
-                // Output basic barcode information
-                Console.WriteLine($"Barcode Type: {result.CodeTypeName}");
-                Console.WriteLine($"Raw CodeText: {result.CodeText}");
-
-                // Use the regex to find AI/value pairs within the CodeText
-                MatchCollection matches = aiRegex.Matches(result.CodeText);
-                if (matches.Count > 0)
+                // If no barcodes were found, inform the user and exit.
+                if (results.Length == 0)
                 {
-                    Console.WriteLine("Extracted DataBar Expanded fields:");
-                    foreach (Match match in matches)
+                    Console.WriteLine("No barcodes were detected.");
+                    return;
+                }
+
+                // Iterate through each detected barcode and display its details.
+                foreach (var result in results)
+                {
+                    Console.WriteLine($"Barcode Type: {result.CodeTypeName}");
+                    Console.WriteLine($"Code Text: {result.CodeText}");
+
+                    // Use a regular expression to extract all numeric substrings from the code text.
+                    var matches = Regex.Matches(result.CodeText ?? string.Empty, @"\d+");
+                    if (matches.Count > 0)
                     {
-                        // Group 1 = AI, Group 2 = numeric value associated with the AI
-                        string ai = match.Groups[1].Value;
-                        string value = match.Groups[2].Value;
-                        Console.WriteLine($"  AI ({ai}) = {value}");
+                        Console.WriteLine("Numeric values:");
+                        foreach (Match match in matches)
+                        {
+                            Console.WriteLine($"  {match.Value}");
+                        }
                     }
-                }
-                else
-                {
-                    // No AI/value pairs matched the expected pattern
-                    Console.WriteLine("No numeric AI fields found in the CodeText.");
-                }
+                    else
+                    {
+                        Console.WriteLine("No numeric values found.");
+                    }
 
-                Console.WriteLine(); // Blank line between results for readability
+                    Console.WriteLine(); // Blank line between barcodes for readability.
+                }
             }
         }
     }

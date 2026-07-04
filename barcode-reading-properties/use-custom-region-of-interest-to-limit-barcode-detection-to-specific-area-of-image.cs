@@ -1,49 +1,67 @@
+// Title: Barcode detection with custom region of interest
+// Description: Demonstrates limiting barcode recognition to a specific area of an image using Aspose.BarCode.
+// Prompt: Use custom region of interest to limit barcode detection to a specific area of an image.
+// Tags: barcode, region of interest, detection, aspose.barcode, csharp
+
 using System;
+using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a barcode, defining a region of interest,
-/// and reading barcodes within that region using Aspose.BarCode.
+/// Example program that generates a barcode (if needed) and reads it using a custom region of interest.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a barcode image, defines a central ROI, and reads barcodes within that ROI.
+    /// Entry point. Generates a sample barcode image if missing, then reads barcodes within the top‑left quarter of the image.
     /// </summary>
     static void Main()
     {
-        // Create a barcode generator for Code128 with sample text
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
+        // Path for the sample barcode image
+        string imagePath = "sample_barcode.png";
+
+        // Generate a barcode image if it does not exist
+        if (!File.Exists(imagePath))
         {
-            // Generate the barcode image in memory
-            using (Bitmap barcodeImage = generator.GenerateBarCodeImage())
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
             {
-                // Calculate coordinates for a central region of interest (ROI)
-                int roiX = barcodeImage.Width / 4;          // X offset (quarter width)
-                int roiY = barcodeImage.Height / 4;         // Y offset (quarter height)
-                int roiWidth = barcodeImage.Width / 2;      // Width (half of image)
-                int roiHeight = barcodeImage.Height / 2;    // Height (half of image)
+                // Set a simple black bar color
+                generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
+                // Save as PNG
+                generator.Save(imagePath, BarCodeImageFormat.Png);
+                Console.WriteLine($"Barcode image generated: {imagePath}");
+            }
+        }
 
-                // Define the ROI rectangle
-                var region = new Rectangle(roiX, roiY, roiWidth, roiHeight);
+        // Verify the image file exists before attempting recognition
+        if (!File.Exists(imagePath))
+        {
+            Console.WriteLine($"Error: Image file '{imagePath}' not found.");
+            return;
+        }
 
-                // Initialize a barcode reader that scans only within the ROI
-                using (var reader = new BarCodeReader(barcodeImage, region, DecodeType.AllSupportedTypes))
+        // Load the image and define a custom region of interest (top‑left quarter)
+        using (var bitmap = new Bitmap(imagePath))
+        {
+            // Define a rectangle covering the top‑left quarter of the image
+            var roi = new Rectangle(0, 0, bitmap.Width / 2, bitmap.Height / 2);
+
+            // Create a reader and set the image with the region of interest
+            using (var reader = new BarCodeReader())
+            {
+                reader.SetBarCodeImage(bitmap, roi);
+
+                // Read barcodes within the specified region
+                foreach (var result in reader.ReadBarCodes())
                 {
-                    // Iterate through all detected barcodes in the ROI
-                    foreach (var result in reader.ReadBarCodes())
-                    {
-                        // Output barcode type and decoded text
-                        Console.WriteLine($"Detected Type: {result.CodeTypeName}");
-                        Console.WriteLine($"Code Text: {result.CodeText}");
-
-                        // Retrieve and display the bounding rectangle of the detected barcode
-                        var bounds = result.Region.Rectangle;
-                        Console.WriteLine($"Barcode Region - X: {bounds.X}, Y: {bounds.Y}, Width: {bounds.Width}, Height: {bounds.Height}");
-                    }
+                    Console.WriteLine($"Detected Type: {result.CodeTypeName}");
+                    Console.WriteLine($"Detected Text: {result.CodeText}");
+                    var bounds = result.Region.Rectangle;
+                    Console.WriteLine($"Region - X:{bounds.X}, Y:{bounds.Y}, Width:{bounds.Width}, Height:{bounds.Height}");
                 }
             }
         }

@@ -1,86 +1,114 @@
+// Title: Detect rotated barcode and verify orientation
+// Description: Generates a Code128 barcode, rotates the image, then reads the barcode and checks that the detected orientation matches the known rotation.
+// Prompt: Detect barcodes in rotated images and verify orientation angle matches expected rotation.
+// Tags: code128, barcode detection, rotation, orientation, aspose.barcode, image processing
+
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a rotated barcode, saving it to a file,
-/// and then reading the barcode to verify its detected orientation.
+/// Demonstrates barcode generation, image rotation, and orientation verification using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a rotated barcode image, saves it, and validates the orientation
-    /// using Aspose.BarCode's recognition capabilities.
+    /// Entry point of the example. Generates a barcode, rotates it, reads it back, and validates the detected angle.
     /// </summary>
     static void Main()
     {
-        // Define the output image file path.
-        string imagePath = "rotated_barcode.png";
+        // Expected rotation angle (in degrees) applied to the image
+        const double expectedAngle = 90.0;
 
-        // Expected rotation angle in degrees for the generated barcode.
-        float expectedAngle = 45f;
+        // File paths for the original and rotated barcode images
+        string originalPath = "original.png";
+        string rotatedPath = "rotated.png";
 
         // ------------------------------------------------------------
-        // Generate a barcode image with the specified rotation angle.
+        // 1. Generate a simple Code128 barcode and save it as PNG
         // ------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
         {
-            // Apply the desired rotation to the barcode.
-            generator.Parameters.RotationAngle = expectedAngle;
-
-            // Save the rotated barcode image to the file system.
-            generator.Save(imagePath);
+            // Save the generated barcode image to disk
+            generator.Save(originalPath, BarCodeImageFormat.Png);
         }
 
-        // ------------------------------------------------------------
-        // Verify that the image file was successfully created.
-        // ------------------------------------------------------------
-        if (!File.Exists(imagePath))
+        // Verify that the original barcode image was successfully created
+        if (!File.Exists(originalPath))
         {
-            Console.WriteLine($"Error: Image file '{imagePath}' was not created.");
+            Console.WriteLine($"Failed to create barcode image: {originalPath}");
             return;
         }
 
         // ------------------------------------------------------------
-        // Read the barcode from the saved image and obtain its orientation.
+        // 2. Load the original image, rotate it 90° clockwise, and save
         // ------------------------------------------------------------
-        using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
+        using (var originalBitmap = new Bitmap(originalPath))
         {
-            // Perform barcode recognition.
-            BarCodeResult[] results = reader.ReadBarCodes();
-
-            // Check if any barcodes were detected.
-            if (results.Length == 0)
+            // Clone the bitmap to avoid altering the original file
+            using (var rotatedBitmap = (Bitmap)originalBitmap.Clone())
             {
-                Console.WriteLine("No barcodes were detected in the image.");
-                return;
+                // Rotate the image 90 degrees clockwise (no flip)
+                rotatedBitmap.RotateFlip(RotateFlipType.Rotate90FlipNone);
+                // Save the rotated image to disk
+                rotatedBitmap.Save(rotatedPath, ImageFormat.Png);
             }
+        }
 
-            // Iterate through each detected barcode result.
-            foreach (var result in results)
+        // Verify that the rotated image was successfully created
+        if (!File.Exists(rotatedPath))
+        {
+            Console.WriteLine($"Failed to create rotated image: {rotatedPath}");
+            return;
+        }
+
+        // ------------------------------------------------------------
+        // 3. Read the rotated barcode image and evaluate orientation
+        // ------------------------------------------------------------
+        using (var reader = new BarCodeReader(rotatedPath, DecodeType.AllSupportedTypes))
+        {
+            // Iterate through all detected barcodes (should be only one)
+            foreach (var result in reader.ReadBarCodes())
             {
-                // Detected orientation angle (in degrees) of the barcode region.
-                double detectedAngle = result.Region.Angle;
-
-                // Output the decoded text and detected orientation.
+                // Output the decoded barcode text
                 Console.WriteLine($"Detected CodeText: {result.CodeText}");
-                Console.WriteLine($"Detected Orientation Angle: {detectedAngle} degrees");
 
-                // Verify that the detected orientation matches the expected rotation.
-                double tolerance = 0.5; // allowable deviation in degrees
-                if (Math.Abs(detectedAngle - expectedAngle) <= tolerance)
+                // Retrieve the angle of the barcode region (in degrees)
+                double detectedAngle = result.Region.Angle;
+                Console.WriteLine($"Detected Angle: {detectedAngle} degrees");
+
+                // Allow a small tolerance when comparing angles
+                double tolerance = 0.5;
+                bool matchesExpected = Math.Abs(detectedAngle - expectedAngle) <= tolerance ||
+                                       Math.Abs(detectedAngle - (360 - expectedAngle)) <= tolerance;
+
+                // Report whether the detected orientation matches the expected rotation
+                if (matchesExpected)
                 {
-                    Console.WriteLine("Orientation verification: SUCCESS (angle matches expected rotation).");
+                    Console.WriteLine("Orientation matches expected rotation.");
                 }
                 else
                 {
-                    Console.WriteLine("Orientation verification: FAILURE (angle does not match expected rotation).");
+                    Console.WriteLine("Orientation does NOT match expected rotation.");
                 }
             }
+        }
+
+        // ------------------------------------------------------------
+        // 4. Clean up temporary files (optional)
+        // ------------------------------------------------------------
+        try
+        {
+            File.Delete(originalPath);
+            File.Delete(rotatedPath);
+        }
+        catch
+        {
+            // Suppress any exceptions during cleanup
         }
     }
 }

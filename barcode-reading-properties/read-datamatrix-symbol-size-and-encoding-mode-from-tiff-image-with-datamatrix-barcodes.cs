@@ -1,10 +1,17 @@
+// Title: Read DataMatrix Symbol Size and Encoding Mode from TIFF
+// Description: Demonstrates how to load a TIFF image containing DataMatrix barcodes, iterate through detected symbols, and attempt to retrieve symbol size and encoding mode (which are not exposed by the API).
+// Prompt: Read DataMatrix symbol size and encoding mode from a TIFF image with DataMatrix barcodes.
+// Tags: datamatrix, barcode, recognition, tiff, aspose.barcode, aspnet
+
 using System;
 using System.IO;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates how to read DataMatrix barcodes from a TIFF image using Aspose.BarCode.
+/// Example program that reads DataMatrix barcodes from a TIFF image
+/// and displays available recognition information.
 /// </summary>
 class Program
 {
@@ -13,33 +20,39 @@ class Program
     /// </summary>
     static void Main()
     {
-        // Path to the TIFF image containing DataMatrix barcodes.
-        string imagePath = "datamatrix.tif";
+        // Path to the TIFF image containing DataMatrix barcodes
+        string imagePath = "datamatrix.tiff";
 
-        // Verify that the file exists before attempting to read it.
+        // Verify that the file exists before attempting to read it
         if (!File.Exists(imagePath))
         {
             Console.WriteLine($"File not found: {imagePath}");
             return;
         }
 
-        // Load the image as a Bitmap (Aspose.Drawing) and create a BarCodeReader
-        // configured to decode only DataMatrix barcodes.
-        using (Bitmap bitmap = new Bitmap(imagePath))
-        using (BarCodeReader reader = new BarCodeReader(bitmap, DecodeType.DataMatrix))
+        // Create a BarCodeReader configured for DataMatrix symbology
+        using (var reader = new BarCodeReader(imagePath, DecodeType.DataMatrix))
         {
-            // Iterate through all detected barcodes.
+            // Iterate through all detected barcodes in the image
             foreach (var result in reader.ReadBarCodes())
             {
-                // Output the type of the detected barcode.
+                // Output basic barcode information
                 Console.WriteLine($"Detected barcode type: {result.CodeTypeName}");
-                // Output the decoded text of the barcode.
                 Console.WriteLine($"Code text: {result.CodeText}");
 
-                // The Aspose.BarCode API does not expose DataMatrix symbol size
-                // (DataMatrixVersion) or encoding mode (DataMatrixEncodeMode) via
-                // the recognition result, so these details cannot be retrieved.
-                Console.WriteLine("DataMatrix symbol size and encoding mode are not available via the recognition API.");
+                // Retrieve DataMatrix‑specific extended parameters
+                var dmExt = result.Extended.DataMatrix;
+
+                // Symbol size (version) and encoding mode are not exposed directly
+                // via the public recognition API. We report their unavailability.
+                Console.WriteLine("Symbol size (version): not available via recognition API");
+                Console.WriteLine("Encoding mode: not available via recognition API");
+
+                // Additional DataMatrix flags that are available
+                Console.WriteLine($"Is Reader Programming: {dmExt.IsReaderProgramming}");
+                Console.WriteLine($"Structured Append Barcode ID: {dmExt.StructuredAppendBarcodeId}");
+                Console.WriteLine($"Structured Append Barcodes Count: {dmExt.StructuredAppendBarcodesCount}");
+                Console.WriteLine($"Structured Append File ID: {dmExt.StructuredAppendFileId}");
                 Console.WriteLine();
             }
         }

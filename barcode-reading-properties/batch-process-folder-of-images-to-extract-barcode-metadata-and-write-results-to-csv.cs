@@ -1,103 +1,111 @@
+// Title: Batch Barcode Extraction to CSV
+// Description: Processes all images in a folder, reads any barcodes present, and writes their metadata to a CSV file.
+// Prompt: Batch process a folder of images to extract barcode metadata and write results to CSV.
+// Tags: barcode, extraction, csv, batch, aspose.barcode, aspose.drawing
+
 using System;
 using System.IO;
-using System.Collections.Generic;
+using System.Text;
 using Aspose.BarCode;
+using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Scans a folder for image files, reads any barcodes found, and writes the results to a CSV file.
+/// Demonstrates how to batch‑process a directory of images, extract barcode information,
+/// and export the results to a CSV file using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
     /// Entry point of the application.
-    /// Accepts an optional folder path argument; defaults to "Barcodes" if none provided.
+    /// Accepts an optional folder path argument; otherwise defaults to a folder named "Images".
+    /// Scans supported image files, reads any barcodes, and writes details to a CSV file.
     /// </summary>
-    /// <param name="args">Command‑line arguments.</param>
+    /// <param name="args">Command‑line arguments; first argument may specify the folder to process.</param>
     static void Main(string[] args)
     {
-        // Determine the folder to scan. Use a default if none provided.
-        string folderPath = args.Length > 0 ? args[0] : "Barcodes";
+        // Determine the folder to process. Use argument if provided, otherwise default to "Images".
+        string folderPath = args.Length > 0 ? args[0] : "Images";
 
-        // Verify that the folder exists before proceeding.
+        // Verify that the target folder exists.
         if (!Directory.Exists(folderPath))
         {
             Console.WriteLine($"Folder not found: {folderPath}");
             return;
         }
 
-        // Prepare CSV output file path.
+        // Prepare CSV output file path inside the target folder.
         string csvPath = Path.Combine(folderPath, "barcode_results.csv");
 
-        // Open a StreamWriter for the CSV file (overwrite if it already exists).
-        using (var writer = new StreamWriter(csvPath, false))
+        // Open a StreamWriter for the CSV file (UTF‑8 encoding, overwrite if exists).
+        using (var csvWriter = new StreamWriter(csvPath, false, Encoding.UTF8))
         {
             // Write CSV header line.
-            writer.WriteLine("FileName,BarcodeType,CodeText,Confidence,ReadingQuality,Angle,RegionX,RegionY,RegionWidth,RegionHeight");
+            csvWriter.WriteLine("FileName,CodeType,CodeText,Confidence,ReadingQuality,RegionX,RegionY,RegionWidth,RegionHeight");
 
-            // Define supported image extensions to search for.
-            string[] extensions = new[] { ".png", ".jpg", ".jpeg", ".bmp", ".tiff", ".tif" };
-            var imageFiles = new List<string>();
+            // Define supported image file extensions.
+            string[] extensions = new[] { ".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff" };
 
-            // Collect all image files with the supported extensions in the target folder (non‑recursive).
-            foreach (var ext in extensions)
+            // Retrieve all files in the folder (filtering later by extension).
+            var imageFiles = Directory.GetFiles(folderPath);
+
+            // Iterate over each file in the directory.
+            foreach (var file in imageFiles)
             {
-                imageFiles.AddRange(Directory.GetFiles(folderPath, "*" + ext, SearchOption.TopDirectoryOnly));
-            }
+                // Skip files that do not have a supported image extension.
+                if (Array.IndexOf(extensions, Path.GetExtension(file).ToLowerInvariant()) < 0)
+                    continue;
 
-            // Limit processing to a safe sample size (e.g., first 5 images) to avoid long runs.
-            int processedCount = 0;
-            const int maxSamples = 5;
-
-            // Iterate over each discovered image file.
-            foreach (var imagePath in imageFiles)
-            {
-                // Stop if the maximum sample count has been reached.
-                if (processedCount >= maxSamples)
-                    break;
-
-                // Ensure the file still exists (it could have been removed meanwhile).
-                if (!File.Exists(imagePath))
+                // Ensure the file still exists before processing.
+                if (!File.Exists(file))
                 {
-                    Console.WriteLine($"File not found: {imagePath}");
+                    Console.WriteLine($"File not found (skipped): {file}");
                     continue;
                 }
 
-                // Read barcodes from the image using all supported barcode types.
-                using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
+                // Load the image using Aspose.Drawing.Bitmap.
+                using (var bitmap = new Bitmap(file))
                 {
-                    // Process each barcode detected in the current image.
-                    foreach (var result in reader.ReadBarCodes())
+                    // Initialize a barcode reader that attempts to decode all supported types.
+                    using (var reader = new BarCodeReader(bitmap, DecodeType.AllSupportedTypes))
                     {
-                        // Extract relevant metadata from the barcode result.
-                        string fileName = Path.GetFileName(imagePath);
-                        string barcodeType = result.CodeTypeName ?? "";
-                        string codeText = result.CodeText ?? "";
-                        int confidence = (int)result.Confidence;
-                        double readingQuality = result.ReadingQuality;
-                        double angle = result.Region.Angle;
+                        // Read all barcodes found in the current image.
+                        foreach (var result in reader.ReadBarCodes())
+                        {
+                            // Extract the bounding rectangle of the detected barcode region.
+                            var rect = result.Region.Rectangle;
 
-                        // Extract region rectangle and round values to integers.
-                        var rect = result.Region.Rectangle;
-                        int regionX = (int)Math.Round((double)rect.X);
-                        int regionY = (int)Math.Round((double)rect.Y);
-                        int regionWidth = (int)Math.Round((double)rect.Width);
-                        int regionHeight = (int)Math.Round((double)rect.Height);
+                            // Build a CSV line with the required fields.
+                            var line = new StringBuilder();
+                            line.Append(Path.GetFileName(file));
+                            line.Append(',');
+                            line.Append(result.CodeTypeName);
+                            line.Append(',');
+                            // Replace commas in the code text to avoid CSV column misalignment.
+                            line.Append(result.CodeText?.Replace(",", " "));
+                            line.Append(',');
+                            line.Append(result.Confidence);
+                            line.Append(',');
+                            line.Append(result.ReadingQuality);
+                            line.Append(',');
+                            line.Append(rect.X);
+                            line.Append(',');
+                            line.Append(rect.Y);
+                            line.Append(',');
+                            line.Append(rect.Width);
+                            line.Append(',');
+                            line.Append(rect.Height);
 
-                        // Simple CSV escaping: wrap in quotes and double any internal quotes.
-                        string Escape(string s) => $"\"{s.Replace("\"", "\"\"")}\"";
-
-                        // Write a CSV line with the extracted data.
-                        writer.WriteLine($"{Escape(fileName)},{Escape(barcodeType)},{Escape(codeText)},{confidence},{readingQuality},{angle},{regionX},{regionY},{regionWidth},{regionHeight}");
+                            // Write the constructed line to the CSV file.
+                            csvWriter.WriteLine(line.ToString());
+                        }
                     }
                 }
-
-                // Increment the processed image counter.
-                processedCount++;
             }
         }
 
-        // Inform the user that processing is complete and where to find the results.
+        // Inform the user that processing is complete and provide the CSV location.
         Console.WriteLine($"Barcode extraction completed. Results saved to: {csvPath}");
     }
 }

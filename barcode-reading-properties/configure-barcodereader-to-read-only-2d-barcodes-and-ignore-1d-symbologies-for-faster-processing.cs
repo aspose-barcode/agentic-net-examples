@@ -1,57 +1,60 @@
+// Title: Read Only 2D Barcodes with BarCodeReader
+// Description: Demonstrates configuring BarCodeReader to decode only 2D symbologies, skipping 1D types for faster processing.
+// Prompt: Configure BarCodeReader to read only 2D barcodes and ignore 1D symbologies for faster processing.
+// Tags: barcode, 2d, decode, aspose, barcodereader
+
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a QR code, reading it, and cleaning up the temporary file.
+/// Example program that generates a QR code (if needed) and reads only 2D barcodes from an image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a QR code image, reads it back, displays the decoded information,
-    /// and then deletes the temporary file.
+    /// Entry point. Generates a sample QR code image (if missing) and uses BarCodeReader configured
+    /// to decode only 2D symbologies, ignoring all 1D types for improved performance.
     /// </summary>
     static void Main()
     {
-        // Define the path for a temporary PNG file that will hold the sample QR code.
-        string tempFile = Path.Combine(Path.GetTempPath(), "sample_qr.png");
+        // Path for the sample QR code image
+        string imagePath = "sample_qr.png";
 
-        // Generate a QR code image with the text "Hello Aspose" and save it to the temporary file.
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Hello Aspose"))
+        // Generate a QR code image if it does not already exist
+        if (!File.Exists(imagePath))
         {
-            generator.Save(tempFile);
-        }
-
-        // Verify that the file was successfully created before attempting to read it.
-        if (!File.Exists(tempFile))
-        {
-            Console.WriteLine("Failed to create the sample barcode image.");
-            return;
-        }
-
-        // Open the generated image and create a reader that only looks for 2D barcodes.
-        using (var bitmap = new Bitmap(tempFile))
-        using (var reader = new BarCodeReader(bitmap, DecodeType.Types2D))
-        {
-            // Iterate through all detected barcodes and output their type and decoded text.
-            foreach (var result in reader.ReadBarCodes())
+            // Create a QR code generator with the desired text
+            using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Sample QR Code"))
             {
-                Console.WriteLine($"Detected Type: {result.CodeTypeName}");
-                Console.WriteLine($"Decoded Text : {result.CodeText}");
+                // Save the generated QR code as a PNG file
+                generator.Save(imagePath, BarCodeImageFormat.Png);
             }
         }
 
-        // Attempt to delete the temporary file; ignore any exceptions as the OS will clean up later.
-        try
+        // Verify that the image file exists before attempting to read it
+        if (!File.Exists(imagePath))
         {
-            File.Delete(tempFile);
+            Console.WriteLine($"Error: Image file '{imagePath}' not found.");
+            return;
         }
-        catch
+
+        // Create a BarCodeReader and configure it to process only 2D barcodes
+        using (var reader = new BarCodeReader(imagePath))
         {
-            // No action needed – the file will be removed by the operating system eventually.
+            // Set the decode type to all 2D symbologies (ignores 1D types)
+            reader.BarCodeReadType = DecodeType.Types2D;
+
+            // Iterate through all detected barcodes in the image
+            foreach (var result in reader.ReadBarCodes())
+            {
+                // Output the type and decoded text of each 2D barcode
+                Console.WriteLine($"Detected 2D Barcode Type: {result.CodeTypeName}");
+                Console.WriteLine($"Decoded Text: {result.CodeText}");
+            }
         }
     }
 }
