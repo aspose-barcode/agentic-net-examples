@@ -1,37 +1,37 @@
+// Title: Generate barcode with AutoSizeMode.Nearest using only image dimensions
+// Description: Demonstrates creating a Code128 barcode image by setting AutoSizeMode to Nearest and specifying only ImageWidth and ImageHeight. Useful for quickly generating barcodes with desired size without manual scaling.
+// Prompt: Generate a barcode image using AutoSizeMode.Nearest, providing only ImageHeight and ImageWidth parameters.
+// Tags: code128, barcode, autosizemode, nearest, imagegeneration, aspnet, csharp
+
 using System;
-using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generating a Code128 barcode image using Aspose.BarCode.
+/// Example program that generates a Code128 barcode image using AutoSizeMode.Nearest.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Application entry point. Generates a barcode and saves it as a PNG file.
+    /// Entry point. Creates a barcode generator, configures size, saves the image, and writes a confirmation to console.
     /// </summary>
     static void Main()
     {
-        // Determine the full path for the output PNG file in the current directory.
-        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "barcode.png");
-
-        // Initialize a BarcodeGenerator for Code128 symbology with the sample data "123456".
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
+        // Initialize a barcode generator for Code128 with sample text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            // Configure the generator to automatically size the barcode to the nearest possible dimensions.
+            // Set AutoSizeMode to Nearest to let the library choose the best size.
             generator.Parameters.AutoSizeMode = AutoSizeMode.Nearest;
 
-            // Set the desired image dimensions in points (1 point = 1/72 inch). These values are used by the Nearest mode.
-            generator.Parameters.ImageWidth.Point = 200f;
-            generator.Parameters.ImageHeight.Point = 100f;
+            // Define only the image dimensions (width and height) in points.
+            generator.Parameters.ImageWidth.Point = 300f;   // Width in points.
+            generator.Parameters.ImageHeight.Point = 150f; // Height in points.
 
-            // Save the generated barcode image to the specified path.
-            // The file format (PNG) is inferred from the file extension.
-            generator.Save(outputPath);
+            // Save the generated barcode image to a PNG file.
+            generator.Save("barcode.png");
         }
 
-        // Inform the user where the barcode image has been saved.
-        Console.WriteLine($"Barcode image saved to: {outputPath}");
+        // Inform the user that the barcode image has been created.
+        Console.WriteLine("Barcode image generated: barcode.png");
     }
 }

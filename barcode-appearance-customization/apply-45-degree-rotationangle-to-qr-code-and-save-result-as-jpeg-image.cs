@@ -1,31 +1,30 @@
+// Title: QR Code Rotation Example
+// Description: Demonstrates applying a 45-degree rotation to a QR code and saving it as a JPEG image.
+// Prompt: Apply a 45‑degree RotationAngle to a QR code and save the result as a JPEG image.
+// Tags: qr, rotation, jpeg, aspose.barcode, barcodegeneration
+
 using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generating a QR code with a 45-degree rotation and saving it as a JPEG image.
+/// Entry point for the QR code rotation demonstration.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a QR code, rotates it, saves to file, and writes a confirmation to console.
+    /// Generates a QR code, rotates it 45 degrees, and saves it as a JPEG file.
     /// </summary>
     static void Main()
     {
-        // Define the output file name for the generated QR code image
-        string outputPath = "qr45.jpg";
-
-        // Create a BarcodeGenerator instance for QR encoding with the desired text
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Hello World"))
+        // Initialize the QR code generator with the desired text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Hello Aspose"))
         {
-            // Set rotation angle to 45 degrees (clockwise)
+            // Set the rotation angle to 45 degrees.
             generator.Parameters.RotationAngle = 45f;
 
-            // Save the generated barcode as a JPEG image to the specified path
-            generator.Save(outputPath, BarCodeImageFormat.Jpeg);
+            // Persist the rotated QR code image as a JPEG file.
+            generator.Save("qr_rotated.jpg");
         }
-
-        // Inform the user that the QR code image has been saved
-        Console.WriteLine($"QR code saved to {outputPath}");
     }
 }

@@ -1,104 +1,113 @@
+// Title: Barcode Generation with Configurable Appearance Settings
+// Description: Demonstrates reading barcode appearance options from a JSON configuration file and applying them to an Aspose.BarCode generator.
+// Prompt: Design a configuration file format to store barcode appearance settings such as AutoSizeMode, XDimension, and padding values.
+// Tags: barcode, configuration, json, autosizemode, xdimension, padding, aspose.barcode, c#
+
 using System;
 using System.IO;
 using System.Text.Json;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
-/// <summary>
-/// Represents the configuration settings for barcode generation.
-/// </summary>
-public class BarcodeConfig
+namespace BarcodeConfigDemo
 {
     /// <summary>
-    /// Gets or sets the auto-size mode for the barcode.
+    /// Represents the structure of the configuration file.
+    /// The file is a simple JSON document, e.g.:
+    /// {
+    ///   "AutoSizeMode": "Interpolation",
+    ///   "XDimension": 2.5,
+    ///   "Padding": { "Left": 5, "Top": 5, "Right": 5, "Bottom": 5 }
+    /// }
     /// </summary>
-    public AutoSizeMode AutoSizeMode { get; set; }
-
-    /// <summary>
-    /// Gets or sets the X-dimension (module width) of the barcode.
-    /// </summary>
-    public float XDimension { get; set; }
-
-    /// <summary>
-    /// Gets or sets the left padding of the barcode.
-    /// </summary>
-    public float PaddingLeft { get; set; }
-
-    /// <summary>
-    /// Gets or sets the top padding of the barcode.
-    /// </summary>
-    public float PaddingTop { get; set; }
-
-    /// <summary>
-    /// Gets or sets the right padding of the barcode.
-    /// </summary>
-    public float PaddingRight { get; set; }
-
-    /// <summary>
-    /// Gets or sets the bottom padding of the barcode.
-    /// </summary>
-    public float PaddingBottom { get; set; }
-}
-
-class Program
-{
-    /// <summary>
-    /// Entry point of the application. Loads barcode configuration, generates a sample barcode, and saves it to a file.
-    /// </summary>
-    static void Main()
+    public class BarcodeConfig
     {
-        const string configPath = "barcodeConfig.json"; // Path to the JSON configuration file.
-        const string outputPath = "barcode.png";        // Path where the generated barcode image will be saved.
+        // AutoSizeMode as a string; will be parsed to the corresponding enum.
+        public string AutoSizeMode { get; set; } = "None";
 
-        // Ensure a configuration file exists; create a default one if missing.
-        if (!File.Exists(configPath))
+        // Module size of the barcode (in points).
+        public float XDimension { get; set; } = 1.0f;
+
+        // Padding values around the barcode.
+        public PaddingConfig Padding { get; set; } = new PaddingConfig();
+    }
+
+    /// <summary>
+    /// Holds padding values for each side of the barcode.
+    /// </summary>
+    public class PaddingConfig
+    {
+        public float Left { get; set; } = 0f;
+        public float Top { get; set; } = 0f;
+        public float Right { get; set; } = 0f;
+        public float Bottom { get; set; } = 0f;
+    }
+
+    class Program
+    {
+        /// <summary>
+        /// Entry point of the demo. Reads configuration, creates a barcode, and saves it as an image.
+        /// </summary>
+        static void Main()
         {
-            var defaultConfig = new BarcodeConfig
+            const string configFile = "barcodeConfig.json";
+
+            // Ensure a configuration file exists; create a default one if missing.
+            if (!File.Exists(configFile))
             {
-                AutoSizeMode = AutoSizeMode.None,
-                XDimension = 2f,
-                PaddingLeft = 5f,
-                PaddingTop = 5f,
-                PaddingRight = 5f,
-                PaddingBottom = 5f
-            };
+                var defaultConfig = new BarcodeConfig
+                {
+                    AutoSizeMode = "Interpolation",
+                    XDimension = 2.5f,
+                    Padding = new PaddingConfig { Left = 5f, Top = 5f, Right = 5f, Bottom = 5f }
+                };
+                var json = JsonSerializer.Serialize(defaultConfig, new JsonSerializerOptions { WriteIndented = true });
+                File.WriteAllText(configFile, json);
+                Console.WriteLine($"Created default configuration file: {configFile}");
+            }
 
-            // Serialize the default configuration with indentation for readability.
-            var json = JsonSerializer.Serialize(defaultConfig, new JsonSerializerOptions { WriteIndented = true });
-            File.WriteAllText(configPath, json);
-            Console.WriteLine($"Default configuration created at '{configPath}'.");
+            // Load configuration from the JSON file.
+            BarcodeConfig config;
+            try
+            {
+                var json = File.ReadAllText(configFile);
+                config = JsonSerializer.Deserialize<BarcodeConfig>(json);
+                if (config == null)
+                    throw new InvalidOperationException("Configuration deserialization resulted in null.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to read configuration: {ex.Message}");
+                return;
+            }
+
+            // Convert the AutoSizeMode string to the corresponding enum value.
+            if (!Enum.TryParse<AutoSizeMode>(config.AutoSizeMode, ignoreCase: true, out var autoSizeMode))
+            {
+                Console.WriteLine($"Invalid AutoSizeMode value: {config.AutoSizeMode}");
+                return;
+            }
+
+            // Create a barcode generator and apply settings from the configuration.
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+            {
+                // Apply AutoSizeMode.
+                generator.Parameters.AutoSizeMode = autoSizeMode;
+
+                // Apply XDimension (module size) using the Point unit.
+                generator.Parameters.Barcode.XDimension.Point = config.XDimension;
+
+                // Apply padding for each side.
+                generator.Parameters.Barcode.Padding.Left.Point = config.Padding.Left;
+                generator.Parameters.Barcode.Padding.Top.Point = config.Padding.Top;
+                generator.Parameters.Barcode.Padding.Right.Point = config.Padding.Right;
+                generator.Parameters.Barcode.Padding.Bottom.Point = config.Padding.Bottom;
+
+                // Save the generated barcode image.
+                const string outputFile = "barcode.png";
+                generator.Save(outputFile);
+                Console.WriteLine($"Barcode generated and saved to {outputFile}");
+            }
         }
-
-        // Load configuration from the JSON file.
-        BarcodeConfig config;
-        try
-        {
-            var json = File.ReadAllText(configPath);
-            config = JsonSerializer.Deserialize<BarcodeConfig>(json);
-            if (config == null)
-                throw new InvalidOperationException("Configuration deserialization returned null.");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Failed to load configuration: {ex.Message}");
-            return;
-        }
-
-        // Generate a sample barcode using the loaded settings.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
-        {
-            // Apply appearance settings from the configuration.
-            generator.Parameters.AutoSizeMode = config.AutoSizeMode;
-            generator.Parameters.Barcode.XDimension.Point = config.XDimension;
-            generator.Parameters.Barcode.Padding.Left.Point = config.PaddingLeft;
-            generator.Parameters.Barcode.Padding.Top.Point = config.PaddingTop;
-            generator.Parameters.Barcode.Padding.Right.Point = config.PaddingRight;
-            generator.Parameters.Barcode.Padding.Bottom.Point = config.PaddingBottom;
-
-            // Save the barcode image to the specified output path.
-            generator.Save(outputPath);
-        }
-
-        Console.WriteLine($"Barcode generated with settings from '{configPath}' and saved to '{outputPath}'.");
     }
 }

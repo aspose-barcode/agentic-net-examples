@@ -1,122 +1,151 @@
+// Title: Barcode Generation API Example
+// Description: Demonstrates how to accept a JSON payload with appearance options, generate a barcode, and return a PNG byte stream.
+// Prompt: Integrate barcode generation into an API that accepts JSON payload specifying appearance options and returns a PNG stream.
+// Tags: barcode, generation, json, api, png, aspose
+
 using System;
 using System.IO;
-using System.Text;
 using System.Text.Json;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
-/// <summary>
-/// Demonstrates generating a barcode image from a JSON payload using Aspose.BarCode.
-/// </summary>
-class Program
+namespace BarcodeApiSimulation
 {
-    /// <summary>
-    /// Model representing the JSON payload for barcode generation.
-    /// </summary>
-    private class BarcodeRequest
+    // DTO for JSON payload
+    public class BarcodeRequest
     {
         public string Symbology { get; set; }
         public string CodeText { get; set; }
-        public float? BarHeight { get; set; }
-        public float? ImageWidth { get; set; }
-        public float? ImageHeight { get; set; }
-        public float? RotationAngle { get; set; }
-        public float? Padding { get; set; }
-        public string BarColor { get; set; }   // Hex, e.g. "#FF0000"
-        public string BackColor { get; set; }  // Hex, e.g. "#FFFFFF"
+        public string ForeColor { get; set; }          // Hex, e.g. "#FF0000"
+        public string BackColor { get; set; }          // Hex, e.g. "#FFFFFF"
+        public float? ImageWidth { get; set; }         // Points
+        public float? ImageHeight { get; set; }        // Points
+        public float? XDimension { get; set; }         // Points
+        public float? BarHeight { get; set; }          // Points (used only when AutoSizeMode = None)
+        public string AutoSizeMode { get; set; }       // "None", "Interpolation", "Nearest"
     }
 
     /// <summary>
-    /// Entry point of the application. Parses a JSON payload, configures a barcode generator,
-    /// and outputs the generated PNG image as a Base64 string.
+    /// Simulates an API that generates barcodes from JSON requests.
     /// </summary>
-    static void Main()
+    class Program
     {
-        // Sample JSON payload; replace with actual input as needed.
-        string json = @"{
-            ""Symbology"": ""Code128"",
-            ""CodeText"": ""1234567890"",
-            ""BarHeight"": 40,
-            ""ImageWidth"": 300,
-            ""ImageHeight"": 150,
-            ""RotationAngle"": 0,
-            ""Padding"": 10,
-            ""BarColor"": ""#0000FF"",
-            ""BackColor"": ""#FFFFFF""
-        }";
-
-        // Parse JSON into a BarcodeRequest object.
-        BarcodeRequest request;
-        try
+        /// <summary>
+        /// Parses a hex color string (e.g. "#RRGGBB") into an Aspose.Drawing.Color.
+        /// </summary>
+        /// <param name="hex">Hexadecimal color string.</param>
+        /// <returns>Corresponding Color object.</returns>
+        private static Color ParseColor(string hex)
         {
-            request = JsonSerializer.Deserialize<BarcodeRequest>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            if (string.IsNullOrWhiteSpace(hex))
+                throw new ArgumentException("Color string is null or empty.");
+
+            // Remove leading '#' if present
+            string clean = hex.TrimStart('#');
+            if (clean.Length != 6)
+                throw new ArgumentException($"Invalid color format: {hex}");
+
+            // Convert each component from hex to int
+            int r = Convert.ToInt32(clean.Substring(0, 2), 16);
+            int g = Convert.ToInt32(clean.Substring(2, 2), 16);
+            int b = Convert.ToInt32(clean.Substring(4, 2), 16);
+            return Color.FromArgb(r, g, b);
+        }
+
+        /// <summary>
+        /// Generates a barcode image from a JSON payload and returns the PNG bytes.
+        /// </summary>
+        /// <param name="jsonPayload">JSON string containing barcode parameters.</param>
+        /// <returns>Byte array with PNG image data.</returns>
+        private static byte[] GenerateBarcodeFromJson(string jsonPayload)
+        {
+            // Deserialize request
+            BarcodeRequest request = JsonSerializer.Deserialize<BarcodeRequest>(jsonPayload);
             if (request == null)
                 throw new ArgumentException("Invalid JSON payload.");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error parsing JSON: {ex.Message}");
-            return;
-        }
 
-        // Resolve the symbology name to a BaseEncodeType using reflection.
-        var field = typeof(EncodeTypes).GetField(request.Symbology);
-        if (field == null)
-        {
-            Console.WriteLine($"Unknown symbology: {request.Symbology}");
-            return;
-        }
-        BaseEncodeType encodeType = (BaseEncodeType)field.GetValue(null);
+            // Resolve symbology name to EncodeTypes field via reflection
+            var field = typeof(EncodeTypes).GetField(request.Symbology);
+            if (field == null)
+                throw new ArgumentException($"Unknown symbology: {request.Symbology}");
+            BaseEncodeType encodeType = (BaseEncodeType)field.GetValue(null);
 
-        // Create the barcode generator and apply appearance options.
-        using (var generator = new BarcodeGenerator(encodeType, request.CodeText ?? string.Empty))
-        {
-            // Set bar height (requires AutoSizeMode.None).
-            if (request.BarHeight.HasValue)
+            // Create generator with codetext
+            using (var generator = new BarcodeGenerator(encodeType, request.CodeText))
             {
-                if (request.BarHeight.Value <= 0f)
+                // Set foreground color if provided
+                if (!string.IsNullOrWhiteSpace(request.ForeColor))
+                    generator.Parameters.Barcode.BarColor = ParseColor(request.ForeColor);
+
+                // Set background color if provided
+                if (!string.IsNullOrWhiteSpace(request.BackColor))
+                    generator.Parameters.BackColor = ParseColor(request.BackColor);
+
+                // Set AutoSizeMode if provided
+                if (!string.IsNullOrWhiteSpace(request.AutoSizeMode))
                 {
-                    Console.WriteLine("BarHeight must be greater than zero.");
-                    return;
+                    if (Enum.TryParse<AutoSizeMode>(request.AutoSizeMode, out var mode))
+                        generator.Parameters.AutoSizeMode = mode;
+                    else
+                        throw new ArgumentException($"Invalid AutoSizeMode: {request.AutoSizeMode}");
                 }
-                generator.Parameters.AutoSizeMode = AutoSizeMode.None;
-                generator.Parameters.Barcode.BarHeight.Point = request.BarHeight.Value;
+
+                // Set image width/height if provided
+                if (request.ImageWidth.HasValue)
+                    generator.Parameters.ImageWidth.Point = request.ImageWidth.Value;
+                if (request.ImageHeight.HasValue)
+                    generator.Parameters.ImageHeight.Point = request.ImageHeight.Value;
+
+                // Set XDimension if provided
+                if (request.XDimension.HasValue)
+                    generator.Parameters.Barcode.XDimension.Point = request.XDimension.Value;
+
+                // Set BarHeight only when AutoSizeMode is None
+                if (request.BarHeight.HasValue && generator.Parameters.AutoSizeMode == AutoSizeMode.None)
+                    generator.Parameters.Barcode.BarHeight.Point = request.BarHeight.Value;
+
+                // Generate PNG into memory stream and return bytes
+                using (var ms = new MemoryStream())
+                {
+                    generator.Save(ms, BarCodeImageFormat.Png);
+                    return ms.ToArray();
+                }
             }
+        }
 
-            // Set image dimensions (used when AutoSizeMode is Interpolation).
-            if (request.ImageWidth.HasValue)
-                generator.Parameters.ImageWidth.Point = request.ImageWidth.Value;
-            if (request.ImageHeight.HasValue)
-                generator.Parameters.ImageHeight.Point = request.ImageHeight.Value;
+        /// <summary>
+        /// Entry point that demonstrates barcode generation using a sample JSON payload.
+        /// </summary>
+        static void Main()
+        {
+            // Sample JSON payload representing an API request
+            string sampleJson = @"{
+                ""Symbology"": ""Code128"",
+                ""CodeText"": ""1234567890"",
+                ""ForeColor"": ""#0000FF"",
+                ""BackColor"": ""#FFFFFF"",
+                ""ImageWidth"": 300,
+                ""ImageHeight"": 150,
+                ""XDimension"": 2,
+                ""AutoSizeMode"": ""Interpolation""
+            }";
 
-            // Apply rotation angle if provided.
-            if (request.RotationAngle.HasValue)
-                generator.Parameters.RotationAngle = request.RotationAngle.Value;
-
-            // Apply uniform padding to all sides if provided.
-            if (request.Padding.HasValue)
+            try
             {
-                generator.Parameters.Barcode.Padding.Left.Point = request.Padding.Value;
-                generator.Parameters.Barcode.Padding.Top.Point = request.Padding.Value;
-                generator.Parameters.Barcode.Padding.Right.Point = request.Padding.Value;
-                generator.Parameters.Barcode.Padding.Bottom.Point = request.Padding.Value;
-            }
+                // Generate PNG bytes from the JSON request
+                byte[] pngBytes = GenerateBarcodeFromJson(sampleJson);
 
-            // Set bar and background colors from hex strings.
-            if (!string.IsNullOrEmpty(request.BarColor))
-                generator.Parameters.Barcode.BarColor = Color.FromArgb(Convert.ToInt32(request.BarColor.TrimStart('#'), 16));
-            if (!string.IsNullOrEmpty(request.BackColor))
-                generator.Parameters.BackColor = Color.FromArgb(Convert.ToInt32(request.BackColor.TrimStart('#'), 16));
-
-            // Save the generated barcode to a memory stream as PNG.
-            using (var ms = new MemoryStream())
-            {
-                generator.Save(ms, BarCodeImageFormat.Png);
-                byte[] pngBytes = ms.ToArray();
+                // Simulate API response by outputting Base64 string
                 string base64 = Convert.ToBase64String(pngBytes);
-                Console.WriteLine("Generated PNG (Base64):");
+                Console.WriteLine("PNG Base64:");
                 Console.WriteLine(base64);
+            }
+            catch (Exception ex)
+            {
+                // Output any errors encountered during processing
+                Console.WriteLine($"Error: {ex.Message}");
             }
         }
     }
