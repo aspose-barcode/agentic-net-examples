@@ -1,65 +1,52 @@
+// Title: Determine Barcode Orientation Angle in BMP Image
+// Description: The program loads a BMP image, detects all barcodes, and outputs each barcode's type, text, and orientation angle.
+// Prompt: Determine barcode orientation angle for each detected barcode in a BMP image.
+// Tags: barcode symbology, orientation, bmp, aspose.barcode, c#
+
 using System;
 using System.IO;
-using Aspose.BarCode;
-using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a rotated barcode image (if missing) and reading its orientation using Aspose.BarCode.
+/// Demonstrates how to read barcodes from a BMP image and retrieve their orientation angles.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a sample barcode image if it does not exist, then reads and displays barcode information including orientation.
+    /// Entry point of the application. Detects barcodes in the specified BMP file and prints their type, text, and angle.
     /// </summary>
     static void Main()
     {
-        const string imagePath = "sample.bmp";
+        // Path to the BMP image containing barcodes.
+        string imagePath = "sample.bmp";
 
-        // ------------------------------------------------------------
-        // Ensure the sample image exists; generate a rotated barcode if missing.
-        // ------------------------------------------------------------
+        // Verify that the image file exists before processing.
         if (!File.Exists(imagePath))
         {
-            // Create a barcode generator for Code128 with the text "Sample123".
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
-            {
-                // Rotate the barcode by 45 degrees.
-                generator.Parameters.RotationAngle = 45f;
-
-                // Save the generated barcode as a BMP image.
-                generator.Save(imagePath, BarCodeImageFormat.Bmp);
-            }
-        }
-
-        // ------------------------------------------------------------
-        // Verify the image file exists before attempting to read it.
-        // ------------------------------------------------------------
-        if (!File.Exists(imagePath))
-        {
-            Console.WriteLine($"Error: Image file '{imagePath}' not found.");
+            Console.WriteLine($"Image file '{imagePath}' not found.");
             return;
         }
 
-        // ------------------------------------------------------------
-        // Read barcodes from the BMP image and output their orientation angles.
-        // ------------------------------------------------------------
+        // Initialize the barcode reader for all supported symbologies.
         using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
         {
-            // Iterate through all detected barcodes.
+            int count = 0;
+
+            // Iterate through each detected barcode.
             foreach (var result in reader.ReadBarCodes())
             {
-                // Orientation angle in degrees for the detected barcode region.
+                // The angle (in degrees) of the detected barcode.
                 double angle = result.Region.Angle;
 
-                // Output barcode details to the console.
-                Console.WriteLine($"Barcode Type: {result.CodeTypeName}");
-                Console.WriteLine($"Code Text   : {result.CodeText}");
-                Console.WriteLine($"Orientation : {angle} degrees");
-                Console.WriteLine();
+                // Output barcode details including its orientation angle.
+                Console.WriteLine($"Barcode {count + 1}: Type={result.CodeTypeName}, Text={result.CodeText}, Angle={angle}");
+                count++;
+            }
+
+            // If no barcodes were found, inform the user.
+            if (count == 0)
+            {
+                Console.WriteLine("No barcodes detected in the image.");
             }
         }
     }

@@ -1,37 +1,45 @@
+// Title: Read All Barcode Types from an Image
+// Description: Demonstrates how to instantiate BarCodeReader with an image file path and read every supported barcode type present in the image.
+// Prompt: Instantiate BarCodeReader with an image file path and read all detected barcode types.
+// Tags: barcode, symbology, read, alltypes, console, aspose.barcode
+
 using System;
 using System.IO;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates reading all supported barcode types from an image file using Aspose.BarCode.
+/// Example program that reads all supported barcode types from a given image file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
+    /// Entry point of the application. Instantiates a <see cref="BarCodeReader"/> and outputs detected barcodes.
     /// </summary>
     static void Main()
     {
-        // Path to the image that contains barcodes.
+        // Path to the image containing barcodes
         string imagePath = "sample.png";
 
-        // Verify that the file exists before attempting to read.
+        // Verify that the image file exists before attempting to read
         if (!File.Exists(imagePath))
         {
-            // Inform the user and exit if the file cannot be found.
             Console.WriteLine($"File not found: {imagePath}");
             return;
         }
 
-        // Create a BarCodeReader that will attempt to decode all supported barcode types.
-        using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
+        // Create the reader for the image file inside a using block to ensure proper disposal
+        using (BarCodeReader reader = new BarCodeReader(imagePath))
         {
-            // Iterate through each detected barcode in the image.
-            foreach (var result in reader.ReadBarCodes())
+            // Configure the reader to detect all supported barcode types
+            reader.BarCodeReadType = DecodeType.AllSupportedTypes;
+
+            // Perform the recognition and retrieve all results
+            BarCodeResult[] results = reader.ReadBarCodes();
+
+            // Iterate through each detected barcode and display its type and decoded text
+            foreach (BarCodeResult result in results)
             {
-                // Output the type of the barcode (e.g., QR, Code128).
                 Console.WriteLine($"BarCode Type: {result.CodeTypeName}");
-                // Output the decoded text/value of the barcode.
                 Console.WriteLine($"BarCode CodeText: {result.CodeText}");
             }
         }

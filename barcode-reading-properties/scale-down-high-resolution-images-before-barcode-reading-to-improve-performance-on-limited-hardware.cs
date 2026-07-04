@@ -1,72 +1,96 @@
+// Title: Scaling High‑Resolution Images for Efficient Barcode Reading
+// Description: Demonstrates how to downscale a high‑resolution image before barcode recognition to improve performance on constrained hardware.
+// Prompt: Scale down high‑resolution images before barcode reading to improve performance on limited hardware.
+// Tags: barcode, scaling, image processing, performance, aspose.barcode, aspose.drawing
+
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
-using Aspose.Drawing.Drawing2D;
 
 /// <summary>
-/// Demonstrates loading a high‑resolution image, scaling it down,
-/// and reading any barcodes present using Aspose.BarCode.
+/// Example program that scales down a high‑resolution image and reads barcodes from it.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Scales an input image to a maximum dimension and extracts barcodes.
+    /// Entry point. Loads an image, optionally scales it, and processes it for barcode detection.
     /// </summary>
     static void Main()
     {
-        // Path to the high‑resolution image (replace with an actual file if available)
-        string inputPath = "highres.png";
+        // Path to the high‑resolution image containing barcodes
+        const string inputImagePath = "highres.png";
 
-        // Verify that the file exists before proceeding
-        if (!File.Exists(inputPath))
+        // Verify that the image file exists before proceeding
+        if (!File.Exists(inputImagePath))
         {
-            Console.WriteLine($"File not found: {inputPath}");
+            Console.WriteLine($"File not found: {inputImagePath}");
             return;
         }
 
-        // Load the original image from file
-        using (var original = new Bitmap(inputPath))
+        // Desired maximum dimension (width or height) after scaling, in pixels
+        const int maxDimension = 800;
+
+        // Load the original high‑resolution image into a Bitmap object
+        using (var original = new Bitmap(inputImagePath))
         {
-            // Determine scaling factor to fit within maxDimension while preserving aspect ratio
-            float maxDimension = 1000f;
-            float scale = Math.Min(maxDimension / original.Width, maxDimension / original.Height);
-            if (scale > 1f) scale = 1f; // Prevent up‑scaling if image is already smaller
+            // Determine the scaling factor while preserving the aspect ratio
+            float scale = 1f;
+            if (original.Width > original.Height)
+            {
+                // Landscape orientation: limit width
+                if (original.Width > maxDimension)
+                    scale = (float)maxDimension / original.Width;
+            }
+            else
+            {
+                // Portrait orientation: limit height
+                if (original.Height > maxDimension)
+                    scale = (float)maxDimension / original.Height;
+            }
 
-            // Calculate new dimensions based on scaling factor
-            int newWidth = (int)Math.Round(original.Width * scale);
-            int newHeight = (int)Math.Round(original.Height * scale);
+            // If the image is already within the desired size, process it directly
+            if (scale >= 1f)
+            {
+                ProcessImage(original);
+                return;
+            }
 
-            // Create a new bitmap with the calculated dimensions
+            // Calculate new dimensions based on the scaling factor
+            int newWidth = (int)(original.Width * scale);
+            int newHeight = (int)(original.Height * scale);
+
+            // Create a new bitmap with the reduced size
             using (var scaled = new Bitmap(newWidth, newHeight))
             {
-                // Draw the original image onto the scaled bitmap using high‑quality interpolation
+                // Render the original image onto the scaled bitmap
                 using (var graphics = Graphics.FromImage(scaled))
                 {
-                    graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
                     graphics.DrawImage(original, 0, 0, newWidth, newHeight);
                 }
 
-                // Encode the scaled bitmap to a memory stream in PNG format
-                using (var ms = new MemoryStream())
-                {
-                    scaled.Save(ms, ImageFormat.Png);
-                    ms.Position = 0; // Reset stream position for reading
+                // Perform barcode recognition on the scaled image
+                ProcessImage(scaled);
+            }
+        }
+    }
 
-                    // Initialize barcode reader to process all supported barcode types
-                    using (var reader = new BarCodeReader(ms, DecodeType.AllSupportedTypes))
-                    {
-                        // Iterate through all detected barcodes and output their details
-                        foreach (var result in reader.ReadBarCodes())
-                        {
-                            Console.WriteLine($"Detected Type: {result.CodeTypeName}");
-                            Console.WriteLine($"Code Text: {result.CodeText}");
-                        }
-                    }
-                }
+    // Reads barcodes from the provided bitmap and prints the detection results
+    private static void ProcessImage(Bitmap bitmap)
+    {
+        // Initialize the reader to detect all supported barcode types
+        using (var reader = new BarCodeReader(bitmap, DecodeType.AllSupportedTypes))
+        {
+            // Apply a high‑performance preset to speed up recognition
+            reader.QualitySettings = QualitySettings.HighPerformance;
+
+            // Iterate through each detected barcode and output its details
+            foreach (var result in reader.ReadBarCodes())
+            {
+                Console.WriteLine($"BarCode Type: {result.CodeTypeName}");
+                Console.WriteLine($"BarCode CodeText: {result.CodeText}");
             }
         }
     }

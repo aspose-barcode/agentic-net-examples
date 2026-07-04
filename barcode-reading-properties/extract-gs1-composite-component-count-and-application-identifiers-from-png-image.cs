@@ -1,3 +1,8 @@
+// Title: Extract GS1 Composite component count and AIs from PNG
+// Description: Demonstrates reading a GS1 Composite barcode from a PNG image, retrieving the linear and 2D component texts, counting application identifiers, and reporting component count.
+// Prompt: Extract GS1 Composite component count and application identifiers from a PNG image.
+// Tags: gs1 composite, barcode reading, png, aspose.barcode, csharp
+
 using System;
 using System.IO;
 using System.Text.RegularExpressions;
@@ -5,80 +10,73 @@ using Aspose.BarCode;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates reading a GS1 Composite barcode from an image file
-/// and extracting its components and Application Identifiers (AIs).
+/// Program to extract GS1 Composite component count and application identifiers from a PNG image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Reads the specified PNG image, detects GS1 Composite barcodes,
-    /// and prints details such as barcode type, code text, AI count,
-    /// and component count.
+    /// Entry point. Reads the PNG, extracts barcode data, and displays component texts, AI count, and component count.
     /// </summary>
     static void Main()
     {
-        // Path to the PNG image containing the GS1 Composite barcode.
-        string imagePath = "gs1composite.png";
+        // Path to the PNG image containing the GS1 Composite barcode
+        const string imagePath = "gs1composite.png";
 
-        // Verify that the image file exists before attempting to read it.
+        // Verify that the image file exists before attempting to read it
         if (!File.Exists(imagePath))
         {
-            Console.WriteLine($"Image file not found: {imagePath}");
+            Console.WriteLine($"File not found: {imagePath}");
             return;
         }
 
-        // Create a BarCodeReader configured for GS1 Composite barcodes.
+        // Create a BarCodeReader configured for GS1 Composite Bar symbology
         using (var reader = new BarCodeReader(imagePath, DecodeType.GS1CompositeBar))
         {
-            bool anyFound = false; // Tracks whether any barcode was detected.
+            // Read all barcodes present in the image
+            var results = reader.ReadBarCodes();
 
-            // Iterate over all detected barcodes in the image.
-            foreach (var result in reader.ReadBarCodes())
+            // If no barcodes were detected, inform the user and exit
+            if (results.Length == 0)
             {
-                anyFound = true;
+                Console.WriteLine("No barcodes detected.");
+                return;
+            }
 
-                // Output basic barcode information.
-                Console.WriteLine($"Detected Barcode Type: {result.CodeTypeName}");
-                Console.WriteLine($"CodeText: {result.CodeText}");
+            // Process each detected barcode result
+            foreach (var result in results)
+            {
+                // Access extended GS1 Composite parameters (linear and 2D components)
+                var gs1Ext = result.Extended.GS1CompositeBar;
 
-                // GS1 Composite codetext consists of linear and 2D parts separated by '|'.
-                // Split the codetext into its constituent parts.
-                string[] parts = result.CodeText.Split('|');
+                // Retrieve the linear (1D) component text; use empty string if null
+                string linearText = gs1Ext.OneDCodeText ?? string.Empty;
+                // Retrieve the 2D component text; use empty string if null
+                string twoDText = gs1Ext.TwoDCodeText ?? string.Empty;
 
-                // Combine parts with a space to simplify AI extraction via regex.
-                string combined = string.Join(" ", parts);
+                Console.WriteLine($"Linear component text: {linearText}");
+                Console.WriteLine($"2D component text: {twoDText}");
 
-                // Find all Application Identifiers (AI) in the format (nn) where n is a digit.
-                var matches = Regex.Matches(combined, @"\(\d{2,4}\)");
-                int aiCount = matches.Count;
+                // Use a regular expression to find all Application Identifiers (AIs) in the linear component
+                var aiMatches = Regex.Matches(linearText, @"\((\d{2,4})\)");
+                int aiCount = aiMatches.Count;
 
-                // Display the number of AIs found.
-                Console.WriteLine($"Application Identifier Count: {aiCount}");
+                Console.WriteLine($"Number of Application Identifiers: {aiCount}");
 
-                // If any AIs are present, list them.
+                // If any AIs were found, list them
                 if (aiCount > 0)
                 {
-                    Console.WriteLine("Application Identifiers found:");
-                    foreach (Match m in matches)
+                    Console.WriteLine("Application Identifiers:");
+                    foreach (Match match in aiMatches)
                     {
-                        Console.WriteLine($"  {m.Value}");
+                        // Extract the numeric AI without parentheses
+                        string ai = match.Groups[1].Value;
+                        Console.WriteLine($"- {ai}");
                     }
                 }
 
-                // Component count corresponds to the number of distinct parts
-                // (linear + 2D) obtained from splitting the codetext.
-                int componentCount = parts.Length;
-                Console.WriteLine($"Component Count (linear + 2D parts): {componentCount}");
-
-                // Separator for readability between multiple barcode results.
-                Console.WriteLine(new string('-', 40));
-            }
-
-            // If no barcodes were detected, inform the user.
-            if (!anyFound)
-            {
-                Console.WriteLine("No GS1 Composite barcode detected in the image.");
+                // GS1 Composite always consists of two components: linear and 2D
+                Console.WriteLine($"GS1 Composite component count: 2");
+                Console.WriteLine();
             }
         }
     }

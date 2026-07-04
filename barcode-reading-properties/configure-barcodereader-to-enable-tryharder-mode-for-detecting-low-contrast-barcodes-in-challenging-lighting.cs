@@ -1,70 +1,64 @@
+// Title: Detect low‑contrast barcode using tryHarder mode
+// Description: Demonstrates configuring BarCodeReader with high‑quality settings to read a low‑contrast barcode generated in the same program.
+// Prompt: Configure BarCodeReader to enable tryHarder mode for detecting low‑contrast barcodes in challenging lighting.
+// Tags: barcode, low-contrast, tryharder, qualitysettings, generation, recognition
+
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a low‑contrast barcode image and reading it using Aspose.BarCode.
+/// Example program that generates a low‑contrast barcode and reads it using try‑harder mode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a low‑contrast barcode, saves it to disk, and then attempts to read it.
+    /// Entry point. Generates a low‑contrast barcode image, then reads it with high‑quality settings.
     /// </summary>
     static void Main()
     {
-        // --------------------------------------------------------------------
-        // 1. Generate a low‑contrast barcode image and save it to a file.
-        // --------------------------------------------------------------------
-        string imagePath = "low_contrast.png";
+        // Path for the sample barcode image
+        string imagePath = "low_contrast_barcode.png";
 
-        // Use a BarcodeGenerator to create a Code128 barcode with the text "LowContrast".
+        // -------------------------------------------------
+        // Generate a low‑contrast barcode image
+        // -------------------------------------------------
         using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "LowContrast"))
         {
-            // Set barcode foreground color to a dark gray.
-            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.FromArgb(100, 100, 100);
-            // Set background color to a light gray, creating low contrast.
-            generator.Parameters.BackColor = Aspose.Drawing.Color.FromArgb(200, 200, 200);
-            // Save the generated image to the specified path.
-            generator.Save(imagePath);
+            // Set bar color and background color to be similar (low contrast)
+            generator.Parameters.Barcode.BarColor = Color.Gray;
+            generator.Parameters.BackColor = Color.LightGray;
+
+            // Save the barcode image to the specified path
+            generator.Save(imagePath, BarCodeImageFormat.Png);
         }
 
-        // --------------------------------------------------------------------
-        // 2. Verify that the image file was created successfully.
-        // --------------------------------------------------------------------
+        // Verify that the image was created successfully
         if (!File.Exists(imagePath))
         {
-            Console.WriteLine($"Error: Barcode image file '{imagePath}' not found.");
+            Console.WriteLine($"Error: Barcode image not found at '{imagePath}'.");
             return;
         }
 
-        // --------------------------------------------------------------------
-        // 3. Inform the user about the lack of a dedicated 'TryHarder' option.
-        // --------------------------------------------------------------------
-        Console.WriteLine("Note: Aspose.BarCode.BarCodeReader does not have a 'TryHarder' property.");
-        Console.WriteLine("Enabling high‑quality recognition settings instead.");
-
-        // --------------------------------------------------------------------
-        // 4. Read the barcode from the generated image using high‑quality settings.
-        // --------------------------------------------------------------------
-        using (var bitmap = new Bitmap(imagePath))
-        using (var reader = new BarCodeReader(bitmap, DecodeType.AllSupportedTypes))
+        // -------------------------------------------------
+        // Read the barcode using a high‑quality (try‑harder) setting
+        // -------------------------------------------------
+        using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
         {
-            // Apply high‑quality settings to improve detection of low‑contrast images.
+            // Enable the high‑quality preset which is equivalent to a "try harder" mode
             reader.QualitySettings = QualitySettings.HighQuality;
 
-            // Enable fast deconvolution to help with blurred or low‑contrast content.
-            reader.QualitySettings.Deconvolution = DeconvolutionMode.Fast;
+            // Optionally, increase deconvolution for better low‑contrast handling
+            // reader.QualitySettings.Deconvolution = DeconvolutionMode.Fast;
 
-            // Iterate through all detected barcodes and output their details.
+            // Iterate through all detected barcodes and output their details
             foreach (var result in reader.ReadBarCodes())
             {
                 Console.WriteLine($"Detected Type: {result.CodeTypeName}");
-                Console.WriteLine($"Decoded Text: {result.CodeText}");
-                Console.WriteLine($"Confidence: {result.Confidence}");
-                Console.WriteLine($"Reading Quality: {result.ReadingQuality}");
+                Console.WriteLine($"Decoded Text : {result.CodeText}");
             }
         }
     }

@@ -1,52 +1,95 @@
+// Title: Extract Aztec Code layer count and compact mode flag
+// Description: Demonstrates how to read an Aztec barcode from an image and retrieve its layer count and compact mode flag using Aspose.BarCode.
+// Prompt: Extract Aztec Code layer count and compact mode flag from an image containing Aztec barcodes.
+// Tags: aztec, barcode, extraction, layer count, compact mode, aspose.barcode, csharp
+
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates how to read Aztec barcodes from an image using Aspose.BarCode.
+/// Program to extract Aztec barcode layer count and compact mode flag from an image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Accepts an optional command‑line argument specifying the image file path.
+    /// Entry point. Reads the specified image, detects Aztec barcodes, and prints their details.
     /// </summary>
-    /// <param name="args">Command‑line arguments.</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Determine the image path: use the first argument if provided, otherwise default to "aztec.png".
-        string imagePath = args.Length > 0 ? args[0] : "aztec.png";
+        // Path to the image containing the Aztec barcode.
+        string imagePath = "aztec.png";
 
-        // Verify that the specified file exists before attempting to read it.
+        // Verify that the image file exists before attempting to read it.
         if (!File.Exists(imagePath))
         {
             Console.WriteLine($"File not found: {imagePath}");
             return;
         }
 
-        // Initialize a BarCodeReader configured to decode only Aztec barcodes.
-        using (var reader = new BarCodeReader(imagePath, DecodeType.Aztec))
+        // Initialize the barcode reader for Aztec symbology.
+        using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.Aztec))
         {
-            // Read all barcodes found in the image.
-            var results = reader.ReadBarCodes();
+            bool anyFound = false;
 
-            // If no barcodes were detected, inform the user and exit.
-            if (results.Length == 0)
+            // Iterate through all detected barcodes in the image.
+            foreach (BarCodeResult result in reader.ReadBarCodes())
             {
-                Console.WriteLine("No Aztec barcode detected in the image.");
-                return;
+                anyFound = true;
+
+                // Output basic barcode information.
+                Console.WriteLine($"Barcode type: {result.CodeTypeName}");
+                Console.WriteLine($"Codetext: {result.CodeText}");
+
+                // Access extended Aztec-specific information, if available.
+                var aztecInfo = result.Extended?.Aztec;
+                if (aztecInfo != null)
+                {
+                    // Use reflection to obtain LayersCount if the property exists.
+                    var layersProp = aztecInfo.GetType().GetProperty("LayersCount");
+                    if (layersProp != null)
+                    {
+                        int layers = (int)layersProp.GetValue(aztecInfo);
+                        Console.WriteLine($"Aztec layers count: {layers}");
+                    }
+                    else
+                    {
+                        Console.WriteLine("Aztec layers count: unavailable in this library version.");
+                    }
+
+                    // Use reflection to obtain SymbolMode if the property exists.
+                    var modeProp = aztecInfo.GetType().GetProperty("SymbolMode");
+                    if (modeProp != null)
+                    {
+                        object modeValue = modeProp.GetValue(aztecInfo);
+                        // Determine whether the mode is Compact, if the enum is present.
+                        bool isCompact = false;
+                        var enumType = modeValue?.GetType();
+                        if (enumType != null && Enum.IsDefined(enumType, "Compact"))
+                        {
+                            var compactValue = Enum.Parse(enumType, "Compact");
+                            isCompact = modeValue.Equals(compactValue);
+                        }
+                        Console.WriteLine($"Compact mode: {isCompact}");
+                    }
+                    else
+                    {
+                        Console.WriteLine("Compact mode flag: unavailable in this library version.");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("No Aztec extended information available.");
+                }
+
+                Console.WriteLine();
             }
 
-            // Iterate through each detected barcode and display its details.
-            foreach (var result in results)
+            // Inform the user if no Aztec barcodes were detected.
+            if (!anyFound)
             {
-                Console.WriteLine($"Barcode type: {result.CodeTypeName}");
-                Console.WriteLine($"Codetext   : {result.CodeText}");
-
-                // Note: The Aspose.BarCode API does not expose layer count or compact mode for Aztec barcodes.
-                // Inform the user that this information is unavailable.
-                Console.WriteLine("Layer count and compact mode information are not accessible through the current Aspose.BarCode API.");
+                Console.WriteLine("No Aztec barcodes were detected in the image.");
             }
         }
     }

@@ -1,109 +1,92 @@
+// Title: Barcode generation, combination, and limited decoding demonstration
+// Description: This example creates three different barcodes, merges them into a single image, and then reads up to three barcodes from that image to limit processing overhead.
+// Prompt: Set maximum number of barcodes per image to three to limit processing overhead.
+// Tags: barcode generation, barcode recognition, limit processing, aspose.barcode, png
+
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating multiple barcodes, combining them into a single image,
-/// saving the result, and then recognizing the barcodes from the combined image.
+/// Demonstrates generating multiple barcodes, combining them into one image,
+/// and reading a limited number of barcodes from the combined image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates three sample barcodes, merges them side‑by‑side,
-    /// saves the combined image, and reads back the barcodes.
+    /// Entry point of the program. Generates three barcodes, combines them,
+    /// saves the combined image, and reads up to three barcodes from it.
     /// </summary>
     static void Main()
     {
-        // --------------------------------------------------------------------
-        // 1. Define barcode types and corresponding text values.
-        // --------------------------------------------------------------------
-        var barcodeInfos = new (BaseEncodeType type, string text)[]
-        {
-            (EncodeTypes.Code128, "ABC123"),
-            (EncodeTypes.QR, "https://example.com"),
-            (EncodeTypes.DataMatrix, "DataMatrixSample")
-        };
+        // Generate three sample barcodes of different symbologies
+        Bitmap bmp1;
+        Bitmap bmp2;
+        Bitmap bmp3;
 
-        // --------------------------------------------------------------------
-        // 2. Generate individual barcode images in memory.
-        // --------------------------------------------------------------------
-        var barcodeBitmaps = new Bitmap[barcodeInfos.Length];
-        for (int i = 0; i < barcodeInfos.Length; i++)
+        using (var gen1 = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
         {
-            // Create a generator for the current barcode definition.
-            using (var generator = new BarcodeGenerator(barcodeInfos[i].type, barcodeInfos[i].text))
-            {
-                // Save the barcode to a memory stream as PNG.
-                using (var ms = new MemoryStream())
-                {
-                    generator.Save(ms, BarCodeImageFormat.Png);
-                    ms.Position = 0; // Reset stream position for reading.
-                    barcodeBitmaps[i] = new Bitmap(ms); // Load bitmap from stream.
-                }
-            }
+            bmp1 = gen1.GenerateBarCodeImage();
         }
 
-        // --------------------------------------------------------------------
-        // 3. Calculate dimensions for the combined image (horizontal layout).
-        // --------------------------------------------------------------------
-        int totalWidth = 0;
-        int maxHeight = 0;
-        foreach (var bmp in barcodeBitmaps)
+        using (var gen2 = new BarcodeGenerator(EncodeTypes.QR, "ABC"))
         {
-            totalWidth += bmp.Width;               // Accumulate widths.
-            if (bmp.Height > maxHeight) maxHeight = bmp.Height; // Track tallest bitmap.
+            bmp2 = gen2.GenerateBarCodeImage();
         }
 
-        // --------------------------------------------------------------------
-        // 4. Create a new bitmap to hold all barcodes side by side.
-        // --------------------------------------------------------------------
+        using (var gen3 = new BarcodeGenerator(EncodeTypes.EAN13, "1234567890128"))
+        {
+            bmp3 = gen3.GenerateBarCodeImage();
+        }
+
+        // Combine the three barcode images side by side into a single bitmap
+        int totalWidth = bmp1.Width + bmp2.Width + bmp3.Width;
+        int maxHeight = Math.Max(bmp1.Height, Math.Max(bmp2.Height, bmp3.Height));
+
         using (var combined = new Bitmap(totalWidth, maxHeight))
         {
             using (var graphics = Graphics.FromImage(combined))
             {
-                int offsetX = 0; // Horizontal offset for drawing each barcode.
-                foreach (var bmp in barcodeBitmaps)
-                {
-                    // Draw the current barcode at the current offset.
-                    graphics.DrawImage(bmp, offsetX, 0, bmp.Width, bmp.Height);
-                    offsetX += bmp.Width; // Move offset for next barcode.
-                }
+                // Draw each barcode at the appropriate horizontal offset
+                graphics.DrawImage(bmp1, 0, 0);
+                graphics.DrawImage(bmp2, bmp1.Width, 0);
+                graphics.DrawImage(bmp3, bmp1.Width + bmp2.Width, 0);
             }
 
-            // ----------------------------------------------------------------
-            // 5. Save the combined image to disk.
-            // ----------------------------------------------------------------
-            const string combinedPath = "combined.png";
+            // Save the combined image to disk as PNG
+            string combinedPath = "combined.png";
             combined.Save(combinedPath, ImageFormat.Png);
-            Console.WriteLine($"Combined barcode image saved to {combinedPath}");
-
-            // ----------------------------------------------------------------
-            // 6. Recognize barcodes from the saved combined image.
-            // ----------------------------------------------------------------
-            using (var reader = new BarCodeReader(combinedPath, DecodeType.AllSupportedTypes))
-            {
-                var results = reader.ReadBarCodes();
-                int limit = Math.Min(3, results.Length); // Process up to three results.
-                Console.WriteLine($"Processing up to {limit} barcodes:");
-                for (int i = 0; i < limit; i++)
-                {
-                    var result = results[i];
-                    Console.WriteLine($"Type: {result.CodeTypeName}, Text: {result.CodeText}");
-                }
-            }
         }
 
-        // --------------------------------------------------------------------
-        // 7. Release resources held by individual barcode bitmaps.
-        // --------------------------------------------------------------------
-        foreach (var bmp in barcodeBitmaps)
+        // Release resources held by the individual barcode bitmaps
+        bmp1.Dispose();
+        bmp2.Dispose();
+        bmp3.Dispose();
+
+        // Verify that the combined image file exists before attempting to read it
+        string imagePath = "combined.png";
+        if (!File.Exists(imagePath))
         {
-            bmp.Dispose();
+            Console.WriteLine($"Image file not found: {imagePath}");
+            return;
+        }
+
+        // Read barcodes from the combined image, processing at most three to limit overhead
+        using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
+        {
+            var results = reader.ReadBarCodes();
+            int processed = 0;
+            foreach (var result in results)
+            {
+                if (processed >= 3)
+                    break;
+
+                Console.WriteLine($"Barcode {processed + 1}: Type = {result.CodeTypeName}, Text = {result.CodeText}");
+                processed++;
+            }
         }
     }
 }

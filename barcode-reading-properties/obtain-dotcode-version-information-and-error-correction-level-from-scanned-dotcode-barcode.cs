@@ -1,68 +1,58 @@
+// Title: Retrieve DotCode version and error correction level
+// Description: Demonstrates how to scan a DotCode barcode and attempt to obtain its version and error correction level, handling cases where the API does not expose these details.
+// Prompt: Obtain DotCode version information and error correction level from a scanned DotCode barcode.
+// Tags: dotcode, barcode, version, error correction, aspose.barcode, barcoderecognition
+
 using System;
 using System.IO;
-using Aspose.BarCode;
-using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generation and reading of a DotCode barcode using Aspose.BarCode.
+/// Example program that reads a DotCode barcode from an image and tries to
+/// extract version information and error correction level using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
     /// Entry point of the application.
-    /// Generates a DotCode barcode, saves it to a temporary file, reads it back,
-    /// displays the decoded information, and cleans up the temporary file.
+    /// Scans the specified image for DotCode barcodes and reports available details.
     /// </summary>
     static void Main()
     {
-        // Sample DotCode text to encode.
-        string codeText = "1234567890";
+        // Path to the image containing a DotCode barcode.
+        const string imagePath = "dotcode_sample.png";
 
-        // Determine a temporary file path for the barcode image.
-        string tempPath = Path.GetTempPath();
-        string imagePath = Path.Combine(tempPath, "dotcode_sample.png");
-
-        // Generate a DotCode barcode image and save it to the temporary file.
-        using (var generator = new BarcodeGenerator(EncodeTypes.DotCode, codeText))
-        {
-            generator.Save(imagePath);
-        }
-
-        // Verify that the image file was successfully created.
+        // Verify that the image file exists before attempting to read it.
         if (!File.Exists(imagePath))
         {
-            Console.WriteLine("Failed to create the barcode image.");
+            Console.WriteLine($"File not found: {imagePath}");
             return;
         }
 
-        // Read the DotCode barcode from the generated image.
-        using (var bitmap = new Bitmap(imagePath))
-        using (var reader = new BarCodeReader(bitmap, DecodeType.DotCode))
+        // Initialize a BarCodeReader configured for DotCode symbology.
+        using (var reader = new BarCodeReader(imagePath, DecodeType.DotCode))
         {
-            // Iterate through all detected barcodes (should be only one in this case).
+            // Iterate through all detected barcodes in the image.
             foreach (var result in reader.ReadBarCodes())
             {
-                // Output the symbology type (e.g., DotCode).
-                Console.WriteLine($"Symbology: {result.CodeTypeName}");
-                // Output the decoded text.
-                Console.WriteLine($"CodeText: {result.CodeText}");
+                // Output basic barcode information.
+                Console.WriteLine($"BarCode Type: {result.CodeTypeName}");
+                Console.WriteLine($"BarCode CodeText: {result.CodeText}");
 
-                // Note: Aspose.BarCode does not expose version or error‑correction level for DotCode.
-                Console.WriteLine("Version information and error correction level are not available via Aspose.BarCode API for DotCode.");
-                Console.WriteLine();
+                // Attempt to retrieve extended DotCode parameters (version, error correction level).
+                // The current Aspose.BarCode API does not expose these fields.
+                var dotExt = result.Extended?.DotCode;
+                if (dotExt != null)
+                {
+                    Console.WriteLine("DotCode version information: not available via Aspose.BarCode API.");
+                    Console.WriteLine("DotCode error correction level: not available via Aspose.BarCode API.");
+                }
+                else
+                {
+                    // No extended parameters were provided for this barcode.
+                    Console.WriteLine("No DotCode extended parameters were found.");
+                }
             }
-        }
-
-        // Attempt to delete the temporary image file.
-        try
-        {
-            File.Delete(imagePath);
-        }
-        catch
-        {
-            // If deletion fails, ignore – the OS will clean up temporary files later.
         }
     }
 }

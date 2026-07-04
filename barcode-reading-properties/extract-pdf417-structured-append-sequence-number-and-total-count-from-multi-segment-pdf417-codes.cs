@@ -1,65 +1,70 @@
+// Title: Extract PDF417 Structured‑Append Sequence Information
+// Description: Demonstrates how to read multi‑segment PDF417 barcodes and retrieve the structured‑append sequence number and total segment count.
+// Prompt: Extract PDF417 structured‑append sequence number and total count from multi‑segment PDF417 codes.
+// Tags: pdf417, structured-append, barcode, recognition, aspose.barcode, csharp
+
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates reading PDF417 barcodes (including Macro PDF417) from image files in a specified folder.
+/// Example program that extracts structured‑append information from PDF417 barcodes.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Scans a folder for image files, reads PDF417 barcodes,
-    /// and outputs segment information for Macro PDF417 barcodes.
+    /// Entry point. Reads an image file, detects PDF417 barcodes, and prints their structured‑append details.
     /// </summary>
     static void Main()
     {
-        // Define the folder that contains PDF417 barcode images. Adjust the path as needed.
-        string imagesFolder = "pdf417_images";
+        // Path to the image containing PDF417 barcode segments.
+        const string imagePath = "pdf417_multi.png";
 
-        // Verify that the folder exists; if not, inform the user and exit.
-        if (!Directory.Exists(imagesFolder))
+        // Verify that the image file exists before attempting to read it.
+        if (!File.Exists(imagePath))
         {
-            Console.WriteLine($"Folder not found: {imagesFolder}");
+            Console.WriteLine($"File not found: {imagePath}");
             return;
         }
 
-        // Retrieve all files in the folder (non‑recursive). Filtering by extension will be done later.
-        string[] imageFiles = Directory.GetFiles(imagesFolder, "*.*", SearchOption.TopDirectoryOnly);
-        if (imageFiles.Length == 0)
+        // Open the image file as a read‑only stream.
+        using (var stream = new FileStream(imagePath, FileMode.Open, FileAccess.Read))
+        // Initialise a barcode reader configured for PDF417 symbology.
+        using (var reader = new BarCodeReader(stream, DecodeType.Pdf417))
         {
-            Console.WriteLine("No image files found in the folder.");
-            return;
-        }
+            bool anyFound = false;
 
-        // Iterate over each file found in the folder.
-        foreach (string filePath in imageFiles)
-        {
-            // Determine the file extension and process only supported image types.
-            string ext = Path.GetExtension(filePath).ToLowerInvariant();
-            if (ext != ".png" && ext != ".jpg" && ext != ".jpeg" && ext != ".tif" && ext != ".tiff" && ext != ".bmp")
-                continue; // Skip unsupported file types.
-
-            // Double‑check that the file still exists before attempting to read it.
-            if (!File.Exists(filePath))
+            // Iterate through all recognized barcodes in the image.
+            foreach (BarCodeResult result in reader.ReadBarCodes())
             {
-                Console.WriteLine($"File not found: {filePath}");
-                continue;
+                anyFound = true;
+                Console.WriteLine($"Code Text: {result.CodeText}");
+
+                // Structured Append information is stored in the PDF417 extended parameters.
+                var pdf417Ext = result.Extended?.Pdf417;
+                if (pdf417Ext != null)
+                {
+                    // MacroPdf417FileID corresponds to the file identifier.
+                    // MacroPdf417SegmentID corresponds to the sequence number (starts from 0).
+                    // MacroPdf417SegmentsCount corresponds to the total number of segments.
+                    Console.WriteLine($"Structured Append File ID   : {pdf417Ext.MacroPdf417FileID}");
+                    Console.WriteLine($"Structured Append Sequence : {pdf417Ext.MacroPdf417SegmentID}");
+                    Console.WriteLine($"Structured Append Total    : {pdf417Ext.MacroPdf417SegmentsCount}");
+                }
+                else
+                {
+                    Console.WriteLine("No structured-append information available for this barcode.");
+                }
+
+                // Separator for readability between barcode entries.
+                Console.WriteLine(new string('-', 40));
             }
 
-            // Create a BarCodeReader configured to decode PDF417 barcodes.
-            using (var reader = new BarCodeReader(filePath, DecodeType.Pdf417))
+            // Inform the user if no PDF417 barcodes were detected.
+            if (!anyFound)
             {
-                // Read all barcodes present in the image.
-                foreach (var result in reader.ReadBarCodes())
-                {
-                    // Extract Macro PDF417 (structured‑append) information.
-                    int segmentId = result.Extended.Pdf417.MacroPdf417SegmentID;
-                    int segmentsCount = result.Extended.Pdf417.MacroPdf417SegmentsCount;
-
-                    // SegmentID is zero‑based; display as 1‑based for readability.
-                    Console.WriteLine($"{Path.GetFileName(filePath)}: Segment {segmentId + 1} of {segmentsCount}");
-                }
+                Console.WriteLine("No PDF417 barcodes were detected in the image.");
             }
         }
     }
