@@ -1,83 +1,88 @@
+// Title: Generate Code 39 Barcodes with Checksum and Save as SVG
+// Description: The program reads text files from an input folder, creates Code 39 barcodes with checksum enabled, and writes the barcodes as SVG files to an output folder.
+// Prompt: Create a job that processes a folder, generates Code 39 barcodes with checksum enabled, and saves them as SVG.
+// Tags: code39, barcode, checksum, svg, aspose.barcode, file-processing, csharp
+
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Entry point for the barcode generation utility.
-/// Scans a folder for files, uses each file name (without extension) as the barcode text,
-/// and generates an SVG barcode image for each file.
+/// Demonstrates how to generate Code 39 barcodes (with checksum) from text files
+/// and save the resulting images as SVG files.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Main method that orchestrates the barcode generation process.
+    /// Entry point of the application. Processes each file in the input folder,
+    /// creates a barcode, and stores it in the output folder.
     /// </summary>
-    /// <param name="args">Command‑line arguments; the first argument can specify the input folder.</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Determine the folder to process: use first argument or default to a subfolder named "Input"
-        string folderPath = args.Length > 0
-            ? args[0]
-            : Path.Combine(Directory.GetCurrentDirectory(), "Input");
-
-        // Verify that the input folder exists
-        if (!Directory.Exists(folderPath))
-        {
-            Console.WriteLine($"Folder not found: {folderPath}");
-            return;
-        }
-
-        // Create an output folder for SVG files (will be created if it does not exist)
+        // Define input and output directories relative to the current working directory.
+        string inputFolder = Path.Combine(Directory.GetCurrentDirectory(), "Input");
         string outputFolder = Path.Combine(Directory.GetCurrentDirectory(), "Output");
-        Directory.CreateDirectory(outputFolder);
 
-        // Retrieve all files in the input folder
-        string[] files = Directory.GetFiles(folderPath);
-        if (files.Length == 0)
+        // Ensure the input folder exists; create it if missing.
+        if (!Directory.Exists(inputFolder))
         {
-            Console.WriteLine($"No files found in folder: {folderPath}");
-            return;
+            Directory.CreateDirectory(inputFolder);
         }
 
-        // Use Code39FullASCII symbology (the only Code39 variant supported)
-        BaseEncodeType encodeType = EncodeTypes.Code39FullASCII;
-
-        // Process each file individually
-        foreach (string filePath in files)
+        // If the input folder is empty, create a sample text file to demonstrate functionality.
+        string[] existingFiles = Directory.GetFiles(inputFolder);
+        if (existingFiles.Length == 0)
         {
-            // Use the file name (without extension) as the barcode text
-            string codeText = Path.GetFileNameWithoutExtension(filePath);
-            if (string.IsNullOrEmpty(codeText))
+            string samplePath = Path.Combine(inputFolder, "Sample1.txt");
+            File.WriteAllText(samplePath, "ABC-123");
+        }
+
+        // Ensure the output folder exists; create it if missing.
+        if (!Directory.Exists(outputFolder))
+        {
+            Directory.CreateDirectory(outputFolder);
+        }
+
+        // Iterate over each file in the input folder and generate a corresponding barcode.
+        foreach (string filePath in Directory.GetFiles(inputFolder))
+        {
+            try
             {
-                Console.WriteLine($"Skipping empty filename for path: {filePath}");
-                continue;
-            }
+                // Derive the barcode file name from the source file name (without extension).
+                string fileNameWithoutExt = Path.GetFileNameWithoutExtension(filePath);
 
-            // Build the output SVG file path
-            string outputFileName = $"{codeText}.svg";
-            string outputPath = Path.Combine(outputFolder, outputFileName);
+                // Read the file content to be encoded; trim whitespace to avoid empty codes.
+                string codeText = File.ReadAllText(filePath).Trim();
 
-            // Generate the barcode using Aspose.BarCode
-            using (BarcodeGenerator generator = new BarcodeGenerator(encodeType, codeText))
-            {
-                // Enable checksum and display it in the human‑readable text
-                generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
-                generator.Parameters.Barcode.ChecksumAlwaysShow = true;
-
-                // Save the barcode as an SVG file (evaluation license supports Code39 for SVG)
-                try
+                // Skip processing if the file contains no usable text.
+                if (string.IsNullOrEmpty(codeText))
                 {
+                    Console.WriteLine($"Skipping empty file: {filePath}");
+                    continue;
+                }
+
+                // Initialise the barcode generator for Code39FullASCII with the provided text.
+                using (var generator = new BarcodeGenerator(EncodeTypes.Code39FullASCII, codeText))
+                {
+                    // Enable checksum calculation for the barcode.
+                    generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
+
+                    // Construct the full output path for the SVG file.
+                    string outputPath = Path.Combine(outputFolder, $"{fileNameWithoutExt}.svg");
+
+                    // Save the generated barcode as an SVG image.
                     generator.Save(outputPath, BarCodeImageFormat.Svg);
-                    Console.WriteLine($"Generated SVG: {outputPath}");
+                    Console.WriteLine($"Generated barcode: {outputPath}");
                 }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Failed to save SVG for '{codeText}': {ex.Message}");
-                }
+            }
+            catch (Exception ex)
+            {
+                // Log any errors that occur while processing an individual file.
+                Console.WriteLine($"Error processing file '{filePath}': {ex.Message}");
             }
         }
 
-        Console.WriteLine("Processing completed.");
+        // End of processing – the program exits automatically.
     }
 }

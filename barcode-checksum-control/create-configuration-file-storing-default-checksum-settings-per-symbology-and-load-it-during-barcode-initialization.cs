@@ -1,113 +1,84 @@
+// Title: Barcode checksum configuration example
+// Description: Demonstrates creating per‑symbology XML configuration files that store default checksum settings and loading one of them during barcode generation.
+// Prompt: Create a configuration file storing default checksum settings per symbology and load it during barcode initialization.
+// Tags: barcode symbology, checksum, configuration, xml, aspose.barcode, generation
+
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Text.Json;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Represents the configuration that maps barcode symbology names to their checksum settings.
-/// </summary>
-class ChecksumConfig
-{
-    // Dictionary where the key is the symbology name and the value indicates whether checksum is enabled.
-    public Dictionary<string, EnableChecksum> Settings { get; set; } = new();
-}
-
-/// <summary>
-/// Entry point for the barcode generation sample application.
+/// Example program that creates XML configuration files for barcode checksum settings
+/// and shows how to load a configuration during barcode generation.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Main method that creates a default configuration (if missing), loads the configuration,
-    /// and generates sample barcodes using the specified checksum settings.
+    /// Entry point of the application.
     /// </summary>
     static void Main()
     {
-        const string configPath = "checksumConfig.json";
-
-        // --------------------------------------------------------------------
-        // Create default configuration file if it does not already exist.
-        // --------------------------------------------------------------------
-        if (!File.Exists(configPath))
+        // ------------------------------------------------------------
+        // Prepare a folder to store the generated XML configuration files
+        // ------------------------------------------------------------
+        string configDir = Path.Combine(Directory.GetCurrentDirectory(), "Config");
+        if (!Directory.Exists(configDir))
         {
-            var defaultConfig = new ChecksumConfig();
-
-            // Define default checksum settings per symbology.
-            defaultConfig.Settings[EncodeTypes.Code39FullASCII.TypeName] = EnableChecksum.Yes;
-            defaultConfig.Settings[EncodeTypes.Code128.TypeName] = EnableChecksum.Yes; // mandatory
-            defaultConfig.Settings[EncodeTypes.ITF14.TypeName] = EnableChecksum.No;
-            defaultConfig.Settings[EncodeTypes.EAN13.TypeName] = EnableChecksum.Default;
-            defaultConfig.Settings[EncodeTypes.DatabarOmniDirectional.TypeName] = EnableChecksum.Default;
-
-            // Serialize the configuration to formatted JSON and write to disk.
-            var json = JsonSerializer.Serialize(defaultConfig, new JsonSerializerOptions { WriteIndented = true });
-            File.WriteAllText(configPath, json);
-            Console.WriteLine($"Created default config at '{configPath}'.");
+            Directory.CreateDirectory(configDir);
         }
 
-        // --------------------------------------------------------------------
-        // Load configuration from file.
-        // --------------------------------------------------------------------
-        ChecksumConfig config;
-        try
+        // ------------------------------------------------------------
+        // Define a set of symbologies together with their default checksum preferences
+        // ------------------------------------------------------------
+        var symbologySettings = new (BaseEncodeType type, EnableChecksum checksum)[]
         {
-            var json = File.ReadAllText(configPath);
-            config = JsonSerializer.Deserialize<ChecksumConfig>(json) ?? new ChecksumConfig();
+            (EncodeTypes.Code128, EnableChecksum.Yes),          // Code128 always uses checksum
+            (EncodeTypes.Code39FullASCII, EnableChecksum.No),   // Example: disable checksum for Code39FullASCII
+            (EncodeTypes.EAN13, EnableChecksum.Yes)            // EAN13 requires checksum
+        };
+
+        // ------------------------------------------------------------
+        // Generate an XML configuration file for each symbology
+        // ------------------------------------------------------------
+        foreach (var (type, checksum) in symbologySettings)
+        {
+            string configPath = Path.Combine(configDir, $"{type.TypeName}_checksum.xml");
+
+            // Use a placeholder codetext; it will be replaced after loading
+            using (var generator = new BarcodeGenerator(type, "123456"))
+            {
+                // Apply the default checksum setting for this symbology
+                generator.Parameters.Barcode.IsChecksumEnabled = checksum;
+
+                // Export the current generator settings to an XML file
+                generator.ExportToXml(configPath);
+            }
         }
-        catch (Exception ex)
+
+        // ------------------------------------------------------------
+        // Demonstrate loading a configuration file and generating a barcode
+        // ------------------------------------------------------------
+        // Choose a symbology to demonstrate (Code128 in this case)
+        BaseEncodeType demoType = EncodeTypes.Code128;
+        string demoConfigPath = Path.Combine(configDir, $"{demoType.TypeName}_checksum.xml");
+
+        if (!File.Exists(demoConfigPath))
         {
-            Console.WriteLine($"Failed to load config: {ex.Message}");
+            Console.WriteLine($"Configuration file not found: {demoConfigPath}");
             return;
         }
 
-        // --------------------------------------------------------------------
-        // Sample data for each supported symbology.
-        // --------------------------------------------------------------------
-        var sampleData = new Dictionary<string, string>
+        // Load the configuration, set the actual codetext, and save the barcode image
+        using (var generator = BarcodeGenerator.ImportFromXml(demoConfigPath))
         {
-            { EncodeTypes.Code39FullASCII.TypeName, "ABC-123" },
-            { EncodeTypes.Code128.TypeName, "1234567890" },
-            { EncodeTypes.ITF14.TypeName, "01234567890123" },
-            { EncodeTypes.EAN13.TypeName, "1234567890128" },
-            { EncodeTypes.DatabarOmniDirectional.TypeName, "(01)01234567890123" }
-        };
+            // Assign the real codetext to encode
+            generator.CodeText = "ABC1234567890";
 
-        // --------------------------------------------------------------------
-        // Generate barcodes using the loaded checksum settings.
-        // --------------------------------------------------------------------
-        foreach (var kvp in config.Settings)
-        {
-            string symbologyName = kvp.Key;
-            EnableChecksum checksumSetting = kvp.Value;
-
-            // Resolve the symbology name to a BaseEncodeType instance via reflection.
-            var field = typeof(EncodeTypes).GetField(symbologyName);
-            if (field == null)
-            {
-                Console.WriteLine($"Unknown symbology: {symbologyName}. Skipping.");
-                continue;
-            }
-
-            var encodeType = (BaseEncodeType)field.GetValue(null)!;
-
-            // Retrieve sample code text; fall back to a generic placeholder if not defined.
-            string codeText = sampleData.ContainsKey(symbologyName) ? sampleData[symbologyName] : "Sample";
-
-            // Create a barcode generator with the specified type and code text.
-            using (var generator = new BarcodeGenerator(encodeType, codeText))
-            {
-                // Apply the checksum configuration from the settings.
-                generator.Parameters.Barcode.IsChecksumEnabled = checksumSetting;
-
-                // Save the generated barcode image to a PNG file.
-                string fileName = $"{symbologyName}_barcode.png";
-                generator.Save(fileName);
-                Console.WriteLine($"Generated '{fileName}' with checksum setting '{checksumSetting}'.");
-            }
+            // Save the generated barcode image to the current directory
+            string outputImage = Path.Combine(Directory.GetCurrentDirectory(), "barcode_demo.png");
+            generator.Save(outputImage);
+            Console.WriteLine($"Barcode saved to: {outputImage}");
         }
-
-        Console.WriteLine("Barcode generation completed.");
     }
 }

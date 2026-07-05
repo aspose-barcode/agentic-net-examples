@@ -1,62 +1,94 @@
+// Title: Generate Barcodes for All Symbologies with Default Checksum
+// Description: The program iterates through every barcode symbology supported by Aspose.BarCode, creates a sample barcode, toggles checksum to its default behavior, saves the image, and logs any errors.
+// Prompt: Write a script that generates barcodes for all symbologies, toggles checksum per default behavior, and logs exceptions.
+// Tags: barcode, symbology, generation, checksum, exception handling, aspose.barcode
+
 using System;
 using System.IO;
+using System.Reflection;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generation of barcode images for all supported symbologies using Aspose.BarCode.
+/// Demonstrates how to generate a PNG barcode image for each supported symbology,
+/// applying the default checksum behavior and handling any runtime exceptions.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a PNG barcode for each symbology defined in <see cref="EncodeTypes"/>.
+    /// Entry point of the application. Creates an output folder, enumerates all symbologies,
+    /// generates sample barcodes, saves them as PNG files, and logs progress or errors.
     /// </summary>
     static void Main()
     {
-        // Define the output directory for generated barcode images.
+        // Create (or reuse) the output directory for generated barcode images.
         string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
-        // Ensure the directory exists.
         Directory.CreateDirectory(outputDir);
 
-        // Retrieve all symbology names defined in EncodeTypes.
-        string[] symbologyNames = EncodeTypes.GetNames();
+        // Retrieve the list of all symbology names defined in EncodeTypes.
+        string[] symNames = EncodeTypes.GetNames();
 
-        // Iterate over each symbology name.
-        foreach (string name in symbologyNames)
+        // Process each symbology individually.
+        foreach (string name in symNames)
         {
             try
             {
-                // Attempt to parse the symbology name into a BaseEncodeType instance.
-                if (!EncodeTypes.TryParse(name, out BaseEncodeType encodeType))
+                // Resolve the symbology name to its corresponding BaseEncodeType via reflection.
+                FieldInfo field = typeof(EncodeTypes).GetField(name, BindingFlags.Public | BindingFlags.Static);
+                if (field == null)
                 {
-                    Console.WriteLine($"Unable to parse symbology name: {name}");
-                    continue; // Skip to the next symbology if parsing fails.
+                    Console.WriteLine($"[WARN] Symbology field not found: {name}");
+                    continue;
                 }
 
-                // Sample code text to encode; invalid formats will trigger an exception.
-                string sampleCodeText = "1234567890";
+                BaseEncodeType encodeType = (BaseEncodeType)field.GetValue(null);
 
-                // Create a barcode generator for the current symbology and sample text.
-                using (var generator = new BarcodeGenerator(encodeType, sampleCodeText))
+                // Generate a sample codetext appropriate for the current symbology.
+                string codeText = GetSampleCodeText(name);
+
+                // Initialize the barcode generator with the resolved type and sample text.
+                using (BarcodeGenerator generator = new BarcodeGenerator(encodeType, codeText))
                 {
-                    // Set checksum behavior to the default for the symbology.
+                    // Apply the default checksum behavior (enabled/disabled as defined by the symbology).
                     generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Default;
 
-                    // Build the full file path for the PNG image.
+                    // Construct the full file path for the PNG output.
                     string filePath = Path.Combine(outputDir, $"{name}.png");
-                    // Save the generated barcode as a PNG file.
-                    generator.Save(filePath, BarCodeImageFormat.Png);
-                    Console.WriteLine($"Generated barcode for {name} at {filePath}");
+
+                    // Save the generated barcode image.
+                    generator.Save(filePath);
+                    Console.WriteLine($"[INFO] Generated barcode for {name} -> {filePath}");
                 }
             }
             catch (Exception ex)
             {
-                // Log any errors that occur during barcode generation.
-                Console.WriteLine($"Error generating barcode for {name}: {ex.Message}");
+                // Log any exception that occurs while processing the current symbology.
+                Console.WriteLine($"[ERROR] Failed to generate {name}: {ex.Message}");
             }
         }
+    }
 
-        // Indicate that the process has finished.
-        Console.WriteLine("Barcode generation completed.");
+    /// <summary>
+    /// Provides a generic sample codetext for a given symbology.
+    /// Certain symbologies require specific formats, which are handled via a switch expression.
+    /// </summary>
+    /// <param name="symName">The name of the symbology.</param>
+    /// <returns>A sample codetext string suitable for the specified symbology.</returns>
+    static string GetSampleCodeText(string symName)
+    {
+        // Default fallback codetext.
+        const string defaultText = "1234567890";
+
+        // Adjust codetext for known symbologies that have strict format requirements.
+        return symName switch
+        {
+            nameof(EncodeTypes.EAN13) => "1234567890128",               // Valid EAN‑13 with checksum
+            nameof(EncodeTypes.EAN8) => "12345670",                    // Valid EAN‑8 with checksum
+            nameof(EncodeTypes.UPCA) => "123456789012",                // Valid UPC‑A
+            nameof(EncodeTypes.UPCE) => "0123456",                     // Valid UPC‑E
+            nameof(EncodeTypes.DatabarLimited) => "(01)08888888888888",
+            nameof(EncodeTypes.DatabarOmniDirectional) => "(01)12345678901231",
+            _ => defaultText
+        };
     }
 }

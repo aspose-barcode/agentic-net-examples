@@ -1,74 +1,63 @@
+// Title: Barcode Checksum Helper Demo
+// Description: Demonstrates using a helper class to control checksum generation for a barcode and saving the result as an image.
+// Prompt: Create a helper class abstracting checksum control logic, exposing methods to enable, disable, and query status.
+// Tags: barcode, checksum, helper, aspnet, csharp, aspose.barcode, code128, image
+
 using System;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
-/// <summary>
-/// Helper class to manage checksum settings for a <see cref="BarcodeGenerator"/>.
-/// </summary>
-class ChecksumHelper
+namespace BarcodeChecksumHelperDemo
 {
     /// <summary>
-    /// Enables checksum for the given barcode generator.
+    /// Provides static methods to enable, disable, and query the checksum setting of a <see cref="BarcodeGenerator"/>.
     /// </summary>
-    /// <param name="generator">The <see cref="BarcodeGenerator"/> instance.</param>
-    public static void Enable(BarcodeGenerator generator)
+    public static class BarcodeChecksumHelper
     {
-        // Validate argument
-        if (generator == null) throw new ArgumentNullException(nameof(generator));
-        // Set checksum flag to Yes
-        generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
-    }
-
-    /// <summary>
-    /// Disables checksum for the given barcode generator.
-    /// </summary>
-    /// <param name="generator">The <see cref="BarcodeGenerator"/> instance.</param>
-    public static void Disable(BarcodeGenerator generator)
-    {
-        // Validate argument
-        if (generator == null) throw new ArgumentNullException(nameof(generator));
-        // Set checksum flag to No
-        generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.No;
-    }
-
-    /// <summary>
-    /// Returns <c>true</c> if checksum is enabled; otherwise, <c>false</c>.
-    /// </summary>
-    /// <param name="generator">The <see cref="BarcodeGenerator"/> instance.</param>
-    /// <returns>Boolean indicating checksum status.</returns>
-    public static bool GetStatus(BarcodeGenerator generator)
-    {
-        // Validate argument
-        if (generator == null) throw new ArgumentNullException(nameof(generator));
-        // Compare current setting with Yes
-        return generator.Parameters.Barcode.IsChecksumEnabled == EnableChecksum.Yes;
-    }
-}
-
-/// <summary>
-/// Demonstrates enabling and disabling checksum on a barcode generator and saving the image.
-/// </summary>
-class Program
-{
-    /// <summary>
-    /// Application entry point.
-    /// </summary>
-    static void Main()
-    {
-        // Create a Code39FullASCII barcode generator with sample text
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code39FullASCII, "ABC123"))
+        // Enables checksum generation for the supplied generator.
+        public static void SetChecksumOn(BarcodeGenerator generator)
         {
-            // Initially disable checksum
-            ChecksumHelper.Disable(generator);
-            Console.WriteLine("Checksum enabled? " + ChecksumHelper.GetStatus(generator));
+            if (generator == null) throw new ArgumentNullException(nameof(generator));
+            generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
+        }
 
-            // Enable checksum
-            ChecksumHelper.Enable(generator);
-            Console.WriteLine("Checksum enabled? " + ChecksumHelper.GetStatus(generator));
+        // Disables checksum generation for the supplied generator.
+        public static void SetChecksumOff(BarcodeGenerator generator)
+        {
+            if (generator == null) throw new ArgumentNullException(nameof(generator));
+            generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.No;
+        }
 
-            // Save the barcode image to a file
-            generator.Save("barcode.png");
-            Console.WriteLine("Barcode saved as barcode.png");
+        // Returns true if checksum is enabled; otherwise false.
+        public static bool GetChecksumStatus(BarcodeGenerator generator)
+        {
+            if (generator == null) throw new ArgumentNullException(nameof(generator));
+            return generator.Parameters.Barcode.IsChecksumEnabled == EnableChecksum.Yes;
+        }
+    }
+
+    class Program
+    {
+        /// <summary>
+        /// Entry point of the demo application. Creates a barcode, toggles checksum settings, and saves the image.
+        /// </summary>
+        static void Main()
+        {
+            // Create a barcode generator for Code128 with sample text.
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
+            {
+                // Initially disable checksum.
+                BarcodeChecksumHelper.SetChecksumOff(generator);
+                Console.WriteLine($"Checksum enabled? {BarcodeChecksumHelper.GetChecksumStatus(generator)}");
+
+                // Enable checksum.
+                BarcodeChecksumHelper.SetChecksumOn(generator);
+                Console.WriteLine($"Checksum enabled? {BarcodeChecksumHelper.GetChecksumStatus(generator)}");
+
+                // Save the barcode image to a file.
+                string outputPath = "barcode.png";
+                generator.Save(outputPath);
+                Console.WriteLine($"Barcode saved to {outputPath}");
+            }
         }
     }
 }

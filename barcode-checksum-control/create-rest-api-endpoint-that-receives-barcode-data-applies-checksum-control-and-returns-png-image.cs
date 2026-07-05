@@ -1,64 +1,65 @@
+// Title: Barcode generation with checksum and PNG output via simulated REST endpoint
+// Description: Demonstrates how to receive barcode data, apply checksum control, and return a PNG image (as Base64) for a REST API scenario.
+// Prompt: Create a REST API endpoint that receives barcode data, applies checksum control, and returns a PNG image.
+// Tags: barcode, checksum, png, rest api, aspnet, aspose.barcode
+
 using System;
 using System.IO;
-using System.Text;
+using System.Reflection;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a Code39FullASCII barcode with checksum enabled,
-/// saving it to a PNG file, and outputting a Base64 representation.
+/// Example program that simulates a REST API endpoint for barcode generation.
+/// It receives barcode type and data, applies checksum control, and returns a PNG image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Generates a barcode image as a PNG byte array.
-    /// </summary>
-    /// <param name="codeText">The text to encode in the barcode.</param>
-    /// <returns>Byte array containing the PNG image.</returns>
-    static byte[] GenerateBarcodeImage(string codeText)
-    {
-        // Choose Code39FullASCII which supports optional checksum.
-        BaseEncodeType encodeType = EncodeTypes.Code39FullASCII;
-
-        // Create a barcode generator with the specified type and text.
-        using (var generator = new BarcodeGenerator(encodeType, codeText))
-        {
-            // Enable checksum calculation and ensure the checksum digit is displayed.
-            generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
-            generator.Parameters.Barcode.ChecksumAlwaysShow = true;
-
-            // Save the generated barcode to a memory stream in PNG format.
-            using (var ms = new MemoryStream())
-            {
-                generator.Save(ms, BarCodeImageFormat.Png);
-                // Return the PNG data as a byte array.
-                return ms.ToArray();
-            }
-        }
-    }
-
-    /// <summary>
-    /// Entry point of the application. Generates a barcode, writes it to disk,
-    /// and prints a Base64-encoded representation to the console.
+    /// Entry point that mimics handling a REST request, generates the barcode, and outputs the image as Base64.
     /// </summary>
     static void Main()
     {
-        // Sample input that would typically come from a REST request.
-        string inputCodeText = "ABC123";
+        // ---------- Simulated request payload ----------
+        // Barcode symbology (e.g., Code128) and the data to encode.
+        string symbologyName = "Code128"; // barcode type
+        string codeText = "123ABC";       // data to encode
 
-        // Generate the barcode image bytes.
-        byte[] pngBytes = GenerateBarcodeImage(inputCodeText);
+        // ---------- Resolve symbology name to EncodeTypes ----------
+        // Use reflection to map the string name to the corresponding BaseEncodeType enum value.
+        var field = typeof(EncodeTypes).GetField(symbologyName, BindingFlags.Public | BindingFlags.Static);
+        if (field == null)
+        {
+            Console.WriteLine($"Unknown symbology: {symbologyName}");
+            return;
+        }
 
-        // Write the image to a file for verification.
-        string outputPath = "barcode.png";
-        File.WriteAllBytes(outputPath, pngBytes);
-        Console.WriteLine($"Barcode image saved to: {Path.GetFullPath(outputPath)}");
+        BaseEncodeType encodeType = (BaseEncodeType)field.GetValue(null);
 
-        // Simulate an HTTP response by outputting a Base64-encoded PNG.
-        string base64Image = Convert.ToBase64String(pngBytes);
-        Console.WriteLine("Base64 PNG response:");
-        Console.WriteLine(base64Image);
+        // ---------- Create barcode generator with checksum enabled ----------
+        using (var generator = new BarcodeGenerator(encodeType, codeText))
+        {
+            // Enable checksum generation and make it visible in the human‑readable text.
+            generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
+            generator.Parameters.Barcode.ChecksumAlwaysShow = true;
+
+            // ---------- Save barcode to a memory stream as PNG ----------
+            using (var ms = new MemoryStream())
+            {
+                generator.Save(ms, BarCodeImageFormat.Png);
+                byte[] imageBytes = ms.ToArray();
+
+                // ---------- Output the image as a Base64 string ----------
+                // This simulates the HTTP response body in a console environment.
+                string base64 = Convert.ToBase64String(imageBytes);
+                Console.WriteLine("Barcode PNG (Base64):");
+                Console.WriteLine(base64);
+            }
+        }
+
+        // Note: In a real REST API you would return the PNG bytes with the appropriate
+        // content‑type header. The console application prints the Base64 representation
+        // to demonstrate the result within the snippet runner environment.
     }
 }

@@ -1,56 +1,70 @@
+// Title: Code128 Weighted‑Position Checksum Example
+// Description: Demonstrates calculating the Code 128 weighted‑position checksum for a given input string using Code Set B. Useful for validating barcode data before encoding.
+// Prompt: Implement a method that calculates and returns the weighted‑position checksum for a given Code 128 input string.
+// Tags: barcode, code128, checksum, weighted-position, codesetb, console
+
 using System;
 
-/// <summary>
-/// Demonstrates calculation of a Code128 weighted‑position checksum using Code Set B.
-/// </summary>
-class Program
+namespace Code128ChecksumDemo
 {
     /// <summary>
-    /// Calculates the Code128 weighted‑position checksum (mod 103) for the supplied text using Code Set B.
+    /// Provides a console demo for calculating a Code 128 weighted‑position checksum.
     /// </summary>
-    /// <param name="codeText">The string to calculate the checksum for.</param>
-    /// <returns>The checksum value (0‑102).</returns>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="codeText"/> is null.</exception>
-    /// <exception cref="ArgumentException">Thrown when a character is outside the valid Code128 Set B range.</exception>
-    static int CalculateCode128Checksum(string codeText)
+    class Program
     {
-        // Validate input
-        if (codeText == null)
-            throw new ArgumentNullException(nameof(codeText));
-
-        const int startCodeB = 104; // Start Code B value per specification
-        int sum = startCodeB;       // Initialize sum with the start code
-
-        // Iterate over each character to compute weighted sum
-        for (int i = 0; i < codeText.Length; i++)
+        /// <summary>
+        /// Entry point. Calculates and displays the checksum for a sample input string.
+        /// </summary>
+        static void Main()
         {
-            char ch = codeText[i];
-            int charValue = ch - 32; // Map character to Code Set B value (0‑95)
+            // Sample input string to be checksummed
+            string input = "ABCD123";
 
-            // Ensure character is within the valid range for Code Set B
-            if (charValue < 0 || charValue > 95)
-                throw new ArgumentException($"Character '{ch}' at position {i} is not valid for Code128 Set B.");
+            // Compute the checksum using the helper method
+            int checksum = CalculateCode128Checksum(input);
 
-            int position = i + 1; // Position index starts at 1 per checksum algorithm
-            sum += charValue * position; // Add weighted value to running total
+            // Output the original input and its checksum
+            Console.WriteLine($"Input: {input}");
+            Console.WriteLine($"Weighted‑position checksum (mod 103): {checksum}");
         }
 
-        // Return checksum as modulo 103 of the accumulated sum
-        return sum % 103;
-    }
+        // Calculates the Code128 weighted‑position checksum (mod 103) using Code Set B.
+        static int CalculateCode128Checksum(string input)
+        {
+            // Validate argument
+            if (input == null)
+                throw new ArgumentNullException(nameof(input));
 
-    /// <summary>
-    /// Entry point of the program. Calculates and displays the checksum for a sample string.
-    /// </summary>
-    static void Main()
-    {
-        // Sample data to demonstrate checksum calculation
-        string sample = "1234567890";
+            // Start Code B value as defined by Code128 specification
+            const int startCodeValue = 104;
+            int sum = startCodeValue; // Initialize sum with start code value
 
-        // Compute checksum using the helper method
-        int checksum = CalculateCode128Checksum(sample);
+            // Iterate over each character, applying weight based on position (1‑based)
+            for (int i = 0; i < input.Length; i++)
+            {
+                // Convert character to its Code128 Code Set B numeric value
+                int charValue = GetCode128ValueForCodeSetB(input[i]);
 
-        // Output the result to the console
-        Console.WriteLine($"Code128 weighted‑position checksum for \"{sample}\" is: {checksum}");
+                // Position index starts at 1, so weight = i + 1
+                int weight = i + 1;
+
+                // Accumulate weighted value
+                sum += charValue * weight;
+            }
+
+            // Return checksum as remainder modulo 103
+            return sum % 103;
+        }
+
+        // Maps a character to its Code128 Code Set B value (ASCII 32–127 -> 0–95)
+        static int GetCode128ValueForCodeSetB(char ch)
+        {
+            // Ensure character is within the valid range for Code Set B
+            if (ch < 32 || ch > 127)
+                throw new ArgumentException($"Character '{ch}' is not valid for Code128 Code Set B.");
+
+            // Compute Code Set B value by offsetting ASCII code
+            return ch - 32;
+        }
     }
 }

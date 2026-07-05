@@ -1,55 +1,55 @@
+// Title: Serialize and Reload Barcode Generation Settings
+// Description: Demonstrates how to serialize barcode generator settings, including checksum enablement, to an XML file and later import them to generate a barcode image.
+// Prompt: Serialize barcode generation settings, including IsChecksumEnabled, to XML and reload them later.
+// Tags: barcode, serialization, xml, checksum, aspose.barcode, code128, image generation
+
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates how to generate a barcode, export its settings to XML,
-/// import those settings, and save the resulting images.
+/// Example program that shows how to export barcode generation settings to XML,
+/// import them back, and generate a barcode image using the restored settings.
 /// </summary>
 class Program
 {
     /// <summary>
     /// Entry point of the application.
-    /// Generates a barcode, saves its image, exports settings to XML,
-    /// imports the settings, and saves the imported barcode image.
+    /// Serializes barcode settings (including checksum) to XML, reloads them,
+    /// and creates a barcode image file.
     /// </summary>
     static void Main()
     {
-        // Define file paths for the generated barcode images and the XML settings file.
-        string xmlPath = "barcodeSettings.xml";
-        string originalImagePath = "barcode_original.png";
-        string importedImagePath = "barcode_imported.png";
+        // Define file paths in the current directory
+        string xmlPath = Path.Combine(Directory.GetCurrentDirectory(), "barcodeSettings.xml");
+        string imagePath = Path.Combine(Directory.GetCurrentDirectory(), "barcode.png");
 
-        // --------------------------------------------------------------------
-        // Create a barcode generator, enable checksum, save the image,
-        // and export the generator's configuration to an XML file.
-        // --------------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code39FullASCII, "12345"))
+        // Create a barcode generator, configure checksum and visual options, then export settings to XML
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            // Enable checksum for the barcode.
+            // Enable checksum for the barcode
             generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
 
-            // Save the generated barcode image to the specified path.
-            generator.Save(originalImagePath);
+            // Optionally set other visual parameters
+            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Blue;
+            generator.Parameters.Barcode.XDimension.Point = 2f;
 
-            // Export the current generator settings (including checksum) to XML.
+            // Export the current settings to an XML file
             generator.ExportToXml(xmlPath);
         }
 
-        // --------------------------------------------------------------------
-        // Import the previously saved XML settings into a new generator instance
-        // and save the barcode image generated from those imported settings.
-        // --------------------------------------------------------------------
+        // Import the settings from the XML file into a new generator instance
         using (var importedGenerator = BarcodeGenerator.ImportFromXml(xmlPath))
         {
-            // Save the barcode image created from the imported settings.
-            importedGenerator.Save(importedImagePath);
+            // Verify that the checksum setting was restored (optional console output)
+            Console.WriteLine("IsChecksumEnabled after import: " + importedGenerator.Parameters.Barcode.IsChecksumEnabled);
+
+            // Save a barcode image using the imported settings
+            importedGenerator.Save(imagePath);
         }
 
-        // Output the full paths of the generated files for verification.
-        Console.WriteLine($"Original barcode saved to: {Path.GetFullPath(originalImagePath)}");
-        Console.WriteLine($"XML settings saved to: {Path.GetFullPath(xmlPath)}");
-        Console.WriteLine($"Imported barcode saved to: {Path.GetFullPath(importedImagePath)}");
+        // Indicate completion
+        Console.WriteLine("Barcode generated and settings serialized successfully.");
     }
 }

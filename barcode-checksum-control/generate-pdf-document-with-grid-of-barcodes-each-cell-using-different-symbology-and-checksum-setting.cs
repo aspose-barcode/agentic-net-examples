@@ -1,72 +1,105 @@
+// Title: PDF Barcode Grid Example
+// Description: Generates a PDF containing a 2x2 grid where each cell displays a barcode of a different symbology and checksum configuration.
+// Prompt: Generate a PDF document with a grid of barcodes, each cell using a different symbology and checksum setting.
+// Tags: barcode, symbology, pdf, aspose.barcode, aspose.pdf, grid, checksum
+
 using System;
 using System.Collections.Generic;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Pdf;
+using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
+using Aspose.Pdf;
 
 /// <summary>
-/// Demonstrates generating multiple barcodes, storing them in memory,
-/// and embedding them into a PDF document using Aspose libraries.
+/// Demonstrates how to create a PDF document that contains a grid of barcodes,
+/// each using a distinct symbology and checksum setting.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates barcodes, creates a PDF, and saves the result.
+    /// Entry point of the example. Generates the PDF and writes the output path to the console.
     /// </summary>
     static void Main()
     {
-        // Define barcode specifications: symbology, text, and checksum setting.
-        var barcodes = new List<(BaseEncodeType type, string text, EnableChecksum checksum)>
+        // Output PDF file name
+        string pdfPath = "BarcodesGrid.pdf";
+
+        // Define a small set of barcode specifications (max 4 for evaluation mode)
+        var specs = new List<(BaseEncodeType Type, string CodeText, EnableChecksum Checksum, string Caption)>
         {
-            (EncodeTypes.Code128, "ABC123456", EnableChecksum.Yes),               // Code128 requires checksum
-            (EncodeTypes.Code39FullASCII, "CODE39*TEST", EnableChecksum.No),    // Code39 optional checksum
-            (EncodeTypes.EAN13, "5901234123457", EnableChecksum.Yes),          // EAN13 with checksum
-            (EncodeTypes.Pdf417, "PDF417 Sample Text", EnableChecksum.Yes)    // PDF417 (checksum ignored)
+            // Code128 - checksum always required
+            (EncodeTypes.Code128, "ABC123", EnableChecksum.Yes, "Code128"),
+            // Code39FullASCII - checksum optional, enable it
+            (EncodeTypes.Code39FullASCII, "CODE39", EnableChecksum.Yes, "Code39FullASCII"),
+            // Codabar - checksum not applicable, set to No
+            (EncodeTypes.Codabar, "A123B", EnableChecksum.No, "Codabar"),
+            // DataMatrix - 2D barcode, checksum not applicable
+            (EncodeTypes.DataMatrix, "DMATRIX", EnableChecksum.Default, "DataMatrix")
         };
 
-        // Collection to hold generated barcode images as memory streams.
-        var barcodeImages = new List<MemoryStream>();
-
-        // Generate each barcode and store its PNG image in a memory stream.
-        foreach (var (type, text, checksum) in barcodes)
+        // Create a new PDF document
+        using (var pdfDoc = new Document())
         {
-            using (var generator = new BarcodeGenerator(type, text))
-            {
-                // Apply the specified checksum setting.
-                generator.Parameters.Barcode.IsChecksumEnabled = checksum;
+            // Add a single page to the document
+            var page = pdfDoc.Pages.Add();
 
-                // Save the barcode image to a memory stream in PNG format.
-                var ms = new MemoryStream();
-                generator.Save(ms, BarCodeImageFormat.Png);
-                ms.Position = 0; // Reset stream position for subsequent reading.
-                barcodeImages.Add(ms);
+            // Determine grid layout (2 columns x 2 rows)
+            int cols = 2;
+            int rows = 2;
+            double pageWidth = page.PageInfo.Width;
+            double pageHeight = page.PageInfo.Height;
+            double cellWidth = pageWidth / cols;
+            double cellHeight = pageHeight / rows;
+
+            // Iterate over each barcode specification and place it in the grid
+            for (int i = 0; i < specs.Count; i++)
+            {
+                var spec = specs[i];
+
+                // Create a barcode generator for the current specification
+                using (var generator = new BarcodeGenerator(spec.Type, spec.CodeText))
+                {
+                    // Apply checksum setting where applicable
+                    generator.Parameters.Barcode.IsChecksumEnabled = spec.Checksum;
+
+                    // For Code128, show checksum in the human‑readable text
+                    if (spec.Type == EncodeTypes.Code128)
+                    {
+                        generator.Parameters.Barcode.ChecksumAlwaysShow = true;
+                    }
+
+                    // Render the barcode to a memory stream as PNG
+                    using (var ms = new MemoryStream())
+                    {
+                        generator.Save(ms, BarCodeImageFormat.Png);
+                        ms.Position = 0;
+
+                        // Calculate the rectangle for the current cell
+                        int col = i % cols;
+                        int row = i / cols;
+                        double llx = col * cellWidth;
+                        double lly = pageHeight - ((row + 1) * cellHeight);
+                        double urx = llx + cellWidth;
+                        double ury = lly + cellHeight;
+
+                        // Add the barcode image to the PDF page within the calculated rectangle
+                        page.AddImage(
+                            ms,
+                            new Aspose.Pdf.Rectangle(llx, lly, urx, ury),
+                            (int)cellWidth,
+                            (int)cellHeight,
+                            true);
+                    }
+                }
             }
+
+            // Save the generated PDF to disk
+            pdfDoc.Save(pdfPath);
         }
 
-        // Create a new PDF document and add a single page.
-        var pdfDoc = new Document();
-        var page = pdfDoc.Pages.Add();
-
-        // Embed each barcode image into the PDF page.
-        // (Maximum of 4 images per evaluation limits.)
-        foreach (var imgStream in barcodeImages)
-        {
-            var pdfImage = new Aspose.Pdf.Image
-            {
-                ImageStream = imgStream,
-                FixWidth = 200.0,
-                FixHeight = 100.0
-            };
-            page.Paragraphs.Add(pdfImage);
-        }
-
-        // Save the assembled PDF to disk.
-        const string outputPdf = "BarcodesGrid.pdf";
-        pdfDoc.Save(outputPdf);
-        Console.WriteLine($"PDF with barcodes saved to: {outputPdf}");
+        // Inform the user where the PDF was saved
+        Console.WriteLine($"PDF with barcode grid saved to: {Path.GetFullPath(pdfPath)}");
     }
 }

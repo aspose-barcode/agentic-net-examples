@@ -1,34 +1,34 @@
+// Title: Generate Code 128 Barcode with Checksum and Save as JPEG
+// Description: Demonstrates creating a Code 128 barcode, enabling checksum, and exporting it to a JPEG file using Aspose.BarCode.
+// Prompt: Instantiate BarcodeParameters, enable checksum, generate a Code 128 barcode, and export it as JPEG.
+// Tags: barcode, code128, checksum, jpeg, generation, aspose.barcode
+
 using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generating a Code128 barcode image using Aspose.BarCode.
+/// Example program that generates a Code 128 barcode with checksum enabled
+/// and saves it as a JPEG image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a Code128 barcode and saves it as a JPEG file.
+    /// Entry point of the application.
     /// </summary>
     static void Main()
     {
-        // Define the output file name and path for the generated barcode image.
-        string outputPath = "code128.jpg";
-
-        // Initialize a BarcodeGenerator for the Code128 symbology.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128))
+        // Initialize a barcode generator for Code 128 with the desired text
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
         {
-            // Assign the data to be encoded in the barcode.
-            generator.CodeText = "1234567890";
-
-            // Activate checksum calculation for the barcode (required for some scanners).
+            // Enable checksum generation for the barcode
             generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
 
-            // Persist the generated barcode to a JPEG file at the specified path.
-            generator.Save(outputPath, BarCodeImageFormat.Jpeg);
+            // Save the generated barcode image as a JPEG file
+            generator.Save("code128.jpg");
         }
 
-        // Inform the user where the barcode image has been saved.
-        Console.WriteLine($"Barcode saved to {outputPath}");
+        // Inform the user that the barcode has been created
+        Console.WriteLine("Barcode generated and saved as code128.jpg");
     }
 }

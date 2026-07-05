@@ -1,3 +1,8 @@
+// Title: Barcode Generator with Checksum Toggle
+// Description: Demonstrates how to generate a barcode image while allowing the checksum to be turned on or off via command‑line arguments.
+// Prompt: Build a console utility that accepts arguments to toggle checksum for a symbology and outputs the image path.
+// Tags: barcode symbology, checksum, console, aspose.barcode, image output
+
 using System;
 using System.IO;
 using System.Reflection;
@@ -5,47 +10,40 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generating a barcode image using Aspose.BarCode with optional command‑line parameters.
+/// Console utility that creates a barcode image based on command‑line arguments.
+/// Allows toggling of the checksum feature for the selected symbology and prints the saved image path.
 /// </summary>
 class Program
 {
     /// <summary>
     /// Entry point of the application.
-    /// Accepts optional arguments to customize the barcode generation:
-    /// <list type="number">
-    ///   <item>symbologyName – the barcode symbology (e.g., Code39FullASCII)</item>
-    ///   <item>codeText – the text to encode</item>
-    ///   <item>checksumFlag – \"yes\" or \"no\" to enable checksum</item>
-    ///   <item>outputPath – file path for the generated image</item>
-    /// </list>
+    /// Accepts up to four arguments: symbology name, checksum flag, code text, and optional output path.
     /// </summary>
     /// <param name="args">Command‑line arguments.</param>
     static void Main(string[] args)
     {
         // --------------------------------------------------------------------
-        // Default values for barcode generation
+        // Default values for optional parameters
         // --------------------------------------------------------------------
-        string symbologyName = "Code39FullASCII";
-        string codeText = "12345";
-        string checksumArg = "yes";
-        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "barcode.png");
+        string symbologyName = "Code128";   // Default symbology
+        string checksumArg = "on";          // Default checksum setting
+        string codeText = "123456";         // Default data to encode
+        string outputPath = null;           // Will be generated if not supplied
 
         // --------------------------------------------------------------------
-        // Override defaults with command‑line arguments, if supplied
-        // Expected order: symbologyName codeText checksumFlag outputPath
+        // Parse command‑line arguments (if any) and override defaults
         // --------------------------------------------------------------------
         if (args.Length > 0) symbologyName = args[0];
-        if (args.Length > 1) codeText = args[1];
-        if (args.Length > 2) checksumArg = args[2];
+        if (args.Length > 1) checksumArg = args[1];
+        if (args.Length > 2) codeText = args[2];
         if (args.Length > 3) outputPath = args[3];
 
         // --------------------------------------------------------------------
-        // Resolve the symbology name to the corresponding EncodeTypes value
-        // using reflection on the EncodeTypes class
+        // Resolve the symbology name to an EncodeTypes value using reflection
         // --------------------------------------------------------------------
-        FieldInfo field = typeof(EncodeTypes).GetField(
+        var field = typeof(EncodeTypes).GetField(
             symbologyName,
-            BindingFlags.Public | BindingFlags.Static);
+            BindingFlags.Public | BindingFlags.Static | BindingFlags.IgnoreCase);
 
         if (field == null)
         {
@@ -58,24 +56,26 @@ class Program
         // --------------------------------------------------------------------
         // Determine whether checksum should be enabled based on the argument
         // --------------------------------------------------------------------
-        EnableChecksum checksumSetting = string.Equals(
-            checksumArg,
-            "no",
-            StringComparison.OrdinalIgnoreCase)
-            ? EnableChecksum.No
-            : EnableChecksum.Yes;
+        EnableChecksum checksumSetting = EnableChecksum.Yes;
 
-        // --------------------------------------------------------------------
-        // Ensure the directory for the output file exists
-        // --------------------------------------------------------------------
-        string outputDir = Path.GetDirectoryName(outputPath);
-        if (!string.IsNullOrEmpty(outputDir) && !Directory.Exists(outputDir))
+        if (string.Equals(checksumArg, "off", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(checksumArg, "no", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(checksumArg, "false", StringComparison.OrdinalIgnoreCase))
         {
-            Directory.CreateDirectory(outputDir);
+            checksumSetting = EnableChecksum.No;
         }
 
         // --------------------------------------------------------------------
-        // Generate the barcode and save it to the specified path
+        // Build the output file path if the user did not provide one
+        // --------------------------------------------------------------------
+        if (string.IsNullOrWhiteSpace(outputPath))
+        {
+            string fileName = $"{encodeType.TypeName}_{(checksumSetting == EnableChecksum.Yes ? "ChecksumOn" : "ChecksumOff")}.png";
+            outputPath = Path.Combine(Directory.GetCurrentDirectory(), fileName);
+        }
+
+        // --------------------------------------------------------------------
+        // Generate the barcode image with the selected settings
         // --------------------------------------------------------------------
         using (var generator = new BarcodeGenerator(encodeType, codeText))
         {
@@ -83,6 +83,9 @@ class Program
             generator.Save(outputPath);
         }
 
+        // --------------------------------------------------------------------
+        // Inform the user where the image was saved
+        // --------------------------------------------------------------------
         Console.WriteLine($"Barcode saved to: {outputPath}");
     }
 }

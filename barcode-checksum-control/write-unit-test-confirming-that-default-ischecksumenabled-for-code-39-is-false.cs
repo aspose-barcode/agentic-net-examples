@@ -1,29 +1,36 @@
+// Title: Verify default checksum setting for Code 39 barcode
+// Description: Demonstrates how to confirm that the IsChecksumEnabled property for Code 39 barcodes defaults to disabled, useful for ensuring correct checksum handling in barcode generation.
+// Prompt: Write a unit test confirming that the default IsChecksumEnabled for Code 39 is false.
+// Tags: barcode symbology, checksum, unit test, code39, aspose.barcode
+
 using System;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates verification of the default checksum setting for Code39 barcodes using Aspose.BarCode.
+/// Example program that checks the default checksum configuration for a Code 39 barcode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Creates a Code39 barcode generator and checks the default checksum flag.
+    /// Entry point of the program. Creates a barcode generator and verifies the default checksum setting.
     /// </summary>
     static void Main()
     {
-        // Initialize a barcode generator for Code39FullASCII with sample data "ABC123".
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code39FullASCII, "ABC123"))
+        // Initialize a BarcodeGenerator for Code39FullASCII with sample text "ABC".
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code39FullASCII, "ABC"))
         {
-            // Verify that the default IsChecksumEnabled property is not set to Yes.
-            if (generator.Parameters.Barcode.IsChecksumEnabled == EnableChecksum.Yes)
-            {
-                // If the checksum is incorrectly enabled, throw an exception.
-                throw new InvalidOperationException("Default IsChecksumEnabled for Code39 is not false.");
-            }
+            // Retrieve the current default checksum setting from the generator's parameters.
+            EnableChecksum defaultChecksum = generator.Parameters.Barcode.IsChecksumEnabled;
 
-            // If the check passes, output a confirmation message.
-            Console.WriteLine("Test passed: Default IsChecksumEnabled for Code39 is false.");
+            // Compare the retrieved setting with the expected default (No) and output the result.
+            if (defaultChecksum == EnableChecksum.No)
+            {
+                Console.WriteLine("PASSED: Default IsChecksumEnabled for Code39 is No.");
+            }
+            else
+            {
+                Console.WriteLine($"FAILED: Expected No, but got {defaultChecksum}.");
+            }
         }
     }
 }

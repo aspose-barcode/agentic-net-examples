@@ -1,77 +1,72 @@
+// Title: Batch Barcode Generation with Checksum Error Handling
+// Description: Demonstrates generating a batch of barcodes while catching and logging checksum calculation errors.
+// Prompt: Implement error handling that catches and logs any checksum calculation errors during batch barcode generation.
+// Tags: barcode, checksum, error handling, batch generation, aspose.barcode, png
+
 using System;
-using System.Collections.Generic;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates batch generation of barcodes using Aspose.BarCode.
+/// Example program that creates a set of barcodes, handling checksum errors gracefully.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a set of barcodes and saves them to disk.
+    /// Entry point of the application. Generates barcodes in a batch and logs any checksum errors.
     /// </summary>
     static void Main()
     {
-        // --------------------------------------------------------------------
-        // Prepare output directory where barcode images will be saved.
-        // --------------------------------------------------------------------
-        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
-        if (!Directory.Exists(outputDir))
+        // Define the output folder for generated barcode images
+        string outputFolder = "Barcodes";
+
+        // Ensure the output directory exists
+        if (!Directory.Exists(outputFolder))
         {
-            Directory.CreateDirectory(outputDir);
+            Directory.CreateDirectory(outputFolder);
         }
 
-        // --------------------------------------------------------------------
-        // Define batch data: each tuple contains a barcode symbology and the text to encode.
-        // --------------------------------------------------------------------
-        var batch = new List<(BaseEncodeType type, string text)>
+        // Prepare a sample batch of barcodes (including some with intentional checksum errors)
+        var batch = new (BaseEncodeType Type, string Text)[]
         {
-            (EncodeTypes.Code39FullASCII, "ABC-123"),
-            (EncodeTypes.EAN13, "123456789012"), // 12 digits, checksum will be calculated
-            (EncodeTypes.ITF14, "1234567890123"), // 13 digits, checksum will be calculated
-            (EncodeTypes.Codabar, "A12345B"), // valid Codabar
-            (EncodeTypes.Code128, "Invalid|*?") // intentionally invalid characters for demonstration
+            (EncodeTypes.EAN13, "1234567890128"), // valid EAN13
+            (EncodeTypes.EAN13, "1234567890123"), // invalid checksum
+            (EncodeTypes.UPCA,  "012345678905"), // valid UPCA
+            (EncodeTypes.UPCA,  "012345678904"), // invalid checksum
+            (EncodeTypes.Code128, "ABC123")      // Code128 (checksum handled internally)
         };
 
-        int index = 1; // Counter for naming output files
-
-        // --------------------------------------------------------------------
-        // Iterate over each barcode definition, generate the image, and handle errors.
-        // --------------------------------------------------------------------
-        foreach (var item in batch)
+        // Iterate over each barcode definition in the batch
+        for (int i = 0; i < batch.Length; i++)
         {
-            // Build the full file path for the current barcode image.
-            string filePath = Path.Combine(outputDir, $"barcode_{index}.png");
+            var (type, text) = batch[i];
+            string filePath = Path.Combine(outputFolder, $"barcode_{i + 1}.png");
 
             try
             {
-                // Create a generator for the specified symbology and text.
-                using (var generator = new BarcodeGenerator(item.type, item.text))
+                // Create a barcode generator for the specified type and text
+                using (var generator = new BarcodeGenerator(type, text))
                 {
-                    // Enable checksum calculation where the symbology supports it.
+                    // Throw an exception if the provided text is incorrect (e.g., wrong checksum)
+                    generator.Parameters.Barcode.ThrowExceptionWhenCodeTextIncorrect = true;
+
+                    // Enable checksum generation where applicable
                     generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
 
-                    // Save the generated barcode image to the file system.
+                    // Save the generated barcode image to the file system
                     generator.Save(filePath);
-
-                    // Inform the user that the barcode was generated successfully.
-                    Console.WriteLine($"Generated barcode {index}: {filePath}");
+                    Console.WriteLine($"Generated barcode saved to: {filePath}");
                 }
             }
             catch (Exception ex)
             {
-                // Log any errors that occur during barcode generation (e.g., invalid characters).
-                Console.WriteLine($"Error generating barcode {index} (Symbology: {item.type.TypeName}): {ex.Message}");
+                // Log any errors that occur during barcode generation, such as checksum failures
+                Console.WriteLine($"Error generating barcode #{i + 1} (Type: {type.TypeName}, Text: {text}): {ex.Message}");
             }
-
-            index++; // Increment the counter for the next barcode.
         }
 
-        // --------------------------------------------------------------------
-        // Indicate that the batch processing has finished.
-        // --------------------------------------------------------------------
-        Console.WriteLine("Batch processing completed.");
+        // Indicate that the batch processing has finished
+        Console.WriteLine("Batch barcode generation completed.");
     }
 }
