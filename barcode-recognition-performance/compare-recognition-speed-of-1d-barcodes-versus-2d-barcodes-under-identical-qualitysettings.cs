@@ -1,3 +1,8 @@
+// Title: Compare recognition speed of 1D vs 2D barcodes
+// Description: Demonstrates generating a Code128 and QR barcode, then measures and compares their recognition times using identical QualitySettings.
+// Prompt: Compare recognition speed of 1D barcodes versus 2D barcodes under identical QualitySettings.
+// Tags: barcode symbology, recognition speed, qualitysettings, code128, qr, aspnet.barcode, csharp
+
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -6,107 +11,111 @@ using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates generation and recognition of 1D (Code128) and 2D (QR) barcodes,
-/// measuring and comparing their recognition times.
+/// Demonstrates barcode generation and recognition speed comparison between 1D (Code128) and 2D (QR) symbologies.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates temporary barcode images, reads them back, measures recognition time,
-    /// outputs results, and cleans up temporary files.
+    /// Entry point. Generates temporary barcode images, measures recognition times, outputs results, and cleans up files.
     /// </summary>
     static void Main()
     {
-        // --------------------------------------------------------------------
-        // Define temporary file paths for the generated barcode images.
-        // --------------------------------------------------------------------
-        string code128Path = Path.Combine(Path.GetTempPath(), "code128.png");
-        string qrPath = Path.Combine(Path.GetTempPath(), "qr.png");
+        // Define file paths for temporary barcode images
+        string code128Path = "code128.png";
+        string qrPath = "qr.png";
 
-        // --------------------------------------------------------------------
-        // Generate a 1D barcode (Code128) and save it to the temporary path.
-        // --------------------------------------------------------------------
-        using (var generator1D = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+        // -------------------------------------------------
+        // Generate a 1D Code128 barcode and save as PNG
+        // -------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            generator1D.Save(code128Path);
+            generator.Save(code128Path, BarCodeImageFormat.Png);
         }
 
-        // --------------------------------------------------------------------
-        // Generate a 2D barcode (QR) and save it to the temporary path.
-        // --------------------------------------------------------------------
-        using (var generator2D = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
+        // -------------------------------------------------
+        // Generate a 2D QR barcode and save as PNG
+        // -------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
         {
-            generator2D.Save(qrPath);
+            generator.Save(qrPath, BarCodeImageFormat.Png);
         }
 
-        // --------------------------------------------------------------------
-        // Prepare a common QualitySettings instance for both readers.
-        // --------------------------------------------------------------------
+        // Prepare identical quality settings for both recognitions
         var quality = QualitySettings.NormalQuality;
 
-        // --------------------------------------------------------------------
-        // Measure recognition time for the 1D barcode.
-        // --------------------------------------------------------------------
-        double time1D;
-        using (var reader1D = new BarCodeReader(code128Path, DecodeType.Code128))
+        // -------------------------------------------------
+        // Measure recognition time for the 1D barcode
+        // -------------------------------------------------
+        long time1D;
+        using (var reader = new BarCodeReader(code128Path, DecodeType.Code128))
         {
-            // Apply the same quality settings.
-            reader1D.QualitySettings = quality;
+            // Apply the same quality settings
+            reader.QualitySettings = quality;
 
-            // Start timing.
+            // Start timing
             var sw = Stopwatch.StartNew();
 
-            // Read all barcodes in the image.
-            foreach (var result in reader1D.ReadBarCodes())
-            {
-                // Output detection details to ensure processing occurs.
-                Console.WriteLine($"1D Detected: {result.CodeTypeName} - {result.CodeText}");
-            }
+            // Perform recognition
+            var results = reader.ReadBarCodes();
 
-            // Stop timing and record elapsed milliseconds.
+            // Stop timing
             sw.Stop();
-            time1D = sw.Elapsed.TotalMilliseconds;
+            time1D = sw.ElapsedMilliseconds;
+
+            // Output detection results
+            Console.WriteLine($"1D Code128 detected: {results.Length} barcode(s).");
+            foreach (var result in results)
+            {
+                Console.WriteLine($"  Text: {result.CodeText}");
+            }
         }
 
-        // --------------------------------------------------------------------
-        // Measure recognition time for the 2D barcode.
-        // --------------------------------------------------------------------
-        double time2D;
-        using (var reader2D = new BarCodeReader(qrPath, DecodeType.QR))
+        // -------------------------------------------------
+        // Measure recognition time for the 2D barcode
+        // -------------------------------------------------
+        long time2D;
+        using (var reader = new BarCodeReader(qrPath, DecodeType.QR))
         {
-            // Apply the same quality settings.
-            reader2D.QualitySettings = quality;
+            // Apply the same quality settings
+            reader.QualitySettings = quality;
 
-            // Start timing.
+            // Start timing
             var sw = Stopwatch.StartNew();
 
-            // Read all barcodes in the image.
-            foreach (var result in reader2D.ReadBarCodes())
-            {
-                // Output detection details to ensure processing occurs.
-                Console.WriteLine($"2D Detected: {result.CodeTypeName} - {result.CodeText}");
-            }
+            // Perform recognition
+            var results = reader.ReadBarCodes();
 
-            // Stop timing and record elapsed milliseconds.
+            // Stop timing
             sw.Stop();
-            time2D = sw.Elapsed.TotalMilliseconds;
+            time2D = sw.ElapsedMilliseconds;
+
+            // Output detection results
+            Console.WriteLine($"2D QR detected: {results.Length} barcode(s).");
+            foreach (var result in results)
+            {
+                Console.WriteLine($"  Text: {result.CodeText}");
+            }
         }
 
-        // --------------------------------------------------------------------
-        // Output a comparison of the recognition times.
-        // --------------------------------------------------------------------
+        // -------------------------------------------------
+        // Output comparison of recognition times
+        // -------------------------------------------------
         Console.WriteLine();
-        Console.WriteLine($"Recognition time (1D Code128): {time1D:F2} ms");
-        Console.WriteLine($"Recognition time (2D QR): {time2D:F2} ms");
-        Console.WriteLine(time1D < time2D
-            ? "1D barcode recognized faster."
-            : "2D barcode recognized faster.");
+        Console.WriteLine("Recognition time comparison (identical QualitySettings):");
+        Console.WriteLine($"  1D (Code128): {time1D} ms");
+        Console.WriteLine($"  2D (QR)     : {time2D} ms");
 
-        // --------------------------------------------------------------------
-        // Clean up temporary files, ignoring any errors.
-        // --------------------------------------------------------------------
-        try { if (File.Exists(code128Path)) File.Delete(code128Path); } catch { }
-        try { if (File.Exists(qrPath)) File.Delete(qrPath); } catch { }
+        // -------------------------------------------------
+        // Clean up temporary files
+        // -------------------------------------------------
+        try
+        {
+            if (File.Exists(code128Path)) File.Delete(code128Path);
+            if (File.Exists(qrPath)) File.Delete(qrPath);
+        }
+        catch
+        {
+            // Ignored - cleanup failure should not affect program exit
+        }
     }
 }

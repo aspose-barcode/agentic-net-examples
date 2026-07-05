@@ -1,104 +1,104 @@
+// Title: Benchmark Stacked vs Single Linear Barcode Recognition
+// Description: Demonstrates generating stacked DataBar and single Code128 barcodes, then measures recognition time to compare scalability.
+// Prompt: Benchmark recognition of stacked linear barcodes versus single barcodes to evaluate algorithm scalability.
+// Tags: barcode, recognition, benchmark, stacked, linear, databar, code128, aspnet, aspose
+
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates barcode generation and recognition benchmarking using Aspose.BarCode.
+/// Generates stacked DataBar and single Code128 barcodes, then benchmarks their recognition performance.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Executes benchmark tests for selected barcode symbologies.
+    /// Entry point of the benchmark application.
     /// </summary>
     static void Main()
     {
-        const int sampleCount = 5; // Number of iterations per benchmark
+        const int sampleCount = 5; // safe sample size for benchmarking
 
-        // Benchmark a single linear barcode (Code128)
-        BenchmarkSymbology(
-            "Code128 (single)",
-            EncodeTypes.Code128,
-            "ABC1234567",
-            DecodeType.Code128,
-            sampleCount);
-
-        // Benchmark stacked linear barcodes (DataBar stacked variants)
-        BenchmarkSymbology(
-            "DataBar Stacked",
-            EncodeTypes.DatabarStacked,
-            "(01)12345678901231",
-            DecodeType.DatabarStacked,
-            sampleCount);
-
-        BenchmarkSymbology(
-            "DataBar Stacked OmniDirectional",
-            EncodeTypes.DatabarStackedOmniDirectional,
-            "(01)12345678901231",
-            DecodeType.DatabarStackedOmniDirectional,
-            sampleCount);
-    }
-
-    /// <summary>
-    /// Generates a barcode, reads it back, and measures the average recognition time.
-    /// </summary>
-    /// <param name="label">Descriptive label for the benchmark output.</param>
-    /// <param name="encodeType">The barcode symbology to generate.</param>
-    /// <param name="codeText">The text to encode in the barcode.</param>
-    /// <param name="decodeType">The barcode symbology to use for recognition.</param>
-    /// <param name="iterations">Number of times to repeat the test.</param>
-    private static void BenchmarkSymbology(string label, BaseEncodeType encodeType, string codeText, BaseDecodeType decodeType, int iterations)
-    {
-        double totalMs = 0; // Accumulator for total elapsed time
-
-        for (int i = 0; i < iterations; i++)
+        // ------------------------------------------------------------
+        // Generate stacked linear DataBar barcodes (EncodeTypes.DatabarStacked)
+        // ------------------------------------------------------------
+        var stackedImages = new List<byte[]>();
+        for (int i = 0; i < sampleCount; i++)
         {
-            // Generate barcode image into a memory stream
-            using (var ms = new MemoryStream())
+            string codeText = $"(01)1234567890123{i}";
+            using (var generator = new BarcodeGenerator(EncodeTypes.DatabarStacked, codeText))
             {
-                using (var generator = new BarcodeGenerator(encodeType, codeText))
+                using (var ms = new MemoryStream())
                 {
-                    // Save the generated barcode as PNG into the stream
                     generator.Save(ms, BarCodeImageFormat.Png);
-                }
-
-                // Reset stream position to the beginning for reading
-                ms.Position = 0;
-
-                // Load the image from the stream as a Bitmap
-                using (var bitmap = new Bitmap(ms))
-                {
-                    // Create a reader configured for the expected decode type
-                    using (var reader = new BarCodeReader(bitmap, decodeType))
-                    {
-                        // Start timing the recognition process
-                        var sw = Stopwatch.StartNew();
-
-                        // Perform barcode detection
-                        var results = reader.ReadBarCodes();
-
-                        // Stop timing
-                        sw.Stop();
-
-                        // Accumulate elapsed milliseconds
-                        totalMs += sw.Elapsed.TotalMilliseconds;
-
-                        // Simple validation to ensure detection succeeded
-                        if (results.Length == 0)
-                        {
-                            Console.WriteLine($"{label}: No barcode detected in iteration {i + 1}");
-                        }
-                    }
+                    stackedImages.Add(ms.ToArray());
                 }
             }
         }
 
-        // Compute and display the average recognition time
-        double avgMs = totalMs / iterations;
-        Console.WriteLine($"{label}: Average recognition time over {iterations} runs = {avgMs:F2} ms");
+        // ------------------------------------------------------------
+        // Generate single linear barcodes (EncodeTypes.Code128)
+        // ------------------------------------------------------------
+        var singleImages = new List<byte[]>();
+        for (int i = 0; i < sampleCount; i++)
+        {
+            string codeText = $"CODE{i:D4}";
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+            {
+                using (var ms = new MemoryStream())
+                {
+                    generator.Save(ms, BarCodeImageFormat.Png);
+                    singleImages.Add(ms.ToArray());
+                }
+            }
+        }
+
+        // ------------------------------------------------------------
+        // Benchmark recognition of stacked barcodes
+        // ------------------------------------------------------------
+        var stackedTimer = new Stopwatch();
+        stackedTimer.Start();
+        foreach (var imageData in stackedImages)
+        {
+            using (var ms = new MemoryStream(imageData))
+            using (var reader = new BarCodeReader(ms, DecodeType.DatabarStacked))
+            {
+                foreach (var result in reader.ReadBarCodes())
+                {
+                    // Result processing can be added here if needed
+                }
+            }
+        }
+        stackedTimer.Stop();
+
+        // ------------------------------------------------------------
+        // Benchmark recognition of single barcodes
+        // ------------------------------------------------------------
+        var singleTimer = new Stopwatch();
+        singleTimer.Start();
+        foreach (var imageData in singleImages)
+        {
+            using (var ms = new MemoryStream(imageData))
+            using (var reader = new BarCodeReader(ms, DecodeType.Code128))
+            {
+                foreach (var result in reader.ReadBarCodes())
+                {
+                    // Result processing can be added here if needed
+                }
+            }
+        }
+        singleTimer.Stop();
+
+        // ------------------------------------------------------------
+        // Output benchmark results
+        // ------------------------------------------------------------
+        Console.WriteLine($"Stacked DataBar recognition time for {sampleCount} barcodes: {stackedTimer.Elapsed.TotalMilliseconds} ms");
+        Console.WriteLine($"Average per barcode: {stackedTimer.Elapsed.TotalMilliseconds / sampleCount:F2} ms");
+        Console.WriteLine($"Single Code128 recognition time for {sampleCount} barcodes: {singleTimer.Elapsed.TotalMilliseconds} ms");
+        Console.WriteLine($"Average per barcode: {singleTimer.Elapsed.TotalMilliseconds / sampleCount:F2} ms");
     }
 }

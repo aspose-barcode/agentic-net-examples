@@ -1,3 +1,8 @@
+// Title: Benchmark Code39 vs Code128 Generation Speed
+// Description: Generates a small set of Code39 and Code128 barcodes, measures processing time to compare performance when prioritizing Code39.
+// Prompt: Configure the library to prioritize Code39 symbology and measure any change in overall processing speed.
+// Tags: barcode symbology, generation, performance, aspose.barcode, csharp
+
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -7,97 +12,87 @@ using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generation and recognition of Code39 barcodes using Aspose.BarCode.
-/// Measures performance of both operations and cleans up temporary files.
+/// Demonstrates how to prioritize the Code39 symbology, generate barcodes,
+/// and compare its processing speed against Code128 using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a set of Code39 barcodes, recognizes them, and reports timing.
+    /// Entry point of the application. Generates barcodes for Code39 and Code128,
+    /// measures the time taken for each, and outputs a simple performance comparison.
     /// </summary>
-    static void Main()
+    /// <param name="args">Command‑line arguments (not used).</param>
+    static void Main(string[] args)
     {
-        // ------------------------------------------------------------
-        // Prepare sample data: an array of strings to encode as barcodes
-        // ------------------------------------------------------------
-        string[] sampleTexts = new string[]
+        // Number of barcodes to generate for each symbology (kept small for quick execution)
+        const int sampleCount = 5;
+
+        // Ensure the output directory exists
+        string outputDir = "Barcodes";
+        if (!Directory.Exists(outputDir))
         {
-            "CODE39-1",
-            "CODE39-2",
-            "CODE39-3",
-            "CODE39-4",
-            "CODE39-5"
-        };
+            Directory.CreateDirectory(outputDir);
+        }
 
-        // Create a temporary directory to store generated barcode images
-        string tempDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
-        Directory.CreateDirectory(tempDir);
+        // -------------------- Benchmark Code39 --------------------
+        // Start timing for Code39 generation
+        Stopwatch swCode39 = new Stopwatch();
+        swCode39.Start();
 
-        // ------------------------------------------------------------
-        // Measure generation time for Code39 barcodes
-        // ------------------------------------------------------------
-        Stopwatch genWatch = Stopwatch.StartNew();
-
-        for (int i = 0; i < sampleTexts.Length; i++)
+        for (int i = 0; i < sampleCount; i++)
         {
-            // Build file path for the current barcode image
-            string filePath = Path.Combine(tempDir, $"code39_{i}.png");
-
-            // Generate barcode with full ASCII Code39 encoding
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code39FullASCII, sampleTexts[i]))
+            // Prioritize Code39 symbology by explicitly using EncodeTypes.Code39
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code39, $"CODE39_SAMPLE_{i}"))
             {
-                // Optional: set resolution for consistency across images
-                generator.Parameters.Resolution = 300f;
+                // Example of a Code39‑specific setting: wide‑narrow ratio
+                generator.Parameters.Barcode.WideNarrowRatio = 3f;
 
-                // Save the generated barcode image to the temporary directory
+                // Save the generated barcode image
+                string filePath = Path.Combine(outputDir, $"code39_{i}.png");
                 generator.Save(filePath);
             }
         }
 
-        genWatch.Stop();
-        Console.WriteLine($"Generation of {sampleTexts.Length} Code39 barcodes took {genWatch.ElapsedMilliseconds} ms.");
+        // Stop timing for Code39
+        swCode39.Stop();
+        TimeSpan code39Duration = swCode39.Elapsed;
 
-        // ------------------------------------------------------------
-        // Measure recognition time for the generated barcodes
-        // ------------------------------------------------------------
-        Stopwatch recWatch = Stopwatch.StartNew();
+        // -------------------- Benchmark Code128 (reference) --------------------
+        // Start timing for Code128 generation
+        Stopwatch swCode128 = new Stopwatch();
+        swCode128.Start();
 
-        for (int i = 0; i < sampleTexts.Length; i++)
+        for (int i = 0; i < sampleCount; i++)
         {
-            // Build file path for the current barcode image
-            string filePath = Path.Combine(tempDir, $"code39_{i}.png");
-
-            // Initialize a barcode reader for full ASCII Code39 decoding
-            using (var reader = new BarCodeReader(filePath, DecodeType.Code39FullASCII))
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, $"CODE128_SAMPLE_{i}"))
             {
-                // Iterate through all recognized barcodes in the image
-                foreach (var result in reader.ReadBarCodes())
-                {
-                    // Output recognized text (optional)
-                    Console.WriteLine($"Recognized: {result.CodeText}");
-                }
+                // No special settings required for Code128 in this benchmark
+                string filePath = Path.Combine(outputDir, $"code128_{i}.png");
+                generator.Save(filePath);
             }
         }
 
-        recWatch.Stop();
-        Console.WriteLine($"Recognition of {sampleTexts.Length} Code39 barcodes took {recWatch.ElapsedMilliseconds} ms.");
+        // Stop timing for Code128
+        swCode128.Stop();
+        TimeSpan code128Duration = swCode128.Elapsed;
 
-        // ------------------------------------------------------------
-        // Cleanup temporary files and directory
-        // ------------------------------------------------------------
-        try
+        // -------------------- Output Results --------------------
+        Console.WriteLine($"Generated {sampleCount} Code39 barcodes in {code39Duration.TotalMilliseconds} ms.");
+        Console.WriteLine($"Generated {sampleCount} Code128 barcodes in {code128Duration.TotalMilliseconds} ms.");
+
+        // Simple comparison of processing times
+        double speedDifference = code128Duration.TotalMilliseconds - code39Duration.TotalMilliseconds;
+        if (speedDifference > 0)
         {
-            // Delete each file in the temporary directory
-            foreach (var file in Directory.GetFiles(tempDir))
-                File.Delete(file);
-
-            // Remove the temporary directory itself
-            Directory.Delete(tempDir);
+            Console.WriteLine($"Code39 was faster by {speedDifference} ms.");
         }
-        catch
+        else if (speedDifference < 0)
         {
-            // Ignore any errors that occur during cleanup
+            Console.WriteLine($"Code128 was faster by {-speedDifference} ms.");
+        }
+        else
+        {
+            Console.WriteLine("Both symbologies took the same amount of time.");
         }
     }
 }

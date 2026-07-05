@@ -1,85 +1,42 @@
+// Title: Custom Color Scheme for Barcode Generation
+// Description: Demonstrates how to apply a dark bar color and a light background to improve detection of dark barcodes on light backgrounds.
+// Prompt: Apply a custom color scheme to enhance detection of dark barcodes on light backgrounds.
+// Tags: code128, color, generation, png, aspose.barcode, aspose.drawing
+
 using System;
-using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a barcode with custom colors and reading it back using Aspose.BarCode.
+/// Example program that generates a Code128 barcode with a custom dark bar color
+/// and a light background to enhance contrast for detection on light surfaces.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the program. Generates a barcode image, saves it, and attempts to read it back.
+    /// Entry point of the application. Creates a barcode, applies custom colors,
+    /// and saves the result as a PNG image.
     /// </summary>
     static void Main()
     {
-        // Define the output file path for the generated barcode image.
-        string outputPath = "custom_color_barcode.png";
-
-        // ------------------------------------------------------------
-        // Generate a barcode with custom colors (dark bars on light background)
-        // ------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "DarkOnLight"))
+        // Initialize a barcode generator for Code128 with the sample text "Sample123"
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
         {
-            // Set the color of the dark bars.
-            generator.Parameters.Barcode.BarColor = Color.Black;
+            // Set a dark bar color (dark blue) to stand out against a light background
+            generator.Parameters.Barcode.BarColor = Color.FromArgb(0, 0, 139); // DarkBlue
 
-            // Set the background color (light area).
-            generator.Parameters.BackColor = Color.White;
+            // Set a light background color (light yellow) to improve contrast
+            generator.Parameters.BackColor = Color.FromArgb(255, 255, 224); // LightYellow
 
-            // Increase resolution to improve detection accuracy.
-            generator.Parameters.Resolution = 300f;
+            // Optional: increase XDimension for larger modules, improving readability
+            generator.Parameters.Barcode.XDimension.Point = 2f;
 
-            // Add padding to avoid clipping of the barcode at the image edges.
-            generator.Parameters.Barcode.Padding.Left.Point = 5f;
-            generator.Parameters.Barcode.Padding.Top.Point = 5f;
-            generator.Parameters.Barcode.Padding.Right.Point = 5f;
-            generator.Parameters.Barcode.Padding.Bottom.Point = 5f;
-
-            // Save the generated barcode as a PNG file.
-            generator.Save(outputPath, BarCodeImageFormat.Png);
+            // Save the generated barcode image to a PNG file
+            generator.Save("custom_color_barcode.png");
         }
 
-        // ------------------------------------------------------------
-        // Verify that the barcode image file was successfully created.
-        // ------------------------------------------------------------
-        if (!File.Exists(outputPath))
-        {
-            Console.WriteLine($"Failed to create barcode image at '{outputPath}'.");
-            return;
-        }
-
-        // ------------------------------------------------------------
-        // Read the generated barcode using a custom recognition configuration.
-        // ------------------------------------------------------------
-        using (var reader = new BarCodeReader(outputPath, DecodeType.AllSupportedTypes))
-        {
-            // Optimize detection for dark bars on a light background.
-            reader.QualitySettings.Deconvolution = DeconvolutionMode.Fast;
-            reader.QualitySettings.AllowIncorrectBarcodes = true;
-
-            // Perform the barcode recognition.
-            var results = reader.ReadBarCodes();
-
-            // Check if any barcodes were detected.
-            if (results.Length == 0)
-            {
-                Console.WriteLine("No barcode detected.");
-            }
-            else
-            {
-                // Output details for each detected barcode.
-                foreach (var result in results)
-                {
-                    Console.WriteLine($"Detected Type: {result.CodeTypeName}");
-                    Console.WriteLine($"Decoded Text: {result.CodeText}");
-                    Console.WriteLine($"Confidence: {result.Confidence}");
-                    Console.WriteLine($"Reading Quality: {result.ReadingQuality}");
-                }
-            }
-        }
+        // Inform the user that the barcode has been generated
+        Console.WriteLine("Barcode generated with custom colors: custom_color_barcode.png");
     }
 }

@@ -1,76 +1,75 @@
+// Title: Barcode XDimension Logging Example
+// Description: Demonstrates generating a Code128 barcode with a specific XDimension and recognizing it using minimal XDimension mode while logging the exact values used.
+// Prompt: Implement a feature that logs the exact XDimension and MinimalXDimension values used for each image.
+// Tags: barcode, code128, xdimension, recognition, logging, aspose.barcode, aspose.drawing
+
 using System;
-using System.Collections.Generic;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating barcodes with a specific XDimension and then recognizing them,
-/// logging both generation and recognition parameters.
+/// Example program that creates a barcode with a defined XDimension,
+/// reads it back using minimal XDimension mode, and logs the dimension values.
 /// </summary>
 class Program
 {
     /// <summary>
     /// Entry point of the application.
-    /// Generates sample barcodes, saves them to temporary files, and reads them back
-    /// to display recognition details.
     /// </summary>
     static void Main()
     {
-        // Define a collection of barcode types and corresponding text to encode.
-        var samples = new List<(BaseEncodeType EncodeType, string CodeText)>
+        // Initialize a barcode generator for Code128 with sample text
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
         {
-            (EncodeTypes.Code128, "ABC123"),
-            (EncodeTypes.QR, "https://example.com"),
-            (EncodeTypes.DataMatrix, "DataMatrixSample")
-        };
+            // Set the XDimension (module width) to 2 points for generation
+            generator.Parameters.Barcode.XDimension.Point = 2f;
 
-        // Process each sample: generate, save, and then read/recognize.
-        foreach (var sample in samples)
-        {
-            // Build a temporary file path using the barcode type name.
-            string filePath = Path.Combine(Path.GetTempPath(), $"{sample.EncodeType.TypeName}.png");
-
-            // ---------- Barcode Generation ----------
-            using (var generator = new BarcodeGenerator(sample.EncodeType, sample.CodeText))
+            // Create a memory stream to hold the generated barcode image
+            using (var imageStream = new MemoryStream())
             {
-                // Set the XDimension (module size) explicitly to 2 points.
-                generator.Parameters.Barcode.XDimension.Point = 2f; // 2 points
-
-                // Disable auto-sizing to preserve the explicit XDimension setting.
-                generator.Parameters.AutoSizeMode = AutoSizeMode.None;
-
-                // Save the generated barcode image to the temporary file.
-                generator.Save(filePath);
-
-                // Log generation details to the console.
-                Console.WriteLine($"Generated {sample.EncodeType.TypeName} barcode at: {filePath}");
-                Console.WriteLine($"  Generation XDimension: {generator.Parameters.Barcode.XDimension.Point} points");
-            }
-
-            // ---------- Barcode Recognition ----------
-            using (var reader = new BarCodeReader(filePath, DecodeType.AllSupportedTypes))
-            {
-                // Optional: configure quality settings here (e.g., deconvolution).
-                // reader.QualitySettings.Deconvolution = DeconvolutionMode.Fast;
-
-                // Perform the recognition operation.
-                var results = reader.ReadBarCodes();
-
-                // Retrieve and log the MinimalXDimension used by the recognizer.
-                float minimalXDim = reader.QualitySettings.MinimalXDimension;
-                Console.WriteLine($"  Recognition MinimalXDimension: {minimalXDim} points");
-
-                // Output each recognized barcode's type and decoded text.
-                foreach (var result in results)
+                // Generate the barcode image and save it as PNG into the stream
+                using (Bitmap bitmap = generator.GenerateBarCodeImage())
                 {
-                    Console.WriteLine($"  Detected Type: {result.CodeTypeName}, Text: {result.CodeText}");
+                    bitmap.Save(imageStream, ImageFormat.Png);
+                }
+
+                // Reset stream position to the beginning for reading
+                imageStream.Position = 0;
+
+                // Initialize a barcode reader for recognition
+                using (var reader = new BarCodeReader())
+                {
+                    // Assign the generated image to the reader
+                    reader.SetBarCodeImage(imageStream);
+
+                    // Configure the reader to use minimal XDimension mode
+                    reader.QualitySettings.XDimension = XDimensionMode.UseMinimalXDimension;
+                    // Set the minimal XDimension value (in points) for recognition
+                    reader.QualitySettings.MinimalXDimension = 3f;
+
+                    // Iterate over all detected barcodes in the image
+                    foreach (var result in reader.ReadBarCodes())
+                    {
+                        // Log the XDimension used during barcode generation
+                        Console.WriteLine($"Generated XDimension (points): {generator.Parameters.Barcode.XDimension.Point}");
+
+                        // Log the MinimalXDimension used during barcode recognition
+                        Console.WriteLine($"Recognition MinimalXDimension (points): {reader.QualitySettings.MinimalXDimension}");
+
+                        // Output details of the detected barcode region
+                        var bounds = result.Region.Rectangle;
+                        Console.WriteLine($"Detected barcode region: X={bounds.X}, Y={bounds.Y}, Width={bounds.Width}, Height={bounds.Height}");
+
+                        // Output the decoded text from the barcode
+                        Console.WriteLine($"Decoded text: {result.CodeText}");
+                        Console.WriteLine();
+                    }
                 }
             }
-
-            // Add a blank line for readability between samples.
-            Console.WriteLine();
         }
     }
 }

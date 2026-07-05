@@ -1,73 +1,57 @@
+// Title: QR Code Recognition with Deconvolution in JPEG Images
+// Description: Demonstrates configuring deconvolution and quality settings to improve detection of blurred QR codes stored in JPEG files.
+// Prompt: Configure deconvolution parameters to improve recognition of blurred QR codes in JPEG files.
+// Tags: qr, deconvolution, barcode recognition, jpeg, aspose.barcode, qualitysettings
+
 using System;
 using System.IO;
 using Aspose.BarCode;
-using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a QR code image (if missing) and recognizing it,
-/// including handling of blurred images using deconvolution.
+/// Example program that reads a blurred QR code from a JPEG image
+/// using Aspose.BarCode with deconvolution and high‑quality settings.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a QR code image if it does not exist,
-    /// then reads and decodes the QR code, applying deconvolution to improve detection
-    /// of blurred images.
+    /// Entry point of the application.
+    /// Configures the barcode reader, applies deconvolution, and outputs detection results.
     /// </summary>
     static void Main()
     {
-        const string imagePath = "blurred_qr.jpg";
+        // Path to the JPEG image containing a blurred QR code.
+        string imagePath = "blurred_qr.jpg";
 
-        // ------------------------------------------------------------
-        // Step 1: Ensure a QR code image exists.
-        // ------------------------------------------------------------
+        // Verify that the image file exists before attempting to read it.
         if (!File.Exists(imagePath))
         {
-            // Create a QR code generator with the desired content.
-            using (var generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
-            {
-                // Set a high error correction level to increase resilience to blur.
-                generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
-
-                // Save the generated QR code as a JPEG file (default quality).
-                generator.Save(imagePath, BarCodeImageFormat.Jpeg);
-            }
-
-            // Note: In a real scenario the JPEG might already be blurred.
-            // The comment about simulating blur is retained for context.
-        }
-
-        // ------------------------------------------------------------
-        // Step 2: Verify the image file exists before attempting recognition.
-        // ------------------------------------------------------------
-        if (!File.Exists(imagePath))
-        {
-            Console.WriteLine($"Image file not found: {imagePath}");
+            Console.WriteLine($"File not found: {imagePath}");
             return;
         }
 
-        // ------------------------------------------------------------
-        // Step 3: Read and decode the QR code, using deconvolution to aid
-        //         detection of blurred images.
-        // ------------------------------------------------------------
-        using (var reader = new BarCodeReader(imagePath, DecodeType.QR))
+        // Initialize the barcode reader for QR codes using the specified image.
+        using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.QR))
         {
-            // Enable fast deconvolution to attempt restoration of blurred barcodes.
+            // Apply a high‑quality preset that is suitable for damaged or blurred barcodes.
+            reader.QualitySettings = QualitySettings.HighQuality;
+
+            // Enable fast deconvolution to help restore blurred image details.
             reader.QualitySettings.Deconvolution = DeconvolutionMode.Fast;
 
-            // Allow recognition even if the barcode has minor errors (e.g., checksum issues).
+            // Allow recognition of barcodes with minor errors to increase detection chances.
             reader.QualitySettings.AllowIncorrectBarcodes = true;
 
-            // Iterate through all detected barcodes in the image.
+            // Iterate through all detected barcodes and output their details.
             foreach (var result in reader.ReadBarCodes())
             {
-                Console.WriteLine($"Detected Type: {result.CodeTypeName}");
-                Console.WriteLine($"Decoded Text : {result.CodeText}");
+                Console.WriteLine($"Detected QR Code: {result.CodeText}");
+                Console.WriteLine($"Confidence: {result.Confidence}");
                 Console.WriteLine($"Reading Quality: {result.ReadingQuality}");
-                Console.WriteLine($"Confidence    : {result.Confidence}");
+
+                // Output the detected barcode region (bounding rectangle).
+                var bounds = result.Region.Rectangle;
+                Console.WriteLine($"Region - X:{bounds.X}, Y:{bounds.Y}, Width:{bounds.Width}, Height:{bounds.Height}");
             }
         }
     }

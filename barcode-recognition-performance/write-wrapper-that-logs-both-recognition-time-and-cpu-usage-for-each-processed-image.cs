@@ -1,3 +1,8 @@
+// Title: Barcode generation and recognition with timing and CPU usage logging
+// Description: Demonstrates generating sample barcodes, then recognizing them while logging the elapsed time and CPU consumption for each image.
+// Prompt: Write a wrapper that logs both recognition time and CPU usage for each processed image.
+// Tags: barcode, generation, recognition, timing, cpu usage, aspose.barcode
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -5,83 +10,84 @@ using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates barcode generation and recognition using Aspose.BarCode.
+/// Example program that creates barcode images, reads them back, and logs
+/// both the recognition duration and the CPU time consumed for each image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Generates a barcode image for the specified type and text, returning a MemoryStream with PNG data.
-    /// </summary>
-    /// <param name="type">The barcode symbology to generate.</param>
-    /// <param name="codeText">The text to encode in the barcode.</param>
-    /// <returns>A MemoryStream positioned at the beginning containing the PNG image.</returns>
-    static MemoryStream GenerateBarcodeImage(BaseEncodeType type, string codeText)
-    {
-        // Create a memory stream to hold the generated image.
-        var ms = new MemoryStream();
-
-        // Use BarcodeGenerator with default settings to create the barcode.
-        using (var generator = new BarcodeGenerator(type, codeText))
-        {
-            // Save the barcode as PNG into the memory stream.
-            generator.Save(ms, BarCodeImageFormat.Png);
-        }
-
-        // Reset stream position so it can be read from the start.
-        ms.Position = 0;
-        return ms;
-    }
-
-    /// <summary>
-    /// Entry point of the application. Generates sample barcodes, recognizes them, and logs performance metrics.
+    /// Entry point of the application. Generates sample barcodes, then
+    /// processes each image while measuring performance metrics.
     /// </summary>
     static void Main()
     {
-        // Define a collection of sample barcodes with their types and texts.
-        var samples = new List<(BaseEncodeType Type, string Text)>
+        // Define sample barcodes to generate and process
+        var samples = new List<(BaseEncodeType EncodeType, string CodeText, string FileName)>
         {
-            (EncodeTypes.Code128, "Sample123"),
-            (EncodeTypes.QR, "https://example.com"),
-            (EncodeTypes.DataMatrix, "DataMatrixTest")
+            (EncodeTypes.Code128, "Sample123", "barcode1.png"),
+            (EncodeTypes.QR, "https://example.com", "barcode2.png"),
+            (EncodeTypes.DataMatrix, "DataMatrixTest", "barcode3.png")
         };
 
-        // Process each sample barcode.
+        // ------------------------------------------------------------
+        // Generate barcode images
+        // ------------------------------------------------------------
         foreach (var sample in samples)
         {
-            // Generate the barcode image and obtain a stream for recognition.
-            using (var imageStream = GenerateBarcodeImage(sample.Type, sample.Text))
+            // Ensure any existing file is overwritten
+            if (File.Exists(sample.FileName))
             {
-                // Capture CPU time before recognition.
-                Process process = Process.GetCurrentProcess();
-                TimeSpan cpuBefore = process.TotalProcessorTime;
+                File.Delete(sample.FileName);
+            }
 
-                // Start a stopwatch to measure wall‑clock time.
+            // Create a generator for the specified type and text
+            using (var generator = new BarcodeGenerator(sample.EncodeType, sample.CodeText))
+            {
+                // Save the generated barcode as a PNG image
+                generator.Save(sample.FileName, BarCodeImageFormat.Png);
+            }
+        }
+
+        // ------------------------------------------------------------
+        // Process each image: measure recognition time and CPU usage
+        // ------------------------------------------------------------
+        foreach (var sample in samples)
+        {
+            // Verify that the image file exists before attempting to read it
+            if (!File.Exists(sample.FileName))
+            {
+                Console.WriteLine($"File not found: {sample.FileName}");
+                continue;
+            }
+
+            // Create a BarCodeReader that attempts to decode all supported types
+            using (var reader = new BarCodeReader(sample.FileName, DecodeType.AllSupportedTypes))
+            {
+                // Start timing and capture initial CPU usage
                 var stopwatch = Stopwatch.StartNew();
+                var process = Process.GetCurrentProcess();
+                var cpuStart = process.TotalProcessorTime;
 
-                // Recognize the barcode from the image stream.
-                using (var reader = new BarCodeReader(imageStream, DecodeType.AllSupportedTypes))
-                {
-                    // Iterate through all detected barcodes.
-                    foreach (var result in reader.ReadBarCodes())
-                    {
-                        // Output the detected barcode type and decoded text.
-                        Console.WriteLine($"Detected Type: {result.CodeTypeName}");
-                        Console.WriteLine($"Code Text: {result.CodeText}");
-                    }
-                }
+                // Perform barcode recognition
+                var results = reader.ReadBarCodes();
 
-                // Stop timing measurements.
+                // Stop timing and capture final CPU usage
                 stopwatch.Stop();
-                TimeSpan cpuAfter = process.TotalProcessorTime;
+                var cpuEnd = process.TotalProcessorTime;
+                var cpuUsed = cpuEnd - cpuStart;
 
-                // Log the symbology and performance data.
-                Console.WriteLine($"Barcode Symbology: {sample.Type.TypeName}");
-                Console.WriteLine($"Recognition Time (ms): {stopwatch.ElapsedMilliseconds}");
-                Console.WriteLine($"CPU Time Used (ms): {(cpuAfter - cpuBefore).TotalMilliseconds}");
-                Console.WriteLine(new string('-', 40));
+                // Log the performance metrics and recognition results
+                Console.WriteLine($"Processing file: {sample.FileName}");
+                Console.WriteLine($"Recognition time: {stopwatch.Elapsed.TotalMilliseconds} ms");
+                Console.WriteLine($"CPU time used: {cpuUsed.TotalMilliseconds} ms");
+                foreach (var result in results)
+                {
+                    Console.WriteLine($"  Detected Type: {result.CodeTypeName}");
+                    Console.WriteLine($"  CodeText: {result.CodeText}");
+                }
+                Console.WriteLine(); // Blank line for readability
             }
         }
     }

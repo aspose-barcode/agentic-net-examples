@@ -1,82 +1,76 @@
+// Title: Barcode confidence summary report
+// Description: Generates several barcode images, reads them, and reports the average confidence per barcode type.
+// Prompt: Generate a summary report showing average confidence per preset across a test image set.
+// Tags: barcode symbology, confidence analysis, summary report, aspose.barcode, csharp
+
 using System;
-using System.IO;
 using System.Collections.Generic;
-using System.Linq; // Required for Sum()
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing; // required for Aspose.BarCode image handling
 
 /// <summary>
-/// Demonstrates generating, recognizing, and evaluating confidence levels of various barcode symbologies using Aspose.BarCode.
+/// Demonstrates how to generate barcodes, read them, and calculate the average confidence per preset.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates barcode images for a set of presets,
-    /// reads them back to collect confidence values, and outputs the average confidence per preset.
+    /// Entry point of the application. Generates barcode images, reads them, and prints average confidence values.
     /// </summary>
     static void Main()
     {
-        // Define a small set of barcode presets (symbologies) to test.
-        BaseEncodeType[] presets = new BaseEncodeType[]
+        // Create a temporary directory to store generated barcode images.
+        string tempDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
+        if (!Directory.Exists(tempDir))
+            Directory.CreateDirectory(tempDir);
+
+        // Define a small set of barcode presets to generate and test.
+        var presets = new List<(BaseEncodeType EncodeType, string CodeText, string FileName)>
         {
-            EncodeTypes.Code128,
-            EncodeTypes.QR,
-            EncodeTypes.DataMatrix,
-            EncodeTypes.Pdf417,
-            EncodeTypes.Aztec
+            (EncodeTypes.Code128, "ABC123", "code128.png"),
+            (EncodeTypes.QR, "https://example.com", "qr.png"),
+            (EncodeTypes.DataMatrix, "DM12345", "datamatrix.png"),
+            (EncodeTypes.Pdf417, "PDF417 Sample Text", "pdf417.png")
         };
 
-        // Create a temporary folder for generated barcode images.
-        string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
-        if (!Directory.Exists(tempFolder))
+        // Generate barcode images for each preset.
+        foreach (var preset in presets)
         {
-            Directory.CreateDirectory(tempFolder);
+            string filePath = Path.Combine(tempDir, preset.FileName);
+            using (var generator = new BarcodeGenerator(preset.EncodeType, preset.CodeText))
+            {
+                // Use default settings; ensure image is saved as PNG.
+                generator.Save(filePath);
+            }
         }
 
-        // Dictionary to hold confidence values per preset (key = preset name, value = list of confidence ints).
-        var confidenceMap = new Dictionary<string, List<int>>();
+        // Dictionary to accumulate confidence values per preset (using CodeTypeName as key).
+        var confidenceMap = new Dictionary<string, List<int>>(StringComparer.OrdinalIgnoreCase);
 
-        // Iterate over each barcode preset.
-        foreach (BaseEncodeType preset in presets)
+        // Recognize each generated image and collect confidence data.
+        foreach (var preset in presets)
         {
-            // Use the preset's type name as a dictionary key.
-            string presetName = preset.TypeName;
-            confidenceMap[presetName] = new List<int>();
-
-            // Generate a barcode image for the current preset.
-            string imagePath = Path.Combine(tempFolder, $"{presetName}.png");
-            using (var generator = new BarcodeGenerator(preset, "Test123"))
+            string filePath = Path.Combine(tempDir, preset.FileName);
+            if (!File.Exists(filePath))
             {
-                generator.Save(imagePath, BarCodeImageFormat.Png);
-            }
-
-            // Verify the image was successfully created.
-            if (!File.Exists(imagePath))
-            {
-                Console.WriteLine($"Failed to create image for preset {presetName}.");
+                Console.WriteLine($"Warning: File not found - {filePath}");
                 continue;
             }
 
-            // Recognize the barcode and collect confidence values.
-            using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
+            using (var reader = new BarCodeReader(filePath, DecodeType.AllSupportedTypes))
             {
                 foreach (BarCodeResult result in reader.ReadBarCodes())
                 {
-                    // Confidence is an enum; cast to int for averaging.
-                    int confidenceValue = (int)result.Confidence;
+                    string presetName = result.CodeTypeName; // e.g., "Code128", "QR", etc.
+                    int confidenceValue = (int)result.Confidence; // Enum underlying int.
+
+                    if (!confidenceMap.ContainsKey(presetName))
+                        confidenceMap[presetName] = new List<int>();
+
                     confidenceMap[presetName].Add(confidenceValue);
                 }
-            }
-
-            // Clean up the generated image file.
-            try
-            {
-                File.Delete(imagePath);
-            }
-            catch
-            {
-                // Ignore cleanup errors.
             }
         }
 
@@ -84,20 +78,20 @@ class Program
         Console.WriteLine("Average Confidence per Preset:");
         foreach (var kvp in confidenceMap)
         {
-            string preset = kvp.Key;
+            string presetName = kvp.Key;
             List<int> values = kvp.Value;
             double average = values.Count > 0 ? (double)values.Sum() / values.Count : 0.0;
-            Console.WriteLine($"{preset}: {average:F2}");
+            Console.WriteLine($"{presetName}: {average:F2}");
         }
 
-        // Remove the temporary folder and its contents.
+        // Cleanup temporary files (optional).
         try
         {
-            Directory.Delete(tempFolder, true);
+            Directory.Delete(tempDir, true);
         }
         catch
         {
-            // Ignore cleanup errors.
+            // Ignore any cleanup errors.
         }
     }
 }

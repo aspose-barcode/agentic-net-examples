@@ -1,3 +1,8 @@
+// Title: Process images in a zip archive and generate barcode summary JSON
+// Description: This example extracts each image from a zip file, scans for barcodes using Aspose.BarCode, and writes a JSON summary of detected barcodes per file.
+// Prompt: Create a script that processes all images in a zip archive and outputs a summary JSON file.
+// Tags: barcode, image-processing, zip, json, aspose.barcode, aspose.drawing
+
 using System;
 using System.IO;
 using System.IO.Compression;
@@ -5,108 +10,127 @@ using System.Collections.Generic;
 using System.Text.Json;
 using Aspose.BarCode;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
-namespace BarcodeZipProcessor
+/// <summary>
+/// Demonstrates processing images from a zip archive, detecting barcodes, and outputting a JSON summary.
+/// </summary>
+class Program
 {
     /// <summary>
-    /// Entry point for the Barcode Zip Processor application.
-    /// Scans image files inside a zip archive, detects barcodes, and writes a JSON summary.
+    /// Entry point. Accepts optional zip file path argument, scans images for barcodes, and writes summary.json.
     /// </summary>
-    class Program
+    /// <param name="args">Command‑line arguments; first argument may specify the zip file path.</param>
+    static void Main(string[] args)
     {
-        // Simple DTO for JSON output
-        public class BarcodeInfo
+        // Determine zip file path (use first argument or default to "images.zip")
+        string zipPath = args.Length > 0 ? args[0] : "images.zip";
+
+        // Define output JSON file name
+        string outputPath = "summary.json";
+
+        // Verify that the zip file exists before proceeding
+        if (!File.Exists(zipPath))
         {
-            public string FileName { get; set; }
-            public List<DetectedBarcode> Barcodes { get; set; } = new List<DetectedBarcode>();
+            Console.WriteLine($"Zip file not found: {zipPath}");
+            return;
         }
 
-        public class DetectedBarcode
+        // Collection that will hold barcode information for each processed file
+        var summary = new List<FileBarcodeInfo>();
+
+        // Open the zip archive for reading
+        using (FileStream zipFileStream = new FileStream(zipPath, FileMode.Open, FileAccess.Read))
+        using (ZipArchive archive = new ZipArchive(zipFileStream, ZipArchiveMode.Read))
         {
-            public string TypeName { get; set; }
-            public string CodeText { get; set; }
-        }
-
-        /// <summary>
-        /// Main method that orchestrates the processing of the zip file.
-        /// </summary>
-        /// <param name="args">Command‑line arguments; first argument may be the zip file path.</param>
-        static void Main(string[] args)
-        {
-            // Determine zip file path: use first argument if provided, otherwise default to "input.zip"
-            string zipPath = args.Length > 0 ? args[0] : "input.zip";
-
-            // Verify that the zip file exists before proceeding
-            if (!File.Exists(zipPath))
+            // Iterate through each entry in the archive
+            foreach (ZipArchiveEntry entry in archive.Entries)
             {
-                Console.WriteLine($"Zip file not found: {zipPath}");
-                return;
-            }
+                // Process only supported image file types based on extension
+                string ext = Path.GetExtension(entry.FullName).ToLowerInvariant();
+                if (ext != ".png" && ext != ".jpg" && ext != ".jpeg" && ext != ".bmp" && ext != ".gif")
+                    continue;
 
-            // Collection that will hold barcode information for each processed image
-            var summary = new List<BarcodeInfo>();
-
-            // Supported image extensions (case‑insensitive)
-            string[] imageExtensions = new[] { ".png", ".jpg", ".jpeg", ".bmp", ".gif" };
-
-            // Open the zip archive for reading
-            using (var zip = ZipFile.OpenRead(zipPath))
-            {
-                // Iterate over each entry (file) in the archive
-                foreach (var entry in zip.Entries)
+                // Prepare a container for barcode results of the current file
+                var fileInfo = new FileBarcodeInfo
                 {
-                    // Skip directory entries (they have an empty Name)
-                    if (string.IsNullOrEmpty(entry.Name))
-                        continue;
+                    FileName = entry.FullName,
+                    Barcodes = new List<BarcodeResultInfo>()
+                };
 
-                    // Filter out non‑image files based on extension
-                    string ext = Path.GetExtension(entry.Name).ToLowerInvariant();
-                    if (Array.IndexOf(imageExtensions, ext) < 0)
-                        continue;
-
-                    // Prepare a DTO to hold barcode results for the current image
-                    var info = new BarcodeInfo { FileName = entry.FullName };
-
-                    // Open a stream to the image data inside the zip entry
-                    using (var entryStream = entry.Open())
+                // Read the zip entry into a memory stream (required for Aspose.Drawing.Bitmap)
+                using (MemoryStream ms = new MemoryStream())
+                {
+                    using (Stream entryStream = entry.Open())
                     {
-                        // Initialize the barcode reader to scan all supported barcode types
-                        using (var reader = new BarCodeReader(entryStream, DecodeType.AllSupportedTypes))
+                        entryStream.CopyTo(ms);
+                    }
+                    ms.Position = 0; // Reset stream position before loading bitmap
+
+                    // Load the image into a bitmap object
+                    using (Bitmap bitmap = new Bitmap(ms))
+                    {
+                        // Initialize barcode reader to detect all supported barcode types
+                        using (BarCodeReader reader = new BarCodeReader(bitmap, DecodeType.AllSupportedTypes))
                         {
-                            // Read all barcodes found in the image
-                            foreach (var result in reader.ReadBarCodes())
+                            // Iterate over all detected barcodes in the image
+                            foreach (BarCodeResult result in reader.ReadBarCodes())
                             {
-                                // Map the detection result to our DTO format
-                                var detected = new DetectedBarcode
+                                fileInfo.Barcodes.Add(new BarcodeResultInfo
                                 {
-                                    TypeName = result.CodeTypeName,
+                                    CodeType = result.CodeTypeName,
                                     CodeText = result.CodeText
-                                };
-                                info.Barcodes.Add(detected);
+                                });
                             }
                         }
                     }
-
-                    // Add the populated info object to the summary list
-                    summary.Add(info);
                 }
-            }
 
-            // Serialize the summary list to a formatted JSON string
-            var jsonOptions = new JsonSerializerOptions { WriteIndented = true };
-            string json = JsonSerializer.Serialize(summary, jsonOptions);
-            string outputPath = "summary.json";
-
-            // Attempt to write the JSON output to disk and report success or failure
-            try
-            {
-                File.WriteAllText(outputPath, json);
-                Console.WriteLine($"Summary written to {outputPath}");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Failed to write summary: {ex.Message}");
+                // Add the populated file information to the summary list
+                summary.Add(fileInfo);
             }
         }
+
+        // Serialize the summary collection to a formatted JSON string
+        var jsonOptions = new JsonSerializerOptions { WriteIndented = true };
+        string json = JsonSerializer.Serialize(summary, jsonOptions);
+
+        // Write the JSON output to the designated file
+        File.WriteAllText(outputPath, json);
+        Console.WriteLine($"Summary written to {outputPath}");
+    }
+
+    // Helper classes that define the JSON structure
+
+    /// <summary>
+    /// Represents barcode detection results for a single file.
+    /// </summary>
+    class FileBarcodeInfo
+    {
+        /// <summary>
+        /// The relative path or name of the file within the zip archive.
+        /// </summary>
+        public string FileName { get; set; }
+
+        /// <summary>
+        /// List of barcodes detected in the file.
+        /// </summary>
+        public List<BarcodeResultInfo> Barcodes { get; set; }
+    }
+
+    /// <summary>
+    /// Represents a single barcode detection result.
+    /// </summary>
+    class BarcodeResultInfo
+    {
+        /// <summary>
+        /// The type/name of the detected barcode (e.g., QR, Code128).
+        /// </summary>
+        public string CodeType { get; set; }
+
+        /// <summary>
+        /// The decoded text/value of the barcode.
+        /// </summary>
+        public string CodeText { get; set; }
     }
 }

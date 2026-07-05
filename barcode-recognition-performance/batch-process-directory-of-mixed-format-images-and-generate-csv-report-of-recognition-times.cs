@@ -1,114 +1,107 @@
+// Title: Batch barcode recognition with CSV timing report
+// Description: Demonstrates processing a directory of mixed‑format images, recognizing any barcodes, and writing a CSV file that records each barcode and the time taken for recognition.
+// Prompt: Batch process a directory of mixed‑format images and generate a CSV report of recognition times.
+// Tags: barcode, recognition, csv, batch, aspose.barcode, file-io
+
 using System;
 using System.IO;
 using System.Diagnostics;
+using System.Linq;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Sample program that scans a directory of images for barcodes and generates a CSV report.
+/// Example program that scans a folder of images for barcodes,
+/// measures recognition time for each file, and writes the results to a CSV report.
 /// </summary>
 class Program
 {
     /// <summary>
     /// Entry point of the application.
-    /// Scans up to 10 image files in the specified directory (or "Images" by default),
-    /// attempts to read any barcodes using Aspose.BarCode, and writes the results to a CSV file.
+    /// Accepts optional command‑line arguments for input directory and output CSV file.
     /// </summary>
-    /// <param name="args">Optional command‑line arguments. The first argument can specify the images directory.</param>
+    /// <param name="args">
+    /// args[0] – input directory (default: "Images")
+    /// args[1] – output CSV file path (default: "report.csv")
+    /// </param>
     static void Main(string[] args)
     {
-        // Determine the directory to process (use first argument or default to "Images")
-        string imagesDir = args.Length > 0 ? args[0] : "Images";
+        // Determine input directory (first argument) or fall back to default "Images"
+        string inputDir = args.Length > 0 ? args[0] : "Images";
 
-        // Verify that the directory exists before proceeding
-        if (!Directory.Exists(imagesDir))
+        // Determine output CSV file (second argument) or fall back to default "report.csv"
+        string outputCsv = args.Length > 1 ? args[1] : "report.csv";
+
+        // Verify that the input directory exists
+        if (!Directory.Exists(inputDir))
         {
-            Console.WriteLine($"Directory not found: {imagesDir}");
+            Console.WriteLine($"Input directory does not exist: {inputDir}");
             return;
         }
 
         // Define supported image file extensions
-        string[] extensions = new[] { ".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff", ".gif" };
+        string[] extensions = new[] { ".png", ".jpg", ".jpeg", ".bmp", ".gif", ".tif", ".tiff" };
 
-        // Retrieve all files in the directory (filtering will be done later)
-        string[] files = Directory.GetFiles(imagesDir);
+        // Retrieve up to 10 image files matching the supported extensions
+        var files = Directory.GetFiles(inputDir)
+                             .Where(f => extensions.Contains(Path.GetExtension(f).ToLowerInvariant()))
+                             .Take(10)
+                             .ToArray();
 
-        // Limit processing to a safe sample size (10 files max)
-        const int maxFiles = 10;
-        int processedCount = 0;
-
-        // Prepare the CSV output file path
-        string csvPath = Path.Combine(imagesDir, "BarcodeReport.csv");
-
-        // Open a StreamWriter for the CSV file (overwrite if it already exists)
-        using (var writer = new StreamWriter(csvPath, false))
+        // Exit if no matching image files were found
+        if (files.Length == 0)
         {
-            // Write CSV header line
+            Console.WriteLine("No image files found to process.");
+            return;
+        }
+
+        // Open the CSV writer; using ensures the file is closed properly
+        using (StreamWriter writer = new StreamWriter(outputCsv))
+        {
+            // Write CSV header row
             writer.WriteLine("FileName,BarcodeType,CodeText,RecognitionTimeMs");
 
-            // Iterate over each file found in the directory
+            // Process each image file
             foreach (string filePath in files)
             {
-                // Stop processing once the maximum number of files has been reached
-                if (processedCount >= maxFiles)
-                    break;
-
-                // Check file extension against the list of supported types
-                string ext = Path.GetExtension(filePath).ToLowerInvariant();
-                if (Array.IndexOf(extensions, ext) < 0)
-                    continue; // skip unsupported files
-
-                // Ensure the file still exists (it might have been removed meanwhile)
+                // Skip files that cannot be accessed
                 if (!File.Exists(filePath))
                 {
-                    Console.WriteLine($"File not found: {filePath}");
+                    Console.WriteLine($"File not found, skipping: {filePath}");
                     continue;
                 }
 
-                try
-                {
-                    // Load the image into a bitmap object
-                    using (var bitmap = new Bitmap(filePath))
-                    {
-                        // Create a barcode reader that attempts to decode all supported barcode types
-                        using (var reader = new BarCodeReader(bitmap, DecodeType.AllSupportedTypes))
-                        {
-                            // Measure the time taken to read barcodes
-                            var stopwatch = Stopwatch.StartNew();
-                            var results = reader.ReadBarCodes();
-                            stopwatch.Stop();
+                // Start timing the recognition operation
+                Stopwatch sw = Stopwatch.StartNew();
 
-                            if (results.Length == 0)
-                            {
-                                // No barcode detected – write an entry with empty fields for type and text
-                                writer.WriteLine($"{Path.GetFileName(filePath)},,,{stopwatch.ElapsedMilliseconds}");
-                            }
-                            else
-                            {
-                                // One or more barcodes were detected; write a line for each result
-                                foreach (var result in results)
-                                {
-                                    // Replace commas in the output fields to avoid breaking CSV format
-                                    string type = result.CodeTypeName?.Replace(",", " ");
-                                    string text = result.CodeText?.Replace(",", " ");
-                                    writer.WriteLine($"{Path.GetFileName(filePath)},{type},{text},{stopwatch.ElapsedMilliseconds}");
-                                }
-                            }
+                // Initialize the barcode reader for all supported symbologies
+                using (BarCodeReader reader = new BarCodeReader(filePath, DecodeType.AllSupportedTypes))
+                {
+                    // Perform barcode detection and collect results
+                    var results = reader.ReadBarCodes().ToArray();
+                    sw.Stop(); // Stop timing after reading completes
+
+                    if (results.Length == 0)
+                    {
+                        // No barcode detected – log the file with empty fields
+                        writer.WriteLine($"{Path.GetFileName(filePath)},,,{sw.ElapsedMilliseconds}");
+                        Console.WriteLine($"No barcode found in {Path.GetFileName(filePath)} (Time: {sw.ElapsedMilliseconds} ms)");
+                    }
+                    else
+                    {
+                        // Write a CSV line for each detected barcode
+                        foreach (var result in results)
+                        {
+                            // Escape commas in the decoded text to preserve CSV format
+                            string codeText = result.CodeText?.Replace(",", "&#44;") ?? string.Empty;
+                            writer.WriteLine($"{Path.GetFileName(filePath)},{result.CodeTypeName},{codeText},{sw.ElapsedMilliseconds}");
+                            Console.WriteLine($"Processed {Path.GetFileName(filePath)} - Type: {result.CodeTypeName}, Text: {result.CodeText}, Time: {sw.ElapsedMilliseconds} ms");
                         }
                     }
-
-                    // Increment the count of successfully processed files
-                    processedCount++;
-                }
-                catch (Exception ex)
-                {
-                    // Log any errors (e.g., unsupported image format) and continue with the next file
-                    Console.WriteLine($"Error processing '{filePath}': {ex.Message}");
                 }
             }
         }
 
-        // Inform the user where the report has been saved
-        Console.WriteLine($"Barcode recognition report generated at: {csvPath}");
+        // Inform the user where the CSV report was saved
+        Console.WriteLine($"CSV report generated at: {Path.GetFullPath(outputCsv)}");
     }
 }

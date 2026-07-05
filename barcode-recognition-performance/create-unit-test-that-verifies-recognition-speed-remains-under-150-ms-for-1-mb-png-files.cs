@@ -1,3 +1,8 @@
+// Title: Barcode recognition speed test for 1‑MB PNG
+// Description: Generates a large PNG barcode, then measures recognition time ensuring it stays under 150 ms.
+// Prompt: Create a unit test that verifies recognition speed remains under 150 ms for 1‑MB PNG files.
+// Tags: barcode, performance, png, recognition, unit-test, aspose.barcode
+
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -7,79 +12,99 @@ using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demo program that generates a large barcode image, saves it to a temporary file,
-/// and measures the time required to recognize it using Aspose.BarCode.
+/// Demo program that creates a large barcode image and measures recognition speed.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a barcode, saves it, reads it back, measures recognition time,
-    /// and reports success or failure based on a 150 ms threshold.
+    /// Entry point that runs the performance test.
     /// </summary>
     static void Main()
     {
-        // Define temporary file path for the barcode image
-        string tempFile = Path.Combine(Path.GetTempPath(), "test_barcode.png");
+        // Path for temporary barcode image
+        string imagePath = Path.Combine(Path.GetTempPath(), "large_barcode.png");
 
-        // Generate a barcode image large enough to be around 1 MB
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "PerformanceTest1234567890"))
+        // Ensure any previous file is removed
+        if (File.Exists(imagePath))
         {
-            // Use interpolation mode and set explicit image dimensions (points)
-            generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
-            generator.Parameters.ImageWidth.Point = 3000f;   // width in points
-            generator.Parameters.ImageHeight.Point = 3000f;  // height in points
-
-            // Save the generated image to the temporary file
-            generator.Save(tempFile);
+            File.Delete(imagePath);
         }
 
-        // Verify that the file was created successfully
-        if (!File.Exists(tempFile))
+        // Generate a barcode image large enough to be at least 1 MB
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "SampleCodeForPerformanceTest1234567890"))
+        {
+            // Set a large image size to increase file size
+            generator.Parameters.ImageWidth.Point = 2500f;
+            generator.Parameters.ImageHeight.Point = 2500f;
+            generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
+
+            // Save the image as PNG
+            generator.Save(imagePath, BarCodeImageFormat.Png);
+        }
+
+        // Verify the generated file exists
+        if (!File.Exists(imagePath))
         {
             Console.WriteLine("Failed to create barcode image.");
             return;
         }
 
-        // Start timing the barcode recognition process
-        var stopwatch = new Stopwatch();
-        stopwatch.Start();
-
-        // Open the saved image for reading and recognize all supported barcode types
-        using (var reader = new BarCodeReader(tempFile, DecodeType.AllSupportedTypes))
+        // Verify the file size is at least 1 MB (1 048 576 bytes)
+        long fileSize = new FileInfo(imagePath).Length;
+        if (fileSize < 1_048_576)
         {
-            // Apply a standard quality preset for recognition
-            reader.QualitySettings = QualitySettings.NormalQuality;
+            Console.WriteLine($"Generated image is smaller than 1 MB (size: {fileSize} bytes).");
+            return;
+        }
 
-            // Iterate through all detected barcodes
-            foreach (var result in reader.ReadBarCodes())
+        // Prepare the barcode reader
+        using (var reader = new BarCodeReader())
+        {
+            // Use high‑performance settings for speed
+            reader.QualitySettings = QualitySettings.HighPerformance;
+
+            // Set the image for recognition
+            reader.SetBarCodeImage(imagePath);
+
+            // Measure recognition time
+            var stopwatch = Stopwatch.StartNew();
+            var results = reader.ReadBarCodes();
+            stopwatch.Stop();
+
+            // Check if any barcode was detected
+            if (results.Length == 0)
             {
-                // Output each result to prevent the loop from being optimized away
-                Console.WriteLine($"Detected: {result.CodeTypeName} - {result.CodeText}");
+                Console.WriteLine("No barcode detected.");
+                return;
+            }
+
+            // Output the recognized code text
+            foreach (var result in results)
+            {
+                Console.WriteLine($"Detected Type: {result.CodeTypeName}, Text: {result.CodeText}");
+            }
+
+            // Verify the recognition time is under 150 ms
+            long elapsedMs = stopwatch.ElapsedMilliseconds;
+            Console.WriteLine($"Recognition time: {elapsedMs} ms");
+            if (elapsedMs <= 150)
+            {
+                Console.WriteLine("Test passed: recognition speed is within the required limit.");
+            }
+            else
+            {
+                Console.WriteLine("Test failed: recognition took longer than 150 ms.");
             }
         }
 
-        // Stop the timer and calculate elapsed milliseconds
-        stopwatch.Stop();
-        long elapsedMs = stopwatch.ElapsedMilliseconds;
-
-        // Report whether recognition completed within the 150 ms threshold
-        if (elapsedMs < 150)
-        {
-            Console.WriteLine($"Success: Recognition completed in {elapsedMs} ms (under 150 ms).");
-        }
-        else
-        {
-            Console.WriteLine($"Failure: Recognition took {elapsedMs} ms (exceeds 150 ms).");
-        }
-
-        // Attempt to delete the temporary file; ignore any errors that occur
+        // Clean up the temporary file
         try
         {
-            File.Delete(tempFile);
+            File.Delete(imagePath);
         }
         catch
         {
-            // Cleanup errors are intentionally ignored
+            // Ignore any cleanup errors
         }
     }
 }

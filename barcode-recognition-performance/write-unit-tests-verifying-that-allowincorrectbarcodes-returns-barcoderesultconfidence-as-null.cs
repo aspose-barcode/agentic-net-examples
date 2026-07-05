@@ -1,84 +1,95 @@
+// Title: Demonstrate AllowIncorrectBarcodes effect on barcode confidence
+// Description: Generates an EAN13 barcode with an incorrect checksum and shows how the AllowIncorrectBarcodes setting influences the Confidence property of BarCodeResult.
+// Prompt: Write unit tests verifying that AllowIncorrectBarcodes returns BarCodeResult.Confidence as null.
+// Tags: barcode symbology, ean13, allowincorrectbarcodes, confidence, unit testing, aspose.barcode
+
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a Code39 barcode, reading it with relaxed quality settings,
-/// and verifying that the Confidence property is null when AllowIncorrectBarcodes is enabled.
+/// Example program that creates an EAN13 barcode with an invalid checksum
+/// and demonstrates the impact of the <c>AllowIncorrectBarcodes</c> quality setting
+/// on the <c>BarCodeResult.Confidence</c> value returned by the reader.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
+    /// Entry point of the example. Generates a temporary barcode image,
+    /// runs two recognition scenarios (allowing and disallowing incorrect barcodes),
+    /// and outputs the results to the console.
     /// </summary>
     static void Main()
     {
-        // --------------------------------------------------------------------
-        // Create a temporary PNG file path for the barcode image.
-        // --------------------------------------------------------------------
-        string tempFile = Path.Combine(Path.GetTempPath(), "test_barcode.png");
+        // Prepare a temporary PNG file for the barcode image
+        string tempPath = Path.Combine(Path.GetTempPath(), "temp_ean13.png");
 
-        // --------------------------------------------------------------------
-        // Generate a simple Code39 barcode and save it to the temporary file.
-        // --------------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code39, "12345"))
+        // Create an EAN13 barcode with an incorrect checksum (last digit is wrong)
+        using (var generator = new BarcodeGenerator(EncodeTypes.EAN13, "1234567890123"))
         {
-            generator.Save(tempFile);
+            generator.Save(tempPath);
         }
 
-        // --------------------------------------------------------------------
-        // Verify that the barcode image file was successfully created.
-        // --------------------------------------------------------------------
-        if (!File.Exists(tempFile))
+        // Verify that the file was created
+        if (!File.Exists(tempPath))
         {
             Console.WriteLine("Failed to create barcode image.");
             return;
         }
 
-        // --------------------------------------------------------------------
-        // Read the barcode from the file with AllowIncorrectBarcodes enabled.
-        // --------------------------------------------------------------------
-        using (var reader = new BarCodeReader(tempFile, DecodeType.Code39))
+        // ------------------------------------------------------------
+        // Test 1: AllowIncorrectBarcodes = true
+        // ------------------------------------------------------------
+        using (var reader = new BarCodeReader(tempPath, DecodeType.EAN13))
         {
-            // Enable recognition of barcodes that may not meet strict quality criteria.
+            // Enable recognition of incorrect barcodes
             reader.QualitySettings.AllowIncorrectBarcodes = true;
 
-            // Perform the barcode reading operation.
-            BarCodeResult[] results = reader.ReadBarCodes();
-
-            // If no barcodes were detected, report and exit.
-            if (results.Length == 0)
+            bool confidenceIsNone = false;
+            foreach (BarCodeResult result in reader.ReadBarCodes())
             {
-                Console.WriteLine("No barcode detected.");
-                return;
+                // When AllowIncorrectBarcodes is true, the engine should return a result
+                // with Confidence set to BarCodeConfidence.None (value 0)
+                confidenceIsNone = result.Confidence == BarCodeConfidence.None;
+                Console.WriteLine($"Test1 - Confidence: {result.Confidence}");
             }
 
-            // Iterate over each detected barcode result.
-            foreach (var result in results)
-            {
-                // Expect the Confidence property to be null when AllowIncorrectBarcodes is true.
-                bool isConfidenceNull = result.Confidence == null;
-
-                // Output test result based on the Confidence value.
-                Console.WriteLine(isConfidenceNull
-                    ? "Test Passed: Confidence is null."
-                    : $"Test Failed: Confidence is {result.Confidence}.");
-            }
+            Console.WriteLine(confidenceIsNone
+                ? "Test1 passed: Confidence is None as expected."
+                : "Test1 failed: Confidence is not None.");
         }
 
-        // --------------------------------------------------------------------
-        // Clean up: delete the temporary barcode image file.
-        // --------------------------------------------------------------------
+        // ------------------------------------------------------------
+        // Test 2: AllowIncorrectBarcodes = false
+        // ------------------------------------------------------------
+        using (var reader = new BarCodeReader(tempPath, DecodeType.EAN13))
+        {
+            // Disable recognition of incorrect barcodes (default behavior)
+            reader.QualitySettings.AllowIncorrectBarcodes = false;
+
+            bool noResult = true;
+            foreach (BarCodeResult result in reader.ReadBarCodes())
+            {
+                // With AllowIncorrectBarcodes disabled, the reader should not return any result
+                noResult = false;
+                Console.WriteLine($"Test2 - Unexpected result with Confidence: {result.Confidence}");
+            }
+
+            Console.WriteLine(noResult
+                ? "Test2 passed: No result returned as expected."
+                : "Test2 failed: Result was returned despite AllowIncorrectBarcodes being false.");
+        }
+
+        // Clean up temporary file
         try
         {
-            File.Delete(tempFile);
+            File.Delete(tempPath);
         }
         catch
         {
-            // Suppress any exceptions that occur during cleanup.
+            // Ignore any cleanup errors
         }
     }
 }

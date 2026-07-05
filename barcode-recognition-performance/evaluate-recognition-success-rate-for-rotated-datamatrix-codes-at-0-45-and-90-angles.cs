@@ -1,100 +1,71 @@
+// Title: DataMatrix rotation recognition test
+// Description: Demonstrates generating DataMatrix barcodes at different rotation angles and measuring recognition success rate.
+// Prompt: Evaluate recognition success rate for rotated DataMatrix codes at 0°, 45°, and 90° angles.
+// Tags: datamatrix, rotation, recognition, success-rate, aspose.barcode, csharp
+
 using System;
-using System.IO;
+using System.Collections.Generic;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generation and recognition of rotated DataMatrix barcodes using Aspose.BarCode.
+/// Generates DataMatrix barcodes at various rotation angles,
+/// attempts to recognize them, and reports the overall success rate.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates DataMatrix barcodes at various rotation angles,
-    /// attempts to read them back, and reports the success rate.
+    /// Entry point of the application. Executes the rotation test and prints results.
     /// </summary>
     static void Main()
     {
-        // Sample DataMatrix text to encode
-        const string codeText = "AsposeDataMatrixTest";
+        // Text to encode in the DataMatrix barcode
+        const string codeText = "TestDataMatrix12345";
 
-        // Rotation angles (in degrees) to test
-        float[] angles = new float[] { 0f, 45f, 90f };
+        // Rotation angles (in degrees) to evaluate
+        float[] angles = { 0f, 45f, 90f };
+        int successful = 0;
 
-        // Counters for total tests and successful reads
-        int totalTests = angles.Length;
-        int successfulReads = 0;
-
-        // Iterate over each rotation angle
+        // Iterate over each angle, generate, recognize, and log the outcome
         foreach (float angle in angles)
         {
-            // Build a temporary file path for the generated barcode image
-            string tempFile = Path.Combine(Path.GetTempPath(), $"DataMatrix_{angle}.png");
-
-            // -------------------------------------------------
-            // Generate a rotated DataMatrix barcode and save it
-            // -------------------------------------------------
+            // Create a barcode generator for DataMatrix with the specified text
             using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, codeText))
             {
-                // Apply the desired rotation angle
+                // Apply rotation to the generated barcode image
                 generator.Parameters.RotationAngle = angle;
 
-                // Save the barcode image to the temporary file
-                generator.Save(tempFile);
-            }
-
-            // Verify that the image file was successfully created
-            if (!File.Exists(tempFile))
-            {
-                Console.WriteLine($"Failed to create barcode image for angle {angle}°.");
-                continue;
-            }
-
-            // -------------------------------------------------
-            // Attempt to read the barcode from the generated image
-            // -------------------------------------------------
-            using (var reader = new BarCodeReader(tempFile, DecodeType.DataMatrix))
-            {
-                bool readSuccess = false;
-
-                // Iterate through all detected barcodes (should be only one)
-                foreach (var result in reader.ReadBarCodes())
+                // Generate the barcode as a bitmap image
+                using (Bitmap bitmap = generator.GenerateBarCodeImage())
                 {
-                    // Check if the decoded text matches the original text
-                    if (!string.IsNullOrEmpty(result.CodeText) && result.CodeText == codeText)
+                    // Initialize a reader to decode DataMatrix barcodes from the bitmap
+                    using (var reader = new BarCodeReader(bitmap, DecodeType.DataMatrix))
                     {
-                        readSuccess = true;
-                        break;
+                        bool recognized = false;
+
+                        // Scan all detected barcodes in the image
+                        foreach (BarCodeResult result in reader.ReadBarCodes())
+                        {
+                            // Verify that the decoded text matches the original
+                            if (!string.IsNullOrEmpty(result.CodeText) && result.CodeText == codeText)
+                            {
+                                recognized = true;
+                                break;
+                            }
+                        }
+
+                        // Output the result for the current angle
+                        Console.WriteLine($"Angle {angle}°: {(recognized ? "Success" : "Failure")}");
+                        if (recognized) successful++;
                     }
                 }
-
-                // Update counters and output result for the current angle
-                if (readSuccess)
-                {
-                    successfulReads++;
-                    Console.WriteLine($"Angle {angle}°: SUCCESS");
-                }
-                else
-                {
-                    Console.WriteLine($"Angle {angle}°: FAILURE");
-                }
-            }
-
-            // -------------------------------------------------
-            // Clean up: delete the temporary barcode image file
-            // -------------------------------------------------
-            try
-            {
-                File.Delete(tempFile);
-            }
-            catch
-            {
-                // Suppress any exceptions during cleanup
             }
         }
 
-        // Calculate the overall success rate and display it
-        double successRate = totalTests > 0 ? (double)successfulReads / totalTests * 100.0 : 0.0;
-        Console.WriteLine($"Recognition success rate: {successRate:F2}% ({successfulReads}/{totalTests})");
+        // Calculate and display the overall recognition success rate
+        double successRate = (double)successful / angles.Length * 100.0;
+        Console.WriteLine($"Recognition success rate: {successRate:F2}%");
     }
 }

@@ -1,48 +1,58 @@
+// Title: Verify MinimalXDimension default behavior
+// Description: Demonstrates checking that MinimalXDimension is zero when UseMinimalXDimension is disabled in barcode quality settings.
+// Prompt: Create unit tests ensuring MinimalXDimension defaults to zero when UseMinimalXDimension is false.
+// Tags: barcode, symbology, code128, qualitysettings, minimalxdimension, unit-test, aspnet
+
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a Code128 barcode, saving it to a memory stream,
-/// and then reading it back to verify the MinimalXDimension setting.
+/// Example program that generates a Code128 barcode, reads it back,
+/// and verifies that MinimalXDimension defaults to zero when the
+/// XDimension mode is not set to UseMinimalXDimension.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a barcode, reads it, and checks the MinimalXDimension value.
+    /// Entry point of the example. Generates a barcode, reads it,
+    /// and checks the MinimalXDimension default value.
     /// </summary>
     static void Main()
     {
-        // Create a barcode generator for Code128 with the data "123456"
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
+        // Generate a simple Code128 barcode and keep it in memory.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Test123"))
         {
-            // Prepare a memory stream to hold the generated barcode image
+            // Use default settings (AutoSizeMode.None, default XDimension).
             using (var ms = new MemoryStream())
             {
-                // Save the barcode image to the memory stream in PNG format
+                // Save the barcode image to the memory stream in PNG format.
                 generator.Save(ms, BarCodeImageFormat.Png);
-                // Reset stream position to the beginning for reading
-                ms.Position = 0;
+                ms.Position = 0; // Reset stream position for reading.
 
-                // Initialize a barcode reader to recognize all supported types from the stream
-                using (var reader = new BarCodeReader(ms, DecodeType.AllSupportedTypes))
+                // Create a reader for the generated image.
+                using (var reader = new BarCodeReader(ms, DecodeType.Code128))
                 {
-                    // Set XDimension mode to Normal (disables UseMinimalXDimension)
-                    reader.QualitySettings.XDimension = XDimensionMode.Normal;
+                    // Ensure the XDimension mode is NOT UseMinimalXDimension.
+                    if (reader.QualitySettings.XDimension == XDimensionMode.UseMinimalXDimension)
+                    {
+                        Console.WriteLine("FAILED: XDimension mode is unexpectedly UseMinimalXDimension.");
+                        return;
+                    }
 
-                    // Retrieve the MinimalXDimension value (should be zero in Normal mode)
-                    float minimalX = reader.QualitySettings.MinimalXDimension;
-                    // Determine if the retrieved value is effectively zero
-                    bool testPassed = Math.Abs(minimalX) < 0.0001f;
-
-                    // Output the test result to the console
-                    Console.WriteLine(testPassed
-                        ? "PASS: MinimalXDimension is zero when UseMinimalXDimension is false."
-                        : $"FAIL: MinimalXDimension is {minimalX}, expected zero.");
+                    // Verify that MinimalXDimension defaults to zero.
+                    float minimal = reader.QualitySettings.MinimalXDimension;
+                    if (Math.Abs(minimal) < 0.0001f)
+                    {
+                        Console.WriteLine("PASSED: MinimalXDimension defaults to zero when UseMinimalXDimension is false.");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"FAILED: MinimalXDimension is {minimal}, expected 0.");
+                    }
                 }
             }
         }

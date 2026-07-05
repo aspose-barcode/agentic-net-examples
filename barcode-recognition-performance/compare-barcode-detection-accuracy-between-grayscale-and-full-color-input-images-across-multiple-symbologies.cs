@@ -1,120 +1,130 @@
+// Title: Barcode detection accuracy comparison between color and grayscale images
+// Description: Generates barcodes in color and grayscale, then reads them to compare detection confidence and reading quality across multiple symbologies.
+// Prompt: Compare barcode detection accuracy between grayscale and full‑color input images across multiple symbologies.
+// Tags: barcode, symbology, detection, grayscale, color, aspose.barcode, c#
+
 using System;
-using System.Collections.Generic;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates barcode generation, conversion to grayscale, and recognition comparison
-/// using Aspose.BarCode library.
+/// Demonstrates how to generate barcodes in both color and grayscale,
+/// then reads them back to compare detection confidence and reading quality
+/// across several symbologies.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Converts a color <see cref="Bitmap"/> to a grayscale image.
-    /// </summary>
-    /// <param name="source">The source color bitmap.</param>
-    /// <returns>A new bitmap containing the grayscale representation of the source.</returns>
-    static Bitmap ConvertToGrayscale(Bitmap source)
-    {
-        // Create a new bitmap with the same dimensions as the source.
-        var gray = new Bitmap(source.Width, source.Height);
-
-        // Iterate over each pixel to compute its luminance.
-        for (int y = 0; y < source.Height; y++)
-        {
-            for (int x = 0; x < source.Width; x++)
-            {
-                // Retrieve the original pixel color.
-                Color c = source.GetPixel(x, y);
-
-                // Calculate luminance using the standard NTSC coefficients.
-                int lum = (int)(0.299 * c.R + 0.587 * c.G + 0.114 * c.B);
-
-                // Create a gray color where R, G, and B are equal to the luminance.
-                Color grayColor = Color.FromArgb(lum, lum, lum);
-
-                // Set the pixel in the grayscale bitmap.
-                gray.SetPixel(x, y, grayColor);
-            }
-        }
-
-        return gray;
-    }
-
-    /// <summary>
-    /// Entry point of the program. Generates barcodes, creates grayscale versions,
-    /// and compares detection results between color and grayscale images.
+    /// Entry point. Generates sample barcodes, reads them, and outputs a comparison
+    /// of detection results for color versus grayscale images.
     /// </summary>
     static void Main()
     {
-        // Define a list of barcode symbologies and the corresponding sample texts.
-        var symbologies = new List<(BaseEncodeType type, string text)>
+        // Define the set of symbologies and corresponding sample texts
+        var symbologies = new (BaseEncodeType Encode, string CodeText)[]
         {
-            (EncodeTypes.Code128, "ABC123"),
-            (EncodeTypes.QR, "https://example.com"),
+            (EncodeTypes.Code128, "1234567890"),
+            (EncodeTypes.QR, "Hello QR"),
             (EncodeTypes.DataMatrix, "DM12345"),
-            (EncodeTypes.Pdf417, "PDF417Test")
+            (EncodeTypes.Pdf417, "PDF417 Sample")
         };
 
-        // Process each symbology/text pair.
-        foreach (var (sym, txt) in symbologies)
+        // Prepare a directory to store generated barcode images
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "BarcodeSamples");
+        if (!Directory.Exists(outputDir))
         {
-            // Generate a barcode image in color.
-            using (var generator = new BarcodeGenerator(sym, txt))
+            Directory.CreateDirectory(outputDir);
+        }
+
+        // Process each symbology
+        foreach (var (encode, codeText) in symbologies)
+        {
+            // -------------------------------------------------
+            // Generate a color barcode (blue bars on yellow background)
+            // -------------------------------------------------
+            string colorPath = Path.Combine(outputDir, $"{encode.TypeName}_color.png");
+            using (var generator = new BarcodeGenerator(encode, codeText))
             {
-                using (Bitmap colorBmp = generator.GenerateBarCodeImage())
-                {
-                    // Convert the color barcode image to grayscale.
-                    using (Bitmap grayBmp = ConvertToGrayscale(colorBmp))
-                    {
-                        // -------------------- Recognition on Color Image --------------------
-                        bool detectedColor;
-                        BarCodeConfidence confidenceColor = BarCodeConfidence.None;
+                generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Blue;
+                generator.Parameters.BackColor = Aspose.Drawing.Color.Yellow;
+                generator.Save(colorPath);
+            }
 
-                        // Initialize a reader for the color bitmap.
-                        using (var readerColor = new BarCodeReader(colorBmp, DecodeType.AllSupportedTypes))
-                        {
-                            // Read all barcodes present in the image.
-                            var results = readerColor.ReadBarCodes();
+            // -------------------------------------------------
+            // Generate a grayscale barcode (default black on white)
+            // -------------------------------------------------
+            string grayPath = Path.Combine(outputDir, $"{encode.TypeName}_gray.png");
+            using (var generator = new BarcodeGenerator(encode, codeText))
+            {
+                // No explicit color settings -> black/white output
+                generator.Save(grayPath);
+            }
 
-                            // Determine if any barcode was detected.
-                            detectedColor = results.Length > 0;
+            // -------------------------------------------------
+            // Read and evaluate the color image
+            // -------------------------------------------------
+            var colorResult = ReadBarcode(colorPath);
 
-                            // Capture confidence of the first detected barcode, if any.
-                            if (detectedColor)
-                                confidenceColor = results[0].Confidence;
-                        }
+            // -------------------------------------------------
+            // Read and evaluate the grayscale image
+            // -------------------------------------------------
+            var grayResult = ReadBarcode(grayPath);
 
-                        // -------------------- Recognition on Grayscale Image --------------------
-                        bool detectedGray;
-                        BarCodeConfidence confidenceGray = BarCodeConfidence.None;
+            // -------------------------------------------------
+            // Output a side‑by‑side comparison of detection results
+            // -------------------------------------------------
+            Console.WriteLine($"Symbology: {encode.TypeName}");
+            Console.WriteLine($"  Color Image   -> Detected: {colorResult.Detected}, Confidence: {colorResult.Confidence}, ReadingQuality: {colorResult.ReadingQuality}");
+            Console.WriteLine($"  Grayscale Image-> Detected: {grayResult.Detected}, Confidence: {grayResult.Confidence}, ReadingQuality: {grayResult.ReadingQuality}");
+            Console.WriteLine();
+        }
+    }
 
-                        // Initialize a reader for the grayscale bitmap.
-                        using (var readerGray = new BarCodeReader(grayBmp, DecodeType.AllSupportedTypes))
-                        {
-                            // Read all barcodes present in the image.
-                            var results = readerGray.ReadBarCodes();
+    // Helper struct to hold detection information for a single barcode read operation
+    private struct DetectionInfo
+    {
+        public bool Detected;
+        public BarCodeConfidence Confidence;
+        public double ReadingQuality;
+    }
 
-                            // Determine if any barcode was detected.
-                            detectedGray = results.Length > 0;
+    /// <summary>
+    /// Reads the first barcode from the specified image file and returns detection details.
+    /// </summary>
+    /// <param name="imagePath">Path to the image containing the barcode.</param>
+    /// <returns>A <see cref="DetectionInfo"/> struct with detection status, confidence, and reading quality.</returns>
+    private static DetectionInfo ReadBarcode(string imagePath)
+    {
+        var info = new DetectionInfo
+        {
+            Detected = false,
+            Confidence = BarCodeConfidence.None,
+            ReadingQuality = 0.0
+        };
 
-                            // Capture confidence of the first detected barcode, if any.
-                            if (detectedGray)
-                                confidenceGray = results[0].Confidence;
-                        }
+        // Verify that the image file exists before attempting to read
+        if (!File.Exists(imagePath))
+        {
+            Console.WriteLine($"Warning: File not found - {imagePath}");
+            return info;
+        }
 
-                        // -------------------- Output Comparison --------------------
-                        Console.WriteLine($"{sym.TypeName}:");
-                        Console.WriteLine($"  Color     - Detected: {detectedColor}, Confidence: {confidenceColor}");
-                        Console.WriteLine($"  Grayscale - Detected: {detectedGray}, Confidence: {confidenceGray}");
-                        Console.WriteLine();
-                    }
-                }
+        // Use Aspose.BarCode reader to decode any supported barcode type
+        using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
+        {
+            foreach (var result in reader.ReadBarCodes())
+            {
+                // Capture details from the first detected barcode and exit loop
+                info.Detected = true;
+                info.Confidence = result.Confidence;
+                info.ReadingQuality = result.ReadingQuality;
+                break;
             }
         }
+
+        return info;
     }
 }

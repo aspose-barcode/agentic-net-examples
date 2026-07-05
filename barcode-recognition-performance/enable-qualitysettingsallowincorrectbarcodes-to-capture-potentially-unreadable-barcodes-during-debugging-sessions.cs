@@ -1,65 +1,50 @@
+// Title: Code128 Barcode Generation and Recognition with AllowIncorrectBarcodes
+// Description: Demonstrates generating a Code128 barcode, saving it as PNG, and reading it back while allowing recognition of potentially unreadable barcodes for debugging.
+// Prompt: Enable QualitySettings.AllowIncorrectBarcodes to capture potentially unreadable barcodes during debugging sessions.
+// Tags: barcode, code128, generation, recognition, allowincorrectbarcodes, aspnet, c#
+
 using System;
-using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a barcode image, reading it with relaxed quality settings,
-/// and cleaning up the temporary file.
+/// Example program that creates a Code128 barcode image and then reads it back,
+/// enabling the AllowIncorrectBarcodes setting to capture barcodes that may be damaged or unreadable during debugging.
 /// </summary>
 class Program
 {
     /// <summary>
     /// Entry point of the application.
-    /// Generates a barcode, reads it, displays detection details, and deletes the temporary image.
+    /// Generates a barcode, saves it, and then reads it while allowing incorrect barcodes.
     /// </summary>
     static void Main()
     {
-        // Define the temporary file path for the generated barcode image
-        string imagePath = Path.Combine(Path.GetTempPath(), "sample_barcode.png");
-
-        // Generate a sample barcode image using Code128 encoding and the text "123ABC"
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123ABC"))
+        // ------------------------------------------------------------
+        // Generate a simple Code128 barcode and save it to a PNG file.
+        // ------------------------------------------------------------
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            // Save the generated barcode image to the temporary file
-            generator.Save(imagePath);
+            // Save the generated barcode image as "barcode.png".
+            generator.Save("barcode.png");
         }
 
-        // Verify that the image was successfully created
-        if (!File.Exists(imagePath))
+        // ------------------------------------------------------------
+        // Read the generated barcode image and output its details.
+        // ------------------------------------------------------------
+        using (BarCodeReader reader = new BarCodeReader("barcode.png", DecodeType.Code128))
         {
-            Console.WriteLine("Failed to create barcode image.");
-            return;
-        }
-
-        // Initialize a barcode reader for all supported decode types
-        using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
-        {
-            // Allow detection of barcodes that may be partially unreadable or of low quality
+            // Enable recognition of potentially incorrect or damaged barcodes.
             reader.QualitySettings.AllowIncorrectBarcodes = true;
 
-            // Iterate through all detected barcodes in the image
+            // Iterate through all detected barcodes in the image.
             foreach (var result in reader.ReadBarCodes())
             {
-                // Output detection details to the console
-                Console.WriteLine($"Detected Type: {result.CodeTypeName}");
-                Console.WriteLine($"Code Text: {result.CodeText}");
-                Console.WriteLine($"Confidence: {result.Confidence}");
-                Console.WriteLine($"Reading Quality: {result.ReadingQuality}");
-                Console.WriteLine();
+                // Output the type of the detected barcode.
+                Console.WriteLine($"Detected barcode type: {result.CodeTypeName}");
+                // Output the decoded text contained in the barcode.
+                Console.WriteLine($"Decoded text: {result.CodeText}");
             }
-        }
-
-        // Attempt to delete the temporary barcode image; ignore any errors that occur
-        try
-        {
-            File.Delete(imagePath);
-        }
-        catch
-        {
-            // Cleanup errors are intentionally ignored
         }
     }
 }

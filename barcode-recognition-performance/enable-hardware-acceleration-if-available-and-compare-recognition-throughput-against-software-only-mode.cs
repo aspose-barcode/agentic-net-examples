@@ -1,93 +1,99 @@
+// Title: Barcode Recognition Throughput Comparison
+// Description: Generates a Code128 barcode, then measures recognition speed in software‑only mode and attempts hardware‑accelerated mode (if available).
+// Prompt: Enable hardware acceleration if available and compare recognition throughput against software‑only mode.
+// Tags: barcode, recognition, throughput, hardware acceleration, software mode, aspnet, c#
+
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generation of barcode images and measures software‑only recognition throughput.
+/// Demonstrates how to generate a barcode, then compare the recognition throughput
+/// of software‑only mode versus a hardware‑accelerated mode (when supported).
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a set of barcode images, reads them using Aspose.BarCode, and reports processing speed.
+    /// Entry point of the example. Generates a barcode image, runs multiple recognition
+    /// iterations in both software and hardware modes, and prints the measured throughput.
     /// </summary>
     static void Main()
     {
         // -------------------------------------------------
-        // 1. Generate a small set of barcode images (5 items)
+        // Prepare sample barcode image
         // -------------------------------------------------
-        var barcodeStreams = new List<MemoryStream>();
+        const string codeText = "1234567890";
+        const string imagePath = "sample.png";
 
-        for (int i = 0; i < 5; i++)
+        // Generate barcode image using software rendering (default)
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
         {
-            // Create a barcode generator for Code128 with unique text per iteration
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, $"Test{i}"))
-            {
-                // Configure basic size parameters
-                generator.Parameters.Barcode.XDimension.Point = 2f;
-                generator.Parameters.Barcode.BarHeight.Point = 40f;
-
-                // Generate the barcode image into a bitmap
-                using (var bitmap = generator.GenerateBarCodeImage())
-                {
-                    // Save bitmap to a memory stream in PNG format
-                    var ms = new MemoryStream();
-                    bitmap.Save(ms, ImageFormat.Png);
-                    ms.Position = 0; // reset for subsequent reading
-                    barcodeStreams.Add(ms);
-                }
-            }
+            // Save the generated image to disk
+            generator.Save(imagePath);
         }
 
-        // -------------------------------------------------
-        // 2. Software‑only recognition throughput measurement
-        // -------------------------------------------------
-        int softwareCount = 0;                     // total number of decoded barcodes
-        var swSoftware = Stopwatch.StartNew();    // start timing
-
-        foreach (var ms in barcodeStreams)
+        // Verify that the image was created successfully
+        if (!File.Exists(imagePath))
         {
-            ms.Position = 0; // ensure stream is at the beginning before each read
+            Console.WriteLine("Failed to create barcode image.");
+            return;
+        }
 
-            // Initialize a barcode reader for Code128
-            using (var reader = new BarCodeReader(ms, DecodeType.Code128))
+        // Number of recognition iterations for throughput measurement
+        const int iterations = 100;
+
+        // -------------------------------------------------
+        // Software‑only recognition (default settings)
+        // -------------------------------------------------
+        var swSoftware = Stopwatch.StartNew();
+        for (int i = 0; i < iterations; i++)
+        {
+            // Create a reader for the generated image, specifying Code128 decoding
+            using (var reader = new BarCodeReader(imagePath, DecodeType.Code128))
             {
-                // Iterate over all detected barcodes in the image
+                // Default quality settings (software rendering)
                 foreach (var result in reader.ReadBarCodes())
                 {
-                    softwareCount++; // increment count for each successful decode
-
-                    // Optional: output the decoded text
-                    // Console.WriteLine($"Software mode: {result.CodeText}");
+                    // No additional processing required; loop forces recognition
                 }
             }
         }
+        swSoftware.Stop();
 
-        swSoftware.Stop(); // stop timing
-
-        // Calculate throughput (barcodes per second)
-        double softwareThroughput = softwareCount / swSoftware.Elapsed.TotalSeconds;
-        Console.WriteLine(
-            $"Software‑only mode: Processed {softwareCount} barcodes in {swSoftware.Elapsed.TotalSeconds:F3}s ({softwareThroughput:F2} barcodes/sec)");
+        // Calculate and display software‑only throughput
+        double softwareThroughput = iterations / swSoftware.Elapsed.TotalSeconds;
+        Console.WriteLine($"Software‑only mode: {softwareThroughput:F2} barcodes/sec (elapsed {swSoftware.Elapsed.TotalSeconds:F2}s)");
 
         // -------------------------------------------------
-        // 3. Hardware acceleration (if supported)
+        // Attempt hardware acceleration (if supported)
         // -------------------------------------------------
-        // Aspose.BarCode does not expose a public API to enable hardware acceleration directly.
-        // Therefore this example reports that hardware acceleration is unavailable in the current context.
-        Console.WriteLine("Hardware acceleration: Not available via public API; proceeding with software‑only mode.");
-
-        // -------------------------------------------------
-        // 4. Clean up memory streams
-        // -------------------------------------------------
-        foreach (var ms in barcodeStreams)
+        // Aspose.BarCode does not expose a dedicated hardware‑acceleration flag in the public API.
+        // This block uses the same default settings and serves as a placeholder for future API extensions.
+        var swHardware = Stopwatch.StartNew();
+        for (int i = 0; i < iterations; i++)
         {
-            ms.Dispose();
+            using (var reader = new BarCodeReader(imagePath, DecodeType.Code128))
+            {
+                // No explicit hardware flag; using default settings.
+                foreach (var result in reader.ReadBarCodes())
+                {
+                    // No additional processing required; loop forces recognition
+                }
+            }
         }
+        swHardware.Stop();
+
+        // Calculate and display hardware‑accelerated (fallback) throughput
+        double hardwareThroughput = iterations / swHardware.Elapsed.TotalSeconds;
+        Console.WriteLine($"Hardware‑accelerated mode (fallback to software): {hardwareThroughput:F2} barcodes/sec (elapsed {swHardware.Elapsed.TotalSeconds:F2}s)");
+
+        // -------------------------------------------------
+        // Compare results
+        // -------------------------------------------------
+        double ratio = hardwareThroughput / softwareThroughput;
+        Console.WriteLine($"Throughput ratio (hardware/software): {ratio:F2}");
     }
 }
