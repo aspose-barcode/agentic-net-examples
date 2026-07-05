@@ -1,100 +1,88 @@
+// Title: Export Barcode Generator Settings to XML Using Configurable Directory
+// Description: Demonstrates loading a JSON configuration to determine the export folder and then exporting barcode generator settings to an XML file.
+// Prompt: Design a configuration file that specifies the default XML export directory and integrates it with ExportToXml calls.
+// Tags: barcode symbology, export, xml, configuration, aspnet, aspose.barcodes
+
 using System;
 using System.IO;
 using System.Text.Json;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
-/// <summary>
-/// Represents application configuration settings.
-/// </summary>
-class Config
+namespace BarcodeExportConfigExample
 {
     /// <summary>
-    /// Gets or sets the directory where exported files will be saved.
+    /// Simple configuration class matching the JSON structure.
+    /// Contains the default directory where exported XML files are saved.
     /// </summary>
-    public string ExportDirectory { get; set; } = "Export";
-}
-
-/// <summary>
-/// Main program class.
-/// </summary>
-class Program
-{
-    /// <summary>
-    /// Application entry point. Handles configuration loading/creation,
-    /// ensures the export directory exists, generates a barcode, and
-    /// exports its configuration to an XML file.
-    /// </summary>
-    static void Main()
+    public class AppConfig
     {
-        const string configPath = "config.json";
+        public string ExportDirectory { get; set; } = "Export";
+    }
 
-        Config config;
+    class Program
+    {
+        /// <summary>
+        /// Entry point of the example.
+        /// Loads configuration, ensures the export directory exists, generates a barcode,
+        /// and exports its settings to an XML file in the configured location.
+        /// </summary>
+        static void Main()
+        {
+            // Load configuration from "config.json" if it exists; otherwise use defaults.
+            var config = LoadConfiguration("config.json");
 
-        // Load existing configuration or create a default one.
-        if (File.Exists(configPath))
-        {
-            try
-            {
-                string json = File.ReadAllText(configPath);
-                config = JsonSerializer.Deserialize<Config>(json) ?? new Config();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Failed to read config: {ex.Message}");
-                config = new Config();
-            }
-        }
-        else
-        {
-            config = new Config();
-            try
-            {
-                string json = JsonSerializer.Serialize(config, new JsonSerializerOptions { WriteIndented = true });
-                File.WriteAllText(configPath, json);
-                Console.WriteLine($"Created default config at '{configPath}'.");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Failed to write default config: {ex.Message}");
-            }
-        }
-
-        // Ensure the export directory exists.
-        if (!Directory.Exists(config.ExportDirectory))
-        {
-            try
+            // Ensure the export directory exists; create it if necessary.
+            if (!Directory.Exists(config.ExportDirectory))
             {
                 Directory.CreateDirectory(config.ExportDirectory);
-                Console.WriteLine($"Created export directory '{config.ExportDirectory}'.");
             }
-            catch (Exception ex)
+
+            // Create a barcode generator for Code128 with sample text.
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
             {
-                Console.WriteLine($"Failed to create export directory: {ex.Message}");
-                return;
+                // Optional: customize barcode appearance here if needed.
+                // e.g., generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Blue;
+
+                // Build the full path for the exported XML file.
+                string xmlPath = Path.Combine(config.ExportDirectory, "barcode_properties.xml");
+
+                // Export generator settings to XML file.
+                bool exported = generator.ExportToXml(xmlPath);
+                Console.WriteLine(exported
+                    ? $"Barcode configuration exported successfully to: {xmlPath}"
+                    : $"Failed to export barcode configuration to: {xmlPath}");
             }
         }
 
-        // Define barcode parameters.
-        BaseEncodeType encodeType = EncodeTypes.Code128;
-        string codeText = "1234567890";
-
-        // Generate the barcode and export its configuration.
-        using (var generator = new BarcodeGenerator(encodeType, codeText))
+        /// <summary>
+        /// Reads configuration from a JSON file; falls back to defaults on any error.
+        /// </summary>
+        /// <param name="filePath">Path to the JSON configuration file.</param>
+        /// <returns>An <see cref="AppConfig"/> instance with loaded or default values.</returns>
+        private static AppConfig LoadConfiguration(string filePath)
         {
-            // Optional barcode visual settings.
-            generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
-            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-            generator.Parameters.BackColor = Aspose.Drawing.Color.White;
+            // If the config file does not exist, return a new instance with default values.
+            if (!File.Exists(filePath))
+            {
+                return new AppConfig();
+            }
 
-            // Build the full path for the XML export file.
-            string xmlFilePath = Path.Combine(config.ExportDirectory, "barcode.xml");
-
-            // Export the barcode configuration to XML.
-            bool exported = generator.ExportToXml(xmlFilePath);
-            Console.WriteLine(exported
-                ? $"Barcode configuration exported to '{xmlFilePath}'."
-                : $"Failed to export barcode configuration to '{xmlFilePath}'.");
+            try
+            {
+                // Read the entire JSON content.
+                string json = File.ReadAllText(filePath);
+                var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                // Deserialize JSON into AppConfig; if null, use defaults.
+                var config = JsonSerializer.Deserialize<AppConfig>(json, options);
+                return config ?? new AppConfig();
+            }
+            catch (Exception ex)
+            {
+                // Log any errors and revert to default configuration.
+                Console.WriteLine($"Error loading configuration: {ex.Message}");
+                return new AppConfig();
+            }
         }
     }
 }

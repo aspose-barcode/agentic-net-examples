@@ -1,61 +1,83 @@
+// Title: Barcode Detection and XML Export
+// Description: Detects all barcodes in an image file and writes their type and text to an XML document.
+// Prompt: Create a console app that accepts an image path, detects barcodes, and writes state to an XML file.
+// Tags: barcode, detection, xml, console, aspose.barcoderecognition
+
 using System;
 using System.IO;
 using System.Xml;
-using Aspose.BarCode;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Reads barcodes from an image file and writes the detection results to an XML document.
+/// Demonstrates how to read barcodes from an image and export the results to an XML file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Application entry point.
+    /// Entry point of the console application.
+    /// Accepts an optional image path argument, detects barcodes, and writes the results to an XML file.
     /// </summary>
-    /// <param name="args">Command‑line arguments; the first argument may specify the image file path.</param>
+    /// <param name="args">Command‑line arguments; the first argument may be the image file path.</param>
     static void Main(string[] args)
     {
-        // Determine the image path: use the first command‑line argument if supplied,
-        // otherwise fall back to a default sample image.
+        // Determine image path from command‑line or use a default sample.
         string imagePath = args.Length > 0 ? args[0] : "sample.png";
 
-        // Verify that the specified image file exists before proceeding.
+        // Verify that the image file exists before proceeding.
         if (!File.Exists(imagePath))
         {
-            Console.WriteLine($"File not found: {imagePath}");
+            Console.WriteLine($"Image file not found: {imagePath}");
             return;
         }
 
-        // Define the output XML file path where barcode information will be saved.
-        string xmlPath = "Barcodes.xml";
+        // Prepare the output XML file path by changing the image extension to .xml.
+        string xmlPath = Path.ChangeExtension(imagePath, ".xml");
 
-        // Create a BarCodeReader that attempts to decode all supported barcode types.
-        using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
+        // Configure the XML writer to produce indented, human‑readable output.
+        XmlWriterSettings settings = new XmlWriterSettings
         {
-            // Perform the barcode recognition and obtain an array of results.
-            BarCodeResult[] results = reader.ReadBarCodes();
+            Indent = true,
+            IndentChars = "  "
+        };
 
-            // Write the detection results to an XML file with indentation for readability.
-            using (var writer = XmlWriter.Create(xmlPath, new XmlWriterSettings { Indent = true }))
+        // Open the XML writer within a using block to ensure proper disposal.
+        using (XmlWriter writer = XmlWriter.Create(xmlPath, settings))
+        {
+            writer.WriteStartDocument();
+            writer.WriteStartElement("Barcodes");
+
+            // Initialize the barcode reader to detect all supported barcode types.
+            using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
             {
-                writer.WriteStartDocument();               // Begin the XML document.
-                writer.WriteStartElement("Barcodes");      // Root element.
-
-                // Iterate over each detected barcode and write its details as an element.
-                foreach (var result in results)
+                // Iterate through each detected barcode in the image.
+                foreach (var result in reader.ReadBarCodes())
                 {
                     writer.WriteStartElement("BarCode");
-                    writer.WriteAttributeString("Type", result.CodeTypeName ?? string.Empty);
-                    writer.WriteAttributeString("CodeText", result.CodeText ?? string.Empty);
+
+                    // Write the barcode type name (e.g., QR, Code128).
+                    writer.WriteElementString("Type", result.CodeTypeName ?? string.Empty);
+
+                    // Write the decoded text/value of the barcode.
+                    writer.WriteElementString("CodeText", result.CodeText ?? string.Empty);
+
+                    // Optional: write the region bounds of the barcode if needed.
+                    // var rect = result.Region.Rectangle;
+                    // writer.WriteStartElement("Region");
+                    // writer.WriteElementString("X", rect.X.ToString());
+                    // writer.WriteElementString("Y", rect.Y.ToString());
+                    // writer.WriteElementString("Width", rect.Width.ToString());
+                    // writer.WriteElementString("Height", rect.Height.ToString());
+                    // writer.WriteEndElement(); // Region
+
                     writer.WriteEndElement(); // BarCode
                 }
-
-                writer.WriteEndElement(); // Barcodes
-                writer.WriteEndDocument(); // End of XML document.
             }
 
-            // Inform the user about the number of barcodes detected and the output location.
-            Console.WriteLine($"Detected {results.Length} barcode(s). Results written to {xmlPath}.");
+            writer.WriteEndElement(); // Barcodes
+            writer.WriteEndDocument();
         }
+
+        // Inform the user that processing is complete and provide the XML file location.
+        Console.WriteLine($"Barcode detection completed. Results saved to: {xmlPath}");
     }
 }

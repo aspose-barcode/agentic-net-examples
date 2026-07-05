@@ -1,49 +1,54 @@
+// Title: Load barcode generator state from XML, generate image, and export state
+// Description: Demonstrates loading a barcode generator configuration from an XML file, generating a barcode image, and exporting the (potentially modified) state back to XML.
+// Prompt: Write a script that loads an XML state, sets an image, and re‑exports the state to a file.
+// Tags: barcode symbology, generation, xml, export, aspose.barcode, aspose.drawing
+
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates loading a barcode generator state from XML,
-/// modifying its parameters, and saving both the barcode image
-/// and the updated state back to XML.
+/// Example program that loads a barcode generator state from an XML file,
+/// generates a barcode image, and re‑exports the (possibly modified) state to a new XML file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Application entry point.
-    /// Loads a barcode configuration from an XML file, changes the background color,
-    /// saves the generated barcode image, and exports the modified configuration.
+    /// Entry point of the application.
     /// </summary>
     static void Main()
     {
-        // Define file paths for the input XML, output image, and output XML.
+        // Path to the input XML file containing the barcode generator state
         string inputXmlPath = "barcode_state.xml";
-        string outputImagePath = "barcode.png";
-        string outputXmlPath = "barcode_state_modified.xml";
 
-        // Ensure the input XML file exists before attempting to load it.
+        // Path where the generated barcode image will be saved
+        string outputImagePath = "generated_barcode.png";
+
+        // Path where the (potentially modified) generator state will be exported
+        string outputXmlPath = "exported_state.xml";
+
+        // Verify that the input XML file exists before proceeding
         if (!File.Exists(inputXmlPath))
         {
             Console.WriteLine($"Input XML file not found: {inputXmlPath}");
             return;
         }
 
-        // Import the barcode generator state from the XML file.
-        using (var generator = BarcodeGenerator.ImportFromXml(inputXmlPath))
+        // Load the BarcodeGenerator configuration from the XML file
+        using (BarcodeGenerator generator = BarcodeGenerator.ImportFromXml(inputXmlPath))
         {
-            // Example modification: set the barcode background color to light gray.
-            generator.Parameters.BackColor = Color.LightGray;
+            // Generate the barcode image based on the loaded configuration
+            using (var bitmap = generator.GenerateBarCodeImage())
+            {
+                // Save the generated image as a PNG file
+                bitmap.Save(outputImagePath, ImageFormat.Png);
+            }
 
-            // Save the generated barcode image as a PNG file.
-            generator.Save(outputImagePath, BarCodeImageFormat.Png);
-
-            // Export the modified generator state to a new XML file.
+            // Export the current generator state back to an XML file
             generator.ExportToXml(outputXmlPath);
         }
 
-        // Inform the user that the process completed successfully.
-        Console.WriteLine("Barcode image and modified XML state have been saved.");
+        Console.WriteLine("Barcode image generated and state exported successfully.");
     }
 }

@@ -1,96 +1,129 @@
+// Title: Barcode XML Import Integrity Diagnostic
+// Description: Demonstrates generating a barcode, exporting its settings to XML, re‑importing them, and comparing the original and imported results to verify data integrity.
+// Prompt: Develop a diagnostic tool that compares original results with those obtained after XML import to ensure data integrity.
+// Tags: barcode, xml, import, export, integrity, diagnostics, aspose.barcode, code128, png
+
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates exporting a <see cref="BarcodeGenerator"/> configuration to XML,
-/// importing it back, generating barcode images, and comparing the original and
-/// imported results.
+/// Entry point for the barcode XML import integrity diagnostic example.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Application entry point.
-    /// Creates a QR barcode, exports its settings to an XML stream,
-    /// imports the settings into a new generator, generates images from both,
-    /// and outputs a diagnostic comparison of key properties.
+    /// Generates a barcode, exports its configuration to XML, re‑imports it, and compares the original and imported results.
     /// </summary>
     static void Main()
     {
-        // Initialize the original barcode generator with sample settings.
-        using (var originalGenerator = new BarcodeGenerator(EncodeTypes.QR, "Test123"))
+        // --------------------------------------------------------------------
+        // Define file names for the original image, imported image, and XML file.
+        // --------------------------------------------------------------------
+        const string originalImagePath = "original.png";
+        const string importedImagePath = "imported.png";
+        const string xmlPath = "barcode.xml";
+
+        // --------------------------------------------------------------------
+        // Sample barcode data: code text and symbology type.
+        // --------------------------------------------------------------------
+        const string codeText = "1234567890";
+        BaseEncodeType encodeType = EncodeTypes.Code128;
+
+        // --------------------------------------------------------------------
+        // Create the original barcode generator, apply custom visual settings,
+        // save the image, and export the generator configuration to XML.
+        // --------------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(encodeType, codeText))
         {
-            // Configure QR-specific parameters.
-            originalGenerator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
-            // Set the module (X) dimension in points.
-            originalGenerator.Parameters.Barcode.XDimension.Point = 2f;
-            // Define image resolution (dpi) and rotation.
-            originalGenerator.Parameters.Resolution = 300f;
-            originalGenerator.Parameters.RotationAngle = 0f;
+            // Example customizations
+            generator.Parameters.Barcode.BarColor = Color.Blue;
+            generator.Parameters.Barcode.XDimension.Point = 2f;
+            generator.Parameters.ImageWidth.Point = 300f;
+            generator.Parameters.ImageHeight.Point = 150f;
 
-            // Generate the original barcode image and store it in a byte array.
-            byte[] originalImageBytes;
-            using (var originalBitmap = originalGenerator.GenerateBarCodeImage())
-            using (var originalMs = new MemoryStream())
-            {
-                originalBitmap.Save(originalMs, ImageFormat.Png);
-                originalImageBytes = originalMs.ToArray();
-            }
+            // Save the generated barcode image.
+            generator.Save(originalImagePath, BarCodeImageFormat.Png);
 
-            // Export the generator's configuration to an in‑memory XML stream.
-            using (var xmlMs = new MemoryStream())
-            {
-                originalGenerator.ExportToXml(xmlMs);
-                // Reset stream position for reading.
-                xmlMs.Position = 0;
-
-                // Import the settings from XML into a new generator instance.
-                using (var importedGenerator = BarcodeGenerator.ImportFromXml(xmlMs))
-                {
-                    // Generate a barcode image from the imported generator.
-                    byte[] importedImageBytes;
-                    using (var importedBitmap = importedGenerator.GenerateBarCodeImage())
-                    using (var importedMs = new MemoryStream())
-                    {
-                        importedBitmap.Save(importedMs, ImageFormat.Png);
-                        importedImageBytes = importedMs.ToArray();
-                    }
-
-                    // Compare core properties between original and imported generators.
-                    bool codeTextMatch = originalGenerator.CodeText == importedGenerator.CodeText;
-                    bool symbologyMatch = originalGenerator.BarcodeType.TypeName == importedGenerator.BarcodeType.TypeName;
-                    bool imageMatch = AreByteArraysEqual(originalImageBytes, importedImageBytes);
-
-                    // Output diagnostic results to the console.
-                    Console.WriteLine("Diagnostic Comparison Results:");
-                    Console.WriteLine($"CodeText match: {codeTextMatch}");
-                    Console.WriteLine($"Symbology match: {symbologyMatch}");
-                    Console.WriteLine($"Generated image match: {imageMatch}");
-                }
-            }
+            // Export the generator's settings to an XML file.
+            generator.ExportToXml(xmlPath);
         }
+
+        // --------------------------------------------------------------------
+        // Verify that the XML file was created before attempting import.
+        // --------------------------------------------------------------------
+        if (!File.Exists(xmlPath))
+        {
+            Console.WriteLine("XML file was not created. Exiting.");
+            return;
+        }
+
+        // --------------------------------------------------------------------
+        // Import a new barcode generator from the previously saved XML.
+        // --------------------------------------------------------------------
+        BarcodeGenerator importedGenerator = BarcodeGenerator.ImportFromXml(xmlPath);
+        if (importedGenerator == null)
+        {
+            Console.WriteLine("Failed to import generator from XML. Exiting.");
+            return;
+        }
+
+        // --------------------------------------------------------------------
+        // Save an image using the imported generator settings.
+        // --------------------------------------------------------------------
+        importedGenerator.Save(importedImagePath, BarCodeImageFormat.Png);
+        importedGenerator.Dispose();
+
+        // --------------------------------------------------------------------
+        // Compare the original and imported images byte‑by‑byte.
+        // --------------------------------------------------------------------
+        bool imagesEqual = CompareFiles(originalImagePath, importedImagePath);
+        Console.WriteLine($"Image comparison result: {(imagesEqual ? "Identical" : "Different")}");
+
+        // --------------------------------------------------------------------
+        // Compare core properties (symbology type and code text) of the original
+        // and imported generators to ensure configuration integrity.
+        // --------------------------------------------------------------------
+        using (var originalGen = new BarcodeGenerator(encodeType, codeText))
+        using (var importedGen = BarcodeGenerator.ImportFromXml(xmlPath))
+        {
+            bool typeEqual = originalGen.BarcodeType.TypeName == importedGen.BarcodeType.TypeName;
+            bool textEqual = originalGen.CodeText == importedGen.CodeText;
+            Console.WriteLine($"Symbology comparison: {(typeEqual ? "Match" : "Mismatch")}");
+            Console.WriteLine($"CodeText comparison: {(textEqual ? "Match" : "Mismatch")}");
+        }
+
+        // --------------------------------------------------------------------
+        // Clean up temporary files (optional). Uncomment to delete files.
+        // --------------------------------------------------------------------
+        // File.Delete(originalImagePath);
+        // File.Delete(importedImagePath);
+        // File.Delete(xmlPath);
     }
 
-    /// <summary>
-    /// Compares two byte arrays for equality.
-    /// </summary>
-    /// <param name="a">First byte array.</param>
-    /// <param name="b">Second byte array.</param>
-    /// <returns>True if both arrays are non‑null, have the same length, and contain identical bytes; otherwise, false.</returns>
-    static bool AreByteArraysEqual(byte[] a, byte[] b)
+    // ------------------------------------------------------------------------
+    // Helper method to compare two files byte by byte.
+    // Returns true if files are identical; otherwise false.
+    // ------------------------------------------------------------------------
+    static bool CompareFiles(string path1, string path2)
     {
-        if (a == null || b == null) return false;
-        if (a.Length != b.Length) return false;
+        if (!File.Exists(path1) || !File.Exists(path2))
+            return false;
 
-        for (int i = 0; i < a.Length; i++)
+        byte[] file1 = File.ReadAllBytes(path1);
+        byte[] file2 = File.ReadAllBytes(path2);
+
+        if (file1.Length != file2.Length)
+            return false;
+
+        for (int i = 0; i < file1.Length; i++)
         {
-            if (a[i] != b[i]) return false;
+            if (file1[i] != file2[i])
+                return false;
         }
-
         return true;
     }
 }

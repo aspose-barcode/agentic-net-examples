@@ -1,80 +1,73 @@
+// Title: Scheduled Export of Barcode Reader State to XML
+// Description: Demonstrates generating barcodes, reading them, and exporting the reader state to XML for audit logging.
+// Prompt: Create a scheduled job that periodically exports reader state to XML for audit logging of processed barcodes.
+// Tags: barcode symbology, generation, recognition, xml, audit logging, scheduled job
+
 using System;
-using System.Collections.Generic;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating barcodes, reading them, and exporting the reader state to XML.
+/// Example program that generates sample barcodes, reads them, and exports the reader state to XML.
+/// Intended to be invoked by an external scheduler for periodic audit logging.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Application entry point.
-    /// Generates sample barcodes, reads them, and logs detection results and reader state.
+    /// Entry point of the console application.
+    /// Generates barcodes, reads them, and writes the reader state to XML files.
     /// </summary>
     static void Main()
     {
-        // Define a collection of sample barcodes (symbology type and associated text)
-        var samples = new List<(BaseEncodeType type, string text)>
+        // Define sample barcodes with their symbology and corresponding code text.
+        var samples = new (BaseEncodeType EncodeType, string CodeText)[]
         {
             (EncodeTypes.Code128, "Sample123"),
             (EncodeTypes.QR, "https://example.com"),
-            (EncodeTypes.EAN13, "1234567890128")
+            (EncodeTypes.DatabarStacked, "(01)01234567890123")
         };
 
-        int index = 0; // Used to differentiate output files for each sample
-
-        // Process each sample barcode definition
-        foreach (var sample in samples)
+        // Iterate over each sample barcode definition.
+        for (int i = 0; i < samples.Length; i++)
         {
-            // Create a memory stream to hold the generated barcode image
-            using (var ms = new MemoryStream())
+            var (encodeType, codeText) = samples[i];
+
+            // Generate a barcode image and store it in a memory stream.
+            using (var generator = new BarcodeGenerator(encodeType, codeText))
+            using (var imageStream = new MemoryStream())
             {
-                // Generate the barcode image and write it to the memory stream
-                using (var generator = new BarcodeGenerator(sample.type, sample.text))
-                {
-                    // Save the barcode as a PNG image
-                    generator.Save(ms, BarCodeImageFormat.Png);
-                }
+                // Save the generated barcode as a PNG image into the stream.
+                generator.Save(imageStream, BarCodeImageFormat.Png);
+                imageStream.Position = 0; // Reset stream position for subsequent reading.
 
-                // Reset stream position to the beginning for reading
-                ms.Position = 0;
-
-                // Initialize a barcode reader that supports all available symbologies
-                using (var reader = new BarCodeReader(ms, DecodeType.AllSupportedTypes))
+                // Initialize a barcode reader to decode all supported types from the image stream.
+                using (var reader = new BarCodeReader(imageStream, DecodeType.AllSupportedTypes))
                 {
-                    // Iterate over all detected barcodes in the image
+                    Console.WriteLine($"Reading barcode {i + 1}: {encodeType.TypeName}");
+
+                    // Enumerate and display each detected barcode result.
                     foreach (var result in reader.ReadBarCodes())
                     {
-                        // Output detection details to the console
-                        Console.WriteLine($"[{index}] Detected Type: {result.CodeTypeName}, Text: {result.CodeText}");
+                        Console.WriteLine($"  Detected Type: {result.CodeTypeName}");
+                        Console.WriteLine($"  CodeText: {result.CodeText}");
                     }
 
-                    // Build a unique file name for exporting the reader's internal state
-                    string xmlPath = $"ReaderState_{index}.xml";
-
-                    // Attempt to export the reader state (settings and results) to an XML file
-                    try
-                    {
-                        reader.ExportToXml(xmlPath);
-                        Console.WriteLine($"Reader state exported to: {xmlPath}");
-                    }
-                    catch (Exception ex)
-                    {
-                        // Log any errors that occur during export
-                        Console.WriteLine($"Failed to export reader state: {ex.Message}");
-                    }
+                    // Export the internal reader state to an XML file for audit purposes.
+                    string xmlPath = $"ReaderState_{i + 1}_{DateTime.Now:yyyyMMdd_HHmmss}.xml";
+                    bool exported = reader.ExportToXml(xmlPath);
+                    Console.WriteLine(exported
+                        ? $"  Reader state exported to: {xmlPath}"
+                        : $"  Failed to export reader state for barcode {i + 1}");
                 }
             }
 
-            index++; // Increment index for the next sample
+            Console.WriteLine(); // Add a blank line as a visual separator between samples.
         }
 
-        // Indicate that all processing is complete
-        Console.WriteLine("Processing completed.");
+        // Note: This console application runs once and exits.
+        // To schedule periodic execution, configure an external scheduler (e.g., Windows Task Scheduler) to run this program at desired intervals.
     }
 }

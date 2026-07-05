@@ -1,3 +1,8 @@
+// Title: Encrypt barcode state XML after export
+// Description: Demonstrates exporting a barcode's state to XML and then encrypting the file to protect sensitive data.
+// Prompt: Implement a feature that encrypts the XML state file after ExportToXml to protect sensitive barcode data.
+// Tags: barcode symbology, export, xml, encryption, aes, aspose.barcode
+
 using System;
 using System.IO;
 using System.Security.Cryptography;
@@ -5,64 +10,64 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates exporting a barcode generator state to XML and encrypting the XML file using AES.
+/// Example program that generates a barcode, exports its state to an XML file,
+/// and then encrypts that XML file using AES to protect sensitive barcode data.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a Code128 barcode, exports its state to an XML file, and encrypts that file.
+    /// Entry point of the application. Performs barcode generation, XML export,
+    /// AES encryption of the exported file, and cleanup of the plain XML.
     /// </summary>
     static void Main()
     {
-        // Define file paths for the XML state and the encrypted output
+        // Define file paths for the intermediate XML state and the final encrypted output
         string xmlPath = "barcode_state.xml";
         string encryptedPath = "barcode_state.enc";
 
-        // Create a barcode generator for Code128 with sample data
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+        // Create a barcode generator for Code128 with sample data and export its state to XML
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
         {
-            // Export the generator's state to an XML file
+            // Export the barcode properties to an XML file; ExportToXml returns true on success
             bool exported = generator.ExportToXml(xmlPath);
-            Console.WriteLine(exported
-                ? $"Exported XML to '{xmlPath}'."
-                : $"Failed to export XML to '{xmlPath}'.");
+            if (!exported)
+            {
+                Console.WriteLine("Failed to export barcode state to XML.");
+                return;
+            }
         }
 
-        // Ensure the XML file was created before attempting encryption
-        if (!File.Exists(xmlPath))
-        {
-            Console.WriteLine("XML file not found. Encryption aborted.");
-            return;
-        }
-
-        // Prepare a deterministic 256‑bit key and 128‑bit IV for demonstration purposes
-        byte[] key = new byte[32]; // 256-bit key
-        byte[] iv = new byte[16];  // 128-bit IV
+        // Prepare static AES key and IV for demonstration (do NOT use static values in production)
+        byte[] key = new byte[32]; // 256‑bit key
+        byte[] iv = new byte[16];  // 128‑bit IV
         for (int i = 0; i < key.Length; i++) key[i] = (byte)(i + 1);
         for (int i = 0; i < iv.Length; i++) iv[i] = (byte)(i + 1);
 
-        // Perform AES encryption of the XML file
-        using (var aes = Aes.Create())
+        // Encrypt the XML file using AES and write the ciphertext to a new file
+        using (Aes aes = Aes.Create())
         {
             aes.Key = key;
             aes.IV = iv;
-            aes.Mode = CipherMode.CBC;
-            aes.Padding = PaddingMode.PKCS7;
 
-            // Open the source XML file for reading
-            using (var inputFile = new FileStream(xmlPath, FileMode.Open, FileAccess.Read))
-            // Create the destination file for the encrypted data
-            using (var outputFile = new FileStream(encryptedPath, FileMode.Create, FileAccess.Write))
-            // Set up a CryptoStream to handle encryption while writing
-            using (var cryptoStream = new CryptoStream(outputFile, aes.CreateEncryptor(), CryptoStreamMode.Write))
+            using (FileStream inputFile = new FileStream(xmlPath, FileMode.Open, FileAccess.Read))
+            using (FileStream outputFile = new FileStream(encryptedPath, FileMode.Create, FileAccess.Write))
+            using (CryptoStream cryptoStream = new CryptoStream(outputFile, aes.CreateEncryptor(), CryptoStreamMode.Write))
             {
-                // Copy the entire XML content into the CryptoStream, which encrypts it on the fly
+                // Copy the plaintext XML data into the CryptoStream, which encrypts it on the fly
                 inputFile.CopyTo(cryptoStream);
             }
         }
 
-        // Inform the user that encryption succeeded
-        Console.WriteLine($"Encrypted XML saved to '{encryptedPath}'.");
+        // Attempt to delete the original plain XML file, leaving only the encrypted version
+        try
+        {
+            File.Delete(xmlPath);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Could not delete original XML file: {ex.Message}");
+        }
+
+        Console.WriteLine($"Barcode state encrypted successfully to '{encryptedPath}'.");
     }
 }
