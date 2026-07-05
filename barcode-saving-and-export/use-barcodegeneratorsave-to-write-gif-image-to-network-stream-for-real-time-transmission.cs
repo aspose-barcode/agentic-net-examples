@@ -1,52 +1,55 @@
+// Title: Generate Code128 Barcode GIF and Send via TCP
+// Description: Creates a Code128 barcode, saves it as a GIF directly to a network stream, and transmits it to a TCP server in real time.
+// Prompt: Use BarcodeGenerator.Save to write a GIF image to a network stream for real‑time transmission.
+// Tags: barcode, code128, gif, network, tcp, aspnet, aspose.barcode, generation
+
 using System;
-using System.IO;
 using System.Net.Sockets;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a Code128 barcode, saving it to a memory stream,
-/// and optionally sending it over a network connection.
+/// Demonstrates generating a Code128 barcode as a GIF and sending it over a TCP connection.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a barcode, writes it to a MemoryStream, and displays the size.
+    /// Entry point of the example. Generates the barcode and streams it to a TCP server.
     /// </summary>
     static void Main()
     {
-        // Define the text to encode in the barcode.
-        string codeText = "1234567890";
+        // Barcode data to encode
+        const string codeText = "1234567890";
 
-        // Initialize a barcode generator for Code128 with the specified text.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+        // Destination server details (modify as required)
+        const string host = "localhost";
+        const int port = 5000;
+
+        try
         {
-            // Set visual appearance: black bars on a white background.
-            generator.Parameters.Barcode.BarColor = Color.Black;
-            generator.Parameters.BackColor = Color.White;
-
-            // Use a MemoryStream to simulate real‑time transmission of the barcode image.
-            using (var memoryStream = new MemoryStream())
+            // Establish a TCP connection to the target server
+            using (TcpClient client = new TcpClient())
             {
-                // Save the generated barcode as a GIF image into the memory stream.
-                generator.Save(memoryStream, BarCodeImageFormat.Gif);
+                client.Connect(host, port);
 
-                // Output the size of the generated GIF in bytes.
-                Console.WriteLine($"Generated GIF size: {memoryStream.Length} bytes");
+                // Obtain the network stream for sending data
+                using (NetworkStream networkStream = client.GetStream())
+                {
+                    // Initialize the barcode generator for Code128 symbology
+                    using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+                    {
+                        // Directly write the generated barcode as a GIF to the network stream
+                        generator.Save(networkStream, BarCodeImageFormat.Gif);
+                    }
+                }
             }
 
-            // Example of sending the barcode over a network (commented out because no server is available).
-            // using (var client = new TcpClient("example.com", 12345))
-            // {
-            //     using (NetworkStream networkStream = client.GetStream())
-            //     {
-            //         // Write the GIF directly to the network stream.
-            //         generator.Save(networkStream, BarCodeImageFormat.Gif);
-            //         networkStream.Flush();
-            //     }
-            // }
+            Console.WriteLine("Barcode GIF sent successfully.");
+        }
+        catch (Exception ex)
+        {
+            // Output any errors that occur during the process
+            Console.WriteLine($"Error: {ex.Message}");
         }
     }
 }

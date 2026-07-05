@@ -1,87 +1,96 @@
+// Title: Batch Code39 SVG Barcode Generator
+// Description: Reads a list of values from a CSV file (or uses a default list) and creates a Code39 barcode SVG for each entry.
+// Prompt: Batch generate Code39 barcodes from a CSV list and save each as an individual SVG file.
+// Tags: code39, barcode, batch, svg, csv, aspnet, aspose.barcode
+
 using System;
+using System.Collections.Generic;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generating Code39 barcodes from a list of strings (read from a CSV file or sample data)
-/// and saving them as SVG files using Aspose.BarCode.
+/// Demonstrates how to generate a batch of Code39 barcodes from a CSV file
+/// and save each barcode as an individual SVG file using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Reads input data, generates barcodes, and writes SVG files to the output directory.
+    /// Entry point of the application. Handles CSV loading, barcode generation,
+    /// and file output for each code text.
     /// </summary>
     static void Main()
     {
-        // Path to the optional CSV file containing barcode texts (one per line).
-        string csvPath = "input.csv";
+        // Input CSV file path (optional). If the file does not exist, a default list is used.
+        const string csvPath = "input.csv";
 
-        // Array to hold the barcode texts.
-        string[] codeTexts;
+        // Directory where SVG files will be saved.
+        const string outputDir = "Barcodes";
 
-        // Load barcode texts from CSV if it exists; otherwise use predefined sample data.
-        if (File.Exists(csvPath))
-        {
-            // Read all lines from the CSV file; each line is expected to contain a single value.
-            codeTexts = File.ReadAllLines(csvPath);
-        }
-        else
-        {
-            // Sample data used when the CSV file is missing.
-            codeTexts = new string[]
-            {
-                "ABC123",
-                "987654321",
-                "CODE-39",
-                "Aspose.BarCode",
-                "Sample001"
-            };
-            Console.WriteLine("CSV file not found. Using sample data.");
-        }
-
-        // Ensure the output directory for barcode images exists.
-        string outputDir = "Barcodes";
+        // Ensure the output directory exists.
         if (!Directory.Exists(outputDir))
         {
             Directory.CreateDirectory(outputDir);
         }
 
-        // Process each barcode text.
-        foreach (string rawLine in codeTexts)
+        // Load code texts from CSV or use a fallback sample.
+        List<string> codeTexts = new List<string>();
+        if (File.Exists(csvPath))
         {
-            // Trim whitespace and guard against null values.
-            string codeText = rawLine?.Trim();
-
-            // Skip empty or null lines.
-            if (string.IsNullOrEmpty(codeText))
-                continue;
-
-            // Create a safe file name by removing invalid path characters
-            string safeFileName = string.Concat(codeText.Split(Path.GetInvalidFileNameChars()));
-
-            // Full path for the SVG output file.
-            string outputPath = Path.Combine(outputDir, safeFileName + ".svg");
-
-            // Generate a Code39 barcode with full ASCII support.
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code39FullASCII, codeText))
+            // Simple CSV parsing: each line's first column is taken as the barcode value.
+            foreach (var line in File.ReadAllLines(csvPath))
             {
-                // No additional settings are required for basic Code39 generation.
-                try
+                if (string.IsNullOrWhiteSpace(line))
+                    continue;
+
+                // Split by comma and trim whitespace.
+                var parts = line.Split(',');
+                if (parts.Length > 0)
                 {
-                    // Save the barcode as an SVG file.
-                    generator.Save(outputPath, BarCodeImageFormat.Svg);
-                    Console.WriteLine($"Saved barcode for \"{codeText}\" to \"{outputPath}\"");
-                }
-                catch (Exception ex)
-                {
-                    // Handle potential errors (e.g., licensing restrictions) and continue processing.
-                    Console.WriteLine($"Failed to save barcode for \"{codeText}\": {ex.Message}");
+                    var code = parts[0].Trim();
+                    if (!string.IsNullOrEmpty(code))
+                        codeTexts.Add(code);
                 }
             }
         }
+        else
+        {
+            // Fallback sample data (safe size for demonstration).
+            codeTexts.AddRange(new[]
+            {
+                "CODE39A",
+                "12345",
+                "HELLO-WORLD",
+                "ASP.NET",
+                "BARCODE"
+            });
+        }
 
-        Console.WriteLine("Processing completed.");
+        // Generate a Code39 barcode for each code text and save as SVG.
+        foreach (var codeText in codeTexts)
+        {
+            // File name is sanitized to avoid invalid path characters.
+            var safeFileName = GetSafeFileName(codeText);
+            var outputPath = Path.Combine(outputDir, safeFileName + ".svg");
+
+            // Create a barcode generator for Code39 with the current text.
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code39, codeText))
+            {
+                // Save directly as SVG.
+                generator.Save(outputPath, BarCodeImageFormat.Svg);
+            }
+
+            Console.WriteLine($"Generated barcode for '{codeText}' -> {outputPath}");
+        }
+    }
+
+    // Replaces characters that are invalid in file names with an underscore.
+    private static string GetSafeFileName(string name)
+    {
+        foreach (char c in Path.GetInvalidFileNameChars())
+        {
+            name = name.Replace(c, '_');
+        }
+        return name;
     }
 }

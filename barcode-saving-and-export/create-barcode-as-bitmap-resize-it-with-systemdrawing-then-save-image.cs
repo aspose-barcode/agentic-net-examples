@@ -1,3 +1,8 @@
+// Title: Generate and Resize a Code128 Barcode Image
+// Description: Demonstrates creating a Code128 barcode as a bitmap, enlarging it using System.Drawing, and saving both original and resized images as PNG files.
+// Prompt: Create a barcode as a Bitmap, resize it with System.Drawing, then save the image.
+// Tags: code128, barcode generation, resize, png, aspose.barcode, aspose.drawing
+
 using System;
 using System.IO;
 using Aspose.BarCode;
@@ -6,50 +11,55 @@ using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a Code128 barcode, resizing it, and saving as a PNG file.
+/// Example program that generates a barcode, resizes it, and saves both versions as PNG files.
 /// </summary>
 class Program
 {
     /// <summary>
     /// Entry point of the application.
-    /// Generates a barcode, doubles its dimensions, and writes the result to disk.
+    /// Generates a Code128 barcode, resizes it using System.Drawing, and writes the images to disk.
     /// </summary>
     static void Main()
     {
-        // Path where the resized barcode image will be saved.
-        string outputPath = "barcode_resized.png";
+        // Paths for the original and resized barcode images
+        string originalPath = "barcode_original.png";
+        string resizedPath = "barcode_resized.png";
 
-        // Define barcode type and the text to encode.
-        BaseEncodeType encodeType = EncodeTypes.Code128;
-        string codeText = "123456";
-
-        // Create a barcode generator with the specified type and text.
-        using (var generator = new BarcodeGenerator(encodeType, codeText))
+        // 1. Generate a Code128 barcode and save it as a PNG file
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            // Generate the original barcode image as a bitmap.
-            using (var originalBitmap = generator.GenerateBarCodeImage())
+            generator.Save(originalPath, BarCodeImageFormat.Png);
+        }
+
+        // 2. Load the generated image using Aspose.Drawing
+        using (var originalImage = Image.FromFile(originalPath) as Bitmap)
+        {
+            if (originalImage == null)
             {
-                // Calculate new dimensions (double the original width and height).
-                int newWidth = originalBitmap.Width * 2;
-                int newHeight = originalBitmap.Height * 2;
+                Console.WriteLine("Failed to load the generated barcode image.");
+                return;
+            }
 
-                // Create a new bitmap with the target size.
-                using (var resizedBitmap = new Bitmap(newWidth, newHeight))
+            // Define new dimensions (e.g., double the size)
+            int newWidth = originalImage.Width * 2;
+            int newHeight = originalImage.Height * 2;
+
+            // 3. Create a new bitmap with the desired size
+            using (var resizedBitmap = new Bitmap(newWidth, newHeight))
+            {
+                // 4. Draw the original image onto the resized bitmap
+                using (var graphics = Graphics.FromImage(resizedBitmap))
                 {
-                    // Obtain a graphics object to draw onto the resized bitmap.
-                    using (var graphics = Graphics.FromImage(resizedBitmap))
-                    {
-                        // Render the original barcode onto the resized bitmap, scaling it.
-                        graphics.DrawImage(originalBitmap, 0, 0, newWidth, newHeight);
-                    }
-
-                    // Save the resized bitmap as a PNG file.
-                    resizedBitmap.Save(outputPath, ImageFormat.Png);
+                    graphics.DrawImage(originalImage, 0, 0, newWidth, newHeight);
                 }
+
+                // 5. Save the resized image as PNG
+                resizedBitmap.Save(resizedPath, ImageFormat.Png);
             }
         }
 
-        // Output the full path of the saved image for verification.
-        Console.WriteLine($"Barcode image saved to: {Path.GetFullPath(outputPath)}");
+        // Output the locations of the saved images
+        Console.WriteLine($"Original barcode saved to: {originalPath}");
+        Console.WriteLine($"Resized barcode saved to: {resizedPath}");
     }
 }

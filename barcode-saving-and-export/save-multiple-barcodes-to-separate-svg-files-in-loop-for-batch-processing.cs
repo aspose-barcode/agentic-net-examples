@@ -1,58 +1,64 @@
+// Title: Batch Barcode Generation to Separate Files
+// Description: Demonstrates generating multiple Code128 barcodes and saving each to an individual file in a loop for batch processing.
+// Prompt: Save multiple barcodes to separate SVG files in a loop for batch processing.
+// Tags: code128, barcode, batch, svg, generation, aspose.barcode
+
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generating Code39FullASCII barcodes and saving them as SVG files.
+/// Generates a series of barcodes and saves each to a separate file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a set of barcodes and writes them to the file system.
+    /// Entry point of the application. Creates an output directory, iterates over sample texts,
+    /// generates a Code128 barcode for each, saves it to a file, and logs the operation.
     /// </summary>
     static void Main()
     {
-        // Define sample barcode texts to be encoded.
-        string[] texts = { "ABC123", "DEF456", "GHI789", "JKL012", "MNO345" };
-
-        // Specify the output directory where SVG files will be saved.
+        // Define the output directory for generated barcode files
         string outputDir = "Barcodes";
 
-        // Ensure the output directory exists; create it if it does not.
+        // Ensure the output directory exists
         if (!Directory.Exists(outputDir))
         {
             Directory.CreateDirectory(outputDir);
         }
 
-        // Iterate over each text value, generate a barcode, and save it.
-        for (int i = 0; i < texts.Length; i++)
+        // Sample texts to encode into barcodes
+        string[] sampleTexts = new string[]
         {
-            // Current barcode text.
-            string codeText = texts[i];
+            "Sample001",
+            "Sample002",
+            "Sample003",
+            "Sample004",
+            "Sample005"
+        };
 
-            // Construct the full file path for the SVG output.
-            string filePath = Path.Combine(outputDir, $"barcode_{i + 1}.svg");
+        // Loop through each sample text, generate a barcode, and save it
+        for (int i = 0; i < sampleTexts.Length; i++)
+        {
+            // Current text to encode
+            string codeText = sampleTexts[i];
 
-            // Initialize the barcode generator with Code39FullASCII encoding.
-            // This encoding is supported for SVG output in evaluation mode.
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code39FullASCII, codeText))
+            // Build the output file name (e.g., barcode_1.png)
+            string fileName = Path.Combine(outputDir, $"barcode_{i + 1}.png");
+
+            // Create a barcode generator for Code128 with the current text
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
             {
-                // Example parameter: set the module (X) dimension to 2 points.
-                generator.Parameters.Barcode.XDimension.Point = 2f;
-
-                try
-                {
-                    // Save the generated barcode as an SVG file.
-                    generator.Save(filePath, BarCodeImageFormat.Svg);
-                    Console.WriteLine($"Saved barcode {i + 1} to {filePath}");
-                }
-                catch (Exception ex)
-                {
-                    // Report any errors that occur during the save operation.
-                    Console.WriteLine($"Failed to save barcode {i + 1}: {ex.Message}");
-                }
+                // Save the generated barcode to the specified file
+                generator.Save(fileName);
             }
+
+            // Log the successful save operation
+            Console.WriteLine($"Saved barcode '{codeText}' to '{fileName}'.");
         }
+
+        // Indicate that the batch process has finished
+        Console.WriteLine("Batch barcode generation completed.");
     }
 }

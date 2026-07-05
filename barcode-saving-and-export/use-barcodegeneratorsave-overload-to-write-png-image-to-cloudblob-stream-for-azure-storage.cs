@@ -1,63 +1,62 @@
+// Title: Generate Code128 barcode PNG and upload to Azure Blob storage (demo)
+// Description: Demonstrates creating a Code128 barcode, saving it as PNG to a stream, and showing how to upload the stream to Azure Blob storage.
+// Prompt: Use BarcodeGenerator.Save overload to write a PNG image to a CloudBlob stream for Azure storage.
+// Tags: barcode, code128, png, azure blob, aspose.barcode, stream
+
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
-/// <summary>
-/// Demonstrates generating a Code128 barcode, saving it to a memory stream,
-/// and writing the image to a local file. Includes commented example code
-/// for uploading the stream to Azure Blob Storage.
-/// </summary>
-class Program
+namespace BarcodeToAzureBlobDemo
 {
     /// <summary>
-    /// Entry point of the application. Generates a barcode, saves it to a
-    /// memory stream, writes the image to a file, and optionally shows how
-    /// to upload the stream to Azure Blob Storage.
+    /// Demonstrates barcode generation and (simulated) upload to Azure Blob storage.
     /// </summary>
-    /// <param name="args">Command‑line arguments (not used).</param>
-    static void Main(string[] args)
+    class Program
     {
-        // Initialize a barcode generator for Code128 with the sample text "1234567890".
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+        /// <summary>
+        /// Entry point. Generates a Code128 barcode, saves it as PNG to a stream,
+        /// and writes the image to a local file (placeholder for Azure Blob upload).
+        /// </summary>
+        static void Main()
         {
-            // Set the barcode's foreground (bar) color to black.
-            generator.Parameters.Barcode.BarColor = Color.Black;
-
-            // Set the background color of the image to white.
-            generator.Parameters.BackColor = Color.White;
-
-            // Create a memory stream to hold the generated PNG image.
-            using (var memoryStream = new MemoryStream())
+            // Initialize a barcode generator for Code128 with sample text.
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
             {
-                // Save the barcode image into the memory stream in PNG format.
-                generator.Save(memoryStream, BarCodeImageFormat.Png);
+                // Optional: customize barcode appearance (blue bars on white background).
+                generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Blue;
+                generator.Parameters.BackColor = Aspose.Drawing.Color.White;
 
-                // Reset the stream position to the beginning for subsequent reads.
-                memoryStream.Position = 0;
+                // Save the barcode image to a memory stream in PNG format.
+                using (var memoryStream = new MemoryStream())
+                {
+                    generator.Save(memoryStream, BarCodeImageFormat.Png);
+                    memoryStream.Position = 0; // Reset stream position for subsequent reading.
 
-                // Write the image bytes from the memory stream to a local file named "barcode.png".
-                File.WriteAllBytes("barcode.png", memoryStream.ToArray());
+                    // -----------------------------------------------------------------
+                    // Real Azure Blob storage implementation (requires Azure.Storage.Blobs NuGet package):
+                    // -----------------------------------------------------------------
+                    // using Azure.Storage.Blobs;
+                    // var blobServiceClient = new BlobServiceClient("<connection-string>");
+                    // var containerClient = blobServiceClient.GetBlobContainerClient("mycontainer");
+                    // var blobClient = containerClient.GetBlobClient("barcode.png");
+                    // await blobClient.UploadAsync(memoryStream, overwrite: true);
+                    // -----------------------------------------------------------------
+                    // Since Azure SDK is not available in the snippet runner, write to a local file instead.
 
-                // -----------------------------------------------------------------
-                // Example code for uploading the stream to Azure Blob Storage.
-                // This requires the Azure.Storage.Blobs NuGet package, which is
-                // not available in the snippet runner environment.
-                // -----------------------------------------------------------------
-                /*
-                // using Azure.Storage.Blobs;
-                // string connectionString = "<your-azure-connection-string>";
-                // var blobServiceClient = new BlobServiceClient(connectionString);
-                // var containerClient = blobServiceClient.GetBlobContainerClient("mycontainer");
-                // var blobClient = containerClient.GetBlobClient("barcode.png");
-                // memoryStream.Position = 0;
-                // await blobClient.UploadAsync(memoryStream, overwrite: true);
-                */
+                    const string localFilePath = "barcode.png";
+
+                    // Write the PNG data from the memory stream to a local file.
+                    using (var fileStream = new FileStream(localFilePath, FileMode.Create, FileAccess.Write))
+                    {
+                        memoryStream.CopyTo(fileStream);
+                    }
+
+                    Console.WriteLine($"Barcode image saved to '{localFilePath}'.");
+                }
             }
         }
-
-        // Inform the user that the barcode has been generated and saved.
-        Console.WriteLine("Barcode generated and saved to 'barcode.png'.");
     }
 }

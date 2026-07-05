@@ -1,35 +1,31 @@
+// Title: Generate UPC-A barcode with 600 DPI resolution and save as TIFF
+// Description: Demonstrates creating a UPC-A barcode, setting the image resolution to 600 DPI, and saving the result as a TIFF file.
+// Prompt: Set image resolution to 600 DPI and save a UPC‑A barcode as a TIFF file.
+// Tags: barcode, upc-a, resolution, tiff, aspose.barcode, generation
+
 using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generating a UPC‑A barcode and saving it as a TIFF image using Aspose.BarCode.
+/// Example program that creates a UPC‑A barcode, configures a high‑resolution output,
+/// and saves the image as a TIFF file.
 /// </summary>
 class Program
 {
     /// <summary>
     /// Entry point of the application.
-    /// Generates a UPC‑A barcode with a specified resolution and writes it to a TIFF file.
     /// </summary>
     static void Main()
     {
-        // Define the output file name and location.
-        string outputPath = "upc_a.tiff";
-
-        // Specify the barcode symbology (UPC‑A) to be used.
-        BaseEncodeType encodeType = EncodeTypes.UPCA;
-
-        // Initialize the barcode generator with the chosen symbology and the data to encode.
-        using (var generator = new BarcodeGenerator(encodeType, "123456789012"))
+        // Initialize a barcode generator for the UPC‑A symbology with a valid 12‑digit value.
+        using (var generator = new BarcodeGenerator(EncodeTypes.UPCA, "012345678905"))
         {
-            // Configure the image resolution (dots per inch) for the generated barcode.
+            // Configure the image resolution to 600 DPI for high‑quality output.
             generator.Parameters.Resolution = 600f;
 
-            // Save the generated barcode image to the specified path in TIFF format.
-            generator.Save(outputPath, BarCodeImageFormat.Tiff);
-
-            // Inform the user that the barcode has been successfully saved.
-            Console.WriteLine($"UPC‑A barcode saved to '{outputPath}' with resolution {generator.Parameters.Resolution} DPI.");
+            // Persist the generated barcode as a TIFF image file.
+            generator.Save("upc_a.tiff");
         }
     }
 }

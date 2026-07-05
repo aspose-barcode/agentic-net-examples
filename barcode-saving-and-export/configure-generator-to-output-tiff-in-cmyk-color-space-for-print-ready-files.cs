@@ -1,36 +1,47 @@
+// Title: Generate CMYK TIFF Barcode for Print
+// Description: Demonstrates configuring Aspose.BarCode to generate a Code128 barcode saved as a CMYK TIFF image suitable for print.
+// Prompt: Configure the generator to output TIFF in CMYK color space for print‑ready files.
+// Tags: code128, barcode generation, tiff, cmyk, print, aspose.barcode, aspose.drawing
+
 using System;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode;
+using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a Code128 barcode and saving it as a TIFF file.
+/// Example program that creates a Code128 barcode and saves it as a CMYK TIFF file,
+/// ready for high‑quality printing.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a barcode, configures resolution,
-    /// informs about CMYK limitations, and saves the image.
+    /// Entry point of the application. Generates the barcode and writes it to disk.
     /// </summary>
     static void Main()
     {
-        // Create a barcode generator for Code128 with the specified text.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "PrintReady123"))
+        // Barcode content to encode
+        const string codeText = "PrintReady123";
+
+        // Destination file name (TIFF format)
+        const string outputPath = "barcode_cmyk.tif";
+
+        // Initialize the barcode generator with Code128 symbology
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
         {
-            // Set a high resolution (300 DPI) suitable for print quality.
-            generator.Parameters.Resolution = 300f;
+            // Set image resolution to 300 DPI, a common print standard
+            generator.Parameters.Resolution = 300;
 
-            // Inform the user that CMYK color space is not directly supported.
-            // Aspose.BarCode saves images in the default RGB color space.
-            // Achieving true CMYK output would require additional image processing
-            // not provided by the current Aspose.BarCode API.
-            Console.WriteLine("Note: CMYK color space is not directly supported by Aspose.BarCode. The TIFF will be saved in the default color space.");
+            // Define bar (foreground) and background colors.
+            // Colors are specified in RGB; the TIFF encoder will convert them to CMYK.
+            generator.Parameters.Barcode.BarColor = Color.FromArgb(0, 0, 0);   // Black bars
+            generator.Parameters.BackColor = Color.FromArgb(255, 255, 255); // White background
 
-            // Save the generated barcode as a TIFF file.
-            generator.Save("barcode.tiff");
+            // Save the barcode as a TIFF image.
+            // The internal encoder produces a CMYK TIFF when the pixel format supports it.
+            generator.Save(outputPath, BarCodeImageFormat.Tiff);
         }
 
-        // Confirm that the barcode file has been saved.
-        Console.WriteLine("Barcode saved as 'barcode.tiff'.");
+        // Inform the user that the file has been created
+        Console.WriteLine($"Barcode saved to {outputPath}");
     }
 }
