@@ -1,3 +1,8 @@
+// Title: Barcode Recognition Timing from High‑Resolution PNG
+// Description: Loads a high‑resolution PNG image, runs barcode detection with default settings, and reports the elapsed time.
+// Prompt: Load a high‑resolution PNG image and measure barcode recognition time using default settings.
+// Tags: barcode, recognition, timing, png, aspose.barcode, aspose.drawing
+
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -5,47 +10,54 @@ using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates barcode recognition from a high‑resolution PNG image using Aspose.BarCode.
+/// Demonstrates loading a high‑resolution PNG image, recognizing barcodes,
+/// and measuring the recognition time using Aspose.BarCode default settings.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Loads an image, reads all supported barcodes, and prints the results with timing information.
+    /// Entry point of the example. Performs image loading, barcode reading,
+    /// and outputs timing and detection results to the console.
     /// </summary>
     static void Main()
     {
         // Path to the high‑resolution PNG image
-        string imagePath = "barcode.png";
+        string imagePath = "high_res.png";
 
-        // Verify that the file exists before attempting to load it
+        // Verify that the image file exists before attempting to load it
         if (!File.Exists(imagePath))
         {
             Console.WriteLine($"File not found: {imagePath}");
             return;
         }
 
-        // Load the image into a bitmap and create a barcode reader that supports all types
-        using (var bitmap = new Bitmap(imagePath))
-        using (var reader = new BarCodeReader(bitmap, DecodeType.AllSupportedTypes))
+        // Load the image into a bitmap using Aspose.Drawing
+        using (Bitmap bitmap = new Bitmap(imagePath))
         {
-            // Start measuring the time taken for barcode recognition
-            var stopwatch = Stopwatch.StartNew();
-
-            // Perform the barcode reading operation
-            var results = reader.ReadBarCodes();
-
-            // Stop the timer after reading is complete
-            stopwatch.Stop();
-
-            // Iterate through each detected barcode and output its type and decoded text
-            foreach (var result in results)
+            // Initialize the barcode reader and assign the bitmap as the source image
+            using (BarCodeReader reader = new BarCodeReader())
             {
-                Console.WriteLine($"Type: {result.CodeTypeName}, Text: {result.CodeText}");
-            }
+                reader.SetBarCodeImage(bitmap);
 
-            // Output the total elapsed time for the recognition process
-            Console.WriteLine($"Recognition time: {stopwatch.ElapsedMilliseconds} ms");
+                // Start timing the barcode recognition process
+                Stopwatch sw = Stopwatch.StartNew();
+
+                // Perform barcode detection with default settings
+                BarCodeResult[] results = reader.ReadBarCodes();
+
+                // Stop the timer once detection is complete
+                sw.Stop();
+
+                // Output the elapsed time in milliseconds
+                Console.WriteLine($"Recognition time: {sw.Elapsed.TotalMilliseconds} ms");
+
+                // Iterate through all detected barcodes and display their type and text
+                foreach (BarCodeResult result in results)
+                {
+                    Console.WriteLine($"BarCode Type: {result.CodeTypeName}");
+                    Console.WriteLine($"BarCode CodeText: {result.CodeText}");
+                }
+            }
         }
     }
 }

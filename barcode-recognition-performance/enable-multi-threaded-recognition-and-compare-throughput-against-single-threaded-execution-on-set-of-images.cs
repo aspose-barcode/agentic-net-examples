@@ -1,98 +1,112 @@
+// Title: Multi‑Threaded vs Single‑Threaded Barcode Recognition Throughput
+// Description: Demonstrates generating Code128 barcodes in memory, then recognizing them using Aspose.BarCode in both single‑threaded and multi‑threaded modes to compare processing time.
+// Prompt: Enable multi‑threaded recognition and compare throughput against single‑threaded execution on a set of images.
+// Tags: barcode, code128, recognition, multithreading, throughput, aspose.barcode, csharp
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Threading.Tasks;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates barcode generation and recognition using Aspose.BarCode
-/// in both single‑threaded and multi‑threaded scenarios.
+/// Example program that generates a set of Code128 barcodes, then
+/// reads them using Aspose.BarCode in single‑threaded and multi‑threaded
+/// configurations to compare processing throughput.
 /// </summary>
 class Program
 {
     /// <summary>
     /// Entry point of the application.
-    /// Generates sample barcode images, then reads them sequentially
-    /// and in parallel while measuring execution time.
     /// </summary>
     static void Main()
     {
-        // ------------------------------------------------------------
-        // 1. Generate sample barcode images and store them in memory.
-        // ------------------------------------------------------------
-        var barcodeImages = new List<byte[]>();
-        for (int i = 0; i < 5; i++)
-        {
-            // Create a unique code text for each barcode (e.g., CODE001).
-            string codeText = $"CODE{i + 1:D3}";
+        const int sampleCount = 5; // Number of barcode images to generate (kept small for demo)
 
-            // Initialize a barcode generator for Code128 format.
+        // Store generated barcode bitmaps for later recognition
+        var barcodes = new List<Bitmap>();
+
+        // ------------------------------------------------------------
+        // Generate sample barcode images in memory
+        // ------------------------------------------------------------
+        for (int i = 0; i < sampleCount; i++)
+        {
+            string codeText = $"CODE{i:D4}";
+
+            // Create a barcode generator for Code128 with the specified text
             using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
             {
-                // Save the generated barcode to a memory stream as PNG.
-                using (var ms = new MemoryStream())
-                {
-                    generator.Save(ms, BarCodeImageFormat.Png);
-                    // Store the byte array for later recognition.
-                    barcodeImages.Add(ms.ToArray());
-                }
+                // Generate the barcode as a bitmap using default settings
+                Bitmap bmp = generator.GenerateBarCodeImage();
+
+                // Keep a copy for recognition tests
+                barcodes.Add(bmp);
             }
         }
 
         // ------------------------------------------------------------
-        // 2. Single‑threaded barcode recognition.
+        // Single‑threaded recognition
         // ------------------------------------------------------------
-        var swSingle = Stopwatch.StartNew(); // Start timing.
+        // Restrict processing to a single core
+        BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount = 1;
 
-        foreach (var imgData in barcodeImages)
+        var swSingle = Stopwatch.StartNew(); // Start timing
+        int totalResultsSingle = 0;
+
+        // Process each bitmap sequentially
+        foreach (var bmp in barcodes)
         {
-            // Load each image from its byte array.
-            using (var ms = new MemoryStream(imgData))
+            using (var reader = new BarCodeReader(bmp, DecodeType.Code128))
             {
-                // Initialize a reader that can decode all supported barcode types.
-                using (var reader = new BarCodeReader(ms, DecodeType.AllSupportedTypes))
+                // Count all decoded results
+                foreach (var result in reader.ReadBarCodes())
                 {
-                    // Iterate over all detected barcodes in the image.
-                    foreach (var result in reader.ReadBarCodes())
-                    {
-                        Console.WriteLine($"[Single] Type: {result.CodeTypeName}, Text: {result.CodeText}");
-                    }
+                    totalResultsSingle++;
                 }
             }
         }
 
-        swSingle.Stop(); // Stop timing.
-        Console.WriteLine($"Single‑threaded elapsed: {swSingle.ElapsedMilliseconds} ms");
+        swSingle.Stop(); // Stop timing
 
         // ------------------------------------------------------------
-        // 3. Multi‑threaded barcode recognition using all CPU cores.
+        // Multi‑threaded recognition
         // ------------------------------------------------------------
-        // Configure the Aspose processor to utilize the full core count.
+        // Allow the library to use all available processor cores
         BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount = Environment.ProcessorCount;
 
-        var swMulti = Stopwatch.StartNew(); // Start timing.
+        var swMulti = Stopwatch.StartNew(); // Start timing
+        int totalResultsMulti = 0;
 
-        // Process each image in parallel.
-        Parallel.ForEach(barcodeImages, imgData =>
+        // Process each bitmap in parallel
+        Parallel.ForEach(barcodes, bmp =>
         {
-            using (var ms = new MemoryStream(imgData))
+            using (var reader = new BarCodeReader(bmp, DecodeType.Code128))
             {
-                using (var reader = new BarCodeReader(ms, DecodeType.AllSupportedTypes))
+                foreach (var result in reader.ReadBarCodes())
                 {
-                    foreach (var result in reader.ReadBarCodes())
-                    {
-                        Console.WriteLine($"[Parallel] Type: {result.CodeTypeName}, Text: {result.CodeText}");
-                    }
+                    // Increment counter in a thread‑safe manner
+                    System.Threading.Interlocked.Increment(ref totalResultsMulti);
                 }
             }
         });
 
-        swMulti.Stop(); // Stop timing.
-        Console.WriteLine($"Multi‑threaded elapsed: {swMulti.ElapsedMilliseconds} ms");
+        swMulti.Stop(); // Stop timing
+
+        // ------------------------------------------------------------
+        // Output comparison results
+        // ------------------------------------------------------------
+        Console.WriteLine($"Single‑threaded:  {swSingle.ElapsedMilliseconds} ms, total results = {totalResultsSingle}");
+        Console.WriteLine($"Multi‑threaded:   {swMulti.ElapsedMilliseconds} ms, total results = {totalResultsMulti}");
+
+        // ------------------------------------------------------------
+        // Clean up generated bitmaps
+        // ------------------------------------------------------------
+        foreach (var bmp in barcodes)
+        {
+            bmp.Dispose();
+        }
     }
 }

@@ -1,89 +1,72 @@
+// Title: Barcode Recognition Performance on Large Images
+// Description: Demonstrates generating a QR code, embedding it into a large 4000x4000 bitmap, and measuring recognition time using the HighPerformance preset.
+// Prompt: Profile the impact of large image dimensions (e.g., 4000x4000) on recognition time with HighPerformance preset.
+// Tags: qr, barcode, recognition, performance, highperformance, aspose.barcode, image processing
+
 using System;
 using System.Diagnostics;
-using System.IO;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a barcode, embedding it in a large image,
-/// and measuring recognition performance using Aspose.BarCode.
+/// Example program that creates a QR barcode, places it on a large bitmap,
+/// and profiles the recognition time using the HighPerformance quality preset.
 /// </summary>
 class Program
 {
     /// <summary>
     /// Entry point of the application.
-    /// Generates a barcode, draws it onto a large bitmap,
-    /// then runs multiple recognition iterations while timing them.
+    /// Generates a QR barcode, draws it onto a 4000x4000 image,
+    /// and measures how long recognition takes with HighPerformance settings.
     /// </summary>
     static void Main()
     {
-        // Create a barcode generator for Code128 with sample data.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+        // Generate a simple QR barcode image in memory
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Sample Text"))
         {
-            // Store the generated barcode image in a memory stream.
-            using (var barcodeStream = new MemoryStream())
+            using (Image barcodeImage = generator.GenerateBarCodeImage())
             {
-                generator.Save(barcodeStream, BarCodeImageFormat.Png);
-                barcodeStream.Position = 0; // Reset stream position for reading.
-
-                // Load the barcode image from the stream into a bitmap.
-                using (var barcodeBitmap = new Bitmap(barcodeStream))
+                // Create a large bitmap (e.g., 4000x4000) and draw the barcode onto it
+                const int largeSize = 4000;
+                using (var largeBitmap = new Bitmap(largeSize, largeSize))
                 {
-                    // Define size for a large blank canvas (4000x4000 pixels).
-                    const int largeSize = 4000;
-
-                    // Create the large bitmap that will hold the barcode.
-                    using (var largeBitmap = new Bitmap(largeSize, largeSize))
+                    // Prepare graphics object for drawing
+                    using (var graphics = Graphics.FromImage(largeBitmap))
                     {
-                        // Prepare graphics object to draw on the large bitmap.
-                        using (var graphics = Graphics.FromImage(largeBitmap))
+                        // Fill background with white
+                        graphics.Clear(Color.White);
+
+                        // Center the barcode image on the large bitmap
+                        int x = (largeSize - barcodeImage.Width) / 2;
+                        int y = (largeSize - barcodeImage.Height) / 2;
+                        graphics.DrawImage(barcodeImage, x, y, barcodeImage.Width, barcodeImage.Height);
+                    }
+
+                    // Measure recognition time using HighPerformance preset
+                    using (var reader = new BarCodeReader(largeBitmap, DecodeType.AllSupportedTypes))
+                    {
+                        // Apply HighPerformance quality settings
+                        reader.QualitySettings = QualitySettings.HighPerformance;
+
+                        // Start timing
+                        var stopwatch = Stopwatch.StartNew();
+
+                        // Perform barcode recognition
+                        BarCodeResult[] results = reader.ReadBarCodes();
+
+                        // Stop timing
+                        stopwatch.Stop();
+
+                        // Output recognition duration
+                        Console.WriteLine($"Recognition time (HighPerformance) on {largeSize}x{largeSize} image: {stopwatch.ElapsedMilliseconds} ms");
+
+                        // List detected barcodes
+                        foreach (var result in results)
                         {
-                            // Fill the background with white color.
-                            graphics.Clear(Color.White);
-
-                            // Calculate coordinates to center the barcode.
-                            int x = (largeSize - barcodeBitmap.Width) / 2;
-                            int y = (largeSize - barcodeBitmap.Height) / 2;
-
-                            // Draw the barcode onto the large bitmap at the calculated position.
-                            graphics.DrawImage(barcodeBitmap, x, y, barcodeBitmap.Width, barcodeBitmap.Height);
+                            Console.WriteLine($"Detected: Type={result.CodeTypeName}, Text={result.CodeText}");
                         }
-
-                        // Number of recognition iterations for timing.
-                        const int iterations = 5;
-                        double totalMs = 0;
-
-                        // Perform recognition repeatedly to gather timing data.
-                        for (int i = 0; i < iterations; i++)
-                        {
-                            // Start a high‑resolution stopwatch.
-                            var sw = Stopwatch.StartNew();
-
-                            // Initialize the barcode reader with the large bitmap.
-                            using (var reader = new BarCodeReader(largeBitmap))
-                            {
-                                // Use the HighPerformance preset to speed up recognition.
-                                reader.QualitySettings = QualitySettings.HighPerformance;
-
-                                // Read all barcodes in the image (results are printed, not used for timing).
-                                foreach (var result in reader.ReadBarCodes())
-                                {
-                                    Console.WriteLine($"Iteration {i + 1}: Detected {result.CodeTypeName} - {result.CodeText}");
-                                }
-                            }
-
-                            // Stop the stopwatch and accumulate elapsed time.
-                            sw.Stop();
-                            totalMs += sw.Elapsed.TotalMilliseconds;
-
-                            // Output elapsed time for the current iteration.
-                            Console.WriteLine($"Iteration {i + 1} elapsed: {sw.Elapsed.TotalMilliseconds:F2} ms");
-                        }
-
-                        // Compute and display the average recognition time.
-                        double averageMs = totalMs / iterations;
-                        Console.WriteLine($"Average recognition time (HighPerformance) on {largeSize}x{largeSize} image: {averageMs:F2} ms");
                     }
                 }
             }

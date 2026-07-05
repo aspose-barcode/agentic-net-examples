@@ -1,98 +1,95 @@
+// Title: Barcode generation and recognition with mid‑batch preset switching
+// Description: Demonstrates creating Code128 barcodes, then reading them while changing quality presets partway through the batch to ensure earlier results remain unaffected.
+// Prompt: Verify that switching presets mid‑batch does not corrupt previously obtained results.
+// Tags: barcode, code128, generation, recognition, qualitysettings, batch, preset
+
 using System;
-using System.Collections.Generic;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating barcodes, storing them in memory, and recognizing them
-/// while switching between different quality settings of the <see cref="BarCodeReader"/>.
+/// Example program that generates a set of Code128 barcodes, saves them as PNG files,
+/// and then reads them back while switching the quality preset mid‑batch to verify
+/// that earlier decoded results are not affected.
 /// </summary>
 class Program
 {
     /// <summary>
     /// Entry point of the application.
-    /// Generates sample barcodes, reads them with varying quality presets,
-    /// and verifies the recognition results.
     /// </summary>
     static void Main()
     {
-        // Define sample barcodes to generate (type and text)
-        var samples = new List<(BaseEncodeType Encode, string Text)>
+        // Prepare a temporary folder for barcode images
+        string folder = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
+        if (!Directory.Exists(folder))
         {
-            (EncodeTypes.Code128, "ABC123"),
-            (EncodeTypes.QR, "https://example.com")
-        };
+            Directory.CreateDirectory(folder);
+        }
 
-        // Generate barcode images and keep them as byte arrays in memory
-        var images = new List<byte[]>();
-        foreach (var (encode, text) in samples)
+        // Sample code texts to encode
+        string[] codeTexts = { "123456789012", "ABCDEF", "9876543210", "Test123", "HelloWorld" };
+        string[] filePaths = new string[codeTexts.Length];
+
+        // -------------------------------------------------
+        // Generate barcode images and store their file paths
+        // -------------------------------------------------
+        for (int i = 0; i < codeTexts.Length; i++)
         {
-            using (var ms = new MemoryStream())
+            string filePath = Path.Combine(folder, $"barcode_{i}.png");
+            filePaths[i] = filePath;
+
+            // Create a barcode generator for Code128 and save the image
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeTexts[i]))
             {
-                // Create a generator for the current barcode type and text
-                using (var generator = new BarcodeGenerator(encode, text))
-                {
-                    // Save the generated barcode as PNG into the memory stream
-                    generator.Save(ms, BarCodeImageFormat.Png);
-                }
-
-                // Store the image bytes for later processing
-                images.Add(ms.ToArray());
+                generator.Save(filePath);
             }
         }
 
-        // Use a single BarCodeReader instance and switch its QualitySettings between reads
-        using (var reader = new BarCodeReader())
+        // -------------------------------------------------
+        // Read barcodes back, switching quality presets mid‑batch
+        // -------------------------------------------------
+        for (int i = 0; i < filePaths.Length; i++)
         {
-            for (int i = 0; i < images.Count; i++)
+            // Initialize a reader for the current file
+            using (var reader = new BarCodeReader(filePaths[i], DecodeType.Code128))
             {
-                // Load the current image from memory into a stream
-                using (var imgStream = new MemoryStream(images[i]))
+                // Switch preset after the second barcode (mid‑batch)
+                if (i >= 2)
                 {
-                    // Assign the image stream to the reader
-                    reader.SetBarCodeImage(imgStream);
+                    reader.QualitySettings = QualitySettings.HighQuality;
                 }
-
-                // Apply quality preset: first image uses NormalQuality, others use MaxQuality
-                if (i == 0)
+                else
                 {
                     reader.QualitySettings = QualitySettings.NormalQuality;
                 }
-                else
+
+                bool matched = false;
+
+                // Iterate through all detected barcodes in the image
+                foreach (var result in reader.ReadBarCodes())
                 {
-                    reader.QualitySettings = QualitySettings.MaxQuality;
+                    if (result.CodeText == codeTexts[i])
+                    {
+                        matched = true;
+                        Console.WriteLine($"File {i}: Success - decoded '{result.CodeText}'.");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"File {i}: Mismatch - expected '{codeTexts[i]}', got '{result.CodeText}'.");
+                    }
                 }
 
-                // Perform barcode recognition on the current image
-                var results = reader.ReadBarCodes();
-
-                // If no barcodes were detected, report and continue to next image
-                if (results.Length == 0)
+                // If no barcode was detected, report it
+                if (!matched)
                 {
-                    Console.WriteLine($"Image {i}: No barcode detected.");
-                    continue;
-                }
-
-                // Take the first detection result (there should be only one per sample)
-                var result = results[0];
-                Console.WriteLine($"Image {i}: Detected Type = {result.CodeTypeName}, CodeText = {result.CodeText}");
-
-                // Verify that the recognized text matches the original sample text
-                if (result.CodeText == samples[i].Text)
-                {
-                    Console.WriteLine("  Verification passed.");
-                }
-                else
-                {
-                    Console.WriteLine("  Verification failed.");
+                    Console.WriteLine($"File {i}: No barcode detected.");
                 }
             }
         }
 
-        // If execution reaches this point without exceptions, all preset switches succeeded
-        Console.WriteLine("Batch processing completed successfully.");
+        // Cleanup (optional)
+        // foreach (var path in filePaths) { File.Delete(path); }
+        // Directory.Delete(folder);
     }
 }

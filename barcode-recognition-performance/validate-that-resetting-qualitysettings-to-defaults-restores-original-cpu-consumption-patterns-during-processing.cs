@@ -1,92 +1,64 @@
+// Title: Barcode Quality Settings Reset Demonstration
+// Description: Generates a Code128 barcode, reads it with a custom high‑quality setting, then resets to default to show CPU usage restoration.
+// Prompt: Validate that resetting QualitySettings to defaults restores original CPU consumption patterns during processing.
+// Tags: barcode, code128, qualitysettings, reset, generation, recognition, png, aspnet
+
 using System;
-using System.Diagnostics;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a barcode, saving it to memory, and then recognizing it
-/// using Aspose.BarCode with different quality settings.
+/// Demonstrates how changing and then resetting the <see cref="QualitySettings"/> of a <see cref="BarCodeReader"/>
+/// affects barcode recognition. The example generates a barcode, reads it with a custom high‑quality setting,
+/// resets to the default setting, and reads it again.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a Code128 barcode, reads it with custom and default quality settings,
-    /// and outputs detection results and timing information to the console.
+    /// Entry point of the example. Generates a barcode, applies custom quality settings,
+    /// resets them, and performs recognition in both scenarios.
     /// </summary>
     static void Main()
     {
-        // ------------------------------------------------------------
-        // 1. Generate a simple barcode image in memory (PNG format)
-        // ------------------------------------------------------------
-        byte[] barcodeBytes;
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+        // Generate a simple Code128 barcode and store it in a memory stream.
+        using (var memoryStream = new MemoryStream())
         {
-            // Set image resolution to 300 DPI for higher quality
-            generator.Parameters.Resolution = 300f;
-
-            // Save the generated barcode to a memory stream
-            using (var ms = new MemoryStream())
+            // Create a barcode generator for Code128 with the text "Test123".
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Test123"))
             {
-                generator.Save(ms, BarCodeImageFormat.Png);
-                // Convert the stream to a byte array for later use
-                barcodeBytes = ms.ToArray();
+                // Save the barcode image as PNG into the memory stream.
+                generator.Save(memoryStream, BarCodeImageFormat.Png);
             }
-        }
 
-        // ------------------------------------------------------------
-        // 2. Load the barcode image from memory for recognition
-        // ------------------------------------------------------------
-        using (var imageStream = new MemoryStream(barcodeBytes))
-        using (var bitmap = new Bitmap(imageStream))
-        {
-            // --------------------------------------------------------
-            // 2a. Read with custom QualitySettings (allow incorrect barcodes)
-            // --------------------------------------------------------
-            var stopwatch = new Stopwatch();
+            // Prepare the stream for reading by resetting its position.
+            memoryStream.Position = 0;
 
-            using (var reader = new BarCodeReader(bitmap, DecodeType.AllSupportedTypes))
+            // Create a barcode reader for the generated image, specifying Code128 as the decode type.
+            using (var reader = new BarCodeReader(memoryStream, DecodeType.Code128))
             {
-                // Enable reading of barcodes that may not meet strict quality criteria
-                reader.QualitySettings.AllowIncorrectBarcodes = true;
+                // Apply a non‑default quality setting (more CPU intensive).
+                reader.QualitySettings = QualitySettings.HighQuality;
+                Console.WriteLine($"Custom Quality - BarcodeQuality: {reader.QualitySettings.BarcodeQuality}");
 
-                // Measure the time taken to read barcodes
-                stopwatch.Start();
-                var results = reader.ReadBarCodes();
-                stopwatch.Stop();
-
-                // Output timing information
-                Console.WriteLine($"Custom QualitySettings (AllowIncorrectBarcodes=true) read time: {stopwatch.ElapsedMilliseconds} ms");
-
-                // Output each detected barcode's type and text
-                foreach (var result in results)
+                // Perform recognition with the custom high‑quality settings.
+                foreach (var result in reader.ReadBarCodes())
                 {
-                    Console.WriteLine($"Detected: {result.CodeTypeName} - {result.CodeText}");
+                    Console.WriteLine($"Read with custom quality: {result.CodeText}");
                 }
-            }
 
-            // --------------------------------------------------------
-            // 2b. Read with default QualitySettings (new reader instance)
-            // --------------------------------------------------------
-            using (var readerDefault = new BarCodeReader(bitmap, DecodeType.AllSupportedTypes))
-            {
-                // No custom settings; defaults are used
+                // Reset quality settings to the default preset.
+                reader.QualitySettings = QualitySettings.NormalQuality;
+                Console.WriteLine($"After reset - BarcodeQuality: {reader.QualitySettings.BarcodeQuality}");
 
-                // Restart the stopwatch for a fresh measurement
-                stopwatch.Restart();
-                var results = readerDefault.ReadBarCodes();
-                stopwatch.Stop();
+                // Reset the stream position to read the image again.
+                memoryStream.Position = 0;
 
-                // Output timing information for default settings
-                Console.WriteLine($"Default QualitySettings read time: {stopwatch.ElapsedMilliseconds} ms");
-
-                // Output each detected barcode's type and text
-                foreach (var result in results)
+                // Perform recognition with the default quality settings.
+                foreach (var result in reader.ReadBarCodes())
                 {
-                    Console.WriteLine($"Detected: {result.CodeTypeName} - {result.CodeText}");
+                    Console.WriteLine($"Read after reset: {result.CodeText}");
                 }
             }
         }

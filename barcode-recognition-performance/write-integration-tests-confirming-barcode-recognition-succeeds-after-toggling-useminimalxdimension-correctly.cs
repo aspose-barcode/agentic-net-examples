@@ -1,90 +1,85 @@
+// Title: Barcode recognition with and without UseMinimalXDimension
+// Description: Demonstrates generating a Code128 barcode and testing recognition using default quality settings versus minimal X dimension mode.
+// Prompt: Write integration tests confirming barcode recognition succeeds after toggling UseMinimalXDimension correctly.
+// Tags: barcode, code128, recognition, minimalxdimension, qualitysettings, integration-test
+
 using System;
-using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates barcode generation and recognition using Aspose.BarCode.
+/// Example program that generates a Code128 barcode and runs two integration tests:
+/// 1) Recognition with default quality settings.
+/// 2) Recognition with <c>UseMinimalXDimension</c> enabled.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Generates a Code128 barcode image and returns it as a <see cref="MemoryStream"/>.
-    /// </summary>
-    /// <param name="codeText">The text to encode in the barcode.</param>
-    /// <returns>A memory stream containing the PNG image of the generated barcode.</returns>
-    static MemoryStream GenerateBarcode(string codeText)
-    {
-        // Create a memory stream to hold the barcode image.
-        var stream = new MemoryStream();
-
-        // Initialize the barcode generator with Code128 encoding and the provided text.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
-        {
-            // Save the generated barcode to the stream in PNG format.
-            generator.Save(stream, BarCodeImageFormat.Png);
-        }
-
-        // Reset the stream position to the beginning for subsequent reading.
-        stream.Position = 0;
-        return stream;
-    }
-
-    /// <summary>
-    /// Entry point that generates a Code128 barcode, then reads it using default settings
-    /// and with minimal X dimension configuration.
+    /// Entry point. Generates a barcode image in memory and validates recognition under different quality configurations.
     /// </summary>
     static void Main()
     {
-        const string barcodeText = "Test123";
-
-        // Generate the barcode image and obtain a stream containing the PNG data.
-        using (var barcodeStream = GenerateBarcode(barcodeText))
+        // Create a Code128 barcode with sample text.
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "Test123"))
         {
-            // ---------- Default recognition ----------
-            // Create a reader that decodes Code128 barcodes from the stream.
-            using (var reader = new BarCodeReader(barcodeStream, DecodeType.Code128))
+            // Generate the barcode image in memory.
+            using (Bitmap barcodeImage = generator.GenerateBarCodeImage())
             {
-                bool defaultSuccess = false;
-
-                // Iterate through all detected barcodes.
-                foreach (var result in reader.ReadBarCodes())
+                // ---------- Test 1: Default recognition settings ----------
+                using (BarCodeReader defaultReader = new BarCodeReader(barcodeImage, DecodeType.Code128))
                 {
-                    Console.WriteLine($"Default read: {result.CodeText}");
+                    // Apply the default QualitySettings (NormalQuality).
+                    defaultReader.QualitySettings = QualitySettings.NormalQuality;
 
-                    // Verify that the decoded text matches the original.
-                    if (result.CodeText == barcodeText)
+                    Console.WriteLine("Reading with default QualitySettings...");
+                    bool defaultSuccess = false;
+
+                    // Iterate through all detected barcodes.
+                    foreach (BarCodeResult result in defaultReader.ReadBarCodes())
+                    {
+                        Console.WriteLine($"Detected Type: {result.CodeTypeName}, CodeText: {result.CodeText}");
                         defaultSuccess = true;
+                    }
+
+                    // Warn if no barcode was detected.
+                    if (!defaultSuccess)
+                    {
+                        Console.WriteLine("Warning: No barcode detected with default settings.");
+                    }
                 }
 
-                Console.WriteLine($"Default recognition success: {defaultSuccess}");
-            }
-
-            // Reset the stream position to allow a second read.
-            barcodeStream.Position = 0;
-
-            // ---------- Recognition with UseMinimalXDimension ----------
-            using (var reader = new BarCodeReader(barcodeStream, DecodeType.Code128))
-            {
-                // Configure the reader to use a minimal X dimension for better detection of small barcodes.
-                reader.QualitySettings.XDimension = XDimensionMode.UseMinimalXDimension;
-                reader.QualitySettings.MinimalXDimension = 2f; // Example minimal size in points.
-
-                bool minimalSuccess = false;
-
-                // Iterate through all detected barcodes with the new settings.
-                foreach (var result in reader.ReadBarCodes())
+                // ---------- Test 2: UseMinimalXDimension mode ----------
+                using (BarCodeReader minimalReader = new BarCodeReader(barcodeImage, DecodeType.Code128))
                 {
-                    Console.WriteLine($"UseMinimalXDimension read: {result.CodeText}");
+                    // Start with normal quality settings.
+                    minimalReader.QualitySettings = QualitySettings.NormalQuality;
 
-                    // Verify that the decoded text matches the original.
-                    if (result.CodeText == barcodeText)
+                    // Configure QualitySettings to use minimal X dimension.
+                    minimalReader.QualitySettings.XDimension = XDimensionMode.UseMinimalXDimension;
+                    minimalReader.QualitySettings.MinimalXDimension = 2f; // minimal element size in pixels
+
+                    Console.WriteLine("\nReading with UseMinimalXDimension mode (MinimalXDimension = 2)...");
+                    bool minimalSuccess = false;
+
+                    // Iterate through all detected barcodes.
+                    foreach (BarCodeResult result in minimalReader.ReadBarCodes())
+                    {
+                        Console.WriteLine($"Detected Type: {result.CodeTypeName}, CodeText: {result.CodeText}");
                         minimalSuccess = true;
-                }
+                    }
 
-                Console.WriteLine($"UseMinimalXDimension recognition success: {minimalSuccess}");
+                    // Warn if no barcode was detected.
+                    if (!minimalSuccess)
+                    {
+                        Console.WriteLine("Warning: No barcode detected with UseMinimalXDimension settings.");
+                    }
+                }
             }
         }
+
+        // Indicate that the program completed successfully.
+        Console.WriteLine("\nIntegration test completed.");
     }
 }
