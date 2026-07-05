@@ -1,3 +1,8 @@
+// Title: Document optional‑checksum symbologies from Aspose.BarCode
+// Description: Parses the EncodeTypes enumeration to find symbologies with optional checksum and writes them to a JSON file.
+// Prompt: Document optional‑checksum symbologies by parsing the library enumeration and outputting the list to a JSON file.
+// Tags: barcode symbology, documentation, json output, aspose.barcode, encode types
+
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -5,65 +10,73 @@ using System.Reflection;
 using System.Text.Json;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
 
-namespace OptionalChecksumSymbologies
+/// <summary>
+/// Demonstrates how to extract symbologies with optional checksum from Aspose.BarCode and export them to JSON.
+/// </summary>
+class Program
 {
     /// <summary>
-    /// Demonstrates how to list barcode symbologies where the checksum is optional
-    /// and writes the result to a JSON file.
+    /// Entry point. Builds a list of optional‑checksum symbologies and writes it to a JSON file.
     /// </summary>
-    class Program
+    static void Main()
     {
-        /// <summary>
-        /// Entry point of the application.
-        /// Retrieves symbologies with optional checksums and serializes them to JSON.
-        /// </summary>
-        static void Main()
+        // Define the set of symbology names that have an optional checksum according to the documentation.
+        var optionalChecksumNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
-            // Define the set of symbology names that support an optional checksum.
-            var optionalChecksumNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-            {
-                "Code39",
-                "Code39FullASCII",
-                "Standard2of5",
-                "Interleaved2of5",
-                "Matrix2of5",
-                "ItalianPost25",
-                "DeutschePostIdentcode",
-                "DeutschePostLeitcode",
-                "VIN"
-            };
+            "Code39FullASCII",          // Code39 (full ASCII) – optional checksum
+            "Standard2of5",             // Standard 2 of 5 – optional checksum
+            "Interleaved2of5",          // Interleaved 2 of 5 – optional checksum
+            "Matrix2of5",               // Matrix 2 of 5 – optional checksum
+            "ItalianPost25",            // Italian Post 25 – optional checksum
+            "DeutschePostIdentcode",    // Deutsche Post Identcode – optional checksum
+            "DeutschePostLeitcode",     // Deutsche Post Leitcode – optional checksum
+            "VIN",                      // Vehicle Identification Number – optional checksum
+            "Codabar"                   // Codabar – optional checksum
+        };
 
-            // Get all public static fields from EncodeTypes; each field represents a barcode symbology.
-            var fields = typeof(EncodeTypes).GetFields(BindingFlags.Public | BindingFlags.Static);
-            var optionalSymbologies = new List<string>();
+        // Retrieve all public static fields from EncodeTypes that represent symbology encode types.
+        var encodeTypeFields = typeof(EncodeTypes).GetFields(BindingFlags.Public | BindingFlags.Static);
+        var symbologies = new List<object>();
 
-            // Iterate through the fields and collect those whose names are in the optional checksum set.
-            foreach (var field in fields)
+        // Iterate over each field to determine if it corresponds to an optional‑checksum symbology.
+        foreach (var field in encodeTypeFields)
+        {
+            // Ensure the field type derives from BaseEncodeType; otherwise, skip it.
+            if (!typeof(BaseEncodeType).IsAssignableFrom(field.FieldType))
+                continue;
+
+            // Get the actual encode type instance.
+            var encodeInstance = (BaseEncodeType)field.GetValue(null);
+            if (encodeInstance == null)
+                continue;
+
+            // Use the TypeName property (e.g., "Code39FullASCII") for lookup.
+            string name = encodeInstance.TypeName;
+            bool hasOptionalChecksum = optionalChecksumNames.Contains(name);
+
+            // Include only symbologies where the checksum is optional.
+            if (hasOptionalChecksum)
             {
-                // The field name corresponds directly to the symbology name.
-                string name = field.Name;
-                if (optionalChecksumNames.Contains(name))
+                symbologies.Add(new
                 {
-                    optionalSymbologies.Add(name);
-                }
+                    Symbology = name,
+                    OptionalChecksum = true
+                });
             }
-
-            // Serialize the list of optional symbologies to a formatted JSON string.
-            string json = JsonSerializer.Serialize(optionalSymbologies, new JsonSerializerOptions { WriteIndented = true });
-
-            // Determine the output file path in the current working directory.
-            string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "optional_checksum_symbologies.json");
-
-            // Write the JSON content to the file, overwriting any existing file.
-            using (var writer = new StreamWriter(outputPath, false))
-            {
-                writer.Write(json);
-            }
-
-            // Inform the user where the JSON file has been saved.
-            Console.WriteLine($"Optional checksum symbologies written to: {outputPath}");
         }
+
+        // Serialize the collected symbologies to a formatted JSON string.
+        var jsonOptions = new JsonSerializerOptions { WriteIndented = true };
+        string json = JsonSerializer.Serialize(symbologies, jsonOptions);
+
+        // Determine the output file path in the current working directory.
+        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "optional_checksum_symbologies.json");
+
+        // Write the JSON content to the file.
+        File.WriteAllText(outputPath, json);
+
+        // Inform the user where the file was saved.
+        Console.WriteLine($"Optional checksum symbologies written to: {outputPath}");
     }
 }

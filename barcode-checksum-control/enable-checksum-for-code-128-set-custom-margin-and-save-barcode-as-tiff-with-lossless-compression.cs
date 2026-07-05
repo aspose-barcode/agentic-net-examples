@@ -1,40 +1,44 @@
+// Title: Code128 Barcode with Checksum, Custom Margin, and TIFF Output
+// Description: Generates a Code 128 barcode, enables its checksum, applies a uniform margin, and saves the image as a losslessly compressed TIFF file.
+// Prompt: Enable checksum for Code 128, set custom margin, and save the barcode as TIFF with lossless compression.
+// Tags: code128, checksum, margin, tiff, aspose.barcode, barcode generation
+
 using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generating a Code128 barcode using Aspose.BarCode and saving it as a TIFF file.
+/// Demonstrates how to generate a Code 128 barcode with checksum enabled,
+/// apply custom margins, and save the result as a losslessly compressed TIFF image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a Code128 barcode with custom padding and saves it to disk.
+    /// Entry point of the example. Creates the barcode, configures its parameters,
+    /// saves it to disk, and writes a confirmation message to the console.
     /// </summary>
     static void Main()
     {
-        // Sample code text for the Code128 barcode.
-        string codeText = "1234567890";
+        // Define the output file path for the generated TIFF image
+        string outputPath = "code128.tif";
 
-        // Create a barcode generator for Code128 with the specified text.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+        // Initialize a Code128 barcode generator with sample text "1234567890"
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            // Enable checksum (mandatory for Code128, but set explicitly for clarity).
+            // Enable checksum (required for Code128 to ensure data integrity)
             generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
 
-            // Configure custom margins (padding) in points for each side of the barcode.
-            generator.Parameters.Barcode.Padding.Left.Point   = 10f;
-            generator.Parameters.Barcode.Padding.Top.Point    = 10f;
-            generator.Parameters.Barcode.Padding.Right.Point  = 10f;
+            // Set a uniform custom margin of 10 points on all sides
+            generator.Parameters.Barcode.Padding.Left.Point = 10f;
+            generator.Parameters.Barcode.Padding.Top.Point = 10f;
+            generator.Parameters.Barcode.Padding.Right.Point = 10f;
             generator.Parameters.Barcode.Padding.Bottom.Point = 10f;
 
-            // Define the output file path and save the barcode as a TIFF image.
-            // TIFF uses lossless compression by default.
-            string outputPath = "code128.tiff";
+            // Save the barcode as a TIFF image using lossless compression
             generator.Save(outputPath, BarCodeImageFormat.Tiff);
-
-            // Inform the user that the barcode has been saved.
-            Console.WriteLine($"Barcode saved to {outputPath}");
         }
+
+        // Inform the user that the barcode has been saved successfully
+        Console.WriteLine($"Barcode saved to {outputPath}");
     }
 }

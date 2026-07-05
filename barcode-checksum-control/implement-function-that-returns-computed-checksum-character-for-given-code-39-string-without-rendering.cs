@@ -1,66 +1,91 @@
+// Title: Code 39 checksum calculation example
+// Description: Demonstrates how to compute the checksum character for a Code 39 string without rendering it, useful for validation or barcode generation.
+// Prompt: Implement a function that returns the computed checksum character for a given Code 39 string without rendering.
+// Tags: barcode symbology, checksum, code39, console, csharp
+
 using System;
 using System.Collections.Generic;
 
-/// <summary>
-/// Demonstrates calculation of a Code 39 checksum for a given data string.
-/// </summary>
-class Program
+namespace Code39ChecksumDemo
 {
     /// <summary>
-    /// Entry point of the application. Computes and displays the checksum for sample data.
+    /// Demonstrates computing Code 39 checksum characters.
     /// </summary>
-    static void Main()
+    class Program
     {
-        // Sample Code 39 data to be checksummed.
-        string data = "HELLO-123";
+        // Character set for Code 39 (order defines the value of each character)
+        private static readonly string Code39Charset = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-. $/+%*";
 
-        // Compute the checksum character using the helper method.
-        char checksum = ComputeCode39Checksum(data);
+        // Mapping from character to its numeric value for quick lookup
+        private static readonly Dictionary<char, int> CharValueMap = CreateCharValueMap();
 
-        // Output the original data and its checksum.
-        Console.WriteLine($"Data: {data}");
-        Console.WriteLine($"Checksum character: {checksum}");
-    }
-
-    /// <summary>
-    /// Returns the Code 39 checksum character for the supplied data string.
-    /// </summary>
-    /// <param name="data">The data string to calculate the checksum for.</param>
-    /// <returns>The checksum character according to the Code 39 specification.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="data"/> is null.</exception>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="data"/> contains an invalid character.</exception>
-    static char ComputeCode39Checksum(string data)
-    {
-        // Validate input.
-        if (data == null) throw new ArgumentNullException(nameof(data));
-
-        // Code 39 character set (43 symbols) in order.
-        const string charset = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-. $/+%";
-
-        // Build a lookup table: character -> numeric value.
-        var valueMap = new Dictionary<char, int>();
-        for (int i = 0; i < charset.Length; i++)
+        /// <summary>
+        /// Entry point. Processes sample strings and displays their checksum characters or errors.
+        /// </summary>
+        static void Main()
         {
-            valueMap[charset[i]] = i;
+            // Sample inputs to demonstrate checksum calculation
+            string[] samples = { "HELLO", "CODE39", "123ABC", "ASP.NET" };
+
+            foreach (var text in samples)
+            {
+                try
+                {
+                    // Compute checksum for each sample string
+                    char checksum = ComputeCode39Checksum(text);
+                    Console.WriteLine($"Input: {text}  =>  Checksum character: {checksum}");
+                }
+                catch (ArgumentException ex)
+                {
+                    // Report any validation errors (e.g., invalid characters)
+                    Console.WriteLine($"Input: {text}  =>  Error: {ex.Message}");
+                }
+            }
         }
 
-        int sum = 0;
-
-        // Iterate over each character, converting to upper case for case‑insensitivity.
-        foreach (char ch in data.ToUpperInvariant())
+        // Computes the Code 39 checksum character for the supplied data string.
+        // The algorithm sums the values of each character (according to the Code 39 charset)
+        // and returns the character whose value equals (sum mod 43).
+        private static char ComputeCode39Checksum(string data)
         {
-            // Retrieve the numeric value; throw if character is not part of the charset.
-            if (!valueMap.TryGetValue(ch, out int val))
-                throw new ArgumentException($"Invalid character '{ch}' for Code 39.", nameof(data));
+            if (data == null)
+                throw new ArgumentException("Input cannot be null.");
 
-            // Accumulate the sum of values.
-            sum += val;
+            int sum = 0;
+            foreach (char ch in data)
+            {
+                // Code 39 is case‑insensitive; convert to upper case.
+                char upper = char.ToUpperInvariant(ch);
+
+                // The asterisk (*) is used only as start/stop delimiter and must not appear in data.
+                if (upper == '*')
+                    throw new ArgumentException("Asterisk (*) is not allowed in the data portion of a Code 39 barcode.");
+
+                // Look up the numeric value for the character; throw if not found.
+                if (!CharValueMap.TryGetValue(upper, out int value))
+                    throw new ArgumentException($"Invalid character '{ch}' for Code 39.");
+
+                sum += value;
+            }
+
+            int checksumValue = sum % 43;
+            // The charset string includes the asterisk at the end; its index is 43.
+            // Since checksumValue is in range 0‑42, we can safely index into the string.
+            return Code39Charset[checksumValue];
         }
 
-        // Modulo 43 gives the checksum value.
-        int checksumValue = sum % 43;
-
-        // Return the corresponding checksum character from the charset.
-        return charset[checksumValue];
+        // Builds a dictionary mapping each allowed character to its numeric value.
+        private static Dictionary<char, int> CreateCharValueMap()
+        {
+            var map = new Dictionary<char, int>();
+            for (int i = 0; i < Code39Charset.Length; i++)
+            {
+                char c = Code39Charset[i];
+                // The asterisk is only a delimiter; we still map it for completeness,
+                // but it will be rejected during checksum calculation.
+                map[c] = i;
+            }
+            return map;
+        }
     }
 }

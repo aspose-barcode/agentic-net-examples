@@ -1,79 +1,72 @@
+// Title: Code39 checksum disabling does not affect image output
+// Description: Demonstrates that turning off the checksum for an optional‑checksum symbology (Code 39) yields the same PNG image as the default configuration.
+// Prompt: Validate that disabling checksum for an optional‑checksum barcode like Code 39 does not alter the generated image data.
+// Tags: barcode, code39, checksum, image, png, aspose.barcode
+
 using System;
 using System.IO;
+using System.Linq;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates generating Code39 barcodes with and without checksum
-/// and comparing the resulting images.
+/// Example program that generates Code 39 bar‑codes with and without an explicit checksum
+/// setting and verifies that the resulting images are identical.
 /// </summary>
 class Program
 {
     /// <summary>
     /// Entry point of the application.
-    /// Generates two barcode images (with and without checksum) and
-    /// checks whether the resulting byte arrays are identical.
+    /// Generates two barcode images and compares their binary data.
     /// </summary>
     static void Main()
     {
-        const string codeText = "ABC-123";
+        // Sample Code39 text (no checksum character)
+        const string codeText = "CODE39";
 
-        // Generate barcode image with checksum enabled (explicit)
-        byte[] imageWithChecksum = GenerateBarcodeImage(EnableChecksum.Yes, codeText);
+        // Generate image with checksum explicitly disabled
+        byte[] imageWithoutChecksum = GenerateBarcodeImage(EncodeTypes.Code39FullASCII, codeText, EnableChecksum.No);
 
-        // Generate barcode image with checksum disabled
-        byte[] imageWithoutChecksum = GenerateBarcodeImage(EnableChecksum.No, codeText);
+        // Generate image with default settings (checksum not used for Code39)
+        byte[] imageDefault = GenerateBarcodeImage(EncodeTypes.Code39FullASCII, codeText, null);
 
         // Compare the two images byte‑by‑byte
-        bool areIdentical = AreByteArraysEqual(imageWithChecksum, imageWithoutChecksum);
+        bool areIdentical = imageWithoutChecksum.SequenceEqual(imageDefault);
+
+        // Output the comparison result
         Console.WriteLine($"Images are identical: {areIdentical}");
     }
 
     /// <summary>
-    /// Generates a barcode image as a PNG byte array.
+    /// Creates a barcode image using the specified encoding type, text, and optional checksum setting.
     /// </summary>
-    /// <param name="checksumSetting">Whether to enable checksum.</param>
-    /// <param name="text">The text to encode in the barcode.</param>
-    /// <returns>Byte array containing the PNG image.</returns>
-    static byte[] GenerateBarcodeImage(EnableChecksum checksumSetting, string text)
+    /// <param name="type">The barcode symbology to use.</param>
+    /// <param name="text">The data to encode.</param>
+    /// <param name="checksumSetting">
+    /// Optional flag indicating whether to enable or disable the checksum.
+    /// If null, the generator's default behavior is applied.
+    /// </param>
+    /// <returns>A byte array containing the PNG image data.</returns>
+    private static byte[] GenerateBarcodeImage(BaseEncodeType type, string text, EnableChecksum? checksumSetting)
     {
-        // Create a barcode generator for Code39FullASCII encoding
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code39FullASCII, text))
+        // Initialize the barcode generator with the requested type and text
+        using (var generator = new BarcodeGenerator(type, text))
         {
-            // Apply the checksum setting
-            generator.Parameters.Barcode.IsChecksumEnabled = checksumSetting;
+            // Apply checksum setting only when a value is provided
+            if (checksumSetting.HasValue)
+            {
+                // Disable or enable checksum as requested
+                generator.Parameters.Barcode.IsChecksumEnabled = checksumSetting.Value;
+            }
 
-            // Save the generated barcode to a memory stream in PNG format
+            // Write the generated barcode to a memory stream in PNG format
             using (var ms = new MemoryStream())
             {
                 generator.Save(ms, BarCodeImageFormat.Png);
-                // Return the image data as a byte array
+                // Return the raw image bytes
                 return ms.ToArray();
             }
         }
-    }
-
-    /// <summary>
-    /// Compares two byte arrays for equality.
-    /// </summary>
-    /// <param name="a">First byte array.</param>
-    /// <param name="b">Second byte array.</param>
-    /// <returns>True if arrays are non‑null, same length, and contain identical bytes; otherwise false.</returns>
-    static bool AreByteArraysEqual(byte[] a, byte[] b)
-    {
-        // If either array is null, they cannot be equal
-        if (a == null || b == null) return false;
-
-        // Different lengths mean arrays are not equal
-        if (a.Length != b.Length) return false;
-
-        // Compare each byte sequentially
-        for (int i = 0; i < a.Length; i++)
-        {
-            if (a[i] != b[i]) return false;
-        }
-
-        // All bytes match
-        return true;
     }
 }

@@ -1,58 +1,53 @@
+// Title: Force checksum visibility in barcode generation
+// Description: Demonstrates how to generate a Code128 barcode and optionally force the checksum digit to appear in the human‑readable text.
+// Prompt: Extend the barcode generation routine to accept a flag that forces checksum visibility regardless of symbology defaults.
+// Tags: barcode symbology, checksum, output format, aspose.barcode, csharp
+
 using System;
-using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generating a barcode image using Aspose.BarCode based on command‑line arguments.
+/// Program entry point demonstrating barcode generation with optional checksum visibility.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Accepts optional arguments: code text, symbology name, and a flag to force checksum visibility.
+    /// Parses command‑line arguments to determine if the checksum should always be shown,
+    /// generates a Code128 barcode, and saves it as an image file.
     /// </summary>
     /// <param name="args">Command‑line arguments.</param>
     static void Main(string[] args)
     {
-        // Determine the text to encode; default to "1234567890" if not provided.
-        string codeText = args.Length > 0 ? args[0] : "1234567890";
-
-        // Determine the symbology (barcode type); default to "Code128" if not provided.
-        string symbologyName = args.Length > 1 ? args[1] : "Code128";
-
-        // Determine whether to force the checksum digit to appear in the human‑readable text.
-        // Accepts "true" (case‑insensitive) or "1" as true values.
-        bool forceChecksumVisibility = args.Length > 2 &&
-            (args[2].Equals("true", StringComparison.OrdinalIgnoreCase) || args[2] == "1");
-
-        // Resolve the symbology name to the corresponding BaseEncodeType enum value using reflection.
-        var field = typeof(EncodeTypes).GetField(symbologyName);
-        if (field == null)
+        // Determine whether to force checksum visibility based on a command‑line flag.
+        bool forceChecksum = false;
+        foreach (string arg in args)
         {
-            // Inform the user if the provided symbology name is not recognized and exit.
-            Console.WriteLine($"Unknown symbology: {symbologyName}");
-            return;
+            if (arg.Equals("--show-checksum", StringComparison.OrdinalIgnoreCase))
+            {
+                forceChecksum = true;
+                break;
+            }
         }
 
-        // Cast the reflected field value to BaseEncodeType.
-        BaseEncodeType encodeType = (BaseEncodeType)field.GetValue(null);
+        // Sample barcode data to encode.
+        string codeText = "123456789";
 
-        // Create a BarcodeGenerator with the selected encode type and code text.
-        using (var generator = new BarcodeGenerator(encodeType, codeText))
+        // Create a Code128 barcode generator with the specified data.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
         {
-            // If requested, configure the generator to always show the checksum digit.
-            if (forceChecksumVisibility)
+            // If the flag is set, force the checksum digit to appear in the human‑readable text.
+            if (forceChecksum)
             {
                 generator.Parameters.Barcode.ChecksumAlwaysShow = true;
             }
 
-            // Define the output file name and save the generated barcode as a PNG image.
-            string outputPath = "barcode.png";
+            // Define the output file path and save the barcode image.
+            string outputPath = "code128.png";
             generator.Save(outputPath);
 
-            // Output the full path of the saved barcode image for user reference.
-            Console.WriteLine($"Barcode saved to: {Path.GetFullPath(outputPath)}");
+            // Inform the user about the saved file and checksum visibility status.
+            Console.WriteLine($"Barcode saved to {outputPath}. Checksum visibility forced: {forceChecksum}");
         }
     }
 }

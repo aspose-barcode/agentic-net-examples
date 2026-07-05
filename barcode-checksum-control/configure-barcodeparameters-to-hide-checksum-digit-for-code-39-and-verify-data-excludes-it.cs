@@ -1,58 +1,81 @@
+// Title: Hide Code 39 checksum and verify its absence
+// Description: Demonstrates configuring BarcodeParameters to suppress the checksum digit for a Code 39 barcode and then confirming that the generated barcode does not contain a checksum.
+// Prompt: Configure BarcodeParameters to hide the checksum digit for Code 39 and verify the data excludes it.
+// Tags: code39, checksum, hide, barcode, generation, recognition, aspnet, c#
 using System;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates generating a Code39 barcode without a checksum and verifying it.
+/// Example program that generates a Code 39 barcode without a checksum,
+/// hides the human‑readable text, and verifies that no checksum is present
+/// in the decoded result.
 /// </summary>
 class Program
 {
     /// <summary>
     /// Entry point of the application.
-    /// Generates a Code39 barcode with checksum disabled, saves it to a file,
-    /// then reads the barcode back to verify that the checksum digit is absent.
     /// </summary>
     static void Main()
     {
-        // Sample Code39 data without checksum
-        const string originalCodeText = "ABC123";
+        // ------------------------------------------------------------
+        // 1. Define the output file path for the generated barcode image.
+        // ------------------------------------------------------------
+        string outputPath = Path.Combine(Environment.CurrentDirectory, "code39.png");
 
-        // Path for the generated barcode image
-        const string imagePath = "code39.png";
-
-        // Generate Code39 barcode with checksum disabled and hidden
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code39FullASCII, originalCodeText))
+        // ------------------------------------------------------------
+        // 2. Create a Code39FullASCII barcode generator with sample data.
+        //    The data does not include a checksum digit.
+        // ------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code39FullASCII, "HELLO"))
         {
-            // Disable checksum generation
+            // Disable automatic checksum generation for Code 39.
             generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.No;
-            // Ensure checksum digit is not shown in human‑readable text
+
+            // Ensure the checksum is not forced to appear in the human‑readable text.
             generator.Parameters.Barcode.ChecksumAlwaysShow = false;
 
-            // Save the barcode image to the specified path
-            generator.Save(imagePath);
+            // Hide the human‑readable text completely.
+            generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.None;
+
+            // Save the generated barcode image to the specified path.
+            generator.Save(outputPath);
         }
 
-        // Verify the barcode by reading it back from the saved image
-        using (var reader = new BarCodeReader(imagePath, DecodeType.Code39))
+        // ------------------------------------------------------------
+        // 3. Verify that the barcode image was successfully created.
+        // ------------------------------------------------------------
+        if (!File.Exists(outputPath))
         {
-            // Disable checksum validation to avoid false failures
+            Console.WriteLine("Failed to generate barcode image.");
+            return;
+        }
+
+        // ------------------------------------------------------------
+        // 4. Read the barcode from the saved image and disable checksum validation.
+        //    This prevents false failures if a checksum were present.
+        // ------------------------------------------------------------
+        using (var reader = new BarCodeReader(outputPath, DecodeType.Code39))
+        {
             reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.Off;
 
-            // Iterate through all recognized barcodes (should be only one)
-            foreach (var result in reader.ReadBarCodes())
+            // Iterate through all decoded barcode results (should be only one).
+            foreach (BarCodeResult result in reader.ReadBarCodes())
             {
-                // Output the recognized text
-                Console.WriteLine($"Recognized CodeText: {result.CodeText}");
+                Console.WriteLine($"Decoded CodeText: {result.CodeText}");
 
-                // Compare with the original text to confirm checksum absence
-                if (result.CodeText == originalCodeText)
+                // For Code 39, the checksum (if any) is exposed via Extended.OneD.CheckSum.
+                string checksum = result.Extended?.OneD?.CheckSum;
+
+                if (string.IsNullOrEmpty(checksum))
                 {
-                    Console.WriteLine("Verification succeeded: checksum digit is absent.");
+                    Console.WriteLine("Checksum: <none> (as expected)");
                 }
                 else
                 {
-                    Console.WriteLine("Verification failed: unexpected CodeText.");
+                    Console.WriteLine($"Checksum: {checksum} (unexpected)");
                 }
             }
         }
