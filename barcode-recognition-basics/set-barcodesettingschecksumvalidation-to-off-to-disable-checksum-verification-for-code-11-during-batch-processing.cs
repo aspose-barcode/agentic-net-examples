@@ -1,3 +1,8 @@
+// Title: Code11 barcode generation and checksum‑disabled batch reading
+// Description: Demonstrates generating Code11 barcodes, saving them as PNG, and reading them back with checksum validation turned off.
+// Prompt: Set BarcodeSettings.ChecksumValidation to Off to disable checksum verification for Code 11 during batch processing.
+// Tags: code11, barcode, generation, recognition, checksumvalidation, aspnet, csharp
+
 using System;
 using System.IO;
 using Aspose.BarCode;
@@ -5,73 +10,69 @@ using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Sample program demonstrating generation and reading of Code11 barcodes using Aspose.BarCode.
+/// Generates Code11 barcodes, saves them as PNG files, and reads them back with checksum validation disabled.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates temporary barcode images, reads them without checksum validation, and cleans up.
+    /// Application entry point. Creates sample Code11 barcodes, writes PNG files, then reads them while turning off checksum verification.
     /// </summary>
     static void Main()
     {
-        // Create a temporary folder for sample barcode images
-        string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeSample_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
+        // Define sample Code11 values to encode
+        string[] codeTexts = { "12345", "67890", "112233" };
 
-        // Sample Code11 barcode texts
-        string[] sampleTexts = { "12345", "67890", "112233" };
-        string[] imagePaths = new string[sampleTexts.Length];
+        // Prepare output directory for generated barcode images
+        string outputFolder = "Barcodes";
+        Directory.CreateDirectory(outputFolder);
 
-        // Generate barcode images and store their paths
-        for (int i = 0; i < sampleTexts.Length; i++)
+        // ------------------------------------------------------------
+        // Generate Code11 barcodes and save each as a PNG file
+        // ------------------------------------------------------------
+        for (int i = 0; i < codeTexts.Length; i++)
         {
-            // Build the full file path for the current barcode image
-            string imagePath = Path.Combine(tempFolder, $"code11_{i}.png");
+            // Build full file path for the current barcode image
+            string filePath = Path.Combine(outputFolder, $"code11_{i}.png");
 
             // Create a barcode generator for Code11 with the current text
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code11, sampleTexts[i]))
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code11, codeTexts[i]))
             {
-                // Save the generated barcode image to the specified path
-                generator.Save(imagePath);
+                // Save the generated barcode image in PNG format
+                generator.Save(filePath, BarCodeImageFormat.Png);
             }
-
-            // Store the generated image path for later processing
-            imagePaths[i] = imagePath;
         }
 
-        // Process each generated barcode image with checksum validation disabled
-        foreach (string path in imagePaths)
+        // ------------------------------------------------------------
+        // Read each generated barcode image with checksum validation disabled
+        // ------------------------------------------------------------
+        foreach (string file in Directory.GetFiles(outputFolder, "*.png"))
         {
-            // Verify that the file exists before attempting to read it
-            if (!File.Exists(path))
+            // Verify that the file actually exists before attempting to read
+            if (!File.Exists(file))
             {
-                Console.WriteLine($"File not found: {path}");
+                Console.WriteLine($"File not found: {file}");
                 continue;
             }
 
-            // Initialize a barcode reader for Code11 format
-            using (var reader = new BarCodeReader(path, DecodeType.Code11))
+            // Initialize a barcode reader for Code11
+            using (var reader = new BarCodeReader(file, DecodeType.Code11))
             {
-                // Disable checksum verification to allow reading even if checksum is incorrect or omitted
+                // Disable checksum verification for Code11 as required by the prompt
                 reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.Off;
 
-                // Read all barcodes found in the image
-                foreach (var result in reader.ReadBarCodes())
+                // Iterate through all detected barcodes in the image
+                foreach (BarCodeResult result in reader.ReadBarCodes())
                 {
-                    // Output the file name and detected barcode text
-                    Console.WriteLine($"File: {Path.GetFileName(path)} | Detected CodeText: {result.CodeText}");
+                    // Output basic barcode information
+                    Console.WriteLine($"File: {Path.GetFileName(file)}  CodeText: {result.CodeText}");
+
+                    // If extended 1D information is available, display the checksum value
+                    if (result.Extended?.OneD != null)
+                    {
+                        Console.WriteLine($"Checksum: {result.Extended.OneD.CheckSum}");
+                    }
                 }
             }
-        }
-
-        // Clean up temporary files and directory
-        try
-        {
-            Directory.Delete(tempFolder, true);
-        }
-        catch
-        {
-            // Ignore any errors that occur during cleanup
         }
     }
 }

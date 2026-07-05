@@ -1,48 +1,47 @@
+// Title: Unlimited Barcode Processing with BarCodeReader Timeout
+// Description: Demonstrates setting BarCodeReader.Timeout to zero to allow unlimited processing time when reading complex images containing multiple barcodes.
+// Prompt: Set BarCodeReader's TimeOut to zero to allow unlimited processing time for complex multi‑barcode images.
+// Tags: barcode, timeout, multibarcode, aspose, csharp
+
 using System;
 using System.IO;
-using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a barcode, saving it to a memory stream,
-/// and then reading it back using Aspose.BarCode library.
+/// Example program that reads all barcodes from an image using Aspose.BarCode.
+/// It sets the reader's <c>Timeout</c> to zero, which disables the time limit
+/// and enables processing of complex multi‑barcode images without interruption.
 /// </summary>
 class Program
 {
     /// <summary>
     /// Entry point of the application.
-    /// Generates a Code128 barcode, writes it to a PNG stream,
-    /// and reads the barcode back to display its type and text.
     /// </summary>
     static void Main()
     {
-        // Initialize a barcode generator for Code128 with the given data
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
+        // Path to the image containing multiple barcodes.
+        const string imagePath = "multi_barcodes.png";
+
+        // Verify that the image file exists before attempting to read it.
+        if (!File.Exists(imagePath))
         {
-            // Create an in‑memory stream to hold the generated image
-            using (var ms = new MemoryStream())
+            Console.WriteLine($"File not found: {imagePath}");
+            return;
+        }
+
+        // Create a BarCodeReader for the specified image file.
+        using (var reader = new BarCodeReader(imagePath))
+        {
+            // Set the timeout to zero to allow unlimited processing time.
+            reader.Timeout = 0;
+
+            // Configure the reader to detect all supported barcode types.
+            reader.BarCodeReadType = DecodeType.AllSupportedTypes;
+
+            // Iterate through all detected barcodes and output their type and text.
+            foreach (var result in reader.ReadBarCodes())
             {
-                // Save the generated barcode as a PNG image into the memory stream
-                generator.Save(ms, BarCodeImageFormat.Png);
-
-                // Reset stream position to the beginning for reading
-                ms.Position = 0;
-
-                // Initialize a barcode reader that will attempt to decode any supported type
-                using (var reader = new BarCodeReader(ms, DecodeType.AllSupportedTypes))
-                {
-                    // Set Timeout to zero to allow unlimited processing time
-                    reader.Timeout = 0;
-
-                    // Iterate through all detected barcodes in the image
-                    foreach (var result in reader.ReadBarCodes())
-                    {
-                        // Output the barcode type (e.g., Code128) and the decoded text
-                        Console.WriteLine($"BarCode Type: {result.CodeTypeName}");
-                        Console.WriteLine($"BarCode CodeText: {result.CodeText}");
-                    }
-                }
+                Console.WriteLine($"Type: {result.CodeTypeName}, Text: {result.CodeText}");
             }
         }
     }

@@ -1,44 +1,43 @@
+// Title: Barcode Recognition from PNG using Aspose.BarCode
+// Description: Loads a PNG image into a Bitmap and uses BarCodeReader to detect and output all supported barcode types found in the image.
+// Prompt: Load a PNG image into a Bitmap object and recognize barcodes via BarCodeReader constructor.
+// Tags: barcode, recognition, png, aspose, csharp
+
 using System;
 using System.IO;
 using Aspose.Drawing;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates how to read all supported barcode types from a PNG image using Aspose.BarCode.
+/// Demonstrates loading a PNG image and recognizing any barcodes it contains using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Loads an image file, scans it for barcodes, and prints the results to the console.
+    /// Entry point of the example. Loads the image, creates a reader, and prints detected barcode information.
     /// </summary>
     static void Main()
     {
-        // Define the path to the PNG image that contains barcodes.
-        string imagePath = "barcode.png";
+        // Path to the PNG image file
+        const string imagePath = "sample.png";
 
-        // Ensure the specified file exists before attempting to load it.
+        // Verify that the image file exists before attempting to load it
         if (!File.Exists(imagePath))
         {
-            // Inform the user that the file could not be found and exit.
             Console.WriteLine($"File not found: {imagePath}");
             return;
         }
 
-        // Load the image into an Aspose.Drawing.Bitmap within a using block to guarantee disposal.
+        // Load the PNG image into an Aspose.Drawing.Bitmap instance
         using (Bitmap bitmap = new Bitmap(imagePath))
+        // Initialize BarCodeReader with the bitmap, configuring it to detect all supported barcode types
+        using (BarCodeReader reader = new BarCodeReader(bitmap, DecodeType.AllSupportedTypes))
         {
-            // Initialize a BarCodeReader to detect all supported barcode types in the bitmap.
-            using (BarCodeReader reader = new BarCodeReader(bitmap, DecodeType.AllSupportedTypes))
+            // Iterate through all detected barcodes and output their type and decoded text
+            foreach (var result in reader.ReadBarCodes())
             {
-                // Iterate over each detected barcode result.
-                foreach (var result in reader.ReadBarCodes())
-                {
-                    // Output the type of the barcode (e.g., QR, Code128).
-                    Console.WriteLine($"BarCode Type: {result.CodeTypeName}");
-                    // Output the decoded text/value of the barcode.
-                    Console.WriteLine($"BarCode CodeText: {result.CodeText}");
-                }
+                Console.WriteLine($"BarCode Type: {result.CodeTypeName}");
+                Console.WriteLine($"BarCode Text: {result.CodeText}");
             }
         }
     }

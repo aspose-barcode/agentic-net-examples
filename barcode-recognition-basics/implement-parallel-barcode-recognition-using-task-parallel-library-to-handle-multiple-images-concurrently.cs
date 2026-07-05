@@ -1,79 +1,88 @@
+// Title: Parallel Barcode Recognition with TPL
+// Description: Generates sample Code128 barcodes, then uses Task Parallel Library to recognize them concurrently, demonstrating multi‑core processing.
+// Prompt: Implement parallel barcode recognition using Task Parallel Library to handle multiple images concurrently.
+// Tags: code128, generation, recognition, parallel, tpl, console
+
 using System;
-using System.Collections.Generic;
 using System.IO;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates generating Code128 barcodes, storing them in memory,
-/// and recognizing them concurrently using the Aspose.BarCode library.
+/// Demonstrates generating barcode images and recognizing them in parallel using the Task Parallel Library.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates sample barcodes, processes them in parallel, and outputs detection results.
+    /// Entry point of the application. Generates sample barcodes, processes them concurrently, and cleans up temporary files.
     /// </summary>
     static void Main()
     {
-        // Define a list of sample barcode texts to encode.
-        List<string> codeTexts = new List<string>
+        // --------------------------------------------------------------------
+        // 1. Generate a small set of sample barcode images (5 items)
+        // --------------------------------------------------------------------
+        var imagePaths = new List<string>();
+        for (int i = 0; i < 5; i++)
         {
-            "Sample1",
-            "Sample2",
-            "Sample3",
-            "Sample4",
-            "Sample5"
-        };
+            // Create unique barcode text for each image
+            string codeText = $"CODE{i + 1}";
+            // Determine a temporary file path for the image
+            string filePath = Path.Combine(Path.GetTempPath(), $"barcode_{i}.png");
 
-        // Generate barcode images for each text and store them in memory streams.
-        List<MemoryStream> imageStreams = new List<MemoryStream>();
-        foreach (string text in codeTexts)
-        {
-            // Create a new memory stream for the current barcode image.
-            MemoryStream ms = new MemoryStream();
-
-            // Use BarcodeGenerator to create a Code128 barcode.
-            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, text))
+            // Generate and save the barcode image using Code128 symbology
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
             {
-                // Save the generated barcode as a PNG into the memory stream.
-                generator.Save(ms, BarCodeImageFormat.Png);
+                generator.Save(filePath, BarCodeImageFormat.Png);
             }
 
-            // Reset the stream position to the beginning for subsequent reading.
-            ms.Position = 0;
-            imageStreams.Add(ms);
+            // Store the path for later processing
+            imagePaths.Add(filePath);
         }
 
-        // Process each barcode image concurrently using the Task Parallel Library (TPL).
-        List<Task> tasks = new List<Task>();
-        foreach (MemoryStream stream in imageStreams)
+        // --------------------------------------------------------------------
+        // 2. Configure the barcode reader to utilize all available CPU cores
+        // --------------------------------------------------------------------
+        BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount = Environment.ProcessorCount;
+
+        // --------------------------------------------------------------------
+        // 3. Perform parallel recognition of the generated images
+        // --------------------------------------------------------------------
+        Parallel.ForEach(imagePaths, path =>
         {
-            // Capture the current stream in a local variable for the task closure.
-            Task task = Task.Run(() =>
+            // Open a reader for the current image file
+            using (var reader = new BarCodeReader(path, DecodeType.AllSupportedTypes))
             {
-                // Create a BarCodeReader to decode all supported barcode types from the stream.
-                using (BarCodeReader reader = new BarCodeReader(stream, DecodeType.AllSupportedTypes))
+                // Iterate over all detected barcodes in the image
+                foreach (var result in reader.ReadBarCodes())
                 {
-                    // Iterate through all detected barcodes and output their type and text.
-                    foreach (var result in reader.ReadBarCodes())
+                    // Synchronize console output to avoid interleaved lines from multiple threads
+                    lock (Console.Out)
                     {
-                        Console.WriteLine($"Detected: {result.CodeTypeName} - {result.CodeText}");
+                        Console.WriteLine($"File: {Path.GetFileName(path)} | Type: {result.CodeTypeName} | Text: {result.CodeText}");
                     }
                 }
+            }
+        });
 
-                // Dispose the memory stream after processing to free resources.
-                stream.Dispose();
-            });
-
-            tasks.Add(task);
+        // --------------------------------------------------------------------
+        // 4. Clean up temporary files
+        // --------------------------------------------------------------------
+        foreach (var path in imagePaths)
+        {
+            try
+            {
+                if (File.Exists(path))
+                {
+                    File.Delete(path);
+                }
+            }
+            catch
+            {
+                // Ignore any cleanup errors (e.g., file in use)
+            }
         }
-
-        // Wait for all recognition tasks to complete before proceeding.
-        Task.WaitAll(tasks.ToArray());
-
-        Console.WriteLine("Parallel barcode recognition completed.");
     }
 }

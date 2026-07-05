@@ -1,71 +1,73 @@
+// Title: Read barcodes from PDF pages using Aspose
+// Description: Demonstrates extracting each PDF page as an image and scanning it for barcodes with BarCodeReader.
+// Prompt: Read barcodes from PDF pages by extracting each page as an image and feeding it to BarCodeReader.
+// Tags: barcode, pdf, image extraction, aspose.pdf, aspose.barcode, csharp
+
 using System;
 using System.IO;
-using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Pdf;
-using Aspose.Pdf.Facades;
+using Aspose.Pdf.Devices;
+using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates barcode detection in PDF pages using Aspose libraries.
+/// Sample program that reads barcodes from each page of a PDF file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Accepts an optional PDF file path argument,
-    /// renders each page to an image, and reads any barcodes present.
+    /// Entry point. Loads a PDF, converts each page to an image, and scans for barcodes.
     /// </summary>
-    /// <param name="args">Command‑line arguments; first argument may be a PDF file path.</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Determine PDF file path: use first argument if provided, otherwise default to "sample.pdf".
-        string pdfPath = args.Length > 0 ? args[0] : "sample.pdf";
+        // Path to the PDF file (adjust as needed)
+        string pdfPath = "sample.pdf";
 
-        // Verify that the specified PDF file exists before proceeding.
+        // Verify that the PDF file exists
         if (!File.Exists(pdfPath))
         {
             Console.WriteLine($"PDF file not found: {pdfPath}");
             return;
         }
 
-        // Open the PDF document for reading.
-        using (var pdfDoc = new Document(pdfPath))
+        // Load the PDF document
+        using (var pdfDocument = new Document(pdfPath))
         {
-            // Create a converter to render PDF pages as images.
-            using (var pdfConverter = new PdfConverter(pdfDoc))
+            int pageCount = pdfDocument.Pages.Count;
+            Console.WriteLine($"Processing {pageCount} page(s) from '{pdfPath}'.");
+
+            // Iterate through each page
+            for (int pageIndex = 1; pageIndex <= pageCount; pageIndex++)
             {
-                // Enable barcode optimization to improve barcode rendering quality.
-                pdfConverter.RenderingOptions.BarcodeOptimization = true;
+                var page = pdfDocument.Pages[pageIndex];
 
-                // Iterate through each page in the PDF.
-                int pageCount = pdfDoc.Pages.Count;
-                for (int page = 1; page <= pageCount; page++)
+                // Convert the page to a JPEG image stored in a memory stream
+                using (var imageStream = new MemoryStream())
                 {
-                    // Configure the converter to process a single page.
-                    pdfConverter.StartPage = page;
-                    pdfConverter.EndPage = page;
+                    var resolution = new Resolution(300);
+                    var jpegDevice = new JpegDevice(resolution);
+                    jpegDevice.Process(page, imageStream);
+                    imageStream.Position = 0; // Reset stream position for reading
 
-                    // Perform the conversion of the specified page to an image.
-                    pdfConverter.DoConvert();
-
-                    // Retrieve the rendered image into a memory stream.
-                    using (var ms = new MemoryStream())
+                    // Load the image into an Aspose.Drawing.Bitmap
+                    using (var bitmap = new Bitmap(imageStream))
                     {
-                        pdfConverter.GetNextImage(ms);
-                        ms.Position = 0; // Reset stream position for reading.
-
-                        // Initialize the barcode reader on the image stream.
-                        using (var reader = new BarCodeReader(ms, DecodeType.AllSupportedTypes))
+                        // Initialize the barcode reader for all supported symbologies
+                        using (var reader = new BarCodeReader(bitmap, DecodeType.AllSupportedTypes))
                         {
-                            // Read all barcodes detected in the image.
+                            // Use a standard quality preset
+                            reader.QualitySettings = QualitySettings.NormalQuality;
+
+                            // Perform barcode detection
                             var results = reader.ReadBarCodes();
 
-                            // Output detection results to the console.
                             if (results.Length == 0)
                             {
-                                Console.WriteLine($"Page {page}: No barcodes detected.");
+                                Console.WriteLine($"Page {pageIndex}: No barcodes detected.");
                             }
                             else
                             {
-                                Console.WriteLine($"Page {page}: Detected {results.Length} barcode(s).");
+                                Console.WriteLine($"Page {pageIndex}: Detected {results.Length} barcode(s).");
                                 foreach (var result in results)
                                 {
                                     Console.WriteLine($"  Type: {result.CodeTypeName}, Text: {result.CodeText}");

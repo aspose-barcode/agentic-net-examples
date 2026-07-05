@@ -1,3 +1,8 @@
+// Title: Barcode generation, reading, and confidence warning demo
+// Description: Demonstrates creating a Code128 barcode, reading it, and logging a warning when the recognition confidence is moderate, suggesting image enhancement.
+// Prompt: Log a warning when BarCodeResult.Confidence equals Confidence.Moderate and suggest image enhancement to the user.
+// Tags: barcode symbology, generation, recognition, confidence, warning, console
+
 using System;
 using System.IO;
 using Aspose.BarCode;
@@ -5,82 +10,78 @@ using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates generating a Code128 barcode, saving it to a temporary PNG file,
-/// reading it back, and displaying detection results with confidence information.
+/// Demonstrates barcode generation, reading, and confidence handling.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a barcode, reads it, outputs details, and cleans up the temporary file.
+    /// Entry point. Generates a barcode image, reads it, and logs a warning if confidence is moderate.
     /// </summary>
     static void Main()
     {
-        // ------------------------------------------------------------
-        // Create a temporary PNG file path for the barcode image.
-        // ------------------------------------------------------------
-        string tempImagePath = Path.Combine(Path.GetTempPath(), "sample_barcode.png");
+        // Define the path where the barcode image will be saved
+        string imagePath = "barcode.png";
 
-        // ------------------------------------------------------------
-        // Generate a simple Code128 barcode and save it to the temporary file.
-        // ------------------------------------------------------------
+        // -------------------------------------------------
+        // Generate a simple Code128 barcode and save it to file
+        // -------------------------------------------------
         using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            // Optional: set a moderate resolution (150 DPI) which may affect confidence.
-            generator.Parameters.Resolution = 150f;
-
-            // Save the generated barcode image to the specified path.
-            generator.Save(tempImagePath);
+            // Set a standard resolution to improve image quality
+            generator.Parameters.Resolution = 300;
+            generator.Save(imagePath);
         }
 
-        // ------------------------------------------------------------
-        // Verify that the image file was successfully created.
-        // ------------------------------------------------------------
-        if (!File.Exists(tempImagePath))
+        // -------------------------------------------------
+        // Verify that the barcode image file was created successfully
+        // -------------------------------------------------
+        if (!File.Exists(imagePath))
         {
-            Console.WriteLine("Error: Failed to create barcode image.");
+            Console.WriteLine($"Error: Barcode image not found at '{imagePath}'.");
             return;
         }
 
-        // ------------------------------------------------------------
-        // Read the barcode from the image using all supported decode types.
-        // ------------------------------------------------------------
-        using (var reader = new BarCodeReader(tempImagePath, DecodeType.AllSupportedTypes))
+        // -------------------------------------------------
+        // Read the barcode from the saved image file
+        // -------------------------------------------------
+        using (var reader = new BarCodeReader(imagePath, DecodeType.Code128))
         {
             bool anyResult = false;
 
-            // Iterate through all detected barcodes.
+            // Iterate through all detected barcodes
             foreach (BarCodeResult result in reader.ReadBarCodes())
             {
                 anyResult = true;
 
-                // Output barcode type, decoded text, and confidence level.
-                Console.WriteLine($"Type: {result.CodeTypeName}, Text: {result.CodeText}, Confidence: {result.Confidence}");
+                // Output basic barcode information
+                Console.WriteLine($"BarCode Type: {result.CodeTypeName}");
+                Console.WriteLine($"BarCode CodeText: {result.CodeText}");
+                Console.WriteLine($"BarCode Confidence: {result.Confidence}");
 
-                // Warn if the confidence level is only moderate.
+                // Log a warning if the confidence level is moderate
                 if (result.Confidence == BarCodeConfidence.Moderate)
                 {
-                    Console.WriteLine("Warning: Barcode confidence is moderate. Consider enhancing the image (e.g., increase resolution, improve contrast).");
+                    Console.WriteLine("Warning: Moderate confidence detected. Consider enhancing the image (e.g., increase resolution, improve lighting) for better recognition.");
                 }
             }
 
-            // If no barcodes were detected, inform the user.
+            // Inform the user if no barcodes were detected
             if (!anyResult)
             {
                 Console.WriteLine("No barcodes were detected in the image.");
             }
         }
 
-        // ------------------------------------------------------------
-        // Clean up the temporary image file.
-        // ------------------------------------------------------------
+        // -------------------------------------------------
+        // Clean up the generated image file (optional)
+        // -------------------------------------------------
         try
         {
-            File.Delete(tempImagePath);
+            File.Delete(imagePath);
         }
         catch
         {
-            // Ignore any errors that occur during cleanup.
+            // Ignore any errors that occur during cleanup
         }
     }
 }

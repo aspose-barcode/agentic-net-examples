@@ -1,109 +1,73 @@
+// Title: Abort barcode recognition from another thread
+// Description: Demonstrates calling Abort on a BarCodeReader while recognition runs in a separate thread to stop processing immediately.
+// Prompt: Call Abort method from a separate thread while recognition is running to stop the operation immediately.
+// Tags: barcode, abort, multithreading, recognition, aspose.barcoderecognition
+
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Threading;
-using System.Threading.Tasks;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a barcode image, reading it asynchronously,
-/// aborting the read operation after a short delay, and cleaning up resources.
+/// Example program showing how to abort barcode recognition from another thread.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
+    /// Runs barcode recognition in a separate thread.
+    /// The method will be interrupted if <see cref="BarCodeReader.Abort"/> is called from another thread.
+    /// </summary>
+    /// <param name="readerObj">An instance of <see cref="BarCodeReader"/> passed as an object.</param>
+    private static void ThreadRecognize(object readerObj)
+    {
+        // Cast the passed object back to BarCodeReader
+        BarCodeReader reader = (BarCodeReader)readerObj;
+
+        // Iterate through all detected barcodes; this loop will exit early if Abort() is invoked
+        foreach (BarCodeResult result in reader.ReadBarCodes())
+        {
+            Console.WriteLine($"BarCode Type: {result.CodeTypeName}");
+            Console.WriteLine($"BarCode Text: {result.CodeText}");
+        }
+    }
+
+    /// <summary>
+    /// Entry point that generates a barcode, starts recognition on a separate thread,
+    /// aborts it, and waits for completion.
     /// </summary>
     static void Main()
     {
-        // --------------------------------------------------------------------
-        // 1. Prepare a temporary file path for the barcode image.
-        // --------------------------------------------------------------------
-        string tempDir = Path.GetTempPath();
-        string imagePath = Path.Combine(tempDir, "sample_barcode.png");
-
-        // --------------------------------------------------------------------
-        // 2. Generate a simple Code128 barcode and save it as PNG.
-        // --------------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Test123"))
+        // Generate a sample barcode image in memory (Code128 with value "123456789")
+        using (MemoryStream ms = new MemoryStream())
         {
-            generator.Save(imagePath, BarCodeImageFormat.Png);
-        }
-
-        // --------------------------------------------------------------------
-        // 3. Verify that the image file was created successfully.
-        // --------------------------------------------------------------------
-        if (!File.Exists(imagePath))
-        {
-            Console.WriteLine("Failed to create barcode image.");
-            return;
-        }
-
-        // --------------------------------------------------------------------
-        // 4. Create a barcode reader that supports all barcode types.
-        // --------------------------------------------------------------------
-        using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
-        {
-            var results = new List<string>();
-
-            // ----------------------------------------------------------------
-            // 5. Start barcode recognition on a separate thread.
-            // ----------------------------------------------------------------
-            var recognitionThread = new Thread(() =>
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "123456789"))
             {
-                try
-                {
-                    // Iterate through all detected barcodes.
-                    foreach (var result in reader.ReadBarCodes())
-                    {
-                        // Protect shared list with a lock.
-                        lock (results)
-                        {
-                            results.Add(result.CodeText);
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    // Expected exception when Abort is called; log the message.
-                    Console.WriteLine("Recognition stopped: " + ex.Message);
-                }
-            });
+                generator.Save(ms, BarCodeImageFormat.Png);
+            }
 
-            recognitionThread.Start();
+            // Reset stream position so the reader can read from the beginning
+            ms.Position = 0;
 
-            // ----------------------------------------------------------------
-            // 6. Abort the recognition after a short delay (100 ms).
-            // ----------------------------------------------------------------
-            Task.Delay(100).ContinueWith(_ => reader.Abort()).Wait();
-
-            // ----------------------------------------------------------------
-            // 7. Wait for the recognition thread to finish.
-            // ----------------------------------------------------------------
-            recognitionThread.Join();
-
-            // ----------------------------------------------------------------
-            // 8. Output the number of detected barcodes and their values.
-            // ----------------------------------------------------------------
-            Console.WriteLine("Recognition completed. Detected barcodes: " + results.Count);
-            foreach (var txt in results)
+            // Create a BarCodeReader for the image stream and enable all supported symbologies
+            using (BarCodeReader reader = new BarCodeReader(ms, DecodeType.AllSupportedTypes))
             {
-                Console.WriteLine("Detected: " + txt);
+                // Set a generous timeout to give Abort() enough time to take effect
+                reader.Timeout = 10000; // 10 seconds
+
+                // Start the recognition process on a separate thread
+                Thread recognizeThread = new Thread(ThreadRecognize);
+                recognizeThread.Start(reader);
+
+                // Request immediate abort from the main thread
+                reader.Abort();
+
+                // Wait for the recognition thread to finish cleanly
+                recognizeThread.Join();
             }
         }
 
-        // --------------------------------------------------------------------
-        // 9. Clean up the temporary image file.
-        // --------------------------------------------------------------------
-        try
-        {
-            File.Delete(imagePath);
-        }
-        catch
-        {
-            // Suppress any errors that occur during cleanup.
-        }
+        Console.WriteLine("Recognition aborted and program completed.");
     }
 }

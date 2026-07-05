@@ -1,53 +1,52 @@
+// Title: Barcode Recognition with Timeout
+// Description: Demonstrates generating a sample Code128 barcode if missing, then reading it with a 5‑second timeout to abort long processing.
+// Prompt: Set TimeOut property to five seconds to abort recognition if processing exceeds the specified limit.
+// Tags: barcode, code128, timeout, recognition, aspose.barcode
+
 using System;
 using System.IO;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
+using Aspose.BarCode;
 
 /// <summary>
-/// Demonstrates generating a Code128 barcode image and recognizing it using Aspose.BarCode.
+/// Example program that creates a barcode image (if needed) and reads it using a timeout setting.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a barcode image if missing, then reads and displays detected barcodes.
+    /// Entry point of the application. Generates a sample barcode if it does not exist,
+    /// then reads the barcode with a 5‑second timeout to prevent long‑running recognition.
     /// </summary>
     static void Main()
     {
-        // Path to the barcode image file
-        string imagePath = "sample.png";
+        const string imagePath = "barcode.png";
 
-        // If the barcode image does not exist, generate a simple Code128 barcode
+        // ------------------------------------------------------------
+        // Ensure a sample barcode image exists; create one if missing.
+        // ------------------------------------------------------------
         if (!File.Exists(imagePath))
         {
-            // Initialize the barcode generator with Code128 symbology and sample data
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+            // Generate a Code128 barcode with the text "12345" and save as PNG.
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "12345"))
             {
-                // Save the generated barcode as a PNG file
-                generator.Save(imagePath);
-                Console.WriteLine($"Barcode image generated at: {Path.GetFullPath(imagePath)}");
+                generator.Save(imagePath, BarCodeImageFormat.Png);
             }
         }
 
-        // Ensure the image file exists before attempting to read it
-        if (!File.Exists(imagePath))
+        // ------------------------------------------------------------
+        // Read the barcode image using a timeout of 5 seconds (5000 ms).
+        // ------------------------------------------------------------
+        using (var reader = new BarCodeReader(imagePath))
         {
-            Console.WriteLine("Error: Barcode image file not found.");
-            return;
-        }
-
-        // Create a BarCodeReader to detect all supported barcode types in the image
-        using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
-        {
-            // Set a timeout of 5000 ms (5 seconds) for the recognition process
+            // Abort recognition if it exceeds the specified time limit.
             reader.Timeout = 5000;
 
-            // Iterate through all detected barcodes and output their type and text
+            // Iterate through all detected barcodes and output their type and text.
             foreach (var result in reader.ReadBarCodes())
             {
-                Console.WriteLine($"Detected Type: {result.CodeTypeName}");
-                Console.WriteLine($"Detected Text: {result.CodeText}");
+                Console.WriteLine("BarCode Type: " + result.CodeTypeName);
+                Console.WriteLine("BarCode CodeText: " + result.CodeText);
             }
         }
     }

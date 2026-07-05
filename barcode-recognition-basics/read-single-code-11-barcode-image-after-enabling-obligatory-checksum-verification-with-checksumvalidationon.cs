@@ -1,3 +1,8 @@
+// Title: Read Code 11 barcode with checksum validation
+// Description: Demonstrates reading a Code 11 barcode image while enforcing checksum verification using Aspose.BarCode.
+// Prompt: Read a single Code 11 barcode image after enabling obligatory checksum verification with ChecksumValidation.On.
+// Tags: code11, read, checksum, console, barcodereader, aspose.barcode
+
 using System;
 using System.IO;
 using Aspose.BarCode;
@@ -5,73 +10,59 @@ using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates generation and reading of a Code11 barcode with checksum validation using Aspose.BarCode.
+/// Example program that generates (if needed) and reads a Code 11 barcode image
+/// with checksum validation enabled.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a Code11 barcode image, reads it back with checksum validation, and cleans up the temporary file.
+    /// Entry point. Generates a barcode image if missing, then reads it with checksum verification.
     /// </summary>
     static void Main()
     {
-        // Define the numeric text to encode in the Code11 barcode.
-        string codeText = "123456";
+        // Define the path for the sample barcode image
+        const string imagePath = "code11.png";
 
-        // Build a temporary file path for the barcode image.
-        string tempImagePath = Path.Combine(Path.GetTempPath(), "code11.png");
-
-        // -------------------- Barcode Generation --------------------
-        // Create a BarcodeGenerator for Code11 and set checksum inclusion.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code11, codeText))
+        // ------------------------------------------------------------
+        // Generate a Code 11 barcode image if it does not already exist
+        // ------------------------------------------------------------
+        if (!File.Exists(imagePath))
         {
-            // Enable checksum generation.
-            generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
-
-            // Save the generated barcode image to the temporary path.
-            generator.Save(tempImagePath);
+            // Create a barcode generator for Code 11 with sample data
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code11, "1234567890"))
+            {
+                // Save the generated barcode to the specified file
+                generator.Save(imagePath);
+            }
         }
 
-        // Verify that the image file was successfully created.
-        if (!File.Exists(tempImagePath))
+        // ------------------------------------------------------------
+        // Verify that the image now exists before attempting to read it
+        // ------------------------------------------------------------
+        if (!File.Exists(imagePath))
         {
             Console.WriteLine("Failed to create barcode image.");
             return;
         }
 
-        // -------------------- Barcode Reading --------------------
-        // Initialize a BarCodeReader for Code11 with checksum validation enabled.
-        using (var reader = new BarCodeReader(tempImagePath, DecodeType.Code11))
+        // ------------------------------------------------------------
+        // Read the barcode with checksum validation enabled
+        // ------------------------------------------------------------
+        using (var reader = new BarCodeReader(imagePath, DecodeType.Code11))
         {
-            // Require checksum verification during reading.
+            // Enable obligatory checksum verification
             reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
 
-            // Read all barcodes from the image.
-            var results = reader.ReadBarCodes();
-
-            // Output detection results.
-            if (results.Length == 0)
+            // Iterate through all detected barcodes (should be only one)
+            foreach (var result in reader.ReadBarCodes())
             {
-                Console.WriteLine("No Code11 barcode detected.");
-            }
-            else
-            {
-                foreach (var result in results)
-                {
-                    Console.WriteLine($"Detected Code11 barcode: {result.CodeText}");
-                }
-            }
-        }
+                // Output the raw decoded text
+                Console.WriteLine($"CodeText: {result.CodeText}");
 
-        // -------------------- Cleanup --------------------
-        // Attempt to delete the temporary image file; ignore any errors.
-        try
-        {
-            File.Delete(tempImagePath);
-        }
-        catch
-        {
-            // Cleanup failure is non‑critical; continue execution.
+                // Output checksum and value without checksum (OneD extended info)
+                Console.WriteLine($"Checksum: {result.Extended.OneD.CheckSum}");
+                Console.WriteLine($"Value (without checksum): {result.Extended.OneD.Value}");
+            }
         }
     }
 }

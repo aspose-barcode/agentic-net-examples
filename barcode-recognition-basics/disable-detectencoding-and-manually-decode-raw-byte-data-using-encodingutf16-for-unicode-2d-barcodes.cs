@@ -1,61 +1,65 @@
+// Title: Demonstrate manual UTF-16 decoding of Unicode QR code without auto-detect
+// Description: Shows how to generate a QR code with Unicode text, disable automatic encoding detection, and manually decode the raw byte data using Encoding.Unicode (UTF-16). Useful for handling 2D barcodes that contain Unicode characters.
+// Prompt: Disable DetectEncoding and manually decode raw byte data using Encoding.UTF16 for Unicode 2D barcodes.
+// Tags: qr, unicode, manual-decoding, detectencoding, encoding.unicode, aspose.barcode
+
 using System;
 using System.IO;
 using System.Text;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a QR code with Unicode (UTF-16) data,
-/// then reading it back while manually handling encoding.
+/// Example program that generates a QR code containing Unicode text,
+/// disables automatic encoding detection during reading, and manually
+/// decodes the raw byte data using UTF-16 (Encoding.Unicode).
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a QR code containing Cyrillic text, saves it to a memory stream,
-    /// and reads it back using Aspose.BarCode with manual UTF-16 decoding.
+    /// Entry point of the example. Generates a QR code, reads it back,
+    /// and demonstrates manual decoding of the barcode text.
     /// </summary>
     static void Main()
     {
-        // Sample Unicode text (Cyrillic)
+        // Sample Unicode text to encode in the QR code
         const string unicodeText = "Привет";
 
-        // Create a QR code generator
+        // Create a QR code generator and set the code text using UTF-16 encoding
         using (var generator = new BarcodeGenerator(EncodeTypes.QR))
         {
-            // Encode the text as UTF-16 (Unicode) bytes
             generator.SetCodeText(unicodeText, Encoding.Unicode);
 
-            // Save the generated barcode image to a memory stream in PNG format
-            using (var imageStream = new MemoryStream())
+            // Save the generated barcode to a memory stream in PNG format
+            using (var ms = new MemoryStream())
             {
-                generator.Save(imageStream, BarCodeImageFormat.Png);
-                // Reset stream position to the beginning for reading
-                imageStream.Position = 0;
+                generator.Save(ms, BarCodeImageFormat.Png);
+                ms.Position = 0; // Reset stream position for reading
 
-                // Load the image from the stream into a Bitmap for recognition
-                using (var bitmap = new Bitmap(imageStream))
+                // Initialize a barcode reader for QR codes, using the memory stream as input
+                using (var reader = new BarCodeReader(ms, DecodeType.QR))
                 {
-                    // Initialize a barcode reader configured for QR codes
-                    using (var reader = new BarCodeReader(bitmap, DecodeType.QR))
+                    // Disable automatic detection of the text encoding
+                    reader.BarcodeSettings.DetectEncoding = false;
+
+                    // Read all barcodes found in the image
+                    var results = reader.ReadBarCodes();
+                    if (results.Length == 0)
                     {
-                        // Disable automatic encoding detection to demonstrate manual decoding
-                        reader.BarcodeSettings.DetectEncoding = false;
+                        Console.WriteLine("No barcode detected.");
+                        return;
+                    }
 
-                        // Iterate over all detected barcodes (should be one in this case)
-                        foreach (var result in reader.ReadBarCodes())
-                        {
-                            // The automatically detected CodeText may be incorrect because DetectEncoding is off
-                            Console.WriteLine("Auto-detected CodeText: " + result.CodeText);
+                    // Process each detected barcode result
+                    foreach (var result in results)
+                    {
+                        // When DetectEncoding is disabled, CodeText may contain garbled data
+                        Console.WriteLine("Raw CodeText (auto-detect disabled): " + result.CodeText);
 
-                            // Retrieve the raw byte array from the barcode
-                            byte[] rawBytes = result.CodeBytes;
-                            // Manually decode the bytes using UTF-16 (Unicode) encoding
-                            string manualText = Encoding.Unicode.GetString(rawBytes);
-                            Console.WriteLine("Manually decoded (UTF-16): " + manualText);
-                        }
+                        // Manually decode the raw byte data using UTF-16 (Encoding.Unicode)
+                        string decodedText = result.GetCodeText(Encoding.Unicode);
+                        Console.WriteLine("Manually decoded text (UTF-16): " + decodedText);
                     }
                 }
             }

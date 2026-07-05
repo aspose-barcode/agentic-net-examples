@@ -1,69 +1,77 @@
+// Title: QR Code Generation and Decoding with UTF-8 Fallback
+// Description: Demonstrates generating a QR code containing Unicode text, reading it with encoding detection disabled, and applying a fallback decoding when UTF‑8 fails.
+// Prompt: Implement a fallback decoding routine that triggers when DetectEncoding is false and raw data cannot be interpreted as UTF8.
+// Tags: qr, barcode, encoding, fallback, aspose.barcode, utf8, windows-1252
+
 using System;
 using System.IO;
 using System.Text;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing.Imaging;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a QR code with Unicode text,
-/// saving it to a memory stream, and then reading it back
-/// while handling encoding manually.
+/// Example program that creates a QR code with Unicode text, reads it without automatic encoding detection,
+/// and demonstrates a manual fallback decoding strategy when UTF‑8 decoding is not successful.
 /// </summary>
 class Program
 {
     /// <summary>
     /// Entry point of the application.
-    /// Generates a QR code, reads it, and attempts UTF‑8 decoding.
     /// </summary>
     static void Main()
     {
-        // Create a memory stream to hold the generated QR code image.
+        // ------------------------------------------------------------
+        // 1. Generate a QR code containing Cyrillic text using UTF‑8 encoding.
+        // ------------------------------------------------------------
         using (var ms = new MemoryStream())
         {
-            // Generate a QR code containing the Unicode text "Привет".
+            // Create a barcode generator for QR codes with the desired text.
             using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Привет"))
             {
-                // Explicitly set the code text with UTF‑8 encoding.
+                // Explicitly set the code text with UTF‑8 encoding to ensure correct byte representation.
                 generator.SetCodeText("Привет", Encoding.UTF8);
-                // Save the QR code image as PNG into the memory stream.
+
+                // Save the generated barcode image into the memory stream in PNG format.
                 generator.Save(ms, BarCodeImageFormat.Png);
             }
 
-            // Reset the stream position to the beginning for reading.
-            ms.Position = 0;
+            // ------------------------------------------------------------
+            // 2. Prepare the stream for reading the barcode image.
+            // ------------------------------------------------------------
+            ms.Position = 0; // Reset stream position to the beginning.
 
-            // Initialize a barcode reader for QR codes using the memory stream.
+            // ------------------------------------------------------------
+            // 3. Read the barcode with automatic encoding detection turned off.
+            // ------------------------------------------------------------
             using (var reader = new BarCodeReader(ms, DecodeType.QR))
             {
-                // Disable automatic encoding detection to work with raw bytes.
+                // Disable automatic detection so we can control the decoding process.
                 reader.BarcodeSettings.DetectEncoding = false;
 
-                // Iterate over all detected barcodes (should be one in this case).
-                foreach (var result in reader.ReadBarCodes())
+                // Iterate over all detected barcodes (in this case, just one).
+                foreach (BarCodeResult result in reader.ReadBarCodes())
                 {
-                    // Output the raw CodeText as returned by the reader.
-                    Console.WriteLine($"Raw CodeText: {result.CodeText}");
+                    // Attempt to decode the raw data using UTF‑8.
+                    string textUtf8 = result.GetCodeText(Encoding.UTF8);
 
-                    // Convert the raw CodeText string to its original byte representation
-                    // using the system's default encoding (the reader's output encoding).
-                    byte[] rawBytes = Encoding.Default.GetBytes(result.CodeText);
-                    string decodedText;
-                    // Prepare a UTF‑8 encoder that does not emit a BOM and throws on invalid bytes.
-                    var utf8 = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+                    // Determine whether a fallback is needed:
+                    // - Empty or null result indicates decoding failure.
+                    // - Presence of the Unicode replacement character (�) signals invalid UTF‑8 sequences.
+                    bool needFallback = string.IsNullOrEmpty(textUtf8) || textUtf8.Contains('\uFFFD');
 
-                    try
+                    if (needFallback)
                     {
-                        // Attempt to decode the raw bytes as UTF‑8.
-                        decodedText = utf8.GetString(rawBytes);
-                        Console.WriteLine($"Decoded as UTF-8: {decodedText}");
+                        // ------------------------------------------------------------
+                        // 4. Fallback decoding: try Windows‑1252 (or any other desired encoding).
+                        // ------------------------------------------------------------
+                        string fallbackText = result.GetCodeText(Encoding.GetEncoding(1252));
+                        Console.WriteLine($"Fallback decoded text: {fallbackText}");
                     }
-                    catch (DecoderFallbackException)
+                    else
                     {
-                        // If UTF‑8 decoding fails, fall back to Windows‑1252 encoding.
-                        var fallbackEncoding = Encoding.GetEncoding("windows-1252");
-                        decodedText = fallbackEncoding.GetString(rawBytes);
-                        Console.WriteLine($"Fallback decoded (Windows-1252): {decodedText}");
+                        // UTF‑8 decoding succeeded; output the result.
+                        Console.WriteLine($"UTF8 decoded text: {textUtf8}");
                     }
                 }
             }

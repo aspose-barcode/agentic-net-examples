@@ -1,62 +1,58 @@
+// Title: QR barcode generation, Base64 encoding, and decoding with encoding detection
+// Description: Demonstrates generating a QR barcode, converting it to a Base64 string, then decoding it back while detecting Unicode text encoding.
+// Prompt: Develop a backend service that receives base64‑encoded barcode images, decodes them with DetectEncoding enabled, and returns decoded text.
+// Tags: qr, barcode, base64, encoding detection, aspnet, aspose.barcode, csharp
+
 using System;
 using System.IO;
-using Aspose.BarCode;
+using System.Text;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a barcode, converting it to a Base64 string,
-/// decoding it back to an image, and reading the barcode using Aspose.BarCode.
+/// Example program that generates a QR barcode, encodes it to Base64, and decodes it with encoding detection enabled.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates a Code128 barcode, encodes it to Base64,
-    /// decodes it, and reads the barcode.
+    /// Entry point. Generates a QR barcode from sample Unicode text, converts it to Base64, then reads it back detecting encoding.
     /// </summary>
     static void Main()
     {
-        // ------------------------------------------------------------
-        // Step 1: Generate a sample barcode image (Code128) and obtain its Base64 representation.
-        // ------------------------------------------------------------
+        // Sample text containing Unicode characters to test encoding detection.
+        const string sampleText = "Привет";
+
+        // Generate a QR barcode image and encode it to a Base64 string.
         string base64Image;
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "HelloWorld"))
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, sampleText))
         {
-            // Create an in‑memory stream to hold the PNG image.
             using (var ms = new MemoryStream())
             {
-                // Save the generated barcode to the memory stream in PNG format.
+                // Save the barcode as PNG into the memory stream.
                 generator.Save(ms, BarCodeImageFormat.Png);
-
-                // Convert the stream contents to a byte array.
-                byte[] imageBytes = ms.ToArray();
-
-                // Encode the byte array as a Base64 string.
-                base64Image = Convert.ToBase64String(imageBytes);
+                // Convert the PNG bytes to a Base64 string.
+                base64Image = Convert.ToBase64String(ms.ToArray());
             }
         }
 
-        // ------------------------------------------------------------
-        // Step 2: Decode the Base64 string back to image bytes.
-        // ------------------------------------------------------------
-        byte[] decodedBytes = Convert.FromBase64String(base64Image);
+        // Output the Base64 string (optional, can be removed in production).
+        Console.WriteLine("Base64 Barcode Image:");
+        Console.WriteLine(base64Image);
+        Console.WriteLine();
 
-        // ------------------------------------------------------------
-        // Step 3: Use BarCodeReader with DetectEncoding enabled to read the barcode.
-        // ------------------------------------------------------------
-        using (var imageStream = new MemoryStream(decodedBytes))
+        // Decode the Base64 string back to an image stream.
+        byte[] imageBytes = Convert.FromBase64String(base64Image);
+        using (var imageStream = new MemoryStream(imageBytes))
         {
-            // Initialize the reader to detect all supported barcode types.
+            // Create a barcode reader that checks all supported symbologies.
             using (var reader = new BarCodeReader(imageStream, DecodeType.AllSupportedTypes))
             {
-                // Enable automatic detection of text encoding for the barcode.
+                // Enable detection of text encoding for Unicode code sets.
                 reader.BarcodeSettings.DetectEncoding = true;
 
-                // Read all barcodes found in the image.
-                var results = reader.ReadBarCodes();
-
-                // Output decoded text for each barcode.
-                foreach (var result in results)
+                // Read and output all detected barcodes.
+                foreach (var result in reader.ReadBarCodes())
                 {
                     Console.WriteLine("Decoded Text: " + result.CodeText);
                 }

@@ -1,80 +1,80 @@
+// Title: Barcode Generation, Recognition, and Position Reporting
+// Description: Generates a Code128 barcode image, reads it back, counts unique barcodes, and prints their positions.
+// Prompt: Access FoundBarCodes collection after recognition to count unique barcodes and display their positions.
+// Tags: code128, barcode generation, barcode recognition, unique count, position output, aspose.barcode
+
 using System;
-using System.IO;
 using System.Collections.Generic;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a barcode image, verifying its creation,
-/// and reading back barcodes from the image using Aspose.BarCode.
+/// Demonstrates how to generate a barcode, recognize it, count unique values,
+/// and display the position of each detected barcode using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a barcode, saves it to a file, then reads and displays barcode information.
+    /// Entry point of the example. Generates a barcode image, reads it,
+    /// and outputs detection details to the console.
     /// </summary>
     static void Main()
     {
-        // Define the file path for the generated barcode image.
-        string imagePath = "sample.png";
-
-        // -------------------------------------------------
-        // Generate a sample barcode image (Code128, value "ABC123")
-        // -------------------------------------------------
+        // ------------------------------------------------------------
+        // Step 1: Generate a sample barcode image (Code128, text "ABC123")
+        // ------------------------------------------------------------
+        string imagePath = "sample_barcode.png";
         using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "ABC123"))
         {
-            // Save the generated barcode to the specified path.
-            generator.Save(imagePath);
+            // Save the generated barcode as a PNG file
+            generator.Save(imagePath, BarCodeImageFormat.Png);
         }
 
-        // -------------------------------------------------
-        // Verify that the barcode image was successfully created.
-        // -------------------------------------------------
+        // ------------------------------------------------------------
+        // Step 2: Verify that the image file was created successfully
+        // ------------------------------------------------------------
         if (!File.Exists(imagePath))
         {
             Console.WriteLine("Failed to create barcode image.");
             return;
         }
 
-        // -------------------------------------------------
-        // Read all supported barcodes from the generated image.
-        // -------------------------------------------------
+        // ------------------------------------------------------------
+        // Step 3: Read barcodes from the generated image
+        // ------------------------------------------------------------
         using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
         {
-            // Retrieve an array of barcode results.
-            BarCodeResult[] results = reader.ReadBarCodes();
+            // Perform recognition of all supported barcode types
+            reader.ReadBarCodes();
 
-            // Determine the set of unique barcode texts.
-            var uniqueCodes = new HashSet<string>();
+            // --------------------------------------------------------
+            // Step 4: Access the FoundBarCodes collection
+            // --------------------------------------------------------
+            BarCodeResult[] results = reader.FoundBarCodes;
+            int totalCount = results.Length;
+            Console.WriteLine($"Total barcodes detected: {totalCount}");
+
+            // --------------------------------------------------------
+            // Step 5: Count unique barcodes based on their CodeText
+            // --------------------------------------------------------
+            var uniqueSet = new HashSet<string>();
             foreach (var result in results)
             {
-                uniqueCodes.Add(result.CodeText);
+                uniqueSet.Add(result.CodeText);
             }
+            Console.WriteLine($"Unique barcodes count: {uniqueSet.Count}");
 
-            // Output summary information.
-            Console.WriteLine($"Total barcodes detected: {results.Length}");
-            Console.WriteLine($"Unique barcodes count: {uniqueCodes.Count}");
-
-            // -------------------------------------------------
-            // Display detailed information for each detected barcode.
-            // -------------------------------------------------
-            foreach (var result in results)
+            // --------------------------------------------------------
+            // Step 6: Display positions (region) of each detected barcode
+            // --------------------------------------------------------
+            for (int i = 0; i < totalCount; i++)
             {
-                // Extract the bounding rectangle of the barcode region.
+                var result = results[i];
                 var rect = result.Region.Rectangle;
-                int x = (int)Math.Round((double)rect.X);
-                int y = (int)Math.Round((double)rect.Y);
-                int width = (int)Math.Round((double)rect.Width);
-                int height = (int)Math.Round((double)rect.Height);
-                double angle = result.Region.Angle; // Rotation angle of the barcode.
-
-                // Print barcode text and its position/size.
-                Console.WriteLine($"CodeText: {result.CodeText}");
-                Console.WriteLine($"Position: X={x}, Y={y}, Width={width}, Height={height}, Angle={angle}");
-                Console.WriteLine();
+                Console.WriteLine(
+                    $"Barcode {i + 1}: Text = '{result.CodeText}', Position = (X={rect.X}, Y={rect.Y}, Width={rect.Width}, Height={rect.Height})");
             }
         }
     }

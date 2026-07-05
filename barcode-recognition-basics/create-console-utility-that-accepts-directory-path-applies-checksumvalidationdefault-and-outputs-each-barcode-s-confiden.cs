@@ -1,70 +1,64 @@
+// Title: Barcode Confidence Level Scanner
+// Description: Scans a directory for supported image and PDF files, reads barcodes with default checksum validation, and prints each barcode's confidence level.
+// Prompt: Create a console utility that accepts a directory path, applies ChecksumValidation.Default, and outputs each barcode's confidence level.
+// Tags: barcode, checksumvalidation, console, confidence, aspose.barcode, file-processing
+
 using System;
 using System.IO;
 using Aspose.BarCode;
-using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Scans a directory for image files and attempts to read any barcodes present using Aspose.BarCode.
+/// Console utility that scans a directory for barcode images/PDFs,
+/// applies default checksum validation, and outputs each barcode's confidence level.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Accepts an optional directory path argument; if omitted, uses the current working directory.
+    /// Entry point. Accepts an optional directory path argument,
+    /// processes supported files, and writes barcode details to the console.
     /// </summary>
-    /// <param name="args">Command‑line arguments; the first argument may specify the directory to scan.</param>
+    /// <param name="args">Command‑line arguments; first argument may be a directory path.</param>
     static void Main(string[] args)
     {
-        // Determine the directory to scan: use the first argument or fallback to the current directory.
+        // Determine directory to scan; fallback to current directory if none provided.
         string directoryPath = args.Length > 0 ? args[0] : Directory.GetCurrentDirectory();
 
-        // Verify that the specified directory exists before proceeding.
+        // Verify that the directory exists before proceeding.
         if (!Directory.Exists(directoryPath))
         {
             Console.WriteLine($"Directory not found: {directoryPath}");
             return;
         }
 
-        // Define the set of image file extensions that will be considered for barcode scanning.
-        string[] supportedExtensions = new[] { ".png", ".jpg", ".jpeg", ".bmp", ".tiff", ".tif", ".gif" };
+        // File extensions that Aspose.BarCode can read.
+        string[] extensions = new[] { ".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff", ".gif", ".pdf" };
 
-        // Retrieve all files in the target directory (non‑recursive).
-        string[] files = Directory.GetFiles(directoryPath);
-
-        // Iterate over each file and process only those with supported image extensions.
-        foreach (string filePath in files)
+        // Enumerate all files in the target directory.
+        foreach (string filePath in Directory.GetFiles(directoryPath))
         {
-            // Skip files whose extensions are not in the supported list.
-            if (Array.IndexOf(supportedExtensions, Path.GetExtension(filePath).ToLowerInvariant()) < 0)
+            // Process only supported image/pdf files.
+            if (Array.IndexOf(extensions, Path.GetExtension(filePath).ToLowerInvariant()) < 0)
                 continue;
 
-            // Ensure the file still exists (it could have been removed after the initial enumeration).
+            // Double‑check file existence (defensive programming).
             if (!File.Exists(filePath))
             {
-                Console.WriteLine($"File not found: {filePath}");
+                Console.WriteLine($"File not found (skipped): {filePath}");
                 continue;
             }
 
-            // Create a barcode reader for the current image, configured to detect all supported barcode types.
+            // Open the barcode reader for the current file.
             using (var reader = new BarCodeReader(filePath, DecodeType.AllSupportedTypes))
             {
-                // Use the default checksum validation setting.
+                // Apply default checksum validation as required.
                 reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.Default;
 
-                bool anyFound = false; // Tracks whether any barcode was detected in the current file.
-
-                // Read all barcodes present in the image.
-                foreach (var result in reader.ReadBarCodes())
+                // Read all barcodes in the file.
+                foreach (BarCodeResult result in reader.ReadBarCodes())
                 {
-                    anyFound = true;
-                    Console.WriteLine($"{Path.GetFileName(filePath)} | Type: {result.CodeTypeName} | Confidence: {result.Confidence}");
-                }
-
-                // If no barcodes were found, output a corresponding message.
-                if (!anyFound)
-                {
-                    Console.WriteLine($"{Path.GetFileName(filePath)} | No barcode detected.");
+                    // Output file name, barcode type, and confidence level.
+                    Console.WriteLine($"File: {Path.GetFileName(filePath)} | Type: {result.CodeTypeName} | Confidence: {result.Confidence}");
                 }
             }
         }

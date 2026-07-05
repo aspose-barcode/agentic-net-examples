@@ -1,3 +1,8 @@
+// Title: Read and Log Barcodes from Generated Image
+// Description: Generates a Code128 barcode in memory, reads it using Aspose.BarCode, and logs each detected barcode's type and text.
+// Prompt: Invoke ReadBarCodes and iterate over the BarCodeResult array to log each barcode's text and type.
+// Tags: barcode symbology, read operation, console output, aspose.barcode, code128
+
 using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
@@ -5,32 +10,29 @@ using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a barcode, then reading it back using Aspose.BarCode.
+/// Demonstrates how to generate a barcode, read it, and output the results to the console.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a Code128 barcode image in memory and reads it back, printing the type and text.
+    /// Entry point of the application. Generates a barcode image, reads it, and logs each detected barcode's type and text.
     /// </summary>
     static void Main()
     {
-        // Create a barcode generator for Code128 with the specified data.
+        // Generate a Code128 barcode image in memory with the value "Sample123".
         using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
         {
-            // Generate the barcode image as a bitmap in memory.
+            // Render the barcode to a bitmap.
             using (var bitmap = generator.GenerateBarCodeImage())
             {
-                // Initialize a barcode reader to decode all supported barcode types from the bitmap.
+                // Initialize a reader that scans the bitmap for all supported barcode types.
                 using (var reader = new BarCodeReader(bitmap, DecodeType.AllSupportedTypes))
                 {
-                    // Iterate through all detected barcodes in the image.
+                    // Read all barcodes found in the image.
                     foreach (var result in reader.ReadBarCodes())
                     {
-                        // Output the barcode type (e.g., Code128) to the console.
-                        Console.WriteLine("BarCode Type: " + result.CodeTypeName);
-                        // Output the decoded text/value of the barcode.
-                        Console.WriteLine("BarCode Text: " + result.CodeText);
+                        // Log the barcode type (symbology) and the decoded text.
+                        Console.WriteLine($"BarCode Type: {result.CodeTypeName}, Text: {result.CodeText}");
                     }
                 }
             }
