@@ -1,75 +1,39 @@
+// Title: Generate Code39 Barcode with Margins and Export as SVG
+// Description: Creates a Code39 barcode, applies uniform padding, and saves it as an SVG file with a viewBox that matches the barcode dimensions.
+// Prompt: Generate a barcode, set its margins, and export as SVG ensuring the viewBox matches the barcode size.
+// Tags: code39, barcode, margin, svg, aspose.barcode, generation
+
 using System;
-using System.IO;
-using System.Xml.Linq;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generating a Code39 barcode, saving it as SVG, and reading its viewBox attribute.
+/// Demonstrates barcode generation, margin configuration, and SVG export using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a barcode, saves it to an SVG file, and outputs the SVG viewBox.
+    /// Entry point of the application. Generates a Code39 barcode, sets padding, and saves it as an SVG file.
     /// </summary>
     static void Main()
     {
-        // Define the full path for the output SVG file in the current directory.
-        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "barcode.svg");
-
-        // Create a barcode generator for Code39FullASCII (supported for SVG in evaluation mode).
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code39FullASCII, "12345"))
+        // Initialize the barcode generator with Code39 symbology and sample data
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code39, "Sample123"))
         {
-            // Configure padding (margins) around the barcode in points.
-            generator.Parameters.Barcode.Padding.Left.Point   = 10f;
-            generator.Parameters.Barcode.Padding.Top.Point    = 10f;
-            generator.Parameters.Barcode.Padding.Right.Point  = 10f;
+            // Set uniform padding (10 points) on all sides of the barcode
+            generator.Parameters.Barcode.Padding.Left.Point = 10f;
+            generator.Parameters.Barcode.Padding.Top.Point = 10f;
+            generator.Parameters.Barcode.Padding.Right.Point = 10f;
             generator.Parameters.Barcode.Padding.Bottom.Point = 10f;
 
-            // Attempt to save the barcode as an SVG file.
-            try
-            {
-                generator.Save(outputPath, BarCodeImageFormat.Svg);
-                Console.WriteLine($"Barcode saved to: {outputPath}");
-            }
-            catch (Exception ex)
-            {
-                // Handle any errors that occur during the save operation (e.g., evaluation license restrictions).
-                Console.WriteLine($"Error saving SVG: {ex.Message}");
-                return;
-            }
+            // Ensure the generated image size matches the barcode dimensions
+            generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
+
+            // Save the barcode as an SVG file; the viewBox will correspond to the barcode size
+            generator.Save("barcode.svg");
         }
 
-        // Verify that the SVG file was created and read its viewBox attribute.
-        if (File.Exists(outputPath))
-        {
-            try
-            {
-                // Load the SVG document.
-                XDocument svgDoc = XDocument.Load(outputPath);
-
-                // Retrieve the viewBox attribute from the root <svg> element.
-                XAttribute viewBoxAttr = svgDoc.Root.Attribute("viewBox");
-
-                if (viewBoxAttr != null)
-                {
-                    Console.WriteLine($"SVG viewBox: {viewBoxAttr.Value}");
-                }
-                else
-                {
-                    Console.WriteLine("viewBox attribute not found in SVG.");
-                }
-            }
-            catch (Exception ex)
-            {
-                // Handle any errors that occur while reading the SVG file.
-                Console.WriteLine($"Error reading SVG: {ex.Message}");
-            }
-        }
-        else
-        {
-            Console.WriteLine("SVG file was not created.");
-        }
+        // Inform the user that the barcode has been successfully generated and saved
+        Console.WriteLine("Barcode generated and saved as barcode.svg");
     }
 }

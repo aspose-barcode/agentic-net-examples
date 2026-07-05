@@ -1,34 +1,33 @@
+// Title: Generate QR Code PNG with 300 DPI
+// Description: Creates a QR code containing 'Hello World' and saves it as a PNG image at 300 DPI resolution.
+// Prompt: Generate a QR code and save it as a PNG file with 300 DPI resolution.
+// Tags: qr, barcode, generation, png, 300dpi, aspose.barcode
+
 using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generating a QR code using Aspose.BarCode and saving it as a PNG file.
+/// Demonstrates generating a QR code and saving it as a PNG file with 300 DPI resolution using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a QR code and writes it to disk.
+    /// Entry point of the example. Generates the QR code and writes it to disk.
     /// </summary>
     static void Main()
     {
-        // Define the output file path for the generated QR code image.
-        string outputPath = "qr_code.png";
-
-        // Initialize a BarcodeGenerator for QR code symbology.
+        // Initialize the QR code generator with the QR symbology.
         using (var generator = new BarcodeGenerator(EncodeTypes.QR))
         {
-            // Assign the text that will be encoded into the QR code.
-            generator.CodeText = "Hello Aspose";
+            // Define the data to encode in the QR code.
+            generator.CodeText = "Hello World";
 
-            // Set the image resolution to 300 DPI for higher quality output.
-            generator.Parameters.Resolution = 300f;
+            // Configure the output image resolution (dots per inch).
+            generator.Parameters.Resolution = 300;
 
-            // Save the generated QR code as a PNG file at the specified path.
-            generator.Save(outputPath, BarCodeImageFormat.Png);
+            // Persist the generated QR code as a PNG file.
+            generator.Save("qr.png");
         }
-
-        // Inform the user that the QR code has been saved.
-        Console.WriteLine($"QR code saved to {outputPath}");
     }
 }

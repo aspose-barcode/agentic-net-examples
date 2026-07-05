@@ -1,36 +1,39 @@
+// Title: Generate Code128 Barcode with Custom Colors and Save as GIF
+// Description: Demonstrates creating a Code128 barcode, applying custom background and bar colors, and exporting it as a GIF image suitable for web usage.
+// Prompt: Create a barcode with custom background color and export it as a GIF image for web use.
+// Tags: code128, barcode, color, gif, aspose.barcode, aspose.drawing, generation
+
 using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a Code128 barcode and saving it as a GIF image.
+/// Example program that generates a Code128 barcode with custom colors
+/// and saves it as a GIF image for web use.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a barcode, configures its appearance,
-    /// saves it to a file, and writes the output path to the console.
+    /// Entry point of the application.
+    /// Creates a barcode, customizes its appearance, and writes it to a GIF file.
     /// </summary>
     static void Main()
     {
-        // Define the output file path for the generated barcode image.
-        string outputPath = "barcode.gif";
-
-        // Initialize a BarcodeGenerator with Code128 symbology and the desired text.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
+        // Initialize a BarcodeGenerator for Code128 with the desired text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "HelloWorld"))
         {
-            // Set the background color of the image (light gray).
-            generator.Parameters.BackColor = Color.LightGray;
+            // Apply a custom background color to the image.
+            generator.Parameters.BackColor = Color.LightYellow;
 
-            // Set the foreground (bar) color of the barcode (dark blue).
+            // Apply a custom foreground (bar) color to the barcode.
             generator.Parameters.Barcode.BarColor = Color.DarkBlue;
 
-            // Save the barcode as a GIF image, which is suitable for web usage.
-            generator.Save(outputPath, BarCodeImageFormat.Gif);
+            // Save the generated barcode as a GIF file, which is web‑friendly.
+            generator.Save("barcode.gif");
         }
 
-        // Inform the user where the barcode image has been saved.
-        Console.WriteLine($"Barcode image saved to: {outputPath}");
+        // Inform the user that the operation completed successfully.
+        Console.WriteLine("Barcode generated and saved as barcode.gif");
     }
 }

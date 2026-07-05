@@ -1,3 +1,8 @@
+// Title: Save PDF417 barcode as EMF and embed in Word
+// Description: Demonstrates generating a PDF417 barcode, exporting it as an EMF vector image, and inserting the image into a Word document.
+// Prompt: Save a PDF417 barcode as an EMF vector file and embed it into a Word document.
+// Tags: pdf417, barcode, emf, word, aspose.barcode, aspose.words
+
 using System;
 using System.IO;
 using Aspose.BarCode;
@@ -5,54 +10,61 @@ using Aspose.BarCode.Generation;
 using Aspose.Words;
 
 /// <summary>
-/// Demonstrates generating a PDF417 barcode, saving it as EMF, and embedding it into a Word document.
+/// Example program that creates a PDF417 barcode, saves it as an EMF file,
+/// and embeds the EMF image into a Word document.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Application entry point.
+    /// Entry point of the application.
     /// </summary>
-    static void Main()
+    /// <param name="args">Command‑line arguments (not used).</param>
+    static void Main(string[] args)
     {
-        // Define file paths for the intermediate EMF image and the final Word document.
+        // Define output file paths
         string emfPath = "pdf417.emf";
-        string wordPath = "Pdf417Barcode.docx";
+        string docPath = "BarcodeDocument.docx";
 
-        // Generate a PDF417 barcode and save it as an EMF image.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Pdf417, "Sample PDF417 Text"))
+        // Text to encode in the PDF417 barcode
+        string codeText = "Sample PDF417 Barcode Text";
+
+        // Generate the PDF417 barcode and save it as an EMF vector image
+        try
         {
-            // EMF saving may fail in evaluation mode, so wrap it in a try‑catch block.
-            try
+            using (var generator = new BarcodeGenerator(EncodeTypes.Pdf417, codeText))
             {
+                // Export the barcode to EMF format
                 generator.Save(emfPath, BarCodeImageFormat.Emf);
-                Console.WriteLine($"Barcode saved as EMF to '{emfPath}'.");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error saving EMF: {ex.Message}");
-                return; // Abort if the image could not be saved.
             }
         }
+        catch (Exception ex)
+        {
+            // Handle evaluation version limitation for EMF export
+            if (ex.Message.Contains("evaluation"))
+            {
+                Console.WriteLine("A valid Aspose.BarCode license is required for EMF export of this barcode type.");
+                return;
+            }
 
-        // Ensure the EMF file was created before attempting to embed it.
+            // Re‑throw any other unexpected exceptions
+            throw;
+        }
+
+        // Ensure the EMF file was created successfully
         if (!File.Exists(emfPath))
         {
-            Console.WriteLine("EMF file not found. Cannot embed into Word document.");
+            Console.WriteLine($"Failed to create EMF file at '{emfPath}'.");
             return;
         }
 
-        // Create a new Word document and obtain a builder for inserting content.
+        // Create a new Word document and insert the EMF image
         var doc = new Document();
         var builder = new DocumentBuilder(doc);
+        builder.InsertImage(emfPath);
+        doc.Save(docPath);
 
-        // Open the EMF file as a stream and insert it into the document.
-        using (var emfStream = File.OpenRead(emfPath))
-        {
-            builder.InsertImage(emfStream);
-        }
-
-        // Save the populated Word document to disk.
-        doc.Save(wordPath);
-        Console.WriteLine($"Word document with embedded barcode saved to '{wordPath}'.");
+        // Output the locations of the generated files
+        Console.WriteLine($"PDF417 barcode saved as EMF: {Path.GetFullPath(emfPath)}");
+        Console.WriteLine($"Word document with embedded barcode saved as: {Path.GetFullPath(docPath)}");
     }
 }
