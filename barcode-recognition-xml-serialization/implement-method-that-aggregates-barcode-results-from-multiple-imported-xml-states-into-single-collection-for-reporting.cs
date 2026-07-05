@@ -1,82 +1,94 @@
+// Title: Aggregate barcode results from multiple XML states
+// Description: Demonstrates importing barcode generator XML, generating images, recognizing barcodes, and aggregating results for reporting.
+// Prompt: Implement a method that aggregates barcode results from multiple imported XML states into a single collection for reporting.
+// Tags: barcode symbology, aggregation, xml import, aspose.barcode, console output
+
 using System;
 using System.Collections.Generic;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing.Imaging;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates importing barcode generator settings from XML files,
-/// generating barcode images, reading them, and aggregating the results.
+/// Sample program that creates barcode generators, exports them to XML,
+/// imports the XML back, reads the generated barcodes, and aggregates the results.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
+    /// Entry point of the application. Prepares sample XML states, aggregates barcode results,
+    /// and writes a simple report to the console.
     /// </summary>
     static void Main()
     {
-        // Define sample XML state files (replace with real paths as needed)
-        var xmlFiles = new List<string>
+        // Prepare a list to hold the XML streams representing exported barcode generators.
+        var xmlStreams = new List<MemoryStream>();
+
+        // ----- First barcode: Code128 with text "ABC123" -----
+        using (var gen1 = new BarcodeGenerator(EncodeTypes.Code128, "ABC123"))
         {
-            "state1.xml",
-            "state2.xml",
-            "state3.xml"
-        };
+            // Export the generator configuration to a memory stream as XML.
+            var ms1 = new MemoryStream();
+            gen1.ExportToXml(ms1);
+            ms1.Position = 0; // Reset stream position for later reading.
+            xmlStreams.Add(ms1);
+        }
 
-        // Process each XML file and collect all detected barcode results
-        var aggregatedResults = AggregateBarcodeResults(xmlFiles);
+        // ----- Second barcode: QR with text "Hello World" -----
+        using (var gen2 = new BarcodeGenerator(EncodeTypes.QR, "Hello World"))
+        {
+            // Export the generator configuration to a memory stream as XML.
+            var ms2 = new MemoryStream();
+            gen2.ExportToXml(ms2);
+            ms2.Position = 0; // Reset stream position for later reading.
+            xmlStreams.Add(ms2);
+        }
 
-        // Output the total number of barcodes detected
-        Console.WriteLine($"Total barcodes detected: {aggregatedResults.Count}");
+        // Aggregate barcode results from the imported XML states.
+        List<BarCodeResult> aggregatedResults = AggregateBarcodeResults(xmlStreams);
 
-        // List each detected barcode's type and text
+        // Report the aggregated results to the console.
+        Console.WriteLine("Aggregated Barcode Results:");
         foreach (var result in aggregatedResults)
         {
-            Console.WriteLine($"Type: {result.CodeTypeName}, Text: {result.CodeText}");
+            Console.WriteLine($"Type: {result.CodeTypeName}, CodeText: {result.CodeText}");
+        }
+
+        // Clean up streams to release resources.
+        foreach (var stream in xmlStreams)
+        {
+            stream.Dispose();
         }
     }
 
     /// <summary>
-    /// Imports barcode generators from the given XML files, generates images,
-    /// reads barcodes from those images and aggregates all results.
+    /// Imports barcode generators from XML streams, generates barcode images,
+    /// recognizes the barcodes, and aggregates all <see cref="BarCodeResult"/> objects into a single collection.
     /// </summary>
-    /// <param name="xmlPaths">Paths to XML files containing barcode generator settings.</param>
-    /// <returns>List of all detected <see cref="BarCodeResult"/> objects.</returns>
-    static List<BarCodeResult> AggregateBarcodeResults(IEnumerable<string> xmlPaths)
+    /// <param name="xmlStreams">Collection of streams containing exported barcode generator XML.</param>
+    /// <returns>List of <see cref="BarCodeResult"/> objects from all imported states.</returns>
+    static List<BarCodeResult> AggregateBarcodeResults(IEnumerable<MemoryStream> xmlStreams)
     {
-        // Collection to hold all barcode results from all files
         var allResults = new List<BarCodeResult>();
 
-        // Iterate over each provided XML path
-        foreach (var path in xmlPaths)
+        // Process each XML stream individually.
+        foreach (var xmlStream in xmlStreams)
         {
-            // Verify the XML file exists before attempting to import
-            if (!File.Exists(path))
+            // Import the BarcodeGenerator from its XML representation.
+            using (var generator = BarcodeGenerator.ImportFromXml(xmlStream))
             {
-                Console.WriteLine($"Warning: XML file not found – skipping '{path}'.");
-                continue;
-            }
-
-            // Import generator settings from the XML file
-            using (var generator = BarcodeGenerator.ImportFromXml(path))
-            {
-                // Create a memory stream to hold the generated barcode image
-                using (var imageStream = new MemoryStream())
+                // Generate the barcode image in memory.
+                using (var image = generator.GenerateBarCodeImage())
                 {
-                    // Save the barcode image as PNG into the memory stream
-                    generator.Save(imageStream, BarCodeImageFormat.Png);
-                    // Reset stream position to the beginning for reading
-                    imageStream.Position = 0;
-
-                    // Initialize a barcode reader to decode all supported types
-                    using (var reader = new BarCodeReader(imageStream, DecodeType.AllSupportedTypes))
+                    // Recognize the barcode(s) from the generated image.
+                    using (var reader = new BarCodeReader(image, DecodeType.AllSupportedTypes))
                     {
-                        // Read all barcodes present in the image
-                        var results = reader.ReadBarCodes();
+                        // Read all barcodes found in the image.
+                        BarCodeResult[] results = reader.ReadBarCodes();
 
-                        // If any barcodes were detected, add them to the aggregate list
+                        // Add the results to the aggregated collection, if any were found.
                         if (results != null)
                         {
                             allResults.AddRange(results);
@@ -86,7 +98,6 @@ class Program
             }
         }
 
-        // Return the complete list of detected barcode results
         return allResults;
     }
 }

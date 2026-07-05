@@ -1,86 +1,83 @@
+// Title: Export barcode recognition state to XML over a network socket
+// Description: Generates a barcode, recognizes it, exports the recognition state as XML, and transmits it via a TCP socket.
+// Prompt: Demonstrate how to use ExportToXml(Stream) to send barcode recognition state over a network socket.
+// Tags: barcode, recognition, export, xml, network, socket, aspose
+
 using System;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
-using Aspose.BarCode;
+using System.Threading.Tasks;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing.Imaging;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates barcode generation, recognition, and transmission of recognition data over a TCP socket.
+/// Demonstrates generating a barcode, recognizing it, exporting the recognition state to XML,
+/// and sending that XML over a TCP socket.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a Code128 barcode, reads it, exports the recognition result to XML,
-    /// and simulates sending that XML over a network socket.
+    /// Entry point of the example. Executes the barcode generation, recognition, export, and network transmission.
     /// </summary>
     static void Main()
     {
-        // Generate a simple Code128 barcode and keep it in a memory stream.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
+        // Generate a simple Code128 barcode image in memory.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "12345"))
         {
-            using (var imageStream = new MemoryStream())
+            using (Bitmap barcodeImage = generator.GenerateBarCodeImage())
             {
-                // Save the generated barcode image as PNG into the memory stream.
-                generator.Save(imageStream, BarCodeImageFormat.Png);
-                // Reset stream position to the beginning for reading.
-                imageStream.Position = 0;
-
-                // Recognize the barcode from the image stream.
-                using (var reader = new BarCodeReader(imageStream, DecodeType.AllSupportedTypes))
+                // Create a reader for the generated image and perform recognition of all supported types.
+                using (var reader = new BarCodeReader(barcodeImage, DecodeType.AllSupportedTypes))
                 {
-                    // Iterate through all detected barcodes and output their type and text.
+                    // Output each detected barcode to the console.
                     foreach (var result in reader.ReadBarCodes())
                     {
                         Console.WriteLine($"Detected: {result.CodeTypeName} - {result.CodeText}");
                     }
 
-                    // Export the recognition state to an XML stream.
-                    using (var xmlStream = new MemoryStream())
+                    // Export the recognition state to a memory stream in XML format.
+                    using (var stateStream = new MemoryStream())
                     {
-                        reader.ExportToXml(xmlStream);
-                        // Reset stream position to the beginning for transmission.
-                        xmlStream.Position = 0;
+                        bool exported = reader.ExportToXml(stateStream);
+                        Console.WriteLine($"Exported to XML: {exported}");
 
-                        // ----- Simulate sending the XML over a network socket -----
-                        const int port = 5000;
-                        // Set up a TCP listener on the loopback address.
-                        var listener = new TcpListener(IPAddress.Loopback, port);
-                        listener.Start();
-
-                        // Begin accepting an incoming client connection asynchronously.
-                        var acceptTask = listener.AcceptTcpClientAsync();
-
-                        // Client side: connect to the listener and send the XML data.
-                        using (var client = new TcpClient())
+                        // Set up a TCP listener that will act as the server receiving the XML data.
+                        using (var listener = new TcpListener(IPAddress.Loopback, 5000))
                         {
-                            client.Connect(IPAddress.Loopback, port);
-                            using (var netStream = client.GetStream())
+                            listener.Start();
+
+                            // Accept the incoming connection on a background task.
+                            Task acceptTask = Task.Run(() =>
                             {
-                                // Copy the XML bytes to the network stream.
-                                xmlStream.CopyTo(netStream);
+                                using (TcpClient serverClient = listener.AcceptTcpClient())
+                                using (NetworkStream serverStream = serverClient.GetStream())
+                                using (var receivedStream = new MemoryStream())
+                                {
+                                    // Copy the incoming XML data into a memory stream.
+                                    serverStream.CopyTo(receivedStream);
+                                    Console.WriteLine($"Server received {receivedStream.Length} bytes of XML data.");
+                                }
+                            });
+
+                            // Connect as a client and send the XML data over the socket.
+                            using (var client = new TcpClient())
+                            {
+                                client.Connect(IPAddress.Loopback, 5000);
+                                using (NetworkStream clientStream = client.GetStream())
+                                {
+                                    // Reset the position of the state stream before sending.
+                                    stateStream.Position = 0;
+                                    stateStream.CopyTo(clientStream);
+                                    Console.WriteLine("Client sent XML data over the socket.");
+                                }
                             }
-                        }
 
-                        // Server side: receive the XML data from the client.
-                        using (var serverClient = acceptTask.Result)
-                        using (var serverStream = serverClient.GetStream())
-                        using (var receivedMs = new MemoryStream())
-                        {
-                            // Copy received bytes into a memory stream.
-                            serverStream.CopyTo(receivedMs);
-                            // Convert the received bytes to a UTF-8 string.
-                            string receivedXml = System.Text.Encoding.UTF8.GetString(receivedMs.ToArray());
-                            Console.WriteLine("Received XML:");
-                            Console.WriteLine(receivedXml);
+                            // Wait for the server side to finish processing the received data.
+                            acceptTask.Wait();
+                            listener.Stop();
                         }
-
-                        // Stop listening for further connections.
-                        listener.Stop();
-                        // ---------------------------------------------------------
                     }
                 }
             }

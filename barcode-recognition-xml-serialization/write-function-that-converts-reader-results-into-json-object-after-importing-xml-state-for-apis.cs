@@ -1,3 +1,8 @@
+// Title: Convert BarCodeReader results to JSON after importing XML state
+// Description: Demonstrates generating a barcode, exporting the reader state to XML, importing it back, reading barcodes, and converting the results to a JSON document.
+// Prompt: Write a function that converts reader results into a JSON object after importing the XML state for APIs.
+// Tags: barcode symbology, generation, recognition, json, xml, aspose.barcode
+
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -7,96 +12,98 @@ using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a barcode, reading it, exporting/importing reader state,
-/// and serializing the results to JSON.
+/// Sample program that shows how to generate a barcode, export/import the reader state via XML,
+/// read the barcode, and serialize the results to JSON.
 /// </summary>
 class Program
 {
-    // Simple DTO for JSON serialization of barcode results
-    class BarcodeResultInfo
-    {
-        public string CodeTypeName { get; set; }
-        public string CodeText { get; set; }
-        public int Confidence { get; set; }
-        public double ReadingQuality { get; set; }
-        public RegionInfo Region { get; set; }
-    }
-
-    // DTO representing the region of a detected barcode
-    class RegionInfo
-    {
-        public float X { get; set; }
-        public float Y { get; set; }
-        public float Width { get; set; }
-        public float Height { get; set; }
-        public double Angle { get; set; }
-    }
-
     /// <summary>
     /// Entry point of the application.
-    /// Generates a sample barcode if needed, reads it, exports/imports reader state,
-    /// and prints the detection results as formatted JSON.
     /// </summary>
     static void Main()
     {
-        const string imagePath = "barcode.png";
-        const string xmlPath = "reader.xml";
+        // Define temporary file paths for the barcode image and the exported XML state
+        string imagePath = "barcode.png";
+        string xmlPath = "reader_state.xml";
 
-        // Ensure a sample barcode image exists; generate one if missing
-        if (!File.Exists(imagePath))
+        // ------------------------------------------------------------
+        // Generate a sample Code128 barcode and save it to a PNG file
+        // ------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
         {
-            using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Hello World"))
-            {
-                generator.Save(imagePath);
-            }
+            generator.Save(imagePath);
         }
 
-        // Create a reader, assign the image, and export its state to XML
-        using (var bitmap = new Bitmap(imagePath))
-        using (var reader = new BarCodeReader(bitmap, DecodeType.AllSupportedTypes))
+        // ------------------------------------------------------------
+        // Create a BarCodeReader, export its internal state to XML, then dispose it
+        // ------------------------------------------------------------
+        using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
         {
-            // Export the current reader configuration and state to an XML file
             reader.ExportToXml(xmlPath);
         }
 
-        // Import the reader state from the previously saved XML
-        using (var importedReader = BarCodeReader.ImportFromXml(xmlPath))
+        // ------------------------------------------------------------
+        // Import the previously saved reader state from the XML file
+        // ------------------------------------------------------------
+        BarCodeReader importedReader = BarCodeReader.ImportFromXml(xmlPath);
+        if (importedReader == null)
         {
-            // Reassign the image after import (required for further reading)
-            importedReader.SetBarCodeImage(imagePath);
+            Console.WriteLine("Failed to import BarCodeReader from XML.");
+            return;
+        }
 
-            // Perform barcode detection on the image
-            var results = importedReader.ReadBarCodes();
+        // Assign the image source to the imported reader (required after import)
+        importedReader.SetBarCodeImage(imagePath);
 
-            // Convert detection results into a list of DTOs for serialization
-            var resultList = new List<BarcodeResultInfo>();
-            foreach (var result in results)
+        // ------------------------------------------------------------
+        // Read barcodes from the image using the imported reader
+        // ------------------------------------------------------------
+        BarCodeResult[] results = importedReader.ReadBarCodes();
+
+        // ------------------------------------------------------------
+        // Convert each BarCodeResult into an anonymous object suitable for JSON serialization
+        // ------------------------------------------------------------
+        var jsonItems = new List<object>();
+        foreach (var result in results)
+        {
+            var region = result.Region.Rectangle;
+            jsonItems.Add(new
             {
-                var regionRect = result.Region.Rectangle;
-                var info = new BarcodeResultInfo
+                CodeText = result.CodeText,
+                CodeTypeName = result.CodeTypeName,
+                Confidence = result.Confidence,
+                ReadingQuality = result.ReadingQuality,
+                Angle = result.Region.Angle,
+                Region = new
                 {
-                    CodeTypeName = result.CodeTypeName,
-                    CodeText = result.CodeText,
-                    Confidence = (int)result.Confidence,
-                    ReadingQuality = result.ReadingQuality,
-                    Region = new RegionInfo
-                    {
-                        X = regionRect.X,
-                        Y = regionRect.Y,
-                        Width = regionRect.Width,
-                        Height = regionRect.Height,
-                        Angle = result.Region.Angle
-                    }
-                };
-                resultList.Add(info);
-            }
+                    X = region.X,
+                    Y = region.Y,
+                    Width = region.Width,
+                    Height = region.Height
+                }
+            });
+        }
 
-            // Serialize the DTO list to formatted JSON
-            var jsonOptions = new JsonSerializerOptions { WriteIndented = true };
-            string json = JsonSerializer.Serialize(resultList, jsonOptions);
+        // ------------------------------------------------------------
+        // Serialize the list of result objects to a formatted JSON string
+        // ------------------------------------------------------------
+        string json = JsonSerializer.Serialize(jsonItems, new JsonSerializerOptions { WriteIndented = true });
+        Console.WriteLine(json);
 
-            // Output the JSON to the console
-            Console.WriteLine(json);
+        // ------------------------------------------------------------
+        // Clean up resources
+        // ------------------------------------------------------------
+        importedReader.Dispose();
+
+        // Optionally delete temporary files (comment out if you want to keep them)
+        try
+        {
+            if (File.Exists(imagePath)) File.Delete(imagePath);
+            if (File.Exists(xmlPath)) File.Delete(xmlPath);
+        }
+        catch
+        {
+            // Ignore any cleanup errors
         }
     }
 }

@@ -1,65 +1,61 @@
+// Title: Import barcode reader settings from XML and decode an image
+// Description: Demonstrates loading a saved BarCodeReader configuration from an XML file, then applying it to a new reader instance to decode a barcode image.
+// Prompt: Import a saved XML state file into a new reader instance before setting the image.
+// Tags: barcode, import, xml, reader, decode, aspose, barcoderecognition
+
 using System;
 using System.IO;
-using Aspose.BarCode;
-using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates creating a barcode image, exporting its settings to XML,
-/// and then importing those settings to read the barcode from the image.
+/// Example program that imports a saved BarCodeReader state from XML and decodes a barcode image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
+    /// Entry point. Loads XML state, configures the reader, and reads barcodes from an image.
     /// </summary>
     static void Main()
     {
-        // Paths for the barcode image and the XML settings file.
-        string xmlPath = "readerSettings.xml";
+        // Paths to the XML state file and the barcode image.
+        string xmlPath = "readerState.xml";
         string imagePath = "barcode.png";
 
-        // If either the barcode image or the XML settings file is missing,
-        // generate a sample barcode and export its configuration.
-        if (!File.Exists(imagePath) || !File.Exists(xmlPath))
-        {
-            // Create a barcode generator for Code128 with sample data.
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
-            {
-                // Save the generated barcode image to the specified path.
-                generator.Save(imagePath);
-
-                // Export the generator's configuration to an XML file for later import.
-                generator.ExportToXml(xmlPath);
-            }
-        }
-
-        // Ensure the XML settings file exists before attempting to import it.
+        // Verify that the XML file exists.
         if (!File.Exists(xmlPath))
         {
-            Console.WriteLine($"XML settings file not found: {xmlPath}");
+            Console.WriteLine($"XML state file not found: {xmlPath}");
             return;
         }
 
-        // Import reader settings from the XML file.
-        using (var reader = BarCodeReader.ImportFromXml(xmlPath))
+        // Verify that the image file exists.
+        if (!File.Exists(imagePath))
         {
-            // Assign the barcode image to the reader.
-            if (File.Exists(imagePath))
-            {
-                reader.SetBarCodeImage(imagePath);
-            }
-            else
-            {
-                Console.WriteLine($"Barcode image file not found: {imagePath}");
-                return;
-            }
+            Console.WriteLine($"Barcode image file not found: {imagePath}");
+            return;
+        }
 
-            // Iterate through all recognized barcodes and display their details.
+        // Create a new BarCodeReader instance.
+        using (var reader = new BarCodeReader())
+        {
+            // Import the saved settings from the XML file.
+            // This static method applies the imported settings to the current reader instance.
+            BarCodeReader.ImportFromXml(xmlPath);
+
+            // Optionally set the decode type to all supported types.
+            reader.BarCodeReadType = DecodeType.AllSupportedTypes;
+
+            // Assign the image to be processed.
+            reader.SetBarCodeImage(imagePath);
+
+            // Perform recognition and output results.
             foreach (var result in reader.ReadBarCodes())
             {
-                Console.WriteLine($"BarCode Type: {result.CodeTypeName}");
-                Console.WriteLine($"BarCode CodeText: {result.CodeText}");
+                Console.WriteLine($"Type: {result.CodeTypeName}");
+                Console.WriteLine($"Text: {result.CodeText}");
+                Console.WriteLine($"Confidence: {result.Confidence}");
+                Console.WriteLine($"Region: {result.Region.Rectangle}");
+                Console.WriteLine();
             }
         }
     }

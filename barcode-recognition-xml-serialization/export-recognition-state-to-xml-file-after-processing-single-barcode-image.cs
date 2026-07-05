@@ -1,56 +1,51 @@
+// Title: Export Barcode Recognition State to XML
+// Description: Demonstrates how to read a barcode image, display detected information, and export the full recognition state to an XML file.
+// Prompt: Export the recognition state to an XML file after processing a single barcode image.
+// Tags: barcode, recognition, xml, export, aspose.barcode, c#
+
 using System;
 using System.IO;
 using Aspose.BarCode;
-using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates barcode generation, recognition, and exporting the recognition state to XML.
+/// Sample program that reads a barcode image, prints detection results,
+/// and saves the complete recognition state to an XML file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Handles barcode generation (if needed), reads the barcode, prints details,
-    /// and exports the full recognition state to an XML file.
+    /// Entry point of the application.
     /// </summary>
     static void Main()
     {
-        // Define file paths for the barcode image and the exported XML.
-        string imagePath = "barcode.png";
-        string xmlPath = "recognition_state.xml";
+        // Path to the barcode image to be processed.
+        const string imagePath = "barcode.png";
 
-        // If the barcode image does not exist, generate a sample Code128 barcode.
+        // Path where the recognition state XML will be saved.
+        const string xmlOutputPath = "recognition_state.xml";
+
+        // Verify that the image file exists before attempting to read it.
         if (!File.Exists(imagePath))
         {
-            // Create a BarcodeGenerator with the desired encoding and data.
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
-            {
-                // Save the generated barcode image to the specified path.
-                generator.Save(imagePath);
-                Console.WriteLine($"Sample barcode image created at '{imagePath}'.");
-            }
+            Console.WriteLine($"Error: Image file \"{imagePath}\" not found.");
+            return;
         }
 
-        // Initialize a BarCodeReader to detect all supported barcode types in the image.
+        // Create a BarCodeReader for the image, detecting all supported symbologies.
         using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
         {
-            // Perform the recognition and retrieve all detected barcodes.
-            var results = reader.ReadBarCodes();
-
-            // Iterate through each recognition result and output its details.
-            foreach (var result in results)
+            // Iterate through all detected barcodes.
+            foreach (var result in reader.ReadBarCodes())
             {
-                Console.WriteLine($"Type: {result.CodeTypeName}");
-                Console.WriteLine($"CodeText: {result.CodeText}");
-                Console.WriteLine($"Confidence: {result.Confidence}");
-                Console.WriteLine($"ReadingQuality: {result.ReadingQuality}");
-                Console.WriteLine();
+                // Output basic information about each detected barcode.
+                Console.WriteLine($"Detected Type: {result.CodeTypeName}");
+                Console.WriteLine($"Code Text: {result.CodeText}");
             }
 
-            // Export the complete recognition state (including all detected barcodes) to an XML file.
-            reader.ExportToXml(xmlPath);
-            Console.WriteLine($"Recognition state exported to '{xmlPath}'.");
+            // Export the full recognition state (detected barcodes, settings, metadata) to an XML file.
+            reader.ExportToXml(xmlOutputPath);
+            Console.WriteLine($"Recognition state exported to \"{xmlOutputPath}\".");
         }
     }
 }

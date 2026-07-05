@@ -1,50 +1,69 @@
+// Title: Barcode generation, export to XML, and logging of image path
+// Description: Demonstrates creating a Code128 barcode, saving it as an image, exporting the generator state to XML, and logging the image path used during barcode reading.
+// Prompt: Design a logging mechanism that records the file path used in SetBarCodeImage alongside the exported XML state.
+// Tags: barcode symbology, generation, export, xml, logging, aspose.barcode, aspose.drawing
+
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates creating a Code128 barcode, exporting its state to XML,
-/// and logging the generated file paths.
+/// Example program that generates a barcode, exports its configuration to XML,
+/// and logs the image path used when reading the barcode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
+    /// Entry point of the example. Performs barcode generation, XML export,
+    /// and reads the barcode while logging relevant information.
     /// </summary>
     static void Main()
     {
-        // Define a temporary output directory for all generated files.
-        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
-        Directory.CreateDirectory(outputDir); // Ensure the directory exists.
+        // Define file paths for the barcode image and the exported XML
+        string imagePath = "barcode.png";
+        string xmlPath = "barcode.xml";
 
-        // Build full file paths for the barcode image, XML state, and log file.
-        string imagePath = Path.Combine(outputDir, "barcode.png");
-        string xmlPath   = Path.Combine(outputDir, "barcode_state.xml");
-        string logPath   = Path.Combine(outputDir, "log.txt");
-
-        // Create a simple Code128 barcode with the specified data.
+        // Generate a Code128 barcode, save the image, and export generator settings to XML
         using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            // Enable checksum calculation for the barcode.
-            generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
-
-            // Save the generated barcode as a PNG image.
+            // Save the generated barcode image to the specified path
             generator.Save(imagePath);
 
-            // Export the generator's internal state to an XML file.
+            // Export the generator's current state (settings) to an XML file
             generator.ExportToXml(xmlPath);
         }
 
-        // Prepare a log message containing the locations of the generated files.
-        string logContent = $"Barcode image saved to: {imagePath}{Environment.NewLine}" +
-                            $"Generator state exported to XML: {xmlPath}{Environment.NewLine}" +
-                            $"Log generated at: {logPath}{Environment.NewLine}";
+        // Retrieve the exported XML content if the file was created successfully
+        string xmlContent = File.Exists(xmlPath) ? File.ReadAllText(xmlPath) : "XML file not found.";
 
-        // Output the log message to the console for immediate feedback.
-        Console.WriteLine(logContent);
+        // Initialize a BarCodeReader to read barcodes from the saved image
+        using (var reader = new BarCodeReader())
+        {
+            // Verify that the barcode image file exists before attempting to load it
+            if (File.Exists(imagePath))
+            {
+                // Log the file path that will be passed to SetBarCodeImage
+                Console.WriteLine($"Calling SetBarCodeImage with path: {imagePath}");
+                reader.SetBarCodeImage(imagePath);
+            }
+            else
+            {
+                // Inform the user that the expected image file could not be found
+                Console.WriteLine($"Image file not found: {imagePath}");
+            }
 
-        // Persist the log message to a text file.
-        File.WriteAllText(logPath, logContent);
+            // Log the previously exported XML state for diagnostic purposes
+            Console.WriteLine("Exported XML state:");
+            Console.WriteLine(xmlContent);
+
+            // Read and display any barcodes detected in the image
+            foreach (var result in reader.ReadBarCodes())
+            {
+                Console.WriteLine($"Detected barcode: Type={result.CodeTypeName}, Text={result.CodeText}");
+            }
+        }
     }
 }

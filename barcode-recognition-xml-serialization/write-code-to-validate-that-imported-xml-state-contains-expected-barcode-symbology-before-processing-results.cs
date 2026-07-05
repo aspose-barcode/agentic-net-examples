@@ -1,96 +1,53 @@
+// Title: Validate barcode symbology from imported XML state
+// Description: Demonstrates how to import a barcode generator from an XML file, verify that its symbology matches the expected type, and then generate an image if validation succeeds.
+// Prompt: Write code to validate that an imported XML state contains the expected barcode symbology before processing results.
+// Tags: barcode symbology, validation, xml import, aspose.barcode, csharp
+
 using System;
 using System.IO;
-using System.Xml.Linq;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates loading barcode symbology from an XML file,
-/// validating it against an expected value, and generating a barcode image.
+/// Example program that validates the barcode symbology defined in an imported XML state before generating the barcode image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
+    /// Entry point of the program. Performs validation of the barcode symbology and generates an image if the validation passes.
     /// </summary>
     static void Main()
     {
-        // Define the expected barcode symbology (Code128 in this case)
-        BaseEncodeType expectedSymbology = EncodeTypes.Code128;
+        // Expected symbology name (e.g., "Code128")
+        const string expectedSymbology = "Code128";
 
-        // Path to the optional XML state file that may contain the symbology name
-        string xmlPath = "state.xml";
+        // Path to the XML file that contains the barcode state
+        const string xmlPath = "barcode_state.xml";
 
-        // Load the XML document: either from file or use a sample XML string if the file is missing
-        XDocument doc;
-        if (File.Exists(xmlPath))
+        // Verify that the XML file exists before attempting import
+        if (!File.Exists(xmlPath))
         {
-            try
+            Console.WriteLine($"Error: XML file not found at '{xmlPath}'.");
+            return;
+        }
+
+        // Import the barcode generator from the XML state
+        using (BarcodeGenerator generator = BarcodeGenerator.ImportFromXml(xmlPath))
+        {
+            // Retrieve the actual symbology type name from the imported generator
+            string actualSymbology = generator.BarcodeType.TypeName;
+
+            // Compare with the expected symbology (case‑insensitive)
+            if (!string.Equals(actualSymbology, expectedSymbology, StringComparison.OrdinalIgnoreCase))
             {
-                doc = XDocument.Load(xmlPath);
-            }
-            catch (Exception ex)
-            {
-                // Report any errors that occur while loading the XML file and exit
-                Console.WriteLine($"Failed to load XML file: {ex.Message}");
+                Console.WriteLine($"Warning: Expected symbology '{expectedSymbology}' but found '{actualSymbology}'. Processing aborted.");
                 return;
             }
+
+            // Symbology matches – proceed with barcode processing (e.g., generate and save an image)
+            const string outputImage = "validated_barcode.png";
+            generator.Save(outputImage);
+            Console.WriteLine($"Barcode symbology validated as '{actualSymbology}'. Image saved to '{outputImage}'.");
         }
-        else
-        {
-            // Sample XML used when the state file does not exist
-            string sampleXml = @"<State><BarcodeSymbology>Code128</BarcodeSymbology></State>";
-            doc = XDocument.Parse(sampleXml);
-        }
-
-        // Retrieve the symbology name from the XML document
-        string symbologyName = doc.Root?.Element("BarcodeSymbology")?.Value?.Trim();
-        if (string.IsNullOrEmpty(symbologyName))
-        {
-            // If the element is missing or empty, inform the user and exit
-            Console.WriteLine("Symbology element not found in XML.");
-            return;
-        }
-
-        // Use reflection to map the string name to the corresponding EncodeTypes field
-        var fieldInfo = typeof(EncodeTypes).GetField(symbologyName);
-        if (fieldInfo == null)
-        {
-            // If the name does not correspond to a known symbology, report and exit
-            Console.WriteLine($"Unknown symbology name in XML: {symbologyName}");
-            return;
-        }
-
-        // Cast the reflected value to BaseEncodeType
-        BaseEncodeType xmlSymbology = (BaseEncodeType)fieldInfo.GetValue(null);
-
-        // Compare the symbology from XML with the expected symbology
-        if (xmlSymbology.TypeName != expectedSymbology.TypeName)
-        {
-            // Mismatch detected – report details and exit
-            Console.WriteLine($"Symbology mismatch. Expected: {expectedSymbology.TypeName}, Found: {xmlSymbology.TypeName}");
-            return;
-        }
-
-        // Symbology matches the expectation
-        Console.WriteLine($"Symbology validated: {xmlSymbology.TypeName}");
-
-        // Example barcode generation using the validated symbology
-        string codeText = "1234567890";               // Data to encode in the barcode
-        string outputPath = "validated_barcode.png"; // Destination file for the generated image
-
-        // Create a BarcodeGenerator with the validated symbology and data
-        using (var generator = new BarcodeGenerator(xmlSymbology, codeText))
-        {
-            // Optional: set image resolution (dots per inch)
-            generator.Parameters.Resolution = 300f;
-
-            // Save the generated barcode image to the specified path
-            generator.Save(outputPath);
-        }
-
-        // Inform the user that the barcode has been successfully generated
-        Console.WriteLine($"Barcode generated and saved to '{outputPath}'.");
     }
 }

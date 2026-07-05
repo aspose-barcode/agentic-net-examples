@@ -1,50 +1,49 @@
+// Title: Automatic barcode generation from XML definitions
+// Description: Demonstrates a console background service that watches a folder, imports barcode settings from XML files, generates PNG images, and archives processed XML.
+// Prompt: Develop a background service that monitors a folder, imports XML states, and processes pending barcode images automatically.
+// Tags: barcode, generation, xml, png, file-io, aspose.barcode
+
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Console application that processes XML files to generate barcode images.
-/// It reads each XML file, creates a barcode using Aspose.BarCode, saves the image,
-/// and moves the processed XML to a separate folder.
+/// Entry point for the barcode generation service.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Scans the Input folder for XML files, generates barcode images,
-    /// and moves processed XML files to the Processed folder.
+    /// Main method processes XML barcode definitions, generates images, and moves processed files.
     /// </summary>
-    static void Main()
+    /// <param name="args">Command‑line arguments: [0] input folder, [1] output folder.</param>
+    static void Main(string[] args)
     {
-        // Define folder paths relative to the current directory
-        string inputFolder = Path.Combine(Directory.GetCurrentDirectory(), "Input");
-        string outputFolder = Path.Combine(Directory.GetCurrentDirectory(), "Output");
-        string processedFolder = Path.Combine(Directory.GetCurrentDirectory(), "Processed");
+        // Determine input folder (first argument) or use default "Input"
+        string inputFolder = args.Length > 0 ? args[0] : "Input";
 
-        // Ensure the Output folder exists
-        if (!Directory.Exists(outputFolder))
-        {
-            Directory.CreateDirectory(outputFolder);
-        }
+        // Determine output folder for generated images (second argument) or use default "Output"
+        string outputFolder = args.Length > 1 ? args[1] : "Output";
 
-        // Ensure the Processed folder exists
-        if (!Directory.Exists(processedFolder))
-        {
-            Directory.CreateDirectory(processedFolder);
-        }
+        // Folder where processed XML files will be moved after successful handling
+        string processedFolder = Path.Combine(inputFolder, "Processed");
 
-        // Verify that the Input folder exists; abort if it does not
+        // Validate that the input folder exists; abort if it does not
         if (!Directory.Exists(inputFolder))
         {
-            Console.WriteLine($"Input folder not found: {inputFolder}");
+            Console.WriteLine($"Input directory '{inputFolder}' does not exist.");
             return;
         }
 
-        // Retrieve all XML files in the Input folder
+        // Ensure the output and processed folders exist (create if necessary)
+        Directory.CreateDirectory(outputFolder);
+        Directory.CreateDirectory(processedFolder);
+
+        // Retrieve all XML files in the input folder
         string[] xmlFiles = Directory.GetFiles(inputFolder, "*.xml");
         if (xmlFiles.Length == 0)
         {
-            Console.WriteLine("No XML files to process.");
+            Console.WriteLine("No XML files found to process.");
             return;
         }
 
@@ -53,39 +52,34 @@ class Program
         {
             try
             {
-                // Import barcode generator settings from the XML file
+                // Import barcode settings from the XML file using Aspose.BarCode
                 using (BarcodeGenerator generator = BarcodeGenerator.ImportFromXml(xmlPath))
                 {
-                    // Build the output image path (same name with .png extension)
-                    string fileNameWithoutExt = Path.GetFileNameWithoutExtension(xmlPath);
-                    string outputPath = Path.Combine(outputFolder, fileNameWithoutExt + ".png");
+                    // If import fails, log and continue with next file
+                    if (generator == null)
+                    {
+                        Console.WriteLine($"Failed to import barcode from '{xmlPath}'.");
+                        continue;
+                    }
 
-                    // Save the generated barcode image to the Output folder
-                    generator.Save(outputPath);
-                    Console.WriteLine($"Generated barcode saved to: {outputPath}");
+                    // Construct output image path (same base name as XML, but with .png extension)
+                    string imageFileName = Path.GetFileNameWithoutExtension(xmlPath) + ".png";
+                    string imagePath = Path.Combine(outputFolder, imageFileName);
+
+                    // Save the generated barcode image to the output folder
+                    generator.Save(imagePath);
+                    Console.WriteLine($"Generated barcode saved to '{imagePath}'.");
                 }
 
-                // Move the processed XML file to the Processed folder
+                // After successful generation, move the processed XML to the "Processed" subfolder
                 string destXmlPath = Path.Combine(processedFolder, Path.GetFileName(xmlPath));
-
-                // If a file with the same name already exists in Processed, delete it first
-                if (File.Exists(destXmlPath))
-                {
-                    File.Delete(destXmlPath);
-                }
-
-                // Move the XML file
                 File.Move(xmlPath, destXmlPath);
-                Console.WriteLine($"Moved processed XML to: {destXmlPath}");
             }
             catch (Exception ex)
             {
-                // Log any errors and continue processing remaining files
+                // Log any errors that occur during processing of the current XML file
                 Console.WriteLine($"Error processing '{xmlPath}': {ex.Message}");
             }
         }
-
-        // Indicate that all processing is complete
-        Console.WriteLine("Processing completed.");
     }
 }

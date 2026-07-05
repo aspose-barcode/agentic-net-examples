@@ -1,11 +1,19 @@
+// Title: Barcode recognition with XML state export
+// Description: Demonstrates how to read barcodes from an image stream using Aspose.BarCode and export the reader's internal state as XML.
+// Prompt: Create a function that accepts an image stream, performs recognition, and returns the XML state as a string.
+// Tags: barcode, recognition, xml, aspose.barcode, stream
+
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates barcode generation, recognition, and exporting the reader's state as XML.
+/// Sample program that generates a barcode, recognizes it from a stream,
+/// and outputs the reader's XML state.
 /// </summary>
 class Program
 {
@@ -13,58 +21,54 @@ class Program
     /// Recognizes barcodes from an image stream and returns the reader's XML state.
     /// </summary>
     /// <param name="imageStream">Stream containing the barcode image.</param>
-    /// <returns>XML representation of the reader's state after recognition.</returns>
+    /// <returns>XML string representing the reader's configuration and results.</returns>
     static string RecognizeAndExportXml(Stream imageStream)
     {
         if (imageStream == null)
-            throw new ArgumentException("Image stream cannot be null.");
+            throw new ArgumentNullException(nameof(imageStream));
 
-        // Ensure the stream is positioned at the beginning before reading.
-        imageStream.Position = 0;
-
-        // Create a reader that checks all supported symbologies.
+        // Initialize the reader with all supported decode types.
         using (var reader = new BarCodeReader(imageStream, DecodeType.AllSupportedTypes))
         {
-            // Perform recognition (optional, but ensures results are populated).
+            // Perform the actual recognition.
             reader.ReadBarCodes();
 
-            // Export the reader's state to an in‑memory XML stream.
+            // Export the reader's configuration/state to XML.
             using (var xmlStream = new MemoryStream())
             {
                 reader.ExportToXml(xmlStream);
-                xmlStream.Position = 0; // Reset to beginning for reading.
+                xmlStream.Position = 0; // Reset stream position for reading.
 
-                // Read the XML content as a string.
-                using (var readerStream = new StreamReader(xmlStream))
+                using (var sr = new StreamReader(xmlStream))
                 {
-                    return readerStream.ReadToEnd();
+                    // Return the entire XML content as a string.
+                    return sr.ReadToEnd();
                 }
             }
         }
     }
 
     /// <summary>
-    /// Entry point of the program. Generates a sample barcode, recognizes it, and prints the XML state.
+    /// Entry point that generates a sample barcode, runs recognition, and prints the XML state.
     /// </summary>
     static void Main()
     {
-        // Generate a sample barcode image in memory.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
+        // Create a sample barcode image in memory.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
         {
-            using (var imageStream = new MemoryStream())
+            using (var bitmap = generator.GenerateBarCodeImage())
             {
-                // Save the barcode as PNG into the stream.
-                generator.Save(imageStream, BarCodeImageFormat.Png);
+                using (var imageStream = new MemoryStream())
+                {
+                    // Save the bitmap to a PNG stream.
+                    bitmap.Save(imageStream, ImageFormat.Png);
+                    imageStream.Position = 0; // Reset stream position for reading.
 
-                // Reset stream position before recognition.
-                imageStream.Position = 0;
-
-                // Recognize the barcode and obtain the XML state.
-                string xmlState = RecognizeAndExportXml(imageStream);
-
-                // Output the XML state to the console.
-                Console.WriteLine("Reader XML State:");
-                Console.WriteLine(xmlState);
+                    // Recognize and obtain XML state.
+                    string xml = RecognizeAndExportXml(imageStream);
+                    Console.WriteLine("Reader XML State:");
+                    Console.WriteLine(xml);
+                }
             }
         }
     }
