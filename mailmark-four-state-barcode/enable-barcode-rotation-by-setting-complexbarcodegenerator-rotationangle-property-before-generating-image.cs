@@ -1,44 +1,43 @@
+// Title: Rotate SwissQR barcode image using ComplexBarcodeGenerator
+// Description: Demonstrates how to rotate a SwissQR barcode by setting the RotationAngle property before saving the image.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category, showcasing the use of ComplexBarcodeGenerator and SwissQRCodetext classes to create and manipulate Swiss QR Bill barcodes. Typical use cases include generating payment QR codes with custom orientation for printing or display. Developers often need to adjust rotation, size, and other parameters when integrating barcodes into documents or UI layouts.
+// Prompt: Enable barcode rotation by setting ComplexBarcodeGenerator RotationAngle property before generating the image.
+// Tags: swissqr, rotation, complexbarcodegenerator, barcodegeneration, png, aspnet, aspnetcore, csharp
+
 using System;
-using System.IO;
-using Aspose.BarCode;
-using Aspose.BarCode.Generation;
 using Aspose.BarCode.ComplexBarcode;
+using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generating a rotated Mailmark barcode using Aspose.BarCode.
+/// Example program that generates a rotated SwissQR barcode image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a Mailmark barcode, rotates it, and saves it as a PNG file.
+    /// Entry point of the application. Creates a SwissQR codetext, sets a rotation angle,
+    /// and saves the resulting barcode image to a file.
     /// </summary>
     static void Main()
     {
-        // Prepare a Mailmark codetext (required for ComplexBarcodeGenerator)
-        var mailmark = new MailmarkCodetext
+        // Create a SwissQR codetext and populate required fields for a payment bill
+        var swissQr = new SwissQRCodetext();
+        swissQr.Bill.Creditor.Name = "John Doe";
+        swissQr.Bill.Creditor.CountryCode = "CH";
+        swissQr.Bill.Account = "CH9300762011623852957";
+        swissQr.Bill.Amount = 199.95m;
+        swissQr.Bill.Version = SwissQRBill.QrBillStandardVersion.V2_0;
+
+        // Initialize ComplexBarcodeGenerator with the prepared codetext
+        using (var generator = new ComplexBarcodeGenerator(swissQr))
         {
-            Format = 4,               // 4 – unspecified/default
-            VersionID = 1,
-            Class = "0",
-            SupplychainID = 384224,
-            ItemID = 16563762,
-            DestinationPostCodePlusDPS = "EF61AH8T "
-        };
+            // Set rotation angle (e.g., 90 degrees) before generating the image
+            generator.Parameters.RotationAngle = 90f;
 
-        // Define output file path in the current directory
-        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "mailmark_rotated.png");
-
-        // Create the barcode generator with the Mailmark codetext
-        using (var generator = new ComplexBarcodeGenerator(mailmark))
-        {
-            // Set rotation angle (in degrees) – 45° clockwise
-            generator.Parameters.RotationAngle = 45f;
-
-            // Save the generated barcode image as PNG to the specified path
-            generator.Save(outputPath, BarCodeImageFormat.Png);
+            // Save the rotated barcode image to a PNG file
+            generator.Save("rotated_swissqr.png");
         }
 
-        // Inform the user where the file was saved
-        Console.WriteLine($"Rotated barcode saved to: {outputPath}");
+        // Inform the user that the barcode has been generated
+        Console.WriteLine("Barcode generated and saved as rotated_swissqr.png");
     }
 }

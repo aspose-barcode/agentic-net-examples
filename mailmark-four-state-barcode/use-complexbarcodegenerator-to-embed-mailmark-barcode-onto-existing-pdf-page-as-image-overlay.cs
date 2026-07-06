@@ -1,77 +1,79 @@
+// Title: Embed Mailmark Barcode onto PDF using ComplexBarcodeGenerator
+// Description: Demonstrates generating a Mailmark barcode with Aspose.BarCode and overlaying it onto an existing PDF page as an image.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation and PDF manipulation category. It showcases the use of ComplexBarcodeGenerator, MailmarkCodetext, and Aspose.Pdf Document classes to create a Mailmark barcode image and embed it into a PDF. Developers working with postal barcodes, document automation, or custom PDF overlays commonly need such patterns to integrate barcode data into existing documents.
+// Prompt: Use ComplexBarcodeGenerator to embed a Mailmark barcode onto an existing PDF page as an image overlay.
+// Tags: mailmark, barcode, complexbarcode, pdf, overlay, image, generation, aspose.barcode, aspose.pdf
+
 using System;
 using System.IO;
 using Aspose.BarCode.ComplexBarcode;
 using Aspose.BarCode.Generation;
 using Aspose.Pdf;
-using Aspose.Pdf.Text;
 
 /// <summary>
-/// Demonstrates creating a Mailmark barcode and embedding it into a PDF document.
+/// Example program that generates a Mailmark barcode and embeds it as an image overlay
+/// onto the first page of an existing PDF document.
 /// </summary>
 class Program
 {
     /// <summary>
     /// Entry point of the application.
     /// </summary>
-    static void Main()
+    /// <param name="args">Command‑line arguments (not used).</param>
+    static void Main(string[] args)
     {
-        // Define input and output PDF file paths.
+        // Paths for input and output PDF files
         string inputPdfPath = "input.pdf";
         string outputPdfPath = "output.pdf";
 
-        // If the input PDF does not exist, create a blank PDF with a single page.
+        // Verify that the input PDF exists before proceeding
         if (!File.Exists(inputPdfPath))
         {
-            using (var doc = new Document())
-            {
-                doc.Pages.Add();               // Add an empty page.
-                doc.Save(inputPdfPath);        // Save the new PDF to the specified path.
-            }
+            Console.WriteLine($"Input PDF file not found: {inputPdfPath}");
+            return;
         }
 
-        // Configure the Mailmark barcode data.
+        // Prepare Mailmark codetext with required values
         var mailmark = new MailmarkCodetext
         {
-            Format = 4,
+            Format = 4,                     // 4‑state Mailmark format
             VersionID = 1,
             Class = "0",
             SupplychainID = 384224,
             ItemID = 16563762,
-            DestinationPostCodePlusDPS = "EF61AH8T "
+            DestinationPostCodePlusDPS = "EF61AH8T " // trailing space is mandatory
         };
 
-        // Generate the barcode image and embed it into the PDF.
-        using (var generator = new ComplexBarcodeGenerator(mailmark))
+        // Generate the Mailmark barcode image into a memory stream
         using (var barcodeStream = new MemoryStream())
         {
-            // Save the generated barcode as a PNG into the memory stream.
-            generator.Save(barcodeStream, BarCodeImageFormat.Png);
-            barcodeStream.Position = 0; // Reset stream position for reading.
+            // Create a ComplexBarcodeGenerator for the Mailmark codetext
+            using (var generator = new ComplexBarcodeGenerator(mailmark))
+            {
+                // Save the barcode as PNG; BarCodeImageFormat is from Aspose.BarCode.Generation
+                generator.Save(barcodeStream, BarCodeImageFormat.Png);
+            }
 
-            // Open the existing PDF document.
+            // Reset stream position before using it in PDF
+            barcodeStream.Position = 0;
+
+            // Load the existing PDF document
             using (var pdfDocument = new Document(inputPdfPath))
             {
-                // Access the first page of the PDF.
+                // Get the first page (pages are 1‑based)
                 var page = pdfDocument.Pages[1];
 
-                // Create an image object from the barcode stream.
-                var pdfImage = new Aspose.Pdf.Image
-                {
-                    ImageStream = barcodeStream,
-                    FixWidth = 200.0,   // Set desired width.
-                    FixHeight = 100.0,  // Set desired height.
-                    Margin = new MarginInfo { Top = 0.0, Left = 0.0 } // No margin.
-                };
+                // Define the rectangle where the barcode will be placed (coordinates in points)
+                var rect = new Aspose.Pdf.Rectangle(100, 500, 300, 700); // llx, lly, urx, ury
 
-                // Add the barcode image to the page's paragraphs collection.
-                page.Paragraphs.Add(pdfImage);
+                // Add the barcode image as an overlay on the page
+                page.AddImage(barcodeStream, rect);
 
-                // Save the modified PDF to the output path.
+                // Save the modified PDF to the output path
                 pdfDocument.Save(outputPdfPath);
             }
         }
 
-        // Inform the user that the process completed successfully.
-        Console.WriteLine($"Mailmark barcode has been embedded and saved to '{outputPdfPath}'.");
+        Console.WriteLine($"Mailmark barcode embedded successfully into '{outputPdfPath}'.");
     }
 }

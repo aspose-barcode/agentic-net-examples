@@ -1,56 +1,124 @@
+// Title: Asynchronous Mailmark Barcode Generation Example
+// Description: Demonstrates generating Mailmark barcodes asynchronously to avoid UI thread blocking, saving each as a PNG file.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category, showcasing the use of ComplexBarcodeGenerator with MailmarkCodetext. It illustrates typical scenarios where developers need to create multiple Mailmark barcodes efficiently, leveraging asynchronous Task.Run to keep UI responsive. Key API classes include ComplexBarcodeGenerator, MailmarkCodetext, and BarCodeImageFormat, commonly used for high‑volume barcode creation in .NET applications.
+// Prompt: Implement asynchronous barcode generation with Task.Run to prevent UI thread blocking during complex Mailmark creation.
+// Tags: mailmark, barcode, asynchronous, task.run, complexbarcode, generation, png, aspnet, csharp
+
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
-using Aspose.BarCode.ComplexBarcode;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode.ComplexBarcode;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generation of a Mailmark barcode using Aspose.BarCode.
+/// Demonstrates asynchronous generation of Mailmark barcodes using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a Mailmark barcode and writes its location to the console.
+    /// Asynchronously generates a Mailmark barcode image and saves it to the specified path.
     /// </summary>
-    /// <param name="args">Command‑line arguments (not used).</param>
-    static async Task Main(string[] args)
+    /// <param name="mailmark">The Mailmark codetext containing barcode data.</param>
+    /// <param name="outputPath">Full file path where the PNG image will be saved.</param>
+    /// <returns>A task that resolves to the output path once the image is saved.</returns>
+    private static Task<string> GenerateMailmarkAsync(MailmarkCodetext mailmark, string outputPath)
     {
-        // Define the output file name for the generated barcode image.
-        string outputPath = "mailmark.png";
+        // Run the generation on a background thread to avoid blocking the UI.
+        return Task.Run(() =>
+        {
+            // Ensure the output directory exists.
+            string directory = Path.GetDirectoryName(outputPath);
+            if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+            {
+                Directory.CreateDirectory(directory);
+            }
 
-        // Generate the Mailmark barcode asynchronously.
-        await GenerateMailmarkAsync(outputPath);
+            // Create the complex barcode generator with the Mailmark codetext.
+            using (var generator = new ComplexBarcodeGenerator(mailmark))
+            {
+                // Optional: set barcode colors.
+                generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
+                generator.Parameters.BackColor = Aspose.Drawing.Color.White;
 
-        // Output the full path of the saved image to the console.
-        Console.WriteLine($"Mailmark barcode saved to {Path.GetFullPath(outputPath)}");
+                // Save the barcode image as PNG.
+                generator.Save(outputPath, BarCodeImageFormat.Png);
+            }
+
+            // Return the path of the generated file.
+            return outputPath;
+        });
     }
 
     /// <summary>
-    /// Generates a Mailmark barcode with predefined data and saves it as a PNG file.
+    /// Entry point. Prepares sample Mailmark data, generates barcodes asynchronously, and outputs file locations.
     /// </summary>
-    /// <param name="outputPath">File path where the barcode image will be saved.</param>
-    private static async Task GenerateMailmarkAsync(string outputPath)
+    /// <param name="args">Command‑line arguments (not used).</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    static async Task Main(string[] args)
     {
-        // Run the barcode generation on a background thread to avoid blocking the UI thread.
-        await Task.Run(() =>
-        {
-            // Prepare Mailmark codetext with required fields.
-            var mailmark = new MailmarkCodetext
-            {
-                Format = 4,                     // 4‑state format identifier.
-                VersionID = 1,                  // Version of the Mailmark specification.
-                Class = "0",                    // Class identifier as a string.
-                SupplychainID = 384224,         // Supply chain identifier.
-                ItemID = 16563762,              // Item identifier.
-                DestinationPostCodePlusDPS = "EF61AH8T " // Destination postcode plus DPS (trailing space required).
-            };
+        // Prepare a list of sample Mailmark codetexts.
+        var mailmarks = new List<MailmarkCodetext>();
 
-            // Create a generator for the complex Mailmark barcode using the prepared codetext.
-            using (var generator = new ComplexBarcodeGenerator(mailmark))
-            {
-                // Save the generated barcode as a PNG image to the specified path.
-                generator.Save(outputPath, BarCodeImageFormat.Png);
-            }
-        });
+        // Sample 1
+        var mailmark1 = new MailmarkCodetext
+        {
+            Format = 4,                     // Default/unspecified format
+            VersionID = 1,
+            Class = "0",
+            SupplychainID = 384224,
+            ItemID = 16563762,
+            DestinationPostCodePlusDPS = "EF61AH8T "
+        };
+        mailmarks.Add(mailmark1);
+
+        // Sample 2 (different ItemID)
+        var mailmark2 = new MailmarkCodetext
+        {
+            Format = 4,
+            VersionID = 1,
+            Class = "0",
+            SupplychainID = 384224,
+            ItemID = 16563763,
+            DestinationPostCodePlusDPS = "EF61AH8T "
+        };
+        mailmarks.Add(mailmark2);
+
+        // Sample 3 (different ItemID)
+        var mailmark3 = new MailmarkCodetext
+        {
+            Format = 4,
+            VersionID = 1,
+            Class = "0",
+            SupplychainID = 384224,
+            ItemID = 16563764,
+            DestinationPostCodePlusDPS = "EF61AH8T "
+        };
+        mailmarks.Add(mailmark3);
+
+        // Create tasks for asynchronous generation.
+        var tasks = new List<Task<string>>();
+        int index = 1;
+        foreach (var mailmark in mailmarks)
+        {
+            // Build a unique file name for each barcode.
+            string fileName = $"mailmark_{index}.png";
+            string outputPath = Path.Combine(Directory.GetCurrentDirectory(), fileName);
+
+            // Queue the generation task.
+            tasks.Add(GenerateMailmarkAsync(mailmark, outputPath));
+            index++;
+        }
+
+        // Await all generation tasks to complete.
+        string[] results = await Task.WhenAll(tasks);
+
+        // Output the locations of the generated barcode images.
+        foreach (var path in results)
+        {
+            Console.WriteLine($"Generated Mailmark barcode saved to: {path}");
+        }
     }
 }
