@@ -1,94 +1,59 @@
+// Title: Toggle CodeText Visibility and Verify Image Height Change
+// Description: Demonstrates how to hide and show the human‑readable text of a Code128 barcode and checks that the image height changes accordingly.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, focusing on barcode appearance customization. It uses BarcodeGenerator, CodeTextParameters, and CodeLocation to control the visibility of the main codetext. Developers often need to toggle human‑readable text for different output requirements, such as compact images or printable labels. The snippet shows typical steps for setting parameters, generating images, and performing a simple validation.
+// Prompt: Write unit tests that verify toggling CodetextParameters.Visible correctly shows and hides the main barcode text.
+// Tags: code128, codetextvisibility, bitmap, aspose.barcode, generation, unit-test, debug.assert
+
 using System;
-using System.IO;
+using System.Diagnostics;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating barcodes with visible and hidden human‑readable text,
-/// compares the resulting image heights, and cleans up temporary files.
+/// Example program that toggles the visibility of the barcode's main codetext
+/// and verifies the resulting image height changes as expected.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates two barcode images (one with text, one without),
-    /// compares their heights, outputs the test result, and deletes the temporary files.
+    /// Entry point of the example. Generates two barcode images—one with
+    /// visible text and one without—and asserts that the image without text
+    /// is shorter, confirming the visibility toggle works.
     /// </summary>
     static void Main()
     {
-        // Prepare temporary file paths for the generated barcode images.
-        string tempDir = Path.GetTempPath();
-        string visiblePath = Path.Combine(tempDir, "barcode_visible.png");
-        string hiddenPath = Path.Combine(tempDir, "barcode_hidden.png");
-
-        // ------------------------------------------------------------
-        // Generate barcode with visible human‑readable text (default location)
-        // ------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
+        // Initialize a BarcodeGenerator for Code128 with sample codetext.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "12345"))
         {
-            // Ensure the text is placed below the bars (default behavior).
+            // Set the default location of the human‑readable text to appear below the barcode.
             generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.Below;
-            // Save the image to the temporary path.
-            generator.Save(visiblePath);
-        }
 
-        // ------------------------------------------------------------
-        // Generate barcode with hidden human‑readable text
-        // ------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
-        {
-            // Hide the text by setting its location to None.
-            generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.None;
-            // Save the image to the temporary path.
-            generator.Save(hiddenPath);
-        }
+            // Generate the first image where the text is visible.
+            using (Bitmap imageWithText = generator.GenerateBarCodeImage())
+            {
+                int heightWithText = imageWithText.Height; // Record height with text.
 
-        // ------------------------------------------------------------
-        // Load the generated images to compare their heights
-        // ------------------------------------------------------------
-        int visibleHeight;
-        int hiddenHeight;
+                // Hide the human‑readable text by moving it to the 'None' location.
+                generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.None;
 
-        using (var imgVisible = Image.FromFile(visiblePath))
-        {
-            visibleHeight = imgVisible.Height;
-        }
+                // Generate the second image where the text is hidden.
+                using (Bitmap imageWithoutText = generator.GenerateBarCodeImage())
+                {
+                    int heightWithoutText = imageWithoutText.Height; // Record height without text.
 
-        using (var imgHidden = Image.FromFile(hiddenPath))
-        {
-            hiddenHeight = imgHidden.Height;
-        }
+                    // Determine whether the image without text is shorter.
+                    bool isHeightReduced = heightWithoutText < heightWithText;
 
-        // ------------------------------------------------------------
-        // Evaluate the result: image without text should be shorter
-        // ------------------------------------------------------------
-        if (hiddenHeight < visibleHeight)
-        {
-            Console.WriteLine(
-                "Test passed: hidden text image height ({0}) is less than visible text image height ({1}).",
-                hiddenHeight, visibleHeight);
-        }
-        else
-        {
-            Console.WriteLine(
-                "Test failed: hidden text image height ({0}) is not less than visible text image height ({1}).",
-                hiddenHeight, visibleHeight);
-        }
-
-        // ------------------------------------------------------------
-        // Clean up temporary files
-        // ------------------------------------------------------------
-        try
-        {
-            if (File.Exists(visiblePath))
-                File.Delete(visiblePath);
-            if (File.Exists(hiddenPath))
-                File.Delete(hiddenPath);
-        }
-        catch
-        {
-            // Ignored – cleanup failure should not affect test result.
+                    // Assert the height reduction and output the result.
+                    Debug.Assert(isHeightReduced, "Image height should be reduced when CodeText is hidden.");
+                    Console.WriteLine($"Height with text: {heightWithText}");
+                    Console.WriteLine($"Height without text: {heightWithoutText}");
+                    Console.WriteLine(isHeightReduced
+                        ? "Test passed: Text visibility toggling correctly changes image size."
+                        : "Test failed: Image size did not change as expected.");
+                }
+            }
         }
     }
 }

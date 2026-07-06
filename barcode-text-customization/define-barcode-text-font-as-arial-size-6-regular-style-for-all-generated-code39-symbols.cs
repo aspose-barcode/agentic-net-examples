@@ -1,38 +1,31 @@
+// Title: Generate Code39 barcode with custom Arial 6pt font
+// Description: Demonstrates how to set the human‑readable text font to Arial, size 6, regular style for a Code39 barcode using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating font customization for barcode text. It uses BarcodeGenerator, EncodeTypes, and CodeTextParameters classes to modify text appearance, a common requirement when integrating barcodes into printed materials or UI displays. Developers often need to adjust font family, size, and style to match branding or layout specifications.
+// Prompt: Define barcode text font as Arial, size 6, regular style for all generated Code39 symbols.
+// Tags: code39, font, arial, size6, regular, barcode, generation, aspose.barcode
+
 using System;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generating a Code39 barcode with full ASCII charset using Aspose.BarCode.
+/// Example program that creates a Code39 barcode and sets the text font to Arial, 6pt, regular style.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a barcode image and saves it to disk.
+    /// Main entry point. Generates the barcode, applies font settings, and saves the image.
     /// </summary>
     static void Main()
     {
-        // Define the output file path for the generated barcode image.
-        string outputPath = "code39.png";
-
-        // Initialize a BarcodeGenerator for Code39 with full ASCII support.
-        // The 'using' statement ensures the generator is disposed properly.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code39FullASCII))
+        // Initialize the barcode generator for Code39 with the desired value.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code39, "CODE39"))
         {
-            // Set the text that will be encoded into the barcode.
-            generator.CodeText = "CODE39";
-
-            // Configure the human‑readable text (the text displayed below the barcode):
-            // - Font family: Arial
-            // - Font size: 6 points
-            // - Font style: regular (default)
+            // Configure the human‑readable text font: Arial family, 6 point size, regular style.
             generator.Parameters.Barcode.CodeTextParameters.Font.FamilyName = "Arial";
             generator.Parameters.Barcode.CodeTextParameters.Font.Size.Point = 6f;
 
-            // Save the generated barcode as a PNG image to the specified path.
-            generator.Save(outputPath);
+            // Save the generated barcode as a PNG image file.
+            generator.Save("code39.png");
         }
-
-        // Inform the user that the barcode has been saved.
-        Console.WriteLine($"Barcode saved to {outputPath}");
     }
 }
