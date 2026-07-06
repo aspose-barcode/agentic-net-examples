@@ -1,32 +1,38 @@
+// Title: High‑Resolution Barcode Generation and TIFF Export
+// Description: Demonstrates configuring Aspose.BarCode to generate a Code128 barcode at 300 DPI and save it as a TIFF image suitable for printing.
+// Category-Description: This example belongs to the Aspose.BarCode image generation category, illustrating how to set resolution and output format using the BarcodeGenerator class. Developers often need to produce high‑quality printable barcodes, adjust DPI, and export to formats like TIFF for integration into print workflows.
+// Prompt: Configure the barcode generator for high resolution (300 DPI) and produce TIFF images for printing.
+// Tags: barcode, code128, high resolution, tiff, generation, aspose.barcode, resolution, image format
+
 using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generating a Code128 barcode and saving it as a TIFF image using Aspose.BarCode.
+/// Example program that creates a high‑resolution Code128 barcode and saves it as a TIFF image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a barcode and writes it to a file.
+    /// Entry point of the application. Generates the barcode and writes it to disk.
     /// </summary>
     static void Main()
     {
-        // Define the output file path where the barcode image will be saved.
-        string outputPath = "barcode.tiff";
+        // Define the barcode content and output file name
+        const string codeText = "1234567890";
+        const string outputFile = "barcode.tiff";
 
-        // Create a barcode generator for Code128 with the sample code text "1234567890".
-        // The 'using' statement ensures the generator is properly disposed after use.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+        // Initialize the barcode generator with Code128 symbology
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
         {
-            // Set a high resolution (300 DPI) to ensure good printing quality.
+            // Configure the generator for printing quality (300 DPI)
             generator.Parameters.Resolution = 300f;
 
-            // Save the generated barcode as a TIFF image to the specified output path.
-            generator.Save(outputPath, BarCodeImageFormat.Tiff);
+            // Export the barcode as a TIFF image
+            generator.Save(outputFile, BarCodeImageFormat.Tiff);
         }
 
-        // Inform the user that the barcode image has been saved successfully.
-        Console.WriteLine($"Barcode image saved to: {outputPath}");
+        // Inform the user that the file has been created
+        Console.WriteLine($"Barcode saved to {outputFile}");
     }
 }

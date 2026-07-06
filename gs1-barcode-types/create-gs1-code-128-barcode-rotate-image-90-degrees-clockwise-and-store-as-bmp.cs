@@ -1,35 +1,34 @@
+// Title: Create and rotate a GS1 Code 128 barcode saved as BMP
+// Description: Demonstrates generating a GS1 Code 128 barcode, rotating the image 90° clockwise, and saving it in BMP format.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, showcasing how to use the BarcodeGenerator class with EncodeTypes.GS1Code128. It illustrates typical tasks such as setting rotation angles and exporting to bitmap images, which developers often need when integrating barcodes into documents or printing workflows.
+// Prompt: Create a GS1 Code 128 barcode, rotate the image 90 degrees clockwise, and store as BMP.
+// Tags: gs1, code128, barcode, generation, rotation, bmp, aspose.barcode
+
 using System;
-using Aspose.BarCode.Generation;
 using Aspose.BarCode;
+using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generating a GS1 Code 128 barcode and saving it as a BMP image.
+/// Example program that generates a GS1 Code 128 barcode, rotates it, and saves as BMP.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a barcode, rotates it, and saves the image.
+    /// Entry point of the application.
     /// </summary>
     static void Main()
     {
-        // Define the barcode text. For GS1 Code 128, AI (Application Identifier) values must be enclosed in parentheses.
-        string codeText = "(01)12345678901231";
+        // Define sample GS1 Code 128 data (Application Identifier 01 - GTIN)
+        const string codeText = "(01)12345678901231";
 
-        // Specify the output file path where the BMP image will be saved.
-        string outputPath = "gs1code128.bmp";
-
-        // Initialize the barcode generator with the desired encoding type and text.
-        // The 'using' statement ensures the generator is properly disposed after use.
+        // Initialize the barcode generator with GS1 Code 128 symbology and the data
         using (var generator = new BarcodeGenerator(EncodeTypes.GS1Code128, codeText))
         {
-            // Set the rotation angle to 90 degrees clockwise.
+            // Set rotation angle to 90 degrees clockwise
             generator.Parameters.RotationAngle = 90f;
 
-            // Save the generated barcode image to the specified path in BMP format.
-            generator.Save(outputPath, BarCodeImageFormat.Bmp);
+            // Save the generated barcode image as a BMP file
+            generator.Save("gs1code128.bmp");
         }
-
-        // Inform the user that the barcode image has been saved.
-        Console.WriteLine($"Barcode saved to {outputPath}");
     }
 }

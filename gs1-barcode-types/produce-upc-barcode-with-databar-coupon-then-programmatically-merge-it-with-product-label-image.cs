@@ -1,3 +1,9 @@
+// Title: Generate UPC‑A DataBar Coupon barcode and merge with product label
+// Description: Demonstrates creating a UPC‑A barcode with a GS1 DataBar coupon payload and combining it with an existing product label image.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and image manipulation category. It showcases the use of BarcodeGenerator with EncodeTypes.UpcaGs1DatabarCoupon, setting visual parameters, and merging the generated barcode bitmap onto a product label using Aspose.Drawing graphics. Developers often need to create combined label images for retail packaging, where a barcode is placed on top of product artwork.
+// Prompt: Produce a UPC‑A barcode with a DataBar coupon, then programmatically merge it with a product label image.
+// Tags: upc-a, databar, coupon, barcode-generation, image-merge, png, aspose.barcode, aspose.drawing
+
 using System;
 using System.IO;
 using Aspose.BarCode;
@@ -6,81 +12,81 @@ using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a UPC‑A GS1 DataBar coupon barcode,
-/// compositing it onto a simple product label, and saving the result as a PNG file.
+/// Example program that generates a UPC‑A DataBar coupon barcode,
+/// saves it as an image, and merges it onto a product label picture.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a barcode, draws a product label, merges them, and writes the output image to a temporary folder.
+    /// Entry point of the example. Creates the barcode, merges it with a label,
+    /// and writes the resulting images to disk.
     /// </summary>
     static void Main()
     {
-        // Sample UPC‑A with DataBar coupon code text
-        string couponCode = "514141100906(8110)106141416543213500110000310123196000";
+        // --------------------------------------------------------------------
+        // Define file paths (adjust as needed for your environment)
+        // --------------------------------------------------------------------
+        const string productLabelPath = "product_label.png";
+        const string barcodePath = "barcode.png";
+        const string mergedPath = "merged_label.png";
 
-        // Generate barcode image into a memory stream
-        using (var barcodeStream = new MemoryStream())
+        // Verify that the product label image exists before proceeding
+        if (!File.Exists(productLabelPath))
         {
-            // Create a barcode generator for the specified encode type and data
-            using (var generator = new BarcodeGenerator(EncodeTypes.UpcaGs1DatabarCoupon, couponCode))
+            Console.WriteLine($"Error: Product label image not found at '{productLabelPath}'.");
+            return;
+        }
+
+        // --------------------------------------------------------------------
+        // Prepare the barcode data: UPC‑A with GS1 DataBar coupon payload
+        // --------------------------------------------------------------------
+        const string couponCodeText = "514141100906(8110)106141416543213500110000310123196000";
+
+        // Create a BarcodeGenerator for the UPC‑A DataBar coupon symbology
+        using (var generator = new BarcodeGenerator(EncodeTypes.UpcaGs1DatabarCoupon, couponCodeText))
+        {
+            // Optional visual customizations
+            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
+            generator.Parameters.BackColor = Aspose.Drawing.Color.White;
+
+            // Enable automatic sizing using interpolation
+            generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
+
+            // Set desired image dimensions (points)
+            generator.Parameters.ImageWidth.Point = 300f;
+            generator.Parameters.ImageHeight.Point = 150f;
+
+            // ----------------------------------------------------------------
+            // Generate the barcode bitmap
+            // ----------------------------------------------------------------
+            using (Bitmap barcodeBitmap = generator.GenerateBarCodeImage())
             {
-                // Save the generated barcode as PNG into the memory stream
-                generator.Save(barcodeStream, BarCodeImageFormat.Png);
-            }
+                // Save the standalone barcode image (optional)
+                barcodeBitmap.Save(barcodePath, ImageFormat.Png);
 
-            // Reset stream position to the beginning for subsequent reading
-            barcodeStream.Position = 0;
-
-            // Load the generated barcode image from the stream into a bitmap
-            using (var barcodeBitmap = new Bitmap(barcodeStream))
-            {
-                // Define dimensions for the placeholder product label
-                int labelWidth = 600;
-                int labelHeight = 400;
-
-                // Create a blank label bitmap with a 32‑bit ARGB pixel format
-                using (var labelBitmap = new Bitmap(labelWidth, labelHeight, PixelFormat.Format32bppArgb))
+                // Load the existing product label image
+                using (Image productImage = Image.FromFile(productLabelPath))
                 {
-                    // Obtain a graphics object for drawing on the label bitmap
-                    using (var graphics = Graphics.FromImage(labelBitmap))
+                    // Prepare a graphics object for drawing onto the label
+                    using (Graphics graphics = Graphics.FromImage(productImage))
                     {
-                        // Fill the label background with white color
-                        graphics.Clear(Color.White);
+                        // Define placement margin and calculate position (bottom‑left)
+                        int margin = 50;
+                        int posX = margin;
+                        int posY = productImage.Height - barcodeBitmap.Height - margin;
 
-                        // Draw the product name near the top-left corner
-                        graphics.DrawString(
-                            "Sample Product",
-                            new Font("Arial", 24f),
-                            new SolidBrush(Color.Black),
-                            new PointF(20f, 20f));
-
-                        // Draw a short product description below the name
-                        graphics.DrawString(
-                            "Description: High‑quality item",
-                            new Font("Arial", 14f),
-                            new SolidBrush(Color.DarkGray),
-                            new PointF(20f, 60f));
-
-                        // Calculate position to center the barcode at the bottom of the label
-                        int barcodeX = (labelWidth - barcodeBitmap.Width) / 2;
-                        int barcodeY = labelHeight - barcodeBitmap.Height - 20; // 20 px margin from bottom
-
-                        // Render the barcode onto the label bitmap
-                        graphics.DrawImage(barcodeBitmap, barcodeX, barcodeY, barcodeBitmap.Width, barcodeBitmap.Height);
+                        // Draw the barcode onto the label at the calculated coordinates
+                        graphics.DrawImage(barcodeBitmap, posX, posY, barcodeBitmap.Width, barcodeBitmap.Height);
                     }
 
-                    // Determine output file path in the system's temporary directory
-                    string outputPath = Path.Combine(Path.GetTempPath(), "ProductLabelWithBarcode.png");
-
-                    // Save the combined label and barcode image as PNG
-                    labelBitmap.Save(outputPath, ImageFormat.Png);
-
-                    // Inform the user where the file was saved
-                    Console.WriteLine($"Merged image saved to: {outputPath}");
+                    // Save the combined label image
+                    productImage.Save(mergedPath, ImageFormat.Png);
                 }
             }
         }
+
+        // Inform the user where the output files are located
+        Console.WriteLine($"Barcode image saved to: {barcodePath}");
+        Console.WriteLine($"Merged label image saved to: {mergedPath}");
     }
 }

@@ -1,34 +1,46 @@
+// Title: Generate GS1 Code 128 barcode with custom human‑readable text
+// Description: Demonstrates creating a GS1 Code 128 barcode, adding centered human‑readable text below, and saving it as a JPEG image.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to use BarcodeGenerator with EncodeTypes.GS1Code128, configure CodeTextParameters, and apply AutoSizeMode. Developers often need to produce GS1‑compliant barcodes for product identification, customize human‑readable text appearance, and export to common image formats like JPEG.
+// Prompt: Generate a GS1 Code 128 barcode, embed custom human‑readable text below, and save as JPEG.
+// Tags: gs1, code128, barcode, generation, human‑readable, jpeg, aspose.barcode
+
 using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generating a GS1 Code128 barcode and saving it as a JPEG image.
+/// Program demonstrating GS1 Code 128 barcode generation with custom human‑readable text.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a barcode and writes the output path to the console.
+    /// Entry point. Generates the barcode, configures text, and saves as JPEG.
     /// </summary>
     static void Main()
     {
-        // Output file name for the generated barcode image
-        const string outputPath = "gs1code128.jpg";
+        // Define GS1 Code 128 data: (01) – GTIN, (21) – Serial Number
+        const string gs1Data = "(01)12345678901231(21)ABC123";
 
-        // The data to encode; GS1 format with Application Identifier (01) for GTIN
-        const string codeText = "(01)12345678901231";
-
-        // Initialize a barcode generator for GS1 Code128 with the specified text
-        using (var generator = new BarcodeGenerator(EncodeTypes.GS1Code128, codeText))
+        // Initialize the barcode generator for GS1 Code 128 with the specified data
+        using (var generator = new BarcodeGenerator(EncodeTypes.GS1Code128, gs1Data))
         {
-            // Configure the human‑readable text to appear below the barcode graphic
+            // Position human‑readable text below the barcode and center it horizontally
             generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.Below;
+            generator.Parameters.Barcode.CodeTextParameters.Alignment = TextAlignment.Center;
 
-            // Persist the generated barcode to a JPEG file at the specified path
+            // Set the font family and size for the human‑readable text
+            generator.Parameters.Barcode.CodeTextParameters.Font.FamilyName = "Arial";
+            generator.Parameters.Barcode.CodeTextParameters.Font.Size.Point = 12f;
+
+            // Enable automatic sizing using interpolation (no explicit bar height required)
+            generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
+
+            // Define output file path and save the barcode as a JPEG image
+            const string outputPath = "gs1_code128.jpg";
             generator.Save(outputPath, BarCodeImageFormat.Jpeg);
         }
 
-        // Inform the user where the barcode image was saved
-        Console.WriteLine($"Barcode saved to {outputPath}");
+        // Inform the user that the barcode has been saved
+        Console.WriteLine("GS1 Code 128 barcode saved successfully.");
     }
 }

@@ -1,3 +1,9 @@
+// Title: Batch Generation of GS1 Code 128 Barcodes from a List
+// Description: Demonstrates creating GS1 Code 128 barcodes for each record and saving them as PNG files to a network share.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to use the BarcodeGenerator class with EncodeTypes.GS1Code128. Typical use cases include bulk barcode creation from database tables, exporting to shared locations, and integrating barcode assets into enterprise workflows. Developers often need to validate input, configure checksum display, and handle file system operations when automating barcode production.
+// Prompt: Batch generate GS1 Code 128 barcodes from a database table, saving each image to a network share.
+// Tags: gs1,code128,barcode,generation,output,network,aspobarcodes,aspnet
+
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -5,89 +11,93 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generating GS1‑Code128 barcodes and saving them to a network share.
+/// Demonstrates batch generation of GS1 Code 128 barcodes and saving them to a network share.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates barcode images for a set of sample data and stores them on a UNC path.
+    /// Entry point of the example. Generates barcodes for a set of GS1 codes and writes PNG files to the specified folder.
     /// </summary>
     static void Main()
     {
-        // NOTE: In a real scenario the barcode data would be read from a database.
-        // The following list simulates rows retrieved from a database table.
-        List<string> barcodeData = GetSampleData();
+        // NOTE: In a real scenario, replace the sample data with a database query.
+        // Example of real implementation (requires a database provider):
+        // var connectionString = "your_connection_string";
+        // using (var connection = new SqlConnection(connectionString))
+        // {
+        //     connection.Open();
+        //     var command = new SqlCommand("SELECT GS1Code FROM YourTable", connection);
+        //     using (var reader = command.ExecuteReader())
+        //     {
+        //         while (reader.Read())
+        //         {
+        //             var codeText = reader.GetString(0);
+        //             // Generate barcode...
+        //         }
+        //     }
+        // }
 
-        // Destination folder on a network share (UNC path). Adjust as needed.
-        string networkSharePath = @"\\MyServer\BarcodeShare";
-
-        // Ensure the destination directory exists; create it if it does not.
-        try
+        // Sample GS1 Code 128 data (AI format) for demonstration.
+        List<string> gs1Codes = new List<string>
         {
-            if (!Directory.Exists(networkSharePath))
+            "(01)12345678901231",
+            "(01)98765432109876",
+            "(01)55555555555555",
+            "(01)11111111111111",
+            "(01)22222222222222"
+        };
+
+        // Destination folder (network share or local path). Ensure the folder exists.
+        string outputFolder = @"\\networkshare\Barcodes"; // Replace with actual network share.
+        // For testing on a local machine, you may use:
+        // string outputFolder = Path.Combine(Environment.CurrentDirectory, "Barcodes");
+
+        // Create the output directory if it does not exist.
+        if (!Directory.Exists(outputFolder))
+        {
+            try
             {
-                Directory.CreateDirectory(networkSharePath);
+                Directory.CreateDirectory(outputFolder);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to create output directory: {ex.Message}");
+                return;
             }
         }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Failed to access or create the network share folder: {ex.Message}");
-            return;
-        }
 
-        // Process each barcode value.
-        foreach (string codeText in barcodeData)
+        int index = 1;
+        foreach (string codeText in gs1Codes)
         {
-            // Build a safe file name (remove invalid characters) and add PNG extension.
-            string safeFileName = GetSafeFileName(codeText) + ".png";
-            string outputPath = Path.Combine(networkSharePath, safeFileName);
+            // Validate that the codetext follows GS1 format (basic check).
+            if (string.IsNullOrWhiteSpace(codeText) || !codeText.StartsWith("("))
+            {
+                Console.WriteLine($"Skipping invalid GS1 code: {codeText}");
+                continue;
+            }
 
             try
             {
-                // Initialise the barcode generator with GS1‑Code128 encoding.
+                // Initialize the barcode generator with GS1 Code 128 symbology.
                 using (var generator = new BarcodeGenerator(EncodeTypes.GS1Code128, codeText))
                 {
-                    // Optional: set image resolution if required.
-                    generator.Parameters.Resolution = 300f;
+                    // Optional: always show checksum in human‑readable text.
+                    generator.Parameters.Barcode.ChecksumAlwaysShow = true;
 
-                    // Save the barcode image directly to the network share.
-                    generator.Save(outputPath);
+                    // Build the full file path for the PNG image.
+                    string fileName = Path.Combine(outputFolder, $"GS1Code128_{index}.png");
+
+                    // Save the barcode image as PNG.
+                    generator.Save(fileName);
+                    Console.WriteLine($"Saved barcode {index} to {fileName}");
                 }
-
-                Console.WriteLine($"Generated barcode for '{codeText}' at '{outputPath}'.");
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error generating barcode for '{codeText}': {ex.Message}");
             }
+
+            index++;
         }
-    }
-
-    // Simulated data retrieval. Replace with actual DB access code.
-    static List<string> GetSampleData()
-    {
-        // Example GS1 Code 128 values (must contain parentheses for AI).
-        return new List<string>
-        {
-            "(01)12345678901231",
-            "(01)98765432109876",
-            "(01)55555555555555",
-            "(01)00011122233344",
-            "(01)99988877766655"
-        };
-    }
-
-    // Creates a file‑system‑safe name from the barcode text.
-    static string GetSafeFileName(string input)
-    {
-        // Replace each invalid file name character with an underscore.
-        foreach (char c in Path.GetInvalidFileNameChars())
-        {
-            input = input.Replace(c, '_');
-        }
-
-        // Trim to a reasonable length to avoid excessively long file names.
-        return input.Length > 50 ? input.Substring(0, 50) : input;
     }
 }
