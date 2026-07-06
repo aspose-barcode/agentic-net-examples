@@ -1,84 +1,88 @@
+// Title: QR Code Rendering Performance Comparison between FontMode.Auto and Manual Fonts
+// Description: Demonstrates how to measure the generation time of QR codes using Aspose.BarCode with automatic font selection versus manually specified fonts.
+// Category-Description: This example belongs to the Aspose.BarCode rendering performance category, showcasing the use of BarcodeGenerator, EncodeTypes, and CodeTextParameters.FontMode. Developers often need to benchmark barcode generation for large batches to choose optimal settings for speed and quality. The snippet illustrates typical use cases such as bulk QR code creation for marketing or inventory systems.
+// Prompt: Compare rendering performance between FontMode.Auto and manually specified fonts for large batches of QR codes.
+// Tags: qr code, performance, fontmode, automatic, manual, aspnet, aspose.barcode, generation, benchmarking
+
 using System;
 using System.Diagnostics;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates performance measurement of QR code generation using Aspose.BarCode
-/// with different font sizing modes (Auto vs Manual).
+/// Demonstrates performance comparison of QR code generation using FontMode.Auto versus manual font settings.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates QR codes, measures execution time for
-    /// automatic and manual font modes, and writes the results to the console.
+    /// Entry point. Generates a set of QR codes with automatic and manual font modes, measures elapsed time, and outputs results.
     /// </summary>
     static void Main()
     {
-        // ------------------------------------------------------------
-        // Prepare sample data: generate 5 random GUID strings for QR codes
-        // ------------------------------------------------------------
-        string[] data = new string[5];
-        for (int i = 0; i < data.Length; i++)
+        // Number of QR codes to generate for each test case (kept small for safe execution)
+        const int sampleCount = 5;
+        // Sample text to encode (same for all barcodes)
+        const string sampleText = "https://www.example.com/performance-test";
+
+        // Prepare timers for each font mode
+        var autoTimer = new Stopwatch();
+        var manualTimer = new Stopwatch();
+
+        // Directory to store generated images
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "QrPerformance");
+        if (!Directory.Exists(outputDir))
         {
-            data[i] = Guid.NewGuid().ToString();
+            // Create the output folder if it does not exist
+            Directory.CreateDirectory(outputDir);
         }
 
-        // ------------------------------------------------------------
-        // Measure performance when using FontMode.Auto (automatic font sizing)
-        // ------------------------------------------------------------
-        var stopwatchAuto = Stopwatch.StartNew(); // start timing
-
-        for (int i = 0; i < data.Length; i++)
+        // ---------- Test FontMode.Auto ----------
+        for (int i = 0; i < sampleCount; i++)
         {
-            // Create a barcode generator for a QR code with the current data string
-            using (var generator = new BarcodeGenerator(EncodeTypes.QR, data[i]))
+            // Build file path for the current QR code image
+            string filePath = Path.Combine(outputDir, $"qr_auto_{i}.png");
+            using (var generator = new BarcodeGenerator(EncodeTypes.QR, sampleText))
             {
-                // Enable automatic font sizing
+                // Ensure FontMode is Auto (default, but set explicitly for clarity)
                 generator.Parameters.Barcode.CodeTextParameters.FontMode = FontMode.Auto;
 
-                // Generate the barcode image and write it to a memory stream
-                // (avoids disk I/O for a fair performance comparison)
-                using (var ms = new MemoryStream())
-                {
-                    generator.Save(ms, BarCodeImageFormat.Png);
-                }
+                // Optional: set QR error correction level
+                generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
+
+                // Start timing, generate the barcode, then stop timing
+                autoTimer.Start();
+                generator.Save(filePath);
+                autoTimer.Stop();
             }
         }
 
-        stopwatchAuto.Stop(); // stop timing for Auto mode
-
-        // ------------------------------------------------------------
-        // Measure performance when using FontMode.Manual (explicit font settings)
-        // ------------------------------------------------------------
-        var stopwatchManual = Stopwatch.StartNew(); // start timing
-
-        for (int i = 0; i < data.Length; i++)
+        // ---------- Test FontMode.Manual ----------
+        for (int i = 0; i < sampleCount; i++)
         {
-            // Create a barcode generator for a QR code with the current data string
-            using (var generator = new BarcodeGenerator(EncodeTypes.QR, data[i]))
+            // Build file path for the current QR code image
+            string filePath = Path.Combine(outputDir, $"qr_manual_{i}.png");
+            using (var generator = new BarcodeGenerator(EncodeTypes.QR, sampleText))
             {
-                // Set manual font sizing and specify font details
+                // Switch to manual font mode and specify font details
                 generator.Parameters.Barcode.CodeTextParameters.FontMode = FontMode.Manual;
                 generator.Parameters.Barcode.CodeTextParameters.Font.FamilyName = "Arial";
-                generator.Parameters.Barcode.CodeTextParameters.Font.Size.Point = 12f;
+                generator.Parameters.Barcode.CodeTextParameters.Font.Size.Point = 12f; // 12pt font
 
-                // Generate the barcode image and write it to a memory stream
-                using (var ms = new MemoryStream())
-                {
-                    generator.Save(ms, BarCodeImageFormat.Png);
-                }
+                // Optional: set QR error correction level
+                generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
+
+                // Start timing, generate the barcode, then stop timing
+                manualTimer.Start();
+                generator.Save(filePath);
+                manualTimer.Stop();
             }
         }
 
-        stopwatchManual.Stop(); // stop timing for Manual mode
-
-        // ------------------------------------------------------------
-        // Output the elapsed times for both font modes
-        // ------------------------------------------------------------
-        Console.WriteLine($"FontMode.Auto elapsed time: {stopwatchAuto.ElapsedMilliseconds} ms");
-        Console.WriteLine($"FontMode.Manual elapsed time: {stopwatchManual.ElapsedMilliseconds} ms");
+        // Output aggregated timing results to the console
+        Console.WriteLine($"FontMode.Auto:   Total time = {autoTimer.ElapsedMilliseconds} ms for {sampleCount} QR codes.");
+        Console.WriteLine($"FontMode.Manual: Total time = {manualTimer.ElapsedMilliseconds} ms for {sampleCount} QR codes.");
+        Console.WriteLine($"Average per QR (Auto):   {(double)autoTimer.ElapsedMilliseconds / sampleCount:F2} ms");
+        Console.WriteLine($"Average per QR (Manual): {(double)manualTimer.ElapsedMilliseconds / sampleCount:F2} ms");
     }
 }

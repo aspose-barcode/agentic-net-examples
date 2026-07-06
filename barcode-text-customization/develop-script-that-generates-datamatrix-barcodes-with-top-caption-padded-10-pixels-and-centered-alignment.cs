@@ -1,48 +1,52 @@
+// Title: Generate DataMatrix barcode with top caption, padding and centered alignment
+// Description: Creates a DataMatrix barcode image, adds a caption above it, pads the top by 10 pixels, and centers the caption.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, demonstrating how to customize barcode appearance using the BarcodeGenerator class. It covers setting caption text, alignment, and image padding—common tasks when integrating barcodes into reports, labels, or UI elements. Developers often need to adjust visual layout without altering the encoded data, and this snippet shows the essential API calls for such scenarios.
+// Prompt: Develop a script that generates DataMatrix barcodes with top caption padded 10 pixels and centered alignment.
+// Tags: datamatrix, caption, padding, alignment, png, aspose.barcode, generation
+
 using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
-namespace BarcodeExample
+namespace DataMatrixCaptionExample
 {
     /// <summary>
-    /// Demonstrates generating a DataMatrix barcode with a caption using Aspose.BarCode.
+    /// Demonstrates generating a DataMatrix barcode with a top caption,
+    /// applying 10‑pixel top padding and centering the caption text.
     /// </summary>
     class Program
     {
         /// <summary>
-        /// Entry point of the application. Generates a DataMatrix barcode, adds a caption, and saves the image.
+        /// Entry point of the example. Generates the barcode and saves it as a PNG file.
         /// </summary>
         static void Main()
         {
             // Define the output file path for the generated barcode image.
-            string outputPath = "DataMatrixWithCaption.png";
+            string outputPath = "datamatrix_caption.png";
 
-            // Initialize a BarcodeGenerator for a DataMatrix barcode with the specified code text.
+            // Initialize a BarcodeGenerator for DataMatrix with sample codetext.
             using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, "Sample123"))
             {
-                // Set the caption text that appears above the barcode.
-                generator.Parameters.CaptionAbove.Text = "DataMatrix Sample";
+                // Set the caption text that will appear above the barcode.
+                generator.Parameters.CaptionAbove.Text = "Top Caption";
 
-                // Make sure the caption is rendered (visible) in the output image.
-                generator.Parameters.CaptionAbove.Visible = true;
-
-                // Align the caption horizontally to the center of the image.
+                // Align the caption horizontally to the center.
                 generator.Parameters.CaptionAbove.Alignment = TextAlignment.Center;
 
-                // Add a top padding of 10 pixels to create space between the caption and the barcode.
-                generator.Parameters.CaptionAbove.Padding.Top.Pixels = 10f;
+                // Apply a 10‑pixel padding to the top side of the barcode image.
+                generator.Parameters.Barcode.Padding.Top.Pixels = 10f;
 
-                // Optional: specify a particular DataMatrix version.
-                // This line is commented out because the default version is sufficient for most cases.
-                // generator.Parameters.Barcode.DataMatrix.DataMatrixVersion = DataMatrixVersion.ECC200_20x20;
+                // Optional visual settings: white background and black bars.
+                generator.Parameters.BackColor = Color.White;
+                generator.Parameters.Barcode.BarColor = Color.Black;
 
-                // Save the generated barcode (with caption) to the specified file path.
+                // Save the configured barcode image to the specified path.
                 generator.Save(outputPath);
             }
 
-            // Inform the user that the barcode image has been saved successfully.
-            Console.WriteLine($"Barcode image saved to: {outputPath}");
+            // Inform the user that the barcode has been saved.
+            Console.WriteLine($"Barcode saved to {outputPath}");
         }
     }
 }
