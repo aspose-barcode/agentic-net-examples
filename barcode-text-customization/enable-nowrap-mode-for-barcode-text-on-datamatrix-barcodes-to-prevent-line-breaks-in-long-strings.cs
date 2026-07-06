@@ -1,38 +1,43 @@
+// Title: Enable NoWrap mode for DataMatrix barcode text
+// Description: Demonstrates how to prevent line breaks in the human‑readable text of a DataMatrix barcode by enabling NoWrap mode.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, focusing on barcode text formatting. It showcases the use of BarcodeGenerator, EncodeTypes, and CodeTextParameters to control text wrapping. Developers often need to adjust human‑readable text appearance for long strings in various symbologies, especially DataMatrix, to ensure readability in printed or displayed barcodes.
+// Prompt: Enable NoWrap mode for barcode text on DataMatrix barcodes to prevent line breaks in long strings.
+// Tags: datamatrix, nowrap, barcode, text-formatting, generation, csharp, aspnet, aspnetcore
+
 using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generating a DataMatrix barcode with NoWrap enabled to prevent line breaks in the human‑readable text.
+/// Generates a DataMatrix barcode with NoWrap enabled to keep the human‑readable text on a single line.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a DataMatrix barcode from a long text string, disables wrapping, sets resolution, and saves the image.
+    /// Entry point of the example. Creates a DataMatrix barcode from a long string and saves it as an image.
     /// </summary>
     static void Main()
     {
-        // Define a long text string that would normally wrap in the human‑readable portion of the barcode.
-        string longText = "ThisIsAVeryLongDataMatrixCodeTextThatShouldNotWrapEvenIfItExceedsTypicalLengths";
+        // Define a long codetext that would wrap without NoWrap enabled.
+        string longText = "ThisIsAVeryLongStringThatMightWrapInTheHumanReadableTextIfNoWrapIsNotEnabled1234567890";
 
-        // Initialize a BarcodeGenerator for DataMatrix using the long text.
+        // Initialize a DataMatrix barcode generator with the long text.
         using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, longText))
         {
-            // Disable wrapping of the human‑readable text to keep it on a single line.
+            // Enable NoWrap mode to prevent line breaks in the displayed human‑readable text.
             generator.Parameters.Barcode.CodeTextParameters.NoWrap = true;
 
-            // Optionally set the image resolution (dots per inch) for higher quality output.
-            generator.Parameters.Resolution = 300f;
+            // Set auto‑size mode to Interpolation (optional) to ensure proper image scaling.
+            generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
 
-            // Define the output file path for the generated barcode image.
+            // Define the output file path.
             string outputPath = "datamatrix_nowrap.png";
 
-            // Save the barcode image to the specified file.
+            // Save the generated barcode image to the specified path.
             generator.Save(outputPath);
-
-            // Inform the user where the barcode image was saved.
-            Console.WriteLine($"DataMatrix barcode saved to: {outputPath}");
         }
+
+        // Inform the user that the barcode has been generated.
+        Console.WriteLine("DataMatrix barcode generated with NoWrap enabled.");
     }
 }

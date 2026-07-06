@@ -1,53 +1,64 @@
+// Title: Hide Captions for Batch of Code128 Barcodes
+// Description: Demonstrates how to generate multiple Code128 barcodes while globally disabling their captions.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator and its Parameters.Caption* properties to control caption visibility. Developers often need to produce clean barcode images without human‑readable text for scanning applications, packaging, or UI display. The snippet shows typical batch processing, directory handling, and saving PNG files, useful for quick integration in .NET projects.
+// Prompt: Hide all captions for a batch of Code128 barcodes by setting CaptionParameters.Visible to false globally.
+// Tags: code128, barcode generation, hide captions, batch processing, aspnet, aspose.barcode, png
+
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generating Code128 barcodes using Aspose.BarCode and saving them as PNG files.
+/// Demonstrates batch generation of Code128 barcodes with captions hidden.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a set of sample Code128 barcodes and writes them to disk.
+    /// Entry point. Generates a set of Code128 barcodes, disables both above and below captions, and saves them as PNG files.
     /// </summary>
     static void Main()
     {
-        // Define the output directory relative to the current working directory.
+        // Define the output directory for generated barcode images
         string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
-        // Ensure the directory exists.
-        Directory.CreateDirectory(outputDir);
+        if (!Directory.Exists(outputDir))
+        {
+            // Create the directory if it does not already exist
+            Directory.CreateDirectory(outputDir);
+        }
 
-        // Sample texts to encode as Code128 barcodes.
-        string[] samples = new string[]
+        // Sample data for a batch of Code128 barcodes
+        string[] codes = new string[]
         {
             "ABC123",
-            "9876543210",
-            "CODE128TEST",
-            "12345",
-            "HELLOWORLD"
+            "DEF456",
+            "GHI789",
+            "JKL012",
+            "MNO345"
         };
 
-        // Iterate over each sample text and generate a barcode.
-        foreach (string text in samples)
+        // Iterate over each code, generate a barcode, hide captions, and save the image
+        for (int i = 0; i < codes.Length; i++)
         {
-            // Initialize a barcode generator for Code128 with the current text.
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, text))
+            string codeText = codes[i];
+            string filePath = Path.Combine(outputDir, $"Code128_{i + 1}.png");
+
+            // Use a using block to ensure proper disposal of the generator
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
             {
-                // Hide both the above and below captions for a cleaner image.
+                // Hide both above and below captions globally for this generator
                 generator.Parameters.CaptionAbove.Visible = false;
                 generator.Parameters.CaptionBelow.Visible = false;
 
-                // Build the full file path for the PNG output.
-                string filePath = Path.Combine(outputDir, $"{text}.png");
-                // Save the generated barcode image to disk.
+                // Save the barcode image to the specified file path
                 generator.Save(filePath);
-                // Inform the user that the barcode was saved.
-                Console.WriteLine($"Saved barcode for '{text}' to '{filePath}'");
             }
+
+            // Inform the user that the barcode has been saved
+            Console.WriteLine($"Saved barcode {i + 1} to: {filePath}");
         }
 
-        // Indicate that all barcode generation tasks are complete.
-        Console.WriteLine("All barcodes generated.");
+        // Final status message
+        Console.WriteLine("All barcodes generated successfully.");
     }
 }

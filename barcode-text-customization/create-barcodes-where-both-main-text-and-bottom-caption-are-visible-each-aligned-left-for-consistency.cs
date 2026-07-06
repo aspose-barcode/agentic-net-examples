@@ -1,52 +1,38 @@
+// Title: Left-aligned main text and bottom caption in Code128 barcode
+// Description: Demonstrates how to generate a Code128 barcode with visible main text and a bottom caption, both left‑aligned.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to customize human‑readable text and captions using the BarcodeGenerator and its Parameters properties. Developers often need to control text alignment, visibility, and positioning when creating barcodes for labels, packaging, or documentation. The snippet shows typical usage of EncodeTypes, TextAlignment, and Caption settings.
+/// Prompt: Create barcodes where both main text and bottom caption are visible, each aligned left for consistency.
+/// Tags: code128, barcode, text-alignment, caption, png, aspose.barcode, generation
+
 using System;
-using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a Code128 barcode with custom text and caption,
-/// then saving it as a PNG image.
+/// Generates a Code128 barcode with left‑aligned main text and a visible bottom caption.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a barcode and writes it to disk.
+    /// Entry point. Creates the barcode, configures text alignment, and saves the image.
     /// </summary>
     static void Main()
     {
-        // Define the full path for the output PNG file.
-        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "barcode.png");
-
-        // Ensure the directory for the output file exists; create it if necessary.
-        string outputDir = Path.GetDirectoryName(outputPath);
-        if (!Directory.Exists(outputDir))
+        // Initialize a BarcodeGenerator for Code128 with the main text "123ABC"
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123ABC"))
         {
-            Directory.CreateDirectory(outputDir);
-        }
-
-        // Initialize a barcode generator for Code128 with the sample data "1234567890".
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
-        {
-            // Configure the human‑readable code text to appear below the bars.
-            generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.Below;
+            // Align the human‑readable main text to the left
             generator.Parameters.Barcode.CodeTextParameters.Alignment = TextAlignment.Left;
-            generator.Parameters.Barcode.CodeTextParameters.Font.FamilyName = "Arial";
-            generator.Parameters.Barcode.CodeTextParameters.Font.Size.Point = 10f;
 
-            // Set up a caption that will appear below the barcode (and code text).
+            // Make the bottom caption visible and set its text
             generator.Parameters.CaptionBelow.Visible = true;
-            generator.Parameters.CaptionBelow.Text = "Bottom Caption";
+            generator.Parameters.CaptionBelow.Text = "Sample Caption";
+
+            // Align the bottom caption text to the left
             generator.Parameters.CaptionBelow.Alignment = TextAlignment.Left;
-            generator.Parameters.CaptionBelow.Font.FamilyName = "Arial";
-            generator.Parameters.CaptionBelow.Font.Size.Point = 9f;
-            generator.Parameters.CaptionBelow.TextColor = Color.Black;
 
-            // Save the generated barcode image to the specified PNG file.
-            generator.Save(outputPath, BarCodeImageFormat.Png);
+            // Save the generated barcode as a PNG image
+            generator.Save("barcode.png");
         }
-
-        // Inform the user where the barcode image was saved.
-        Console.WriteLine($"Barcode image saved to: {outputPath}");
     }
 }

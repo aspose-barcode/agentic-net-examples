@@ -1,55 +1,53 @@
+// Title: Align UPC‑A barcode text to the left
+// Description: Demonstrates how to set the human‑readable text alignment to the left for a series of UPC‑A barcodes and save them as PNG images.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and TextAlignment to customize barcode appearance. Developers often need to adjust text positioning for branding or layout requirements when generating barcodes programmatically.
+// Prompt: Align barcode text left for a series of UPC‑A barcodes by setting TextAlignment.Left.
+// Tags: upc-a, text alignment, left, png, barcode generation, aspose.barcode, c#
+
 using System;
-using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
-/// <summary>
-/// Demonstrates generating UPC‑A barcodes using Aspose.BarCode and saving them as PNG files.
-/// </summary>
-class Program
+namespace BarcodeExample
 {
     /// <summary>
-    /// Entry point of the application. Generates a set of UPC‑A barcodes and writes them to the "Barcodes" folder.
+    /// Demonstrates aligning the human‑readable text of UPC‑A barcodes to the left and saving them as PNG files.
     /// </summary>
-    static void Main()
+    class Program
     {
-        // Define a collection of sample UPC‑A codes (12 digits each, including checksum).
-        string[] upcCodes = new string[]
+        /// <summary>
+        /// Entry point. Generates several UPC‑A barcodes with left‑aligned text and writes each to a PNG file.
+        /// </summary>
+        static void Main()
         {
-            "012345678905",
-            "123456789012",
-            "036000291452",
-            "042100005264",
-            "070123456789"
-        };
-
-        // Determine the output directory and ensure it exists.
-        string outputDir = "Barcodes";
-        if (!Directory.Exists(outputDir))
-        {
-            // Create the directory if it does not already exist.
-            Directory.CreateDirectory(outputDir);
-        }
-
-        // Iterate over each UPC code, generate a barcode, and save it as a PNG file.
-        for (int i = 0; i < upcCodes.Length; i++)
-        {
-            string code = upcCodes[i];
-
-            // Initialize a BarcodeGenerator for the UPC‑A format with the current code.
-            using (var generator = new BarcodeGenerator(EncodeTypes.UPCA, code))
+            // Define a collection of sample UPC‑A codes (each code must contain 12 digits)
+            string[] upcCodes = new string[]
             {
-                // Align the human‑readable text to the left side of the barcode.
-                generator.Parameters.Barcode.CodeTextParameters.Alignment = TextAlignment.Left;
+                "012345678905",
+                "123456789012",
+                "234567890123",
+                "345678901234",
+                "456789012345"
+            };
 
-                // Build the full file path for the output image.
-                string filePath = Path.Combine(outputDir, $"upc_{i + 1}.png");
+            // Iterate over each code, generate a barcode, and save it as a PNG image
+            for (int i = 0; i < upcCodes.Length; i++)
+            {
+                string code = upcCodes[i];
+                string fileName = $"upc_a_{i + 1}.png";
 
-                // Save the generated barcode image to the specified path.
-                generator.Save(filePath);
+                // Create a BarcodeGenerator for the UPC‑A symbology with the current code
+                using (var generator = new BarcodeGenerator(EncodeTypes.UPCA, code))
+                {
+                    // Set the human‑readable text alignment to the left side of the barcode
+                    generator.Parameters.Barcode.CodeTextParameters.Alignment = TextAlignment.Left;
 
-                // Output a confirmation message to the console.
-                Console.WriteLine($"Saved barcode {code} to {filePath}");
+                    // Save the generated barcode image to a PNG file
+                    generator.Save(fileName);
+                }
+
+                // Output the name of the saved file to the console for verification
+                Console.WriteLine($"Saved {fileName}");
             }
         }
     }

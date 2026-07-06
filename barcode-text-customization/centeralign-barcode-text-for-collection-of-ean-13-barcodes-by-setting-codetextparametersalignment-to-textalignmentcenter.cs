@@ -1,48 +1,67 @@
+// Title: Center-align EAN‑13 barcode text
+// Description: Demonstrates generating EAN‑13 barcodes with the human‑readable text centered beneath the bars.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to use BarcodeGenerator, CodetextParameters, and TextAlignment to control the appearance of human‑readable text. Typical use cases include creating printable product labels where the text must be centered for aesthetic or regulatory reasons. Developers often need to adjust text alignment, font, and positioning when producing barcodes for packaging, inventory, or point‑of‑sale systems.
+// Prompt: Center-align barcode text for a collection of EAN‑13 barcodes by setting CodetextParameters.Alignment to TextAlignment.Center.
+// Tags: ean13, barcode, text alignment, center, aspose.barcode, png, generation
+
 using System;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generating EAN‑13 barcode images using Aspose.BarCode.
+/// Generates a set of EAN‑13 barcodes and saves them as PNG images with centered human‑readable text.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates barcode images for a set of sample EAN‑13 codes.
+    /// Entry point of the example. Iterates over a list of sample codes, creates a barcode for each,
+    /// centers the text, and writes the image to the output folder.
     /// </summary>
     static void Main()
     {
-        // Define an array of sample EAN‑13 codes (including checksum digit)
+        // Sample EAN‑13 codes (12 digits; checksum will be calculated automatically)
         string[] ean13Codes = new string[]
         {
-            "5901234123457",
-            "4006381333931",
-            "73513537" + "12345", // placeholder, ensure 13 digits
-            "9780306406157",
-            "1234567890128"
+            "123456789012",
+            "987654321098",
+            "400638133393",
+            "590123412345",
+            "735135371234"
         };
 
-        // Iterate over each code to generate and save its barcode image
-        for (int i = 0; i < ean13Codes.Length; i++)
+        // Ensure the output directory exists
+        string outputDir = "Barcodes";
+        if (!Directory.Exists(outputDir))
         {
-            // Current EAN‑13 code
-            string code = ean13Codes[i];
+            Directory.CreateDirectory(outputDir);
+        }
 
-            // Construct a file name for the output image (e.g., ean13_1.png)
-            string fileName = $"ean13_{i + 1}.png";
+        int index = 1;
+        foreach (var code in ean13Codes)
+        {
+            // Validate that the code length is either 12 or 13 digits
+            if (code.Length < 12 || code.Length > 13)
+            {
+                Console.WriteLine($"Skipping invalid code '{code}'. Must be 12 or 13 digits.");
+                continue;
+            }
 
-            // Create and configure the barcode generator within a using block to ensure disposal
+            // Create a barcode generator for the current EAN‑13 code
             using (var generator = new BarcodeGenerator(EncodeTypes.EAN13, code))
             {
                 // Center‑align the human‑readable text beneath the barcode
                 generator.Parameters.Barcode.CodeTextParameters.Alignment = TextAlignment.Center;
 
-                // Save the generated barcode image to the specified file
-                generator.Save(fileName);
+                // Build the full file path for the PNG image
+                string filePath = Path.Combine(outputDir, $"ean13_{index}.png");
+
+                // Save the barcode image in PNG format
+                generator.Save(filePath, BarCodeImageFormat.Png);
+                Console.WriteLine($"Saved barcode to {filePath}");
             }
 
-            // Output a confirmation message to the console
-            Console.WriteLine($"Saved {fileName}");
+            index++;
         }
     }
 }
