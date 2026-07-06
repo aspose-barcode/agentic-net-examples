@@ -1,51 +1,52 @@
+// Title: Switch measurement unit between millimeters and pixels for barcode generation
+// Description: Demonstrates generating two barcodes in one run, first using millimeters for bar height then switching to pixels.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to control measurement units (millimeters, pixels) via the BarcodeGenerator.Parameters.Barcode.BarHeight properties. Developers often need to switch units to meet layout requirements for different output media, such as print (mm) versus screen (px). The key API classes used are BarcodeGenerator, EncodeTypes, and AutoSizeMode.
+// Prompt: Programmatically switch measurement unit from Millimeters to Pixels between two barcode generations in one run.
+// Tags: code128, measurement unit, millimeters, pixels, barcode generation, aspose.barcode
+
 using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating Code128 barcodes using Aspose.BarCode with different measurement units.
+/// Example program that generates two Code128 barcodes, first using millimeters for bar height
+/// and then switching to pixels, demonstrating unit conversion within a single execution.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates two barcode images:
-    /// one using millimeter units and another using pixel units.
+    /// Entry point of the application. Generates two barcode images with different measurement units.
     /// </summary>
     static void Main()
     {
-        // Define output file name for barcode using millimeter units
-        string mmPath = "barcode_mm.png";
-
-        // Create a barcode generator for Code128 with the data "123456"
+        // ------------------------------------------------------------
+        // First barcode: use millimeters for bar height
+        // ------------------------------------------------------------
         using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
         {
-            // Configure bar height and X dimension in millimeters
-            generator.Parameters.Barcode.BarHeight.Millimeters = 20f;   // 20 mm height
-            generator.Parameters.Barcode.XDimension.Millimeters = 0.5f; // 0.5 mm module width
+            // Disable automatic sizing to allow explicit height setting
+            generator.Parameters.AutoSizeMode = AutoSizeMode.None;
 
-            // Save the generated barcode image to the specified path
-            generator.Save(mmPath);
+            // Set bar height explicitly in millimeters (10 mm)
+            generator.Parameters.Barcode.BarHeight.Millimeters = 10f;
+
+            // Save the generated barcode image to a PNG file
+            generator.Save("barcode_mm.png");
         }
 
-        // Inform the user that the millimeter-based barcode has been saved
-        Console.WriteLine($"Barcode saved with millimeter units: {mmPath}");
-
-        // Define output file name for barcode using pixel units
-        string pxPath = "barcode_px.png";
-
-        // Create another barcode generator for the same data
+        // ------------------------------------------------------------
+        // Second barcode: switch to pixels for bar height
+        // ------------------------------------------------------------
         using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
         {
-            // Configure bar height and X dimension in pixels
-            generator.Parameters.Barcode.BarHeight.Pixels = 80f;   // 80 pixel height
-            generator.Parameters.Barcode.XDimension.Pixels = 2f; // 2 pixel module width
+            // Disable automatic sizing to allow explicit height setting
+            generator.Parameters.AutoSizeMode = AutoSizeMode.None;
 
-            // Save the generated barcode image to the specified path
-            generator.Save(pxPath);
+            // Set bar height explicitly in pixels (40 px)
+            generator.Parameters.Barcode.BarHeight.Pixels = 40f;
+
+            // Save the generated barcode image to a PNG file
+            generator.Save("barcode_px.png");
         }
-
-        // Inform the user that the pixel-based barcode has been saved
-        Console.WriteLine($"Barcode saved with pixel units: {pxPath}");
     }
 }

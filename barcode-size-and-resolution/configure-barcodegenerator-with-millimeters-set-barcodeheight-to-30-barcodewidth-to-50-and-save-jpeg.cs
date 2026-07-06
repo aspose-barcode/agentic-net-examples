@@ -1,35 +1,34 @@
+// Title: Generate Code128 Barcode with Millimeter Dimensions and Save as JPEG
+// Description: Demonstrates configuring Aspose.BarCode's BarcodeGenerator to use millimeter units, set specific height and width, and export the barcode as a JPEG image.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to control image size using the Parameters.ImageHeight and ImageWidth properties with millimeter units. Developers commonly use these APIs to produce barcodes with precise physical dimensions for printing on labels, packaging, or documents. The key classes shown are BarcodeGenerator, EncodeTypes, and the Parameters sub‑objects, which are essential for customizing barcode appearance.
+// Prompt: Configure BarcodeGenerator with Millimeters, set BarCodeHeight to 30, BarCodeWidth to 50, and save JPEG.
+// Tags: code128, barcode generation, jpeg, millimeters, aspose.barcode, barcodegenerator, parameters
+
 using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a Code128 barcode using Aspose.BarCode and saving it as a JPEG image.
+/// Example program that creates a Code128 barcode, sets its size in millimeters, and saves it as a JPEG file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a barcode with specified dimensions and saves it to disk.
+    /// Entry point of the application.
     /// </summary>
     static void Main()
     {
-        // Initialize a BarcodeGenerator with Code128 symbology and the desired text.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
+        // Initialize a BarcodeGenerator for Code128 with the sample text "123456"
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
         {
-            // Disable automatic sizing; we'll set dimensions manually.
-            generator.Parameters.AutoSizeMode = AutoSizeMode.None;
+            // Configure the barcode image height to 30 millimeters
+            generator.Parameters.ImageHeight.Millimeters = 30f;
 
-            // Set the barcode's bar height to 30 millimeters.
-            generator.Parameters.Barcode.BarHeight.Millimeters = 30f;   // BarCodeHeight = 30 mm
+            // Configure the barcode image width to 50 millimeters
+            generator.Parameters.ImageWidth.Millimeters = 50f;
 
-            // Set the overall image width to 50 millimeters.
-            generator.Parameters.ImageWidth.Millimeters = 50f;       // BarCodeWidth = 50 mm
-
-            // Save the generated barcode as a JPEG file named "barcode.jpg".
+            // Save the generated barcode as a JPEG image file named "barcode.jpg"
             generator.Save("barcode.jpg");
         }
-
-        // Inform the user that the barcode has been successfully generated.
-        Console.WriteLine("Barcode generated and saved as barcode.jpg");
     }
 }

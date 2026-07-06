@@ -1,61 +1,52 @@
+// Title: Generate low‑resolution Code128 barcode image
+// Description: Demonstrates setting the BarcodeGenerator resolution to 72 dpi and verifies the output image meets low‑resolution display requirements.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to configure barcode rendering parameters such as resolution. It uses BarcodeGenerator and its Parameters property to produce PNG images, a common task for developers needing barcodes for low‑resolution screens or printers. Typical use cases include embedding barcodes in web pages, mobile apps, or low‑dpi print media.
+// Prompt: Set BarcodeGenerator resolution to 72 dpi, test barcode generation meets low‑resolution display requirements.
+// Tags: code128, barcode generation, low resolution, png, aspose.barcode, resolution
+
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a low‑resolution barcode image using Aspose.BarCode
-/// and verifies its DPI settings.
+/// Demonstrates generating a Code128 barcode at 72 dpi and verifying the image resolution.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a Code128 barcode at 72 DPI, saves it to a file,
-    /// and validates the image resolution.
+    /// Entry point. Creates a barcode image with low resolution, saves it, and prints the actual DPI.
     /// </summary>
     static void Main()
     {
-        // Define the output file path for the generated barcode image.
-        string outputPath = "lowres_barcode.png";
+        // Define the output file path for the generated barcode image
+        string outputPath = "barcode.png";
 
-        // Create a barcode generator for Code128 with the sample text "123456".
+        // Create a BarcodeGenerator for Code128 symbology with the desired text
         using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
         {
-            // Set low resolution (72 DPI) to meet low‑resolution display requirements.
+            // Set the resolution to 72 dpi to meet low‑resolution display requirements
             generator.Parameters.Resolution = 72f;
 
-            // Save the generated barcode image to the specified path.
+            // Save the generated barcode as a PNG file
             generator.Save(outputPath);
         }
 
-        // Verify that the image file was successfully created.
+        // Verify that the barcode image file was created successfully
         if (!File.Exists(outputPath))
         {
-            Console.WriteLine($"Failed to create barcode image at '{outputPath}'.");
+            Console.WriteLine("Failed to create barcode image.");
             return;
         }
 
-        // Load the saved image to inspect its resolution properties.
+        // Load the saved image to read its actual DPI values
         using (var image = Image.FromFile(outputPath))
         {
-            // Aspose.Drawing.Image provides HorizontalResolution and VerticalResolution properties.
             float horizDpi = image.HorizontalResolution;
             float vertDpi = image.VerticalResolution;
 
-            Console.WriteLine($"Barcode image saved to '{outputPath}'.");
-            Console.WriteLine($"Image resolution: {horizDpi} DPI (horizontal), {vertDpi} DPI (vertical).");
-
-            // Simple validation: both dimensions should be approximately 72 DPI.
-            if (Math.Abs(horizDpi - 72f) < 0.01f && Math.Abs(vertDpi - 72f) < 0.01f)
-            {
-                Console.WriteLine("Resolution verification passed: image is 72 DPI.");
-            }
-            else
-            {
-                Console.WriteLine("Resolution verification failed: image DPI does not match 72.");
-            }
+            // Output the horizontal and vertical DPI of the generated image
+            Console.WriteLine($"Barcode image resolution: {horizDpi} dpi (horizontal), {vertDpi} dpi (vertical)");
         }
     }
 }

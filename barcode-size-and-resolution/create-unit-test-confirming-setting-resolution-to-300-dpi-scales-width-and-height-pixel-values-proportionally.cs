@@ -1,92 +1,65 @@
+// Title: Verify barcode image resolution scaling
+// Description: Demonstrates that setting the barcode generator resolution to 300 dpi scales the image width and height proportionally compared to the default 96 dpi.
+// Category-Description: This example belongs to the Aspose.BarCode image generation category, illustrating how the Resolution property and AutoSizeMode.Interpolation affect pixel dimensions. It shows typical usage of BarcodeGenerator, its Parameters, and the Aspose.Drawing.Bitmap class for creating barcode images at different DPI settings, a common requirement for high‑resolution printing and scanning scenarios.
+// Prompt: Create unit test confirming setting resolution to 300 dpi scales width and height pixel values proportionally.
+// Tags: barcode, code128, resolution, dpi, interpolation, image generation, aspose.barcode, unit test
+
 using System;
-using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates barcode generation at different resolutions and verifies scaling behavior.
+/// Example program that verifies the effect of changing the barcode image resolution
+/// on the generated bitmap's pixel dimensions. It compares a 96 dpi image with a
+/// 300 dpi image to ensure proportional scaling.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates two barcodes (96 dpi and 300 dpi), compares their pixel dimensions,
-    /// and reports whether the scaling matches the expected factor.
+    /// Entry point of the example. Generates barcode images at two different DPI
+    /// settings and checks that width and height scale proportionally.
     /// </summary>
     static void Main()
     {
-        // Sample barcode data to encode.
-        const string codeText = "Test123";
-
-        // Define temporary file paths for the generated PNG images.
-        string tempPath1 = Path.Combine(Path.GetTempPath(), "barcode_96.png");
-        string tempPath2 = Path.Combine(Path.GetTempPath(), "barcode_300.png");
-
-        // ------------------------------------------------------------
-        // Generate barcode with default resolution (96 dpi).
-        // ------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+        // Create a barcode generator for Code128 with the value "Test"
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Test"))
         {
-            generator.Save(tempPath1, BarCodeImageFormat.Png);
-        }
+            // Enable interpolation mode so that resolution changes affect pixel size
+            generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
 
-        // ------------------------------------------------------------
-        // Generate barcode with a higher resolution (300 dpi).
-        // ------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
-        {
-            // Set the desired resolution before saving.
-            generator.Parameters.Resolution = 300f; // 300 dpi
-            generator.Save(tempPath2, BarCodeImageFormat.Png);
-        }
+            // Define a base image size in pixels (width = 200, height = 100)
+            generator.Parameters.ImageWidth.Pixels = 200f;
+            generator.Parameters.ImageHeight.Pixels = 100f;
 
-        // ------------------------------------------------------------
-        // Load the generated images to retrieve their pixel dimensions.
-        // ------------------------------------------------------------
-        int width96, height96, width300, height300;
-        using (var img96 = Image.FromFile(tempPath1))
-        {
-            width96 = img96.Width;
-            height96 = img96.Height;
-        }
-        using (var img300 = Image.FromFile(tempPath2))
-        {
-            width300 = img300.Width;
-            height300 = img300.Height;
-        }
+            // Generate image at the default resolution of 96 dpi
+            generator.Parameters.Resolution = 96f;
+            using (Bitmap bmp96 = generator.GenerateBarCodeImage())
+            {
+                int width96 = bmp96.Width;
+                int height96 = bmp96.Height;
 
-        // ------------------------------------------------------------
-        // Compute the expected dimensions after scaling from 96 dpi to 300 dpi.
-        // ------------------------------------------------------------
-        double scaleFactor = 300.0 / 96.0;
-        int expectedWidth = (int)Math.Round(width96 * scaleFactor);
-        int expectedHeight = (int)Math.Round(height96 * scaleFactor);
+                // Generate image at a higher resolution of 300 dpi
+                generator.Parameters.Resolution = 300f;
+                using (Bitmap bmp300 = generator.GenerateBarCodeImage())
+                {
+                    int width300 = bmp300.Width;
+                    int height300 = bmp300.Height;
 
-        // ------------------------------------------------------------
-        // Verify that the actual dimensions are within a 1‑pixel tolerance.
-        // ------------------------------------------------------------
-        bool widthMatches = Math.Abs(width300 - expectedWidth) <= 1;
-        bool heightMatches = Math.Abs(height300 - expectedHeight) <= 1;
+                    // Expected scaling factor based on DPI change
+                    float factor = 300f / 96f;
 
-        if (widthMatches && heightMatches)
-        {
-            Console.WriteLine("PASS: Resolution scaling works as expected.");
-            Console.WriteLine($"Original (96 dpi): {width96}x{height96} px");
-            Console.WriteLine($"Scaled (300 dpi):  {width300}x{height300} px");
+                    // Allow a tolerance of 1 pixel due to rounding differences
+                    bool widthOk = Math.Abs(width300 - (int)Math.Round(width96 * factor)) <= 1;
+                    bool heightOk = Math.Abs(height300 - (int)Math.Round(height96 * factor)) <= 1;
+
+                    // Output test result
+                    if (widthOk && heightOk)
+                        Console.WriteLine("PASSED");
+                    else
+                        Console.WriteLine($"FAILED: Expected width≈{width96 * factor}, got {width300}; height≈{height96 * factor}, got {height300}");
+                }
+            }
         }
-        else
-        {
-            Console.WriteLine("FAIL: Resolution scaling did not produce expected dimensions.");
-            Console.WriteLine($"Original (96 dpi): {width96}x{height96} px");
-            Console.WriteLine($"Scaled (300 dpi):  {width300}x{height300} px");
-            Console.WriteLine($"Expected (≈):      {expectedWidth}x{expectedHeight} px");
-        }
-
-        // ------------------------------------------------------------
-        // Clean up temporary files.
-        // ------------------------------------------------------------
-        try { if (File.Exists(tempPath1)) File.Delete(tempPath1); } catch { }
-        try { if (File.Exists(tempPath2)) File.Delete(tempPath2); } catch { }
     }
 }

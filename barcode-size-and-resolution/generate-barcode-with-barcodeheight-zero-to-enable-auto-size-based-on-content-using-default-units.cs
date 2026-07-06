@@ -1,41 +1,38 @@
+// Title: Generate barcode with auto‑sized height using Aspose.BarCode
+// Description: Demonstrates how to create a Code128 barcode where the bar height is automatically determined from the content by setting BarCodeHeight to zero (auto‑size mode). The barcode is saved as a PNG image.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on auto‑sizing and layout configuration. It showcases the use of BarcodeGenerator, EncodeTypes, and AutoSizeMode to let the library calculate optimal dimensions based on the encoded data. Developers often need to generate barcodes that adapt to varying content lengths without manually specifying size parameters, especially for dynamic reporting or label printing scenarios.
+// Prompt: Generate barcode with BarCodeHeight zero to enable auto‑size based on content, using default units.
+// Tags: code128, autosize, barcodeheight, png, aspnet, aspose.barcode, generation
+
 using System;
-using Aspose.BarCode.Generation;
 using Aspose.BarCode;
+using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demo program that generates a barcode using Aspose.BarCode.
+/// Example program that generates a Code128 barcode with automatic height sizing.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates a barcode with auto‑size mode and saves it to a PNG file.
+    /// Entry point of the application. Creates a barcode, enables auto‑size mode, and saves it as a PNG file.
     /// </summary>
     static void Main()
     {
-        // The requested feature (BarCodeHeight = 0) is not supported and throws an exception.
-        // Instead, enable auto‑size by using AutoSizeMode.Interpolation, which lets the
-        // barcode size itself based on the content using default units.
-
-        // Choose a sample symbology (Code 128) and the text to encode.
-        BaseEncodeType encodeType = EncodeTypes.Code128;
-        string codeText = "Sample123";
-
-        // Create the barcode generator within a using block to ensure proper disposal.
-        using (var generator = new BarcodeGenerator(encodeType, codeText))
+        // Initialize a barcode generator for Code128 with the sample text "Sample123".
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
         {
-            // Enable auto‑size mode so the barcode height is calculated automatically.
+            // Set the auto‑size mode to Interpolation.
+            // In this mode the BarCodeHeight property is ignored, allowing the library to determine the optimal height.
             generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
 
-            // No need to set BarHeight; it will be determined automatically.
-
             // Define the output file path.
-            string outputPath = "barcode.png";
+            const string outputPath = "barcode.png";
 
-            // Save the generated barcode image to the specified file.
+            // Save the generated barcode image to the specified path.
             generator.Save(outputPath);
 
-            // Inform the user that the barcode has been generated.
-            Console.WriteLine($"Barcode generated and saved to '{outputPath}'.");
+            // Inform the user that the barcode has been saved.
+            Console.WriteLine($"Barcode saved to {outputPath}");
         }
     }
 }

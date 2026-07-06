@@ -1,41 +1,49 @@
+// Title: Convert Pixels to Points and Generate Code128 Barcode Image
+// Description: Demonstrates converting image dimensions from pixels to points using Aspose.BarCode's Unit class and generating a Code128 barcode with those dimensions.
+// Category-Description: This example belongs to the Aspose.BarCode image sizing and barcode generation category. It showcases the use of the BarcodeGenerator class, AutoSizeMode, and Unit properties (ImageWidth, ImageHeight) to control output size. Developers often need to convert between measurement units (pixels, points, inches) when creating barcodes for print or screen, and this snippet illustrates the typical workflow for such scenarios.
+// Prompt: Convert dimensions from Pixels to Points via Unit class, then generate Code128 image using converted values.
+// Tags: barcode, code128, image sizing, unit conversion, points, pixels, aspnet, aspose.barcode, generation, png
+
 using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generating a Code128 barcode with specific image dimensions using Aspose.BarCode.
+/// Example program that converts pixel dimensions to points and generates a Code128 barcode image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a barcode image and saves it to disk.
+    /// Entry point of the application.
     /// </summary>
     static void Main()
     {
-        // Define desired image dimensions in pixels.
-        float pixelWidth = 300f;
-        float pixelHeight = 150f;
+        // Desired dimensions in pixels
+        float widthPixels = 300f;
+        float heightPixels = 150f;
 
-        // Initialize a barcode generator for Code128 with the sample text.
+        // Convert pixels to points (1 point = 1/72 inch, 1 pixel = 1/96 inch)
+        // points = pixels * (72 / 96) = pixels * 0.75
+        float widthPoints = widthPixels * 0.75f;
+        float heightPoints = heightPixels * 0.75f;
+
+        // Create a Code128 barcode generator with sample text
         using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
         {
-            // Set the image width and height using pixel units.
-            generator.Parameters.ImageWidth.Pixels = pixelWidth;
-            generator.Parameters.ImageHeight.Pixels = pixelHeight;
+            // Use interpolation mode so ImageWidth/ImageHeight control the size
+            generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
 
-            // Convert the pixel dimensions to points (1 point = 1/72 inch) via the Unit class.
-            float widthInPoints = generator.Parameters.ImageWidth.Point;
-            float heightInPoints = generator.Parameters.ImageHeight.Point;
+            // Apply the converted dimensions (points) to the generator
+            generator.Parameters.ImageWidth.Point = widthPoints;
+            generator.Parameters.ImageHeight.Point = heightPoints;
 
-            // Apply the converted point values back to the generator (ensures proper scaling).
-            generator.Parameters.ImageWidth.Point = widthInPoints;
-            generator.Parameters.ImageHeight.Point = heightInPoints;
+            // Optional: set resolution (dpi) if needed
+            generator.Parameters.Resolution = 96f;
 
-            // Save the generated barcode as a PNG file.
+            // Save the barcode image as PNG
             generator.Save("code128.png");
         }
 
-        // Inform the user that the barcode has been created.
         Console.WriteLine("Barcode generated and saved as code128.png");
     }
 }

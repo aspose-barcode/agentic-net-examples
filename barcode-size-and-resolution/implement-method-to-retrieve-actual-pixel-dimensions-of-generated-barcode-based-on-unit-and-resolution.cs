@@ -1,75 +1,58 @@
+// Title: Retrieve pixel dimensions of a generated barcode image
+// Description: Demonstrates how to obtain the actual width and height in pixels of a barcode generated with Aspose.BarCode, considering unit settings and resolution.
+// Category-Description: This example belongs to the Aspose.BarCode image generation category, illustrating the use of BarcodeGenerator, AutoSizeMode, and resolution settings to control barcode size. Developers often need to know the exact pixel dimensions for layout, printing, or further image processing, making this a common requirement in barcode rendering scenarios.
+// Prompt: Implement method to retrieve actual pixel dimensions of generated barcode based on unit and resolution.
+// Tags: barcode symbology, image generation, pixel dimensions, resolution, autosizemode, aspose.barcode
+
 using System;
-using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates how to obtain the pixel dimensions of a generated barcode using Aspose.BarCode.
+/// Example program that generates a Code128 barcode, configures its size and resolution,
+/// and retrieves the actual pixel dimensions of the resulting image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Retrieves the actual pixel width and height of a generated barcode.
-    /// The dimensions are obtained from the bitmap after saving the barcode to a memory stream.
+    /// Retrieves the actual pixel dimensions of the generated barcode image.
     /// </summary>
-    /// <param name="type">The barcode symbology type.</param>
-    /// <param name="codeText">The text to encode in the barcode.</param>
-    /// <param name="resolution">Resolution (dpi) for the generated image.</param>
-    /// <param name="imageWidthPoints">Optional explicit image width in points.</param>
-    /// <param name="imageHeightPoints">Optional explicit image height in points.</param>
+    /// <param name="generator">The configured <see cref="BarcodeGenerator"/> instance.</param>
     /// <returns>A tuple containing the width and height in pixels.</returns>
-    static (int Width, int Height) GetBarcodePixelDimensions(
-        BaseEncodeType type,
-        string codeText,
-        float resolution,
-        float? imageWidthPoints = null,
-        float? imageHeightPoints = null)
+    static (int Width, int Height) GetBarcodePixelDimensions(BarcodeGenerator generator)
     {
-        // Create a barcode generator with the specified type and text
-        using (var generator = new BarcodeGenerator(type, codeText))
+        // Generate the barcode image and obtain its pixel size.
+        using (Bitmap bitmap = generator.GenerateBarCodeImage())
         {
-            // Set the desired resolution (dots per inch)
-            generator.Parameters.Resolution = resolution;
-
-            // If explicit image dimensions are provided, configure auto‑size mode and set size in points
-            if (imageWidthPoints.HasValue && imageHeightPoints.HasValue)
-            {
-                generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
-                generator.Parameters.ImageWidth.Point = imageWidthPoints.Value;
-                generator.Parameters.ImageHeight.Point = imageHeightPoints.Value;
-            }
-
-            // Save the barcode to a memory stream in PNG format
-            using (var ms = new MemoryStream())
-            {
-                generator.Save(ms, BarCodeImageFormat.Png);
-                ms.Position = 0; // Reset stream position for reading
-
-                // Load the image into a bitmap to read its pixel dimensions
-                using (var bitmap = new Bitmap(ms))
-                {
-                    return (bitmap.Width, bitmap.Height);
-                }
-            }
+            return (bitmap.Width, bitmap.Height);
         }
     }
 
     /// <summary>
-    /// Entry point of the program. Demonstrates usage of GetBarcodePixelDimensions.
+    /// Entry point of the example. Configures barcode generation parameters,
+    /// obtains pixel dimensions, and optionally saves the image to disk.
     /// </summary>
     static void Main()
     {
-        // Example: generate a Code128 barcode at 300 DPI with a target size of 200pt x 100pt
-        var dimensions = GetBarcodePixelDimensions(
-            EncodeTypes.Code128,
-            "1234567890",
-            300f,
-            200f,
-            100f);
+        // Create a barcode generator for Code128 with sample text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
+        {
+            // Set resolution (dpi) – this influences unit-to-pixel conversion.
+            generator.Parameters.Resolution = 300f; // 300 dpi
 
-        // Output the resulting pixel dimensions to the console
-        Console.WriteLine($"Barcode pixel dimensions: Width = {dimensions.Width}px, Height = {dimensions.Height}px");
+            // Use interpolation mode to control image size via ImageWidth/ImageHeight.
+            generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
+            generator.Parameters.ImageWidth.Point = 200f;   // 200 points width
+            generator.Parameters.ImageHeight.Point = 80f;   // 80 points height
+
+            // Retrieve actual pixel dimensions after generation.
+            var (width, height) = GetBarcodePixelDimensions(generator);
+
+            Console.WriteLine($"Generated barcode pixel dimensions: Width = {width}px, Height = {height}px");
+
+            // Optionally save the barcode image.
+            generator.Save("barcode.png");
+        }
     }
 }

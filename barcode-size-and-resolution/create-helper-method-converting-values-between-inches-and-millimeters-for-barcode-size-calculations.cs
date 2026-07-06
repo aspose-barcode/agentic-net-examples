@@ -1,63 +1,66 @@
+// Title: Barcode size conversion between inches and millimeters
+// Description: Demonstrates helper methods for converting inches to millimeters and vice versa, used for setting barcode image dimensions.
+// Category-Description: This example belongs to the Aspose.BarCode image sizing category, illustrating how to use the AutoSizeMode.Interpolation mode and the ImageWidth/ImageHeight properties (Millimeters unit) to control barcode dimensions. Developers often need to convert measurement units when integrating barcode generation into print layouts or UI designs, and these helper methods simplify that process.
+// Prompt: Create helper method converting values between Inches and Millimeters for barcode size calculations.
+// Tags: barcode, size conversion, inches, millimeters, autosizemode, imagewidth, imageheight, aspose.barcode
+
 using System;
+using Aspose.BarCode;
+using Aspose.BarCode.Generation;
+using Aspose.Drawing;
 
-namespace BarcodeSizeHelper
+/// <summary>
+/// Demonstrates conversion helpers and barcode generation with size set in millimeters.
+/// </summary>
+class Program
 {
-    /// <summary>
-    /// Entry point for the BarcodeSizeHelper console application.
-    /// Demonstrates conversion between inches and millimeters.
-    /// </summary>
-    class Program
+    // Convert inches to millimeters (1 inch = 25.4 mm)
+    static float InchesToMillimeters(float inches)
     {
-        /// <summary>
-        /// Main method – performs sample conversions and writes results to the console.
-        /// </summary>
-        static void Main()
-        {
-            // Define a value in inches to convert.
-            float inches = 2f;
+        return inches * 25.4f;
+    }
 
-            // Convert inches to millimeters using the UnitConverter helper.
-            float millimeters = UnitConverter.InchesToMillimeters(inches);
-
-            // Output the conversion result.
-            Console.WriteLine($"{inches} inches = {millimeters} mm");
-
-            // Define a value in millimeters to convert.
-            float mmValue = 50f;
-
-            // Convert millimeters to inches using the UnitConverter helper.
-            float inchesValue = UnitConverter.MillimetersToInches(mmValue);
-
-            // Output the conversion result.
-            Console.WriteLine($"{mmValue} mm = {inchesValue} inches");
-        }
+    // Convert millimeters to inches
+    static float MillimetersToInches(float millimeters)
+    {
+        return millimeters / 25.4f;
     }
 
     /// <summary>
-    /// Provides static methods for converting between inches and millimeters.
+    /// Entry point: converts sample dimensions, generates a Code128 barcode with specified size, and saves it as PNG.
     /// </summary>
-    public static class UnitConverter
+    static void Main()
     {
-        /// <summary>
-        /// Converts a measurement in inches to millimeters.
-        /// </summary>
-        /// <param name="inches">The value in inches.</param>
-        /// <returns>The equivalent value in millimeters.</returns>
-        public static float InchesToMillimeters(float inches)
-        {
-            // 1 inch equals 25.4 millimeters.
-            return inches * 25.4f;
-        }
+        // Sample dimensions in inches (typical for print layouts)
+        float widthInInches = 2.0f;
+        float heightInInches = 1.0f;
 
-        /// <summary>
-        /// Converts a measurement in millimeters to inches.
-        /// </summary>
-        /// <param name="millimeters">The value in millimeters.</param>
-        /// <returns>The equivalent value in inches.</returns>
-        public static float MillimetersToInches(float millimeters)
+        // Convert to millimeters for barcode size calculations
+        float widthInMillimeters = InchesToMillimeters(widthInInches);
+        float heightInMillimeters = InchesToMillimeters(heightInInches);
+
+        // Output conversion results to console
+        Console.WriteLine($"Width: {widthInInches} inches = {widthInMillimeters} mm");
+        Console.WriteLine($"Height: {heightInInches} inches = {heightInMillimeters} mm");
+
+        // Create a simple barcode and apply the converted size
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
         {
-            // Divide by 25.4 to convert millimeters back to inches.
-            return millimeters / 25.4f;
+            // Use Interpolation mode to control size via ImageWidth/ImageHeight
+            generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
+
+            // Set size using the millimeter values
+            generator.Parameters.ImageWidth.Millimeters = widthInMillimeters;
+            generator.Parameters.ImageHeight.Millimeters = heightInMillimeters;
+
+            // Optional: set background and bar colors
+            generator.Parameters.BackColor = Color.White;
+            generator.Parameters.Barcode.BarColor = Color.Black;
+
+            // Save the barcode image
+            string outputPath = "barcode.png";
+            generator.Save(outputPath);
+            Console.WriteLine($"Barcode saved to {outputPath}");
         }
     }
 }
