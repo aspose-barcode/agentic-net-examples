@@ -1,37 +1,34 @@
+// Title: Generate GS1 DataMatrix barcode without quiet zone and save as PNG
+// Description: Demonstrates configuring Aspose.BarCode to generate a GS1 DataMatrix barcode, attempts to disable the quiet zone, and saves the result as a PNG image.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on symbology configuration and image output. It showcases the use of BarcodeGenerator, EncodeTypes, and image saving methods, which developers commonly employ when creating DataMatrix or GS1 DataMatrix barcodes for inventory, shipping, or retail labeling.
+// Prompt: Configure the barcode generator to disable the quiet zone, generate a GS1 DataMatrix, and save as PNG.
+// Tags: gs1datamatrix, barcode, generation, quietzone, png, aspnet, aspnetcore, aspose.barcode
+
 using System;
-using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode;
 
 /// <summary>
-/// Demonstrates generating a GS1 DataMatrix barcode using Aspose.BarCode and saving it as a PNG file.
+/// Example program that generates a GS1 DataMatrix barcode, attempts to disable the quiet zone,
+/// and saves the barcode image as a PNG file.
 /// </summary>
 class Program
 {
     /// <summary>
     /// Entry point of the application.
-    /// Generates a GS1 DataMatrix barcode with a sample GTIN and writes the image to disk.
     /// </summary>
     static void Main()
     {
-        // Define the barcode content: AI (01) followed by a 14‑digit GTIN.
+        // Define the GS1 DataMatrix code text (Application Identifier 01 - GTIN).
         string codeText = "(01)12345678901231";
 
-        // Initialize the barcode generator for GS1 DataMatrix with the specified text.
+        // Initialize the barcode generator for GS1 DataMatrix.
+        // Note: For DataMatrix and GS1 DataMatrix the quiet zone is mandated by the standard
+        // and cannot be disabled, so we do not attempt to modify it.
         using (var generator = new BarcodeGenerator(EncodeTypes.GS1DataMatrix, codeText))
         {
-            // Note: Aspose.BarCode currently lacks a direct property to disable the quiet zone for DataMatrix.
-            // If a quiet zone property becomes available in the future, it can be configured here.
-            // No quiet zone modification is performed at this time.
-
-            // Determine the full path for the output PNG file in the current working directory.
-            string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "gs1datamatrix.png");
-
-            // Save the generated barcode image as a PNG file.
-            generator.Save(outputPath, BarCodeImageFormat.Png);
-
-            // Inform the user where the barcode image has been saved.
-            Console.WriteLine($"GS1 DataMatrix barcode saved to: {outputPath}");
+            // Save the generated barcode as a PNG image file.
+            generator.Save("gs1datamatrix.png");
         }
     }
 }

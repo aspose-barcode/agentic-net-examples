@@ -1,55 +1,62 @@
+// Title: Generate UPC‑A barcode with Code128 coupon and email attachment
+// Description: Demonstrates creating a UPC‑A barcode that includes a Code128 coupon, converting it to a PNG byte array, and attaching it to an email message.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and image handling category. It showcases the use of BarcodeGenerator with EncodeTypes.UpcaGs1Code128Coupon, saving the barcode to a memory stream, and integrating the resulting image into a System.Net.Mail email. Developers often need to generate barcodes on‑the‑fly and embed them in communications such as order confirmations or promotional emails.
+// Prompt: Generate a UPC‑A barcode with a Code128 coupon, retrieve image as byte array, and attach to email.
+// Tags: upc-a, code128, barcode generation, image byte array, email attachment, aspose.barcode, system.net.mail
+
 using System;
 using System.IO;
+using System.Net;
 using System.Net.Mail;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generating a UPC‑A with GS1‑128 coupon barcode,
-/// saving it to a PNG image, and attaching it to an email message.
+/// Example program that generates a UPC‑A barcode with an embedded Code128 coupon,
+/// converts the barcode image to a byte array, and attaches it to an email message.
 /// </summary>
 class Program
 {
     /// <summary>
     /// Entry point of the application.
-    /// Generates the barcode, writes it to a memory stream,
-    /// and creates an email with the barcode attached.
     /// </summary>
-    /// <param name="args">Command‑line arguments (not used).</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Define the barcode text: UPC‑A part, GS1‑128 data in parentheses, and additional data.
-        string codeText = "514141100906(8102)03";
-
-        // Initialize the barcode generator for UPC‑A with GS1‑128 coupon encoding.
-        using (var generator = new BarcodeGenerator(EncodeTypes.UpcaGs1Code128Coupon, codeText))
+        // Create a UPC‑A barcode that includes a Code128 coupon.
+        // Example codetext: "514141100906(8102)03"
+        using (var generator = new BarcodeGenerator(EncodeTypes.UpcaGs1Code128Coupon, "514141100906(8102)03"))
         {
             // Save the generated barcode image to a memory stream in PNG format.
-            using (var ms = new MemoryStream())
+            using (var imageStream = new MemoryStream())
             {
-                generator.Save(ms, BarCodeImageFormat.Png);
-                byte[] barcodeBytes = ms.ToArray(); // Convert stream to byte array.
+                generator.Save(imageStream, BarCodeImageFormat.Png);
+                byte[] imageBytes = imageStream.ToArray(); // Convert stream to byte array.
 
-                // Create a memory stream for the attachment using the barcode bytes.
-                using (var attachmentStream = new MemoryStream(barcodeBytes))
+                // Prepare an email message and attach the barcode image.
+                using (var mailMessage = new MailMessage())
                 {
-                    // Build the email message.
-                    using (var message = new MailMessage())
+                    mailMessage.From = new MailAddress("sender@example.com");
+                    mailMessage.To.Add("recipient@example.com");
+                    mailMessage.Subject = "UPC‑A with Code128 Coupon Barcode";
+                    mailMessage.Body = "Please find the generated barcode attached.";
+
+                    // Attach the image using a new memory stream based on the byte array.
+                    using (var attachmentStream = new MemoryStream(imageBytes))
                     {
-                        // Set sender and recipient addresses.
-                        message.From = new MailAddress("sender@example.com");
-                        message.To.Add("recipient@example.com");
-
-                        // Set email subject and body.
-                        message.Subject = "UPC‑A with Code128 Coupon Barcode";
-                        message.Body = "Please find the generated barcode attached.";
-
-                        // Create the attachment (PNG image) and add it to the message.
                         var attachment = new Attachment(attachmentStream, "barcode.png", "image/png");
-                        message.Attachments.Add(attachment);
+                        mailMessage.Attachments.Add(attachment);
 
-                        // Output the size of the generated barcode image for verification.
-                        Console.WriteLine($"Barcode generated: {barcodeBytes.Length} bytes.");
+                        // Send the email using an SMTP client.
+                        // Replace host, port, and credentials with real values when deploying.
+                        using (var smtpClient = new SmtpClient("smtp.example.com"))
+                        {
+                            smtpClient.Port = 25;
+                            // smtpClient.Credentials = new NetworkCredential("username", "password");
+                            // smtpClient.EnableSsl = true;
+
+                            // Uncomment the line below to actually send the email.
+                            // smtpClient.Send(mailMessage);
+                        }
                     }
                 }
             }

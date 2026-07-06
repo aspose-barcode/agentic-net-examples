@@ -1,34 +1,35 @@
+// Title: Generate GS1 DataMatrix barcode with custom module size and BMP output
+// Description: Demonstrates creating a GS1 DataMatrix barcode, setting its module size to 5 pixels, and saving it as a BMP image.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to use the BarcodeGenerator class with EncodeTypes.GS1DataMatrix. Typical use cases include encoding product identifiers (GTIN) and lot numbers for supply‑chain labeling, where developers need to control visual parameters like X‑dimension and export to raster formats such as BMP.
+// Prompt: Generate a GS1 DataMatrix barcode, set module size to 5 pixels, and export as BMP.
+// Tags: gs1datamatrix, barcode generation, module size, bmp, aspose.barcode, csharp
+
 using System;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode;
 
 /// <summary>
-/// Demonstrates generating a GS1 DataMatrix barcode using Aspose.BarCode.
+/// Example program that generates a GS1 DataMatrix barcode,
+/// configures the module size, and saves the result as a BMP file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a GS1 DataMatrix barcode and saves it as a BMP file.
+    /// Entry point of the application.
     /// </summary>
     static void Main()
     {
-        // Define the barcode content: AI (01) followed by a 14‑digit GTIN.
-        string codeText = "(01)12345678901231";
+        // Define the GS1 DataMatrix code text (GTIN and lot number) using Application Identifiers.
+        const string codeText = "(01)12345678901231(10)LOT123";
 
-        // Choose the GS1 DataMatrix symbology.
-        BaseEncodeType encodeType = EncodeTypes.GS1DataMatrix;
-
-        // Create a barcode generator with the specified type and content.
-        using (var generator = new BarcodeGenerator(encodeType, codeText))
+        // Initialize the barcode generator for GS1 DataMatrix with the specified code text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.GS1DataMatrix, codeText))
         {
-            // Configure the X‑dimension (module size) to 5 pixels.
+            // Set the module (X‑dimension) size to 5 pixels to control barcode density.
             generator.Parameters.Barcode.XDimension.Pixels = 5f;
 
-            // Render and save the barcode as a BMP image.
+            // Save the generated barcode image as a BMP file.
             generator.Save("gs1datamatrix.bmp");
         }
-
-        // Inform the user that the image has been saved.
-        Console.WriteLine("GS1 DataMatrix barcode saved as gs1datamatrix.bmp");
     }
 }

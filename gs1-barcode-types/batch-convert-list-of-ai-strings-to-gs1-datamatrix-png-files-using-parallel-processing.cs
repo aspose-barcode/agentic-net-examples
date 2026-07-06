@@ -1,3 +1,9 @@
+// Title: Batch convert AI strings to GS1 DataMatrix PNG files using parallel processing
+// Description: Demonstrates how to encode a list of GS1 Application Identifier strings into DataMatrix barcodes and save them as PNG images in parallel.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on GS1 DataMatrix encoding. It showcases the use of BarcodeGenerator, EncodeTypes, and image format classes to create high‑resolution PNG files. Developers often need to batch‑process multiple barcode values efficiently, and this pattern illustrates parallel execution with safe file naming.
+// Prompt: Batch convert a list of AI strings to GS1 DataMatrix PNG files using parallel processing.
+// Tags: gs1 datamatrix, batch, parallel, png, barcode generation, aspose.barcode, encode types, image output
+
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -6,59 +12,67 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Program to generate GS1 DataMatrix barcodes from AI strings and save them as PNG files.
+/// Provides an entry point that batch‑processes a collection of GS1 Application Identifier strings,
+/// generating GS1 DataMatrix barcodes and saving each as a PNG file using parallel execution.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates PNG files for a list of GS1 AI strings.
+    /// Main method that orchestrates the barcode generation workflow.
     /// </summary>
-    /// <param name="args">Command‑line arguments (not used).</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Sample list of GS1 AI strings (fallback if no arguments are provided)
+        // Define a sample list of AI (Application Identifier) strings to encode as GS1 DataMatrix.
         List<string> aiStrings = new List<string>
         {
-            "(01)12345678901231",
-            "(01)98765432109876",
-            "(01)55555555555555",
-            "(01)11111111111111",
-            "(01)22222222222222"
+            "(01)01234567890128(10)ABC123",
+            "(01)09876543210987(21)XYZ789",
+            "(01)12345678901231(17)221231",
+            "(01)55555555555555(3103)001500",
+            "(01)99999999999999(3102)000750"
         };
 
-        // Determine output directory for generated PNG files
-        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "GS1DataMatrixOutput");
-
-        // Ensure the output directory exists
-        if (!Directory.Exists(outputDir))
+        // Ensure the output directory exists.
+        string outputFolder = "OutputDataMatrix";
+        if (!Directory.Exists(outputFolder))
         {
-            Directory.CreateDirectory(outputDir);
+            Directory.CreateDirectory(outputFolder);
         }
 
-        // Process each AI string in parallel to improve performance
+        // Process each AI string in parallel to improve performance on multi‑core systems.
         Parallel.ForEach(aiStrings, aiString =>
         {
-            // Create a safe file name by removing characters illegal in file names
-            string safeFileName = aiString.Replace("(", "").Replace(")", "").Replace(" ", "_") + ".png";
+            // Generate a file‑system‑safe name from the AI string (remove invalid characters).
+            string safeFileName = GetSafeFileName(aiString) + ".png";
+            string outputPath = Path.Combine(outputFolder, safeFileName);
 
-            // Combine the output directory with the safe file name
-            string outputPath = Path.Combine(outputDir, safeFileName);
-
-            // Generate the GS1 DataMatrix barcode for the current AI string
+            // Create and configure the barcode generator for GS1 DataMatrix.
             using (var generator = new BarcodeGenerator(EncodeTypes.GS1DataMatrix, aiString))
             {
-                // Optional: set resolution or other parameters if needed
-                generator.Parameters.Resolution = 300f;
+                // Set image size using interpolation mode for high‑quality scaling.
+                generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
+                generator.Parameters.ImageWidth.Point = 300f;
+                generator.Parameters.ImageHeight.Point = 300f;
 
-                // Save the generated barcode as a PNG file
-                generator.Save(outputPath);
+                // Save the generated barcode as a PNG file.
+                generator.Save(outputPath, BarCodeImageFormat.Png);
             }
 
-            // Inform the user that the file has been generated
+            // Output the result to the console for tracking.
             Console.WriteLine($"Generated: {outputPath}");
         });
+    }
 
-        // Indicate that all conversions have finished
-        Console.WriteLine("Batch conversion completed.");
+    // Helper method to create a file‑system‑safe name from the AI string.
+    private static string GetSafeFileName(string input)
+    {
+        // Replace any characters that are invalid in file names.
+        foreach (char c in Path.GetInvalidFileNameChars())
+        {
+            input = input.Replace(c, '_');
+        }
+
+        // Remove parentheses and spaces that are unnecessary for the file name.
+        return input.Replace("(", "").Replace(")", "").Replace(" ", "_");
     }
 }

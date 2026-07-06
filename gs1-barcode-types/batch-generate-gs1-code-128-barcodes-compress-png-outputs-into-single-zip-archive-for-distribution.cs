@@ -1,89 +1,75 @@
+// Title: Batch generate GS1 Code 128 barcodes and zip them
+// Description: Generates multiple GS1 Code 128 barcodes as PNG files and compresses them into a single ZIP archive for easy distribution.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, demonstrating how to use the BarcodeGenerator class with EncodeTypes.GS1Code128 to create barcodes, customize parameters (e.g., checksum display), and save them in PNG format. It also shows how to package the generated images using System.IO.Compression.ZipArchive. Developers working with product identification, inventory, or logistics often need to produce GS1-compliant barcodes in bulk and deliver them as a single archive.
+// Prompt: Batch generate GS1 Code 128 barcodes, compress PNG outputs into a single ZIP archive for distribution.
+// Tags: gs1, code128, barcode, generation, png, zip, aspose.barcode
+
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating GS1 Code 128 barcodes, saving them as PNG files,
-/// packaging them into a ZIP archive, and cleaning up temporary files.
+/// Demonstrates batch creation of GS1 Code 128 barcodes and compression of the resulting PNG files into a ZIP archive.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates barcode images from sample data, zips them, and outputs the archive path.
+    /// Entry point of the example. Generates barcode images from predefined GS1 data strings,
+    /// saves them as PNG files, and archives them into a single ZIP file.
     /// </summary>
     static void Main()
     {
-        // Sample GS1 Code 128 data (AI format)
-        var dataList = new List<string>
+        // Define sample GS1 Code 128 data strings using Application Identifier (AI) format.
+        List<string> gs1Data = new List<string>
         {
-            "(01)12345678901231",
-            "(01)98765432109876",
-            "(01)55555555555555",
-            "(01)11111111111111",
-            "(01)22222222222222"
+            "(01)12345678901231",                     // GTIN only
+            "(01)98765432109876(10)ABC123",           // GTIN + Batch/Lot
+            "(01)55555555555555(21)SN001",            // GTIN + Serial Number
+            "(01)11111111111111(17)230101",           // GTIN + Expiration Date
+            "(01)22222222222222(3103)001500"          // GTIN + Net weight (kg)
         };
 
-        // Directory to store temporary PNG files
-        string outputDir = Path.Combine(Path.GetTempPath(), "Gs1Barcodes");
-        if (!Directory.Exists(outputDir))
-        {
-            // Create the directory if it does not exist
-            Directory.CreateDirectory(outputDir);
-        }
+        // Create an output directory for the generated PNG files.
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
+        Directory.CreateDirectory(outputDir);
 
-        // Generate PNG images for each data string
-        var pngFiles = new List<string>();
-        foreach (var data in dataList)
+        // Iterate over each GS1 data string and generate a corresponding barcode image.
+        for (int i = 0; i < gs1Data.Count; i++)
         {
-            // Build a safe file name by removing parentheses and spaces
-            string fileName = $"barcode_{data.Replace("(", "").Replace(")", "").Replace(" ", "")}.png";
+            string codeText = gs1Data[i];
+            string fileName = $"barcode_{i + 1}.png";
             string filePath = Path.Combine(outputDir, fileName);
 
-            // Create a barcode generator for GS1 Code 128
-            using (var generator = new BarcodeGenerator(EncodeTypes.GS1Code128, data))
+            // Initialize the barcode generator with GS1 Code 128 symbology and the current data string.
+            using (var generator = new BarcodeGenerator(EncodeTypes.GS1Code128, codeText))
             {
-                // Optional: show checksum in human‑readable text
+                // Ensure the checksum is always displayed (optional visual requirement).
                 generator.Parameters.Barcode.ChecksumAlwaysShow = true;
 
-                // Save the generated barcode directly as a PNG file
+                // Save the generated barcode as a PNG file.
                 generator.Save(filePath);
             }
-
-            // Keep track of the generated file path for later zipping
-            pngFiles.Add(filePath);
         }
 
-        // Path for the final ZIP archive containing all PNGs
-        string zipPath = Path.Combine(outputDir, "Gs1Barcodes.zip");
+        // Define the path for the ZIP archive that will contain all generated PNG files.
+        string zipPath = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes.zip");
 
-        // Ensure any existing ZIP archive is removed before creating a new one
-        if (File.Exists(zipPath))
+        // Create the ZIP archive and add each PNG file as an entry.
+        using (var zipStream = new FileStream(zipPath, FileMode.Create))
+        using (var archive = new ZipArchive(zipStream, ZipArchiveMode.Create, leaveOpen: false))
         {
-            File.Delete(zipPath);
-        }
-
-        // Create a ZIP archive and add each PNG file as an entry
-        using (var zip = ZipFile.Open(zipPath, ZipArchiveMode.Create))
-        {
-            foreach (var png in pngFiles)
+            foreach (string file in Directory.GetFiles(outputDir, "*.png"))
             {
-                // Add the PNG file to the archive using its file name only
-                zip.CreateEntryFromFile(png, Path.GetFileName(png));
+                string entryName = Path.GetFileName(file);
+                archive.CreateEntryFromFile(file, entryName);
             }
         }
 
-        // Clean up temporary PNG files (optional)
-        foreach (var png in pngFiles)
-        {
-            File.Delete(png);
-        }
-
-        // Inform the user where the ZIP archive was created
-        Console.WriteLine($"Generated ZIP archive at: {zipPath}");
+        // Output summary information to the console.
+        Console.WriteLine($"Generated {gs1Data.Count} GS1 Code 128 barcodes in '{outputDir}'.");
+        Console.WriteLine($"Compressed into ZIP archive: {zipPath}");
     }
 }

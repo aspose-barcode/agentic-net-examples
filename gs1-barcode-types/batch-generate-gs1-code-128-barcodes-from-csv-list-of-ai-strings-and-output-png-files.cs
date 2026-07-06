@@ -1,110 +1,93 @@
+// Title: Batch generate GS1 Code 128 barcodes from CSV
+// Description: Reads a CSV file containing GS1 AI strings, creates a GS1 Code 128 barcode for each entry, and saves the images as PNG files.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, demonstrating how to use the BarcodeGenerator class with EncodeTypes.GS1Code128. Typical use cases include bulk barcode creation for inventory, shipping, or retail labeling where AI data is stored in CSV format. Developers often need to automate barcode production, handle file I/O, and manage output directories, which this snippet illustrates.
+// Prompt: Batch generate GS1 Code 128 barcodes from a CSV list of AI strings and output PNG files.
+// Tags: gs1,code128,barcode,generation,csv,output,png,aspose.barcode
+
 using System;
 using System.IO;
-using System.Collections.Generic;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Entry point for the barcode batch generation utility.
-/// Reads AI strings from a CSV file (or uses sample data) and creates GS1-128 barcodes.
+/// Demonstrates batch generation of GS1 Code 128 barcodes from a CSV file and saves each barcode as a PNG image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Main method that orchestrates reading input, generating barcodes, and saving them to disk.
+    /// Entry point of the application. Reads AI strings from a CSV, generates barcodes, and writes PNG files.
     /// </summary>
-    /// <param name="args">Command‑line arguments; first argument may specify the CSV file path.</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Determine input CSV path (first argument or default)
-        string csvPath = args.Length > 0 ? args[0] : "input.csv";
+        // Input CSV file containing GS1 AI strings (one per line)
+        const string inputCsv = "input.csv";
 
-        // Prepare list to hold AI strings read from CSV or sample data
-        List<string> aiStrings = new List<string>();
+        // Directory where generated PNG files will be saved
+        const string outputDir = "output";
 
-        // Attempt to read AI strings from the specified CSV file
-        if (File.Exists(csvPath))
+        // --------------------------------------------------------------------
+        // Ensure the input file exists; if not, create a sample file with a few AI strings
+        // --------------------------------------------------------------------
+        if (!File.Exists(inputCsv))
         {
-            try
+            string[] sampleData =
             {
-                // Read all lines and split each line by commas
-                foreach (var line in File.ReadAllLines(csvPath))
-                {
-                    // Split by commas, remove empty entries, and trim whitespace
-                    var parts = line.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-                    foreach (var part in parts)
-                    {
-                        var trimmed = part.Trim();
-                        if (!string.IsNullOrEmpty(trimmed))
-                        {
-                            aiStrings.Add(trimmed);
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                // Report any errors encountered while reading the CSV
-                Console.WriteLine($"Error reading CSV file: {ex.Message}");
-            }
-        }
-        else
-        {
-            // CSV not found – fall back to predefined sample AI strings
-            Console.WriteLine($"CSV file not found at '{csvPath}'. Using sample data.");
-            aiStrings.Add("(01)12345678901231");
-            aiStrings.Add("(01)98765432109876");
-            aiStrings.Add("(01)00012345678905");
-            aiStrings.Add("(01)55555555555555");
-            aiStrings.Add("(01)99999999999999");
+                "(01)12345678901231",
+                "(10)ABC123",
+                "(21)9876543210",
+                "(01)09876543210987(21)XYZ12345"
+            };
+            File.WriteAllLines(inputCsv, sampleData);
+            Console.WriteLine($"Sample input file '{inputCsv}' created.");
         }
 
-        // If no AI strings were collected, exit early
-        if (aiStrings.Count == 0)
-        {
-            Console.WriteLine("No AI strings to process. Exiting.");
-            return;
-        }
-
-        // Ensure the output directory exists before saving files
-        string outputDir = "output";
+        // --------------------------------------------------------------------
+        // Ensure the output directory exists
+        // --------------------------------------------------------------------
         if (!Directory.Exists(outputDir))
         {
             Directory.CreateDirectory(outputDir);
         }
 
-        // Iterate over each AI string and generate a corresponding barcode image
+        // --------------------------------------------------------------------
+        // Read all non‑empty lines from the CSV
+        // --------------------------------------------------------------------
+        string[] lines = File.ReadAllLines(inputCsv);
         int index = 1;
-        foreach (var codeText in aiStrings)
+
+        foreach (string rawLine in lines)
         {
-            // Construct a safe file name for the barcode image
-            string safeFileName = $"barcode_{index}.png";
-            string outputPath = Path.Combine(outputDir, safeFileName);
+            // Trim whitespace and skip empty lines
+            string line = rawLine.Trim();
+            if (string.IsNullOrEmpty(line))
+                continue;
+
+            // Create a safe file name based on the index (e.g., barcode_1.png)
+            string fileName = $"barcode_{index}.png";
+            string outputPath = Path.Combine(outputDir, fileName);
 
             try
             {
-                // Create a barcode generator for GS1-128 using the current AI string
-                using (var generator = new BarcodeGenerator(EncodeTypes.GS1Code128, codeText))
+                // --------------------------------------------------------------------
+                // Generate GS1 Code128 barcode for the AI string
+                // --------------------------------------------------------------------
+                using (var generator = new BarcodeGenerator(EncodeTypes.GS1Code128, line))
                 {
-                    // Set desired resolution (dots per inch)
-                    generator.Parameters.Resolution = 300f;
-
-                    // Save the generated barcode as a PNG file (format inferred from extension)
+                    // Save as PNG (format inferred from file extension)
                     generator.Save(outputPath);
                 }
 
-                Console.WriteLine($"Generated barcode for '{codeText}' -> {outputPath}");
+                Console.WriteLine($"Generated: {outputPath}");
             }
             catch (Exception ex)
             {
-                // Report any failures during barcode generation
-                Console.WriteLine($"Failed to generate barcode for '{codeText}': {ex.Message}");
+                // Log any errors that occur during barcode generation
+                Console.WriteLine($"Error processing line {index}: {ex.Message}");
             }
 
             index++;
         }
 
-        // Indicate that the batch process has finished
-        Console.WriteLine("Batch generation completed.");
+        Console.WriteLine("Barcode generation completed.");
     }
 }
