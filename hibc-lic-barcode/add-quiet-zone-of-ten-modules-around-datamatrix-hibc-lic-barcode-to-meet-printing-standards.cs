@@ -1,62 +1,64 @@
+// Title: Add Quiet Zone to HIBC DataMatrix LIC Barcode
+// Description: Demonstrates how to generate a HIBC DataMatrix LIC barcode with a ten‑module quiet zone using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It shows how to work with the ComplexBarcodeGenerator, HIBCLICSecondaryAndAdditionalDataCodetext, and SecondaryAndAdditionalData classes to create HIBC‑compliant DataMatrix barcodes. Developers often need to adjust quiet zones, module size, and padding to satisfy printing standards and regulatory requirements.
+// Prompt: Add a quiet zone of ten modules around a DataMatrix HIBC LIC barcode to meet printing standards.
+// Tags: datamatrix, hibc, quietzone, png, generation, complexbarcode, aspose.barcodes, secondarydata
+
 using System;
-using System.IO;
 using Aspose.BarCode.ComplexBarcode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generation of a HIBC DataMatrix LIC barcode with custom module size,
-/// quiet zone, and resolution using Aspose.BarCode.
+/// Generates a HIBC DataMatrix LIC barcode with a ten‑module quiet zone and saves it as a PNG image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates and saves a HIBC DataMatrix LIC barcode image.
+    /// Entry point of the example. Prepares secondary data, configures barcode parameters, adds a quiet zone,
+    /// and saves the resulting image.
     /// </summary>
     static void Main()
     {
-        // Prepare primary HIBC LIC data (required fields)
-        var primaryCodetext = new HIBCLICPrimaryDataCodetext
+        // Prepare secondary data for the HIBC LIC DataMatrix barcode (lot and serial numbers).
+        var secondaryData = new SecondaryAndAdditionalData
         {
-            BarcodeType = EncodeTypes.HIBCDataMatrixLIC,
-            Data = new PrimaryData
-            {
-                ProductOrCatalogNumber = "12345",   // Product or catalog identifier
-                LabelerIdentificationCode = "A999", // Labeler ID
-                UnitOfMeasureID = 1                 // Unit of measure identifier
-            }
+            LotNumber = "LOT123",
+            SerialNumber = "SN001"
         };
 
-        // Define module size (XDimension) in points (1 point = 1/72 inch)
-        float moduleSize = 2f; // 2 points per module
-
-        // Construct output file path in the current working directory
-        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "hibc_datamatrix.png");
-
-        // Generate the barcode with a quiet zone of ten modules on each side
-        using (var generator = new ComplexBarcodeGenerator(primaryCodetext))
+        // Create the complex codetext object that combines the barcode type, link character, and secondary data.
+        var hibcCodetext = new HIBCLICSecondaryAndAdditionalDataCodetext
         {
-            // Set the size of a single module (XDimension)
-            generator.Parameters.Barcode.XDimension.Point = moduleSize;
+            BarcodeType = EncodeTypes.HIBCDataMatrixLIC,
+            LinkCharacter = '+',
+            Data = secondaryData
+        };
 
-            // Calculate quiet zone size (10 modules * module size)
-            float quietZone = 10f * moduleSize;
+        // Initialize the complex barcode generator with the prepared codetext.
+        using (var generator = new ComplexBarcodeGenerator(hibcCodetext))
+        {
+            // Define the module size (XDimension) – 2 points per module.
+            generator.Parameters.Barcode.XDimension.Point = 2f;
 
-            // Apply quiet zone padding to all sides
+            // Calculate quiet zone size: ten modules on each side.
+            float quietZone = generator.Parameters.Barcode.XDimension.Point * 10f;
+
+            // Apply the quiet zone to all four padding sides.
             generator.Parameters.Barcode.Padding.Left.Point   = quietZone;
             generator.Parameters.Barcode.Padding.Top.Point    = quietZone;
             generator.Parameters.Barcode.Padding.Right.Point  = quietZone;
             generator.Parameters.Barcode.Padding.Bottom.Point = quietZone;
 
-            // Optional: set image resolution for higher quality output
-            generator.Parameters.Resolution = 300f;
+            // Enable automatic sizing using interpolation mode.
+            generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
 
-            // Save the generated barcode image as PNG
-            generator.Save(outputPath, BarCodeImageFormat.Png);
+            // Save the generated barcode as a PNG file.
+            generator.Save("hibc_datamatrix.png");
         }
 
-        // Inform the user where the barcode image was saved
-        Console.WriteLine($"Barcode saved to: {outputPath}");
+        // Inform the user that the barcode has been generated.
+        Console.WriteLine("HIBC DataMatrix LIC barcode generated with a 10‑module quiet zone.");
     }
 }

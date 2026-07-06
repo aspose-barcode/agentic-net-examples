@@ -1,52 +1,49 @@
+// Title: Generate high-resolution HIBC DataMatrix LIC barcode
+// Description: Demonstrates configuring Aspose.BarCode to produce a 300 DPI DataMatrix HIBC LIC barcode, useful for clear printing in medical reports.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category, focusing on HIBC (Health Industry Bar Code) symbology. It showcases the use of ComplexBarcodeGenerator, HIBCLICSecondaryAndAdditionalDataCodetext, and SecondaryAndAdditionalData classes to embed lot and serial numbers. Developers creating medical or pharmaceutical labels often need high-resolution barcodes for accurate scanning and regulatory compliance.
+// Prompt: Configure the barcode generator to use high DPI (300) for sharper DataMatrix HIBC LIC images in medical reports.
+// Tags: datamatrix, hibc, lic, highdpi, barcode, generation, aspnet, aspnetcore
+
 using System;
-using System.IO;
 using Aspose.BarCode.ComplexBarcode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generation of a HIBC DataMatrix LIC barcode with secondary and additional data using Aspose.BarCode.
+/// Demonstrates generating a high‑resolution HIBC DataMatrix LIC barcode using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a HIBC DataMatrix LIC barcode and saves it as a PNG file.
+    /// Entry point. Creates secondary data, builds complex codetext, sets DPI to 300, and saves the barcode as PNG.
     /// </summary>
     static void Main()
     {
-        // Define the output file name for the generated barcode image.
-        string outputPath = "hibc_datamatrix.png";
-
-        // Prepare secondary and additional data required for the HIBC LIC DataMatrix barcode.
+        // Prepare secondary data for HIBC LIC DataMatrix barcode
         var secondaryData = new SecondaryAndAdditionalData
         {
-            LotNumber = "LOT123",                     // Lot number of the product
-            SerialNumber = "SN001",                   // Serial number of the product
-            ExpiryDate = DateTime.Today.AddMonths(6), // Expiration date (6 months from today)
-            ExpiryDateFormat = HIBCLICDateFormat.MMDDYY, // Date format for the expiry date
-            Quantity = 10,                            // Quantity of items
-            DateOfManufacture = DateTime.Today        // Manufacturing date (today)
+            LotNumber = "LOT123",
+            SerialNumber = "SN001"
         };
 
-        // Configure the complex codetext that includes barcode type, link character, and the secondary data.
+        // Configure complex codetext with required link character
         var complexCodetext = new HIBCLICSecondaryAndAdditionalDataCodetext
         {
-            BarcodeType = EncodeTypes.HIBCDataMatrixLIC, // Specify HIBC DataMatrix LIC barcode type
-            LinkCharacter = '+',                         // Link character used in the codetext
-            Data = secondaryData                         // Attach the prepared secondary data
+            BarcodeType = EncodeTypes.HIBCDataMatrixLIC,
+            LinkCharacter = '+',
+            Data = secondaryData
         };
 
-        // Create a ComplexBarcodeGenerator with the configured codetext.
+        // Generate the barcode with high DPI (300)
         using (var generator = new ComplexBarcodeGenerator(complexCodetext))
         {
-            // Set the image resolution to 300 DPI for higher quality output.
+            // Set the resolution (dots per inch) to 300 for sharper output
             generator.Parameters.Resolution = 300f;
-
-            // Save the generated barcode image to the specified file (PNG format by default).
-            generator.Save(outputPath);
+            // Save the generated barcode image as PNG
+            generator.Save("hibc_datamatrix_lic.png");
         }
 
-        // Output the full path of the saved barcode image to the console.
-        Console.WriteLine($"HIBC DataMatrix LIC barcode saved to: {Path.GetFullPath(outputPath)}");
+        // Inform the user that generation succeeded
+        Console.WriteLine("HIBC DataMatrix LIC barcode generated with 300 DPI.");
     }
 }

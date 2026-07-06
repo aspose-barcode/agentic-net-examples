@@ -1,3 +1,9 @@
+// Title: Generate HIBC Code 128 LIC barcode with primary data and save as BMP
+// Description: Demonstrates creating a HIBCLICPrimaryDataCodetext, setting the labeler ID, and generating a BMP image of the barcode.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category, showcasing the use of ComplexBarcodeGenerator with HIBCCode128LIC symbology. It illustrates how to configure primary data fields, such as product number and labeler identification, and render the barcode to a bitmap image. Developers needing to produce HIBC-compliant barcodes for medical or pharmaceutical labeling can follow this pattern.
+// Prompt: Create a HIBCLICPrimaryDataCodetext, set labeler ID, and generate a BMP image of the barcode.
+// Tags: hibc, code128lic, barcode generation, bmp, complexbarcode, aspnet, aspose.barcode
+
 using System;
 using Aspose.BarCode.ComplexBarcode;
 using Aspose.BarCode.Generation;
@@ -5,39 +11,40 @@ using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generation of a HIBC LIC barcode image using Aspose.BarCode.
+/// Example program that creates a HIBCLIC primary data codetext,
+/// sets the labeler identification code, and saves the generated barcode as a BMP image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Creates primary data for a HIBC LIC barcode,
-    /// generates the barcode image, and saves it as a BMP file.
+    /// Entry point of the application.
     /// </summary>
     static void Main()
     {
-        // Initialize primary data codetext for HIBC LIC barcode
+        // Initialize HIBCLIC primary data codetext with required fields
         var primaryCodetext = new HIBCLICPrimaryDataCodetext
         {
-            // Specify the barcode symbology (Code128 LIC in this example)
             BarcodeType = EncodeTypes.HIBCCode128LIC,
-            // Populate required primary data fields
             Data = new PrimaryData
             {
-                ProductOrCatalogNumber = "12345",          // Product or catalog identifier
-                LabelerIdentificationCode = "A999",       // Labeler identification code as required
-                UnitOfMeasureID = 1                        // Unit of measure identifier
+                ProductOrCatalogNumber = "12345",
+                LabelerIdentificationCode = "A999", // labeler ID
+                UnitOfMeasureID = 1
             }
         };
 
-        // Use ComplexBarcodeGenerator to create the barcode image
+        // Generate the barcode image using ComplexBarcodeGenerator
         using (var generator = new ComplexBarcodeGenerator(primaryCodetext))
-        using (Image image = generator.GenerateBarCodeImage())
         {
-            // Save the generated image to disk in BMP format
-            image.Save("hibc_primary.bmp", ImageFormat.Bmp);
+            // Render the barcode to a bitmap
+            using (Bitmap bitmap = generator.GenerateBarCodeImage())
+            {
+                // Save the bitmap as a BMP file
+                bitmap.Save("hibc_primary.bmp", ImageFormat.Bmp);
+            }
         }
 
         // Inform the user that the image has been saved
-        Console.WriteLine("HIBC LIC barcode image saved as hibc_primary.bmp");
+        Console.WriteLine("Barcode image saved as hibc_primary.bmp");
     }
 }
