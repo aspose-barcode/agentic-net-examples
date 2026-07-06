@@ -1,92 +1,79 @@
+// Title: Barcode size unit toggle demonstration
+// Description: Shows how to generate barcodes with dimensions specified in pixels or millimeters, illustrating the core logic behind a UI toggle control.
+// Category-Description: This example belongs to the Aspose.BarCode image generation category, demonstrating the use of BarcodeGenerator, AutoSizeMode, and size unit properties (Pixels, Millimeters). Developers often need to switch measurement units for barcode rendering in UI applications, printing, or labeling scenarios. The snippet provides a reference for implementing unit toggles and instant preview updates.
+// Prompt: Design UI control allowing users to toggle between Pixels and Millimeters for barcode size, updating preview instantly.
+// Tags: barcode, size, unit, pixels, millimeters, generation, aspose.barcode, autosizemode, preview
+
 using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
-namespace BarcodeSizeToggleDemo
+/// <summary>
+/// Demonstrates generating barcode images with size specified in pixels and millimeters.
+/// </summary>
+class Program
 {
     /// <summary>
-    /// Demonstrates generating barcodes with dimensions specified in either pixels or millimeters.
+    /// Entry point. Generates two barcode files using different size units and prints their paths.
     /// </summary>
-    class Program
+    static void Main()
     {
-        /// <summary>
-        /// Generates a barcode image using the specified size unit and saves it to the given path.
-        /// </summary>
-        /// <param name="mode">The unit mode (Pixels or Millimeters) for width and height.</param>
-        /// <param name="widthValue">The width value in the selected unit.</param>
-        /// <param name="heightValue">The height value in the selected unit.</param>
-        /// <param name="outputPath">The file path where the barcode image will be saved.</param>
-        static void GenerateBarcode(UnitMode mode, float widthValue, float heightValue, string outputPath)
+        // NOTE: The original request was for a UI control to toggle units.
+        // The snippet runner does not support UI frameworks, so we demonstrate the core logic
+        // by generating two barcode images: one sized in pixels and one sized in millimeters.
+        // The images are saved to the current directory and their file names are printed.
+
+        // Barcode content and symbology
+        const string codeText = "1234567890";
+        var encodeType = EncodeTypes.Code128;
+
+        // ---------- Generate barcode with size specified in pixels ----------
+        using (var generatorPixels = new BarcodeGenerator(encodeType))
         {
-            // Create a Code128 barcode generator with sample text.
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Demo123"))
-            {
-                // Optional: set background and bar colors.
-                generator.Parameters.BackColor = Aspose.Drawing.Color.White;
-                generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
+            // Set the text to encode
+            generatorPixels.CodeText = codeText;
 
-                // Apply size based on the selected unit mode.
-                if (mode == UnitMode.Pixels)
-                {
-                    // Width and height are interpreted as pixels.
-                    generator.Parameters.ImageWidth.Pixels = widthValue;
-                    generator.Parameters.ImageHeight.Pixels = heightValue;
-                }
-                else // Millimeters
-                {
-                    // Width and height are interpreted as millimeters.
-                    generator.Parameters.ImageWidth.Millimeters = widthValue;
-                    generator.Parameters.ImageHeight.Millimeters = heightValue;
-                }
+            // Use interpolation mode to control exact image size
+            generatorPixels.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
 
-                // Save the barcode image in PNG format.
-                generator.Save(outputPath);
-                Console.WriteLine($"Barcode saved ({mode}): {outputPath}");
-            }
+            // Set image size in pixels
+            generatorPixels.Parameters.ImageWidth.Pixels = 300f;   // 300 pixels width
+            generatorPixels.Parameters.ImageHeight.Pixels = 150f; // 150 pixels height
+
+            // Optional: set background and bar colors
+            generatorPixels.Parameters.BackColor = Color.White;
+            generatorPixels.Parameters.Barcode.BarColor = Color.Black;
+
+            // Save the barcode image
+            const string pixelFile = "barcode_pixels.png";
+            generatorPixels.Save(pixelFile);
+            Console.WriteLine($"Barcode saved with pixel dimensions: {pixelFile}");
         }
 
-        /// <summary>
-        /// Entry point of the demo application. Generates barcodes using both pixel and millimeter dimensions.
-        /// </summary>
-        static void Main()
+        // ---------- Generate barcode with size specified in millimeters ----------
+        using (var generatorMillimeters = new BarcodeGenerator(encodeType))
         {
-            // NOTE: Full UI integration (e.g., WinForms/WPF) cannot be demonstrated in this console
-            // application. The core logic for toggling between Pixels and Millimeters is shown below.
+            // Set the text to encode
+            generatorMillimeters.CodeText = codeText;
 
-            // Example dimensions in pixels.
-            float widthPixels = 300f;
-            float heightPixels = 150f;
+            // Use interpolation mode to control exact image size
+            generatorMillimeters.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
 
-            // Corresponding dimensions in millimeters (approx. 300px and 150px at 96 DPI).
-            float widthMillimeters = 80f;
-            float heightMillimeters = 40f;
+            // Set image size in millimeters
+            generatorMillimeters.Parameters.ImageWidth.Millimeters = 80f;   // 80 mm width
+            generatorMillimeters.Parameters.ImageHeight.Millimeters = 40f; // 40 mm height
 
-            // Generate barcode using pixel dimensions.
-            GenerateBarcode(
-                UnitMode.Pixels,
-                widthPixels,
-                heightPixels,
-                "barcode_pixels.png");
+            // Optional: set background and bar colors
+            generatorMillimeters.Parameters.BackColor = Color.White;
+            generatorMillimeters.Parameters.Barcode.BarColor = Color.Black;
 
-            // Generate barcode using millimeter dimensions.
-            GenerateBarcode(
-                UnitMode.Millimeters,
-                widthMillimeters,
-                heightMillimeters,
-                "barcode_millimeters.png");
-
-            // End of demo.
-            Console.WriteLine("Demo completed.");
+            // Save the barcode image
+            const string mmFile = "barcode_millimeters.png";
+            generatorMillimeters.Save(mmFile);
+            Console.WriteLine($"Barcode saved with millimeter dimensions: {mmFile}");
         }
-    }
 
-    /// <summary>
-    /// Simple enum to represent the unit mode for barcode dimensions.
-    /// </summary>
-    enum UnitMode
-    {
-        Pixels,
-        Millimeters
+        // End of demonstration
     }
 }
