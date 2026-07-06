@@ -1,95 +1,83 @@
+// Title: Decode HIBC LIC barcode from Base64 string using memory stream
+// Description: Demonstrates how to convert a Base64‑encoded image of a HIBC LIC barcode into a byte array, read it from a MemoryStream, and decode the barcode without writing any files to disk.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, focusing on reading and parsing complex HIBC LIC symbology. It showcases the BarCodeReader with DecodeType.AllSupportedTypes and the ComplexCodetextReader for extracting primary, secondary, and combined data. Developers working with healthcare or logistics barcodes can use these APIs to integrate barcode decoding directly from in‑memory image data.
+// Prompt: Decode a base64‑encoded HIBC LIC barcode image string using a memory stream without writing to disk.
+// Tags: hibc, lic, barcode, decoding, memorystream, base64, aspose.barcode, c#, .net
+
 using System;
 using System.IO;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.BarCode.ComplexBarcode;
 
 /// <summary>
-/// Demonstrates reading a barcode from a Base64‑encoded image,
-/// decoding it, and extracting HIBC LIC information if present.
+/// Example program that decodes a HIBC LIC barcode from a Base64‑encoded image using an in‑memory stream.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
+    /// Entry point. Converts the Base64 string to a byte array, reads the barcode, and prints parsed HIBC LIC data.
     /// </summary>
     static void Main()
     {
-        // Base64‑encoded PNG image containing a barcode.
-        // Replace this string with the actual image data as needed.
+        // Base64‑encoded PNG image containing a HIBC LIC barcode.
+        // Replace this string with actual Base64‑encoded image data of a HIBC LIC barcode.
         string base64Image = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+XK6UAAAAASUVORK5CYII=";
 
-        byte[] imageBytes;
+        // Decode the Base64 string into a byte array.
+        byte[] imageBytes = Convert.FromBase64String(base64Image);
 
-        // Convert the Base64 string to a byte array; handle invalid format.
-        try
-        {
-            imageBytes = Convert.FromBase64String(base64Image);
-        }
-        catch (FormatException)
-        {
-            Console.WriteLine("Invalid Base64 string.");
-            return;
-        }
-
-        // Create a memory stream from the image bytes and initialize the barcode reader.
+        // Create a memory stream from the byte array so no file I/O is required.
         using (var memoryStream = new MemoryStream(imageBytes))
+        // Initialise the barcode reader to recognise all supported types.
         using (var reader = new BarCodeReader(memoryStream, DecodeType.AllSupportedTypes))
         {
             // Read all barcodes found in the image.
             var results = reader.ReadBarCodes();
 
-            // If no barcodes were detected, inform the user and exit.
-            if (results.Length == 0)
-            {
-                Console.WriteLine("No barcode detected.");
-                return;
-            }
-
-            // Process each detected barcode.
+            // Process each recognised barcode.
             foreach (var result in results)
             {
-                Console.WriteLine($"Detected barcode type: {result.CodeTypeName}");
-                Console.WriteLine($"Raw code text: {result.CodeText}");
-
-                // Attempt to decode the barcode text as HIBC LIC codetext.
+                // Attempt to parse the codetext as HIBC LIC data.
                 var hibc = ComplexCodetextReader.TryDecodeHIBCLIC(result.CodeText);
                 if (hibc == null)
                 {
-                    Console.WriteLine("The decoded text is not a HIBC LIC codetext.");
+                    Console.WriteLine("Unable to parse HIBC LIC codetext.");
                     continue;
                 }
 
-                // Handle the specific HIBC LIC codetext type.
+                // Determine which HIBC LIC data structure was returned and output its fields.
                 switch (hibc)
                 {
                     case HIBCLICPrimaryDataCodetext primary:
                         Console.WriteLine("Primary Data:");
-                        Console.WriteLine($"  ProductOrCatalogNumber: {primary.Data.ProductOrCatalogNumber}");
-                        Console.WriteLine($"  LabelerIdentificationCode: {primary.Data.LabelerIdentificationCode}");
-                        Console.WriteLine($"  UnitOfMeasureID: {primary.Data.UnitOfMeasureID}");
+                        Console.WriteLine($"Product or Catalog Number: {primary.Data.ProductOrCatalogNumber}");
+                        Console.WriteLine($"Labeler Identification Code: {primary.Data.LabelerIdentificationCode}");
+                        Console.WriteLine($"Unit of Measure ID: {primary.Data.UnitOfMeasureID}");
                         break;
 
                     case HIBCLICSecondaryAndAdditionalDataCodetext secondary:
-                        Console.WriteLine("Secondary Data:");
-                        Console.WriteLine($"  LotNumber: {secondary.Data.LotNumber}");
-                        Console.WriteLine($"  SerialNumber: {secondary.Data.SerialNumber}");
-                        Console.WriteLine($"  Quantity: {secondary.Data.Quantity}");
-                        Console.WriteLine($"  ExpiryDate: {secondary.Data.ExpiryDate}");
-                        Console.WriteLine($"  ExpiryDateFormat: {secondary.Data.ExpiryDateFormat}");
-                        Console.WriteLine($"  DateOfManufacture: {secondary.Data.DateOfManufacture}");
+                        Console.WriteLine("Secondary and Additional Data:");
+                        Console.WriteLine($"Lot Number: {secondary.Data.LotNumber}");
+                        Console.WriteLine($"Serial Number: {secondary.Data.SerialNumber}");
+                        Console.WriteLine($"Quantity: {secondary.Data.Quantity}");
+                        Console.WriteLine($"Expiry Date: {secondary.Data.ExpiryDate}");
+                        Console.WriteLine($"Expiry Date Format: {secondary.Data.ExpiryDateFormat}");
+                        Console.WriteLine($"Date of Manufacture: {secondary.Data.DateOfManufacture}");
                         break;
 
                     case HIBCLICCombinedCodetext combined:
                         Console.WriteLine("Combined Data:");
-                        Console.WriteLine($"  ProductOrCatalogNumber: {combined.PrimaryData.ProductOrCatalogNumber}");
-                        Console.WriteLine($"  LabelerIdentificationCode: {combined.PrimaryData.LabelerIdentificationCode}");
-                        Console.WriteLine($"  UnitOfMeasureID: {combined.PrimaryData.UnitOfMeasureID}");
-                        Console.WriteLine($"  LotNumber: {combined.SecondaryAndAdditionalData.LotNumber}");
-                        Console.WriteLine($"  SerialNumber: {combined.SecondaryAndAdditionalData.SerialNumber}");
+                        Console.WriteLine($"Product or Catalog Number: {combined.PrimaryData.ProductOrCatalogNumber}");
+                        Console.WriteLine($"Labeler Identification Code: {combined.PrimaryData.LabelerIdentificationCode}");
+                        Console.WriteLine($"Unit of Measure ID: {combined.PrimaryData.UnitOfMeasureID}");
+                        Console.WriteLine($"Lot Number: {combined.SecondaryAndAdditionalData.LotNumber}");
+                        Console.WriteLine($"Serial Number: {combined.SecondaryAndAdditionalData.SerialNumber}");
+                        Console.WriteLine($"Quantity: {combined.SecondaryAndAdditionalData.Quantity}");
+                        Console.WriteLine($"Expiry Date: {combined.SecondaryAndAdditionalData.ExpiryDate}");
                         break;
 
                     default:
-                        Console.WriteLine("Unrecognized HIBC LIC codetext type.");
+                        Console.WriteLine("Decoded HIBC LIC type not recognized.");
                         break;
                 }
             }

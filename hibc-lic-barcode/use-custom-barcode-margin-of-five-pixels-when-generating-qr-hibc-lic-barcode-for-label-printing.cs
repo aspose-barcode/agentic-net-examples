@@ -1,45 +1,52 @@
+// Title: Generate QR HIBC LIC barcode with custom 5-pixel margin for label printing
+// Description: Demonstrates how to create a HIBC QR LIC barcode using Aspose.BarCode and apply a uniform 5-pixel margin, suitable for label printing scenarios.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category, focusing on HIBC symbology. It showcases the use of ComplexBarcodeGenerator, HIBCLICPrimaryDataCodetext, and barcode padding settings. Developers creating product labels, medical device tags, or inventory stickers often need to customize barcode margins for printer alignment and readability.
+// Prompt: Use a custom barcode margin of five pixels when generating a QR HIBC LIC barcode for label printing.
+// Tags: hibc, qr, lic, barcode, margin, padding, label printing, aspose.barcode, complexbarcode
+
 using System;
 using Aspose.BarCode.ComplexBarcode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generation of a HIBC QR LIC barcode using Aspose.BarCode.
+/// Program demonstrating QR HIBC LIC barcode generation with custom margins.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Creates a primary HIBC LIC codetext,
-    /// configures barcode padding, generates the QR barcode, and saves it to a file.
+    /// Entry point. Generates a QR HIBC LIC barcode, applies a 5‑pixel margin on all sides, and saves it as PNG.
     /// </summary>
     static void Main()
     {
-        // Define primary HIBC LIC data for the QR barcode
+        // Prepare primary data for HIBC QR LIC barcode
         var primaryCodetext = new HIBCLICPrimaryDataCodetext
         {
             BarcodeType = EncodeTypes.HIBCQRLIC,
             Data = new PrimaryData
             {
-                ProductOrCatalogNumber = "12345",   // Product or catalog identifier
-                LabelerIdentificationCode = "A999", // Labeler ID
-                UnitOfMeasureID = 1                 // Unit of measure identifier
+                ProductOrCatalogNumber = "12345",
+                LabelerIdentificationCode = "A999",
+                UnitOfMeasureID = 1
             }
         };
 
-        // Initialize the barcode generator with the defined codetext
+        // Create generator for the complex barcode
         using (var generator = new ComplexBarcodeGenerator(primaryCodetext))
         {
-            // Set a uniform 5‑pixel margin (padding) on all sides of the barcode
-            generator.Parameters.Barcode.Padding.Left.Pixels   = 5f;
-            generator.Parameters.Barcode.Padding.Top.Pixels    = 5f;
-            generator.Parameters.Barcode.Padding.Right.Pixels  = 5f;
+            // Set custom margin (padding) of 5 pixels on all sides
+            generator.Parameters.Barcode.Padding.Left.Pixels = 5f;
+            generator.Parameters.Barcode.Padding.Top.Pixels = 5f;
+            generator.Parameters.Barcode.Padding.Right.Pixels = 5f;
             generator.Parameters.Barcode.Padding.Bottom.Pixels = 5f;
 
-            // Define output file path and save the generated barcode image
+            // Define output file path
             string outputPath = "hibc_qr.png";
+
+            // Save the barcode image to the specified path
             generator.Save(outputPath);
 
-            // Inform the user where the barcode image was saved
+            // Inform the user that the barcode has been saved
             Console.WriteLine($"QR HIBC LIC barcode saved to {outputPath}");
         }
     }

@@ -1,46 +1,59 @@
+// Title: Generate HIBC LIC Barcode and Return PNG Byte Array
+// Description: Demonstrates creating a HIBC Code128 LIC barcode with secondary data, saving it to a MemoryStream, and obtaining the PNG byte array for API responses.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It showcases the use of ComplexBarcodeGenerator, HIBCLICSecondaryAndAdditionalDataCodetext, and related data classes to produce HIBC LIC barcodes. Developers often need to embed secondary information such as lot numbers, serial numbers, and dates, then deliver the barcode image as a byte array for web APIs or other services.
+// Prompt: Save the generated HIBC LIC barcode to a MemoryStream and return its byte array for an API response.
+// Tags: hibc, lic, barcode generation, png, memory stream, aspose.barcode, complexbarcode
+
 using System;
 using System.IO;
-using Aspose.BarCode;
-using Aspose.BarCode.Generation;
 using Aspose.BarCode.ComplexBarcode;
-using Aspose.Drawing.Imaging;
+using Aspose.BarCode.Generation;
+using Aspose.BarCode.Generation; // for BarCodeImageFormat
+using Aspose.Drawing.Imaging; // for ImageFormat if needed (not used here)
 
 /// <summary>
-/// Demonstrates generation of a HIBC LIC barcode with secondary and additional data using Aspose.BarCode.
+/// Example program that creates a HIBC LIC barcode with secondary data,
+/// saves it to a MemoryStream, and outputs the resulting byte array.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a barcode, writes its byte length to the console, and disposes resources.
+    /// Entry point of the example. Generates the barcode and writes diagnostic information to the console.
     /// </summary>
     static void Main()
     {
-        // Prepare secondary data for HIBC LIC barcode (lot number and serial number)
-        var secondaryData = new SecondaryAndAdditionalData
+        // Prepare secondary and additional data for the HIBC LIC barcode.
+        var secondaryCodetext = new HIBCLICSecondaryAndAdditionalDataCodetext
         {
-            LotNumber = "LOT123",
-            SerialNumber = "SN456"
-        };
-
-        // Configure the complex barcode text with the desired type, link character, and secondary data
-        var complexCodetext = new HIBCLICSecondaryAndAdditionalDataCodetext
-        {
+            // Select the HIBC Code128 LIC symbology.
             BarcodeType = EncodeTypes.HIBCCode128LIC,
+            // The link character is required by the HIBC specification.
             LinkCharacter = '+',
-            Data = secondaryData
+            // Populate the secondary data fields.
+            Data = new SecondaryAndAdditionalData
+            {
+                LotNumber = "LOT123",
+                SerialNumber = "SER123",
+                Quantity = 10,
+                ExpiryDate = DateTime.Now.AddMonths(6),
+                ExpiryDateFormat = HIBCLICDateFormat.MMDDYY,
+                DateOfManufacture = DateTime.Now.AddMonths(-1)
+            }
         };
 
-        // Generate the barcode and save it to a memory stream in PNG format
-        using (var generator = new ComplexBarcodeGenerator(complexCodetext))
+        // Generate the barcode and write it to a MemoryStream in PNG format.
+        using (var generator = new ComplexBarcodeGenerator(secondaryCodetext))
         using (var memoryStream = new MemoryStream())
         {
+            // Save the barcode image to the stream.
             generator.Save(memoryStream, BarCodeImageFormat.Png);
 
-            // Retrieve the generated barcode as a byte array
+            // Retrieve the raw PNG bytes from the stream.
             byte[] barcodeBytes = memoryStream.ToArray();
 
-            // Output the length of the byte array for verification purposes
-            Console.WriteLine($"Generated barcode byte array length: {barcodeBytes.Length}");
+            // Output diagnostic information (length and Base64 representation) for verification.
+            Console.WriteLine($"Barcode byte array length: {barcodeBytes.Length}");
+            Console.WriteLine($"Base64: {Convert.ToBase64String(barcodeBytes)}");
         }
     }
 }

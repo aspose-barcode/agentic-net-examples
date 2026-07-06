@@ -1,59 +1,49 @@
+// Title: Generate HIBC DataMatrix LIC Barcode at 600 DPI
+// Description: Creates a HIBC DataMatrix LIC barcode with secondary data and saves it as a 600 DPI PNG image.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It demonstrates how to use the ComplexBarcodeGenerator together with HIBCLICSecondaryAndAdditionalDataCodetext to produce high‑density HIBC LIC DataMatrix barcodes. Typical use cases include pharmaceutical labeling and inventory tracking where secondary information (lot, serial, dates) must be encoded at high resolution for small‑format labels.
+// Prompt: Adjust the image resolution to 600 DPI when generating a DataMatrix HIBC LIC barcode for high‑density labels.
+// Tags: datamatrix, hibc, lic, generation, resolution, png, complexbarcodegenerator, hibclicsecondaryandadditionaldatacodetext
+
 using System;
 using Aspose.BarCode.ComplexBarcode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generation of a HIBC DataMatrix barcode that includes secondary and additional data,
-/// saved at a resolution of 600 DPI.
+/// Demonstrates generation of a HIBC DataMatrix LIC barcode with secondary data
+/// and saves the image at 600 DPI resolution.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Prepares barcode data, configures the generator, saves the image, and outputs a confirmation message.
+    /// Entry point of the example. Prepares secondary data, configures the generator,
+    /// and saves the high‑resolution barcode image.
     /// </summary>
     static void Main()
     {
-        // ------------------------------------------------------------
-        // 1. Prepare secondary‑and‑additional data for the HIBC LIC DataMatrix barcode
-        // ------------------------------------------------------------
-        var secondaryData = new SecondaryAndAdditionalData
+        // Prepare secondary and additional data required for a HIBC LIC DataMatrix barcode
+        var secondaryCodetext = new HIBCLICSecondaryAndAdditionalDataCodetext
         {
-            LotNumber = "LOT123",                                 // Lot identifier
-            SerialNumber = "SN001",                               // Serial number
-            ExpiryDate = DateTime.Today.AddMonths(6),             // Expiration date (6 months from today)
-            ExpiryDateFormat = HIBCLICDateFormat.MMDDYY,         // Date format for the expiry date
-            Quantity = 10,                                        // Quantity of items
-            DateOfManufacture = DateTime.Today                    // Manufacturing date
+            BarcodeType = EncodeTypes.HIBCDataMatrixLIC,
+            LinkCharacter = '+',
+            Data = new SecondaryAndAdditionalData
+            {
+                LotNumber = "LOT123",
+                SerialNumber = "SN456",
+                ExpiryDate = DateTime.Today.AddMonths(6),
+                ExpiryDateFormat = HIBCLICDateFormat.MMDDYY,
+                Quantity = 10,
+                DateOfManufacture = DateTime.Today
+            }
         };
 
-        // ------------------------------------------------------------
-        // 2. Create the complex codetext object that combines the barcode type,
-        //    link character, and the secondary data defined above
-        // ------------------------------------------------------------
-        var hibcCodetext = new HIBCLICSecondaryAndAdditionalDataCodetext
+        // Generate the barcode with a high image resolution (600 DPI)
+        using (var generator = new ComplexBarcodeGenerator(secondaryCodetext))
         {
-            BarcodeType = EncodeTypes.HIBCDataMatrixLIC, // Use HIBC DataMatrix LIC symbology
-            LinkCharacter = '+',                         // Required link character for HIBC
-            Data = secondaryData                         // Attach the secondary data
-        };
+            // Set the resolution property to 600 DPI
+            generator.Parameters.Resolution = 600;
 
-        // ------------------------------------------------------------
-        // 3. Generate the barcode with a resolution of 600 DPI and save it as PNG
-        // ------------------------------------------------------------
-        using (var generator = new ComplexBarcodeGenerator(hibcCodetext))
-        {
-            // Set both horizontal and vertical resolution to 600 DPI
-            generator.Parameters.Resolution = 600f;
-
-            // Save the generated barcode image; PNG is the default format
-            generator.Save("HIBC_DataMatrix_600DPI.png");
+            // Save the generated barcode as a PNG file
+            generator.Save("HIBC_DataMatrix_600dpi.png");
         }
-
-        // ------------------------------------------------------------
-        // 4. Inform the user that the barcode has been generated
-        // ------------------------------------------------------------
-        Console.WriteLine("Barcode generated with 600 DPI resolution: HIBC_DataMatrix_600DPI.png");
     }
 }

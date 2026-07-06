@@ -1,24 +1,28 @@
+// Title: Decode HIBC Code128 LIC and Validate Code Text
+// Description: Demonstrates setting BarCodeReader.DecodeType to HIBCLIC and checking IsCodeTextValid after decoding a generated barcode image.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of ComplexBarcodeGenerator to create a HIBC Code128 LIC barcode and BarCodeReader to decode it. Developers commonly use these APIs to generate complex symbologies, read scanned images, and validate decoded data in healthcare and logistics applications.
+// Prompt: Set BarCodeReader.DecodeType to HIBCLIC and verify IsCodeTextValid after decoding a scanned image.
+// Tags: hibc, lic, decode, barcode, barcodereader, complexbarcodegenerator, hibclicprimarydatacodetext
+
 using System;
-using System.IO;
-using Aspose.BarCode;
+using Aspose.BarCode.ComplexBarcode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.BarCode.ComplexBarcode;
 using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generation and reading of a primary HIBC LIC barcode using Aspose.BarCode.
+/// Example program that generates a HIBC Code128 LIC barcode, decodes it,
+/// and validates the decoded text using Aspose.BarCode APIs.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a HIBC Code128 LIC barcode, reads it back,
-    /// and displays decoded information.
+    /// Entry point of the example. Generates a barcode, reads it, and prints validation results.
     /// </summary>
     static void Main()
     {
-        // Prepare primary HIBC LIC data with product details.
+        // Define primary HIBC LIC data (product number, labeler ID, unit of measure)
         var primaryCodetext = new HIBCLICPrimaryDataCodetext
         {
             BarcodeType = EncodeTypes.HIBCCode128LIC,
@@ -30,38 +34,29 @@ class Program
             }
         };
 
-        // Generate the barcode image in memory using ComplexBarcodeGenerator.
+        // Generate the barcode image using ComplexBarcodeGenerator
         using (var generator = new ComplexBarcodeGenerator(primaryCodetext))
-        // Create a bitmap from the generated barcode.
         using (Bitmap bitmap = generator.GenerateBarCodeImage())
-        // Use a memory stream to hold the PNG image data.
-        using (var ms = new MemoryStream())
         {
-            // Save the bitmap as PNG into the memory stream.
-            bitmap.Save(ms, ImageFormat.Png);
-            // Reset stream position to the beginning for reading.
-            ms.Position = 0;
-
-            // Initialize a barcode reader for the specific HIBC decode type.
-            using (var reader = new BarCodeReader(ms, DecodeType.HIBCCode128LIC))
+            // Initialize BarCodeReader with the specific decode type for HIBC Code128 LIC
+            using (var reader = new BarCodeReader(bitmap, DecodeType.HIBCCode128LIC))
             {
-                // Read all barcodes found in the stream.
+                // Decode all barcodes found in the image
                 var results = reader.ReadBarCodes();
+
+                // Iterate through each decoding result
                 foreach (var result in results)
                 {
-                    // Simple validation: check that CodeText is not null or empty.
+                    // Determine if the decoded text is non‑empty (valid)
                     bool isValid = !string.IsNullOrEmpty(result.CodeText);
-                    Console.WriteLine($"Decoded CodeText: {result.CodeText}");
-                    Console.WriteLine($"IsCodeTextValid (simulated): {isValid}");
+                    Console.WriteLine($"Decoded Text: {result.CodeText}");
+                    Console.WriteLine($"Is Code Text Valid: {isValid}");
+                }
 
-                    // Decode complex HIBC codetext to retrieve original fields.
-                    var decoded = ComplexCodetextReader.TryDecodeHIBCLIC(result.CodeText) as HIBCLICPrimaryDataCodetext;
-                    if (decoded != null && decoded.Data != null)
-                    {
-                        Console.WriteLine($"ProductOrCatalogNumber: {decoded.Data.ProductOrCatalogNumber}");
-                        Console.WriteLine($"LabelerIdentificationCode: {decoded.Data.LabelerIdentificationCode}");
-                        Console.WriteLine($"UnitOfMeasureID: {decoded.Data.UnitOfMeasureID}");
-                    }
+                // Inform the user if no barcodes were detected
+                if (results.Length == 0)
+                {
+                    Console.WriteLine("No barcode detected.");
                 }
             }
         }

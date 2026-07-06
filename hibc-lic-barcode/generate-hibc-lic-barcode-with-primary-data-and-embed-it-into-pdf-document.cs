@@ -1,68 +1,68 @@
+// Title: Generate HIBC LIC barcode and embed in PDF
+// Description: Demonstrates creating a HIBC LIC barcode with primary data and inserting it into a PDF document.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on complex barcode creation using the ComplexBarcodeGenerator and HIBCLICPrimaryDataCodetext classes. It shows how to encode product information into a HIBC LIC symbology and embed the resulting image into a PDF via Aspose.Pdf. Developers often need to generate regulatory or healthcare barcodes and combine them with document workflows, making this pattern useful for automated report or label generation.
+// Prompt: Generate a HIBC LIC barcode with primary data and embed it into a PDF document.
+// Tags: hibc, lic, barcode, generation, pdf, aspose.barcode, aspose.pdf
+
 using System;
 using System.IO;
 using Aspose.BarCode;
-using Aspose.BarCode.Generation;
 using Aspose.BarCode.ComplexBarcode;
+using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 using Aspose.Pdf;
+using PdfImage = Aspose.Pdf.Image;
 
 /// <summary>
-/// Demonstrates generating a HIBC LIC barcode, embedding it into a PDF, and saving the result.
+/// Demonstrates generating a HIBC LIC barcode with primary data and embedding it into a PDF file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a HIBC LIC barcode image, inserts it into a PDF document, and saves the PDF.
+    /// Entry point of the example. Creates the barcode, converts it to PNG, and adds it to a PDF.
     /// </summary>
     static void Main()
     {
-        // Define the output PDF file name.
-        const string pdfPath = "hibc_barcode.pdf";
-
-        // Prepare primary HIBC LIC data (product information) for barcode generation.
+        // Define the primary data for the HIBC LIC barcode.
         var primaryCodetext = new HIBCLICPrimaryDataCodetext
         {
             BarcodeType = EncodeTypes.HIBCCode128LIC,
             Data = new PrimaryData
             {
-                ProductOrCatalogNumber = "12345",   // Product or catalog identifier.
-                LabelerIdentificationCode = "A999", // Labeler ID.
-                UnitOfMeasureID = 1                 // Unit of measure identifier.
+                ProductOrCatalogNumber = "12345",
+                LabelerIdentificationCode = "A999",
+                UnitOfMeasureID = 1
             }
         };
 
-        // Generate the barcode image and embed it into a PDF document.
+        // Generate the barcode image using ComplexBarcodeGenerator.
         using (var generator = new ComplexBarcodeGenerator(primaryCodetext))
-        using (var barcodeImage = generator.GenerateBarCodeImage())
+        // Render the barcode to a bitmap.
+        using (var bitmap = generator.GenerateBarCodeImage())
+        // Store the bitmap in a memory stream as PNG.
         using (var imageStream = new MemoryStream())
         {
-            // Save the generated barcode image to a memory stream in PNG format.
-            barcodeImage.Save(imageStream, Aspose.Drawing.Imaging.ImageFormat.Png);
+            bitmap.Save(imageStream, ImageFormat.Png);
             imageStream.Position = 0; // Reset stream position for reading.
 
-            // Create a new PDF document and add a page.
-            var pdfDoc = new Document();
-            var page = pdfDoc.Pages.Add();
-
-            // Create an Aspose.Pdf.Image object that references the barcode image stream.
-            var pdfImage = new Aspose.Pdf.Image
+            // Create a new PDF document.
+            using (var pdfDoc = new Document())
             {
-                ImageStream = imageStream,
-                // Optional: set explicit dimensions for the image.
-                // FixWidth = 200.0,
-                // FixHeight = 100.0
-            };
+                // Add a page to the PDF.
+                var page = pdfDoc.Pages.Add();
 
-            // Add the image to the page's paragraph collection.
-            page.Paragraphs.Add(pdfImage);
+                // Create an Aspose.Pdf.Image from the barcode stream.
+                var pdfImage = new PdfImage { ImageStream = imageStream };
 
-            // Save the PDF document to the specified file path.
-            pdfDoc.Save(pdfPath);
+                // Insert the image into the page's paragraph collection.
+                page.Paragraphs.Add(pdfImage);
+
+                // Save the PDF to disk.
+                pdfDoc.Save("HIBC_LIC.pdf");
+            }
         }
 
-        // Output the full path of the created PDF file to the console.
-        Console.WriteLine("PDF with HIBC LIC barcode created: " + Path.GetFullPath(pdfPath));
+        Console.WriteLine("PDF with HIBC LIC barcode created successfully.");
     }
 }

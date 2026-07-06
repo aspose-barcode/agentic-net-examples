@@ -1,42 +1,53 @@
+// Title: Rotate Code 128 HIBC LIC barcode and save as JPEG
+// Description: Generates a HIBC Code 128 LIC barcode with secondary data, rotates the image 90 degrees, and saves it as a JPEG file.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It showcases the use of ComplexBarcodeGenerator, HIBCLICSecondaryAndAdditionalDataCodetext, and SecondaryAndAdditionalData classes to create HIBC‑based barcodes, apply image transformations, and export to common image formats. Developers working with healthcare or logistics barcodes often need to embed additional data, rotate barcodes for label orientation, and produce JPEG outputs for web or print workflows.
+// Prompt: Rotate the generated Code 128 HIBC LIC barcode by 90 degrees and save it as a JPEG image.
+// Tags: barcode, code128, hibc, rotation, jpeg, aspose.barcode, complexbarcode, generation
+
 using System;
-using Aspose.BarCode;
-using Aspose.BarCode.Generation;
 using Aspose.BarCode.ComplexBarcode;
+using Aspose.BarCode.Generation;
+using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates creation of a HIBC Code128 LIC barcode, rotation, and saving as JPEG.
+/// Demonstrates how to generate a HIBC Code 128 LIC barcode with secondary data,
+/// rotate the resulting image by 90 degrees, and save it as a JPEG file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Prepares primary data, generates the barcode, rotates it, and saves the image.
+    /// Entry point of the example. Performs barcode generation, rotation, and saving.
     /// </summary>
     static void Main()
     {
-        // Prepare primary data for HIBC Code128 LIC barcode
-        var primaryCodetext = new HIBCLICPrimaryDataCodetext
+        // Prepare secondary data (lot number and serial number) for the HIBC LIC barcode.
+        var secondaryData = new SecondaryAndAdditionalData
         {
-            BarcodeType = EncodeTypes.HIBCCode128LIC,
-            Data = new PrimaryData
-            {
-                ProductOrCatalogNumber = "12345",      // Product or catalog number
-                LabelerIdentificationCode = "A999",   // Labeler identification code
-                UnitOfMeasureID = 1                    // Unit of measure identifier
-            }
+            LotNumber = "LOT123",
+            SerialNumber = "SER123"
         };
 
-        // Create a ComplexBarcodeGenerator with the prepared data
-        using (var generator = new ComplexBarcodeGenerator(primaryCodetext))
+        // Configure the complex codetext, specifying the barcode type, link character, and secondary data.
+        var complexCodetext = new HIBCLICSecondaryAndAdditionalDataCodetext
         {
-            // Set rotation angle to 90 degrees (clockwise)
-            generator.Parameters.RotationAngle = 90f;
+            BarcodeType = EncodeTypes.HIBCCode128LIC,
+            LinkCharacter = '+',
+            Data = secondaryData
+        };
 
-            // Save the generated barcode as a JPEG file
-            generator.Save("hibc_code128_lic.jpg");
+        // Create a generator for the complex barcode using the configured codetext.
+        using (var generator = new ComplexBarcodeGenerator(complexCodetext))
+        {
+            // Generate the barcode image as a bitmap.
+            using (Bitmap bitmap = generator.GenerateBarCodeImage())
+            {
+                // Rotate the bitmap 90 degrees clockwise without flipping.
+                bitmap.RotateFlip(RotateFlipType.Rotate90FlipNone);
+
+                // Save the rotated bitmap to a JPEG file.
+                bitmap.Save("hibc_code128_lic_rotated.jpg", ImageFormat.Jpeg);
+            }
         }
-
-        // Inform the user that the barcode image has been saved
-        Console.WriteLine("Barcode image saved as hibc_code128_lic.jpg");
     }
 }

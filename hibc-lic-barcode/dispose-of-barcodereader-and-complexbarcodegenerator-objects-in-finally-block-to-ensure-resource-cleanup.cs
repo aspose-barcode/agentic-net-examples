@@ -1,69 +1,73 @@
+// Title: Generate and read a Swiss QR Code using Aspose.BarCode
+// Description: Demonstrates creating a Swiss QR bill barcode, saving it as PNG, and reading it back.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation and recognition category. It showcases the use of ComplexBarcodeGenerator for creating Swiss QR codes and BarCodeReader for decoding QR symbols. Developers often need to generate payment QR codes and validate them programmatically, making this pattern common in financial and invoicing applications.
+// Prompt: Dispose of BarCodeReader and ComplexBarcodeGenerator objects in a finally block to ensure resource cleanup.
+// Tags: swiss qr, barcode generation, barcode reading, qr, aspnet, aspose.barcode, complexbarcodegenerator, barcodereader
+
 using System;
-using System.IO;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.BarCode.ComplexBarcode;
 
 /// <summary>
-/// Demonstrates generation and recognition of a Mailmark complex barcode using Aspose.BarCode.
+/// Demonstrates generating a Swiss QR bill barcode, saving it, and reading it back using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a Mailmark barcode, saves it to a memory stream, and then reads it back.
+    /// Entry point of the example. Generates a Swiss QR code, saves it as PNG, then reads and prints its content.
     /// </summary>
     static void Main()
     {
-        // Prepare Mailmark codetext with required fields
-        var mailmark = new MailmarkCodetext
-        {
-            Format = 4,
-            VersionID = 1,
-            Class = "0",
-            SupplychainID = 384224,
-            ItemID = 16563762,
-            DestinationPostCodePlusDPS = "EF61AH8T "
-        };
+        // Output file path for the generated barcode image
+        const string outputPath = "sample.png";
 
-        ComplexBarcodeGenerator generator = null; // Will hold the barcode generator instance
-        BarCodeReader reader = null;               // Will hold the barcode reader instance
+        // Declare variables for generator and reader; will be instantiated later
+        ComplexBarcodeGenerator complexGenerator = null;
+        BarCodeReader reader = null;
 
         try
         {
-            // Generate barcode image into a memory stream
-            using (var ms = new MemoryStream())
+            // ------------------------------------------------------------
+            // Prepare Swiss QR codetext with required fields
+            // ------------------------------------------------------------
+            var swissQr = new SwissQRCodetext();
+            swissQr.Bill.Creditor.Name = "John Doe";
+            swissQr.Bill.Creditor.CountryCode = "CH";
+            swissQr.Bill.Account = "CH9300762011623852957";
+            swissQr.Bill.Amount = 199.95m;
+            swissQr.Bill.Version = SwissQRBill.QrBillStandardVersion.V2_0;
+
+            // ------------------------------------------------------------
+            // Generate and save the complex barcode image
+            // ------------------------------------------------------------
+            complexGenerator = new ComplexBarcodeGenerator(swissQr);
+            complexGenerator.Save(outputPath, BarCodeImageFormat.Png);
+
+            // ------------------------------------------------------------
+            // Read the generated barcode image and output its content
+            // ------------------------------------------------------------
+            reader = new BarCodeReader(outputPath, DecodeType.QR);
+            var results = reader.ReadBarCodes();
+            foreach (var result in results)
             {
-                // Initialize generator with the prepared Mailmark codetext
-                generator = new ComplexBarcodeGenerator(mailmark);
-
-                // Save the generated barcode as PNG into the memory stream
-                generator.Save(ms, BarCodeImageFormat.Png);
-
-                // Reset stream position to the beginning for reading
-                ms.Position = 0;
-
-                // Initialize reader to decode all supported barcode types from the stream
-                reader = new BarCodeReader(ms, DecodeType.AllSupportedTypes);
-
-                // Read all barcodes found in the stream
-                var results = reader.ReadBarCodes();
-
-                // Output each detected barcode's codetext to the console
-                foreach (var result in results)
-                {
-                    Console.WriteLine($"Detected CodeText: {result.CodeText}");
-                }
+                Console.WriteLine($"Detected CodeText: {result.CodeText}");
             }
         }
         finally
         {
-            // Ensure proper disposal of resources even if an exception occurs
+            // ------------------------------------------------------------
+            // Ensure proper disposal of resources regardless of success/failure
+            // ------------------------------------------------------------
             if (reader != null)
+            {
                 reader.Dispose();
+            }
 
-            if (generator != null)
-                generator.Dispose();
+            if (complexGenerator != null)
+            {
+                complexGenerator.Dispose();
+            }
         }
     }
 }

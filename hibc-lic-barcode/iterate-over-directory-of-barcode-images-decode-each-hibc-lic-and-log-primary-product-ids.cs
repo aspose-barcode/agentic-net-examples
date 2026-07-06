@@ -1,3 +1,9 @@
+// Title: Decode HIBC LIC barcodes from image files
+// Description: Demonstrates how to iterate through a folder of images, decode HIBC LIC barcodes, and output primary product identifiers.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, focusing on HIBC (Health Industry Bar Code) LIC symbologies. It showcases the BarCodeReader and ComplexCodetextReader classes to extract primary product data, a common requirement for healthcare and pharmaceutical inventory systems. Developers can use this pattern to batch‑process barcode images and integrate product identification into their applications.
+// Prompt: Iterate over a directory of barcode images, decode each HIBC LIC, and log primary product IDs.
+// Tags: hibc, lic, barcode, decode, console, aspose.barcode, barcodereader, complexcodetextreader
+
 using System;
 using System.IO;
 using System.Linq;
@@ -5,50 +11,49 @@ using Aspose.BarCode.BarCodeRecognition;
 using Aspose.BarCode.ComplexBarcode;
 
 /// <summary>
-/// Demonstrates reading HIBC barcodes from image files in a specified directory.
+/// Program that scans a directory for image files, decodes any HIBC LIC barcodes,
+/// and writes the primary product information to the console.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Scans a folder for image files, reads HIBC barcodes, and outputs product identifiers.
+    /// Entry point. Accepts an optional folder path argument; defaults to "Barcodes".
     /// </summary>
-    /// <param name="args">Optional command‑line argument specifying the folder path.</param>
+    /// <param name="args">Command‑line arguments; first argument is the folder path.</param>
     static void Main(string[] args)
     {
-        // Determine the directory containing barcode images.
-        // Use the first command‑line argument if provided; otherwise default to "Barcodes".
+        // Determine the folder containing barcode images (use argument if provided).
         string folderPath = args.Length > 0 ? args[0] : "Barcodes";
 
-        // Verify that the directory exists before proceeding.
+        // Verify that the folder exists before proceeding.
         if (!Directory.Exists(folderPath))
         {
-            Console.WriteLine($"Directory not found: {folderPath}");
+            Console.WriteLine($"Folder not found: {folderPath}");
             return;
         }
 
-        // Define the set of supported image file extensions.
-        string[] extensions = new[] { ".png", ".jpg", ".jpeg", ".bmp", ".gif", ".tif", ".tiff" };
-
-        // Retrieve up to 10 image files that match the supported extensions.
+        // Retrieve up to 10 image files with supported extensions.
         var imageFiles = Directory.GetFiles(folderPath)
-                                  .Where(f => extensions.Contains(Path.GetExtension(f), StringComparer.OrdinalIgnoreCase))
-                                  .Take(10) // safe sample size for the runner
-                                  .ToArray();
+            .Where(f => f.EndsWith(".png", StringComparison.OrdinalIgnoreCase) ||
+                        f.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) ||
+                        f.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase) ||
+                        f.EndsWith(".bmp", StringComparison.OrdinalIgnoreCase) ||
+                        f.EndsWith(".tif", StringComparison.OrdinalIgnoreCase) ||
+                        f.EndsWith(".tiff", StringComparison.OrdinalIgnoreCase))
+            .Take(10)
+            .ToArray();
 
-        // If no matching files are found, inform the user and exit.
+        // If no images were found, inform the user and exit.
         if (imageFiles.Length == 0)
         {
-            Console.WriteLine("No barcode image files found in the directory.");
+            Console.WriteLine("No image files found in the specified folder.");
             return;
         }
 
         // Process each image file individually.
-        foreach (var filePath in imageFiles)
+        foreach (string filePath in imageFiles)
         {
-            string fileName = Path.GetFileName(filePath);
-
-            // Initialize a BarCodeReader configured for all HIBC LIC decode types.
+            // Initialize BarCodeReader to detect all HIBC LIC symbologies.
             using (var reader = new BarCodeReader(
                 filePath,
                 DecodeType.HIBCCode128LIC,
@@ -59,51 +64,47 @@ class Program
                 // Read all barcodes present in the image.
                 var results = reader.ReadBarCodes();
 
-                // If no HIBC barcodes were detected, report and continue to the next file.
+                // If no HIBC LIC barcode is detected, report and continue to next file.
                 if (results.Length == 0)
                 {
-                    Console.WriteLine($"{fileName}: No HIBC barcode detected.");
+                    Console.WriteLine($"{Path.GetFileName(filePath)}: No HIBC LIC barcode detected.");
                     continue;
                 }
 
-                // Iterate over each detected barcode.
+                // Iterate through each detected barcode result.
                 foreach (var result in results)
                 {
-                    // Attempt to parse the complex HIBC codetext into a strongly‑typed object.
-                    var hibcObject = ComplexCodetextReader.TryDecodeHIBCLIC(result.CodeText);
-                    if (hibcObject == null)
+                    // Attempt to parse the HIBC LIC codetext using the complex reader.
+                    var hibcCodetext = ComplexCodetextReader.TryDecodeHIBCLIC(result.CodeText);
+                    if (hibcCodetext == null)
                     {
-                        Console.WriteLine($"{fileName}: Unable to decode HIBC codetext.");
+                        Console.WriteLine($"{Path.GetFileName(filePath)}: Unable to decode HIBC LIC codetext.");
                         continue;
                     }
 
-                    string productId = null;
-
-                    // Extract the primary product or catalog number based on the specific HIBC type.
-                    if (hibcObject is HIBCLICPrimaryDataCodetext primary)
+                    // Handle primary data (primary only or combined with secondary data).
+                    if (hibcCodetext is HIBCLICPrimaryDataCodetext primary)
                     {
-                        // Primary data only.
-                        productId = primary.Data?.ProductOrCatalogNumber;
+                        Console.WriteLine($"{Path.GetFileName(filePath)}: ProductOrCatalogNumber={primary.Data.ProductOrCatalogNumber}, " +
+                                          $"LabelerIdentificationCode={primary.Data.LabelerIdentificationCode}, " +
+                                          $"UnitOfMeasureID={primary.Data.UnitOfMeasureID}");
                     }
-                    else if (hibcObject is HIBCLICCombinedCodetext combined)
+                    else if (hibcCodetext is HIBCLICCombinedCodetext combined)
                     {
-                        // Combined primary + secondary data.
-                        productId = combined.PrimaryData?.ProductOrCatalogNumber;
+                        var pd = combined.PrimaryData;
+                        Console.WriteLine($"{Path.GetFileName(filePath)}: ProductOrCatalogNumber={pd.ProductOrCatalogNumber}, " +
+                                          $"LabelerIdentificationCode={pd.LabelerIdentificationCode}, " +
+                                          $"UnitOfMeasureID={pd.UnitOfMeasureID}");
                     }
-                    else if (hibcObject is HIBCLICSecondaryAndAdditionalDataCodetext)
+                    else if (hibcCodetext is HIBCLICSecondaryAndAdditionalDataCodetext)
                     {
-                        // Secondary‑only codetext does not contain a primary product ID.
-                        productId = null;
-                    }
-
-                    // Output the extracted product identifier, or indicate its absence.
-                    if (!string.IsNullOrEmpty(productId))
-                    {
-                        Console.WriteLine($"{fileName}: ProductOrCatalogNumber = {productId}");
+                        // No primary data present; only secondary or additional data.
+                        Console.WriteLine($"{Path.GetFileName(filePath)}: Barcode contains only secondary data.");
                     }
                     else
                     {
-                        Console.WriteLine($"{fileName}: No primary product ID found.");
+                        // Unexpected codetext type.
+                        Console.WriteLine($"{Path.GetFileName(filePath)}: Unrecognized HIBC LIC codetext type.");
                     }
                 }
             }
