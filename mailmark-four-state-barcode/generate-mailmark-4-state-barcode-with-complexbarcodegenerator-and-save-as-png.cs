@@ -1,39 +1,36 @@
-using System;
-using System.IO;
-using Aspose.BarCode;
-using Aspose.BarCode.Generation;
-using Aspose.BarCode.ComplexBarcode;
-using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing.Imaging;
+// Title: Generate Mailmark 4‑state barcode with ComplexBarcodeGenerator
+// Description: Demonstrates creating a Mailmark 4‑state barcode using Aspose.BarCode's ComplexBarcodeGenerator and saving it as a PNG image.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category, illustrating how to work with the MailmarkCodetext class and ComplexBarcodeGenerator to produce 4‑state barcodes. Developers often need to encode postal routing information, service class, and item identifiers for mail processing systems, and this snippet shows the typical steps for configuring the codetext and exporting the barcode image.
+// Prompt: Generate a Mailmark 4‑state barcode with ComplexBarcodeGenerator and save as PNG.
+// Tags: mailmark, barcode, complexbarcodegenerator, png, aspose.barcode, 4-state
 
+using System;
+using Aspose.BarCode.ComplexBarcode;
+using Aspose.BarCode.Generation;
+
+/// <summary>
+/// Demonstrates generating a Mailmark 4‑state barcode and saving it as a PNG file.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point that creates the Mailmark codetext, generates the barcode, and writes it to disk.
+    /// </summary>
     static void Main()
     {
-        // Define output file path
-        string outputPath = "mailmark4state.png";
-
-        // Create and populate MailmarkCodetext for 4‑state barcode
+        // Initialize Mailmark 4‑state codetext with required fields
         var mailmark = new MailmarkCodetext();
-        mailmark.Format = 4;                     // 4‑state format
-        mailmark.VersionID = 1;                  // version
-        mailmark.Class = "0";                    // class as string
-        mailmark.SupplychainID = 384224;         // supply chain identifier
-        mailmark.ItemID = 16563762;              // item identifier
-        mailmark.DestinationPostCodePlusDPS = "EF61AH8T "; // valid postcode+DP
+        mailmark.Format = 4;                         // 4‑state format identifier
+        mailmark.VersionID = 1;                      // Version of the Mailmark specification
+        mailmark.Class = "0";                        // Service type / class code
+        mailmark.SupplychainID = 384224;             // Routing code (supply chain identifier)
+        mailmark.ItemID = 16563762;                  // Customer reference (item identifier)
+        mailmark.DestinationPostCodePlusDPS = "EF61AH8T "; // Destination postcode plus DPS (trailing space required)
 
-        // Generate the barcode using ComplexBarcodeGenerator
+        // Generate the barcode using ComplexBarcodeGenerator and save it as a PNG file
         using (var generator = new ComplexBarcodeGenerator(mailmark))
         {
-            // Save to a memory stream in PNG format
-            using (var ms = new MemoryStream())
-            {
-                generator.Save(ms, BarCodeImageFormat.Png);
-                // Write the PNG bytes to the output file
-                File.WriteAllBytes(outputPath, ms.ToArray());
-            }
+            generator.Save("mailmark.png");          // Write the barcode image to the file system
         }
-
-        Console.WriteLine($"Mailmark 4‑state barcode saved to: {Path.GetFullPath(outputPath)}");
     }
 }

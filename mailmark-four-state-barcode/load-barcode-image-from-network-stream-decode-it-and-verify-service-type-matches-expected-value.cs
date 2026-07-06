@@ -1,75 +1,84 @@
+// Title: Decode Barcode from Network Stream and Verify Service Type
+// Description: Downloads a barcode image via HTTP, decodes it using Aspose.BarCode, and checks that the decoded text matches an expected service identifier.
+// Category-Description: This example belongs to the Aspose.BarCode recognition category, demonstrating how to use BarCodeReader with DecodeType.AllSupportedTypes to read barcodes from streams. Typical scenarios include processing images received over a network, validating embedded data, and integrating barcode verification into web services. Developers often need to download image data, feed it to the reader, and compare the decoded value against business rules.
+// Prompt: Load a barcode image from a network stream, decode it, and verify service type matches expected value.
+// Tags: barcode, decoding, http, network, verification, aspose.barcode, csharp
+
 using System;
 using System.IO;
 using System.Net.Http;
+using System.Threading.Tasks;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates downloading an image from a URL and decoding any barcodes it contains using Aspose.BarCode.
+/// Demonstrates loading a barcode image from a network stream, decoding it,
+/// and verifying that the decoded text matches an expected service type.
 /// </summary>
 class Program
 {
+    // Expected service type that should be encoded in the barcode
+    private const string ExpectedServiceType = "MyService";
+
     /// <summary>
-    /// Entry point of the application.
-    /// Downloads a barcode image, reads all supported barcode types, and validates the detected type against an expected value.
+    /// Entry point of the example. Downloads the barcode image, decodes it,
+    /// and validates the decoded text against <see cref="ExpectedServiceType"/>.
     /// </summary>
-    static void Main()
+    /// <param name="args">Command‑line arguments (not used).</param>
+    static async Task Main(string[] args)
     {
-        // Expected barcode service type (symbology name). Adjust as needed.
-        string expectedServiceType = "QR";
+        // URL of the barcode image (replace with a real URL when testing)
+        const string imageUrl = "https://example.com/barcode.png";
 
-        // URL of the barcode image. Replace with a real endpoint when available.
-        string imageUrl = "https://example.com/barcode.png";
-
-        // Create HttpClient for network access.
+        // Create an HttpClient to download the image
         using (var httpClient = new HttpClient())
+        // Request the image data with response headers read first
+        using (var response = await httpClient.GetAsync(imageUrl, HttpCompletionOption.ResponseHeadersRead))
         {
-            try
+            // Ensure the request succeeded
+            if (!response.IsSuccessStatusCode)
             {
-                // Download the image as a stream (synchronously for simplicity).
-                using (Stream networkStream = httpClient.GetStreamAsync(imageUrl).Result)
-                {
-                    // Initialize the barcode reader to recognize all supported barcode types.
-                    using (var reader = new BarCodeReader(networkStream, DecodeType.AllSupportedTypes))
-                    {
-                        // Perform barcode recognition.
-                        BarCodeResult[] results = reader.ReadBarCodes();
+                Console.WriteLine($"Failed to download image. Status code: {response.StatusCode}");
+                return;
+            }
 
-                        // Check if any barcodes were detected.
-                        if (results.Length == 0)
+            // Obtain the network stream containing the image bytes
+            using (var networkStream = await response.Content.ReadAsStreamAsync())
+            // Copy the network stream into a memory stream for random access
+            using (var memoryStream = new MemoryStream())
+            {
+                await networkStream.CopyToAsync(memoryStream);
+                memoryStream.Position = 0; // Reset position to the beginning for reading
+
+                // Initialize the barcode reader with the image stream and detect all supported types
+                using (var reader = new BarCodeReader(memoryStream, DecodeType.AllSupportedTypes))
+                {
+                    // Perform recognition and retrieve all detected barcodes
+                    BarCodeResult[] results = reader.ReadBarCodes();
+
+                    // If no barcodes were found, inform the user and exit
+                    if (results.Length == 0)
+                    {
+                        Console.WriteLine("No barcode detected in the image.");
+                        return;
+                    }
+
+                    // Process each detected barcode (normally there will be only one)
+                    foreach (var result in results)
+                    {
+                        Console.WriteLine($"Detected Type: {result.CodeTypeName}");
+                        Console.WriteLine($"Decoded Text: {result.CodeText}");
+
+                        // Verify that the decoded text matches the expected service type
+                        if (string.Equals(result.CodeText, ExpectedServiceType, StringComparison.OrdinalIgnoreCase))
                         {
-                            Console.WriteLine("No barcode detected in the image.");
+                            Console.WriteLine("Verification succeeded: service type matches expected value.");
                         }
                         else
                         {
-                            // Iterate through each detected barcode.
-                            foreach (var result in results)
-                            {
-                                Console.WriteLine($"Detected Type: {result.CodeTypeName}");
-                                Console.WriteLine($"Decoded Text: {result.CodeText}");
-
-                                // Verify that the detected service type matches the expected value.
-                                if (string.Equals(result.CodeTypeName, expectedServiceType, StringComparison.OrdinalIgnoreCase))
-                                {
-                                    Console.WriteLine("Service type matches the expected value.");
-                                }
-                                else
-                                {
-                                    Console.WriteLine($"Service type does NOT match the expected value (expected: {expectedServiceType}).");
-                                }
-                            }
+                            Console.WriteLine($"Verification failed: expected '{ExpectedServiceType}' but got '{result.CodeText}'.");
                         }
                     }
                 }
-            }
-            // Handle network-related errors.
-            catch (HttpRequestException ex)
-            {
-                Console.WriteLine($"Network error while retrieving the image: {ex.Message}");
-            }
-            // Handle any other unexpected errors.
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Unexpected error: {ex.Message}");
             }
         }
     }

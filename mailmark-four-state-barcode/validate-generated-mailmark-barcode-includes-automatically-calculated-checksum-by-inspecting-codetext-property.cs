@@ -1,3 +1,9 @@
+// Title: Validate Mailmark barcode checksum via Codetext inspection
+// Description: Demonstrates generating a Mailmark barcode, automatically calculating its checksum, and verifying it by comparing the decoded Codetext with the expected value.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category, focusing on complex barcode types such as Mailmark. It showcases the use of ComplexBarcodeGenerator for creating barcodes, BarCodeReader for decoding, and checksum validation settings. Developers often need to ensure data integrity for Mailmark barcodes in postal and logistics applications, making checksum verification a common requirement.
+// Prompt: Validate generated Mailmark barcode includes automatically calculated checksum by inspecting Codetext property.
+// Tags: mailmark, checksum, barcode generation, barcode recognition, csharp, aspose.barcode
+
 using System;
 using System.IO;
 using Aspose.BarCode;
@@ -6,83 +12,63 @@ using Aspose.BarCode.BarCodeRecognition;
 using Aspose.BarCode.ComplexBarcode;
 
 /// <summary>
-/// Demonstrates generation and validation of a Mailmark barcode using Aspose.BarCode.
+/// Example program that generates a Mailmark barcode, automatically calculates its checksum,
+/// and validates the checksum by decoding the barcode and comparing the Codetext.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a Mailmark barcode, reads it back,
-    /// and verifies that the generated codetext matches the read codetext.
+    /// Entry point of the example. Generates a Mailmark barcode, reads it back, and verifies the checksum.
     /// </summary>
     static void Main()
     {
-        // ------------------------------------------------------------
-        // Prepare Mailmark data (valid sample)
-        // ------------------------------------------------------------
-        var mailmark = new MailmarkCodetext
-        {
-            Format = 4,                 // 4-state Mailmark
-            VersionID = 1,
-            Class = "0",                // Null/Test class
-            SupplychainID = 384224,
-            ItemID = 16563762,
-            DestinationPostCodePlusDPS = "EF61AH8T " // trailing spaces are required
-        };
+        // Prepare Mailmark codetext with required fields
+        var mailmark = new MailmarkCodetext();
+        mailmark.Format = 4; // 4‑state barcode
+        mailmark.VersionID = 1;
+        mailmark.Class = "0";
+        mailmark.SupplychainID = 384224;
+        mailmark.ItemID = 16563762;
+        mailmark.DestinationPostCodePlusDPS = "EF61AH8T ";
 
-        // ------------------------------------------------------------
-        // Construct the expected codetext (includes automatically calculated checksum)
-        // ------------------------------------------------------------
+        // Construct the full codetext (includes automatically calculated checksum)
         string expectedCodetext = mailmark.GetConstructedCodetext();
 
-        // ------------------------------------------------------------
-        // Generate the barcode image into a memory stream
-        // ------------------------------------------------------------
-        using (var ms = new MemoryStream())
+        // Generate the Mailmark barcode image into a memory stream
+        using (var generator = new ComplexBarcodeGenerator(mailmark))
         {
-            using (var generator = new ComplexBarcodeGenerator(mailmark))
+            using (var ms = new MemoryStream())
             {
-                // Save the generated barcode as PNG into the memory stream
+                // Save barcode as PNG into the memory stream
                 generator.Save(ms, BarCodeImageFormat.Png);
-            }
+                ms.Position = 0; // Reset stream position for reading
 
-            // Reset stream position to the beginning for reading
-            ms.Position = 0;
-
-            // ------------------------------------------------------------
-            // Read the barcode back from the memory stream
-            // ------------------------------------------------------------
-            using (var reader = new BarCodeReader(ms, DecodeType.Mailmark))
-            {
-                // Ensure checksum validation is performed (default is appropriate, but set explicitly)
-                reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
-
-                // Read all detected barcodes
-                var results = reader.ReadBarCodes();
-
-                // If no barcodes were detected, inform the user and exit
-                if (results.Length == 0)
+                // Recognize the barcode and enable checksum validation
+                using (var reader = new BarCodeReader(ms, DecodeType.Mailmark))
                 {
-                    Console.WriteLine("No Mailmark barcode detected.");
-                    return;
-                }
+                    // Force checksum validation during decoding
+                    reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
 
-                // ------------------------------------------------------------
-                // Compare each read codetext with the expected codetext
-                // ------------------------------------------------------------
-                foreach (var result in results)
-                {
-                    string readCodetext = result.CodeText;
-                    Console.WriteLine($"Read Codetext: {readCodetext}");
-                    Console.WriteLine($"Expected Codetext: {expectedCodetext}");
-
-                    // Verify that the read codetext matches the generated one exactly
-                    if (string.Equals(readCodetext, expectedCodetext, StringComparison.Ordinal))
+                    bool found = false;
+                    // Iterate through all detected barcodes (should be only one)
+                    foreach (var result in reader.ReadBarCodes())
                     {
-                        Console.WriteLine("Checksum validation succeeded: generated codetext matches read codetext.");
+                        Console.WriteLine("Decoded CodeText: " + result.CodeText);
+                        if (result.CodeText == expectedCodetext)
+                        {
+                            Console.WriteLine("Checksum validation succeeded: decoded codetext matches expected.");
+                        }
+                        else
+                        {
+                            Console.WriteLine("Checksum validation failed: decoded codetext does not match expected.");
+                        }
+                        found = true;
                     }
-                    else
+
+                    // Inform the user if no barcode was detected
+                    if (!found)
                     {
-                        Console.WriteLine("Checksum validation failed: mismatch between generated and read codetext.");
+                        Console.WriteLine("No Mailmark barcode detected in the generated image.");
                     }
                 }
             }

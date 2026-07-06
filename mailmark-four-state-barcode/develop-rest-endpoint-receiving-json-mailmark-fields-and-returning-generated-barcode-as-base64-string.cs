@@ -1,98 +1,84 @@
+// Title: Generate Mailmark barcode from JSON and return Base64
+// Description: Demonstrates how to deserialize Mailmark fields from JSON, create a Mailmark barcode using Aspose.BarCode, and output the image as a Base64 string.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on complex barcode types such as Mailmark. It showcases the use of ComplexBarcodeGenerator and MailmarkCodetext classes to create barcodes from structured data, a common requirement for developers building REST services that need to return barcode images in web-friendly formats.
+// Prompt: Develop a REST endpoint receiving JSON Mailmark fields and returning the generated barcode as Base64 string.
+// Tags: mailmark, barcode generation, json, base64, aspose.barcode, complexbarcode
+
 using System;
 using System.IO;
 using System.Text.Json;
+using Aspose.BarCode;
 using Aspose.BarCode.ComplexBarcode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates deserialization of a Mailmark request JSON payload,
-/// generation of a Mailmark barcode using Aspose.BarCode, and
-/// conversion of the resulting image to a Base64 string.
+/// Example program that deserializes Mailmark data from JSON,
+/// generates a Mailmark barcode, and outputs the image as a Base64 string.
 /// </summary>
 class Program
 {
-    /// <summary>
-    /// Model representing the expected JSON payload for Mailmark barcode generation.
-    /// </summary>
-    private class MailmarkRequest
+    // Sample JSON representing Mailmark fields.
+    // In a real REST service this would come from the request body.
+    private const string SampleJson = @"
     {
-        public int Format { get; set; }               // 0,1,2 etc.
-        public int VersionID { get; set; }            // typically 1
-        public string Class { get; set; }             // string, e.g., "0"
-        public int SupplychainID { get; set; }        // max 99 or 999999
-        public int ItemID { get; set; }               // max 99999999
-        public string DestinationPostCodePlusDPS { get; set; } // 9‑character postcode+DP
-    }
+        ""format"": 4,
+        ""versionId"": 1,
+        ""class"": ""0"",
+        ""supplychainId"": 384224,
+        ""itemId"": 16563762,
+        ""destinationPostCodePlusDps"": ""EF61AH8T ""
+    }";
 
     /// <summary>
-    /// Entry point of the application. Deserializes a sample JSON payload,
-    /// validates required fields, generates a Mailmark barcode, and writes
-    /// the Base64‑encoded image to the console.
+    /// Entry point of the example. Demonstrates the core logic of
+    /// JSON deserialization, barcode generation, and Base64 conversion.
     /// </summary>
     static void Main()
     {
-        // NOTE: Full REST service cannot be hosted in the snippet runner.
-        // The core logic is demonstrated by deserializing a sample JSON,
-        // generating the Mailmark barcode, converting it to Base64 and
-        // printing the result to the console.
+        // NOTE: The snippet runner cannot host an HTTP server.
+        // The core logic is demonstrated by reading a JSON string,
+        // generating a Mailmark barcode, and outputting the image as Base64.
 
-        // Sample JSON payload (replace with real input as needed)
-        string jsonPayload = @"{
-            ""Format"": 4,
-            ""VersionID"": 1,
-            ""Class"": ""0"",
-            ""SupplychainID"": 384224,
-            ""ItemID"": 16563762,
-            ""DestinationPostCodePlusDPS"": ""EF61AH8T ""
-        }";
+        // Deserialize JSON to a POCO using case‑insensitive property matching.
+        var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+        MailmarkInput input = JsonSerializer.Deserialize<MailmarkInput>(SampleJson, options);
 
-        // Deserialize JSON into request object
-        MailmarkRequest request;
-        try
+        // Validate required fields.
+        if (input == null)
         {
-            request = JsonSerializer.Deserialize<MailmarkRequest>(jsonPayload);
-            if (request == null)
-                throw new ArgumentException("Deserialized request is null.");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Failed to parse JSON payload: {ex.Message}");
+            Console.WriteLine("Invalid input.");
             return;
         }
 
-        // Validate required string fields
-        if (string.IsNullOrWhiteSpace(request.Class) ||
-            string.IsNullOrWhiteSpace(request.DestinationPostCodePlusDPS))
-        {
-            Console.WriteLine("Class and DestinationPostCodePlusDPS must be provided.");
-            return;
-        }
-
-        // Populate MailmarkCodetext object with data from the request
+        // Populate MailmarkCodetext with required properties.
         var mailmark = new MailmarkCodetext
         {
-            Format = request.Format,
-            VersionID = request.VersionID,
-            Class = request.Class,
-            SupplychainID = request.SupplychainID,
-            ItemID = request.ItemID,
-            DestinationPostCodePlusDPS = request.DestinationPostCodePlusDPS
+            Format = input.Format,
+            VersionID = input.VersionId,
+            Class = input.Class,
+            SupplychainID = input.SupplychainId,
+            ItemID = input.ItemId,
+            DestinationPostCodePlusDPS = input.DestinationPostCodePlusDps
         };
 
-        // Generate barcode image into a memory stream
+        // Generate barcode image and convert to Base64.
+        using (var generator = new ComplexBarcodeGenerator(mailmark))
         using (var ms = new MemoryStream())
         {
-            using (var generator = new ComplexBarcodeGenerator(mailmark))
-            {
-                // Save as PNG; ComplexBarcodeGenerator disposes correctly after Save
-                generator.Save(ms, BarCodeImageFormat.Png);
-            }
-
-            // Convert image bytes to Base64 string
+            generator.Save(ms, BarCodeImageFormat.Png);
             string base64 = Convert.ToBase64String(ms.ToArray());
-
-            // Output the Base64 string (simulating a REST response body)
             Console.WriteLine(base64);
         }
+    }
+
+    // POCO matching the expected JSON structure.
+    private class MailmarkInput
+    {
+        public int Format { get; set; }
+        public int VersionId { get; set; }
+        public string Class { get; set; }
+        public int SupplychainId { get; set; }
+        public int ItemId { get; set; }
+        public string DestinationPostCodePlusDps { get; set; }
     }
 }
