@@ -1,79 +1,78 @@
+// Title: Generate MaxiCode (Mode 2) with Complex Primary Data
+// Description: Demonstrates building a MaxiCode Mode 2 codetext using the MaxiCodeCodetextMode2 helper, then generating and decoding the barcode image.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation and recognition category. It showcases the use of ComplexBarcodeGenerator, MaxiCodeCodetextMode2, and BarCodeReader to create and read MaxiCode symbols, a common requirement for shipping and logistics applications where detailed routing information is encoded. Developers often need to construct complex codetext structures, render them to images, and verify correctness via decoding.
+// Prompt: Use the MaxiCodeCodetextMode2 helper to build complex primary data and generate the barcode image.
+// Tags: maxicode, mode2, complex barcode, generation, decoding, aspose.barcode, c#
+
 using System;
 using System.IO;
-using Aspose.BarCode.Generation;
 using Aspose.BarCode.ComplexBarcode;
+using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demo program that generates a MaxiCode barcode, saves it, and optionally reads it back.
+/// Demonstrates creating a MaxiCode (Mode 2) barcode with complex primary data,
+/// saving it as an image, and decoding it back using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a MaxiCode barcode, saves to file, and reads it back.
+    /// Entry point of the example. Builds the codetext, generates the barcode,
+    /// saves it to a PNG file, and then reads the file to verify the encoded data.
     /// </summary>
     static void Main()
     {
-        // Prepare the full path for the output PNG file.
-        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "maxicode.png");
+        // Build MaxiCode codetext for Mode 2 with a standard second message
+        var maxiCodeCodetext = new MaxiCodeCodetextMode2();
+        maxiCodeCodetext.PostalCode = "524032140";   // 9‑digit US postal code
+        maxiCodeCodetext.CountryCode = 56;          // Numeric country code
+        maxiCodeCodetext.ServiceCategory = 999;     // Example service category
 
-        // Build MaxiCode primary data using MaxiCodeCodetextMode2.
-        var maxiCodeData = new MaxiCodeCodetextMode2
+        // Create and assign the optional standard second message
+        var secondMessage = new MaxiCodeStandardSecondMessage();
+        secondMessage.Message = "Test message";
+        maxiCodeCodetext.SecondMessage = secondMessage;
+
+        // Generate and save the MaxiCode image to a PNG file
+        string outputPath = "maxicode.png";
+        using (var generator = new ComplexBarcodeGenerator(maxiCodeCodetext))
         {
-            PostalCode = "524032140", // 9‑digit US postal code for Mode 2.
-            CountryCode = 56,         // Example country code.
-            ServiceCategory = 999     // Example service category.
-        };
-
-        // Create a standard second message and assign it to the primary data.
-        var secondMessage = new MaxiCodeStandardSecondMessage
-        {
-            Message = "Sample MaxiCode message"
-        };
-        maxiCodeData.SecondMessage = secondMessage;
-
-        // Generate the barcode image using ComplexBarcodeGenerator.
-        using (var generator = new ComplexBarcodeGenerator(maxiCodeData))
-        {
-            // Optional: set image resolution (dots per inch).
-            generator.Parameters.Resolution = 300f;
-
-            // Save the generated barcode as a PNG file.
-            generator.Save(outputPath, BarCodeImageFormat.Png);
+            generator.Save(outputPath);
         }
 
-        // Inform the user where the barcode image was saved.
-        Console.WriteLine($"MaxiCode barcode saved to: {outputPath}");
-
-        // Demonstrate reading the generated barcode (optional).
+        // Verify that the image was created and read it back for validation
         if (File.Exists(outputPath))
         {
-            // Initialize a barcode reader for MaxiCode format.
+            // Initialize a reader for MaxiCode symbols
             using (var reader = new BarCodeReader(outputPath, DecodeType.MaxiCode))
             {
-                // Iterate through all detected barcodes in the image.
+                // Iterate through all detected barcodes (should be one)
                 foreach (var result in reader.ReadBarCodes())
                 {
-                    // Decode the complex codetext back to MaxiCodeCodetextMode2.
+                    // Decode the complex codetext from the raw CodeText
                     var decoded = ComplexCodetextReader.TryDecodeMaxiCode(
                         result.Extended.MaxiCode.MaxiCodeMode,
                         result.CodeText);
 
-                    // If decoding succeeded and the result is of the expected type, display its fields.
-                    if (decoded is MaxiCodeCodetextMode2 decodedData)
+                    // Cast to the specific Mode 2 type to access its properties
+                    if (decoded is MaxiCodeCodetextMode2 decodedMode2)
                     {
-                        Console.WriteLine("Decoded PostalCode: " + decodedData.PostalCode);
-                        Console.WriteLine("Decoded CountryCode: " + decodedData.CountryCode);
-                        Console.WriteLine("Decoded ServiceCategory: " + decodedData.ServiceCategory);
+                        Console.WriteLine($"PostalCode: {decodedMode2.PostalCode}");
+                        Console.WriteLine($"CountryCode: {decodedMode2.CountryCode}");
+                        Console.WriteLine($"ServiceCategory: {decodedMode2.ServiceCategory}");
 
-                        // If a standard second message is present, display its content.
-                        if (decodedData.SecondMessage is MaxiCodeStandardSecondMessage stdMsg)
+                        // Output the optional second message if present
+                        if (decodedMode2.SecondMessage is MaxiCodeStandardSecondMessage stdMsg)
                         {
-                            Console.WriteLine("Decoded Message: " + stdMsg.Message);
+                            Console.WriteLine($"Second Message: {stdMsg.Message}");
                         }
                     }
                 }
             }
+        }
+        else
+        {
+            Console.WriteLine("Failed to generate the MaxiCode image.");
         }
     }
 }

@@ -1,54 +1,66 @@
+// Title: Generate MaxiCode barcode asynchronously and save as PNG
+// Description: Demonstrates using async/await to create a MaxiCode barcode image without blocking the UI thread.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, focusing on complex barcode symbologies such as MaxiCode. It showcases the ComplexBarcodeGenerator and MaxiCodeCodetextMode2 classes for creating high‑density 2‑D barcodes, a common requirement in logistics and shipping applications. Developers often need to generate these barcodes in background tasks to keep UI responsive.
+// Prompt: Use async methods to generate a MaxiCode image and write it to a file without blocking the UI.
+// Tags: maxicode, barcode, async, generation, png, aspose.barcode, complexbarcodegenerator
+
 using System;
 using System.IO;
 using System.Threading.Tasks;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.ComplexBarcode;
 
 /// <summary>
-/// Demonstrates generation of a MaxiCode barcode using Aspose.BarCode.
+/// Demonstrates asynchronous generation of a MaxiCode barcode image and saving it to a file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates a MaxiCode barcode (Mode 2) with a standard second message
-    /// and saves it as a PNG file.
+    /// Entry point of the console application. Calls the asynchronous barcode generation method.
     /// </summary>
     /// <param name="args">Command‑line arguments (not used).</param>
     static async Task Main(string[] args)
     {
-        // Define the output file name for the generated barcode image.
+        // Define the output file path for the generated PNG image
         string outputPath = "maxicode.png";
 
-        // Configure the MaxiCode codetext for Mode 2.
-        // This includes a 9‑digit postal code, a country code, and a service category.
-        var maxiCodeCodetext = new MaxiCodeCodetextMode2
-        {
-            PostalCode = "524032140",   // 9‑digit US postal code
-            CountryCode = 56,           // Example country code
-            ServiceCategory = 999       // Example service category
-        };
+        // Generate the MaxiCode barcode asynchronously
+        await GenerateMaxiCodeAsync(outputPath);
 
-        // Create the standard second message that accompanies the MaxiCode.
-        var secondMessage = new MaxiCodeStandardSecondMessage
-        {
-            Message = "Sample MaxiCode message"
-        };
-        // Attach the second message to the codetext.
-        maxiCodeCodetext.SecondMessage = secondMessage;
+        // Inform the user that the image has been saved
+        Console.WriteLine($"MaxiCode image saved to: {outputPath}");
+    }
 
-        // Generate and save the barcode on a background thread to avoid blocking.
+    /// <summary>
+    /// Generates a MaxiCode barcode using the ComplexBarcodeGenerator and saves it to the specified path.
+    /// The operation runs on a background thread to avoid blocking the UI.
+    /// </summary>
+    /// <param name="path">File system path where the PNG image will be saved.</param>
+    static async Task GenerateMaxiCodeAsync(string path)
+    {
+        // Execute the barcode generation on a thread‑pool thread
         await Task.Run(() =>
         {
-            // ComplexBarcodeGenerator is required for MaxiCode generation.
-            using (var generator = new ComplexBarcodeGenerator(maxiCodeCodetext))
+            // Prepare MaxiCode codetext (Mode 2 with a standard second message)
+            var maxiCode = new MaxiCodeCodetextMode2
             {
-                // Save the generated barcode as a PNG file.
-                generator.Save(outputPath, BarCodeImageFormat.Png);
+                PostalCode = "524032140",
+                CountryCode = 56,
+                ServiceCategory = 999
+            };
+
+            // Create the optional second message for the MaxiCode
+            var secondMessage = new MaxiCodeStandardSecondMessage
+            {
+                Message = "Sample message"
+            };
+            maxiCode.SecondMessage = secondMessage;
+
+            // Generate and save the barcode image using the ComplexBarcodeGenerator
+            using (var generator = new ComplexBarcodeGenerator(maxiCode))
+            {
+                generator.Save(path, BarCodeImageFormat.Png);
             }
         });
-
-        // Output the full path of the saved image for user confirmation.
-        Console.WriteLine($"MaxiCode image saved to: {Path.GetFullPath(outputPath)}");
     }
 }

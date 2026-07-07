@@ -1,84 +1,90 @@
+// Title: Generate MaxiCode PNG and upload to Azure Blob Storage
+// Description: Demonstrates creating a MaxiCode barcode (Mode 2) as a PNG image using Aspose.BarCode and outlines how to upload the generated file to Azure Blob storage.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on complex barcode types such as MaxiCode. It showcases the use of ComplexBarcodeGenerator, MaxiCodeCodetextMode2, and related classes to produce high‑density 2‑D barcodes, a common requirement for logistics and shipping applications. Developers often need to generate these barcodes programmatically and store them in cloud services like Azure for further processing or distribution.
+// Prompt: Upload a generated MaxiCode PNG file to Azure Blob storage using the Azure SDK after successful creation.
+// Tags: maxicode, generation, png, complexbarcode, azureblob, aspnet, barcode
+
 using System;
 using System.IO;
 using Aspose.BarCode;
-using Aspose.BarCode.ComplexBarcode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode.ComplexBarcode;
 
 /// <summary>
-/// Demonstrates generation of a MaxiCode barcode and saving it locally,
-/// with optional Azure Blob Storage upload (commented out).
+/// Example program that creates a MaxiCode barcode image and demonstrates how to upload it to Azure Blob storage.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a MaxiCode barcode, writes it to a PNG file,
-    /// and contains placeholder code for uploading to Azure Blob Storage.
+    /// Entry point of the application. Generates a MaxiCode PNG and optionally uploads it to Azure Blob storage.
     /// </summary>
     static void Main()
     {
-        // --------------------------------------------------------------------
-        // Prepare MaxiCode codetext (Mode 4 with a simple message)
-        // --------------------------------------------------------------------
-        var maxiCodeCodetext = new MaxiCodeStandardCodetext
+        // Prepare MaxiCode codetext (Mode 2) with sample data
+        var maxiCodeCodetext = new MaxiCodeCodetextMode2
         {
-            Mode = MaxiCodeMode.Mode4,
-            Message = "Hello from Aspose"
+            PostalCode = "524032140",   // 9‑digit US postal code
+            CountryCode = 56,           // USA numeric country code
+            ServiceCategory = 999       // Sample service category
         };
 
-        // --------------------------------------------------------------------
-        // Generate the barcode image into a memory stream
-        // --------------------------------------------------------------------
-        using (var memoryStream = new MemoryStream())
+        // Standard second message (optional additional data)
+        var secondMessage = new MaxiCodeStandardSecondMessage
         {
-            // Create a generator for the complex barcode using the prepared codetext
-            using (var generator = new ComplexBarcodeGenerator(maxiCodeCodetext))
+            Message = "Sample MaxiCode message"
+        };
+        maxiCodeCodetext.SecondMessage = secondMessage;
+
+        // Generate the MaxiCode image into a memory stream
+        using (var generator = new ComplexBarcodeGenerator(maxiCodeCodetext))
+        {
+            using (var ms = new MemoryStream())
             {
-                // Save the generated barcode as PNG into the memory stream
-                generator.Save(memoryStream, BarCodeImageFormat.Png);
+                // Save the barcode as PNG to the memory stream
+                generator.Save(ms, BarCodeImageFormat.Png);
+                ms.Position = 0; // Reset stream position for subsequent reads
+
+                // Write the PNG to a local file (fallback for environments without Azure SDK)
+                const string localPath = "maxicode.png";
+                using (var fileStream = new FileStream(localPath, FileMode.Create, FileAccess.Write))
+                {
+                    ms.CopyTo(fileStream);
+                }
+
+                Console.WriteLine($"MaxiCode image saved locally to '{localPath}'.");
+
+                // ------------------------------------------------------------
+                // Azure Blob Storage upload (requires Azure.Storage.Blobs package)
+                // The following code demonstrates the intended upload logic.
+                // Uncomment and ensure the Azure.Storage.Blobs NuGet package is referenced
+                // when running in an environment where Azure SDK is available.
+                // ------------------------------------------------------------
+                /*
+                try
+                {
+                    // Replace with your actual Azure Storage connection string and container name
+                    string connectionString = "<Your_Azure_Storage_Connection_String>";
+                    string containerName = "<Your_Container_Name>";
+                    string blobName = "maxicode.png";
+
+                    // Create a BlobServiceClient to interact with the storage account
+                    var blobServiceClient = new Azure.Storage.Blobs.BlobServiceClient(connectionString);
+                    var containerClient = blobServiceClient.GetBlobContainerClient(containerName);
+                    containerClient.CreateIfNotExists();
+
+                    // Get a reference to the blob and upload the image
+                    var blobClient = containerClient.GetBlobClient(blobName);
+                    ms.Position = 0; // Reset stream position before upload
+                    blobClient.Upload(ms, overwrite: true);
+
+                    Console.WriteLine($"MaxiCode image uploaded to Azure Blob storage as '{blobName}'.");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Azure upload failed: {ex.Message}");
+                }
+                */
             }
-
-            // Reset stream position to the beginning for subsequent reads
-            memoryStream.Position = 0;
-
-            // ----------------------------------------------------------------
-            // Save the barcode image locally (fallback when Azure SDK is unavailable)
-            // ----------------------------------------------------------------
-            const string localFilePath = "maxicode.png";
-
-            // Create a file stream and copy the memory stream contents into it
-            using (var fileStream = File.Create(localFilePath))
-            {
-                memoryStream.CopyTo(fileStream);
-            }
-
-            Console.WriteLine($"Barcode image saved locally to '{localFilePath}'.");
-
-            // ----------------------------------------------------------------
-            // Azure Blob Storage upload (requires Azure.Storage.Blobs package)
-            // ----------------------------------------------------------------
-            // Replace the placeholders below with your actual Azure Storage connection details.
-            // string connectionString = "<Your_Azure_Storage_Connection_String>";
-            // string containerName   = "barcode-container";
-            // string blobName       = "maxicode.png";
-
-            // try
-            // {
-            //     // Uncomment the following lines after adding the Azure.Storage.Blobs NuGet package.
-            //     /*
-            //     var blobServiceClient = new Azure.Storage.Blobs.BlobServiceClient(connectionString);
-            //     var containerClient   = blobServiceClient.GetBlobContainerClient(containerName);
-            //     containerClient.CreateIfNotExists();
-            //     var blobClient        = containerClient.GetBlobClient(blobName);
-            //     memoryStream.Position = 0; // Ensure stream is at the beginning
-            //     blobClient.Upload(memoryStream, overwrite: true);
-            //     Console.WriteLine($"Uploaded to Azure Blob Storage: {blobClient.Uri}");
-            //     */
-            // }
-            // catch (Exception ex)
-            // {
-            //     Console.WriteLine($"Azure upload failed: {ex.Message}");
-            // }
         }
     }
 }

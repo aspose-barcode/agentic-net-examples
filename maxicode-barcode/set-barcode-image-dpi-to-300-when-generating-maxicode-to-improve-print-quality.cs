@@ -1,49 +1,54 @@
+// Title: Generate MaxiCode barcode with 300 DPI resolution
+// Description: Demonstrates creating a MaxiCode barcode and setting its image DPI to 300 for high‑quality printing.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It showcases the use of ComplexBarcodeGenerator, MaxiCodeCodetextMode2, and related classes to produce MaxiCode symbols. Developers often need to adjust image resolution, embed secondary messages, and export to common formats like PNG for printing or scanning applications.
+// Prompt: Set the barcode image DPI to 300 when generating a MaxiCode to improve print quality.
+// Tags: maxicode, barcode generation, dpi, image resolution, aspose.barcode, png
+
 using System;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.ComplexBarcode;
-using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates generation of a MaxiCode barcode using Aspose.BarCode library.
+/// Example program that creates a MaxiCode barcode with a 300 DPI image resolution.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a MaxiCode barcode (Mode 2) with a standard second message
-    /// and saves it as a PNG image.
+    /// Entry point of the application. Generates a MaxiCode, sets its DPI, and saves it as a PNG file.
     /// </summary>
     static void Main()
     {
-        // Create a MaxiCode codetext object for Mode 2 with required fields
+        // Define the output file name
+        string outputPath = "maxicode.png";
+
+        // Prepare MaxiCode codetext (Mode 2 example) with required fields
         var maxiCodeCodetext = new MaxiCodeCodetextMode2
         {
-            PostalCode = "524032140", // 9‑digit US postal code
-            CountryCode = 56,         // Example country code
-            ServiceCategory = 999     // Example service category
+            PostalCode = "524032140",   // 9‑digit US postal code
+            CountryCode = 056,          // USA country code
+            ServiceCategory = 999       // Example service category
         };
 
-        // Create the standard second message to be embedded in the barcode
+        // Add a simple second message to the MaxiCode
         var secondMessage = new MaxiCodeStandardSecondMessage
         {
-            Message = "Sample MaxiCode message"
+            Message = "Sample MaxiCode"
         };
-
-        // Assign the second message to the MaxiCode codetext
         maxiCodeCodetext.SecondMessage = secondMessage;
 
-        // Initialize the ComplexBarcodeGenerator with the prepared codetext
+        // Generate the MaxiCode using the complex barcode generator
         using (var generator = new ComplexBarcodeGenerator(maxiCodeCodetext))
         {
-            // Configure image resolution (dots per inch) for higher print quality
+            // Set image resolution to 300 DPI for high‑quality print output
             generator.Parameters.Resolution = 300f;
 
-            // Define output file path and save the barcode as a PNG image
-            string outputPath = "maxicode.png";
+            // Save the generated barcode image as a PNG file
             generator.Save(outputPath, BarCodeImageFormat.Png);
-
-            // Inform the user where the barcode image was saved
-            Console.WriteLine($"MaxiCode barcode saved to: {outputPath}");
         }
+
+        // Inform the user where the file was saved
+        Console.WriteLine($"MaxiCode saved to '{Path.GetFullPath(outputPath)}' with 300 DPI.");
     }
 }
