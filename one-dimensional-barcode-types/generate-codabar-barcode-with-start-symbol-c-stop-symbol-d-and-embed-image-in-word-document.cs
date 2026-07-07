@@ -1,3 +1,9 @@
+// Title: Generate Codabar barcode and embed it in a Word document
+// Description: Demonstrates creating a Codabar barcode with start symbol C and stop symbol D, saving it as a PNG image, and inserting the image into a Word document.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use BarcodeGenerator (Aspose.BarCode.Generation) together with Aspose.Words to produce printable documents. Typical use cases include generating inventory labels, shipping tags, or any printable media that requires barcode data embedded in Word files. Developers often need to configure symbology settings, export barcode images, and programmatically manipulate Word documents.
+// Prompt: Generate a Codabar barcode with start symbol C, stop symbol D, and embed the image in a Word document.
+// Tags: codabar, barcode generation, word document, aspose.barcode, aspose.words, image embedding
+
 using System;
 using System.IO;
 using Aspose.BarCode;
@@ -5,48 +11,48 @@ using Aspose.BarCode.Generation;
 using Aspose.Words;
 
 /// <summary>
-/// Demonstrates generating a Codabar barcode using Aspose.BarCode,
-/// saving it as an image, and embedding it into a Word document using Aspose.Words.
+/// Example program that creates a Codabar barcode, saves it as an image,
+/// and embeds the image into a Word document using Aspose libraries.
 /// </summary>
 class Program
 {
     /// <summary>
     /// Entry point of the application.
-    /// Generates a barcode, saves it, creates a Word document, inserts the barcode image, and saves the document.
     /// </summary>
     static void Main()
     {
-        // Define the output directory inside the system's temporary folder
-        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
-        // Ensure the directory exists
-        Directory.CreateDirectory(outputDir);
+        // Define file paths for the temporary barcode image and the final Word document.
+        string imagePath = "codabar.png";
+        string docPath = "Codabar.docx";
 
-        // Build full file paths for the barcode image and the resulting Word document
-        string barcodePath = Path.Combine(outputDir, "codabar.png");
-        string wordPath = Path.Combine(outputDir, "CodabarDocument.docx");
+        // Remove any existing files to ensure a clean run.
+        if (File.Exists(imagePath))
+            File.Delete(imagePath);
+        if (File.Exists(docPath))
+            File.Delete(docPath);
 
-        // Generate a Codabar barcode with start symbol 'C' and stop symbol 'D'
-        using (var generator = new BarcodeGenerator(EncodeTypes.Codabar, "123456"))
+        // Generate a Codabar barcode with start symbol C and stop symbol D.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Codabar))
         {
-            // Configure start and stop symbols for Codabar
+            // Set the data to encode (excluding start/stop symbols).
+            generator.CodeText = "123456";
+
+            // Configure the start and stop symbols for Codabar.
             generator.Parameters.Barcode.Codabar.StartSymbol = CodabarSymbol.C;
             generator.Parameters.Barcode.Codabar.StopSymbol = CodabarSymbol.D;
 
-            // Save the generated barcode as a PNG image
-            generator.Save(barcodePath, BarCodeImageFormat.Png);
+            // Save the generated barcode as a PNG image.
+            generator.Save(imagePath);
         }
 
-        // Create a new Word document
+        // Create a new Word document and insert the barcode image.
         var doc = new Document();
-        // Initialize a DocumentBuilder to modify the document
         var builder = new DocumentBuilder(doc);
-        // Insert the previously saved barcode image into the document
-        builder.InsertImage(barcodePath);
-        // Save the document in DOCX format
-        doc.Save(wordPath, SaveFormat.Docx);
+        builder.InsertImage(imagePath);
+        doc.Save(docPath);
 
-        // Write the locations of the generated files to the console
-        Console.WriteLine($"Barcode image saved to: {barcodePath}");
-        Console.WriteLine($"Word document saved to: {wordPath}");
+        // Clean up the temporary barcode image file.
+        if (File.Exists(imagePath))
+            File.Delete(imagePath);
     }
 }

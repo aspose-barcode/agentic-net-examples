@@ -1,77 +1,74 @@
+// Title: Gradient Background Barcode Example
+// Description: Demonstrates applying a vertical gradient background to a Code128 barcode and saving it as a PNG image.
+// Category-Description: This example belongs to the Aspose.BarCode image generation category, showcasing how to customize barcode appearance using Aspose.BarCode.Generation.BarcodeGenerator and Aspose.Drawing graphics. Typical use cases include branding, UI design, and creating visually appealing barcodes for marketing materials. Developers often need to modify background colors, apply gradients, or overlay images while preserving barcode readability.
+// Prompt: Apply a gradient background using two colors to create a visually appealing barcode.
+// Tags: barcode symbology, gradient background, png output, barcodegenerator, graphics
+
 using System;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a Code128 barcode with a custom vertical gradient background
-/// and saving it as a PNG file using Aspose.BarCode.
+/// Generates a Code128 barcode with a vertical gradient background and saves it as a PNG file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates the barcode, applies a gradient background,
-    /// and writes the resulting image to disk.
+    /// Entry point. Creates the barcode, applies gradient, and writes the image to disk.
     /// </summary>
     static void Main()
     {
-        // Output file path and barcode content
+        // Output file path
         const string outputPath = "gradient_barcode.png";
-        const string codeText = "1234567890";
 
-        // Initialize the barcode generator for Code128 with the specified text
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+        // Create a barcode generator for Code128 with sample text
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            // Set the background to transparent so the custom gradient will be visible
+            // Set barcode bar color
+            generator.Parameters.Barcode.BarColor = Color.Black;
+            // Make the generator background transparent so we can apply our own gradient
             generator.Parameters.BackColor = Color.Transparent;
 
-            // Generate the barcode image as a bitmap
-            using (Bitmap barcodeBitmap = generator.GenerateBarCodeImage())
+            // Generate the barcode image
+            using (Bitmap barcodeBmp = generator.GenerateBarCodeImage())
             {
-                int width = barcodeBitmap.Width;
-                int height = barcodeBitmap.Height;
-
-                // Create a new bitmap that will hold the gradient background and the barcode
-                using (var finalBitmap = new Bitmap(width, height))
+                // Create a new bitmap to hold the gradient background plus the barcode
+                using (Bitmap finalBmp = new Bitmap(barcodeBmp.Width, barcodeBmp.Height))
                 {
-                    // Obtain a graphics object for drawing onto the final bitmap
-                    using (var graphics = Graphics.FromImage(finalBitmap))
+                    using (Graphics graphics = Graphics.FromImage(finalBmp))
                     {
-                        // Define the start and end colors of the vertical gradient
-                        Color startColor = Color.LightBlue;
-                        Color endColor = Color.LightGreen;
+                        // Define two colors for the gradient (top to bottom)
+                        Color topColor = Color.LightBlue;
+                        Color bottomColor = Color.LightCoral;
 
-                        // Fill the background with a vertical gradient, one pixel row at a time
+                        int height = finalBmp.Height;
+                        int width = finalBmp.Width;
+
+                        // Draw a simple vertical gradient by interpolating each scan line
                         for (int y = 0; y < height; y++)
                         {
-                            // Compute interpolation ratio based on current row
                             float ratio = (float)y / (height - 1);
-
-                            // Interpolate each RGB component separately
-                            int r = (int)(startColor.R + (endColor.R - startColor.R) * ratio);
-                            int g = (int)(startColor.G + (endColor.G - startColor.G) * ratio);
-                            int b = (int)(startColor.B + (endColor.B - startColor.B) * ratio);
-
-                            // Create a solid brush with the interpolated color
-                            using (var brush = new SolidBrush(Color.FromArgb(r, g, b)))
+                            int r = (int)(topColor.R + (bottomColor.R - topColor.R) * ratio);
+                            int g = (int)(topColor.G + (bottomColor.G - topColor.G) * ratio);
+                            int b = (int)(topColor.B + (bottomColor.B - topColor.B) * ratio);
+                            Color lineColor = Color.FromArgb(r, g, b);
+                            using (Pen pen = new Pen(lineColor))
                             {
-                                // Draw a one‑pixel‑high rectangle across the entire width
-                                graphics.FillRectangle(brush, 0, y, width, 1);
+                                graphics.DrawLine(pen, 0, y, width, y);
                             }
                         }
 
-                        // Draw the generated barcode on top of the gradient background
-                        graphics.DrawImage(barcodeBitmap, 0, 0, width, height);
+                        // Draw the barcode on top of the gradient background
+                        graphics.DrawImage(barcodeBmp, 0, 0, barcodeBmp.Width, barcodeBmp.Height);
                     }
 
-                    // Save the composed image as a PNG file
-                    finalBitmap.Save(outputPath, ImageFormat.Png);
+                    // Save the final image as PNG
+                    finalBmp.Save(outputPath, ImageFormat.Png);
                 }
             }
         }
 
-        // Inform the user where the file was saved
         Console.WriteLine($"Barcode with gradient background saved to: {outputPath}");
     }
 }

@@ -1,56 +1,59 @@
+// Title: Generate Codabar barcodes in batch and save as TIFF files
+// Description: Demonstrates how to encode a list of identifiers into Codabar barcodes with start/stop symbol 'C' and store each image as a TIFF file.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and Codabar settings. Typical use cases include batch creation of inventory labels, shipping tags, or any scenario requiring multiple Codabar images. Developers often need to configure start/stop symbols, choose image formats, and manage output directories.
+// Prompt: Batch process a list of identifiers, generate Codabar barcodes with start symbol C, and save each as a TIFF file.
+// Tags: barcode symbology, batch processing, tiff output, codabar, aspnet, aspose.barcode, barcode generation
+
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates generating Codabar barcodes for a set of identifiers and saving them as TIFF images.
+/// Demonstrates batch generation of Codabar barcodes with start/stop symbol 'C' and saves them as TIFF images.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates barcodes for predefined identifiers and writes them to disk.
+    /// Entry point that creates barcodes for a predefined set of identifiers and writes them to the file system.
     /// </summary>
     static void Main()
     {
-        // Define a sample list of identifiers to encode as barcodes.
+        // Sample identifiers to encode as Codabar barcodes.
         string[] identifiers = new string[]
         {
             "12345",
             "67890",
-            "ABCDE",
-            "98765",
-            "XYZ12"
+            "ABCDEF",
+            "987654321",
+            "CODE123"
         };
 
-        // Determine the output folder path (a subfolder named "Barcodes" in the current directory).
-        string outputFolder = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
-
-        // Ensure the output folder exists; create it if it does not.
-        if (!Directory.Exists(outputFolder))
+        // Ensure the output directory exists.
+        string outputDir = "Barcodes";
+        if (!Directory.Exists(outputDir))
         {
-            Directory.CreateDirectory(outputFolder);
+            Directory.CreateDirectory(outputDir);
         }
 
-        // Iterate over each identifier and generate a corresponding Codabar barcode.
+        // Process each identifier and generate a corresponding barcode.
         foreach (string id in identifiers)
         {
-            // Initialize a BarcodeGenerator for the current identifier using the Codabar symbology.
+            // Create a barcode generator for Codabar with the current identifier.
             using (var generator = new BarcodeGenerator(EncodeTypes.Codabar, id))
             {
-                // Configure the start and stop symbols for Codabar (C as start, D as stop).
+                // Configure the Codabar start and stop symbols to 'C'.
                 generator.Parameters.Barcode.Codabar.StartSymbol = CodabarSymbol.C;
-                generator.Parameters.Barcode.Codabar.StopSymbol = CodabarSymbol.D;
+                generator.Parameters.Barcode.Codabar.StopSymbol = CodabarSymbol.C;
 
-                // Construct the full file path for the output TIFF image (e.g., "12345.tiff").
-                string outputPath = Path.Combine(outputFolder, $"{id}.tiff");
+                // Build the full file path for the TIFF output.
+                string filePath = Path.Combine(outputDir, $"{id}.tif");
 
-                // Save the generated barcode image to the specified path in TIFF format.
-                generator.Save(outputPath, BarCodeImageFormat.Tiff);
+                // Save the generated barcode as a TIFF file.
+                generator.Save(filePath, BarCodeImageFormat.Tiff);
 
-                // Log the successful creation of the barcode file to the console.
-                Console.WriteLine($"Saved barcode for '{id}' to '{outputPath}'.");
+                // Inform the user that the file was saved.
+                Console.WriteLine($"Saved barcode for '{id}' to '{filePath}'.");
             }
         }
     }

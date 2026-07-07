@@ -1,35 +1,38 @@
+// Title: Generate high‑resolution Code128 barcode image
+// Description: Demonstrates creating a Code128 barcode and saving it as a PNG with 600 DPI resolution for high‑quality glossy label printing.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating how to configure barcode parameters such as resolution using the BarcodeGenerator class. Typical use cases include producing high‑resolution images for printing on glossy labels, packaging, or product identification. Developers often need to set DPI, choose symbology, and export to common image formats.
+// Prompt: Generate a barcode image at 600 DPI resolution for high‑quality glossy label printing.
+// Tags: code128, barcode generation, resolution, png, aspose.barcode, aspose.drawing
+
 using System;
-using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing;
 
-/// <summary>
-/// Demonstrates generating a high‑resolution Code128 barcode and saving it as a PNG file.
-/// </summary>
-class Program
+namespace BarcodeSample
 {
     /// <summary>
-    /// Entry point of the application. Generates a barcode image with 600 DPI resolution.
+    /// Sample program that generates a Code128 barcode image with a resolution of 600 DPI.
     /// </summary>
-    static void Main()
+    class Program
     {
-        // Build the full path for the output PNG file in the current working directory.
-        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "barcode_600dpi.png");
-
-        // Initialise a BarcodeGenerator for Code128 symbology with the sample data "ABC123456".
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "ABC123456"))
+        /// <summary>
+        /// Entry point of the application. Creates a barcode, sets high resolution, and saves it as PNG.
+        /// </summary>
+        static void Main()
         {
-            // Configure the generator to produce a high‑resolution image suitable for glossy label printing.
-            generator.Parameters.Resolution = 600f;          // 600 dots per inch
+            // Initialize the barcode generator with Code128 symbology and sample data.
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+            {
+                // Configure the generator to use 600 DPI for high‑quality glossy label printing.
+                generator.Parameters.Resolution = 600f;
 
-            // Enable anti‑aliasing to smooth the barcode edges.
-            generator.Parameters.UseAntiAlias = true;
+                // Save the generated barcode as a PNG file.
+                generator.Save("barcode.png");
+            }
 
-            // Persist the generated barcode to a PNG file at the specified location.
-            generator.Save(outputPath);
+            // Inform the user that the barcode image has been created.
+            Console.WriteLine("Barcode image generated at 600 DPI: barcode.png");
         }
-
-        // Inform the user where the barcode image has been saved.
-        Console.WriteLine($"Barcode image saved to: {outputPath}");
     }
 }

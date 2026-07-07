@@ -1,88 +1,73 @@
+// Title: Generate barcodes from XML configs and save as TIFF images
+// Description: This example reads up to five XML barcode configuration files from a folder, creates barcodes using Aspose.BarCode, and writes them as TIFF files.
+// Category-Description: Demonstrates batch processing of barcode generation using Aspose.BarCode's BarcodeGenerator class. Typical use cases include automating barcode creation from configuration files for inventory, shipping, or labeling systems. Developers often need to import settings from XML, generate images, and store them in a designated output directory.
+// Prompt: Batch process a folder of XML configuration files, generating a barcode for each and saving as TIFF images.
+// Tags: barcode generation, xml import, batch processing, tiff output, aspose.barcode
+
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates batch generation of barcodes from XML configuration files using Aspose.BarCode.
+/// Demonstrates batch processing of XML barcode configuration files to generate TIFF images.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Processes up to 10 XML configuration files in the specified input folder,
-    /// generates corresponding barcode images, and saves them as TIFF files.
+    /// Entry point. Processes up to five XML files in the specified folder, creates barcodes, and saves them as TIFF files.
     /// </summary>
-    /// <param name="args">
-    /// Optional command‑line argument specifying the input folder path.
-    /// If omitted, defaults to "BarcodesConfig".
-    /// </param>
+    /// <param name="args">Optional first argument specifying the input folder path.</param>
     static void Main(string[] args)
     {
-        // Determine the folder containing XML configuration files.
+        // Determine input folder (first argument or default)
         string inputFolder = args.Length > 0 ? args[0] : "BarcodesConfig";
 
-        // Verify that the input folder exists.
+        // Verify that the input folder exists
         if (!Directory.Exists(inputFolder))
         {
             Console.WriteLine($"Input folder does not exist: {inputFolder}");
             return;
         }
 
-        // Prepare output folder for generated TIFF images (subfolder named "Output").
+        // Prepare output folder inside the input folder
         string outputFolder = Path.Combine(inputFolder, "Output");
-        if (!Directory.Exists(outputFolder))
-        {
-            Directory.CreateDirectory(outputFolder);
-        }
+        Directory.CreateDirectory(outputFolder);
 
-        // Retrieve all XML files in the input folder.
-        // Limit processing to the first 10 files for safety in constrained environments.
+        // Retrieve all XML configuration files (limit to 5 for safety)
         string[] xmlFiles = Directory.GetFiles(inputFolder, "*.xml");
-        int maxFiles = Math.Min(xmlFiles.Length, 10);
+        int maxFiles = Math.Min(xmlFiles.Length, 5);
 
-        // If no XML files are found, inform the user and exit.
-        if (maxFiles == 0)
-        {
-            Console.WriteLine("No XML configuration files found.");
-            return;
-        }
-
-        // Process each XML file sequentially.
+        // Process each XML file
         for (int i = 0; i < maxFiles; i++)
         {
             string xmlPath = xmlFiles[i];
 
-            // Ensure the file still exists before attempting to load it.
+            // Ensure the file still exists before processing
             if (!File.Exists(xmlPath))
             {
-                Console.WriteLine($"File not found (skipped): {xmlPath}");
+                Console.WriteLine($"File not found: {xmlPath}");
                 continue;
             }
 
-            try
+            // Load barcode settings from the XML file
+            using (BarcodeGenerator generator = BarcodeGenerator.ImportFromXml(xmlPath))
             {
-                // Load barcode settings from the XML file using Aspose.BarCode.
-                using (BarcodeGenerator generator = BarcodeGenerator.ImportFromXml(xmlPath))
+                // Verify that the generator was created successfully
+                if (generator == null)
                 {
-                    // Construct the output file name with a .tiff extension.
-                    string fileNameWithoutExt = Path.GetFileNameWithoutExtension(xmlPath);
-                    string outputPath = Path.Combine(outputFolder, fileNameWithoutExt + ".tiff");
-
-                    // Save the generated barcode image as TIFF.
-                    generator.Save(outputPath, BarCodeImageFormat.Tiff);
-                    Console.WriteLine($"Generated barcode: {outputPath}");
+                    Console.WriteLine($"Failed to import XML: {xmlPath}");
+                    continue;
                 }
-            }
-            catch (Exception ex)
-            {
-                // Report any errors encountered while processing the current XML file.
-                Console.WriteLine($"Error processing '{xmlPath}': {ex.Message}");
+
+                // Build the output TIFF file name based on the XML file name
+                string fileNameWithoutExt = Path.GetFileNameWithoutExtension(xmlPath);
+                string tiffPath = Path.Combine(outputFolder, fileNameWithoutExt + ".tiff");
+
+                // Save the generated barcode image as a TIFF file
+                generator.Save(tiffPath, BarCodeImageFormat.Tiff);
+                Console.WriteLine($"Generated barcode: {tiffPath}");
             }
         }
-
-        // Indicate that batch processing has finished.
-        Console.WriteLine("Batch processing completed.");
     }
 }

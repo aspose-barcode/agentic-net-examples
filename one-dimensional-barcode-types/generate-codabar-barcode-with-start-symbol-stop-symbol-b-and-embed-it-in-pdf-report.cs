@@ -2,62 +2,52 @@ using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 using Aspose.Pdf;
 
-/// <summary>
-/// Demonstrates generating a Codabar barcode, embedding it into a PDF,
-/// and saving the resulting document to disk.
-/// </summary>
 class Program
 {
-    /// <summary>
-    /// Entry point of the application.
-    /// Generates a Codabar barcode with specific start/stop symbols,
-    /// inserts it into a PDF, and saves the PDF file.
-    /// </summary>
     static void Main()
     {
-        // Create a barcode generator for Codabar type
-        using (var generator = new BarcodeGenerator(EncodeTypes.Codabar))
-        {
-            // Set the data to encode (excluding start/stop symbols)
-            generator.CodeText = "123456";
+        // Define output file names
+        const string barcodeImagePath = "codabar.png";
+        const string pdfReportPath = "CodabarReport.pdf";
 
-            // Define start and stop symbols for the Codabar barcode
+        // Create Codabar barcode with start symbol A and stop symbol B
+        using (var generator = new BarcodeGenerator(EncodeTypes.Codabar, "123456"))
+        {
+            // Set start and stop symbols
             generator.Parameters.Barcode.Codabar.StartSymbol = CodabarSymbol.A;
             generator.Parameters.Barcode.Codabar.StopSymbol = CodabarSymbol.B;
 
-            // Render the barcode to a memory stream in PNG format
+            // Optional: set colors
+            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
+            generator.Parameters.BackColor = Aspose.Drawing.Color.White;
+
+            // Save barcode image to a file (also keep it in memory for PDF embedding)
+            generator.Save(barcodeImagePath);
             using (var barcodeStream = new MemoryStream())
             {
                 generator.Save(barcodeStream, BarCodeImageFormat.Png);
-                // Reset stream position to the beginning for reading
                 barcodeStream.Position = 0;
 
-                // Initialize a new PDF document
-                var pdfDocument = new Document();
-                // Add a blank page to the document
-                var page = pdfDocument.Pages.Add();
-
-                // Create an image object from the barcode stream
-                var pdfImage = new Aspose.Pdf.Image
+                // Create PDF document and embed the barcode image
+                using (var pdfDoc = new Document())
                 {
-                    ImageStream = barcodeStream,
-                    // Set desired dimensions for the barcode image
-                    FixWidth = 200.0,
-                    FixHeight = 100.0
-                };
+                    var page = pdfDoc.Pages.Add();
 
-                // Insert the barcode image into the PDF page
-                page.Paragraphs.Add(pdfImage);
+                    // Define rectangle where the image will be placed (llx, lly, urx, ury)
+                    var rect = new Aspose.Pdf.Rectangle(100, 500, 400, 700);
+                    page.AddImage(barcodeStream, rect);
 
-                // Define output PDF file path
-                const string pdfPath = "CodabarReport.pdf";
-                // Save the PDF document to disk
-                pdfDocument.Save(pdfPath);
-                // Inform the user that the PDF has been generated
-                Console.WriteLine($"PDF report generated: {pdfPath}");
+                    // Save the PDF report
+                    pdfDoc.Save(pdfReportPath);
+                }
             }
         }
+
+        Console.WriteLine($"Barcode image saved to: {Path.GetFullPath(barcodeImagePath)}");
+        Console.WriteLine($"PDF report saved to: {Path.GetFullPath(pdfReportPath)}");
     }
 }

@@ -1,73 +1,90 @@
+// Title: Generate DataBar Expanded Stacked barcodes and compile into a PDF
+// Description: Demonstrates creating DataBar Expanded Stacked barcodes with different column counts and placing them into a single PDF document.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to configure DataBar symbology, adjust column counts, render barcodes to images, and embed them into an Aspose.Pdf document. Developers often need to produce multiple barcodes in one PDF for reports, labels, or batch processing, using BarcodeGenerator, BarcodeParameters, and Pdf Document classes.
+// Prompt: Generate series of DataBar Expanded Stacked barcodes with varying column counts, compile single PDF document.
+// Tags: databar, expandedstacked, barcode, pdf, aspnet, aspose.barcode, aspose.pdf, generation, image, columns
+
 using System;
-using System.Collections.Generic;
 using System.IO;
+using System.Collections.Generic;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Pdf;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generation of DataBar Expanded Stacked barcodes and embedding them into a PDF.
+/// Example program that generates a series of DataBar Expanded Stacked barcodes with varying column counts
+/// and compiles them into a single PDF document.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates barcode images for different column counts,
-    /// adds each image to a separate PDF page, saves the PDF, and cleans up resources.
+    /// Entry point of the application.
     /// </summary>
     static void Main()
     {
-        // Define column counts for the DataBar Expanded Stacked barcodes (evaluation limit: max 4)
-        int[] columnCounts = { 1, 2, 3, 4 };
+        // Define the output PDF file name
+        string outputPdf = "DataBarExpandedStacked.pdf";
 
-        // Sample GTIN code text suitable for DataBar symbologies
-        const string codeText = "(01)12345678901231";
+        // List of column counts to apply to each barcode instance
+        List<int> columnCounts = new List<int> { 2, 3, 4, 5 };
 
-        // Keep generated image streams until the PDF is saved
-        List<MemoryStream> imageStreams = new List<MemoryStream>();
-
-        // Create a PDF document (Aspose.Pdf Document is not IDisposable)
-        Document pdfDoc = new Document();
-
-        // Iterate over each column count to generate corresponding barcode
-        foreach (int columns in columnCounts)
+        // Create a new PDF document using Aspose.Pdf
+        using (var pdfDoc = new Document())
         {
-            // Generate the barcode image in memory using a using block for the generator
-            using (var generator = new BarcodeGenerator(EncodeTypes.DatabarExpandedStacked, codeText))
+            // Add a single page (evaluation mode permits up to 4 images)
+            var page = pdfDoc.Pages.Add();
+
+            // Determine cell dimensions for a 2x2 grid layout on the page
+            double pageWidth = page.PageInfo.Width;
+            double pageHeight = page.PageInfo.Height;
+            double cellWidth = pageWidth / 2;
+            double cellHeight = pageHeight / 2;
+
+            int index = 0;
+            foreach (int cols in columnCounts)
             {
-                // Set the desired number of columns for this barcode
-                generator.Parameters.Barcode.DataBar.Columns = columns;
+                // Respect evaluation restriction: maximum of 4 barcodes per document
+                if (index >= 4) break;
 
-                // Save the barcode to a memory stream in PNG format
-                var ms = new MemoryStream();
-                generator.Save(ms, BarCodeImageFormat.Png);
-                ms.Position = 0; // Reset stream position for reading
-
-                // Store the stream for later disposal after PDF is saved
-                imageStreams.Add(ms);
-
-                // Add a new page to the PDF and place the barcode image on it
-                Page page = pdfDoc.Pages.Add();
-                var pdfImage = new Aspose.Pdf.Image
+                // Initialize barcode generator for DataBar Expanded Stacked symbology
+                using (var generator = new BarcodeGenerator(EncodeTypes.DatabarExpandedStacked, "(01)01234567890123"))
                 {
-                    ImageStream = ms,
-                    // Adjust size as needed; using fixed dimensions for simplicity
-                    FixWidth = 200.0,
-                    FixHeight = 100.0
-                };
-                page.Paragraphs.Add(pdfImage);
+                    // Set the specific column count for the DataBar barcode
+                    generator.Parameters.Barcode.DataBar.Columns = cols;
+
+                    // Optional visual customizations
+                    generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
+                    generator.Parameters.BackColor = Aspose.Drawing.Color.White;
+                    generator.Parameters.Barcode.XDimension.Point = 2f;
+
+                    // Render the barcode to a memory stream in PNG format
+                    using (var ms = new MemoryStream())
+                    {
+                        generator.Save(ms, BarCodeImageFormat.Png);
+                        ms.Position = 0;
+
+                        // Calculate the placement rectangle for the current grid cell
+                        int row = index / 2;
+                        int col = index % 2;
+                        double llx = col * cellWidth;
+                        double lly = pageHeight - ((row + 1) * cellHeight);
+                        double urx = llx + cellWidth;
+                        double ury = lly + cellHeight;
+                        var rect = new Aspose.Pdf.Rectangle(llx, lly, urx, ury);
+
+                        // Add the barcode image to the PDF page within the calculated rectangle
+                        page.AddImage(ms, rect, (int)cellWidth, (int)cellHeight, true);
+                    }
+                }
+
+                index++;
             }
+
+            // Save the assembled PDF document to disk
+            pdfDoc.Save(outputPdf);
         }
 
-        // Save the compiled PDF containing all barcode pages
-        const string pdfPath = "DataBarExpandedStacked.pdf";
-        pdfDoc.Save(pdfPath);
-        Console.WriteLine($"PDF document created: {pdfPath}");
-
-        // Dispose all memory streams after the PDF has been saved
-        foreach (var stream in imageStreams)
-        {
-            stream.Dispose();
-        }
+        // Output the full path of the generated PDF for user reference
+        Console.WriteLine($"PDF generated: {Path.GetFullPath(outputPdf)}");
     }
 }

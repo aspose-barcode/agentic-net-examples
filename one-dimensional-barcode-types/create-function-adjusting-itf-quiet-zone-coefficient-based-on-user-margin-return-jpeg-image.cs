@@ -1,74 +1,92 @@
+// Title: ITF14 Barcode Generation with Adjustable Quiet Zone
+// Description: Demonstrates generating an ITF14 barcode, adjusting its quiet‑zone based on a user‑specified margin, and saving the result as a JPEG image.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to configure barcode parameters such as XDimension and quiet‑zone coefficient using the BarcodeGenerator class. Typical use cases include creating product packaging barcodes (e.g., ITF14) with custom margins for printing workflows. Developers often need to fine‑tune quiet‑zone settings to meet scanner requirements or layout constraints.
+// Prompt: Create function adjusting ITF quiet zone coefficient based on user margin, return JPEG image.
+// Tags: itf, barcode, quietzone, jpeg, generation, aspose.barcode
+
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing.Imaging;
 
-/// <summary>
-/// Demonstrates generating an ITF14 barcode with a custom quiet zone margin
-/// and saving it as a JPEG file.
-/// </summary>
-class Program
+namespace ITFQuietZoneExample
 {
     /// <summary>
-    /// Entry point of the application. Generates a barcode and writes it to disk.
+    /// Provides a console entry point that generates an ITF14 barcode with a user‑defined quiet‑zone margin
+    /// and saves the resulting JPEG image to disk.
     /// </summary>
-    static void Main()
+    class Program
     {
-        // Define the data to encode and the desired quiet zone margin (in points).
-        string codeText = "123456789012";
-        float margin = 15f;
-
-        // Generate the barcode image as a JPEG byte array.
-        byte[] jpegData = GenerateItfBarcode(codeText, margin);
-
-        // Specify the output file path.
-        string outputPath = "itf_barcode.jpg";
-
-        // Write the JPEG bytes to the file system.
-        File.WriteAllBytes(outputPath, jpegData);
-
-        // Inform the user that the barcode has been saved.
-        Console.WriteLine($"Barcode saved to {outputPath}");
-    }
-
-    /// <summary>
-    /// Generates an ITF14 barcode, adjusts the quiet zone coefficient based on the provided margin,
-    /// and returns the barcode image as a JPEG byte array.
-    /// </summary>
-    /// <param name="codeText">The data to encode (must be valid for ITF14).</param>
-    /// <param name="margin">Desired quiet zone margin in points.</param>
-    /// <returns>JPEG image bytes of the generated barcode.</returns>
-    static byte[] GenerateItfBarcode(string codeText, float margin)
-    {
-        // Validate input: code text must be non‑null and non‑empty.
-        if (string.IsNullOrEmpty(codeText))
-            throw new ArgumentException("Code text cannot be null or empty.", nameof(codeText));
-
-        // Validate input: margin must be a positive value.
-        if (margin <= 0f)
-            throw new ArgumentOutOfRangeException(nameof(margin), "Margin must be greater than zero.");
-
-        // QuietZoneCoef must be at least 10 according to the API.
-        // Convert the margin to an integer coefficient, rounding up.
-        int quietZoneCoef = (int)Math.Ceiling(margin);
-        if (quietZoneCoef < 10)
-            throw new ArgumentException("Quiet zone coefficient must be at least 10.", nameof(margin));
-
-        // Create a barcode generator for the ITF14 symbology with the supplied data.
-        using (var generator = new BarcodeGenerator(EncodeTypes.ITF14, codeText))
+        /// <summary>
+        /// Sample usage: generate an ITF14 barcode with a 20‑point margin and save as JPEG.
+        /// </summary>
+        static void Main()
         {
-            // Apply the calculated quiet zone coefficient.
-            generator.Parameters.Barcode.ITF.QuietZoneCoef = quietZoneCoef;
+            // 14‑digit ITF14 code to encode.
+            string codeText = "12345678901231";
 
-            // Use a memory stream to capture the generated JPEG image.
-            using (var ms = new MemoryStream())
+            // Desired quiet‑zone margin in points.
+            float userMargin = 20f;
+
+            // Output file name for the generated JPEG image.
+            string outputFile = "itf14.jpg";
+
+            try
             {
-                // Save the barcode image into the memory stream in JPEG format.
-                generator.Save(ms, BarCodeImageFormat.Jpeg);
+                // Generate the barcode and obtain JPEG bytes.
+                byte[] jpegBytes = GenerateITFBarcode(codeText, userMargin);
 
-                // Return the image data as a byte array.
-                return ms.ToArray();
+                // Write the JPEG bytes to the specified file.
+                File.WriteAllBytes(outputFile, jpegBytes);
+
+                Console.WriteLine($"Barcode saved to {outputFile}");
+            }
+            catch (Exception ex)
+            {
+                // Output any errors that occur during generation or file I/O.
+                Console.WriteLine($"Error: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Generates an ITF14 barcode, adjusts the quiet‑zone coefficient based on the supplied margin,
+        /// and returns the image as a JPEG byte array.
+        /// </summary>
+        /// <param name="codeText">The 14‑digit code to encode.</param>
+        /// <param name="margin">Desired quiet‑zone margin in points.</param>
+        /// <returns>JPEG image bytes.</returns>
+        static byte[] GenerateITFBarcode(string codeText, float margin)
+        {
+            // Validate that the code text is not null, empty, or whitespace.
+            if (string.IsNullOrWhiteSpace(codeText))
+                throw new ArgumentException("Code text cannot be null or empty.", nameof(codeText));
+
+            // ITF14 requires exactly 14 numeric digits.
+            if (codeText.Length != 14 || !long.TryParse(codeText, out _))
+                throw new ArgumentException("ITF14 code must be a 14‑digit numeric string.", nameof(codeText));
+
+            // Create the barcode generator for ITF14.
+            using (var generator = new BarcodeGenerator(EncodeTypes.ITF14, codeText))
+            {
+                // Set a reasonable XDimension (module width) – 2 points by default.
+                generator.Parameters.Barcode.XDimension.Point = 2f;
+
+                // Calculate the quiet‑zone coefficient.
+                // QuietZoneCoef = ceil(margin / XDimension). Minimum allowed value is 10.
+                int calculatedCoef = (int)Math.Ceiling(margin / generator.Parameters.Barcode.XDimension.Point);
+                if (calculatedCoef < 10)
+                    calculatedCoef = 10;
+
+                // Apply the coefficient to the ITF parameters.
+                generator.Parameters.Barcode.ITF.QuietZoneCoef = calculatedCoef;
+
+                // Generate the image into a memory stream as JPEG.
+                using (var ms = new MemoryStream())
+                {
+                    generator.Save(ms, BarCodeImageFormat.Jpeg);
+                    return ms.ToArray();
+                }
             }
         }
     }

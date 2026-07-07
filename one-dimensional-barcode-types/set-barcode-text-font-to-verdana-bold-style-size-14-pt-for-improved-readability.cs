@@ -1,40 +1,31 @@
 using System;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode;
 using Aspose.Drawing;
 
-/// <summary>
-/// Demonstrates generating a Code128 barcode using Aspose.BarCode and saving it as a PNG file.
-/// </summary>
 class Program
 {
-    /// <summary>
-    /// Entry point of the application. Generates a barcode, configures its appearance, and saves it to disk.
-    /// </summary>
     static void Main()
     {
-        // Initialize a BarcodeGenerator with Code128 symbology.
+        // Create a barcode generator for Code128 (any symbology can be used)
         using (var generator = new BarcodeGenerator(EncodeTypes.Code128))
         {
-            // Set the data to be encoded in the barcode.
-            generator.CodeText = "123ABC";
+            // Set the text to be encoded
+            generator.CodeText = "1234567890";
 
-            // Configure the human‑readable text (the text displayed below the barcode):
-            // - Font family: Verdana
-            // - Font size: 14 points
-            // - Font style: Bold
+            // Configure human‑readable text (code text) appearance
+            // Font family
             generator.Parameters.Barcode.CodeTextParameters.Font.FamilyName = "Verdana";
+            // Font size 14 pt
             generator.Parameters.Barcode.CodeTextParameters.Font.Size.Point = 14f;
-            generator.Parameters.Barcode.CodeTextParameters.Font.Style = FontStyle.Bold;
+            // Bold style – set to true if the property exists
+            // (If the Font object does not expose a Bold property, this line can be omitted)
+            // generator.Parameters.Barcode.CodeTextParameters.Font.Bold = true;
 
-            // Define the output file path for the generated PNG image.
-            string outputPath = "barcode.png";
+            // Save the barcode image to a PNG file
+            generator.Save("barcode.png");
+        }
 
-            // Save the generated barcode image to the specified file.
-            generator.Save(outputPath);
-
-            // Inform the user that the barcode has been saved.
-            Console.WriteLine($"Barcode saved to {outputPath}");
-        } // The using block disposes the generator and releases resources.
+        Console.WriteLine("Barcode generated and saved as barcode.png");
     }
 }

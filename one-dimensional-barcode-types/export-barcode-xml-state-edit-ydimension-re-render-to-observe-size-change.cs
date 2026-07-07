@@ -1,104 +1,74 @@
+// Title: Export barcode XML state, edit YDimension, and re‑render
+// Description: Demonstrates exporting a barcode's configuration to XML, modifying the YDimension property, and generating a new image to see the size change.
+// Category-Description: This example belongs to the Aspose.BarCode generation and manipulation category, showcasing how to persist barcode settings via XML, adjust dimensional properties, and re‑create images. It uses BarcodeGenerator, its Parameters, and ImportFromXml methods—common tasks for developers needing dynamic barcode customization and state persistence.
+// Prompt: Export barcode XML state, edit YDimension, re‑render to observe size change.
+// Tags: code128, export, edit, render, png, xml, barcodegenerator, parameters
+
 using System;
 using System.IO;
-using System.Linq;
-using System.Xml.Linq;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates creating a barcode, exporting its state to XML,
-/// modifying the XML to change the barcode image height, and
-/// re‑generating the barcode image from the modified XML.
+/// Demonstrates exporting a barcode's state to XML, modifying its YDimension, and re‑rendering the image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Executes the barcode generation, XML manipulation, and size verification steps.
+    /// Entry point of the example. Generates an initial barcode, saves its XML state, modifies YDimension, and saves the updated barcode image.
     /// </summary>
     static void Main()
     {
-        // -----------------------------------------------------------------
-        // Define file paths for the original image, XML state, and modified image
-        // -----------------------------------------------------------------
-        string originalImagePath = "original.png";
+        // Define file paths for the initial image, XML state, and the modified image.
+        string initialImagePath = "barcode_initial.png";
         string xmlPath = "barcode_state.xml";
-        string modifiedImagePath = "modified.png";
+        string modifiedImagePath = "barcode_modified.png";
 
-        // -----------------------------------------------------------------
-        // Step 1: Create a barcode, set explicit size, export to XML and save image
-        // -----------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
+        // 1. Create a barcode generator for Code128 and save the initial image.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
         {
-            // Use interpolation mode so ImageWidth/ImageHeight control the size
+            // Set a small size for visibility.
             generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
-            generator.Parameters.ImageWidth.Point = 300f;   // width in points
-            generator.Parameters.ImageHeight.Point = 150f; // initial height (YDimension) in points
+            generator.Parameters.ImageWidth.Point = 200f;
+            generator.Parameters.ImageHeight.Point = 80f;
 
-            // Save the original barcode image to file
-            generator.Save(originalImagePath);
+            // Save the generated barcode image.
+            generator.Save(initialImagePath);
 
-            // Export the current generator state (including size settings) to XML
+            // Export the current generator state to an XML file.
             generator.ExportToXml(xmlPath);
         }
 
-        // -----------------------------------------------------------------
-        // Step 2: Load the exported XML, modify the YDimension (ImageHeight), and save back
-        // -----------------------------------------------------------------
+        // 2. Verify that the XML file was created before attempting to import.
         if (!File.Exists(xmlPath))
         {
-            Console.WriteLine("XML file not found. Exiting.");
+            Console.WriteLine($"XML file not found: {xmlPath}");
             return;
         }
 
-        // Load the XML document containing the barcode generator state
-        XDocument xmlDoc = XDocument.Load(xmlPath);
-
-        // Find the ImageHeight element (case‑sensitive) and change its value
-        var imageHeightElement = xmlDoc.Descendants("ImageHeight").FirstOrDefault();
-        if (imageHeightElement != null)
-        {
-            // Set new height (e.g., 300 points) to observe size change
-            imageHeightElement.Value = "300";
-        }
-        else
-        {
-            Console.WriteLine("ImageHeight element not found in XML. Exiting.");
-            return;
-        }
-
-        // Save the modified XML back to the same file
-        xmlDoc.Save(xmlPath);
-
-        // -----------------------------------------------------------------
-        // Step 3: Load the modified XML into a new generator and render the barcode again
-        // -----------------------------------------------------------------
+        // 3. Load the barcode generator from the exported XML.
         using (var generatorFromXml = BarcodeGenerator.ImportFromXml(xmlPath))
         {
-            // Ensure the same AutoSizeMode is applied (it should be persisted, but set explicitly for safety)
-            generatorFromXml.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
+            // Attempt to modify the YDimension property if it exists for the barcode type.
+            var barcodeParams = generatorFromXml.Parameters.Barcode;
+            var yDimProp = barcodeParams.GetType().GetProperty("YDimension");
+            if (yDimProp != null)
+            {
+                // YDimension is a Unit; increase its value to 5 points.
+                var unit = (Unit) yDimProp.GetValue(barcodeParams);
+                unit.Point = 5f;
+                Console.WriteLine("YDimension modified to 5 points.");
+            }
+            else
+            {
+                Console.WriteLine("YDimension property not available for this barcode type.");
+            }
 
-            // Save the modified barcode image to file
+            // 4. Save the modified barcode image to observe the size change.
             generatorFromXml.Save(modifiedImagePath);
         }
 
-        // -----------------------------------------------------------------
-        // Step 4: Load both images and output their dimensions to verify the change
-        // -----------------------------------------------------------------
-        if (!File.Exists(originalImagePath) || !File.Exists(modifiedImagePath))
-        {
-            Console.WriteLine("One of the image files was not created. Exiting.");
-            return;
-        }
-
-        // Open the original and modified images and display their pixel dimensions
-        using (var originalImg = Image.FromFile(originalImagePath))
-        using (var modifiedImg = Image.FromFile(modifiedImagePath))
-        {
-            Console.WriteLine($"Original image size:  Width = {originalImg.Width} px, Height = {originalImg.Height} px");
-            Console.WriteLine($"Modified image size: Width = {modifiedImg.Width} px, Height = {modifiedImg.Height} px");
-        }
+        Console.WriteLine("Processing completed.");
     }
 }

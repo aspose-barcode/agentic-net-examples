@@ -1,29 +1,41 @@
+// Title: Apply LightCoral Background to Barcode Image
+// Description: Demonstrates setting a custom background color for a generated barcode and saving it as PNG.
+// Category-Description: This example belongs to the Aspose.BarCode image generation category, illustrating how to customize visual appearance using BarcodeGenerator and its Parameters. Typical use cases include branding, UI theming, and improving readability by adjusting background and bar colors. Developers often need to modify colors, sizes, and formats when integrating barcodes into applications.
+// Prompt: Apply a custom background color named “LightCoral” to match UI theme requirements.
+// Tags: barcode symbology, image generation, png output, background color, aspose.barcode, aspose.drawing
+
 using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a Code128 barcode with a custom background color using Aspose.BarCode.
+/// Generates a Code128 barcode with a LightCoral background and saves it as a PNG file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a barcode image and saves it to a file.
+    /// Entry point of the example. Creates a barcode, applies custom colors, and writes the image to disk.
     /// </summary>
     static void Main()
     {
-        // Initialize a BarcodeGenerator for Code128 with the sample text "123456"
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
+        // Initialize the barcode generator with Code128 symbology and sample data.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
         {
-            // Apply a LightCoral background color to match the UI theme
+            // Set the background color to LightCoral to match the UI theme.
             generator.Parameters.BackColor = Color.LightCoral;
 
-            // Save the generated barcode as a PNG file named "barcode.png"
-            generator.Save("barcode.png");
-        }
+            // Set the bar (foreground) color to Black for good contrast.
+            generator.Parameters.Barcode.BarColor = Color.Black;
 
-        // Inform the user that the barcode has been generated and saved
-        Console.WriteLine("Barcode generated with LightCoral background: barcode.png");
+            // Define the output file path for the PNG image.
+            string outputPath = "barcode_lightcoral.png";
+
+            // Save the generated barcode image to the specified file.
+            generator.Save(outputPath);
+
+            // Inform the user where the file was saved.
+            Console.WriteLine($"Barcode saved to {outputPath}");
+        }
     }
 }

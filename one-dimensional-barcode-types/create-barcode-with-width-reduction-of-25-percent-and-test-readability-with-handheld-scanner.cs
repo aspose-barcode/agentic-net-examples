@@ -1,55 +1,59 @@
+// Title: Generate Code128 barcode with 25% width reduction and verify readability
+// Description: Creates a Code128 barcode image with a 25 percent width reduction and then reads it back to confirm it can be scanned with a handheld device.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It demonstrates using BarcodeGenerator to customize barcode dimensions and BarCodeReader to decode the generated image. Developers often need to adjust barcode size for specific printing constraints and validate scanability across devices.
+// Prompt: Create a barcode with width reduction of 25 percent and test readability with a handheld scanner.
+// Tags: code128, width-reduction, png, generation, recognition, aspnet, aspose.barcode
+
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a Code128 barcode with a width reduction,
-/// saving it to a file, and then reading it back using Aspose.BarCode.
+/// Demonstrates creating a Code128 barcode with a 25 percent width reduction,
+/// saving it as a PNG file, and then reading it back to verify scanner readability.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a barcode, saves it, verifies the file, and reads the barcode.
+    /// Entry point of the example. Generates the barcode, saves it, and validates it.
     /// </summary>
     static void Main()
     {
         // Define the output file path for the generated barcode image.
         string outputPath = "barcode.png";
 
-        // Create a BarcodeGenerator for Code128 with the specified text.
-        // The using statement ensures the generator is disposed after use.
+        // Create a Code128 barcode with the sample text "1234567890".
         using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            // Set the bar width reduction to 25 points (percentage of the original width).
-            // BarWidthReduction is expressed in points; 25f corresponds to 25%.
-            generator.Parameters.Barcode.BarWidthReduction.Point = 25f;
+            // Apply a 25% width reduction to the barcode bars.
+            generator.Parameters.Barcode.BarWidthReduction.Point = 0.25f;
 
-            // Save the generated barcode image to the specified file.
-            generator.Save(outputPath);
+            // Save the generated barcode as a PNG image.
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
         // Verify that the barcode image file was successfully created.
         if (!File.Exists(outputPath))
         {
-            Console.WriteLine("Failed to generate the barcode image.");
+            Console.WriteLine($"Failed to create barcode image at '{outputPath}'.");
             return;
         }
 
-        // Open the saved barcode image with BarCodeReader to simulate a handheld scanner.
-        // The using statement ensures the reader is disposed after reading.
-        using (var reader = new BarCodeReader(outputPath, DecodeType.Code128))
+        // Initialize a barcode reader to decode the saved image.
+        using (var reader = new BarCodeReader(outputPath, DecodeType.AllSupportedTypes))
         {
-            // Read all barcodes found in the image.
-            var results = reader.ReadBarCodes();
+            // Use a high‑performance quality preset for faster reading.
+            reader.QualitySettings = QualitySettings.HighPerformance;
 
-            // Iterate through each detected barcode and output its details.
-            foreach (var result in results)
+            // Iterate through all detected barcodes in the image.
+            foreach (var result in reader.ReadBarCodes())
             {
-                Console.WriteLine($"Detected CodeText: {result.CodeText}");
+                Console.WriteLine($"Detected Type: {result.CodeTypeName}");
+                Console.WriteLine($"Code Text: {result.CodeText}");
                 Console.WriteLine($"Confidence: {result.Confidence}");
+                Console.WriteLine($"Reading Quality: {result.ReadingQuality}%");
             }
         }
     }
