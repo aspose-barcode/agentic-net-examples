@@ -1,68 +1,92 @@
+// Title: In-Memory Barcode Image Caching Example
+// Description: Demonstrates how to cache generated barcode images in memory to avoid regenerating identical barcodes, improving performance.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator, BaseEncodeType, and image handling classes. Developers often need to generate multiple barcodes with repeated data, and caching reduces redundant processing and resource usage. Ideal for batch processing, reporting, or any scenario where the same barcode may be requested multiple times.
+// Prompt: Cache generated barcode images in memory to avoid redundant regeneration for identical field sets.
+// Tags: barcode, caching, memory, code128, qr, datamatrix, aspnet, aspose.barcode, image generation
+
 using System;
 using System.Collections.Generic;
-using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates in‑memory caching of barcode images generated with Aspose.BarCode.
+/// Demonstrates in‑memory caching of barcode images to prevent duplicate generation.
 /// </summary>
 class Program
 {
-    // Simple in‑memory cache: key = symbology + code text, value = PNG bytes
-    private static readonly Dictionary<string, byte[]> _barcodeCache = new Dictionary<string, byte[]>();
+    /// <summary>
+    /// Retrieves a barcode image from the cache or generates a new one if it does not exist.
+    /// </summary>
+    /// <param name="encodeType">The barcode symbology to use.</param>
+    /// <param name="codeText">The text or data to encode.</param>
+    /// <param name="cache">Dictionary that stores previously generated images keyed by symbology and text.</param>
+    /// <returns>A <see cref="Bitmap"/> containing the generated barcode.</returns>
+    static Bitmap GetBarcodeImage(BaseEncodeType encodeType, string codeText, Dictionary<string, Bitmap> cache)
+    {
+        // Build a unique cache key from the encode type and the text.
+        string key = $"{encodeType}:{codeText}";
+
+        // Return the cached image if it already exists.
+        if (cache.TryGetValue(key, out Bitmap cachedImage))
+        {
+            Console.WriteLine($"Cache hit for key: {key}");
+            return cachedImage;
+        }
+
+        // No cached image – generate a new barcode.
+        Console.WriteLine($"Generating barcode for key: {key}");
+        using (var generator = new BarcodeGenerator(encodeType, codeText))
+        {
+            Bitmap image = generator.GenerateBarCodeImage();
+            cache[key] = image; // Store the newly generated image for future requests.
+            return image;
+        }
+    }
 
     /// <summary>
-    /// Entry point. Generates barcodes and shows cache behavior.
+    /// Entry point of the example. Generates several barcodes, some of which are duplicates,
+    /// to demonstrate caching. Saves each image to disk and disposes resources afterwards.
     /// </summary>
     static void Main()
     {
-        // First request – should generate a new image
-        byte[] img1 = GetBarcodeImage(EncodeTypes.Code128, "Sample123");
-        Console.WriteLine($"Generated image size: {img1.Length} bytes");
+        // In‑memory cache: maps a unique key to a barcode bitmap.
+        var barcodeCache = new Dictionary<string, Bitmap>();
 
-        // Second request with identical parameters – should hit the cache
-        byte[] img2 = GetBarcodeImage(EncodeTypes.Code128, "Sample123");
-        Console.WriteLine($"Cached image size: {img2.Length} bytes");
-
-        // Different barcode – new generation
-        byte[] img3 = GetBarcodeImage(EncodeTypes.QR, "https://example.com");
-        Console.WriteLine($"Generated QR image size: {img3.Length} bytes");
-    }
-
-    // Returns PNG bytes for the requested barcode, using the cache when possible
-    private static byte[] GetBarcodeImage(BaseEncodeType encodeType, string codeText)
-    {
-        // Build a unique cache key from the encode type and the text to encode
-        string cacheKey = $"{encodeType.GetHashCode()}|{codeText}";
-
-        // Try to retrieve a cached image
-        if (_barcodeCache.TryGetValue(cacheKey, out byte[] cachedBytes))
+        // Define a set of barcode requests; duplicates are intentional to test caching.
+        var requests = new (BaseEncodeType type, string text)[]
         {
-            Console.WriteLine("Cache hit for key: " + cacheKey);
-            return cachedBytes;
-        }
+            (EncodeTypes.Code128, "123ABC"),
+            (EncodeTypes.QR, "https://example.com"),
+            (EncodeTypes.Code128, "123ABC"), // duplicate
+            (EncodeTypes.DataMatrix, "DataMatrixSample"),
+            (EncodeTypes.QR, "https://example.com") // duplicate
+        };
 
-        // Cache miss – generate a new barcode image
-        Console.WriteLine("Cache miss – generating barcode for key: " + cacheKey);
-        using (var generator = new BarcodeGenerator(encodeType, codeText))
+        // Process each request, retrieving from cache or generating as needed.
+        for (int i = 0; i < requests.Length; i++)
         {
-            // Set a modest image size and resolution
-            generator.Parameters.ImageWidth.Point = 300f;
-            generator.Parameters.ImageHeight.Point = 150f;
-            generator.Parameters.Resolution = 300f;
+            var (type, text) = requests[i];
+            Bitmap barcodeImage = GetBarcodeImage(type, text, barcodeCache);
 
-            using (var ms = new MemoryStream())
+            // Save each image with a unique filename for verification.
+            string fileName = $"barcode_{i + 1}.png";
+            using (var fileStream = System.IO.File.OpenWrite(fileName))
             {
-                // Save directly to the stream in PNG format
-                generator.Save(ms, BarCodeImageFormat.Png);
-                byte[] imageBytes = ms.ToArray();
-
-                // Store the generated image in the cache for future requests
-                _barcodeCache[cacheKey] = imageBytes;
-                return imageBytes;
+                barcodeImage.Save(fileStream, ImageFormat.Png);
             }
+
+            Console.WriteLine($"Saved barcode to {fileName}");
         }
+
+        // Dispose all cached bitmaps before exiting to free unmanaged resources.
+        foreach (var kvp in barcodeCache)
+        {
+            kvp.Value.Dispose();
+        }
+
+        Console.WriteLine("All barcodes processed. Press any key to exit.");
+        Console.ReadKey();
     }
 }

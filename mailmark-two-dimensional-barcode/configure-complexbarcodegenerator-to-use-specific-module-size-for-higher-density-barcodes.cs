@@ -1,48 +1,47 @@
+// Title: Configure ComplexBarcodeGenerator with custom module size for high-density Swiss QR codes
+// Description: Demonstrates setting a smaller XDimension on ComplexBarcodeGenerator to produce a higher density Swiss QR barcode.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category, illustrating how to customize barcode parameters such as module size, resolution, and codetext using classes like ComplexBarcodeGenerator, SwissQRCodetext, and BarcodeParameters. Developers often need to adjust these settings to meet specific printing or scanning requirements, especially for QR codes used in financial documents.
+// Prompt: Configure ComplexBarcodeGenerator to use a specific module size for higher density barcodes.
+// Tags: barcode, complex barcode, module size, high density, swissqr, aspose.barcode, generation
+
 using System;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.ComplexBarcode;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a Swiss QR code using Aspose.BarCode's ComplexBarcodeGenerator.
+/// Demonstrates configuring a ComplexBarcodeGenerator to use a specific module size for higher density Swiss QR barcodes.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Creates a Swiss QR codetext, configures the generator,
-    /// and saves the resulting barcode image to a file.
+    /// Entry point of the example. Generates a Swiss QR code with a reduced XDimension for higher density and saves it as an image.
     /// </summary>
     static void Main()
     {
-        // Create a Swiss QR codetext object which holds bill information
+        // Prepare SwissQR codetext with required fields
         var swissQr = new SwissQRCodetext();
-
-        // Populate creditor details
         swissQr.Bill.Creditor.Name = "John Doe";
         swissQr.Bill.Creditor.CountryCode = "CH";
-
-        // Set account number, amount, and QR bill version
         swissQr.Bill.Account = "CH9300762011623852957";
         swissQr.Bill.Amount = 199.95m;
         swissQr.Bill.Version = SwissQRBill.QrBillStandardVersion.V2_0;
 
-        // Initialize the ComplexBarcodeGenerator with the prepared codetext
+        // Create ComplexBarcodeGenerator with the codetext
         using (var generator = new ComplexBarcodeGenerator(swissQr))
         {
-            // Configure a smaller XDimension (module size) for higher barcode density
-            generator.Parameters.Barcode.XDimension.Point = 0.5f; // 0.5 point per module
+            // Set a smaller module size (higher density) using XDimension
+            generator.Parameters.Barcode.XDimension.Point = 0.5f;
 
-            // Optionally increase the image resolution for better visual quality
-            generator.Parameters.Resolution = 300f;
+            // Optional: set image resolution
+            generator.Parameters.Resolution = 300;
 
-            // Define output file path
+            // Save the generated barcode image
             string outputPath = "SwissQR_HighDensity.png";
-
-            // Save the generated barcode as a PNG image
-            generator.Save(outputPath, BarCodeImageFormat.Png);
-
-            // Inform the user where the file was saved
-            Console.WriteLine($"Barcode saved to {outputPath}");
+            generator.Save(outputPath);
+            Console.WriteLine($"Barcode saved to {Path.GetFullPath(outputPath)}");
         }
     }
 }

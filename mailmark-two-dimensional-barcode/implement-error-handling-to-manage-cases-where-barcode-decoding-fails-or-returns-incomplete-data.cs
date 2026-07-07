@@ -1,110 +1,106 @@
+// Title: Barcode Generation and Decoding with Error Handling
+// Description: Demonstrates generating a Code128 barcode, saving it to a temporary file, and decoding it while handling possible failures.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes and BarCodeReader for decoding them. Developers often need to generate barcodes for labeling and later read them from images or scanned documents; this snippet illustrates typical API usage, quality settings, and robust error handling for such scenarios.
+// Prompt: Implement error handling to manage cases where barcode decoding fails or returns incomplete data.
+// Tags: barcode symbology, generation, recognition, error handling, code128, png, aspose.barcode, qualitysettings
+
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a barcode image, reading it back, and cleaning up the temporary file.
+/// Generates a Code128 barcode, saves it to a temporary PNG file, and then decodes it
+/// while handling possible errors such as missing files, unreadable barcodes, or incomplete data.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a Code128 barcode, saves it to a temporary file, reads it back,
-    /// displays detection results, and finally deletes the temporary file.
+    /// Entry point of the example. Executes barcode creation, decoding, and cleanup with comprehensive error handling.
     /// </summary>
     static void Main()
     {
-        // Define the path for the temporary barcode image.
-        string barcodePath = Path.Combine(Path.GetTempPath(), "sample_barcode.png");
+        // Define a temporary file path for the generated barcode image
+        string imagePath = Path.Combine(Path.GetTempPath(), "sample_barcode.png");
 
         // ------------------------------------------------------------
-        // Generate a sample barcode image and save it to the temporary path.
+        // Generate a sample barcode (Code128) and save it to the file
         // ------------------------------------------------------------
-        try
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
         {
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456789012"))
-            {
-                // Optional: configure generator settings such as resolution here.
-                generator.Save(barcodePath);
-                Console.WriteLine($"Barcode image saved to: {barcodePath}");
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Failed to generate barcode: {ex.Message}");
-            return;
+            // Optional: configure generator parameters here if needed
+            generator.Save(imagePath, BarCodeImageFormat.Png);
         }
 
-        // Verify that the image file exists before attempting to read it.
-        if (!File.Exists(barcodePath))
+        // Verify that the image file was created successfully
+        if (!File.Exists(imagePath))
         {
-            Console.WriteLine("Barcode image file does not exist.");
+            Console.WriteLine($"Error: Barcode image file not found at '{imagePath}'.");
             return;
         }
 
         // ------------------------------------------------------------
-        // Read the barcode from the saved image with error handling.
+        // Attempt to read the barcode with error handling
         // ------------------------------------------------------------
         try
         {
-            using (var reader = new BarCodeReader(barcodePath, DecodeType.AllSupportedTypes))
+            using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
             {
-                // Enable checksum validation (optional).
-                reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
-                // Allow recognition of barcodes with incorrect checksum or damaged data.
-                reader.QualitySettings.AllowIncorrectBarcodes = true;
+                // Use a high‑performance quality preset for faster processing
+                reader.QualitySettings = QualitySettings.HighPerformance;
 
-                // Perform the barcode detection.
-                BarCodeResult[] results = reader.ReadBarCodes();
+                // Perform the recognition
+                var results = reader.ReadBarCodes();
 
-                // Check if any barcodes were detected.
+                // No barcodes detected
                 if (results == null || results.Length == 0)
                 {
-                    Console.WriteLine("No barcodes were detected in the image.");
+                    Console.WriteLine("No barcode detected in the image.");
+                    return;
                 }
-                else
+
+                // Process each detected barcode
+                foreach (var result in results)
                 {
-                    // Iterate through each detected barcode and display its details.
-                    foreach (var result in results)
+                    // Check for missing or empty CodeText (incomplete data)
+                    if (string.IsNullOrEmpty(result.CodeText))
                     {
-                        // Handle cases where the decoded text is missing or incomplete.
-                        if (string.IsNullOrEmpty(result.CodeText))
-                        {
-                            Console.WriteLine($"Detected barcode of type '{result.CodeTypeName}' but CodeText is missing or incomplete.");
-                        }
-                        else
-                        {
-                            Console.WriteLine($"Detected barcode type: {result.CodeTypeName}");
-                            Console.WriteLine($"CodeText: {result.CodeText}");
-                            Console.WriteLine($"Confidence: {result.Confidence}");
-                            Console.WriteLine($"ReadingQuality: {result.ReadingQuality}");
-                        }
+                        Console.WriteLine($"Detected barcode of type '{result.CodeTypeName}' but CodeText is missing or empty.");
+                        continue;
                     }
+
+                    // Output basic information about the decoded barcode
+                    Console.WriteLine($"Barcode Type   : {result.CodeTypeName}");
+                    Console.WriteLine($"Code Text      : {result.CodeText}");
+                    Console.WriteLine($"Confidence     : {result.Confidence}");
+                    Console.WriteLine($"Reading Quality: {result.ReadingQuality}");
+                    Console.WriteLine($"Region Angle   : {result.Region.Angle}");
+                    Console.WriteLine($"Region Bounds  : {result.Region.Rectangle}");
+                    Console.WriteLine(new string('-', 40));
                 }
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error during barcode decoding: {ex.Message}");
+            // General exception handling for unexpected errors during decoding
+            Console.WriteLine($"An error occurred while decoding the barcode: {ex.Message}");
         }
         finally
         {
             // ------------------------------------------------------------
-            // Clean up the temporary file regardless of success or failure.
+            // Clean up the temporary image file
             // ------------------------------------------------------------
             try
             {
-                if (File.Exists(barcodePath))
+                if (File.Exists(imagePath))
                 {
-                    File.Delete(barcodePath);
+                    File.Delete(imagePath);
                 }
             }
             catch
             {
-                // Ignored - cleanup failure should not affect program flow.
+                // Ignored – cleanup failure should not affect program flow
             }
         }
     }

@@ -1,53 +1,42 @@
+// Title: Generate Code128 barcode and save as PNG
+// Description: Demonstrates creating a Code128 barcode image using Aspose.BarCode and saving it to disk, which can be adapted to return as a FileResult in ASP.NET MVC.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to use the BarcodeGenerator class to encode data, customize colors, and output images. Developers working on web applications often need to generate barcodes on-the-fly for reports, tickets, or inventory systems, and then return the image via an MVC controller action as a FileResult.
+// Prompt: Integrate barcode generation into an ASP.NET MVC controller and return the image as a FileResult.
+// Tags: code128, barcode generation, png, aspnet mvc, filereturn, aspose.barcode
+
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing.Imaging;
+using Aspose.BarCode;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates barcode generation using Aspose.BarCode in a console application.
-/// This logic can be reused in an ASP.NET MVC controller to return the image as a FileResult.
+/// Demonstrates barcode generation using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the console application.
-    /// Generates a Code128 barcode, converts it to a Base64 string, and writes it to the console.
+    /// Entry point for the console demonstration. In an MVC app this logic would reside in a controller action returning a FileResult.
     /// </summary>
     static void Main()
     {
-        // Generate a Code128 barcode and obtain the image bytes.
-        byte[] barcodeBytes = GenerateBarcodeBytes(EncodeTypes.Code128, "1234567890");
+        // Define the output file path for the generated barcode image.
+        string outputPath = "barcode.png";
 
-        // Convert the image bytes to a Base64 string for easy display.
-        string base64 = Convert.ToBase64String(barcodeBytes);
-        Console.WriteLine("Barcode PNG (Base64):");
-        Console.WriteLine(base64);
-    }
-
-    /// <summary>
-    /// Generates a barcode image in PNG format and returns it as a byte array.
-    /// </summary>
-    /// <param name="encodeType">The type of barcode to generate (e.g., Code128).</param>
-    /// <param name="codeText">The text to encode in the barcode.</param>
-    /// <returns>Byte array containing the PNG image of the generated barcode.</returns>
-    static byte[] GenerateBarcodeBytes(BaseEncodeType encodeType, string codeText)
-    {
-        // Initialize the barcode generator with the specified type and text.
-        using (var generator = new BarcodeGenerator(encodeType, codeText))
+        // Create a BarcodeGenerator for Code128 symbology with the desired data.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456789"))
         {
-            // Enable checksum calculation for the barcode (if applicable).
-            generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
+            // Set the barcode's foreground (bar) color.
+            generator.Parameters.Barcode.BarColor = Color.Black;
 
-            // Use a memory stream to hold the generated image.
-            using (var ms = new MemoryStream())
-            {
-                // Save the barcode image to the memory stream in PNG format.
-                generator.Save(ms, BarCodeImageFormat.Png);
-                // Return the image data as a byte array.
-                return ms.ToArray();
-            }
+            // Set the background color of the image.
+            generator.Parameters.BackColor = Color.White;
+
+            // Save the generated barcode image to the specified file path.
+            generator.Save(outputPath);
         }
+
+        // Output the full path of the saved barcode image for verification.
+        Console.WriteLine($"Barcode image saved to: {Path.GetFullPath(outputPath)}");
     }
 }

@@ -1,57 +1,53 @@
+// Title: Generate Mailmark Type 7 Barcode Image
+// Description: Creates a Mailmark type 7 barcode with routing and service code fields and saves it as a PNG file.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category, demonstrating how to use MailmarkCodetext and ComplexBarcodeGenerator to produce Mailmark symbology. Developers commonly use these APIs to encode routing, service, and item information for postal automation and tracking systems.
+// Prompt: Generate a Mailmark type 7 barcode image using specified routing and service code fields.
+// Tags: mailmark, barcode, generation, png, aspose.barcode, complexbarcodegenerator
+
 using System;
-using System.IO;
-using Aspose.BarCode;
-using Aspose.BarCode.Generation;
 using Aspose.BarCode.ComplexBarcode;
+using Aspose.BarCode.Generation;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generation of a Mailmark type 7 (24x24 modules) barcode using Aspose.BarCode.
+/// Demonstrates creation of a Mailmark type 7 barcode image using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a Mailmark 2D barcode and saves it as a PNG file.
+    /// Entry point. Builds a MailmarkCodetext, generates the barcode, and saves it as a PNG file.
     /// </summary>
     static void Main()
     {
-        // Define the output file path in the current working directory.
-        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "mailmark_type7.png");
-
-        // Create and populate a Mailmark2DCodetext instance with required data.
-        var mailmark = new Mailmark2DCodetext
+        // Initialize Mailmark codetext with required fields
+        var mailmark = new MailmarkCodetext
         {
-            // Version identifier (string)
-            VersionID = "1",
-            // Information type identifier (string)
-            InformationTypeID = "0",
-            // Service class code (string)
+            // Mailmark 4‑state format (type 7)
+            Format = 4,
+            // Version identifier (typically 1)
+            VersionID = 1,
+            // Class identifier as a string
             Class = "0",
-            // Return to sender flag (string)
-            RTSFlag = "0",
-            // Supply chain identifier (int)
-            SupplyChainID = 384224,
-            // Unique item identifier (int)
+            // Routing / supply chain identifier
+            SupplychainID = 384224,
+            // Unique item identifier
             ItemID = 16563762,
-            // Destination postcode plus DPS (must be 9 characters, padded with spaces if needed)
-            DestinationPostCodeAndDPS = "EF61AH8T ",
-            // Optional customer content (left empty)
-            CustomerContent = string.Empty,
-            // UPU country identifier (optional, set to GB)
-            UPUCountryID = "GB",
-            // Define the 2D Mailmark type (type 7 = 24x24 modules)
-            DataMatrixType = Mailmark2DType.Type_7,
-            // Use default encoding mode for customer content
-            CustomerContentEncodeMode = DataMatrixEncodeMode.C40
+            // Destination postcode + DPS (trailing space required by spec)
+            DestinationPostCodePlusDPS = "EF61AH8T "
         };
 
-        // Generate the barcode image using ComplexBarcodeGenerator.
+        // Generate the barcode using ComplexBarcodeGenerator
         using (var generator = new ComplexBarcodeGenerator(mailmark))
         {
-            // Save the generated barcode as a PNG file.
-            generator.Save(outputPath, BarCodeImageFormat.Png);
+            // Optional visual settings: black bars on white background
+            generator.Parameters.Barcode.BarColor = Color.Black;
+            generator.Parameters.BackColor = Color.White;
+
+            // Save the barcode image to a PNG file
+            generator.Save("mailmark.png");
         }
 
-        // Inform the user where the barcode image has been saved.
-        Console.WriteLine($"Mailmark type 7 barcode saved to: {outputPath}");
+        // Inform the user that the image has been saved
+        Console.WriteLine("Mailmark barcode image saved as 'mailmark.png'.");
     }
 }

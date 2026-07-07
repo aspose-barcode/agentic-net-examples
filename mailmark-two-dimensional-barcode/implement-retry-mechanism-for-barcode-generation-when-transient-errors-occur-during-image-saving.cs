@@ -1,90 +1,87 @@
+// Title: Barcode generation with retry on transient errors
+// Description: Demonstrates generating a Code128 barcode and saving it as PNG with a retry mechanism for transient I/O or generation errors.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use BarcodeGenerator, set visual parameters, and handle transient failures during image saving. Developers often need to implement retry logic when working with file systems or network shares to ensure reliable barcode creation in production environments.
+// Prompt: Implement a retry mechanism for barcode generation when transient errors occur during image saving.
+// Tags: barcode, code128, retry, io, exception handling, png, aspose.barcode, generation
+
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a barcode image with retry logic using Aspose.BarCode.
+/// Example program that creates a Code128 barcode image with retry logic for transient errors.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a barcode and saves it to a file, handling transient errors with retries.
+    /// Entry point. Generates a barcode, saves it to a PNG file, and retries on transient failures.
     /// </summary>
     static void Main()
     {
-        // Define barcode settings: symbology type and text to encode.
-        BaseEncodeType encodeType = EncodeTypes.Code128;
-        string codeText = "123ABC";
+        // Define the output file path for the barcode image
+        string outputPath = "barcode.png";
 
-        // Determine the full output file path (current directory + filename).
-        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "barcode.png");
-
-        // Ensure the directory for the output file exists.
-        string outputDir = Path.GetDirectoryName(outputPath);
-        if (!Directory.Exists(outputDir))
+        // Ensure the target directory exists before attempting to save
+        string directory = Path.GetDirectoryName(Path.GetFullPath(outputPath));
+        if (!Directory.Exists(directory))
         {
-            Directory.CreateDirectory(outputDir);
+            Directory.CreateDirectory(directory);
         }
 
-        // Generate the barcode image with up to 3 attempts on transient failures.
-        bool success = GenerateBarcodeWithRetry(encodeType, codeText, outputPath, maxAttempts: 3);
+        // Configure retry parameters
+        const int maxAttempts = 3; // maximum number of retry attempts
+        int attempt = 0;           // current attempt counter
+        bool success = false;      // flag indicating successful save
 
-        // Inform the user of the result.
-        Console.WriteLine(success
-            ? $"Barcode saved successfully to '{outputPath}'."
-            : $"Failed to save barcode after multiple attempts.");
-    }
-
-    /// <summary>
-    /// Generates a barcode image and saves it to the specified path.
-    /// Retries the save operation when a transient exception occurs.
-    /// </summary>
-    /// <param name="type">The barcode symbology.</param>
-    /// <param name="codeText">The text to encode.</param>
-    /// <param name="outputPath">File path for the saved image.</param>
-    /// <param name="maxAttempts">Maximum number of attempts.</param>
-    /// <returns>True if the image was saved successfully; otherwise false.</returns>
-    private static bool GenerateBarcodeWithRetry(BaseEncodeType type, string codeText, string outputPath, int maxAttempts)
-    {
-        // Loop through the allowed number of attempts.
-        for (int attempt = 1; attempt <= maxAttempts; attempt++)
+        // Retry loop: continue until success or max attempts reached
+        while (attempt < maxAttempts && !success)
         {
+            attempt++;
             try
             {
-                // Create a barcode generator with the specified type and text.
-                using (var generator = new BarcodeGenerator(type, codeText))
+                // Create and configure the barcode generator
+                using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123ABC"))
                 {
-                    // Optional: set image resolution (dots per inch).
-                    generator.Parameters.Resolution = 300f;
+                    // Set visual appearance (optional)
+                    generator.Parameters.Barcode.BarColor = Color.Black;
+                    generator.Parameters.BackColor = Color.White;
 
-                    // Save the generated barcode image to the target path.
-                    generator.Save(outputPath);
+                    // Save the generated barcode image to the specified path
+                    generator.Save(outputPath, BarCodeImageFormat.Png);
                 }
 
-                // If we reach this point, the save succeeded; exit with success.
-                return true;
+                // If no exception, mark as successful and inform the user
+                success = true;
+                Console.WriteLine($"Barcode saved successfully on attempt {attempt}.");
             }
             catch (IOException ioEx)
             {
-                // Transient I/O error (e.g., file locked). Log and retry.
-                Console.WriteLine($"Attempt {attempt}: I/O error while saving barcode - {ioEx.Message}");
+                // Handle transient I/O errors (e.g., file lock, network share issues)
+                Console.WriteLine($"I/O error on attempt {attempt}: {ioEx.Message}");
+                if (attempt >= maxAttempts)
+                {
+                    Console.WriteLine("Maximum retry attempts reached. Operation failed.");
+                }
             }
             catch (BarCodeException bcEx)
             {
-                // Transient barcode generation error. Log and retry.
-                Console.WriteLine($"Attempt {attempt}: Barcode generation error - {bcEx.Message}");
+                // Handle transient barcode generation errors
+                Console.WriteLine($"Barcode generation error on attempt {attempt}: {bcEx.Message}");
+                if (attempt >= maxAttempts)
+                {
+                    Console.WriteLine("Maximum retry attempts reached. Operation failed.");
+                }
             }
             catch (Exception ex)
             {
-                // Non-transient error; log and abort further retries.
-                Console.WriteLine($"Attempt {attempt}: Unexpected error - {ex.Message}");
+                // Handle non‑transient, unexpected errors and abort further retries
+                Console.WriteLine($"Unexpected error: {ex.Message}");
                 break;
             }
         }
 
-        // All attempts exhausted without success.
-        return false;
+        // Exit code 0 indicates normal termination (implicit)
     }
 }

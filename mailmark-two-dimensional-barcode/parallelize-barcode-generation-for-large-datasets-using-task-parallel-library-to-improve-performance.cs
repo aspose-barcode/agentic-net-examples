@@ -1,22 +1,27 @@
+// Title: Parallel Barcode Generation Using TPL
+// Description: Demonstrates generating Code128 barcodes in parallel for a list of strings, improving throughput for large datasets.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use the BarcodeGenerator class with the EncodeTypes enumeration to create barcode images. Typical use cases include batch processing of inventory codes, ticket numbers, or any high‑volume identifier set where performance matters. Developers often need to parallelize generation to reduce overall processing time while ensuring thread‑safety of the generator instances.
+// Prompt: Parallelize barcode generation for large datasets using Task Parallel Library to improve performance.
+// Tags: barcode symbology, generation, parallel, task parallel library, png, aspose.barcode, encode types, code128
+
 using System;
-using System.IO;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode;
 
 /// <summary>
-/// Demonstrates generating Code128 barcodes for a list of items and saving them as PNG files.
+/// Example program that generates Code128 barcodes in parallel using the Task Parallel Library (TPL).
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates barcodes in parallel and writes them to disk.
+    /// Entry point of the application. Generates barcodes for each item in the data set concurrently.
     /// </summary>
     static void Main()
     {
-        // Sample dataset of code texts to be encoded as barcodes
-        var data = new List<string>
+        // Sample data set (replace with real data in production)
+        List<string> dataSet = new List<string>
         {
             "Item001",
             "Item002",
@@ -25,32 +30,28 @@ class Program
             "Item005"
         };
 
-        // Define the output directory for generated barcode images
-        string outputDir = "Barcodes";
+        // Output directory (current folder)
+        string outputFolder = AppDomain.CurrentDomain.BaseDirectory;
 
-        // Ensure the output directory exists; create it if it does not
-        if (!Directory.Exists(outputDir))
+        // Parallel generation of barcodes using TPL
+        Parallel.ForEach(dataSet, (codeText) =>
         {
-            Directory.CreateDirectory(outputDir);
-        }
-
-        // Generate barcodes in parallel to improve performance on multi-core systems
-        Parallel.ForEach(data, codeText =>
-        {
-            // Each parallel task creates its own BarcodeGenerator instance to avoid thread‑safety issues
+            // Each task creates its own generator instance because BarcodeGenerator is not thread‑safe
             using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
             {
-                // Set image resolution (dots per inch) for higher quality output
-                generator.Parameters.Resolution = 300f;
+                // Optional: customize appearance of the barcode
+                generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.DarkBlue;
+                generator.Parameters.Barcode.CodeTextParameters.Font.FamilyName = "Arial";
+                generator.Parameters.Barcode.CodeTextParameters.Font.Size.Point = 10f;
 
-                // Build the full file path for the PNG image
-                string filePath = Path.Combine(outputDir, $"{codeText}.png");
+                // Build output file name (e.g., Item001.png)
+                string filePath = System.IO.Path.Combine(outputFolder, $"{codeText}.png");
 
-                // Save the generated barcode image to the specified path
+                // Save the barcode image to the specified path
                 generator.Save(filePath);
 
-                // Log progress to the console
-                Console.WriteLine($"Generated barcode for {codeText} at {filePath}");
+                // Log the successful generation to the console
+                Console.WriteLine($"Generated barcode for '{codeText}' -> {filePath}");
             }
         });
 

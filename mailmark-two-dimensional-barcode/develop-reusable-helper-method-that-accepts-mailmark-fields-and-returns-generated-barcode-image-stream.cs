@@ -1,92 +1,81 @@
+// Title: Generate Mailmark barcode and return image stream
+// Description: Demonstrates creating a Mailmark barcode using Aspose.BarCode and returning it as a MemoryStream for further processing or saving.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category, focusing on Mailmark symbology. It showcases the use of ComplexBarcodeGenerator and MailmarkCodetext classes to encode required fields, a common task for developers integrating postal barcode solutions into .NET applications.
+// Prompt: Develop a reusable helper method that accepts Mailmark fields and returns a generated barcode image stream.
+// Tags: mailmark, barcode, generation, stream, aspose.barcode, complexbarcodegenerator, png
+
 using System;
 using System.IO;
 using Aspose.BarCode;
-using Aspose.BarCode.ComplexBarcode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode.ComplexBarcode;
 
-namespace MailmarkBarcodeExample
+/// <summary>
+/// Provides an example of generating a Mailmark barcode and saving it as an image file.
+/// </summary>
+class Program
 {
-    /// <summary>
-    /// Demonstrates generation of a Mailmark barcode using Aspose.BarCode.
-    /// </summary>
-    class Program
+    // Helper method that creates a Mailmark barcode and returns the image as a MemoryStream.
+    // Parameters correspond to the required Mailmark fields.
+    static MemoryStream GenerateMailmarkBarcode(int format, int versionId, string @class,
+        int supplychainId, int itemId, string destinationPostCodePlusDps)
     {
-        /// <summary>
-        /// Entry point of the application. Generates a Mailmark barcode and saves it as a PNG file.
-        /// </summary>
-        static void Main()
+        // Validate required string parameters.
+        if (string.IsNullOrWhiteSpace(@class))
+            throw new ArgumentException("Class cannot be null or empty.", nameof(@class));
+        if (string.IsNullOrWhiteSpace(destinationPostCodePlusDps))
+            throw new ArgumentException("DestinationPostCodePlusDPS cannot be null or empty.", nameof(destinationPostCodePlusDps));
+
+        // Populate the MailmarkCodetext object with the mandatory fields.
+        var mailmark = new MailmarkCodetext
         {
-            // Sample Mailmark data
-            int format = 4;               // 4‑state format
-            int versionId = 1;
-            string classCode = "0";       // Test class
-            int supplyChainId = 384224;
-            int itemId = 16563762;
-            string destinationPostCodePlusDPS = "EF61AH8T ";
+            Format = format,                     // 1 = Letter, 2 = Large Letter, 4 = unspecified/default
+            VersionID = versionId,               // typically 1
+            Class = @class,                      // e.g., "0"
+            SupplychainID = supplychainId,       // up to 999999
+            ItemID = itemId,                     // up to 99999999
+            DestinationPostCodePlusDPS = destinationPostCodePlusDps // e.g., "EF61AH8T "
+        };
 
-            // Generate the barcode image as a memory stream
-            using (MemoryStream barcodeStream = GenerateMailmarkBarcode(
-                format,
-                versionId,
-                classCode,
-                supplyChainId,
-                itemId,
-                destinationPostCodePlusDPS))
-            {
-                // Save the stream to a file for verification
-                using (FileStream file = File.Create("mailmark.png"))
-                {
-                    barcodeStream.CopyTo(file);
-                }
-
-                Console.WriteLine("Mailmark barcode generated and saved as 'mailmark.png'.");
-            }
+        // Generate the barcode image into a memory stream.
+        var stream = new MemoryStream();
+        using (var generator = new ComplexBarcodeGenerator(mailmark))
+        {
+            generator.Save(stream, BarCodeImageFormat.Png);
         }
 
-        /// <summary>
-        /// Generates a Mailmark barcode image and returns it as a <see cref="MemoryStream"/>.
-        /// </summary>
-        /// <param name="format">Mailmark format (e.g., 4 for 4‑state).</param>
-        /// <param name="versionId">Version identifier.</param>
-        /// <param name="classCode">Class code as a string.</param>
-        /// <param name="supplyChainId">Supply chain identifier.</param>
-        /// <param name="itemId">Item identifier.</param>
-        /// <param name="destinationPostCodePlusDPS">Destination postcode plus DPS (9‑character string).</param>
-        /// <returns>MemoryStream containing the PNG image of the generated barcode.</returns>
-        public static MemoryStream GenerateMailmarkBarcode(
-            int format,
-            int versionId,
-            string classCode,
-            int supplyChainId,
-            int itemId,
-            string destinationPostCodePlusDPS)
+        // Reset stream position for callers.
+        stream.Position = 0;
+        return stream;
+    }
+
+    /// <summary>
+    /// Entry point demonstrating the GenerateMailmarkBarcode helper and saving the result to a file.
+    /// </summary>
+    static void Main()
+    {
+        // Sample data based on the documented valid example.
+        int format = 4;                     // unspecified/default (4-state)
+        int versionId = 1;
+        string @class = "0";
+        int supplychainId = 384224;
+        int itemId = 16563762;
+        string destinationPostCodePlusDps = "EF61AH8T ";
+
+        // Generate the barcode.
+        using (MemoryStream barcodeStream = GenerateMailmarkBarcode(format, versionId, @class,
+                                                                   supplychainId, itemId, destinationPostCodePlusDps))
         {
-            // Validate required string parameters
-            if (string.IsNullOrEmpty(classCode))
-                throw new ArgumentException("Class code must be provided.", nameof(classCode));
-            if (string.IsNullOrEmpty(destinationPostCodePlusDPS))
-                throw new ArgumentException("DestinationPostCodePlusDPS must be provided.", nameof(destinationPostCodePlusDPS));
+            // For demonstration, write the stream length and optionally save to a file.
+            Console.WriteLine($"Generated Mailmark barcode image size: {barcodeStream.Length} bytes");
 
-            // Populate the MailmarkCodetext object with supplied values
-            MailmarkCodetext mailmark = new MailmarkCodetext
+            // Save to a file named "mailmark.png" in the current directory.
+            using (FileStream file = new FileStream("mailmark.png", FileMode.Create, FileAccess.Write))
             {
-                Format = format,
-                VersionID = versionId,
-                Class = classCode,
-                SupplychainID = supplyChainId,
-                ItemID = itemId,
-                DestinationPostCodePlusDPS = destinationPostCodePlusDPS
-            };
-
-            // Generate the barcode using ComplexBarcodeGenerator
-            using (ComplexBarcodeGenerator generator = new ComplexBarcodeGenerator(mailmark))
-            {
-                MemoryStream ms = new MemoryStream();
-                // Save as PNG; BarCodeImageFormat is defined in Aspose.BarCode.Generation
-                generator.Save(ms, BarCodeImageFormat.Png);
-                ms.Position = 0; // Reset stream position for reading by the caller
-                return ms;
+                barcodeStream.CopyTo(file);
             }
+
+            Console.WriteLine("Barcode image saved as 'mailmark.png'.");
         }
     }
 }
