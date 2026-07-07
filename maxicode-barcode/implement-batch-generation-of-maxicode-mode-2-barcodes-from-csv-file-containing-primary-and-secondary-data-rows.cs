@@ -1,108 +1,119 @@
+// Title: Batch Generation of MaxiCode Mode 2 Barcodes from CSV
+// Description: Demonstrates reading a CSV file containing primary and secondary data rows and creating MaxiCode Mode 2 barcodes for each record.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It showcases the use of MaxiCodeCodetextMode2, MaxiCodeStandardSecondMessage, and MaxiCodeStructuredSecondMessage classes to build MaxiCode data structures, and the ComplexBarcodeGenerator to render PNG images. Developers working with shipping, logistics, or any application that requires bulk creation of MaxiCode symbols will find this pattern useful for automating barcode production from data sources such as CSV files.
+// Prompt: Implement batch generation of MaxiCode Mode 2 barcodes from a CSV file containing primary and secondary data rows.
+// Tags: maxicode, batch, csv, barcode generation, aspose.barcode, complexbarcode, png
+
 using System;
 using System.IO;
 using System.Collections.Generic;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.ComplexBarcode;
-using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates batch generation of MaxiCode barcodes from CSV or sample data.
+/// Provides a console application that reads a CSV file and generates a batch of MaxiCode Mode 2 barcodes.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Reads input data, generates MaxiCode barcodes, and saves them as PNG files.
+    /// Entry point of the application. Reads input data, creates MaxiCode objects, and saves barcode images.
     /// </summary>
     static void Main()
     {
-        // Path to the input CSV file containing barcode data.
-        string csvPath = "maxicode_input.csv";
+        // Input CSV path (relative to executable)
+        string csvPath = "input.csv";
 
-        // List to hold rows of data read from the CSV or fallback sample data.
-        List<string[]> rows = new List<string[]>();
-
-        // Check if the CSV file exists before attempting to read it.
-        if (File.Exists(csvPath))
+        // If the CSV does not exist, create a small sample file
+        if (!File.Exists(csvPath))
         {
-            // Read each line of the CSV file. This simple parser splits on commas and trims whitespace.
-            foreach (var line in File.ReadAllLines(csvPath))
+            var sampleLines = new[]
             {
-                // Skip empty or whitespace-only lines.
-                if (string.IsNullOrWhiteSpace(line)) continue;
-
-                // Split the line into parts based on commas.
-                var parts = line.Split(',');
-
-                // Expect at least four columns: PostalCode, CountryCode, ServiceCategory, Message.
-                if (parts.Length >= 4)
-                {
-                    // Trim each part and add as a string array to the rows collection.
-                    rows.Add(new[] { parts[0].Trim(), parts[1].Trim(), parts[2].Trim(), parts[3].Trim() });
-                }
-            }
-        }
-        else
-        {
-            // CSV not found – use hard‑coded sample data as a fallback.
-            rows.Add(new[] { "524032140", "056", "999", "Sample message 1" });
-            rows.Add(new[] { "524032141", "056", "998", "Sample message 2" });
-            rows.Add(new[] { "524032142", "056", "997", "Sample message 3" });
+                "PostalCode,CountryCode,ServiceCategory,SecondMessageType,SecondMessageContent",
+                "524032140,056,999,Standard,Test message 1",
+                "123456789,840,100,Standard,Hello World",
+                "987654321,124,200,Structured,634 ALPHA DRIVE|PITTSBURGH|PA",
+                "111222333,036,300,Standard,Sample Text",
+                "444555666,124,400,Structured,123 MAIN ST|ANYTOWN|CA"
+            };
+            File.WriteAllLines(csvPath, sampleLines);
         }
 
-        // Ensure the output directory exists; create it if necessary.
-        string outputDir = "MaxiCodeOutputs";
+        // Ensure output directory exists
+        string outputDir = "output";
         if (!Directory.Exists(outputDir))
         {
             Directory.CreateDirectory(outputDir);
         }
 
-        // Process each row and generate a corresponding MaxiCode barcode.
-        int index = 1;
-        foreach (var fields in rows)
+        // Read all lines from CSV (including header)
+        var lines = File.ReadAllLines(csvPath);
+        int barcodesGenerated = 0;
+
+        // Process each data line, limiting to 5 barcodes for the demo
+        for (int i = 1; i < lines.Length && barcodesGenerated < 5; i++)
         {
-            try
+            string line = lines[i];
+            if (string.IsNullOrWhiteSpace(line))
+                continue; // Skip empty lines
+
+            // Split CSV fields
+            string[] parts = line.Split(',');
+            if (parts.Length < 5)
+                continue; // Skip malformed lines
+
+            // Trim whitespace from each field
+            for (int p = 0; p < parts.Length; p++)
+                parts[p] = parts[p].Trim();
+
+            // Build MaxiCode codetext for Mode 2 using primary fields
+            var maxiCode = new MaxiCodeCodetextMode2
             {
-                // Build the codetext for MaxiCode Mode 2 using the first three fields.
-                var maxiCode = new MaxiCodeCodetextMode2
+                PostalCode = parts[0],
+                CountryCode = int.Parse(parts[1]),
+                ServiceCategory = int.Parse(parts[2])
+            };
+
+            // Determine and assign the appropriate second message type
+            if (parts[3].Equals("Standard", StringComparison.OrdinalIgnoreCase))
+            {
+                var stdMsg = new MaxiCodeStandardSecondMessage
                 {
-                    PostalCode = fields[0],
-                    CountryCode = int.Parse(fields[1]),
-                    ServiceCategory = int.Parse(fields[2])
+                    Message = parts[4]
                 };
+                maxiCode.SecondMessage = stdMsg;
+            }
+            else if (parts[3].Equals("Structured", StringComparison.OrdinalIgnoreCase))
+            {
+                var structMsg = new MaxiCodeStructuredSecondMessage();
 
-                // Attach the standard second message (fourth field) to the MaxiCode.
-                var secondMessage = new MaxiCodeStandardSecondMessage
+                // Structured content parts are separated by '|'
+                string[] identifiers = parts[4].Split('|');
+                foreach (var id in identifiers)
                 {
-                    Message = fields[3]
-                };
-                maxiCode.SecondMessage = secondMessage;
-
-                // Generate the barcode using the ComplexBarcodeGenerator.
-                using (var generator = new ComplexBarcodeGenerator(maxiCode))
-                {
-                    // Set a high resolution for the output image (optional).
-                    generator.Parameters.Resolution = 300f;
-
-                    // Construct the output file path and save the barcode as a PNG.
-                    string outputPath = Path.Combine(outputDir, $"maxicode_{index}.png");
-                    generator.Save(outputPath, BarCodeImageFormat.Png);
-
-                    // Inform the user that the barcode was generated successfully.
-                    Console.WriteLine($"Generated barcode {index}: {outputPath}");
+                    structMsg.Add(id.Trim());
                 }
+
+                // Year is optional; not provided in this sample
+                maxiCode.SecondMessage = structMsg;
             }
-            catch (Exception ex)
+            else
             {
-                // Report any errors that occur while processing the current row.
-                Console.WriteLine($"Error processing row {index}: {ex.Message}");
+                // Unknown message type – skip this record
+                continue;
             }
 
-            // Move to the next index for naming the subsequent output file.
-            index++;
+            // Generate and save the barcode image as PNG
+            string outputPath = Path.Combine(outputDir, $"MaxiCode_{barcodesGenerated + 1}.png");
+            using (var generator = new ComplexBarcodeGenerator(maxiCode))
+            {
+                generator.Save(outputPath, BarCodeImageFormat.Png);
+            }
+
+            Console.WriteLine($"Generated barcode {barcodesGenerated + 1}: {outputPath}");
+            barcodesGenerated++;
         }
 
-        // Indicate that the batch generation process has finished.
         Console.WriteLine("Batch generation completed.");
     }
 }

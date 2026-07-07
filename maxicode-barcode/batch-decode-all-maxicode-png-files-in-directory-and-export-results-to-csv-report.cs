@@ -1,179 +1,151 @@
+// Title: Batch decode MaxiCode PNG files to CSV
+// Description: Demonstrates how to read multiple MaxiCode barcodes from PNG images in a folder and export the decoded information to a CSV report.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, focusing on batch processing of MaxiCode symbology. It showcases the use of BarCodeReader, DecodeType.MaxiCode, QualitySettings, and ComplexCodetextReader to extract structured data such as postal code, country code, and service category, then writes results to a CSV file. Developers working with bulk barcode decoding, logistics, or shipping label processing can use this pattern for automated data extraction.
+// Prompt: Batch decode all MaxiCode PNG files in a directory and export the results to a CSV report.
+// Tags: maxicode, barcode, batch processing, csv, aspose.barcode, decoding, recognition, complexcodetext
+
 using System;
 using System.IO;
-using System.Text;
 using System.Collections.Generic;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.BarCode.ComplexBarcode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Entry point for the MaxiCode decoding utility.
-/// Scans a folder for PNG images, attempts to read MaxiCode barcodes,
-/// and generates a CSV report with extracted information.
+/// Provides a console application that batch decodes MaxiCode barcodes from PNG files
+/// and writes the extracted information to a CSV report.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Main method executed by the runtime.
-    /// Accepts an optional command‑line argument specifying the input folder.
+    /// Entry point of the application.
     /// </summary>
-    /// <param name="args">Command‑line arguments; first argument is the input folder path.</param>
+    /// <param name="args">
+    /// Optional command‑line arguments:
+    /// args[0] – input folder path (default: "Input"),
+    /// args[1] – output CSV file path (default: "MaxiCodeReport.csv").
+    /// </param>
     static void Main(string[] args)
     {
-        // Determine input folder: use first argument if supplied, otherwise default to "MaxiCodeImages".
-        string inputFolder = args.Length > 0 ? args[0] : "MaxiCodeImages";
+        // Resolve input folder and output CSV path from arguments or use defaults.
+        string inputFolder = args.Length > 0 ? args[0] : "Input";
+        string outputCsv = args.Length > 1 ? args[1] : "MaxiCodeReport.csv";
 
-        // Path for the generated CSV report.
-        string csvPath = "MaxiCodeReport.csv";
-
-        // Ensure the input folder exists; create it if missing and exit.
+        // Ensure the input folder exists; create it if missing.
         if (!Directory.Exists(inputFolder))
         {
-            Console.WriteLine($"Input folder \"{inputFolder}\" does not exist. Creating it.");
             Directory.CreateDirectory(inputFolder);
-            Console.WriteLine("Place PNG files to decode in the folder and rerun the program.");
-            return;
         }
 
-        // StringBuilder to accumulate CSV lines.
-        var sb = new StringBuilder();
-
-        // Write CSV header.
-        sb.AppendLine("FileName,BarcodeType,CodeText,Mode,PostalCode,CountryCode,ServiceCategory,SecondMessage");
-
-        // Retrieve all PNG files from the input folder.
+        // Retrieve all PNG files from the input directory.
         string[] pngFiles = Directory.GetFiles(inputFolder, "*.png");
-        if (pngFiles.Length == 0)
-        {
-            Console.WriteLine($"No PNG files found in \"{inputFolder}\".");
-        }
 
-        // Process each PNG file individually.
-        foreach (string filePath in pngFiles)
+        // Limit processing to a maximum of 10 files as a safety guideline.
+        int maxFiles = Math.Min(pngFiles.Length, 10);
+
+        // Open a StreamWriter for the CSV report.
+        using (var writer = new StreamWriter(outputCsv, false))
         {
-            try
+            // Write the CSV header line.
+            writer.WriteLine("FileName,CodeText,PostalCode,CountryCode,ServiceCategory,Message");
+
+            // Process each PNG file up to the defined limit.
+            for (int i = 0; i < maxFiles; i++)
             {
-                // Open the image file as a read‑only stream.
-                using (var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read))
+                string filePath = pngFiles[i];
+                string fileName = Path.GetFileName(filePath);
+
+                // Guard against missing files (should not happen after GetFiles).
+                if (!File.Exists(filePath))
                 {
-                    // Initialize the barcode reader for MaxiCode type.
-                    using (var reader = new BarCodeReader(fileStream, DecodeType.MaxiCode))
+                    Console.WriteLine($"File not found: {filePath}");
+                    continue;
+                }
+
+                // Initialize a BarCodeReader for MaxiCode decoding.
+                using (var reader = new BarCodeReader(filePath, DecodeType.MaxiCode))
+                {
+                    // Apply the highest quality settings to improve detection accuracy.
+                    reader.QualitySettings = QualitySettings.MaxQuality;
+
+                    // Read all barcodes present in the image.
+                    BarCodeResult[] results = reader.ReadBarCodes();
+
+                    // If no barcodes were found, write an empty record and continue.
+                    if (results.Length == 0)
                     {
-                        // Attempt to read all barcodes in the image.
-                        var results = reader.ReadBarCodes();
+                        writer.WriteLine($"{Escape(fileName)},,,,,");
 
-                        // If no barcodes were detected, record this in the CSV.
-                        if (results.Length == 0)
+                        continue;
+                    }
+
+                    // Process each detected barcode.
+                    foreach (var result in results)
+                    {
+                        // Retrieve raw codetext; ensure it's not null.
+                        string rawCodeText = result.CodeText ?? string.Empty;
+
+                        // Decode the structured MaxiCode codetext.
+                        MaxiCodeCodetext decoded = ComplexCodetextReader.TryDecodeMaxiCode(
+                            result.Extended.MaxiCode.MaxiCodeMode,
+                            rawCodeText);
+
+                        // Initialize fields with default empty values.
+                        string postal = string.Empty;
+                        string country = string.Empty;
+                        string service = string.Empty;
+                        string message = string.Empty;
+
+                        // Extract details for Mode 2 MaxiCode.
+                        if (decoded is MaxiCodeCodetextMode2 mode2)
                         {
-                            sb.AppendLine($"{EscapeCsv(Path.GetFileName(filePath))},,,No barcode found,,,,,");
-                            continue;
-                        }
+                            postal = mode2.PostalCode ?? string.Empty;
+                            country = mode2.CountryCode.ToString();
+                            service = mode2.ServiceCategory.ToString();
 
-                        // Iterate over each detected barcode result.
-                        foreach (var result in results)
-                        {
-                            // Basic barcode properties.
-                            string barcodeType = result.CodeTypeName ?? "";
-                            string codeText = result.CodeText ?? "";
-                            string modeStr = "";
-                            string postalCode = "";
-                            string countryCode = "";
-                            string serviceCategory = "";
-                            string secondMessage = "";
-
-                            // Attempt to extract MaxiCode‑specific extended data.
-                            var maxiCodeExt = result.Extended?.MaxiCode;
-                            if (maxiCodeExt != null)
+                            if (mode2.SecondMessage is MaxiCodeStandardSecondMessage stdMsg)
                             {
-                                // Record the MaxiCode mode (e.g., 2, 3, 4, 5, 6).
-                                modeStr = maxiCodeExt.Mode.ToString();
-
-                                // Decode the structured codetext based on the mode.
-                                var decoded = ComplexCodetextReader.TryDecodeMaxiCode(maxiCodeExt.Mode, codeText);
-
-                                // Handle Mode 2 decoding.
-                                if (decoded is MaxiCodeCodetextMode2 mode2)
-                                {
-                                    postalCode = mode2.PostalCode ?? "";
-                                    countryCode = mode2.CountryCode.ToString();
-                                    serviceCategory = mode2.ServiceCategory.ToString();
-
-                                    // Extract second message, which may be standard or structured.
-                                    if (mode2.SecondMessage is MaxiCodeStandardSecondMessage stdMsg)
-                                    {
-                                        secondMessage = stdMsg.Message ?? "";
-                                    }
-                                    else if (mode2.SecondMessage is MaxiCodeStructuredSecondMessage structMsg)
-                                    {
-                                        var parts = new List<string>();
-                                        foreach (var id in structMsg.Identifiers)
-                                            parts.Add(id);
-                                        parts.Add($"Year:{structMsg.Year}");
-                                        secondMessage = string.Join(" | ", parts);
-                                    }
-                                }
-                                // Handle Mode 3 decoding (similar structure to Mode 2).
-                                else if (decoded is MaxiCodeCodetextMode3 mode3)
-                                {
-                                    postalCode = mode3.PostalCode ?? "";
-                                    countryCode = mode3.CountryCode.ToString();
-                                    serviceCategory = mode3.ServiceCategory.ToString();
-
-                                    if (mode3.SecondMessage is MaxiCodeStandardSecondMessage stdMsg3)
-                                    {
-                                        secondMessage = stdMsg3.Message ?? "";
-                                    }
-                                    else if (mode3.SecondMessage is MaxiCodeStructuredSecondMessage structMsg3)
-                                    {
-                                        var parts = new List<string>();
-                                        foreach (var id in structMsg3.Identifiers)
-                                            parts.Add(id);
-                                        parts.Add($"Year:{structMsg3.Year}");
-                                        secondMessage = string.Join(" | ", parts);
-                                    }
-                                }
+                                message = stdMsg.Message ?? string.Empty;
                             }
-
-                            // Append a CSV line with all extracted fields, escaping as needed.
-                            sb.AppendLine($"{EscapeCsv(Path.GetFileName(filePath))},{EscapeCsv(barcodeType)},{EscapeCsv(codeText)},{EscapeCsv(modeStr)},{EscapeCsv(postalCode)},{EscapeCsv(countryCode)},{EscapeCsv(serviceCategory)},{EscapeCsv(secondMessage)}");
+                            else if (mode2.SecondMessage is MaxiCodeStructuredSecondMessage structMsg)
+                            {
+                                // Concatenate identifiers from the structured message.
+                                message = string.Join(" | ", structMsg.Identifiers);
+                            }
                         }
+                        // Extract details for Mode 3 MaxiCode.
+                        else if (decoded is MaxiCodeCodetextMode3 mode3)
+                        {
+                            postal = mode3.PostalCode ?? string.Empty;
+                            country = mode3.CountryCode.ToString();
+                            service = mode3.ServiceCategory.ToString();
+
+                            if (mode3.SecondMessage is MaxiCodeStandardSecondMessage stdMsg)
+                            {
+                                message = stdMsg.Message ?? string.Empty;
+                            }
+                            else if (mode3.SecondMessage is MaxiCodeStructuredSecondMessage structMsg)
+                            {
+                                message = string.Join(" | ", structMsg.Identifiers);
+                            }
+                        }
+                        // For other MaxiCode modes, fields remain empty.
+
+                        // Write the CSV line, escaping commas where necessary.
+                        writer.WriteLine($"{Escape(fileName)},{Escape(rawCodeText)},{Escape(postal)},{Escape(country)},{Escape(service)},{Escape(message)}");
                     }
                 }
             }
-            catch (Exception ex)
-            {
-                // Log any exception that occurs while processing a file and record it in the CSV.
-                Console.WriteLine($"Error processing file \"{filePath}\": {ex.Message}");
-                sb.AppendLine($"{EscapeCsv(Path.GetFileName(filePath))},Error,,{EscapeCsv(ex.Message)},,,,,");
-            }
         }
 
-        // Attempt to write the accumulated CSV content to disk.
-        try
-        {
-            File.WriteAllText(csvPath, sb.ToString(), Encoding.UTF8);
-            Console.WriteLine($"CSV report generated at \"{csvPath}\".");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Failed to write CSV file: {ex.Message}");
-        }
+        Console.WriteLine($"Decoding completed. Report saved to '{outputCsv}'.");
     }
 
     /// <summary>
-    /// Escapes a CSV field by surrounding it with quotes if it contains
-    /// commas, quotes, or line‑break characters, and doubles any internal quotes.
+    /// Escapes a CSV field by surrounding it with double quotes if it contains a comma,
+    /// and doubles any existing double quotes.
     /// </summary>
-    /// <param name="field">The field value to escape; may be null.</param>
-    /// <returns>A CSV‑safe representation of the field.</returns>
-    static string EscapeCsv(string field)
-    {
-        if (field == null)
-            return "";
-        if (field.Contains("\""))
-            field = field.Replace("\"", "\"\"");
-        if (field.Contains(",") || field.Contains("\"") || field.Contains("\n") || field.Contains("\r"))
-            return $"\"{field}\"";
-        return field;
-    }
+    /// <param name="s">The field value to escape.</param>
+    /// <returns>The escaped field value.</returns>
+    private static string Escape(string s) => s.Contains(",") ? $"\"{s.Replace("\"", "\"\"")}\"" : s;
 }

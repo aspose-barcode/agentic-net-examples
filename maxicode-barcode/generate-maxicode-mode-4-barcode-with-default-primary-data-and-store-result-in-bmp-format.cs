@@ -1,46 +1,43 @@
+// Title: Generate MaxiCode Mode 4 Barcode and Save as BMP
+// Description: Creates a MaxiCode Mode 4 barcode with default primary data and writes it to a BMP image file.
+// Category-Description: This example demonstrates how to use Aspose.BarCode's ComplexBarcodeGenerator to produce a MaxiCode barcode, specifically Mode 4, which is commonly used for shipping and logistics. It showcases the MaxiCodeStandardCodetext class for setting mode and message, configuring image resolution, and saving the result in BMP format. Developers working with advanced barcode symbologies can refer to this pattern for generating other complex barcodes.
+// Prompt: Generate a MaxiCode Mode 4 barcode with default primary data and store the result in BMP format.
+// Tags: maxicode, barcode generation, bmp, aspose.barcode, complexbarcode, csharp
+
 using System;
-using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.ComplexBarcode;
 
 /// <summary>
-/// Demonstrates generation of a MaxiCode barcode in Mode 4 using Aspose.BarCode.
+/// Demonstrates generation of a MaxiCode Mode 4 barcode and saving it as a BMP image using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a MaxiCode Mode 4 barcode and saves it as a BMP file.
+    /// Entry point of the example. Creates a MaxiCode barcode, configures parameters, and saves the image.
     /// </summary>
     static void Main()
     {
-        // Define the output file name (saved in the current working directory)
-        string outputPath = "maxicode_mode4.bmp";
+        // Initialize standard codetext for MaxiCode Mode 4
+        var maxiCodeCodetext = new MaxiCodeStandardCodetext();
+        maxiCodeCodetext.Mode = MaxiCodeMode.Mode4;          // Set barcode mode to Mode 4
+        maxiCodeCodetext.Message = "Test message";          // Set the primary data message
 
-        // Prepare the MaxiCode codetext with Mode 4 and a sample message
-        var maxiCodeCodetext = new MaxiCodeStandardCodetext
+        // Generate the barcode using ComplexBarcodeGenerator
+        using (var generator = new ComplexBarcodeGenerator(maxiCodeCodetext))
         {
-            Mode = MaxiCodeMode.Mode4,
-            Message = "Sample message"
-        };
+            // Optional: define image resolution (dots per inch)
+            generator.Parameters.Resolution = 300;
 
-        // Attempt to generate the barcode and write it to disk
-        try
-        {
-            // Initialize the complex barcode generator with the prepared codetext
-            using (var generator = new ComplexBarcodeGenerator(maxiCodeCodetext))
-            {
-                // Save the generated barcode as a BMP image to the specified path
-                generator.Save(outputPath, BarCodeImageFormat.Bmp);
-            }
+            // Define output file name and format
+            string outputFile = "maxicode_mode4.bmp";
 
-            // Output the full path of the saved image for user confirmation
-            Console.WriteLine($"MaxiCode Mode 4 barcode saved to: {Path.GetFullPath(outputPath)}");
+            // Save the generated barcode as BMP
+            generator.Save(outputFile, BarCodeImageFormat.Bmp);
         }
-        catch (Exception ex)
-        {
-            // Report any errors that occur during barcode generation or file saving
-            Console.WriteLine($"Error generating barcode: {ex.Message}");
-        }
+
+        // Inform the user that the barcode has been saved
+        Console.WriteLine("MaxiCode Mode 4 barcode saved successfully.");
     }
 }

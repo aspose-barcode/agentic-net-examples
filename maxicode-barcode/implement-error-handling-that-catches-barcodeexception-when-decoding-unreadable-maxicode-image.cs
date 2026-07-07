@@ -1,80 +1,57 @@
 using System;
 using System.IO;
-using Aspose.BarCode;
-using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.BarCode.ComplexBarcode;
-using Aspose.Drawing;
 
-/// <summary>
-/// Demonstrates generation of a MaxiCode barcode, intentional corruption of the image,
-/// and handling of decoding attempts with proper exception handling.
-/// </summary>
 class Program
 {
-    /// <summary>
-    /// Entry point of the application.
-    /// Generates a MaxiCode, corrupts its image data, and attempts to read it back.
-    /// </summary>
     static void Main()
     {
-        // --------------------------------------------------------------------
-        // 1. Create a simple MaxiCode codetext (Mode 2) with required fields.
-        // --------------------------------------------------------------------
-        var maxiCodeCodetext = new MaxiCodeCodetextMode2
+        // Path to the MaxiCode image (replace with an actual file path if needed)
+        string imagePath = "unreadable_maxicode.png";
+
+        // Validate that the image file exists
+        if (!File.Exists(imagePath))
         {
-            PostalCode = "524032140",
-            CountryCode = 56,
-            ServiceCategory = 999,
-            SecondMessage = new MaxiCodeStandardSecondMessage { Message = "Test" }
-        };
+            Console.WriteLine($"File not found: {imagePath}");
+            return;
+        }
 
-        // ---------------------------------------------------------------
-        // 2. Generate a valid MaxiCode image and store it in a memory stream.
-        // ---------------------------------------------------------------
-        using (var generator = new ComplexBarcodeGenerator(maxiCodeCodetext))
-        using (var ms = new MemoryStream())
+        try
         {
-            // Save the barcode as PNG into the memory stream.
-            generator.Save(ms, BarCodeImageFormat.Png);
-            ms.Position = 0; // Reset stream position for further operations.
-
-            // ---------------------------------------------------------------
-            // 3. Corrupt the image data to simulate an unreadable barcode.
-            //    Overwrite the first few bytes with arbitrary values.
-            // ---------------------------------------------------------------
-            byte[] corruptBytes = { 0xFF, 0x00, 0xFF, 0x00 };
-            ms.Write(corruptBytes, 0, corruptBytes.Length);
-            ms.Position = 0; // Reset again before reading.
-
-            // ---------------------------------------------------------------
-            // 4. Attempt to decode the corrupted MaxiCode image.
-            //    Handle both barcode-specific and generic exceptions.
-            // ---------------------------------------------------------------
-            try
+            // Create a BarCodeReader for MaxiCode symbology
+            using (var reader = new BarCodeReader(imagePath, DecodeType.MaxiCode))
             {
-                using (var reader = new BarCodeReader(ms, DecodeType.MaxiCode))
-                {
-                    // Read all barcodes found in the stream.
-                    var results = reader.ReadBarCodes();
+                // Read all barcodes from the image
+                var results = reader.ReadBarCodes();
 
-                    // Output each decoded result to the console.
-                    foreach (var result in results)
+                if (results.Length == 0)
+                {
+                    Console.WriteLine("No barcodes detected.");
+                }
+
+                foreach (var result in results)
+                {
+                    // Attempt to decode the MaxiCode codetext using ComplexCodetextReader
+                    var decoded = ComplexCodetextReader.TryDecodeMaxiCode(
+                        result.Extended.MaxiCode.MaxiCodeMode,
+                        result.CodeText);
+
+                    if (decoded != null)
                     {
-                        Console.WriteLine($"Decoded CodeText: {result.CodeText}");
+                        Console.WriteLine($"Decoded MaxiCode codetext: {decoded.GetConstructedCodetext()}");
+                    }
+                    else
+                    {
+                        Console.WriteLine("Failed to decode MaxiCode codetext.");
                     }
                 }
             }
-            catch (BarCodeException ex)
-            {
-                // Specific exception thrown by Aspose.BarCode when decoding fails.
-                Console.WriteLine($"BarcodeException caught: {ex.Message}");
-            }
-            catch (Exception ex)
-            {
-                // Fallback for any other unexpected errors.
-                Console.WriteLine($"Unexpected exception: {ex.Message}");
-            }
+        }
+        catch (Exception ex)
+        {
+            // Handle any errors that occur during decoding (e.g., unreadable image)
+            Console.WriteLine($"Error decoding barcode: {ex.Message}");
         }
     }
 }

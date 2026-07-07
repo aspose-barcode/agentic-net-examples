@@ -1,62 +1,58 @@
+// Title: Generate MaxiCode Barcodes as GIF Images
+// Description: Demonstrates creating multiple MaxiCode barcodes and saving them as GIF files.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use the BarcodeGenerator class with EncodeTypes.MaxiCode and BarCodeImageFormat to produce barcode images. Typical use cases include batch creation of shipping labels, inventory tags, or any scenario requiring MaxiCode symbols in a lightweight GIF format. Developers often need to automate image format selection and file naming for large sets of barcodes.
+/// Prompt: Set the generator's ImageFormat property to GIF and produce a series of MaxiCode images.
+/// Tags: maxicode, barcode generation, gif, aspose.barcode, imageformat, encode types
+
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.ComplexBarcode;
 
 /// <summary>
-/// Demonstrates generation of MaxiCode barcodes in different modes using Aspose.BarCode.
+/// Example program that generates a series of MaxiCode barcodes and saves each as a GIF image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Creates an output directory,
-    /// generates MaxiCode images for several modes, and reports the result.
+    /// Entry point of the application. Creates an output directory, iterates over sample messages,
+    /// generates a MaxiCode barcode for each, and saves the result as a GIF file.
     /// </summary>
     static void Main()
     {
-        // Determine the output directory path relative to the current working directory.
-        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "MaxiCodeImages");
-
-        // Ensure the output directory exists; create it if it does not.
+        // Define the directory where generated images will be stored
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "MaxiCodeOutputs");
         if (!Directory.Exists(outputDir))
         {
+            // Create the directory if it does not already exist
             Directory.CreateDirectory(outputDir);
         }
 
-        // Generate MaxiCode images for Mode 4, Mode 5, and Mode 6.
-        GenerateMaxiCode(outputDir, MaxiCodeMode.Mode4, "Sample message for Mode 4", "maxicode_mode4.gif");
-        GenerateMaxiCode(outputDir, MaxiCodeMode.Mode5, "Sample message for Mode 5", "maxicode_mode5.gif");
-        GenerateMaxiCode(outputDir, MaxiCodeMode.Mode6, "Sample message for Mode 6", "maxicode_mode6.gif");
-
-        // Inform the user where the images have been saved.
-        Console.WriteLine("MaxiCode images have been generated in: " + outputDir);
-    }
-
-    /// <summary>
-    /// Generates a MaxiCode barcode image using the specified mode, message, and file name.
-    /// </summary>
-    /// <param name="folder">The directory where the image will be saved.</param>
-    /// <param name="mode">The MaxiCode mode to use (e.g., Mode4, Mode5, Mode6).</param>
-    /// <param name="message">The text message to encode in the barcode.</param>
-    /// <param name="fileName">The name of the output image file.</param>
-    private static void GenerateMaxiCode(string folder, MaxiCodeMode mode, string message, string fileName)
-    {
-        // Prepare the standard MaxiCode codetext with the specified mode and message.
-        var codetext = new MaxiCodeStandardCodetext
+        // Sample messages to encode in the MaxiCode barcodes
+        string[] messages = new string[]
         {
-            Mode = mode,
-            Message = message
+            "Sample Message 1",
+            "Sample Message 2",
+            "Sample Message 3",
+            "Sample Message 4",
+            "Sample Message 5"
         };
 
-        // Use a ComplexBarcodeGenerator to create and save the barcode image.
-        using (var generator = new ComplexBarcodeGenerator(codetext))
+        // Loop through each message, generate a barcode, and save it as a GIF image
+        for (int i = 0; i < messages.Length; i++)
         {
-            // Combine the folder path and file name to get the full output path.
-            string outputPath = Path.Combine(folder, fileName);
+            // Build the full file path for the current image
+            string filePath = Path.Combine(outputDir, $"maxicode_{i + 1}.gif");
 
-            // Save the generated barcode as a GIF image.
-            generator.Save(outputPath, BarCodeImageFormat.Gif);
+            // Initialize the barcode generator with MaxiCode symbology and the current message
+            using (var generator = new BarcodeGenerator(EncodeTypes.MaxiCode, messages[i]))
+            {
+                // Save the generated barcode image in GIF format
+                generator.Save(filePath, BarCodeImageFormat.Gif);
+            }
         }
+
+        // Inform the user about the successful generation
+        Console.WriteLine($"Generated {messages.Length} MaxiCode GIF images in: {outputDir}");
     }
 }
