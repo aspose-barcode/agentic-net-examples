@@ -1,46 +1,50 @@
+// Title: Rotate Mailmark barcode by 90 degrees
+// Description: Generates a Mailmark barcode, rotates the image 90° clockwise, and saves it as a PNG.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It demonstrates how to use the MailmarkCodetext class together with ComplexBarcodeGenerator to create a Mailmark symbology, apply image transformations (rotation), and export the result. Developers working with postal barcodes, custom layouts, or needing image manipulation in barcode workflows will find this pattern useful.
+/// Prompt: Rotate the generated Mailmark barcode by 90 degrees to satisfy specific layout requirements.
+/// Tags: mailmark, barcode, rotation, png, aspose.barcode, complexbarcodegenerator, imageprocessing
+
 using System;
-using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.ComplexBarcode;
+using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generation of a rotated Mailmark barcode and saves it as a PNG file.
+/// Demonstrates generating a Mailmark barcode, rotating it 90° clockwise, and saving the result as a PNG file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a Mailmark barcode, rotates it 90 degrees, and writes the image to disk.
+    /// Entry point of the example. Prepares Mailmark codetext, creates the barcode image, rotates it, and writes the output file.
     /// </summary>
     static void Main()
     {
-        // Define the output file name for the generated barcode image.
-        string outputPath = "mailmark_rotated.png";
-
-        // Create a MailmarkCodetext instance and populate its properties.
-        // This example uses a 4‑state format with specific identifiers.
+        // Prepare Mailmark codetext with required fields
         var mailmark = new MailmarkCodetext
         {
-            Format = 4,                     // 4‑state format identifier
-            VersionID = 1,                  // Version of the Mailmark specification
-            Class = "0",                    // Class as a string (required by the API)
-            SupplychainID = 384224,         // Supply chain identifier
-            ItemID = 16563762,              // Item identifier
-            DestinationPostCodePlusDPS = "EF61AH8T " // Nine‑character postcode + DP suffix
+            Format = 4,                         // 4‑state barcode
+            VersionID = 1,
+            Class = "0",                        // service type / class
+            SupplychainID = 384224,
+            ItemID = 16563762,                  // customer reference
+            DestinationPostCodePlusDPS = "EF61AH8T " // valid postcode + DPS
         };
 
-        // Initialize the ComplexBarcodeGenerator with the prepared Mailmark codetext.
+        // Generate the Mailmark barcode image using ComplexBarcodeGenerator
         using (var generator = new ComplexBarcodeGenerator(mailmark))
         {
-            // Set the rotation angle to 90 degrees to rotate the barcode.
-            generator.Parameters.RotationAngle = 90f;
+            using (Image barcodeImage = generator.GenerateBarCodeImage())
+            {
+                // Rotate the image 90 degrees clockwise (no flip)
+                barcodeImage.RotateFlip(RotateFlipType.Rotate90FlipNone);
 
-            // Save the rotated barcode image in PNG format to the specified path.
-            generator.Save(outputPath, BarCodeImageFormat.Png);
+                // Save the rotated barcode to a PNG file
+                const string outputPath = "MailmarkRotated.png";
+                barcodeImage.Save(outputPath, ImageFormat.Png);
+                Console.WriteLine($"Rotated Mailmark barcode saved to: {outputPath}");
+            }
         }
-
-        // Output the full path of the saved barcode image to the console.
-        Console.WriteLine($"Mailmark barcode saved to: {Path.GetFullPath(outputPath)}");
     }
 }

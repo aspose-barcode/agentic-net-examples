@@ -1,75 +1,95 @@
+// Title: Barcode Generation with Dependency Injection using Aspose.BarCode
+// Description: Demonstrates registering a barcode generation service in a DI container and using it to create a Code128 PNG image.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to leverage Microsoft.Extensions.DependencyInjection to inject a barcode service. It highlights key API classes such as BarcodeGenerator, EncodeTypes, and the IBarcodeService contract. Developers often need to generate barcodes in various formats across different layers of an application; this pattern provides a clean, testable approach for such scenarios.
+// Prompt: Implement dependency injection to provide a barcode generation service throughout the application.
+// Tags: barcode symbology, generation, png, aspose.barcode, dependency injection, csharp
+
 using System;
-using System.IO;
 using Microsoft.Extensions.DependencyInjection;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 namespace BarcodeDIExample
 {
-    // Service interface for barcode generation
+    /// <summary>
+    /// Service contract for barcode generation.
+    /// </summary>
     public interface IBarcodeService
     {
-        void GenerateBarcode(BaseEncodeType type, string codeText, string outputPath);
+        /// <summary>
+        /// Generates a barcode image from the specified text and saves it to the given path.
+        /// </summary>
+        /// <param name="codeText">The text to encode in the barcode.</param>
+        /// <param name="outputPath">The file path where the barcode image will be saved.</param>
+        void Generate(string codeText, string outputPath);
     }
 
     /// <summary>
-    /// Implementation of <see cref="IBarcodeService"/> using Aspose.BarCode.
+    /// Concrete implementation of <see cref="IBarcodeService"/> using Aspose.BarCode.
     /// </summary>
-    public class BarcodeService : IBarcodeService
+    public class BarcodeService : IBarcodeService, IDisposable
     {
-        /// <summary>
-        /// Generates a barcode image of the specified type and saves it to the given path.
-        /// </summary>
-        /// <param name="type">The barcode encoding type (e.g., Code128).</param>
-        /// <param name="codeText">The text to encode in the barcode.</param>
-        /// <param name="outputPath">The full file path where the barcode image will be saved.</param>
-        public void GenerateBarcode(BaseEncodeType type, string codeText, string outputPath)
+        private bool _disposed = false;
+
+        /// <inheritdoc/>
+        public void Generate(string codeText, string outputPath)
         {
-            // Ensure the output directory exists before attempting to save the file
-            string directory = Path.GetDirectoryName(outputPath);
-            if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+            // Use Code128 as an example symbology.
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128))
             {
-                Directory.CreateDirectory(directory);
-            }
-
-            // Create a BarcodeGenerator, configure its parameters, and save the image
-            using (var generator = new BarcodeGenerator(type, codeText))
-            {
-                // Example: set a higher resolution for better image quality
-                generator.Parameters.Resolution = 300f;
-
-                // Save the barcode image as PNG to the specified path
+                generator.CodeText = codeText;
+                // Save the generated barcode as a PNG file.
                 generator.Save(outputPath);
+            }
+        }
+
+        /// <summary>
+        /// Disposes the service. Currently no unmanaged resources are held, but the pattern is kept for future extensibility.
+        /// </summary>
+        public void Dispose()
+        {
+            if (!_disposed)
+            {
+                // No unmanaged resources to release.
+                _disposed = true;
             }
         }
     }
 
     /// <summary>
-    /// Entry point of the application demonstrating dependency injection with the barcode service.
+    /// Application entry point demonstrating DI-based barcode generation.
     /// </summary>
     class Program
     {
         /// <summary>
-        /// Configures services, resolves the barcode service, and generates a sample barcode.
+        /// Configures the DI container, resolves the barcode service, and generates a sample barcode.
         /// </summary>
-        static void Main()
+        /// <param name="args">Command‑line arguments (not used).</param>
+        static void Main(string[] args)
         {
-            // Set up the dependency injection container
+            // Set up a simple DI container.
             var services = new ServiceCollection();
-            services.AddSingleton<IBarcodeService, BarcodeService>();
-            var serviceProvider = services.BuildServiceProvider();
 
-            // Resolve the barcode service from the DI container
-            var barcodeService = serviceProvider.GetRequiredService<IBarcodeService>();
+            // Register the barcode service as a transient dependency.
+            services.AddTransient<IBarcodeService, BarcodeService>();
 
-            // Define the output file path for the generated barcode image
-            string outputFile = Path.Combine(Directory.GetCurrentDirectory(), "code128.png");
+            // Build the service provider and resolve services within a using block to ensure disposal.
+            using (var provider = services.BuildServiceProvider())
+            {
+                // Resolve the barcode service.
+                var barcodeService = provider.GetRequiredService<IBarcodeService>();
 
-            // Generate a Code128 barcode with sample text and save it to the output file
-            barcodeService.GenerateBarcode(EncodeTypes.Code128, "Sample12345", outputFile);
+                // Sample data and output file.
+                string sampleText = "123ABC456";
+                string outputFile = "sample_code128.png";
 
-            // Inform the user where the barcode image has been saved
-            Console.WriteLine($"Barcode generated and saved to: {outputFile}");
+                // Generate the barcode image.
+                barcodeService.Generate(sampleText, outputFile);
+
+                Console.WriteLine($"Barcode generated and saved to '{outputFile}'.");
+            }
+
+            // Program exits automatically.
         }
     }
 }

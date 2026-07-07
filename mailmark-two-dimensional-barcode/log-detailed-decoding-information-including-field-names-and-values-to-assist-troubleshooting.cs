@@ -1,36 +1,39 @@
+// Title: Generate and Decode a Code128 Barcode with Detailed Logging
+// Description: This example creates a Code128 barcode image, saves it to disk, then reads the image back while logging all decoding fields to aid troubleshooting.
+// Category-Description: Demonstrates Aspose.BarCode generation and recognition workflows. It showcases the use of BarcodeGenerator for creating barcodes and BarCodeReader for decoding them, covering typical scenarios such as visual customization, multi‑symbology support, and detailed result inspection. Developers working with barcode imaging, inventory systems, or document automation often need these APIs to produce and validate barcodes programmatically.
+// Prompt: Log detailed decoding information, including field names and values, to assist troubleshooting.
+// Tags: code128, barcode generation, barcode recognition, decoding, logging, aspose.barcode
+
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a Code128 barcode, saving it to a file,
-/// and then reading it back to display detailed decoding information.
+/// Demonstrates how to generate a Code128 barcode, save it as an image,
+/// and then read it back while outputting detailed decoding information.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a barcode image, verifies its creation, and reads the barcode data.
+    /// Entry point of the example. Generates a barcode, saves it, and logs
+    /// all available decoding details for each detected barcode.
     /// </summary>
     static void Main()
     {
-        // Define the output path for the generated barcode image.
-        string imagePath = "barcode.png";
+        // Define the file name for the generated barcode image.
+        string imagePath = "sample_barcode.png";
 
-        // -------------------------------------------------
-        // Generate a sample Code128 barcode
-        // -------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+        // Generate a simple Code128 barcode and save it to a PNG file.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
         {
-            // Enable checksum for demonstration purposes.
-            generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
+            // Optional: set visual properties for better contrast.
+            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
+            generator.Parameters.BackColor = Aspose.Drawing.Color.White;
 
-            // Save the generated barcode image to the specified file.
-            generator.Save(imagePath);
+            // Save the barcode image.
+            generator.Save(imagePath, BarCodeImageFormat.Png);
         }
 
         // Verify that the image file was successfully created.
@@ -40,53 +43,43 @@ class Program
             return;
         }
 
-        // -------------------------------------------------
-        // Read the barcode and log detailed decoding info
-        // -------------------------------------------------
+        // Read the barcode from the generated image and log detailed information.
         using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
         {
-            // Read all barcodes found in the image.
-            BarCodeResult[] results = reader.ReadBarCodes();
-
-            // If no barcodes were detected, inform the user and exit.
-            if (results.Length == 0)
+            // Iterate through all detected barcodes in the image.
+            foreach (var result in reader.ReadBarCodes())
             {
-                Console.WriteLine("No barcodes were detected.");
-                return;
-            }
+                Console.WriteLine("=== Detected Barcode ===");
+                Console.WriteLine($"Type Name        : {result.CodeTypeName}");
+                Console.WriteLine($"Code Text        : {result.CodeText}");
+                Console.WriteLine($"Confidence       : {result.Confidence}");
+                Console.WriteLine($"Reading Quality  : {result.ReadingQuality}");
 
-            // Iterate through each detected barcode and display its properties.
-            foreach (BarCodeResult result in results)
-            {
-                Console.WriteLine("=== Barcode Detected ===");
-                Console.WriteLine($"Type               : {result.CodeTypeName}");
-                Console.WriteLine($"CodeText           : {result.CodeText}");
-                Console.WriteLine($"Confidence         : {result.Confidence}");
-                Console.WriteLine($"ReadingQuality     : {result.ReadingQuality}");
-
-                // Extract region bounds (X, Y, Width, Height) and round to integers.
+                // Output the region bounds of the detected barcode.
                 var rect = result.Region.Rectangle;
-                int x = (int)Math.Round((double)rect.X);
-                int y = (int)Math.Round((double)rect.Y);
-                int width = (int)Math.Round((double)rect.Width);
-                int height = (int)Math.Round((double)rect.Height);
-                Console.WriteLine($"Region (X,Y,W,H)   : X={x}, Y={y}, Width={width}, Height={height}");
+                Console.WriteLine($"Region X         : {rect.X}");
+                Console.WriteLine($"Region Y         : {rect.Y}");
+                Console.WriteLine($"Region Width     : {rect.Width}");
+                Console.WriteLine($"Region Height    : {rect.Height}");
 
-                // Output the orientation angle of the detected barcode.
-                Console.WriteLine($"Orientation Angle  : {result.Region.Angle}");
-
-                // If the barcode is a 1D type, display extended 1D-specific parameters.
-                if (result.Extended?.OneD != null)
+                // Output extended information if it is available.
+                if (result.Extended != null)
                 {
-                    Console.WriteLine($"OneD Value         : {result.Extended.OneD.Value}");
-                    Console.WriteLine($"OneD CheckSum      : {result.Extended.OneD.CheckSum}");
-                }
+                    // Example for 1D barcodes (e.g., Code128).
+                    var oneD = result.Extended.OneD;
+                    if (oneD != null)
+                    {
+                        Console.WriteLine($"Extended Value   : {oneD.Value}");
+                        Console.WriteLine($"Extended CheckSum: {oneD.CheckSum}");
+                    }
 
-                // If the barcode is a QR code, display extended QR-specific parameters.
-                if (result.Extended?.QR != null)
-                {
-                    Console.WriteLine($"QR Version         : {result.Extended.QR.Version}");
-                    Console.WriteLine($"QR ErrorLevel      : {result.Extended.QR.ErrorLevel}");
+                    // Example for QR codes (if a QR code were present).
+                    var qr = result.Extended.QR;
+                    if (qr != null)
+                    {
+                        Console.WriteLine($"QR Version       : {qr.Version}");
+                        Console.WriteLine($"QR Error Level   : {qr.ErrorLevel}");
+                    }
                 }
 
                 Console.WriteLine();
