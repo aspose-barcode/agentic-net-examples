@@ -1,3 +1,9 @@
+// Title: Codabar barcode generation with Mod16 checksum and validation
+// Description: Demonstrates how to generate a Codabar barcode using Mod16 checksum mode and then read it back while validating the checksum.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating 1D barcodes with specific checksum settings and BarCodeReader for decoding and validating those barcodes. Developers working with inventory, shipping, or point‑of‑sale systems often need to configure checksum modes such as Mod16 for Codabar and ensure data integrity during scanning.
+// Prompt: Configure barcode to use Mod16 checksum mode and validate the checksum after generation.
+// Tags: codabar, checksum, mod16, barcode generation, barcode recognition, aspose.barcode
+
 using System;
 using System.IO;
 using Aspose.BarCode;
@@ -5,71 +11,51 @@ using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates generating a Codabar barcode with Mod16 checksum,
-/// saving it to a temporary file, reading it back with checksum validation,
-/// and cleaning up the temporary file.
+/// Generates a Codabar barcode with Mod16 checksum, saves it as an image,
+/// then reads the image back and validates the checksum using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a barcode, validates it, and outputs results to the console.
+    /// Entry point of the example. Executes barcode creation, saving, and validation.
     /// </summary>
     static void Main()
     {
-        // Define temporary file path for the generated barcode image
-        string tempPath = Path.Combine(Path.GetTempPath(), "codabar_mod16.png");
+        // Define the full path for the output PNG image
+        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "codabar_mod16.png");
 
-        // Generate a Codabar barcode with Mod16 checksum mode
+        // --------------------------------------------------------------------
+        // Generate a Codabar barcode with Mod16 checksum enabled
+        // --------------------------------------------------------------------
         using (var generator = new BarcodeGenerator(EncodeTypes.Codabar, "A123456B"))
         {
-            // Configure the generator to use Mod16 checksum for Codabar
+            // Turn on checksum generation for the barcode
+            generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
+
+            // Specify Mod16 checksum mode for Codabar symbology
             generator.Parameters.Barcode.Codabar.ChecksumMode = CodabarChecksumMode.Mod16;
 
-            // Save the generated barcode image to the temporary file
-            generator.Save(tempPath);
+            // Save the generated barcode image to the specified path
+            generator.Save(outputPath);
         }
 
-        // Verify that the barcode image file was successfully created
-        if (!File.Exists(tempPath))
+        // --------------------------------------------------------------------
+        // Read the generated barcode image and validate its checksum
+        // --------------------------------------------------------------------
+        using (var reader = new BarCodeReader(outputPath, DecodeType.Codabar))
         {
-            Console.WriteLine("Failed to generate the barcode image.");
-            return;
-        }
-
-        // Initialize a barcode reader for the saved image, specifying Codabar as the decode type
-        using (var reader = new BarCodeReader(tempPath, DecodeType.Codabar))
-        {
-            // Enable checksum validation during reading
+            // Enable checksum validation during the recognition process
             reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
 
-            bool anyFound = false;
-
-            // Iterate through all detected barcodes in the image
-            foreach (var result in reader.ReadBarCodes())
+            // Iterate through all detected barcodes (should be only one in this case)
+            foreach (BarCodeResult result in reader.ReadBarCodes())
             {
-                anyFound = true;
-                // Output the decoded text of the barcode
-                Console.WriteLine($"Detected CodeText: {result.CodeText}");
-                // Output the Mod16 checksum value (available in OneD extended parameters)
-                Console.WriteLine($"Checksum (Mod16): {result.Extended.OneD.CheckSum}");
-            }
+                // Output the decoded text
+                Console.WriteLine($"CodeText: {result.CodeText}");
 
-            // If no barcodes were detected, inform the user
-            if (!anyFound)
-            {
-                Console.WriteLine("No barcode was recognized.");
+                // For 1D barcodes, the checksum value is available via Extended.OneD.CheckSum
+                Console.WriteLine($"Checksum: {result.Extended.OneD.CheckSum}");
             }
-        }
-
-        // Attempt to delete the temporary image file; ignore any errors that occur
-        try
-        {
-            File.Delete(tempPath);
-        }
-        catch
-        {
-            // Suppress any exceptions during cleanup
         }
     }
 }

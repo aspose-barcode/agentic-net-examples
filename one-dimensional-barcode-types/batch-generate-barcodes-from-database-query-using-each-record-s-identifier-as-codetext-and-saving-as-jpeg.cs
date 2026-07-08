@@ -1,3 +1,9 @@
+// Title: Batch barcode generation from identifiers
+// Description: Demonstrates generating Code128 barcodes for a list of identifiers and saving each as a JPEG image.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to use BarcodeGenerator with EncodeTypes to create barcodes in bulk. Typical use cases include exporting product IDs, inventory numbers, or any database‑driven identifiers to image files for printing or digital distribution. Developers often need to loop through data sources, set barcode properties, and save images in common formats.
+// Prompt: Batch generate barcodes from a database query, using each record’s identifier as CodeText and saving as JPEG.
+// Tags: barcode symbology, batch generation, jpeg output, aspose.barcode, generation
+
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -5,79 +11,62 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generating Code128 barcodes for a list of identifiers
-/// and saving them as JPEG images using Aspose.BarCode.
+/// Demonstrates batch generation of Code128 barcodes from a collection of identifiers
+/// and saves each barcode as a JPEG image in a designated output folder.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates barcode images for a predefined list of identifiers.
+    /// Entry point of the example. Generates barcodes for sample identifiers and writes them to disk.
     /// </summary>
     static void Main()
     {
-        // Simulated database query result: list of identifier strings.
+        // In a real scenario the identifiers would be read from a database.
+        // For this runnable example we use a hard‑coded list of sample identifiers.
+        // Replace the following block with actual DB access code when the required
+        // data provider packages are available.
         List<string> identifiers = new List<string>
         {
-            "1001",
-            "1002",
-            "1003",
-            "1004",
-            "1005"
+            "ID001",
+            "ID002",
+            "ID003",
+            "ID004",
+            "ID005"
         };
 
-        // Determine the output directory for the generated JPEG images.
-        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
+        // Define the output directory for generated barcode images.
+        string outputFolder = "Barcodes";
 
-        // Create the output directory if it does not already exist.
-        if (!Directory.Exists(outputDir))
+        // Ensure the output directory exists; create it if it does not.
+        if (!Directory.Exists(outputFolder))
         {
-            Directory.CreateDirectory(outputDir);
+            Directory.CreateDirectory(outputFolder);
         }
 
-        // Iterate over each identifier and generate a corresponding barcode image.
+        // Iterate over each identifier and generate a corresponding barcode.
         foreach (string id in identifiers)
         {
-            // Build the full file path for the current barcode image.
-            string outputPath = Path.Combine(outputDir, $"barcode_{id}.jpg");
-
-            // Create a BarcodeGenerator for Code128 using the identifier as the code text.
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, id))
+            // Create a barcode generator for Code128 (adjust symbology as needed).
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128))
             {
-                // Set the image resolution to 300 DPI (optional configuration).
-                generator.Parameters.Resolution = 300f;
+                // Set the text to be encoded in the barcode.
+                generator.CodeText = id;
+
+                // Optional: set foreground and background colors.
+                // generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
+                // generator.Parameters.BackColor = Aspose.Drawing.Color.White;
+
+                // Build the full file path for the JPEG image.
+                string filePath = Path.Combine(outputFolder, $"barcode_{id}.jpeg");
 
                 // Save the generated barcode as a JPEG file.
-                generator.Save(outputPath, BarCodeImageFormat.Jpeg);
-            }
+                generator.Save(filePath, BarCodeImageFormat.Jpeg);
 
-            // Output a confirmation message to the console.
-            Console.WriteLine($"Generated barcode for ID {id} at {outputPath}");
+                // Log the successful generation to the console.
+                Console.WriteLine($"Generated barcode for '{id}' -> {filePath}");
+            }
         }
 
-        // Example of how to retrieve identifiers from a real database (commented out).
-        /*
-        // using System.Data.SqlClient;
-        // string connectionString = "your_connection_string";
-        // string query = "SELECT Identifier FROM YourTable";
-        // using (var connection = new SqlConnection(connectionString))
-        // {
-        //     connection.Open();
-        //     using (var command = new SqlCommand(query, connection))
-        //     using (var reader = command.ExecuteReader())
-        //     {
-        //         while (reader.Read())
-        //         {
-        //             string id = reader.GetString(0);
-        //             string outputPath = Path.Combine(outputDir, $"barcode_{id}.jpg");
-        //             using (var generator = new BarcodeGenerator(EncodeTypes.Code128, id))
-        //             {
-        //                 generator.Parameters.Resolution = 300f;
-        //                 generator.Save(outputPath, BarCodeImageFormat.Jpeg);
-        //             }
-        //         }
-        //     }
-        // }
-        */
+        // End of program.
     }
 }

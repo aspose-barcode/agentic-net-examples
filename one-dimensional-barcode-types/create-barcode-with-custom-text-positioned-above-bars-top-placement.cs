@@ -1,40 +1,43 @@
+// Title: Generate Code128 barcode with custom text above the bars
+// Description: Demonstrates how to create a Code128 barcode and position the human‑readable text on top of the bars, useful for labeling where the text must appear above the barcode.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and CodeTextParameters to customize barcode appearance. Developers often need to adjust text location, font, and color for branding or compliance, and this snippet shows the typical API calls for such customizations.
+// Prompt: Create a barcode with custom text positioned above the bars (top placement).
+// Tags: code128, barcode, text placement, png, aspose.barcode, barcodegenerator, codetextparameters
+
 using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a Code128 barcode with a caption above the barcode using Aspose.BarCode.
+/// Example program that creates a Code128 barcode with custom text placed above the bars.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a barcode image and saves it to disk.
+    /// Entry point. Generates the barcode, customizes the text appearance, and saves it as a PNG file.
     /// </summary>
     static void Main()
     {
-        // Define the output file path for the generated barcode image.
-        string outputPath = "barcode.png";
-
-        // Initialize a BarcodeGenerator for Code128 symbology.
+        // Initialize a barcode generator for the Code128 symbology.
         using (var generator = new BarcodeGenerator(EncodeTypes.Code128))
         {
             // Set the data to be encoded in the barcode.
-            generator.CodeText = "1234567890";
+            generator.CodeText = "Custom Text";
 
-            // Enable and configure the caption that appears above the barcode.
-            generator.Parameters.CaptionAbove.Visible = true;                     // Show the caption.
-            generator.Parameters.CaptionAbove.Text = "Custom Text Above";        // Caption text.
-            generator.Parameters.CaptionAbove.Alignment = TextAlignment.Center; // Center align the caption.
-            generator.Parameters.CaptionAbove.Font.FamilyName = "Arial";         // Font family.
-            generator.Parameters.CaptionAbove.Font.Size.Point = 12f;            // Font size in points.
-            generator.Parameters.CaptionAbove.TextColor = Color.Black;          // Caption text color.
+            // Position the human‑readable text above the barcode bars.
+            generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.Above;
 
-            // Save the generated barcode image to the specified file.
-            generator.Save(outputPath);
+            // Optional: customize the font family, size, and color of the above text.
+            generator.Parameters.Barcode.CodeTextParameters.Font.FamilyName = "Arial";
+            generator.Parameters.Barcode.CodeTextParameters.Font.Size.Point = 12f;
+            generator.Parameters.Barcode.CodeTextParameters.Color = Color.Blue;
+
+            // Save the generated barcode image to a PNG file.
+            generator.Save("barcode.png");
         }
 
-        // Inform the user that the barcode has been saved.
-        Console.WriteLine($"Barcode saved to {outputPath}");
+        // Output a simple confirmation message.
+        Console.WriteLine("Barcode generated and saved as 'barcode.png'.");
     }
 }

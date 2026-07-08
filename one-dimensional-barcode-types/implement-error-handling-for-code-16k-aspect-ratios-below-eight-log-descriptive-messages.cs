@@ -1,69 +1,69 @@
+// Title: Code16K Barcode Generation with Aspect Ratio Validation
+// Description: Demonstrates generating Code 16K barcodes while validating that the aspect ratio meets the minimum requirement of eight.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use the BarcodeGenerator class with EncodeTypes.Code16K. It illustrates typical use cases such as setting barcode parameters, handling invalid input values, and saving the output as PNG images. Developers working with barcode creation often need to enforce symbology‑specific constraints and log informative messages for troubleshooting.
+/// Prompt: Implement error handling for Code 16K aspect ratios below eight, log descriptive messages.
+/// Tags: barcode symbology, generation, png, code16k, aspose.barcode
+
 using System;
-using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generation of Code16K barcodes with aspect ratio validation.
+/// Generates Code16K barcodes for a set of aspect ratios, skipping those below the allowed minimum
+/// and logging appropriate messages. Demonstrates error handling and parameter configuration using
+/// Aspose.BarCode's <see cref="BarcodeGenerator"/>.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates sample barcodes with valid and invalid aspect ratios.
+    /// Entry point of the example. Iterates over predefined aspect ratios, validates them,
+    /// generates barcodes when valid, and logs the process.
     /// </summary>
     static void Main()
     {
-        // Sample data to encode in the Code16K barcode
-        string codeText = "1234567890123456789012345678901234567890";
+        // Sample aspect ratios to test, including values below and above the threshold of 8
+        float[] aspectRatios = { 5.5f, 7.9f, 8.0f, 10.2f };
 
-        // Attempt generation with an invalid aspect ratio (below the minimum of 8)
-        GenerateCode16K(5f, codeText, "code16k_invalid.png");
-
-        // Attempt generation with a valid aspect ratio (8 or above)
-        GenerateCode16K(10f, codeText, "code16k_valid.png");
-    }
-
-    /// <summary>
-    /// Generates a Code16K barcode if the aspect ratio meets the minimum requirement.
-    /// Logs descriptive messages for invalid ratios or any generation errors.
-    /// </summary>
-    /// <param name="aspectRatio">Desired aspect ratio for the barcode.</param>
-    /// <param name="codeText">Text to encode.</param>
-    /// <param name="outputPath">File path to save the generated image.</param>
-    static void GenerateCode16K(float aspectRatio, string codeText, string outputPath)
-    {
-        // Minimum allowed aspect ratio for Code16K is 8
-        if (aspectRatio < 8f)
+        // Process each aspect ratio individually
+        foreach (float ratio in aspectRatios)
         {
-            // Inform the user that the provided ratio is insufficient and skip generation
-            Console.WriteLine($"[Warning] Aspect ratio {aspectRatio} is below the minimum of 8 for Code16K. Generation skipped.");
-            return;
-        }
-
-        try
-        {
-            // Initialize the barcode generator for Code16K with the provided text
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code16K, codeText))
+            // Validate aspect ratio for Code16K; values below 8 are considered invalid
+            if (ratio < 8f)
             {
-                // Apply the validated aspect ratio to the generator's parameters
-                generator.Parameters.Barcode.Code16K.AspectRatio = aspectRatio;
+                Console.WriteLine($"[Warning] Aspect ratio {ratio} is below the minimum allowed (8). Skipping barcode generation.");
+                continue; // Skip to the next ratio
+            }
 
-                // Ensure the output directory exists before saving the image
-                string directory = Path.GetDirectoryName(outputPath);
-                if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+            // Create and configure the barcode generator inside a using block to ensure disposal
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code16K))
+            {
+                try
                 {
-                    Directory.CreateDirectory(directory);
-                }
+                    // Set a sample codetext; Code16K accepts any string
+                    generator.CodeText = "SampleCode16K";
 
-                // Save the generated barcode image (default format is PNG)
-                generator.Save(outputPath);
-                Console.WriteLine($"[Info] Code16K barcode generated successfully: {outputPath}");
+                    // Apply the validated aspect ratio
+                    generator.Parameters.Barcode.Code16K.AspectRatio = ratio;
+
+                    // Optional: set image size for consistency
+                    generator.Parameters.ImageWidth.Point = 300f;
+                    generator.Parameters.ImageHeight.Point = 150f;
+
+                    // Save the barcode image to a file named with the current aspect ratio
+                    string fileName = $"Code16K_Aspect_{ratio}.png";
+                    generator.Save(fileName);
+
+                    Console.WriteLine($"[Info] Generated Code16K barcode with aspect ratio {ratio} saved as '{fileName}'.");
+                }
+                catch (Exception ex)
+                {
+                    // Log any unexpected errors during generation
+                    Console.WriteLine($"[Error] Failed to generate barcode with aspect ratio {ratio}: {ex.Message}");
+                }
             }
         }
-        catch (Exception ex)
-        {
-            // Log any unexpected errors that occur during barcode generation
-            Console.WriteLine($"[Error] Failed to generate Code16K barcode (AspectRatio={aspectRatio}). Exception: {ex.Message}");
-        }
+
+        // Indicate completion of the processing loop
+        Console.WriteLine("Barcode processing completed.");
     }
 }

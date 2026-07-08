@@ -1,37 +1,35 @@
+// Title: Apply custom background color to ITF14 barcode and export as JPEG
+// Description: Demonstrates setting a custom background color for an ITF14 barcode before rendering and saving it as a JPEG image.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to customize visual properties such as background and bar colors using the BarcodeGenerator class. Typical use cases include branding, UI integration, and printing where specific color schemes are required. Developers often need to adjust colors, sizes, and output formats for various barcode symbologies.
+// Prompt: Apply custom background color to ITF barcodes before rendering, export JPEG.
+// Tags: barcode, itf14, background color, jpeg, aspose.barcode, generation
+
 using System;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating an ITF-14 barcode and saving it as a JPEG image.
+/// Demonstrates applying a custom background color to an ITF14 barcode and saving it as a JPEG image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates an ITF-14 barcode with custom visual settings.
+    /// Entry point of the example. Generates the barcode, sets visual parameters, and saves the image.
     /// </summary>
     static void Main()
     {
-        // Define the barcode data: 14 numeric characters required for ITF-14.
-        const string codeText = "12345678901231";
-
-        // Initialize the barcode generator with ITF-14 symbology and the provided data.
-        using (var generator = new BarcodeGenerator(EncodeTypes.ITF14, codeText))
+        // Create an ITF14 barcode generator with sample numeric data
+        using (var generator = new BarcodeGenerator(EncodeTypes.ITF14, "123456789012"))
         {
-            // Set a light yellow background color for the image.
-            generator.Parameters.BackColor = Color.FromArgb(255, 255, 224); // Light yellow
+            // Set a custom background color (light gray)
+            generator.Parameters.BackColor = Color.LightGray;
 
-            // Configure visual appearance of the barcode bars.
-            generator.Parameters.Barcode.BarColor = Color.Black;          // Color of the bars
-            generator.Parameters.Barcode.BarHeight.Point = 40f;          // Height of the bars in points
+            // Optionally customize bar color (default is black)
+            // generator.Parameters.Barcode.BarColor = Color.Black;
 
-            // Define the output file path and save the barcode as a JPEG image.
-            const string outputPath = "itf_barcode.jpg";
-            generator.Save(outputPath, BarCodeImageFormat.Jpeg);
-
-            // Inform the user that the barcode has been saved.
-            Console.WriteLine($"Barcode saved to {outputPath}");
+            // Save the barcode as a JPEG image file
+            generator.Save("itf_barcode.jpg");
         }
     }
 }

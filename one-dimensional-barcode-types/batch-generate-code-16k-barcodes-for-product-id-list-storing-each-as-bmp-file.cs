@@ -1,3 +1,9 @@
+// Title: Batch generate Code 16K barcodes and save as BMP files
+// Description: Demonstrates creating Code 16K barcodes for a collection of product IDs and storing each barcode as an individual BMP image.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to use the BarcodeGenerator class with EncodeTypes.Code16K for batch processing. Typical use cases include inventory labeling, product tracking, and bulk barcode creation where developers need to automate image output in a specific format.
+// Prompt: Batch generate Code 16K barcodes for product ID list, storing each as BMP file.
+// Tags: code16k, barcode, generation, bmp, batch, aspose.barcode
+
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -5,17 +11,17 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Generates Code16K barcodes for a list of product IDs and saves them as BMP files.
+/// Provides an entry point for generating a set of Code 16K barcodes from a list of product identifiers
+/// and saving each barcode as a BMP image file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Iterates over a sample list of product IDs,
-    /// creates a Code16K barcode for each, and writes the image to the output folder.
+    /// Generates Code 16K barcodes for predefined product IDs and writes each image to the "Barcodes" folder.
     /// </summary>
     static void Main()
     {
-        // Define a sample list of product IDs (replace with actual IDs as needed)
+        // Define a sample collection of product identifiers.
         List<string> productIds = new List<string>
         {
             "PROD001",
@@ -25,42 +31,36 @@ class Program
             "PROD005"
         };
 
-        // Determine the output directory relative to the current working directory
-        string outputFolder = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
+        // Determine the output directory relative to the current working directory.
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
 
-        // Ensure the output directory exists; create it if it does not
-        if (!Directory.Exists(outputFolder))
+        // Ensure the output directory exists; create it if it does not.
+        if (!Directory.Exists(outputDir))
         {
-            Directory.CreateDirectory(outputFolder);
+            Directory.CreateDirectory(outputDir);
         }
 
-        // Process each product ID in the list
+        // Iterate over each product ID and generate a corresponding barcode.
         foreach (string id in productIds)
         {
-            // Build the file name and full path for the barcode image
-            string fileName = $"{id}_code16k.bmp";
-            string outputPath = Path.Combine(outputFolder, fileName);
-
-            try
+            // Initialize a barcode generator for the Code 16K symbology.
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code16K))
             {
-                // Initialize the barcode generator for Code16K with the current ID as data
-                using (var generator = new BarcodeGenerator(EncodeTypes.Code16K, id))
-                {
-                    // Optional: set the aspect ratio for the Code16K barcode
-                    generator.Parameters.Barcode.Code16K.AspectRatio = 1.0f;
+                // Assign the product ID as the text to encode in the barcode.
+                generator.CodeText = id;
 
-                    // Save the generated barcode as a BMP image to the specified path
-                    generator.Save(outputPath, BarCodeImageFormat.Bmp);
-                }
+                // Optional: adjust the aspect ratio if required (default is 1.0).
+                // generator.Parameters.Barcode.Code16K.AspectRatio = 1.0f;
 
-                // Inform the user that the barcode was generated successfully
-                Console.WriteLine($"Generated barcode for '{id}' at '{outputPath}'.");
-            }
-            catch (Exception ex)
-            {
-                // Report any errors that occur during barcode generation
-                Console.WriteLine($"Failed to generate barcode for '{id}': {ex.Message}");
+                // Construct the full file path for the BMP output.
+                string filePath = Path.Combine(outputDir, $"Product_{id}.bmp");
+
+                // Save the generated barcode image in BMP format.
+                generator.Save(filePath);
             }
         }
+
+        // Notify the user that the batch operation has completed.
+        Console.WriteLine("Barcode generation completed.");
     }
 }

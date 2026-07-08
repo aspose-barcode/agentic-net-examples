@@ -1,40 +1,35 @@
+// Title: Generate a lime-colored Code128 barcode and save as high‑resolution TIFF
+// Description: Demonstrates how to set a custom foreground color (#00FF00) for a barcode and export it as a high‑quality TIFF image.
+// Category-Description: This example belongs to the Aspose.BarCode image generation category, illustrating usage of BarcodeGenerator, EncodeTypes, and rendering parameters such as BarColor and Resolution. Developers often need to customize barcode appearance and output format for printing or archival purposes. The snippet shows typical steps for creating, styling, and saving barcodes in .NET applications.
+// Prompt: Generate a barcode with custom foreground color #00FF00 (lime) and save as a high‑quality TIFF file.
+// Tags: code128, barcode, color, tiff, highresolution, aspnet, aspose.barcode, generation
+
 using System;
-using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a Code128 barcode and saving it as a TIFF image using Aspose.BarCode.
+/// Entry point for the barcode generation example.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a barcode, configures its appearance,
-    /// and writes the result to a TIFF file in the current directory.
+    /// Generates a Code128 barcode with lime foreground color and saves it as a 300 DPI TIFF file.
     /// </summary>
     static void Main()
     {
-        // Determine the full path for the output TIFF file in the current working directory.
-        string outputPath = Path.Combine(Environment.CurrentDirectory, "barcode.tiff");
-
-        // Initialize a BarcodeGenerator for the Code128 symbology.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128))
+        // Initialize the barcode generator with Code128 symbology and sample data.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
         {
-            // Specify the data to encode in the barcode.
-            generator.CodeText = "1234567890";
-
-            // Set the bar (foreground) color to lime (RGB 0,255,0).
+            // Apply lime color (#00FF00) to the bars.
             generator.Parameters.Barcode.BarColor = Color.FromArgb(0, 255, 0);
 
-            // Define the image resolution (dots per inch) for higher quality output.
+            // Set resolution to 300 DPI for high‑quality output.
             generator.Parameters.Resolution = 300f;
 
-            // Save the generated barcode as a TIFF image to the specified path.
-            generator.Save(outputPath, BarCodeImageFormat.Tiff);
+            // Save the generated barcode as a TIFF image.
+            generator.Save("barcode.tiff");
         }
-
-        // Inform the user where the barcode image has been saved.
-        Console.WriteLine($"Barcode saved to: {outputPath}");
     }
 }

@@ -1,122 +1,93 @@
+// Title: Batch Codabar Barcode Generation from CSV
+// Description: Demonstrates reading a CSV file and generating Codabar barcode images, alternating start/stop symbols for visual variety.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use EncodeTypes, BarcodeGenerator, and CodabarSymbol classes to create barcodes in bulk. Typical use cases include batch processing of inventory codes, ticket numbers, or any data set stored in CSV format where developers need to automate image creation for downstream systems.
+// Prompt: Batch generate Codabar barcodes from a CSV file, applying alternating start symbols for visual variety.
+// Tags: codabar, barcode, batch, csv, image, generation, aspose.barcode
+
 using System;
 using System.IO;
+using System.Collections.Generic;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generating Codabar barcodes from a CSV file using Aspose.BarCode.
+/// Generates Codabar barcodes from a CSV file, alternating start/stop symbols for each image.
 /// </summary>
 class Program
 {
-    // Maximum number of barcodes to generate in this demo (kept small for the runner)
-    private const int MaxBarcodes = 5;
-
     /// <summary>
-    /// Entry point of the application. Reads a CSV file, generates up to <see cref="MaxBarcodes"/>
-    /// Codabar barcodes, and saves them as PNG images.
+    /// Entry point of the example. Reads input data, creates barcodes, and saves them as PNG files.
     /// </summary>
-    /// <param name="args">Command‑line arguments; the first argument may specify the CSV path.</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Determine CSV path: command‑line argument or default sample file
-        string csvPath = args.Length > 0 ? args[0] : "sample.csv";
+        // Path to the CSV file containing the data to encode.
+        const string csvPath = "input.csv";
 
-        // If the CSV does not exist, create a simple sample file
+        // If the CSV does not exist, create a sample file with placeholder data.
         if (!File.Exists(csvPath))
         {
-            Console.WriteLine($"CSV file not found at '{csvPath}'. Creating a sample CSV.");
-            CreateSampleCsv(csvPath);
+            var sampleData = new List<string>
+            {
+                "12345",
+                "67890",
+                "24680",
+                "13579",
+                "112233"
+            };
+            File.WriteAllLines(csvPath, sampleData);
+            Console.WriteLine($"Sample CSV created at '{csvPath}'.");
         }
 
-        // Read all lines from the CSV (including possible header)
-        string[] allLines = File.ReadAllLines(csvPath);
-        if (allLines.Length == 0)
+        // Load all lines from the CSV and filter out empty entries.
+        string[] lines = File.ReadAllLines(csvPath);
+        var codes = new List<string>();
+        foreach (var line in lines)
         {
-            Console.WriteLine("CSV file is empty. Nothing to process.");
+            var trimmed = line.Trim();
+            if (!string.IsNullOrEmpty(trimmed))
+                codes.Add(trimmed);
+        }
+
+        // Abort if no valid data was found.
+        if (codes.Count == 0)
+        {
+            Console.WriteLine("No data found in CSV.");
             return;
         }
 
-        // Ensure the output directory exists (creates if missing)
-        string outputDir = Path.Combine(Path.GetDirectoryName(csvPath) ?? "", "Barcodes");
-        Directory.CreateDirectory(outputDir);
-
-        int processed = 0; // Counter for successfully generated barcodes
-
-        // Iterate over CSV lines until the maximum number of barcodes is reached
-        for (int i = 0; i < allLines.Length && processed < MaxBarcodes; i++)
+        // Define a rotating set of start/stop symbols for visual variety.
+        CodabarSymbol[] symbols = new CodabarSymbol[]
         {
-            string line = allLines[i].Trim();
+            CodabarSymbol.A,
+            CodabarSymbol.B,
+            CodabarSymbol.C,
+            CodabarSymbol.D
+        };
 
-            // Skip empty lines
-            if (string.IsNullOrEmpty(line))
-                continue;
+        // Iterate over each code and generate the corresponding barcode image.
+        for (int i = 0; i < codes.Count; i++)
+        {
+            string codeText = codes[i];
+            CodabarSymbol startStop = symbols[i % symbols.Length];
 
-            // Assume CSV format: CodeText[,OtherColumns...]
-            string[] parts = line.Split(',');
-            string codeText = parts[0].Trim();
-
-            // Skip lines where the code text is missing
-            if (string.IsNullOrEmpty(codeText))
-                continue;
-
-            // Alternate start/stop symbols: A, B, C, D in round‑robin fashion
-            CodabarSymbol startSymbol = GetAlternatingSymbol(processed);
-            CodabarSymbol stopSymbol = startSymbol; // Usually the same as start
-
-            // Build the output file path for the current barcode
-            string outputPath = Path.Combine(outputDir, $"codabar_{processed + 1}.png");
-
-            // Generate the Codabar barcode using Aspose.BarCode
+            // Initialize the generator with Codabar symbology and the current code text.
             using (var generator = new BarcodeGenerator(EncodeTypes.Codabar, codeText))
             {
-                // Apply alternating start/stop symbols
-                generator.Parameters.Barcode.Codabar.StartSymbol = startSymbol;
-                generator.Parameters.Barcode.Codabar.StopSymbol = stopSymbol;
+                // Apply the alternating start and stop symbols.
+                generator.Parameters.Barcode.Codabar.StartSymbol = startStop;
+                generator.Parameters.Barcode.Codabar.StopSymbol = startStop;
 
-                // Optional: set checksum mode to No (Codabar does not require checksum)
-                generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.No;
+                // Set a modest image size (points) for the output PNG.
+                generator.Parameters.ImageWidth.Point = 300f;
+                generator.Parameters.ImageHeight.Point = 150f;
 
-                // Save the image (PNG format by default)
-                generator.Save(outputPath);
+                // Save the generated barcode to a file.
+                string outputFile = $"barcode_{i + 1}.png";
+                generator.Save(outputFile);
+                Console.WriteLine($"Generated '{outputFile}' with start/stop symbol '{startStop}'.");
             }
-
-            Console.WriteLine($"Generated barcode #{processed + 1}: '{codeText}' with start/stop symbol '{startSymbol}'. Saved to '{outputPath}'.");
-            processed++;
         }
 
-        Console.WriteLine($"Processing complete. {processed} barcode(s) generated.");
-    }
-
-    /// <summary>
-    /// Returns a Codabar start/stop symbol in a round‑robin sequence A, B, C, D.
-    /// </summary>
-    /// <param name="index">Zero‑based index used to select the symbol.</param>
-    /// <returns>The selected <see cref="CodabarSymbol"/>.</returns>
-    private static CodabarSymbol GetAlternatingSymbol(int index)
-    {
-        switch (index % 4)
-        {
-            case 0: return CodabarSymbol.A;
-            case 1: return CodabarSymbol.B;
-            case 2: return CodabarSymbol.C;
-            default: return CodabarSymbol.D;
-        }
-    }
-
-    /// <summary>
-    /// Creates a simple CSV file with a few sample code texts.
-    /// </summary>
-    /// <param name="path">The file path where the CSV will be written.</param>
-    private static void CreateSampleCsv(string path)
-    {
-        string[] sampleData =
-        {
-            "1234567",
-            "9876543",
-            "5551234",
-            "24681012",
-            "1357911"
-        };
-        File.WriteAllLines(path, sampleData);
+        Console.WriteLine("Barcode generation completed.");
     }
 }

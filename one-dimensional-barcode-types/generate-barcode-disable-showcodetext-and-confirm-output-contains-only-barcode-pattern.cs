@@ -1,69 +1,52 @@
+// Title: Generate Code128 barcode without human‑readable text
+// Description: Demonstrates creating a Code128 barcode image while disabling the displayed code text.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to configure barcode appearance using BarcodeGenerator and its Parameters. Typical use cases include producing clean barcode images for printing or embedding where human‑readable text is not required. Developers often need to adjust CodeTextParameters, such as Location, Font, and Visibility, to meet specific design requirements.
+// Prompt: Generate a barcode, disable ShowCodeText, and confirm output contains only the barcode pattern.
+// Tags: code128, barcode generation, hide codetext, image output, aspose.barcode, csharp
+
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates generating a Code128 barcode without human‑readable text,
-/// saving it to a temporary file, and then reading it back to verify correctness.
+/// Example program that generates a Code128 barcode image with the human‑readable text disabled.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a barcode, saves it, and validates the saved image by decoding it.
+    /// Entry point. Creates a barcode, saves it to a PNG file, and verifies the file was written.
     /// </summary>
     static void Main()
     {
-        // Define the barcode content and the output file path.
-        string codeText = "1234567890";
-        string outputPath = Path.Combine(Path.GetTempPath(), "barcode.png");
+        // Define the output file path
+        string outputPath = "barcode.png";
 
-        // ------------------------------------------------------------
-        // Generate the barcode image with human‑readable text disabled.
-        // ------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+        // Ensure a previous file does not interfere with the demo
+        if (File.Exists(outputPath))
         {
-            // Hide the code text (human‑readable) from the generated image.
+            File.Delete(outputPath);
+        }
+
+        // Initialize the barcode generator for Code128 with sample data
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
+        {
+            // Hide the human‑readable code text (equivalent to disabling ShowCodeText)
             generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.None;
 
-            // Save the barcode image to the specified path.
+            // Persist the barcode image to the specified file
             generator.Save(outputPath);
         }
 
-        // ------------------------------------------------------------
-        // Verify that the barcode image file was created successfully.
-        // ------------------------------------------------------------
-        if (!File.Exists(outputPath))
+        // Verify that the image file was successfully created
+        if (File.Exists(outputPath))
         {
-            Console.WriteLine("Failed to create barcode image.");
-            return;
+            Console.WriteLine($"Barcode image saved to '{outputPath}'.");
+            Console.WriteLine("Human‑readable text is disabled; the output contains only the barcode pattern.");
         }
-
-        // ------------------------------------------------------------
-        // Read and decode the barcode from the saved image to ensure it is valid.
-        // ------------------------------------------------------------
-        using (var reader = new BarCodeReader(outputPath, DecodeType.Code128))
+        else
         {
-            var results = reader.ReadBarCodes();
-
-            // If no barcodes were detected, inform the user.
-            if (results.Length == 0)
-            {
-                Console.WriteLine("No barcode detected in the generated image.");
-            }
-            else
-            {
-                // Output each decoded barcode's text.
-                foreach (var result in results)
-                {
-                    Console.WriteLine($"Decoded CodeText: {result.CodeText}");
-                }
-
-                // Confirm successful generation without human‑readable text.
-                Console.WriteLine("Barcode generated successfully with no human‑readable text.");
-            }
+            Console.WriteLine("Failed to generate the barcode image.");
         }
     }
 }

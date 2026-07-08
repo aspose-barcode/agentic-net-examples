@@ -1,85 +1,67 @@
+// Title: Batch generate Codabar barcodes from SQL data
+// Description: Demonstrates generating Codabar barcodes for each record retrieved from a SQL query and saving them as JPEG files named with the record identifier.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use the BarcodeGenerator class with EncodeTypes.Codabar to create barcodes in bulk. Typical use cases include batch processing of database records to produce printable barcode images. Developers often need to customize appearance, choose output formats, and automate file naming—this snippet illustrates those common steps.
+// Prompt: Batch generate Codabar barcodes using data from a SQL query, saving each as a JPEG file with identifier name.
+// Tags: codabar, barcode generation, batch processing, jpeg, aspose.barcode, aspose.drawing, sql
+
 using System;
 using System.Collections.Generic;
-using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates batch generation of Codabar barcodes using Aspose.BarCode.
+/// Demonstrates batch generation of Codabar barcodes from data (simulating a SQL query) and saving each as a JPEG file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates barcode images for a set of sample data.
+    /// Entry point of the example. Simulates fetching data from a database and generates barcodes for each record.
     /// </summary>
     static void Main()
     {
-        // NOTE: In a real scenario you would retrieve data from a SQL database.
-        // The following commented code shows how you could do it using System.Data.SqlClient.
-        // However, the required package is not available in the snippet runner, so we use a local sample list instead.
-        /*
-        var connectionString = "Data Source=SERVER;Initial Catalog=Database;Integrated Security=True;";
-        var query = "SELECT Id, CodeText FROM Barcodes WHERE Symbology = 'Codabar'";
-        var rows = new List<(int Id, string CodeText)>();
-
-        using (var connection = new System.Data.SqlClient.SqlConnection(connectionString))
+        // ------------------------------------------------------------
+        // Simulated data representing rows fetched from a SQL query.
+        // Replace this block with actual database access code as needed.
+        // ------------------------------------------------------------
+        var sampleData = new List<(int Id, string Code)>
         {
-            connection.Open();
-            using (var command = new System.Data.SqlClient.SqlCommand(query, connection))
-            using (var reader = command.ExecuteReader())
-            {
-                while (reader.Read())
-                {
-                    int id = reader.GetInt32(0);
-                    string codeText = reader.GetString(1);
-                    rows.Add((id, codeText));
-                }
-            }
-        }
-        */
-
-        // Sample data representing rows fetched from a SQL query.
-        var rows = new List<(int Id, string CodeText)>
-        {
-            (101, "A12345B"),
-            (102, "C67890D"),
-            (103, "A11223B"),
-            (104, "C44556D"),
-            (105, "A78901B")
+            (1, "A12345B"),
+            (2, "C67890D"),
+            (3, "E11223F"),
+            (4, "G44556H"),
+            (5, "I78901J")
         };
 
-        // Ensure the output directory exists; create it if it does not.
-        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
-        if (!Directory.Exists(outputDir))
+        // Iterate over each record and generate a Codabar barcode.
+        foreach (var (id, code) in sampleData)
         {
-            Directory.CreateDirectory(outputDir);
+            GenerateCodabar(id, code);
+        }
+    }
+
+    /// <summary>
+    /// Generates a Codabar barcode image for the specified identifier and code text, then saves it as a JPEG file.
+    /// </summary>
+    /// <param name="identifier">Unique identifier used for naming the output file.</param>
+    /// <param name="codeText">The text to encode in the Codabar barcode. Must be a valid Codabar string.</param>
+    static void GenerateCodabar(int identifier, string codeText)
+    {
+        // Construct the output file name using the identifier.
+        string fileName = $"Barcode_{identifier}.jpeg";
+
+        // Create a BarcodeGenerator for Codabar with the provided code text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Codabar, codeText))
+        {
+            // Optional: customize barcode appearance.
+            generator.Parameters.Barcode.BarColor = Color.Black;   // Set barcode bars to black.
+            generator.Parameters.BackColor = Color.White;          // Set background to white.
+
+            // Save the generated barcode as a JPEG image.
+            generator.Save(fileName, BarCodeImageFormat.Jpeg);
         }
 
-        // Iterate over each row and generate a barcode image.
-        foreach (var row in rows)
-        {
-            // Resolve the Codabar symbology.
-            BaseEncodeType encodeType = EncodeTypes.Codabar;
-
-            // Create the barcode generator with the specified symbology and code text.
-            using (var generator = new BarcodeGenerator(encodeType, row.CodeText))
-            {
-                // Optional: configure barcode parameters if needed.
-                // For example, set start/stop symbols explicitly.
-                // generator.Parameters.Barcode.Codabar.StartSymbol = CodabarStartSymbol.A;
-                // generator.Parameters.Barcode.Codabar.StopSymbol = CodabarStopSymbol.B;
-
-                // Build the output file path using the identifier.
-                string fileName = $"Codabar_{row.Id}.jpg";
-                string outputPath = Path.Combine(outputDir, fileName);
-
-                // Save the barcode as a JPEG image.
-                generator.Save(outputPath, BarCodeImageFormat.Jpeg);
-                Console.WriteLine($"Saved barcode for ID {row.Id} to {outputPath}");
-            }
-        }
-
-        // Indicate that the batch process has finished.
-        Console.WriteLine("Batch barcode generation completed.");
+        // Inform the user that the barcode has been generated.
+        Console.WriteLine($"Generated Codabar barcode for ID {identifier} -> {fileName}");
     }
 }
