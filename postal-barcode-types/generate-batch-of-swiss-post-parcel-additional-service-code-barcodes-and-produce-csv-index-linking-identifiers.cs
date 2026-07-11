@@ -1,70 +1,65 @@
+// Title: Generate Swiss Post Parcel Additional Service Code Barcodes with CSV Index
+// Description: Creates PNG barcodes for Swiss Post Parcel additional service codes and writes a CSV file mapping each code to its image file.
+// Category-Description: This example demonstrates how to use Aspose.BarCode to generate Swiss Post Parcel additional service code barcodes, save them as images, and build an index CSV. It covers the BarcodeGenerator class, EncodeTypes.SwissPostParcel, and file I/O for batch processing—common tasks for developers automating barcode creation for shipping and logistics.
+// Prompt: Generate a batch of Swiss Post Parcel additional service code barcodes and produce a CSV index linking identifiers.
+// Tags: barcode, swisspost, parcel, additional service code, csv, batch generation, aspose.barcode, image output
+
 using System;
 using System.IO;
-using System.Collections.Generic;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generating Swiss Post Parcel barcodes and creating a CSV index file.
+/// Demonstrates batch generation of Swiss Post Parcel additional service code barcodes
+/// and creation of a CSV index linking each identifier to its image file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates barcodes for a set of service codes,
-    /// saves them as PNG files, and writes an index CSV file listing each barcode.
+    /// Entry point of the example. Generates barcode images and writes an index CSV.
     /// </summary>
     static void Main()
     {
-        // Determine the output directory path relative to the current working directory.
-        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "output");
+        // Define the output directory for barcode images
+        string outputDir = "Barcodes";
+        Directory.CreateDirectory(outputDir); // Ensure the directory exists
 
-        // Ensure the output directory exists; create it if it does not.
-        if (!Directory.Exists(outputDir))
-        {
-            Directory.CreateDirectory(outputDir);
-        }
+        // Define the path for the CSV index file
+        string csvPath = Path.Combine(outputDir, "index.csv");
 
-        // Sample additional service codes for Swiss Post Parcel.
-        List<string> serviceCodes = new List<string>
+        // Sample additional service codes for Swiss Post Parcel
+        string[] serviceCodes = new string[]
         {
-            "A1", "A2", "A3", "A4", "A5"
+            "1234567890",
+            "0987654321",
+            "1122334455",
+            "5566778899",
+            "0001112223"
         };
 
-        // Prepare the CSV lines collection; start with the header row.
-        List<string> csvLines = new List<string>();
-        csvLines.Add("Id,CodeText,FileName");
-
-        int id = 1; // Initialize a sequential identifier for each barcode.
-
-        // Iterate over each service code to generate a corresponding barcode.
-        foreach (string codeText in serviceCodes)
+        // Create the CSV file and write the header row
+        using (StreamWriter writer = new StreamWriter(csvPath))
         {
-            // Construct the file name and full path for the barcode image.
-            string fileName = $"barcode_{id}.png";
-            string filePath = Path.Combine(outputDir, fileName);
+            writer.WriteLine("Identifier,FileName");
 
-            // Generate the barcode using Aspose.BarCode.
-            using (var generator = new BarcodeGenerator(EncodeTypes.SwissPostParcel, codeText))
+            // Iterate over each service code to generate a barcode
+            for (int i = 0; i < serviceCodes.Length; i++)
             {
-                // Set the resolution to 300 DPI (optional configuration).
-                generator.Parameters.Resolution = 300f;
+                string code = serviceCodes[i];
+                string fileName = $"SwissPost_{i + 1}.png";
+                string filePath = Path.Combine(outputDir, fileName);
 
-                // Save the generated barcode image to the specified file path.
-                generator.Save(filePath);
+                // Generate the barcode image using Aspose.BarCode
+                using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.SwissPostParcel, code))
+                {
+                    generator.Save(filePath); // Save the barcode as a PNG file
+                }
+
+                // Record the mapping of identifier to file name in the CSV
+                writer.WriteLine($"{code},{fileName}");
             }
-
-            // Add a line to the CSV index for the current barcode.
-            csvLines.Add($"{id},{codeText},{fileName}");
-
-            id++; // Increment the identifier for the next barcode.
         }
 
-        // Write all CSV lines to the index file in the output directory.
-        string csvPath = Path.Combine(outputDir, "index.csv");
-        File.WriteAllLines(csvPath, csvLines);
-
-        // Inform the user about the generation results.
-        Console.WriteLine($"Generated {serviceCodes.Count} barcodes in '{outputDir}'.");
-        Console.WriteLine($"CSV index created at '{csvPath}'.");
+        // Inform the user where the output files are located
+        Console.WriteLine($"Barcodes generated and CSV index created at: {csvPath}");
     }
 }

@@ -1,95 +1,84 @@
+// Title: Generate Dutch KIX Barcodes from JSON and Export as BMP
+// Description: This example reads a JSON array of 8‑digit identifiers, creates Dutch KIX barcodes for each, and saves them as BMP images.
+// Category-Description: Demonstrates Aspose.BarCode barcode generation using the BarcodeGenerator class with EncodeTypes.DutchKIX. Typical use cases include batch creation of KIX barcodes for inventory or logistics, reading identifiers from JSON, configuring barcode parameters, and exporting to bitmap files. Developers often need to validate input, manage output folders, and handle serialization when automating barcode production.
+// Prompt: Generate Dutch KIX barcodes using a JSON array of identifiers and export each as BMP images.
+// Tags: dutch kix, barcode generation, bmp, aspose.barcode, json, csharp
+
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Entry point for the barcode generation console application.
+/// Reads a JSON file containing an array of identifiers, generates Dutch KIX barcodes,
+/// and saves each barcode as a BMP image in the output folder.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Reads a JSON file (or uses sample data), parses identifiers, and generates Dutch KIX barcodes.
+    /// Entry point of the example. Handles JSON loading, identifier validation,
+    /// barcode generation, and image export.
     /// </summary>
-    /// <param name="args">Command‑line arguments; first argument may be a path to a JSON file.</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // ------------------------------------------------------------
-        // Determine JSON source: command‑line argument or fallback sample.
-        // ------------------------------------------------------------
+        // Path to the JSON file that holds the identifier array.
+        const string jsonFile = "identifiers.json";
+
+        // Load JSON content; fall back to a hard‑coded sample if the file is missing.
         string jsonContent;
-        if (args.Length > 0 && File.Exists(args[0]))
+        if (File.Exists(jsonFile))
         {
-            // Read JSON content from the supplied file.
-            jsonContent = File.ReadAllText(args[0]);
+            jsonContent = File.ReadAllText(jsonFile);
         }
         else
         {
-            // No valid file supplied – use a hard‑coded sample array of identifiers.
-            var sampleIds = new[] { "123456789012", "987654321098", "555555555555" };
-            jsonContent = JsonSerializer.Serialize(sampleIds);
-            Console.WriteLine("No valid JSON file supplied – using sample identifiers.");
+            // Sample identifiers for Dutch KIX (numeric, exactly 8 characters).
+            jsonContent = "[\"12345678\", \"87654321\", \"11223344\"]";
         }
 
-        // ------------------------------------------------------------
-        // Parse the JSON array of strings into a List<string>.
-        // ------------------------------------------------------------
-        List<string> identifiers;
+        // Deserialize the JSON array into a string[].
+        string[] identifiers;
         try
         {
-            identifiers = JsonSerializer.Deserialize<List<string>>(jsonContent);
-            if (identifiers == null)
-                throw new Exception("Deserialized list is null.");
+            identifiers = JsonSerializer.Deserialize<string[]>(jsonContent);
+            if (identifiers == null || identifiers.Length == 0)
+                throw new ArgumentException("No identifiers found in JSON.");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Failed to parse JSON: {ex.Message}");
+            Console.WriteLine($"Failed to parse identifiers: {ex.Message}");
             return;
         }
 
-        // ------------------------------------------------------------
-        // Ensure the output directory exists.
-        // ------------------------------------------------------------
-        string outputDir = "KixBarcodes";
+        // Ensure the output directory exists (creates it if necessary).
+        const string outputDir = "output";
         Directory.CreateDirectory(outputDir);
 
-        // ------------------------------------------------------------
-        // Generate a Dutch KIX barcode for each identifier.
-        // ------------------------------------------------------------
+        // Iterate over each identifier, validate it, generate a barcode, and save as BMP.
         foreach (string id in identifiers)
         {
-            // Skip null, empty, or whitespace identifiers.
-            if (string.IsNullOrWhiteSpace(id))
+            // Validate identifier: must be numeric and exactly 8 characters for KIX.
+            if (string.IsNullOrWhiteSpace(id) || id.Length != 8 || !long.TryParse(id, out _))
             {
-                Console.WriteLine("Skipping empty identifier.");
+                Console.WriteLine($"Skipping invalid identifier: '{id}'");
                 continue;
             }
 
-            // Create a file‑system‑safe file name from the identifier.
-            string safeFileName = Path.GetInvalidFileNameChars().Length > 0
-                ? string.Concat(id.Split(Path.GetInvalidFileNameChars()))
-                : id;
-            string outputPath = Path.Combine(outputDir, $"{safeFileName}.bmp");
+            // Build the full path for the output BMP file.
+            string outputPath = Path.Combine(outputDir, $"{id}.bmp");
 
-            try
+            // Create and configure the barcode generator for Dutch KIX.
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.DutchKIX, id))
             {
-                // Initialize the barcode generator with Dutch KIX encoding.
-                using (var generator = new BarcodeGenerator(EncodeTypes.DutchKIX, id))
-                {
-                    // Optional: let the engine choose dimensions via auto‑size mode.
-                    generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
-                    // Save the generated barcode as a BMP image.
-                    generator.Save(outputPath, BarCodeImageFormat.Bmp);
-                }
+                // Optional: set X dimension (size of the smallest bar) to 2 points.
+                generator.Parameters.Barcode.XDimension.Point = 2f;
 
-                Console.WriteLine($"Saved barcode for '{id}' to '{outputPath}'.");
+                // Save the generated barcode image as BMP.
+                generator.Save(outputPath, BarCodeImageFormat.Bmp);
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error generating barcode for '{id}': {ex.Message}");
-            }
+
+            Console.WriteLine($"Generated barcode for '{id}' -> {outputPath}");
         }
     }
 }

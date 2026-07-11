@@ -1,71 +1,84 @@
+// Title: Decode Postnet barcode from memory stream and verify checksum
+// Description: Demonstrates decoding a Postnet barcode generated in‑memory and checking its checksum.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It shows how to use BarcodeGenerator (EncodeTypes.Postnet) to create a barcode, store it in a MemoryStream, and then use BarCodeReader (DecodeType.Postnet) to read and validate the checksum. Developers working with postal barcodes often need to generate, transmit, and verify barcodes without persisting files, making in‑memory processing essential.
+// Prompt: Decode a Postnet barcode from a memory stream and verify checksum correctness.
+// Tags: postnet, barcode, decode, checksum, memory stream, aspose.barcode, generation, recognition
+
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generation and recognition of a Postnet barcode using Aspose.BarCode.
+/// Example program that generates a Postnet barcode, reads it from a memory stream,
+/// and validates the checksum of the decoded value.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a Postnet barcode, saves it to a memory stream, and then reads it back
-    /// while validating the checksum.
+    /// Entry point of the example. Generates, decodes, and validates a Postnet barcode.
     /// </summary>
     static void Main()
     {
-        // Sample Postnet code (ZIP+4 + checksum). Example: "12345678"
-        const string postnetCode = "12345678";
+        // Sample ZIP code (without checksum)
+        string zip = "12345";
 
         // Create a memory stream to hold the generated barcode image
         using (var ms = new MemoryStream())
         {
-            // Initialize the barcode generator for Postnet encoding with the sample code
-            using (var generator = new BarcodeGenerator(EncodeTypes.Postnet, postnetCode))
+            // Generate Postnet barcode and write it as PNG into the memory stream
+            using (var generator = new BarcodeGenerator(EncodeTypes.Postnet, zip))
             {
-                // Save the generated barcode as a PNG image into the memory stream
                 generator.Save(ms, BarCodeImageFormat.Png);
             }
 
-            // Reset the stream position to the beginning so it can be read
+            // Reset the stream position to the beginning for reading
             ms.Position = 0;
 
-            // Initialize a barcode reader to decode Postnet barcodes from the memory stream
+            // Initialize a barcode reader for Postnet from the memory stream
             using (var reader = new BarCodeReader(ms, DecodeType.Postnet))
             {
-                // Enable checksum validation during the recognition process
+                // Turn on checksum validation during reading
                 reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
 
-                // Perform the barcode recognition
+                // Read all barcodes found in the stream
                 var results = reader.ReadBarCodes();
 
-                // If no barcodes were detected, inform the user
+                // If no barcode was detected, inform the user and exit
                 if (results.Length == 0)
                 {
                     Console.WriteLine("No Postnet barcode detected.");
+                    return;
                 }
-                else
-                {
-                    // Iterate through each detected barcode result
-                    foreach (var result in results)
-                    {
-                        // Output the decoded text of the barcode
-                        Console.WriteLine($"Detected CodeText: {result.CodeText}");
 
-                        // For 1D barcodes the checksum value is available in the extended parameters (OneD.CheckSum)
-                        // If the checksum is invalid, the result will be empty or null.
-                        var checksum = result.Extended?.OneD?.CheckSum;
-                        if (!string.IsNullOrEmpty(checksum))
+                // Process each decoded barcode result
+                foreach (var result in results)
+                {
+                    Console.WriteLine($"Decoded CodeText: {result.CodeText}");
+
+                    // Verify checksum manually if the decoded text includes the check digit
+                    if (!string.IsNullOrEmpty(result.CodeText) && result.CodeText.Length > zip.Length)
+                    {
+                        // Extract the check digit (last character of the decoded text)
+                        char decodedCheckChar = result.CodeText[result.CodeText.Length - 1];
+
+                        // Compute the expected check digit from the original ZIP code
+                        int sum = 0;
+                        foreach (char c in zip)
                         {
-                            Console.WriteLine($"Checksum from barcode: {checksum}");
-                            Console.WriteLine("Checksum validation: SUCCESS");
+                            if (char.IsDigit(c))
+                                sum += c - '0';
                         }
-                        else
-                        {
-                            Console.WriteLine("Checksum validation: FAILED or not applicable");
-                        }
+                        int expectedCheck = (10 - (sum % 10)) % 10;
+
+                        // Compare decoded check digit with the expected one
+                        bool checksumMatches = decodedCheckChar - '0' == expectedCheck;
+                        Console.WriteLine($"Checksum validation result: {(checksumMatches ? "Valid" : "Invalid")}");
+                    }
+                    else
+                    {
+                        Console.WriteLine("Checksum digit not present in decoded text.");
                     }
                 }
             }

@@ -1,57 +1,72 @@
+// Title: Generate Australia Post 4‑state barcode with Reed‑Solomon error correction
+// Description: Demonstrates creating an Australia Post 4‑state postal barcode using Aspose.BarCode and applying Reed‑Solomon error correction.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category, focusing on the Australia Post 4‑state symbology. It showcases the use of BarcodeGenerator, BarCodeReader, and related parameter classes to encode, render, and decode barcodes, a common task for developers handling postal automation and logistics solutions.
+// Prompt: Generate an Australia Post 4‑state postal barcode applying Reed‑Solomon error correction technique.
+// Tags: australia post, barcode generation, reed-solomon, error correction, aspnet, aspnetcore, c#, aspose.barcode
+
 using System;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generation and verification of an Australia Post barcode (RM4SCC 4‑state) using Aspose.BarCode.
+/// Demonstrates generation and verification of an Australia Post 4‑state barcode with Reed‑Solomon error correction using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a barcode, saves it as an image, then reads the image back to verify the content.
+    /// Entry point. Generates the barcode, saves it, and reads it back to verify decoding.
     /// </summary>
     static void Main()
     {
-        // Sample Australia Post barcode text (RM4SCC 4‑state)
-        string codeText = "5912345678AB";
+        // Sample codetext for Australia Post 4‑state barcode.
+        string codeText = "5912345678ABCde";
 
-        // Output image file path
+        // Output image file path.
         string outputPath = "AustraliaPost.png";
 
-        // -------------------------------------------------
-        // Generate the barcode and save it as a PNG image
-        // -------------------------------------------------
+        // Create a barcode generator for the Australia Post 4‑state symbology.
         using (var generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, codeText))
         {
-            // Set the encoding table to CTable for interpreting customer information
+            // Use CTable interpreting type (allows alphanumeric characters).
             generator.Parameters.Barcode.AustralianPost.AustralianPostEncodingTable = CustomerInformationInterpretingType.CTable;
 
-            // Save the generated barcode image (PNG format) to the specified path
+            // Optional visual settings: black bars on white background.
+            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
+            generator.Parameters.BackColor = Aspose.Drawing.Color.White;
+
+            // Save the generated barcode image to the specified file.
             generator.Save(outputPath);
         }
 
-        // -------------------------------------------------
-        // Verify the generated barcode by reading it back
-        // -------------------------------------------------
-        using (var image = (Bitmap)Aspose.Drawing.Image.FromFile(outputPath))
-        using (var reader = new BarCodeReader(image, DecodeType.AustraliaPost))
-        {
-            // Configure the reader to match the generator's settings
-            reader.BarcodeSettings.AustraliaPost.CustomerInformationInterpretingType = CustomerInformationInterpretingType.CTable;
-            reader.BarcodeSettings.AustraliaPost.IgnoreEndingFillingPatternsForCTable = true;
+        Console.WriteLine($"Barcode saved to {Path.GetFullPath(outputPath)}");
 
-            // Iterate through all detected barcodes and display their type and text
-            foreach (BarCodeResult result in reader.ReadBarCodes())
+        // Verify the barcode by reading it back if the file was created successfully.
+        if (File.Exists(outputPath))
+        {
+            // Load the saved image into a bitmap.
+            using (var image = new Aspose.Drawing.Bitmap(outputPath))
+            // Initialize a barcode reader for the Australia Post symbology.
+            using (var reader = new BarCodeReader(image, DecodeType.AustraliaPost))
             {
-                Console.WriteLine("BarCode Type: " + result.CodeType);
-                Console.WriteLine("BarCode CodeText: " + result.CodeText);
+                // Set decoding interpreting type to match the generation settings.
+                reader.BarcodeSettings.AustraliaPost.CustomerInformationInterpretingType = CustomerInformationInterpretingType.CTable;
+
+                // Reed‑Solomon error correction is applied automatically by the symbology.
+
+                // Iterate through all detected barcodes (should be one in this case).
+                foreach (var result in reader.ReadBarCodes())
+                {
+                    Console.WriteLine($"Decoded Type: {result.CodeType}");
+                    Console.WriteLine($"Decoded Text: {result.CodeText}");
+                }
             }
         }
-
-        // Indicate that the process has completed
-        Console.WriteLine("Barcode generation and verification completed.");
+        else
+        {
+            Console.WriteLine("Failed to create barcode image.");
+        }
     }
 }

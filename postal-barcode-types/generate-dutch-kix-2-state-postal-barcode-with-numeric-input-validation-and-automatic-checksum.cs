@@ -1,57 +1,62 @@
+// Title: Generate Dutch KIX 2‑state postal barcode with checksum
+// Description: Demonstrates creating a Dutch KIX barcode from numeric input, validating the data, and automatically adding the required checksum.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to use BarcodeGenerator with EncodeTypes.DutchKIX. It shows typical steps such as input validation, enabling checksum, setting colors, and saving the image. Developers working on postal barcode solutions often need these patterns for creating compliant KIX barcodes.
+// Prompt: Generate a Dutch KIX 2‑state postal barcode with numeric input validation and automatic checksum.
+// Tags: dutch kix, barcode generation, checksum, png, aspnet, aspose.barcode
+
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a Dutch KIX barcode using Aspose.BarCode.
+/// Demonstrates generating a Dutch KIX 2‑state postal barcode with numeric validation and automatic checksum.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a barcode from a numeric string and saves it as PNG.
+    /// Entry point. Generates the barcode and saves it as a PNG file.
     /// </summary>
     static void Main()
     {
-        // Sample numeric input; replace with your own value or command‑line argument.
-        string input = "1234567890123"; // 13 digits; checksum will be added automatically.
+        // Sample numeric input for Dutch KIX barcode.
+        // In a real scenario this could come from arguments or another source.
+        string input = "1234567890123";
 
-        // Validate that the input contains only digits.
-        if (!IsNumeric(input))
+        // Validate that the input consists only of digits and is not empty.
+        if (string.IsNullOrEmpty(input) || !IsAllDigits(input))
         {
-            Console.WriteLine("Error: Code text must be numeric.");
-            return;
+            throw new ArgumentException("Input must be a non‑empty numeric string.");
         }
 
-        // Define the symbology for Dutch KIX.
-        BaseEncodeType symbology = EncodeTypes.DutchKIX;
+        // Determine the output file path in the current working directory.
+        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "kix.png");
 
-        // Output file path.
-        string outputPath = "kix.png";
-
-        // Generate the barcode within a using block to ensure proper disposal.
-        using (var generator = new BarcodeGenerator(symbology, input))
+        // Create the barcode generator for the Dutch KIX symbology with the validated input.
+        using (var generator = new BarcodeGenerator(EncodeTypes.DutchKIX, input))
         {
-            // Enable automatic checksum calculation.
+            // Enable automatic checksum generation required by the KIX specification.
             generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
 
-            // Show the checksum digit in the human‑readable text.
-            generator.Parameters.Barcode.ChecksumAlwaysShow = true;
+            // Optional visual settings: black bars on a white background.
+            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
+            generator.Parameters.BackColor = Aspose.Drawing.Color.White;
 
-            // Save the barcode image to the specified path.
-            generator.Save(outputPath);
+            // Save the generated barcode image as a PNG file.
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user where the barcode image was saved.
-        Console.WriteLine($"Dutch KIX barcode saved to {Path.GetFullPath(outputPath)}");
+        // Inform the user where the barcode image has been saved.
+        Console.WriteLine($"Dutch KIX barcode saved to: {outputPath}");
     }
 
-    // Helper method to ensure the string consists only of digits.
-    static bool IsNumeric(string s)
+    // Helper method to verify that a string contains only digit characters.
+    static bool IsAllDigits(string s)
     {
         foreach (char c in s)
         {
-            if (c < '0' || c > '9')
+            if (!char.IsDigit(c))
                 return false;
         }
         return true;

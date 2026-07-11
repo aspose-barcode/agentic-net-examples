@@ -1,123 +1,126 @@
+// Title: Batch decode OneCode barcodes from Azure Blob storage and log results
+// Description: Demonstrates how to read OneCode barcodes from image files (simulating Azure Blob storage) and write decoding details to a log file.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, showcasing the BarCodeReader class for OneCode symbology. It illustrates typical batch processing, quality settings, and result logging, which developers often need when integrating barcode scanning into cloud storage workflows.
+// Prompt: Perform batch decoding of OneCode barcodes from an Azure Blob storage and write outcomes to a log file.
+// Tags: onecode, barcode, decoding, batch, log, aspose.barcode, azure blob, qualitysettings
+
 using System;
 using System.IO;
-using System.Collections.Generic;
-using Aspose.BarCode;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates decoding OneCode barcodes from image files and logging the results.
+/// Demonstrates batch decoding of OneCode barcodes from a local folder (as a stand‑in for Azure Blob storage)
+/// and writes detailed results to a log file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Scans a folder for image files, attempts to decode OneCode barcodes,
-    /// and writes detailed results to a log file.
+    /// Entry point of the example. Scans up to five image files, decodes OneCode barcodes,
+    /// and records outcomes in <c>decode_log.txt</c>.
     /// </summary>
-    /// <param name="args">Optional command‑line arguments; the first argument can specify the images folder.</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // NOTE: In a real scenario the images would be downloaded from Azure Blob Storage.
-        // The Azure SDK code is omitted because the required package is not available in the snippet runner.
-        // Example Azure Blob download (commented out):
-        // using Azure.Storage.Blobs;
-        // var blobServiceClient = new BlobServiceClient(connectionString);
-        // var containerClient = blobServiceClient.GetBlobContainerClient(containerName);
-        // foreach (var blobItem in containerClient.GetBlobs())
-        // {
-        //     var blobClient = containerClient.GetBlobClient(blobItem.Name);
-        //     using var downloadStream = new MemoryStream();
-        //     blobClient.DownloadTo(downloadStream);
-        //     // Process downloadStream...
-        // }
+        // Folder that would contain images downloaded from Azure Blob storage (fallback for demo)
+        string imagesFolder = "SampleBarcodes";
 
-        // Determine the folder that contains sample barcode images.
-        string imagesFolder = args.Length > 0 ? args[0] : "SampleImages";
+        // Path of the log file that will receive decoding results
+        string logFilePath = "decode_log.txt";
 
-        // Verify that the folder exists before proceeding.
-        if (!Directory.Exists(imagesFolder))
+        // Ensure a fresh log file for each run
+        if (File.Exists(logFilePath))
         {
-            Console.WriteLine($"Images folder not found: {imagesFolder}");
-            return;
+            File.Delete(logFilePath);
         }
 
-        // Prepare a log file to capture decoding details.
-        string logPath = "decode_log.txt";
-        using (var logWriter = new StreamWriter(logPath, append: true))
+        // Open a StreamWriter for the log file (non‑appending mode)
+        using (var logWriter = new StreamWriter(logFilePath, append: false))
         {
-            logWriter.WriteLine($"--- Decoding session started at {DateTime.Now} ---");
-
-            // Retrieve all files in the folder and filter for supported image extensions.
-            string[] allFiles = Directory.GetFiles(imagesFolder);
-            var imageFiles = new List<string>();
-            foreach (var file in allFiles)
+            // Retrieve up to five image files from the folder
+            string[] imageFiles = Array.Empty<string>();
+            if (Directory.Exists(imagesFolder))
             {
-                string ext = Path.GetExtension(file).ToLowerInvariant();
-                if (ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".bmp")
+                // Get all files and filter by common image extensions
+                imageFiles = Directory.GetFiles(imagesFolder, "*.*", SearchOption.TopDirectoryOnly);
+                imageFiles = Array.FindAll(imageFiles, f =>
+                    f.EndsWith(".png", StringComparison.OrdinalIgnoreCase) ||
+                    f.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) ||
+                    f.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase) ||
+                    f.EndsWith(".bmp", StringComparison.OrdinalIgnoreCase));
+
+                // Limit the collection to a maximum of five files for the demo
+                if (imageFiles.Length > 5)
                 {
-                    imageFiles.Add(file);
-                    // Limit processing to a maximum of 5 images for this sample.
-                    if (imageFiles.Count >= 5) break;
+                    Array.Resize(ref imageFiles, 5);
                 }
             }
-
-            // If no supported images were found, log and exit.
-            if (imageFiles.Count == 0)
+            else
             {
-                Console.WriteLine("No image files found in the folder.");
-                logWriter.WriteLine("No image files found.");
+                // Log missing folder and exit early
+                logWriter.WriteLine($"Images folder not found: {imagesFolder}");
                 return;
             }
 
-            // Process each selected image file.
-            foreach (var imagePath in imageFiles)
+            // Iterate over each image and attempt barcode decoding
+            foreach (string imagePath in imageFiles)
             {
-                // Ensure the file still exists before attempting to read it.
                 if (!File.Exists(imagePath))
                 {
-                    Console.WriteLine($"File not found: {imagePath}");
-                    logWriter.WriteLine($"{imagePath}: File not found.");
+                    logWriter.WriteLine($"File not found: {imagePath}");
                     continue;
                 }
 
                 try
                 {
-                    // Initialize the barcode reader for OneCode type using the image file.
+                    // Initialize BarCodeReader for OneCode symbology
                     using (var reader = new BarCodeReader(imagePath, DecodeType.OneCode))
                     {
-                        // Attempt to read all barcodes present in the image.
+                        // Apply a normal quality preset (optional but recommended)
+                        reader.QualitySettings = QualitySettings.NormalQuality;
+
+                        // Perform the decoding operation
                         BarCodeResult[] results = reader.ReadBarCodes();
 
-                        // If no barcodes were detected, report and continue to the next image.
                         if (results.Length == 0)
                         {
-                            Console.WriteLine($"{Path.GetFileName(imagePath)}: No OneCode barcode detected.");
+                            // No barcode detected in the current image
                             logWriter.WriteLine($"{Path.GetFileName(imagePath)}: No OneCode barcode detected.");
-                            continue;
                         }
-
-                        // Log details for each detected barcode.
-                        foreach (var result in results)
+                        else
                         {
-                            string logEntry = $"{Path.GetFileName(imagePath)} | Type: {result.CodeTypeName} | Text: {result.CodeText} | Confidence: {result.Confidence} | Quality: {result.ReadingQuality} | Angle: {result.Region.Angle}";
-                            Console.WriteLine(logEntry);
-                            logWriter.WriteLine(logEntry);
+                            // Log details for each detected barcode
+                            foreach (var result in results)
+                            {
+                                var rect = result.Region.Rectangle;
+                                logWriter.WriteLine($"{Path.GetFileName(imagePath)}: Type={result.CodeTypeName}, Text={result.CodeText}, Confidence={result.Confidence}, Quality={result.ReadingQuality}, Region=({rect.X},{rect.Y},{rect.Width},{rect.Height})");
+                            }
                         }
                     }
                 }
                 catch (Exception ex)
                 {
-                    // Capture any unexpected errors and log them.
-                    Console.WriteLine($"{Path.GetFileName(imagePath)}: Error - {ex.Message}");
+                    // Record any exception that occurs during processing
                     logWriter.WriteLine($"{Path.GetFileName(imagePath)}: Error - {ex.Message}");
                 }
             }
-
-            logWriter.WriteLine($"--- Decoding session ended at {DateTime.Now} ---");
         }
 
-        // Inform the user that processing is complete and where to find the log.
-        Console.WriteLine($"Decoding completed. Log written to {Path.GetFullPath(logPath)}");
+        // Placeholder for Azure Blob Storage download logic (commented out because the SDK is unavailable in this environment)
+        /*
+        // using Azure.Storage.Blobs;
+        // string connectionString = "<your_connection_string>";
+        // string containerName = "<your_container_name>";
+        // BlobContainerClient container = new BlobContainerClient(connectionString, containerName);
+        // foreach (BlobItem blobItem in container.GetBlobs())
+        // {
+        //     string localPath = Path.Combine(imagesFolder, blobItem.Name);
+        //     BlobClient blob = container.GetBlobClient(blobItem.Name);
+        //     blob.DownloadTo(localPath);
+        //     // Then process localPath as shown above.
+        // }
+        */
+
+        // Inform the user that processing is complete
+        Console.WriteLine("Decoding completed. See log file: " + logFilePath);
     }
 }

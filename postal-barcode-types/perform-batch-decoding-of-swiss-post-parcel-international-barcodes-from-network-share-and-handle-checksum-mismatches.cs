@@ -1,27 +1,29 @@
+// Title: Batch decode Swiss Post Parcel barcodes from network share
+// Description: Demonstrates how to read Swiss Post Parcel international barcodes in a batch from a shared folder, validating checksums and handling mismatches.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, illustrating the use of BarCodeReader with DecodeType.SwissPostParcel, checksum validation, and file system iteration. Developers working with postal barcode processing, bulk image handling, or network shares can reference this pattern for extracting barcode data and detecting errors.
+// Prompt: Perform batch decoding of Swiss Post Parcel international barcodes from a network share and handle checksum mismatches.
+// Tags: swisspostparcel, barcode, batch, decoding, checksum, network share, aspose.barcode
+
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates batch processing of image files to detect Swiss Post Parcel barcodes
-/// using Aspose.BarCode library. The program scans a specified folder (or a default
-/// network share) for supported image types, reads up to a limited number of files,
-/// and outputs barcode data along with checksum validation information.
+/// Example program that batch processes image files from a network share,
+/// decodes Swiss Post Parcel barcodes, and validates their checksums.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
+    /// Entry point. Scans a folder for supported image files, reads Swiss Post Parcel barcodes,
+    /// and outputs barcode details including checksum information.
     /// </summary>
-    /// <param name="args">
-    /// Optional command‑line arguments. If provided, the first argument is used as the
-    /// input folder path; otherwise a default UNC path is used.
-    /// </param>
+    /// <param name="args">Optional first argument specifying the input folder path.</param>
     static void Main(string[] args)
     {
-        // Determine the input folder: use first argument if supplied, otherwise a default UNC path.
-        string inputFolder = args.Length > 0 ? args[0] : @"\\server\share\Barcodes";
+        // Determine the input folder: use first argument or default network share path.
+        string inputFolder = args.Length > 0 ? args[0] : @"\\localhost\share\barcodes";
 
         // Verify that the folder exists before proceeding.
         if (!Directory.Exists(inputFolder))
@@ -30,88 +32,78 @@ class Program
             return;
         }
 
-        // Define the set of image file extensions that will be processed.
-        string[] extensions = new[] { ".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff" };
-
-        // Retrieve all files in the folder (filtering will be applied later).
+        // Define supported image extensions for barcode scanning.
+        string[] extensions = new[] { ".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp" };
         string[] files = Directory.GetFiles(inputFolder);
+        int processed = 0;
+        const int maxFiles = 10; // Safety cap to limit batch size.
 
-        int processed = 0;                     // Counter for processed files.
-        const int maxFiles = 10;               // Upper limit to keep the demo execution short.
-
-        // Iterate over each file found in the directory.
+        // Iterate over each file in the folder.
         foreach (string filePath in files)
         {
-            // Stop processing once the maximum number of files has been reached.
+            // Stop processing once the maximum file count is reached.
             if (processed >= maxFiles) break;
 
-            // Check if the file has a supported image extension.
+            // Skip files with unsupported extensions.
             string ext = Path.GetExtension(filePath);
             if (Array.IndexOf(extensions, ext, 0, extensions.Length) < 0) continue;
 
-            Console.WriteLine($"Processing file: {Path.GetFileName(filePath)}");
-
-            // Ensure the file still exists (it could have been removed after the initial listing).
+            // Ensure the file still exists (it might have been removed).
             if (!File.Exists(filePath))
             {
-                Console.WriteLine("  File not found, skipping.");
+                Console.WriteLine($"File not found: {filePath}");
                 continue;
             }
 
             try
             {
-                // Initialize the barcode reader for Swiss Post Parcel barcodes.
+                // Initialize the barcode reader for Swiss Post Parcel symbology.
                 using (var reader = new BarCodeReader(filePath, DecodeType.SwissPostParcel))
                 {
-                    // Enable checksum validation; barcodes with an invalid checksum will be ignored.
+                    // Enable checksum validation to detect mismatches.
                     reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
 
-                    // Perform the barcode detection.
-                    var results = reader.ReadBarCodes();
+                    bool anyFound = false;
 
-                    // If no barcodes were found, inform the user.
-                    if (results.Length == 0)
+                    // Read all barcodes found in the current image.
+                    foreach (BarCodeResult result in reader.ReadBarCodes())
                     {
-                        Console.WriteLine("  No Swiss Post Parcel barcode detected.");
-                    }
-                    else
-                    {
-                        // Iterate over each detected barcode and display its details.
-                        foreach (var result in results)
+                        anyFound = true;
+                        Console.WriteLine($"File: {Path.GetFileName(filePath)}");
+                        Console.WriteLine($"  Type: {result.CodeTypeName}");
+                        Console.WriteLine($"  CodeText: {result.CodeText}");
+
+                        // Attempt to retrieve checksum information if available.
+                        try
                         {
-                            Console.WriteLine($"  CodeText: {result.CodeText}");
-
-                            // Attempt to retrieve the checksum from extended parameters, if available.
-                            string checksum = result.Extended?.OneD?.CheckSum;
+                            string checksum = result.Extended.OneD.CheckSum;
                             if (!string.IsNullOrEmpty(checksum))
                             {
-                                // Simple validation: compare the checksum with the last character of the CodeText.
-                                bool matches = result.CodeText.EndsWith(checksum);
-                                Console.WriteLine($"  Checksum: {checksum} (match: {matches})");
-
-                                // Warn the user if the checksum does not match.
-                                if (!matches)
-                                {
-                                    Console.WriteLine("  Warning: Checksum mismatch detected.");
-                                }
-                            }
-                            else
-                            {
-                                Console.WriteLine("  Checksum information not available.");
+                                Console.WriteLine($"  CheckSum: {checksum}");
                             }
                         }
+                        catch
+                        {
+                            // Extended.OneD may not be applicable for this symbology; ignore silently.
+                        }
+                    }
+
+                    // Inform the user if no barcode was detected in the file.
+                    if (!anyFound)
+                    {
+                        Console.WriteLine($"No Swiss Post Parcel barcode detected in file: {Path.GetFileName(filePath)}");
                     }
                 }
             }
             catch (Exception ex)
             {
-                // Report any errors that occur while processing the current file.
-                Console.WriteLine($"  Error processing file: {ex.Message}");
+                // Report any errors encountered while processing the file.
+                Console.WriteLine($"Error processing file '{Path.GetFileName(filePath)}': {ex.Message}");
             }
 
-            processed++; // Increment the processed file counter.
+            processed++;
         }
 
-        Console.WriteLine("Batch processing completed.");
+        Console.WriteLine("Batch decoding completed.");
     }
 }

@@ -1,32 +1,41 @@
+// Title: Generate OneCode barcode with custom DPI and save as PNG
+// Description: Demonstrates creating a OneCode barcode, setting a 300 DPI resolution, and saving it as a high‑resolution PNG image.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on OneCode symbology. It showcases the use of BarcodeGenerator, EncodeTypes, and resolution settings to produce high‑quality images. Developers often need to generate barcodes for printing or digital display with specific DPI requirements, and this snippet illustrates the typical workflow.
+// Prompt: Generate a OneCode barcode with custom DPI of 300 and save as high‑resolution PNG.
+// Tags: onecode, barcode, generation, dpi, png, aspose.barcode
+
 using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
-/// <summary>
-/// Demonstrates generating a OneCode barcode using Aspose.BarCode.
-/// </summary>
-class Program
+namespace OneCodeExample
 {
     /// <summary>
-    /// Entry point of the application. Generates a OneCode barcode with a sample numeric codetext,
-    /// configures high‑resolution settings, saves the image, and writes a confirmation to the console.
+    /// Provides an entry point that generates a OneCode barcode,
+    /// configures a custom DPI of 300, and saves the result as a PNG file.
     /// </summary>
-    static void Main()
+    class Program
     {
-        // Define a sample OneCode numeric codetext (20 digits)
-        string codeText = "12345678901234567890";
-
-        // Initialize the barcode generator for OneCode symbology with the provided codetext
-        using (var generator = new BarcodeGenerator(EncodeTypes.OneCode, codeText))
+        /// <summary>
+        /// Main method that performs the barcode generation and saving process.
+        /// </summary>
+        static void Main()
         {
-            // Configure the generator to use a high‑resolution of 300 DPI
-            generator.Parameters.Resolution = 300f;
+            // OneCode requires a numeric codetext of length 20, 25, 29, or 31.
+            const string codeText = "12345678901234567890";
 
-            // Save the generated barcode as a high‑resolution PNG file
-            generator.Save("OneCode.png");
+            // Initialize the barcode generator with OneCode symbology and the specified codetext.
+            using (var generator = new BarcodeGenerator(EncodeTypes.OneCode, codeText))
+            {
+                // Set the image resolution to 300 DPI for high‑resolution output.
+                generator.Parameters.Resolution = 300f;
+
+                // Save the generated barcode as a PNG image file.
+                generator.Save("OneCode.png");
+            }
+
+            // Inform the user that the barcode has been saved.
+            Console.WriteLine("OneCode barcode saved to OneCode.png");
         }
-
-        // Output a confirmation message to the console
-        Console.WriteLine("OneCode barcode generated and saved as OneCode.png");
     }
 }

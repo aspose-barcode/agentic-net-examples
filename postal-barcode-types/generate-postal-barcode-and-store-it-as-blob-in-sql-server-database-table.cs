@@ -1,62 +1,66 @@
+// Title: Generate and store a Postnet barcode as a PNG BLOB
+// Description: Demonstrates creating a Postnet postal barcode, converting it to PNG, and showing how to store it as a BLOB in SQL Server.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating the use of BarcodeGenerator, BarcodeParameters, and image handling classes. Typical use cases include generating postal barcodes for mailing systems and persisting them in databases. Developers often need to create barcode images, convert them to byte arrays, and insert them into SQL Server tables as VARBINARY data.
+// Prompt: Generate a postal barcode and store it as a BLOB in a SQL Server database table.
+// Tags: postnet, postal barcode, barcode generation, image conversion, sql server, blob, aspose.barcode
+
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demo program that generates a Postnet barcode and optionally stores it in a database.
+/// Example program that generates a Postnet postal barcode,
+/// converts it to a PNG byte array, and demonstrates how it could be stored
+/// as a BLOB in a SQL Server database.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a barcode image from a sample postal code and outputs its size.
+    /// Entry point of the application.
     /// </summary>
     static void Main()
     {
-        // Sample postal code text for a Postnet barcode
-        const string postalCode = "12345";
-
-        // Byte array that will hold the generated barcode image
-        byte[] barcodeBytes;
-
-        // Create a BarcodeGenerator for the Postnet format using the sample postal code
-        using (var generator = new BarcodeGenerator(EncodeTypes.Postnet, postalCode))
+        // Initialize the barcode generator for the Postnet symbology with the data "12345".
+        using (var generator = new BarcodeGenerator(EncodeTypes.Postnet, "12345"))
         {
-            // Optional: configure barcode appearance if needed
-            // generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-            // generator.Parameters.BackColor = Aspose.Drawing.Color.White;
+            // Set a short bar height specific to postal barcodes (5 points).
+            generator.Parameters.Barcode.Postal.PostalShortBarHeight.Point = 5f;
 
-            // Use a memory stream to capture the barcode image in PNG format
-            using (var ms = new MemoryStream())
+            // Generate the barcode image as a Bitmap.
+            using (Bitmap bitmap = generator.GenerateBarCodeImage())
             {
-                // Save the barcode image as PNG into the memory stream
-                generator.Save(ms, BarCodeImageFormat.Png);
+                // Prepare a memory stream to hold the PNG representation.
+                using (var ms = new MemoryStream())
+                {
+                    // Save the bitmap to the memory stream in PNG format.
+                    bitmap.Save(ms, ImageFormat.Png);
+                    byte[] imageBytes = ms.ToArray(); // Convert stream to byte array.
 
-                // Convert the memory stream contents to a byte array
-                barcodeBytes = ms.ToArray();
+                    // -----------------------------------------------------------------
+                    // Example of inserting the PNG byte array into a SQL Server table:
+                    // -----------------------------------------------------------------
+                    // using (var connection = new SqlConnection("your_connection_string"))
+                    // {
+                    //     connection.Open();
+                    //     using (var command = new SqlCommand(
+                    //         "INSERT INTO Barcodes (Id, Image) VALUES (@Id, @Image)", connection))
+                    //     {
+                    //         command.Parameters.Add("@Id", SqlDbType.Int).Value = 1;
+                    //         command.Parameters.Add("@Image", SqlDbType.VarBinary).Value = imageBytes;
+                    //         command.ExecuteNonQuery();
+                    //     }
+                    // }
+                    // -----------------------------------------------------------------
+                    // Since the execution environment may lack SQL Server libraries,
+                    // write the PNG file locally for demonstration purposes.
+
+                    File.WriteAllBytes("postal_barcode.png", imageBytes);
+                    Console.WriteLine("Postal barcode generated and saved to postal_barcode.png");
+                }
             }
         }
-
-        // Output the size of the generated barcode image in bytes
-        Console.WriteLine($"Generated barcode image size: {barcodeBytes.Length} bytes");
-
-        // ----------------------------------------------------------------------
-        // Real database insertion (requires System.Data.SqlClient or Microsoft.Data.SqlClient)
-        // The following code is provided as a reference but is commented out because
-        // the required NuGet package is not available in the snippet runner environment.
-        // ----------------------------------------------------------------------
-        /*
-        using (var connection = new SqlConnection("Data Source=YOUR_SERVER;Initial Catalog=YOUR_DB;Integrated Security=True"))
-        {
-            connection.Open();
-            using (var command = new SqlCommand("INSERT INTO Barcodes (BarcodeImage) VALUES (@Image)", connection))
-            {
-                var param = command.Parameters.Add("@Image", SqlDbType.VarBinary, barcodeBytes.Length);
-                param.Value = barcodeBytes;
-                command.ExecuteNonQuery();
-            }
-        }
-        */
     }
 }

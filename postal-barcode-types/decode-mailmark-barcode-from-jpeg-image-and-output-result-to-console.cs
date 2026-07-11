@@ -1,16 +1,21 @@
+// Title: Decode Mailmark barcode from JPEG image
+// Description: Demonstrates how to read a Mailmark barcode from a JPEG file and display its raw and parsed data.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, focusing on Mailmark symbology. It showcases the use of BarCodeReader with DecodeType.Mailmark and ComplexCodetextReader to extract structured information. Developers working with postal or logistics barcodes can use this pattern to integrate Mailmark decoding into .NET applications.
+// Prompt: Decode a Mailmark barcode from a JPEG image and output the result to the console.
+// Tags: mailmark, barcode, decoding, console, aspose.barcode, complexcodetextreader
+
 using System;
 using System.IO;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.BarCode.ComplexBarcode;
 
 /// <summary>
-/// Demonstrates how to read and decode Mailmark barcodes from an image using Aspose.BarCode.
+/// Program to decode a Mailmark barcode from a JPEG image and display the results.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Reads a JPEG image, detects Mailmark barcodes, and prints decoded fields.
+    /// Entry point. Reads the image, decodes Mailmark barcodes, and prints raw and parsed data.
     /// </summary>
     static void Main()
     {
@@ -20,17 +25,17 @@ class Program
         // Verify that the image file exists before attempting to read it
         if (!File.Exists(imagePath))
         {
-            Console.WriteLine($"Image file not found: {imagePath}");
+            Console.WriteLine($"File not found: {imagePath}");
             return;
         }
 
-        // Initialize a BarCodeReader for the Mailmark symbology using the specified image
+        // Initialize a BarCodeReader configured for Mailmark decoding
         using (var reader = new BarCodeReader(imagePath, DecodeType.Mailmark))
         {
-            // Read all barcodes detected in the image
+            // Read all Mailmark barcodes present in the image
             var results = reader.ReadBarCodes();
 
-            // If no barcodes were found, inform the user and exit
+            // If no barcodes were detected, inform the user and exit
             if (results.Length == 0)
             {
                 Console.WriteLine("No Mailmark barcode detected.");
@@ -40,15 +45,15 @@ class Program
             // Process each detected barcode
             foreach (var result in results)
             {
-                // Output the raw decoded text of the barcode
-                Console.WriteLine($"Raw CodeText: {result.CodeText}");
+                // Output the raw decoded text from the barcode
+                Console.WriteLine($"Decoded CodeText: {result.CodeText}");
 
-                // Attempt to decode the complex Mailmark codetext into its constituent fields
+                // Attempt to parse the raw text into structured Mailmark fields
                 var mailmark = ComplexCodetextReader.TryDecodeMailmark(result.CodeText);
                 if (mailmark != null)
                 {
-                    // Successfully decoded; display each field
-                    Console.WriteLine("Decoded Mailmark fields:");
+                    // Display the parsed Mailmark details
+                    Console.WriteLine("Mailmark Details:");
                     Console.WriteLine($"  Format: {mailmark.Format}");
                     Console.WriteLine($"  VersionID: {mailmark.VersionID}");
                     Console.WriteLine($"  Class: {mailmark.Class}");
@@ -58,8 +63,8 @@ class Program
                 }
                 else
                 {
-                    // Decoding failed; notify the user
-                    Console.WriteLine("Failed to decode Mailmark complex codetext.");
+                    // Inform the user if parsing failed
+                    Console.WriteLine("Failed to parse Mailmark codetext into structured data.");
                 }
             }
         }

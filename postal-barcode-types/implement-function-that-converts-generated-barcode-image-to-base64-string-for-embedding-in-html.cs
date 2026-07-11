@@ -1,51 +1,62 @@
+// Title: Barcode to Base64 conversion example
+// Description: Demonstrates generating a Code128 barcode image and converting it to a Base64 string for embedding in HTML.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to use BarcodeGenerator, set parameters, generate a bitmap, and obtain a Base64-encoded PNG. Developers often need to embed barcodes directly into web pages or emails without saving files, making this pattern common for HTML image sources.
+// Prompt: Implement a function that converts a generated barcode image to a Base64 string for embedding in HTML.
+// Tags: barcode symbology, generation, base64, html embedding, aspose.barcode, aspose.drawing
+
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
-/// <summary>
-/// Demonstrates generating a barcode image and converting it to a Base64 string.
-/// </summary>
-class Program
+namespace BarcodeBase64Example
 {
     /// <summary>
-    /// Entry point of the application. Generates a Code128 barcode for a sample value and prints its Base64 representation.
+    /// Provides an example of generating a barcode and converting it to a Base64 string for HTML embedding.
     /// </summary>
-    static void Main()
+    class Program
     {
-        // Generate a barcode and convert it to a Base64 string
-        string base64 = GenerateBarcodeBase64(EncodeTypes.Code128, "123456");
-        // Output the Base64 string to the console
-        Console.WriteLine(base64);
-    }
-
-    /// <summary>
-    /// Generates a barcode image of the specified type and text, then returns the image as a Base64-encoded string.
-    /// </summary>
-    /// <param name="type">The barcode encoding type (e.g., Code128).</param>
-    /// <param name="codeText">The text to encode in the barcode.</param>
-    /// <returns>Base64 string representing the generated barcode image in PNG format.</returns>
-    static string GenerateBarcodeBase64(BaseEncodeType type, string codeText)
-    {
-        // Create a memory stream to hold the barcode image data
-        using (var ms = new MemoryStream())
+        /// <summary>
+        /// Entry point of the example. Generates a Code128 barcode and writes its Base64 representation to the console.
+        /// </summary>
+        static void Main()
         {
-            // Initialize the barcode generator with the specified type and text
-            using (var generator = new BarcodeGenerator(type, codeText))
+            // Define the text to encode in the barcode.
+            string codeText = "1234567890";
+
+            // Initialize a BarcodeGenerator for Code128 symbology with the specified text.
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
             {
-                // Save the generated barcode to the memory stream in PNG format
-                generator.Save(ms, BarCodeImageFormat.Png);
+                // Optional: adjust the module (X) dimension to control barcode size.
+                generator.Parameters.Barcode.XDimension.Point = 2f;
+
+                // Convert the generated barcode image to a Base64 string.
+                string base64 = ConvertBarcodeToBase64(generator);
+
+                // Output the Base64 string prefixed with the data URI scheme for direct HTML embedding.
+                Console.WriteLine("data:image/png;base64," + base64);
             }
+        }
 
-            // Reset the stream position to the beginning before reading
-            ms.Position = 0;
-
-            // Retrieve the image bytes from the memory stream
-            byte[] imageBytes = ms.ToArray();
-
-            // Convert the image bytes to a Base64 string and return it
-            return Convert.ToBase64String(imageBytes);
+        /// <summary>
+        /// Generates the barcode image from the provided generator and returns its Base64 representation.
+        /// </summary>
+        /// <param name="generator">Configured <see cref="BarcodeGenerator"/> instance.</param>
+        /// <returns>Base64-encoded PNG image.</returns>
+        static string ConvertBarcodeToBase64(BarcodeGenerator generator)
+        {
+            // Generate the barcode as a bitmap.
+            using (Bitmap bitmap = generator.GenerateBarCodeImage())
+            {
+                // Save the bitmap into a memory stream using PNG format.
+                using (var memoryStream = new MemoryStream())
+                {
+                    bitmap.Save(memoryStream, ImageFormat.Png);
+                    // Convert the stream's byte array to a Base64 string.
+                    return Convert.ToBase64String(memoryStream.ToArray());
+                }
+            }
         }
     }
 }

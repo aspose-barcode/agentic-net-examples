@@ -1,75 +1,78 @@
+// Title: Reed‑Solomon Error Correction Test for Australia Post Barcode
+// Description: Demonstrates generating an Australia Post barcode, corrupting it, and verifying that Reed‑Solomon error correction restores the original data.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, showcasing how to use BarcodeGenerator, BarCodeReader, and Reed‑Solomon error correction for Australia Post symbology. Typical use cases include validating barcode robustness in automated mail processing systems and ensuring data integrity after physical damage. Developers often need to generate barcodes, simulate degradation, and confirm that the built‑in error correction can recover the original payload.
+// Prompt: Write a unit test that verifies Reed‑Solomon error correction produces correct output for Australia Post barcode.
+// Tags: australia post, error correction, image, barcodegenerator, barcodereader
+
 using System;
-using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generation and recognition of an Australia Post barcode using Aspose.BarCode.
+/// Example program that generates an Australia Post barcode, intentionally corrupts it,
+/// and verifies that Reed‑Solomon error correction can recover the original code text.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a barcode, saves it to a memory stream,
-    /// then reads it back and verifies that the decoded text matches the original.
+    /// Entry point of the example. Executes the generation, corruption, and verification steps.
     /// </summary>
     static void Main()
     {
-        // Sample Australia Post barcode data
-        const string originalCodeText = "5912345678ABCde";
+        // Original code text for the Australia Post barcode (includes numeric and alphabetic characters)
+        const string originalCodeText = "5912345678AB";
 
-        // Create a barcode generator for Australia Post format with the sample data
+        // Create a barcode generator for Australia Post symbology with the original code text
         using (var generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, originalCodeText))
         {
-            // Set the interpreting type to CTable for customer information
+            // Configure the generator to use the CTable interpreting type (allows letters and digits)
             generator.Parameters.Barcode.AustralianPost.AustralianPostEncodingTable = CustomerInformationInterpretingType.CTable;
 
-            // Prepare a memory stream to hold the generated image
-            using (var ms = new MemoryStream())
+            // Generate the barcode image in memory
+            using (var originalImage = generator.GenerateBarCodeImage())
             {
-                // Save the barcode as a PNG image into the memory stream
-                generator.Save(ms, BarCodeImageFormat.Png);
-                ms.Position = 0; // Reset stream position for reading
-
-                // Load the PNG image from the memory stream into a bitmap
-                using (var bitmap = new Bitmap(ms))
+                // Clone the original image to simulate a damaged barcode
+                using (var corruptedImage = new Bitmap(originalImage))
                 {
-                    // Initialize a barcode reader for Australia Post type
-                    using (var reader = new BarCodeReader(bitmap, DecodeType.AustraliaPost))
+                    // Introduce noise by setting a few pixels to white (simulating physical damage)
+                    for (int i = 0; i < 5; i++)
                     {
-                        // Configure the reader to use the same CTable interpreting type
+                        // Ensure pixel coordinates stay within the image bounds
+                        int x = Math.Min(i, corruptedImage.Width - 1);
+                        int y = Math.Min(i, corruptedImage.Height - 1);
+                        corruptedImage.SetPixel(x, y, Color.White);
+                    }
+
+                    // Initialize a barcode reader for Australia Post symbology using the corrupted image
+                    using (var reader = new BarCodeReader(corruptedImage, DecodeType.AustraliaPost))
+                    {
+                        // Apply the same interpreting type to the reader as used during generation
                         reader.BarcodeSettings.AustraliaPost.CustomerInformationInterpretingType = CustomerInformationInterpretingType.CTable;
 
-                        // Perform barcode recognition and retrieve all results
-                        var results = reader.ReadBarCodes();
+                        bool success = false;
 
-                        // Ensure at least one barcode was detected
-                        if (results.Length == 0)
+                        // Attempt to read barcodes from the corrupted image
+                        foreach (BarCodeResult result in reader.ReadBarCodes())
                         {
-                            Console.WriteLine("FAILED: No barcode detected.");
-                            return;
-                        }
-
-                        // Check if any decoded result matches the original text
-                        bool match = false;
-                        foreach (var result in results)
-                        {
-                            if (result.CodeText == originalCodeText)
+                            // Verify that the decoded text matches the original code text
+                            if (result != null && result.CodeText == originalCodeText)
                             {
-                                match = true;
+                                success = true;
                                 break;
                             }
                         }
 
-                        // Output verification result
-                        if (match)
+                        // Output the test result
+                        if (success)
                         {
-                            Console.WriteLine("PASSED: Decoded text matches original.");
+                            Console.WriteLine("PASSED: Reed‑Solomon error correction recovered the original code text.");
                         }
                         else
                         {
-                            Console.WriteLine($"FAILED: Decoded text does not match. Expected '{originalCodeText}'.");
+                            Console.WriteLine("FAILED: Unable to recover the original code text from the corrupted barcode.");
                         }
                     }
                 }

@@ -1,70 +1,67 @@
+// Title: Verify checksum auto‑correction for Swiss Post Parcel barcode
+// Description: Demonstrates generating a Swiss Post Parcel barcode without a checksum, letting the library auto‑correct it, and confirming the correction via recognition.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category, focusing on checksum handling for Swiss Post Parcel symbology. It showcases the use of BarcodeGenerator, BarCodeReader, and related settings such as ThrowExceptionWhenCodeTextIncorrect and ChecksumValidation. Developers often need to ensure barcodes are valid even when input data lacks required check digits, making this pattern useful for automated validation and correction workflows.
+// Prompt: Write a unit test that confirms checksum auto‑correction for Swiss Post Parcel international barcode.
+// Tags: swisspostparcel, checksum, auto-correction, barcode generation, barcode recognition, unit-test
+
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generation and recognition of a Swiss Post Parcel barcode,
-/// including automatic checksum correction.
+/// Example program that generates a Swiss Post Parcel barcode without a checksum,
+/// enables automatic checksum correction, and verifies the correction via recognition.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a barcode from an incorrect code, lets the library auto‑correct it,
-    /// then reads the barcode back and verifies the correction.
+    /// Entry point of the example. Generates the barcode, corrects the checksum,
+    /// reads it back, and reports whether the auto‑correction succeeded.
     /// </summary>
     static void Main()
     {
-        // Sample incorrect code text for Swiss Post Parcel (checksum will be auto‑corrected)
-        string incorrectCode = "1234567890123456789012"; // length may not match spec; generator will adjust
+        // Base code without checksum (placeholder data)
+        string baseCode = "123456789012";
 
-        // Create barcode generator for Swiss Post Parcel symbology
-        BaseEncodeType symbology = EncodeTypes.SwissPostParcel;
-        using (var generator = new BarcodeGenerator(symbology, incorrectCode))
+        // Create a generator for Swiss Post Parcel barcode with the base code
+        using (var generator = new BarcodeGenerator(EncodeTypes.SwissPostParcel, baseCode))
         {
-            // Disable exception on incorrect code to allow auto‑correction
+            // Allow the generator to correct an incorrect codetext instead of throwing
             generator.Parameters.Barcode.ThrowExceptionWhenCodeTextIncorrect = false;
 
-            // Save generated barcode image to a memory stream in PNG format
+            // Save the generated barcode image to a memory stream (PNG format)
             using (var ms = new MemoryStream())
             {
                 generator.Save(ms, BarCodeImageFormat.Png);
                 ms.Position = 0; // Reset stream position for reading
 
-                // Retrieve the corrected code text after generation
+                // Retrieve the possibly corrected code text (checksum added)
                 string correctedCode = generator.CodeText;
-                Console.WriteLine($"Corrected CodeText after generation: {correctedCode}");
 
-                // Initialize barcode reader for Swiss Post Parcel from the memory stream
+                // Initialize a reader to recognize the barcode from the memory stream
                 using (var reader = new BarCodeReader(ms, DecodeType.SwissPostParcel))
                 {
                     // Enable checksum validation during recognition
                     reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
 
-                    // Read all barcodes found in the image
-                    var results = reader.ReadBarCodes();
-                    if (results.Length == 0)
+                    bool passed = false;
+
+                    // Iterate through all detected barcodes and compare with corrected code
+                    foreach (var result in reader.ReadBarCodes())
                     {
-                        Console.WriteLine("No barcode detected.");
-                        return;
+                        if (result.CodeText == correctedCode)
+                        {
+                            passed = true;
+                            break;
+                        }
                     }
 
-                    // Use the first detected barcode result
-                    var result = results[0];
-                    Console.WriteLine($"Recognized CodeText: {result.CodeText}");
-
-                    // Compare recognized code with the corrected code to verify auto‑correction
-                    if (string.Equals(correctedCode, result.CodeText, StringComparison.Ordinal))
-                    {
-                        Console.WriteLine("Checksum auto‑correction verified successfully.");
-                    }
-                    else
-                    {
-                        Console.WriteLine("Checksum auto‑correction verification failed.");
-                    }
+                    // Output the verification result
+                    Console.WriteLine(passed
+                        ? "PASS: Checksum auto‑correction verified."
+                        : "FAILED: Checksum auto‑correction not verified.");
                 }
             }
         }

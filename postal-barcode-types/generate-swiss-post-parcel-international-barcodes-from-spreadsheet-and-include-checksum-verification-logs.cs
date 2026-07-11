@@ -1,109 +1,104 @@
+// Title: Swiss Post Parcel Barcode Generation and Checksum Validation
+// Description: Generates Swiss Post Parcel barcodes from sample data and demonstrates checksum validation during recognition.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, showcasing how to use EncodeTypes.SwissPostParcel for barcode creation and DecodeType.SwissPostParcel for reading. It highlights typical use cases such as parcel tracking where checksum verification ensures data integrity. Developers often need to generate barcodes, save them as images, and validate them during scanning, making this a common pattern in logistics applications.
+// Prompt: Generate Swiss Post Parcel international barcodes from a spreadsheet and include checksum verification logs.
+// Tags: barcode symbology, generation, recognition, checksum, png, aspose.barcode, encode types, decode types
+
 using System;
-using System.IO;
 using System.Collections.Generic;
-using Aspose.BarCode;
+using System.IO;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.BarCode; // for EncodeTypes
 
 /// <summary>
-/// Demonstrates generating and recognizing Swiss Post Parcel barcodes
-/// from a list of parcel codes read from a CSV file (or sample data).
+/// Demonstrates creating Swiss Post Parcel barcodes from a list of parcel codes,
+/// saving them as PNG images, and performing recognition with checksum validation
+/// both enabled and disabled.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Reads parcel codes, generates barcodes, saves them, and verifies each barcode.
+    /// Entry point of the example. Generates barcodes, saves them, and logs
+    /// recognition results with checksum validation toggled.
     /// </summary>
     static void Main()
     {
-        // Path to the CSV file containing parcel codes (first column)
-        string csvPath = "input.csv";
-
-        // Load parcel codes from CSV or fall back to sample data if the file is missing
-        List<string> parcelCodes = new List<string>();
-        if (File.Exists(csvPath))
+        // Sample data representing rows from a spreadsheet (e.g., parcel IDs)
+        var parcelCodes = new List<string>
         {
-            try
-            {
-                // Read all lines from the CSV file
-                foreach (var line in File.ReadAllLines(csvPath))
-                {
-                    // Skip empty or whitespace‑only lines
-                    if (string.IsNullOrWhiteSpace(line))
-                        continue;
+            "1234567890123",
+            "9876543210987",
+            "5555555555555",
+            "1111111111111",
+            "2222222222222"
+        };
 
-                    // Assume CSV format: CodeText,OtherColumns...
-                    var parts = line.Split(',');
-                    if (parts.Length > 0 && !string.IsNullOrWhiteSpace(parts[0]))
-                        parcelCodes.Add(parts[0].Trim()); // Add the first column as the parcel code
-                }
-            }
-            catch (Exception ex)
-            {
-                // Report any errors encountered while reading the CSV
-                Console.WriteLine($"Error reading CSV file: {ex.Message}");
-            }
-        }
-
-        // If no codes were loaded, use a predefined set of sample data (max 5 items)
-        if (parcelCodes.Count == 0)
-        {
-            parcelCodes.AddRange(new[]
-            {
-                "1234567890123",
-                "9876543210987",
-                "5555555555555",
-                "1111111111111",
-                "2222222222222"
-            });
-        }
-
-        // Process at most 5 items for safety
-        int maxItems = Math.Min(5, parcelCodes.Count);
+        // Directory to store generated barcode images
         string outputDir = "Barcodes";
-
-        // Ensure the output directory exists
-        Directory.CreateDirectory(outputDir);
-
-        // Iterate over each parcel code to generate and verify its barcode
-        for (int i = 0; i < maxItems; i++)
+        if (!Directory.Exists(outputDir))
         {
-            string codeText = parcelCodes[i];
-            string outputPath = Path.Combine(outputDir, $"SwissPost_{i + 1}.png");
+            Directory.CreateDirectory(outputDir);
+        }
 
-            // ---------- Barcode Generation ----------
-            using (var generator = new BarcodeGenerator(EncodeTypes.SwissPostParcel, codeText))
+        // Generate Swiss Post Parcel barcodes and save them as PNG files
+        for (int i = 0; i < parcelCodes.Count; i++)
+        {
+            string code = parcelCodes[i];
+            string filePath = Path.Combine(outputDir, $"SwissPost_{i + 1}.png");
+
+            using (var generator = new BarcodeGenerator(EncodeTypes.SwissPostParcel, code))
             {
-                // Enable checksum generation and display it in the human‑readable text
-                generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
-                generator.Parameters.Barcode.ChecksumAlwaysShow = true;
+                // Set image dimensions (optional)
+                generator.Parameters.ImageWidth.Point = 300f;
+                generator.Parameters.ImageHeight.Point = 150f;
 
-                // Save the generated barcode image to disk
-                generator.Save(outputPath);
-                Console.WriteLine($"[Generation] Saved barcode #{i + 1} to '{outputPath}' (CodeText: {codeText})");
+                // Save the barcode image
+                generator.Save(filePath, BarCodeImageFormat.Png);
+                Console.WriteLine($"Generated barcode for '{code}' -> {filePath}");
             }
+        }
 
-            // ---------- Barcode Recognition ----------
-            using (var reader = new BarCodeReader(outputPath, DecodeType.SwissPostParcel))
+        Console.WriteLine();
+        Console.WriteLine("=== Barcode Recognition with Checksum Validation (On) ===");
+
+        // Recognize each barcode with checksum validation enabled
+        foreach (var file in Directory.GetFiles(outputDir, "*.png"))
+        {
+            using (var reader = new BarCodeReader(file, DecodeType.SwissPostParcel))
             {
-                // Enable checksum validation during recognition
+                // Enable checksum validation
                 reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
 
-                // Read all barcodes found in the image (should be one)
-                var results = reader.ReadBarCodes();
-                foreach (var result in results)
+                foreach (var result in reader.ReadBarCodes())
                 {
-                    Console.WriteLine($"[Recognition] Barcode #{i + 1}");
-                    Console.WriteLine($"  Detected CodeText : {result.CodeText}");
-                    Console.WriteLine($"  Expected CodeText : {codeText}");
-                    Console.WriteLine($"  Checksum          : {result.Extended.OneD.CheckSum}");
-                    Console.WriteLine($"  Match Original    : {result.CodeText == codeText}");
+                    Console.WriteLine($"File: {Path.GetFileName(file)}");
+                    Console.WriteLine($"  Detected CodeText: {result.CodeText}");
+                    Console.WriteLine($"  Confidence: {result.Confidence}");
+                    Console.WriteLine($"  ReadingQuality: {result.ReadingQuality}");
                 }
             }
         }
 
-        // Indicate that processing has finished
-        Console.WriteLine("Processing completed.");
+        Console.WriteLine();
+        Console.WriteLine("=== Barcode Recognition with Checksum Validation (Off) ===");
+
+        // Recognize each barcode with checksum validation disabled
+        foreach (var file in Directory.GetFiles(outputDir, "*.png"))
+        {
+            using (var reader = new BarCodeReader(file, DecodeType.SwissPostParcel))
+            {
+                // Disable checksum validation
+                reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.Off;
+
+                foreach (var result in reader.ReadBarCodes())
+                {
+                    Console.WriteLine($"File: {Path.GetFileName(file)}");
+                    Console.WriteLine($"  Detected CodeText: {result.CodeText}");
+                    Console.WriteLine($"  Confidence: {result.Confidence}");
+                    Console.WriteLine($"  ReadingQuality: {result.ReadingQuality}");
+                }
+            }
+        }
     }
 }

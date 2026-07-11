@@ -1,18 +1,28 @@
+// Title: Asynchronous barcode decoding with Task Parallel Library
+// Description: Demonstrates generating sample barcode images and decoding them concurrently using TPL for high‑throughput scenarios.
+// Category-Description: This example belongs to the Aspose.BarCode batch processing category, showcasing how to use BarcodeGenerator for image creation and BarCodeReader for recognition. It illustrates typical use cases such as large‑scale image collections, where developers need efficient, asynchronous decoding using core API classes like BarcodeGenerator, BarCodeReader, and QualitySettings.
+// Prompt: Implement asynchronous barcode decoding for large image collections using Task Parallel Library.
+// Tags: code128, generation, recognition, png, tpl, aspose.barcode, aspose.drawing, barcode decoding, asynchronous processing
+
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating and decoding barcodes using Aspose.BarCode.
+/// Sample program that generates a set of barcode images and decodes them asynchronously
+/// using the Task Parallel Library. Demonstrates high‑performance batch processing with
+/// Aspose.BarCode APIs.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates sample barcode images,
-    /// decodes them asynchronously, displays the results, and cleans up temporary files.
+    /// Entry point of the application. Generates sample barcodes, decodes them in parallel,
+    /// and cleans up temporary resources.
     /// </summary>
     /// <param name="args">Command‑line arguments (not used).</param>
     static async Task Main(string[] args)
@@ -20,106 +30,82 @@ class Program
         // --------------------------------------------------------------------
         // Prepare a temporary folder for sample barcode images
         // --------------------------------------------------------------------
-        string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodesSample");
+        string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeSamples");
         if (!Directory.Exists(tempFolder))
         {
             Directory.CreateDirectory(tempFolder);
         }
 
         // --------------------------------------------------------------------
-        // Sample code texts for generating barcodes
+        // Generate a small set of sample barcode images (5 items)
         // --------------------------------------------------------------------
-        string[] sampleTexts = new string[]
+        int sampleCount = 5;
+        List<string> imagePaths = new List<string>();
+        for (int i = 0; i < sampleCount; i++)
         {
-            "ABC123",
-            "DEF456",
-            "GHI789",
-            "JKL012",
-            "MNO345"
-        };
-
-        // --------------------------------------------------------------------
-        // Generate barcode images and save them to the temporary folder
-        // --------------------------------------------------------------------
-        foreach (string text in sampleTexts)
-        {
-            string imagePath = Path.Combine(tempFolder, $"{text}.png");
-            BaseEncodeType encodeType = EncodeTypes.Code128;
-
-            // Create a barcode generator for the current text and save the image
-            using (var generator = new BarcodeGenerator(encodeType, text))
+            string filePath = Path.Combine(tempFolder, $"barcode_{i}.png");
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, $"Sample{i}"))
             {
-                generator.Save(imagePath);
+                // Auto‑size the barcode image for optimal dimensions
+                generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
+                generator.Save(filePath, BarCodeImageFormat.Png);
             }
+            imagePaths.Add(filePath);
         }
 
         // --------------------------------------------------------------------
-        // Asynchronously decode all generated images using TPL
+        // Asynchronously decode all images using TPL
         // --------------------------------------------------------------------
-        Task<string>[] decodeTasks = new Task<string>[sampleTexts.Length];
-        for (int i = 0; i < sampleTexts.Length; i++)
+        List<Task> decodeTasks = new List<Task>();
+        foreach (string path in imagePaths)
         {
-            string imagePath = Path.Combine(tempFolder, $"{sampleTexts[i]}.png");
-
-            // Start a task that reads the barcode from the image file
-            decodeTasks[i] = Task.Run(() =>
-            {
-                if (!File.Exists(imagePath))
-                {
-                    Console.WriteLine($"File not found: {imagePath}");
-                    return null;
-                }
-
-                // Use BarCodeReader to read all supported barcode types
-                using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
-                {
-                    foreach (var result in reader.ReadBarCodes())
-                    {
-                        // Return the first detected barcode text
-                        return result.CodeText;
-                    }
-                }
-
-                // No barcode detected
-                return null;
-            });
+            // Queue each decode operation on the thread pool
+            decodeTasks.Add(Task.Run(() => DecodeBarcode(path)));
         }
 
-        // --------------------------------------------------------------------
-        // Await all decoding tasks and collect the results
-        // --------------------------------------------------------------------
-        string[] decodedTexts = await Task.WhenAll(decodeTasks);
+        // Wait for all decoding tasks to complete
+        await Task.WhenAll(decodeTasks);
 
         // --------------------------------------------------------------------
-        // Output decoding results to the console
+        // Clean up temporary files (optional)
         // --------------------------------------------------------------------
-        Console.WriteLine("Decoded barcode texts:");
-        foreach (var decoded in decodedTexts)
+        foreach (string path in imagePaths)
         {
-            if (!string.IsNullOrEmpty(decoded))
-            {
-                Console.WriteLine(decoded);
-            }
-            else
-            {
-                Console.WriteLine("(no barcode detected)");
-            }
+            try { File.Delete(path); } catch { /* ignore cleanup errors */ }
+        }
+        try { Directory.Delete(tempFolder); } catch { /* ignore cleanup errors */ }
+    }
+
+    /// <summary>
+    /// Decodes a single barcode image and writes the results to the console.
+    /// </summary>
+    /// <param name="imagePath">Full path to the barcode image file.</param>
+    private static void DecodeBarcode(string imagePath)
+    {
+        if (!File.Exists(imagePath))
+        {
+            Console.WriteLine($"File not found: {imagePath}");
+            return;
         }
 
-        // --------------------------------------------------------------------
-        // Clean up temporary files and folder
-        // --------------------------------------------------------------------
-        try
+        // Use BarCodeReader to read all supported barcode types
+        using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
         {
-            foreach (string file in Directory.GetFiles(tempFolder))
+            // Apply a high‑performance quality preset for faster processing
+            reader.QualitySettings = QualitySettings.HighPerformance;
+
+            BarCodeResult[] results = reader.ReadBarCodes();
+            if (results.Length == 0)
             {
-                File.Delete(file);
+                Console.WriteLine($"No barcode detected in {Path.GetFileName(imagePath)}");
+                return;
             }
-            Directory.Delete(tempFolder);
-        }
-        catch
-        {
-            // Ignore cleanup errors
+
+            // Output each detected barcode's type and text
+            foreach (var result in results)
+            {
+                Console.WriteLine($"File: {Path.GetFileName(imagePath)} | Type: {result.CodeTypeName} | Text: {result.CodeText}");
+            }
         }
     }
 }

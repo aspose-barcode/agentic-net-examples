@@ -1,104 +1,93 @@
+// Title: Generate Postnet barcodes from database values and save as PNG images
+// Description: Demonstrates how to create Postnet barcodes for ZIP codes retrieved from a data source and store each barcode as an image file.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating the use of BarcodeGenerator with EncodeTypes.Postnet. It shows typical steps such as preparing output folders, validating numeric input, and saving images, which developers often need when integrating postal barcode creation into batch processing or reporting workflows.
+// Prompt: Generate a batch of Postnet barcodes from a database table column and save images to a specified folder.
+// Tags: postnet, barcode, generation, image, aspose.barcode
+
 using System;
-using System.IO;
 using System.Collections.Generic;
-using Aspose.BarCode.Generation;
+using System.IO;
 using Aspose.BarCode;
+using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Generates Postnet barcodes for a list of zip codes and saves them as PNG files.
+/// Demonstrates batch generation of Postnet barcodes from a collection of ZIP codes
+/// and saves each barcode as a PNG image in a dedicated output folder.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Application entry point. Processes command‑line arguments, retrieves zip codes,
-    /// validates them, generates barcodes, and writes the images to the output folder.
+    /// Main entry point. Retrieves ZIP codes, validates them, generates Postnet barcodes,
+    /// and writes the resulting images to disk.
     /// </summary>
-    /// <param name="args">Optional first argument specifying the output directory.</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Determine the output folder: use the first argument if provided, otherwise default to a subfolder.
-        string outputFolder;
-        if (args.Length > 0 && !string.IsNullOrWhiteSpace(args[0]))
-        {
-            outputFolder = args[0];
-        }
-        else
-        {
-            outputFolder = Path.Combine(Directory.GetCurrentDirectory(), "PostnetBarcodes");
-        }
-
-        // Ensure the output directory exists.
+        // Define the folder where barcode images will be stored.
+        string outputFolder = Path.Combine(Directory.GetCurrentDirectory(), "PostnetBarcodes");
         if (!Directory.Exists(outputFolder))
         {
+            // Create the folder if it does not already exist.
             Directory.CreateDirectory(outputFolder);
         }
 
-        // Retrieve the list of Postnet values (zip codes). Replace this stub with real DB access as needed.
-        List<string> postnetValues = GetPostnetValuesFromDatabase();
+        // ------------------------------------------------------------
+        // Simulated data retrieval from a database table column.
+        // Replace this block with actual DB access code, e.g., using
+        // System.Data.SqlClient to read the column values.
+        // ------------------------------------------------------------
+        // Example real implementation (commented out because the
+        // required database provider may not be available in the runner):
+        // List<string> values = new List<string>();
+        // using (var connection = new SqlConnection(connectionString))
+        // {
+        //     connection.Open();
+        //     using (var command = new SqlCommand("SELECT ZipCode FROM Addresses", connection))
+        //     using (var reader = command.ExecuteReader())
+        //     {
+        //         while (reader.Read())
+        //         {
+        //             values.Add(reader.GetString(0));
+        //         }
+        //     }
+        // }
+        List<string> values = new List<string> { "12345", "67890", "24680", "13579", "11223" };
 
-        int index = 1; // Counter for naming output files sequentially.
-
-        // Iterate over each zip code, validate, generate, and save the barcode.
-        foreach (string code in postnetValues)
+        // Iterate over each ZIP code and generate a barcode if the code is valid.
+        foreach (string code in values)
         {
-            // Validate: Postnet barcodes require numeric zip codes only.
-            if (string.IsNullOrWhiteSpace(code) || !IsDigitsOnly(code))
+            // Postnet requires a numeric ZIP code of 5 or 9 digits.
+            if (string.IsNullOrWhiteSpace(code) || (code.Length != 5 && code.Length != 9) || !IsAllDigits(code))
             {
-                Console.WriteLine($"Skipping invalid code '{code}'.");
+                Console.WriteLine($"Skipping invalid Postnet code: {code}");
                 continue;
             }
 
-            // Build the output file name and full path.
-            string fileName = $"Postnet_{index:D3}.png";
-            string filePath = Path.Combine(outputFolder, fileName);
-
-            // Create a barcode generator for the Postnet format and save the image.
+            // Create a barcode generator for the Postnet symbology.
             using (var generator = new BarcodeGenerator(EncodeTypes.Postnet, code))
             {
-                // Optional: set image resolution (dots per inch).
-                generator.Parameters.Resolution = 300f;
+                // Optional: adjust short bar height for postal barcodes.
+                // generator.Parameters.Postal.ShortBarHeight.Point = 2f;
+
+                // Build the full file path for the output image.
+                string filePath = Path.Combine(outputFolder, $"{code}.png");
+
+                // Save the generated barcode as a PNG file.
                 generator.Save(filePath);
+                Console.WriteLine($"Saved Postnet barcode for {code} to {filePath}");
             }
-
-            Console.WriteLine($"Saved barcode for '{code}' to '{filePath}'.");
-            index++;
         }
-
-        Console.WriteLine("Barcode generation completed.");
-    }
-
-    // ------------------------------------------------------------------------
-    // Helper methods
-    // ------------------------------------------------------------------------
-
-    /// <summary>
-    /// Placeholder method that simulates retrieving zip codes from a database.
-    /// Replace with actual data‑access code (e.g., ADO.NET, Entity Framework).
-    /// </summary>
-    /// <returns>A list of zip code strings.</returns>
-    static List<string> GetPostnetValuesFromDatabase()
-    {
-        // Sample data for demonstration purposes.
-        return new List<string>
-        {
-            "12345",
-            "90210",
-            "10001",
-            "33109",
-            "60614"
-        };
     }
 
     /// <summary>
-    /// Determines whether the supplied string consists solely of decimal digits.
+    /// Determines whether the supplied string consists solely of digit characters.
     /// </summary>
-    /// <param name="str">The string to evaluate.</param>
-    /// <returns>True if the string contains only digits; otherwise, false.</returns>
-    static bool IsDigitsOnly(string str)
+    /// <param name="s">The string to evaluate.</param>
+    /// <returns>True if all characters are digits; otherwise, false.</returns>
+    static bool IsAllDigits(string s)
     {
-        foreach (char c in str)
+        foreach (char c in s)
         {
-            if (c < '0' || c > '9')
+            if (!char.IsDigit(c))
                 return false;
         }
         return true;

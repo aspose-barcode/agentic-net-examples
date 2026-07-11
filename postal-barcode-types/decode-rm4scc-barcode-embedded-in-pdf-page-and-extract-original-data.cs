@@ -1,64 +1,78 @@
+// Title: Decode RM4SCC barcode from PDF page
+// Description: Demonstrates how to extract an RM4SCC barcode embedded in a PDF document by converting each page to an image and using Aspose.BarCode to decode it.
+// Category-Description: This example belongs to the Aspose.BarCode PDF barcode recognition category, showcasing the use of PdfConverter (Aspose.Pdf.Facades) together with BarCodeReader (Aspose.BarCode.BarCodeRecognition) to locate and decode RM4SCC symbology. Typical scenarios include processing shipping labels or inventory documents where RM4SCC codes are printed inside PDFs. Developers often need to render PDF pages to images, enable barcode optimization, and apply high‑quality settings for reliable extraction.
+// Prompt: Decode an RM4SCC barcode embedded in a PDF page and extract the original data.
+// Tags: rm4scc, barcode, decode, pdf, aspose.barcode, aspose.pdf, image conversion
+
 using System;
 using System.IO;
-using Aspose.Pdf;
-using Aspose.Pdf.Facades;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.BarCode;
+using Aspose.Pdf.Facades;
 
 /// <summary>
-/// Demonstrates how to extract RM4SCC barcodes from each page of a PDF using Aspose.Pdf and Aspose.BarCode.
+/// Example program that decodes RM4SCC barcodes embedded in PDF pages using Aspose.BarCode and Aspose.Pdf.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Accepts an optional command‑line argument specifying the PDF file path.
+    /// Entry point. Renders each PDF page to an image, then reads RM4SCC barcodes from the image.
     /// </summary>
-    /// <param name="args">Command‑line arguments.</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Determine the PDF file path: use the first argument if supplied, otherwise default to "sample.pdf".
-        string pdfPath = args.Length > 0 ? args[0] : "sample.pdf";
+        // Path to the PDF file containing the RM4SCC barcode.
+        const string pdfPath = "sample.pdf";
 
-        // Verify that the specified PDF file exists before proceeding.
+        // Verify that the PDF file exists before proceeding.
         if (!File.Exists(pdfPath))
         {
-            Console.WriteLine($"PDF file not found: {pdfPath}");
+            Console.WriteLine($"File not found: {pdfPath}");
             return;
         }
 
-        // Open the PDF document within a using block to ensure proper disposal.
-        using (var pdfDocument = new Document(pdfPath))
+        // Initialize the PDF converter which will render pages to images.
+        using (var pdfConverter = new PdfConverter())
         {
-            // Create a PdfConverter to render PDF pages as images.
-            var pdfConverter = new PdfConverter(pdfDocument);
-            // Enable barcode optimization to improve barcode detection performance.
+            pdfConverter.BindPdf(pdfPath);
+            // Enable barcode optimization to improve detection accuracy.
             pdfConverter.RenderingOptions.BarcodeOptimization = true;
 
-            // Loop through each page in the PDF.
-            for (int pageNumber = 1; pageNumber <= pdfDocument.Pages.Count; pageNumber++)
+            // Determine the total number of pages in the document.
+            int totalPages = pdfConverter.Document.Pages.Count;
+
+            // Iterate through each page (example processes all pages).
+            for (int pageNumber = 1; pageNumber <= totalPages; pageNumber++)
             {
-                // Configure the converter to process only the current page.
+                // Set the range to a single page for conversion.
                 pdfConverter.StartPage = pageNumber;
                 pdfConverter.EndPage = pageNumber;
                 pdfConverter.DoConvert();
 
-                // Store the rendered page image in a memory stream.
+                // Render the current page to an in‑memory image stream.
                 using (var imageStream = new MemoryStream())
                 {
                     pdfConverter.GetNextImage(imageStream);
-                    // Reset stream position to the beginning for reading.
-                    imageStream.Position = 0;
+                    imageStream.Position = 0; // Reset stream position for reading.
 
-                    // Initialize a barcode reader for RM4SCC barcodes using the image stream.
+                    // Create a barcode reader configured for RM4SCC symbology.
                     using (var reader = new BarCodeReader(imageStream, DecodeType.RM4SCC))
                     {
-                        // Read all barcodes found on the page.
+                        // Use high‑quality settings to improve recognition reliability.
+                        reader.QualitySettings = QualitySettings.HighQuality;
+
+                        // Attempt to read all barcodes on the image.
                         var results = reader.ReadBarCodes();
-                        // Output each barcode's type and decoded text.
-                        foreach (var result in results)
+
+                        if (results.Length == 0)
                         {
-                            Console.WriteLine($"Page {pageNumber}: Type = {result.CodeTypeName}, Text = {result.CodeText}");
+                            Console.WriteLine($"No RM4SCC barcode detected on page {pageNumber}.");
+                        }
+                        else
+                        {
+                            // Output each decoded barcode value.
+                            foreach (var result in results)
+                            {
+                                Console.WriteLine($"Page {pageNumber} - Decoded RM4SCC: {result.CodeText}");
+                            }
                         }
                     }
                 }

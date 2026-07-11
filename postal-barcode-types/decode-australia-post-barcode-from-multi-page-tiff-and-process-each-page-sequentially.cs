@@ -1,61 +1,69 @@
+// Title: Decode Australia Post barcode from a multi‑page TIFF
+// Description: Demonstrates how to read Australia Post barcodes from each page of a multi‑page TIFF image and output barcode type, text, and location.
+// Category-Description: This example belongs to the Aspose.BarCode recognition category, showcasing the use of BarCodeReader with DecodeType.AustraliaPost on multi‑frame images. It illustrates loading TIFF frames via Aspose.Drawing, converting frames to a supported format, and iterating through pages to extract barcode data—common tasks for developers handling batch scanning or document processing workflows.
+// Prompt: Decode an Australia Post barcode from a multi‑page TIFF and process each page sequentially.
+// Tags: australia post, barcode, decode, tiff, multiframe, aspose.barcode, aspose.drawing
+
 using System;
 using System.IO;
-using Aspose.BarCode;
-using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
+using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates how to read Australia Post barcodes from each page of a multi‑page TIFF file.
+/// Example program that decodes Australia Post barcodes from each page of a multi‑page TIFF file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Processes each frame of the TIFF, decodes barcodes, and prints results.
+    /// Entry point of the application. Loads the TIFF, iterates through its pages, and reads barcodes.
     /// </summary>
     static void Main()
     {
         // Path to the multi‑page TIFF file containing Australia Post barcodes
         const string tiffPath = "input.tif";
 
-        // Verify that the input file exists before proceeding
+        // Verify that the file exists before attempting to process it
         if (!File.Exists(tiffPath))
         {
             Console.WriteLine($"File not found: {tiffPath}");
             return;
         }
 
-        // Load the TIFF image using Aspose.Drawing's Bitmap class
+        // Load the TIFF image using Aspose.Drawing
         using (var tiffImage = new Bitmap(tiffPath))
         {
-            // FrameDimension.Time is used for multi‑frame (page) images such as TIFF
+            // Use the time dimension to iterate over pages (frames) of the TIFF
             var frameDimension = FrameDimension.Time;
-            int frameCount = tiffImage.GetFrameCount(frameDimension);
+            int pageCount = tiffImage.GetFrameCount(frameDimension);
 
-            // Iterate through each frame (page) in the TIFF
-            for (int i = 0; i < frameCount; i++)
+            // Process each page sequentially
+            for (int pageIndex = 0; pageIndex < pageCount; pageIndex++)
             {
-                // Activate the current frame so it can be processed
-                tiffImage.SelectActiveFrame(frameDimension, i);
+                // Select the current frame (page) in the TIFF
+                tiffImage.SelectActiveFrame(frameDimension, pageIndex);
 
-                // Convert the current frame to PNG and store it in a memory stream
+                // Save the selected frame to a memory stream as PNG (BarCodeReader works with Bitmap)
                 using (var ms = new MemoryStream())
                 {
                     tiffImage.Save(ms, ImageFormat.Png);
-                    ms.Position = 0; // Reset stream position for reading
+                    ms.Position = 0;
 
-                    // Initialize the barcode reader for Australia Post symbology
-                    using (var reader = new BarCodeReader(ms, DecodeType.AustraliaPost))
+                    // Load the frame as a Bitmap for barcode recognition
+                    using (var frameBitmap = new Bitmap(ms))
                     {
-                        // Optional: configure decoding parameters specific to Australia Post
-                        reader.BarcodeSettings.AustraliaPost.CustomerInformationInterpretingType = CustomerInformationInterpretingType.CTable;
-                        reader.BarcodeSettings.AustraliaPost.IgnoreEndingFillingPatternsForCTable = true;
-
-                        // Read all barcodes found in the current frame
-                        foreach (var result in reader.ReadBarCodes())
+                        // Create a reader configured for Australia Post barcodes
+                        using (var reader = new BarCodeReader(frameBitmap, DecodeType.AustraliaPost))
                         {
-                            // Output the decoded text along with the page number (1‑based)
-                            Console.WriteLine($"Page {i + 1}: CodeText = {result.CodeText}");
+                            // Read all barcodes on the current page
+                            foreach (var result in reader.ReadBarCodes())
+                            {
+                                Console.WriteLine($"Page {pageIndex + 1}: Type = {result.CodeType}, Text = {result.CodeText}");
+
+                                // Output the bounding rectangle of the detected barcode
+                                var rect = result.Region.Rectangle;
+                                Console.WriteLine($"  Region - X:{rect.X}, Y:{rect.Y}, Width:{rect.Width}, Height:{rect.Height}");
+                            }
                         }
                     }
                 }

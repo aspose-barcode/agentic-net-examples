@@ -1,66 +1,57 @@
+// Title: Numeric Validation for 2‑State Barcode Generation
+// Description: Demonstrates how to validate that the input for a 2‑state barcode contains only numeric characters before generating the barcode.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and related parameter classes to create 1D barcodes. Typical scenarios include validating user input, handling exceptions for invalid data, and configuring visual properties. Developers often need to ensure data integrity before invoking the generation API, making this pattern a common prerequisite in barcode‑related workflows.
+// Prompt: Validate numeric input for a 2‑state barcode generator and raise an exception for non‑numeric characters.
+// Tags: barcode, symbology, validation, code128, generation, aspose.barcode
+
 using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generation of a OneCode (2‑state) barcode after validating that the input
-/// consists solely of numeric characters.
+/// Example program that validates numeric input and generates a 2‑state barcode using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Validates the sample code text, generates a OneCode barcode,
-    /// and handles any validation or generation errors.
+    /// Entry point of the application. Validates the code text, generates a barcode, and saves it to a file.
     /// </summary>
     static void Main()
     {
-        // Sample code text – replace with any value to test validation
+        // Sample numeric input for a 2‑state barcode.
         string codeText = "1234567890";
 
-        try
+        // Ensure the input consists only of digits; otherwise throw an Aspose‑specific exception.
+        if (!IsNumeric(codeText))
         {
-            // Validate that the code text contains only digits
-            ValidateNumeric(codeText);
-
-            // Create a barcode generator for the OneCode symbology using the validated text
-            using (var generator = new BarcodeGenerator(EncodeTypes.OneCode, codeText))
-            {
-                // Configure the generator to throw an exception if the code text is invalid
-                generator.Parameters.Barcode.ThrowExceptionWhenCodeTextIncorrect = true;
-
-                // Save the generated barcode image to a PNG file
-                generator.Save("OneCode.png");
-
-                // Inform the user that the barcode was generated successfully
-                Console.WriteLine("Barcode generated successfully: OneCode.png");
-            }
+            throw new InvalidCodeException("The code text contains non‑numeric characters.");
         }
-        // Handle validation errors (e.g., non‑numeric characters)
-        catch (ArgumentException ex)
+
+        // Create a barcode generator for the Code128 symbology.
+        // The generator implements IDisposable, so we use a using block to guarantee proper resource cleanup.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
         {
-            Console.WriteLine($"Input validation error: {ex.Message}");
-        }
-        // Handle any other errors that may occur during barcode generation
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Barcode generation error: {ex.Message}");
+            // Configure visual appearance: black bars on a white background.
+            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
+            generator.Parameters.BackColor = Aspose.Drawing.Color.White;
+
+            // Define the output file path and save the generated image.
+            string outputPath = "barcode.png";
+            generator.Save(outputPath);
+
+            // Inform the user that the operation succeeded.
+            Console.WriteLine($"Barcode generated and saved to '{outputPath}'.");
         }
     }
 
-    // Validates that the provided string contains only numeric characters.
-    // Throws ArgumentException if any non‑numeric character is found.
-    static void ValidateNumeric(string value)
+    // Helper method that returns true only if every character in the string is a digit (0‑9).
+    private static bool IsNumeric(string text)
     {
-        // Ensure the input is not null or empty
-        if (string.IsNullOrEmpty(value))
-            throw new ArgumentException("Code text cannot be null or empty.");
-
-        // Check each character to confirm it is a digit
-        foreach (char c in value)
+        foreach (char c in text)
         {
-            if (!char.IsDigit(c))
-                throw new ArgumentException("Code text must contain only numeric characters.");
+            if (c < '0' || c > '9')
+                return false;
         }
+        return true;
     }
 }

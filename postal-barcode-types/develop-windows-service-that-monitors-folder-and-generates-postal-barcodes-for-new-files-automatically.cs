@@ -1,66 +1,74 @@
+// Title: Windows Service Simulation for Automatic Postal Barcode Generation
+// Description: Demonstrates monitoring a folder and generating Postnet barcodes for new files using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode file‑processing and barcode generation category. It showcases the BarcodeGenerator class with EncodeTypes.Postnet, folder handling, and image output—common tasks for developers automating postal barcode creation in batch or service scenarios.
+// Prompt: Develop a Windows service that monitors a folder and generates postal barcodes for new files automatically.
+// Tags: postnet, postal barcode, barcode generation, file monitoring, aspose.barcode, image output
+
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generating Postnet barcodes from text files in an input directory.
+/// Simulates a Windows service that watches a directory and creates a Postnet barcode
+/// for each newly added file. The example focuses on folder preparation, file handling,
+/// and barcode generation using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Processes each file in the Input folder,
-    /// creates a Postnet barcode using the file name (without extension) as the
-    /// barcode text, and saves the resulting image to the Output folder.
+    /// Entry point of the simulation. Sets up input/output folders, ensures a sample file,
+    /// and generates a Postnet barcode based on the file name.
     /// </summary>
     static void Main()
     {
-        // Define input and output directories relative to the current working directory.
-        string inputFolder = Path.Combine(Directory.GetCurrentDirectory(), "Input");
-        string outputFolder = Path.Combine(Directory.GetCurrentDirectory(), "Output");
+        // Define input and output directories relative to the current working directory
+        string inputFolder = Path.Combine(Directory.GetCurrentDirectory(), "InputFiles");
+        string outputFolder = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
 
-        // Ensure the input directory exists.
+        // Ensure the input folder exists; create it if missing
         if (!Directory.Exists(inputFolder))
         {
             Directory.CreateDirectory(inputFolder);
         }
 
-        // Ensure the output directory exists.
+        // Ensure the output folder exists; create it if missing
         if (!Directory.Exists(outputFolder))
         {
             Directory.CreateDirectory(outputFolder);
         }
 
-        // If the input folder is empty, create a sample file to demonstrate the workflow.
-        if (Directory.GetFiles(inputFolder).Length == 0)
+        // Seed a sample file when the input folder is empty to demonstrate processing
+        string[] existingFiles = Directory.GetFiles(inputFolder);
+        if (existingFiles.Length == 0)
         {
-            string sampleFile = Path.Combine(inputFolder, "Sample.txt");
-            File.WriteAllText(sampleFile, "12345");
+            string samplePath = Path.Combine(inputFolder, "Sample.txt");
+            File.WriteAllText(samplePath, "Sample content for postal barcode");
+            existingFiles = new[] { samplePath };
         }
 
-        // Process each file found in the input folder.
-        foreach (string filePath in Directory.GetFiles(inputFolder))
+        // Simulate monitoring by processing the first file found in the input folder
+        string fileToProcess = existingFiles[0];
+        if (!File.Exists(fileToProcess))
         {
-            // Use the file name (without extension) as the barcode text.
-            string codeText = Path.GetFileNameWithoutExtension(filePath);
-            if (string.IsNullOrWhiteSpace(codeText))
-            {
-                Console.WriteLine($"Skipping file '{filePath}' because it has no usable name for barcode text.");
-                continue;
-            }
+            Console.WriteLine($"File not found: {fileToProcess}");
+            return;
+        }
 
-            // Build the output file path for the generated barcode image.
-            string outputPath = Path.Combine(outputFolder, $"{codeText}_postnet.png");
+        // Use the file name (without extension) as the barcode text (e.g., "Sample")
+        string codeText = Path.GetFileNameWithoutExtension(fileToProcess);
 
-            // Generate a postal Postnet barcode for the code text.
-            using (var generator = new BarcodeGenerator(EncodeTypes.Postnet, codeText))
-            {
-                // Set a higher resolution for better image quality.
-                generator.Parameters.Resolution = 300f;
-                generator.Save(outputPath);
-            }
+        // Generate a Postnet (postal) barcode for the extracted code text
+        using (var generator = new BarcodeGenerator(EncodeTypes.Postnet, codeText))
+        {
+            // Optional: customize barcode appearance (black bars on white background)
+            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
+            generator.Parameters.BackColor = Aspose.Drawing.Color.White;
 
-            Console.WriteLine($"Generated barcode for '{filePath}' -> '{outputPath}'.");
+            // Construct the output image path and save the barcode as PNG
+            string outputPath = Path.Combine(outputFolder, $"{codeText}_Postnet.png");
+            generator.Save(outputPath);
+            Console.WriteLine($"Barcode generated: {outputPath}");
         }
     }
 }
