@@ -1,85 +1,106 @@
+// Title: StripFNC Support Validation for Barcode Types
+// Description: Demonstrates generating a barcode, enabling StripFNC during reading, and validating that the barcode symbology supports FNC stripping.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes and BarCodeReader with BarcodeSettings to decode them. Developers often need to handle FNC (Function) characters, especially in GS1 implementations, and must verify that the selected symbology supports stripping these characters. The code illustrates typical error‑handling patterns for unsupported barcode types.
+// Prompt: Implement error handling for unsupported barcode types when StripFNC is true and FNC symbols are present.
+// Tags: barcode symbology, fnc stripping, error handling, aspose.barcode, generation, recognition, c#
+
 using System;
-using System.IO;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.BarCode;
 
 /// <summary>
-/// Demonstrates generating a Code128 barcode containing an FNC1 character,
-/// then reading it with StripFNC enabled to observe behavior.
+/// Example program that generates a barcode, enables StripFNC during reading,
+/// and validates whether the barcode type supports FNC stripping.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the sample application.
-    /// Generates a barcode, reads it with StripFNC, and outputs results.
+    /// Entry point of the example. Generates a barcode, configures the reader,
+    /// checks for FNC support, and decodes the barcode while handling possible errors.
     /// </summary>
     static void Main()
     {
-        // Prepare a temporary file path for the barcode image
-        string imagePath = Path.Combine(Path.GetTempPath(), "sample_barcode.png");
+        // Define the barcode type and a code text that includes an FNC placeholder.
+        // In real scenarios FNC characters are represented differently,
+        // but for demonstration we use the string "<FNC1>".
+        BaseEncodeType barcodeType = EncodeTypes.Code128;
+        string originalCodeText = "ABC<FNC1>DEF";
 
-        // Create a Code128 barcode that contains an FNC1 character (ASCII 29)
-        // This symbology does not support StripFNC, so we expect handling of the case.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "\u001D12345"))
+        // --------------------------------------------------------------------
+        // Generate and save the barcode image.
+        // --------------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(barcodeType, originalCodeText))
         {
-            // Save the generated barcode image to the temporary path
-            generator.Save(imagePath);
+            generator.Save("barcode.png");
         }
 
-        // Verify the image was created successfully
-        if (!File.Exists(imagePath))
+        // --------------------------------------------------------------------
+        // Prepare the barcode reader with StripFNC enabled.
+        // --------------------------------------------------------------------
+        using (var reader = new BarCodeReader("barcode.png", DecodeType.Code128))
         {
-            Console.WriteLine("Failed to create barcode image.");
-            return;
-        }
-
-        // Attempt to read the barcode with StripFNC enabled
-        using (var reader = new BarCodeReader(imagePath, DecodeType.Code128))
-        {
-            // Enable stripping of FNC characters during decoding
+            // Enable stripping of FNC characters during decoding.
             reader.BarcodeSettings.StripFNC = true;
 
-            try
+            // List of symbologies that support FNC stripping.
+            BaseEncodeType[] fncSupported = new[]
             {
-                // Read all barcodes from the image
-                var results = reader.ReadBarCodes();
+                EncodeTypes.GS1Code128,
+                EncodeTypes.GS1QR,
+                EncodeTypes.GS1DataMatrix,
+                EncodeTypes.GS1Aztec,
+                EncodeTypes.GS1HanXin,
+                EncodeTypes.GS1CompositeBar,
+                EncodeTypes.GS1DotCode,
+                EncodeTypes.GS1MicroPdf417,
+                EncodeTypes.QR,
+                EncodeTypes.DataMatrix,
+                EncodeTypes.Aztec
+            };
 
-                // Process each decoding result
-                foreach (var result in results)
+            // ----------------------------------------------------------------
+            // Validate that the selected barcode type supports StripFNC
+            // when an FNC placeholder is present in the original code text.
+            // ----------------------------------------------------------------
+            if (reader.BarcodeSettings.StripFNC && originalCodeText.Contains("<FNC1>"))
+            {
+                bool isSupported = false;
+                foreach (var supported in fncSupported)
                 {
-                    // Determine whether the decoded text still contains the FNC character (ASCII 29)
-                    bool containsFnc = result.CodeText != null && result.CodeText.Contains("\u001D");
-
-                    if (containsFnc)
+                    if (barcodeType.Equals(supported))
                     {
-                        // The barcode type does not support StripFNC; report a warning
-                        Console.WriteLine($"[Warning] Barcode type '{result.CodeTypeName}' does not support StripFNC. FNC characters remain in the code text.");
-                    }
-                    else
-                    {
-                        // StripFNC succeeded; display the cleaned code text
-                        Console.WriteLine($"Barcode type: {result.CodeTypeName}");
-                        Console.WriteLine($"CodeText (FNC stripped): {result.CodeText}");
+                        isSupported = true;
+                        break;
                     }
                 }
+
+                if (!isSupported)
+                {
+                    // Report the unsupported scenario; developers may choose to throw.
+                    Console.WriteLine($"Error: StripFNC is enabled, but barcode type '{barcodeType.GetType().Name}' does not support FNC characters.");
+                    // throw new ArgumentException("Unsupported barcode type for StripFNC.");
+                }
+            }
+
+            // ----------------------------------------------------------------
+            // Attempt to read the barcode and handle any Aspose.BarCode exceptions.
+            // ----------------------------------------------------------------
+            try
+            {
+                foreach (BarCodeResult result in reader.ReadBarCodes())
+                {
+                    Console.WriteLine($"Decoded CodeText: {result.CodeText}");
+                }
+            }
+            catch (Aspose.BarCode.BarCodeException ex)
+            {
+                Console.WriteLine($"BarCodeException caught: {ex.Message}");
             }
             catch (Exception ex)
             {
-                // Handle any unexpected errors, such as unsupported operation for StripFNC
-                Console.WriteLine($"Error during barcode reading: {ex.Message}");
-                Console.WriteLine("The selected barcode type may not support StripFNC.");
+                Console.WriteLine($"Unexpected exception: {ex.Message}");
             }
-        }
-
-        // Clean up the temporary image file
-        try
-        {
-            File.Delete(imagePath);
-        }
-        catch
-        {
-            // Ignored – file may be in use or already deleted
         }
     }
 }

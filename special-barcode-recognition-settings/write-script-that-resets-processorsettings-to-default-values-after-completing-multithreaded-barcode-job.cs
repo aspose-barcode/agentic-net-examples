@@ -1,99 +1,99 @@
+// Title: Reset ProcessorSettings after multithreaded barcode processing
+// Description: Demonstrates generating barcode images, configuring multithreaded recognition, and resetting ProcessorSettings to defaults.
+// Category-Description: This example belongs to the Aspose.BarCode multithreading and performance tuning category. It showcases key API classes such as BarcodeGenerator, BarCodeReader, and ProcessorSettings, illustrating typical use cases like batch barcode generation, parallel recognition, and proper cleanup of processor configurations. Developers often need to adjust these settings for optimal CPU utilization and then restore defaults to avoid side effects in subsequent operations.
+// Prompt: Write a script that resets ProcessorSettings to default values after completing a multithreaded barcode job.
+// Tags: code128, generation, recognition, multithreading, png, barcodgenerator, barcodereader, processorsettings
+
 using System;
 using System.IO;
-using System.Threading.Tasks;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating Code128 barcodes, reading them in parallel,
-/// and resetting processor settings using Aspose.BarCode.
+/// Example program that generates barcode images, configures multithreaded barcode recognition,
+/// and resets ProcessorSettings to their default values after processing.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates temporary barcode images, reads them concurrently,
-    /// resets processing settings, and cleans up resources.
+    /// Entry point of the example. Executes barcode generation, multithreaded reading, and settings reset.
     /// </summary>
     static void Main()
     {
-        // --------------------------------------------------------------------
-        // 1. Prepare a temporary directory for barcode images
-        // --------------------------------------------------------------------
-        string tempDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodes");
-        Directory.CreateDirectory(tempDir);
-
-        // --------------------------------------------------------------------
-        // 2. Define sample code texts for barcode generation
-        // --------------------------------------------------------------------
-        string[] codeTexts = new string[] { "ABC123", "DEF456", "GHI789", "JKL012", "MNO345" };
-        string[] imagePaths = new string[codeTexts.Length];
-
-        // --------------------------------------------------------------------
-        // 3. Generate barcode images and store their file paths
-        // --------------------------------------------------------------------
-        for (int i = 0; i < codeTexts.Length; i++)
+        // Prepare a temporary folder for barcode images
+        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodes");
+        if (!Directory.Exists(outputDir))
         {
-            string imagePath = Path.Combine(tempDir, $"barcode_{i}.png");
-
-            // Create a barcode generator for Code128 with the current text
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeTexts[i]))
-            {
-                // Save the generated barcode image using default settings
-                generator.Save(imagePath);
-            }
-
-            // Keep the path for later processing
-            imagePaths[i] = imagePath;
+            Directory.CreateDirectory(outputDir);
         }
 
-        // --------------------------------------------------------------------
-        // 4. Configure ProcessorSettings for multithreaded processing
-        // --------------------------------------------------------------------
-        // Enable use of all available CPU cores for BarCodeReader operations
-        BarCodeReader.ProcessorSettings.UseAllCores = true;
+        // Sample barcode texts to encode
+        string[] texts = { "ABC123", "XYZ789", "HELLO", "WORLD", "TEST5" };
+        string[] imagePaths = new string[texts.Length];
 
-        // --------------------------------------------------------------------
-        // 5. Process barcodes in parallel
-        // --------------------------------------------------------------------
-        Parallel.ForEach(imagePaths, imagePath =>
+        // Generate barcode images using default settings
+        for (int i = 0; i < texts.Length; i++)
         {
-            // Each parallel task reads its assigned barcode image
-            using (var reader = new BarCodeReader(imagePath, DecodeType.Code128))
+            string filePath = Path.Combine(outputDir, $"barcode_{i}.png");
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, texts[i]))
             {
-                // Set a high‑performance quality preset (optional)
-                reader.QualitySettings = QualitySettings.HighPerformance;
+                // Save the barcode as PNG
+                generator.Save(filePath, BarCodeImageFormat.Png);
+            }
+            imagePaths[i] = filePath;
+        }
 
-                // Iterate over all detected barcodes in the image
-                foreach (var result in reader.ReadBarCodes())
+        // Configure ProcessorSettings for a controlled multithreaded job
+        BarCodeReader.ProcessorSettings.UseAllCores = false;
+        BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount = Math.Max(1, Environment.ProcessorCount / 2);
+        BarCodeReader.ProcessorSettings.MaxAdditionalAllowedThreads = Environment.ProcessorCount * 2;
+
+        Console.WriteLine("ProcessorSettings configured for multithreaded job:");
+        Console.WriteLine($"  UseAllCores = {BarCodeReader.ProcessorSettings.UseAllCores}");
+        Console.WriteLine($"  UseOnlyThisCoresCount = {BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount}");
+        Console.WriteLine($"  MaxAdditionalAllowedThreads = {BarCodeReader.ProcessorSettings.MaxAdditionalAllowedThreads}");
+
+        // Perform barcode reading using the configured ProcessorSettings
+        foreach (string path in imagePaths)
+        {
+            if (!File.Exists(path))
+            {
+                Console.WriteLine($"File not found: {path}");
+                continue;
+            }
+
+            using (BarCodeReader reader = new BarCodeReader(path, DecodeType.Code128))
+            {
+                // Iterate through all detected barcodes in the image
+                foreach (BarCodeResult result in reader.ReadBarCodes())
                 {
-                    Console.WriteLine($"File: {Path.GetFileName(imagePath)} | Detected: {result.CodeText}");
+                    Console.WriteLine($"Detected barcode: Type={result.CodeTypeName}, Text={result.CodeText}");
                 }
             }
-        });
-
-        // --------------------------------------------------------------------
-        // 6. Reset ProcessorSettings to their default values
-        // --------------------------------------------------------------------
-        // Default: UseAllCores = false, UseOnlyThisCoresCount = 0 (no specific core count)
-        BarCodeReader.ProcessorSettings.UseAllCores = false;
-        BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount = 0;
-
-        Console.WriteLine("ProcessorSettings have been reset to default values.");
-
-        // --------------------------------------------------------------------
-        // 7. Clean up temporary files (optional)
-        // --------------------------------------------------------------------
-        foreach (var file in imagePaths)
-        {
-            if (File.Exists(file))
-            {
-                File.Delete(file);
-            }
         }
 
-        // Remove the temporary directory
-        Directory.Delete(tempDir, true);
+        // Reset ProcessorSettings to their default values
+        BarCodeReader.ProcessorSettings.UseAllCores = false;
+        BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount = 0;
+        BarCodeReader.ProcessorSettings.MaxAdditionalAllowedThreads = 0;
+
+        Console.WriteLine("ProcessorSettings have been reset to defaults:");
+        Console.WriteLine($"  UseAllCores = {BarCodeReader.ProcessorSettings.UseAllCores}");
+        Console.WriteLine($"  UseOnlyThisCoresCount = {BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount}");
+        Console.WriteLine($"  MaxAdditionalAllowedThreads = {BarCodeReader.ProcessorSettings.MaxAdditionalAllowedThreads}");
+
+        // Cleanup generated files (optional)
+        foreach (string path in imagePaths)
+        {
+            if (File.Exists(path))
+            {
+                File.Delete(path);
+            }
+        }
+        if (Directory.Exists(outputDir))
+        {
+            Directory.Delete(outputDir, true);
+        }
     }
 }

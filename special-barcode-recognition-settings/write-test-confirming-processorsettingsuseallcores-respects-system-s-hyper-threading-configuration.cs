@@ -1,83 +1,72 @@
+// Title: Demonstrate ProcessorSettings.UseAllCores with Code128 barcode
+// Description: Generates a Code128 barcode, saves it as PNG, then reads it using Aspose.BarCode while toggling the UseAllCores setting to show core utilization.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, illustrating how to control multi‑core processing via ProcessorSettings. It showcases BarcodeGenerator for creating barcodes, BarCodeReader for decoding, and the ProcessorSettings API for managing CPU core usage—common tasks for developers optimizing performance in high‑throughput scanning scenarios.
+// Prompt: Write a test confirming ProcessorSettings.UseAllCores respects the system's hyper‑threading configuration.
+// Tags: code128, generation, recognition, png, barcodegenerator, barcodereader, processorsettings
+
 using System;
-using System.IO;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates barcode generation and recognition while configuring processor settings.
+/// Example program that creates a Code128 barcode, saves it as an image,
+/// and demonstrates the effect of ProcessorSettings.UseAllCores on barcode reading performance.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a Code128 barcode, saves it to a temporary PNG file,
-    /// then reads it back using different processor settings.
+    /// Entry point of the example. Generates a barcode, verifies the file,
+    /// and reads it twice: once with all CPU cores enabled and once with a limited core count.
     /// </summary>
     static void Main()
     {
-        // Define path for a temporary PNG file to store the generated barcode image.
-        string tempPath = Path.Combine(Path.GetTempPath(), "test_barcode.png");
+        // Define the output path for the generated barcode image.
+        string imagePath = "barcode.png";
 
-        // Generate a simple Code128 barcode with checksum enabled and save it as PNG.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456789"))
+        // Generate a simple Code128 barcode and save it to the specified file.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Test123"))
         {
-            // Enable checksum for Code128 (required by the API).
-            generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
-            // Save the barcode image to the temporary file.
-            generator.Save(tempPath, BarCodeImageFormat.Png);
+            generator.Save(imagePath);
         }
 
-        // Retrieve and display the number of logical processors (including hyper‑threads).
-        int logicalProcessors = Environment.ProcessorCount;
-        Console.WriteLine($"Logical processors (including hyper‑threads): {logicalProcessors}");
+        // Verify that the image file was successfully created.
+        if (!System.IO.File.Exists(imagePath))
+        {
+            Console.WriteLine("Failed to create barcode image.");
+            return;
+        }
 
-        // ------------------------------------------------------------
-        // Test barcode reading with UseAllCores = true
-        // ------------------------------------------------------------
+        // Display the default ProcessorSettings.UseAllCores value.
+        Console.WriteLine($"Default UseAllCores: {BarCodeReader.ProcessorSettings.UseAllCores}");
+
+        // Enable the use of all processor cores for barcode reading.
         BarCodeReader.ProcessorSettings.UseAllCores = true;
-        Console.WriteLine($"ProcessorSettings.UseAllCores set to: {BarCodeReader.ProcessorSettings.UseAllCores}");
+        Console.WriteLine($"After setting UseAllCores = true: {BarCodeReader.ProcessorSettings.UseAllCores}");
 
         // Read the barcode using all available cores.
-        using (var readerAll = new BarCodeReader(tempPath, DecodeType.Code128))
+        using (var reader = new BarCodeReader(imagePath, DecodeType.Code128))
         {
-            foreach (var result in readerAll.ReadBarCodes())
+            foreach (var result in reader.ReadBarCodes())
             {
-                Console.WriteLine("[UseAllCores=true] Detected barcode: " + result.CodeText);
+                Console.WriteLine($"[AllCores] Detected CodeText: {result.CodeText}");
             }
         }
 
-        // ------------------------------------------------------------
-        // Test barcode reading with UseAllCores = false and limited cores
-        // ------------------------------------------------------------
+        // Disable UseAllCores and limit the number of cores used for processing.
         BarCodeReader.ProcessorSettings.UseAllCores = false;
-        // Limit the number of cores to half of the logical processors, rounded up, but at least 1.
-        BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount = Math.Max(1, logicalProcessors / 2);
-        Console.WriteLine($"ProcessorSettings.UseAllCores set to: {BarCodeReader.ProcessorSettings.UseAllCores}");
-        Console.WriteLine($"ProcessorSettings.UseOnlyThisCoresCount set to: {BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount}");
+        int limitedCores = Math.Max(1, Environment.ProcessorCount / 2);
+        BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount = limitedCores;
+        Console.WriteLine($"After disabling UseAllCores: {BarCodeReader.ProcessorSettings.UseAllCores}");
+        Console.WriteLine($"Limited cores count: {BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount}");
 
-        // Read the barcode using the limited core count.
-        using (var readerLimited = new BarCodeReader(tempPath, DecodeType.Code128))
+        // Read the barcode again, this time using the limited core count.
+        using (var reader = new BarCodeReader(imagePath, DecodeType.Code128))
         {
-            foreach (var result in readerLimited.ReadBarCodes())
+            foreach (var result in reader.ReadBarCodes())
             {
-                Console.WriteLine("[UseAllCores=false] Detected barcode: " + result.CodeText);
+                Console.WriteLine($"[LimitedCores] Detected CodeText: {result.CodeText}");
             }
-        }
-
-        // ------------------------------------------------------------
-        // Clean up: delete the temporary barcode image file
-        // ------------------------------------------------------------
-        try
-        {
-            if (File.Exists(tempPath))
-            {
-                File.Delete(tempPath);
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine("Failed to delete temporary file: " + ex.Message);
         }
     }
 }

@@ -1,96 +1,87 @@
+// Title: Benchmark ProcessorSettings.MaxAdditionalAllowedThreads performance
+// Description: Demonstrates measuring barcode recognition speed using single‑thread vs multi‑thread settings.
+// Category-Description: This example belongs to Aspose.BarCode performance tuning, showing how to configure BarCodeReader.ProcessorSettings for threading. It uses BarcodeGenerator to create sample Code128 barcodes and BarCodeReader to decode them, a common scenario when developers need to optimize bulk barcode processing in server or batch jobs.
+// Prompt: Write a benchmark comparing performance when ProcessorSettings.MaxAdditionalAllowedThreads is zero (single‑thread) versus greater than zero.
+// Tags: barcode, code128, performance, multithreading, aspnet, aspose.barcode, generation, recognition
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates benchmarking of barcode recognition using Aspose.BarCode.
-/// Generates sample barcodes, measures recognition time in single‑ and multi‑threaded modes,
-/// and outputs the results to the console.
+/// Demonstrates benchmarking barcode recognition with different thread settings.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Application entry point.
-    /// Generates a set of barcode images, runs recognition benchmarks, and disposes resources.
+    /// Entry point. Generates sample barcodes, runs single‑ and multi‑thread benchmarks, and outputs elapsed times.
     /// </summary>
     static void Main()
     {
-        // Create a small collection of barcode images held in memory.
-        var barcodeStreams = GenerateSampleBarcodes(5);
+        const int sampleCount = 5;
+        var barcodeStreams = new List<MemoryStream>();
 
-        // Benchmark single‑threaded processing (no additional threads allowed).
-        BarCodeReader.ProcessorSettings.MaxAdditionalAllowedThreads = 0;
-        long singleThreadMs = MeasureRecognitionTime(barcodeStreams);
-        Console.WriteLine($"Single‑threaded recognition time: {singleThreadMs} ms");
+        // Generate sample barcode images in memory
+        for (int i = 0; i < sampleCount; i++)
+        {
+            var codeText = $"Sample{i}";
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+            {
+                var ms = new MemoryStream();
+                generator.Save(ms, BarCodeImageFormat.Png);
+                ms.Position = 0;
+                barcodeStreams.Add(ms);
+            }
+        }
 
-        // Benchmark multi‑threaded processing (allow as many extra threads as there are processors).
-        BarCodeReader.ProcessorSettings.MaxAdditionalAllowedThreads = Environment.ProcessorCount;
-        long multiThreadMs = MeasureRecognitionTime(barcodeStreams);
-        Console.WriteLine($"Multi‑threaded recognition time: {multiThreadMs} ms");
+        // Benchmark with single‑thread (MaxAdditionalAllowedThreads = 0)
+        long singleThreadTicks = RunBenchmark(barcodeStreams, 0);
+        Console.WriteLine($"Single‑thread elapsed: {TimeSpan.FromTicks(singleThreadTicks).TotalMilliseconds} ms");
 
-        // Release all memory streams.
+        // Benchmark with multi‑thread (MaxAdditionalAllowedThreads > 0)
+        int additionalThreads = Math.Max(1, Environment.ProcessorCount - 1);
+        long multiThreadTicks = RunBenchmark(barcodeStreams, additionalThreads);
+        Console.WriteLine($"Multi‑thread (MaxAdditionalAllowedThreads={additionalThreads}) elapsed: {TimeSpan.FromTicks(multiThreadTicks).TotalMilliseconds} ms");
+
+        // Clean up streams
         foreach (var ms in barcodeStreams)
         {
             ms.Dispose();
         }
     }
 
-    // Generates the specified number of Code128 barcode images and returns them as MemoryStreams.
-    private static List<MemoryStream> GenerateSampleBarcodes(int count)
+    /// <summary>
+    /// Runs the recognition benchmark on the provided streams using the specified thread count.
+    /// </summary>
+    /// <param name="streams">Memory streams containing barcode images.</param>
+    /// <param name="maxAdditionalThreads">Maximum additional threads allowed for processing.</param>
+    /// <returns>Elapsed ticks for the benchmark.</returns>
+    static long RunBenchmark(List<MemoryStream> streams, int maxAdditionalThreads)
     {
-        var streams = new List<MemoryStream>();
+        // Configure processor settings
+        BarCodeReader.ProcessorSettings.MaxAdditionalAllowedThreads = maxAdditionalThreads;
 
-        for (int i = 0; i < count; i++)
-        {
-            var ms = new MemoryStream();
-
-            // Use a unique code text for each image (e.g., CODE0001, CODE0002, ...).
-            string codeText = $"CODE{i + 1:D4}";
-
-            // Create a barcode generator for Code128 and save the image directly into the stream.
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
-            {
-                generator.Save(ms, BarCodeImageFormat.Png);
-            }
-
-            // Reset the stream position so it can be read from the beginning.
-            ms.Position = 0;
-            streams.Add(ms);
-        }
-
-        return streams;
-    }
-
-    // Measures the total time (in milliseconds) required to recognize all barcodes in the provided streams.
-    private static long MeasureRecognitionTime(List<MemoryStream> streams)
-    {
         var stopwatch = Stopwatch.StartNew();
 
-        foreach (var ms in streams)
+        foreach (var stream in streams)
         {
-            // Create a new reader for each stream; it is disposed automatically after use.
-            using (var reader = new BarCodeReader(ms, DecodeType.AllSupportedTypes))
+            // Ensure the stream is positioned at the beginning for each read
+            stream.Position = 0;
+            using (var reader = new BarCodeReader(stream, DecodeType.Code128))
             {
-                // ReadBarCodes returns an array of detection results.
-                var results = reader.ReadBarCodes();
-
-                // Output each detected barcode to the console (prevents compiler optimizations from removing the call).
-                foreach (var result in results)
+                // Perform recognition
+                foreach (var result in reader.ReadBarCodes())
                 {
-                    Console.WriteLine($"Detected: {result.CodeTypeName} - {result.CodeText}");
+                    // Access result to ensure processing (no output needed)
+                    var _ = result.CodeText;
                 }
             }
-
-            // Reset the stream position for the next iteration/read.
-            ms.Position = 0;
         }
 
         stopwatch.Stop();
-        return stopwatch.ElapsedMilliseconds;
+        return stopwatch.ElapsedTicks;
     }
 }

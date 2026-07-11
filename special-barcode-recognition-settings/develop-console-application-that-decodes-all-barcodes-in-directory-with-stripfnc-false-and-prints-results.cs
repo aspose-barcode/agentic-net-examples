@@ -1,33 +1,35 @@
+// Title: Decode all barcodes in a directory with StripFNC disabled
+// Description: This console app scans a specified folder, decodes every supported barcode in image files while preserving FNC characters, and prints detailed results.
+// Category-Description: Demonstrates Aspose.BarCode barcode recognition across multiple image formats. It uses BarCodeReader and DecodeType.AllSupportedTypes, showing how to configure BarcodeSettings (StripFNC) and iterate over BarCodeResult objects. Ideal for developers needing batch processing of barcodes in files, such as inventory audits or document digitization.
+// Prompt: Develop a console application that decodes all barcodes in a directory with StripFNC false and prints results.
+// Tags: barcode, decoding, batch, stripfnc, console, aspose.barcode, recognition
+
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Scans a directory for image files and reads any barcodes using Aspose.BarCode.
+/// Entry point for the barcode batch decoding console application.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
+    /// Scans a directory for image files, decodes all supported barcodes with StripFNC disabled, and writes results to the console.
     /// </summary>
-    /// <param name="args">Optional command‑line arguments. The first argument, if present, specifies the directory to scan.</param>
+    /// <param name="args">Optional first argument specifying the directory path; if omitted, the current directory is used.</param>
     static void Main(string[] args)
     {
-        // Determine the directory to scan: use first argument or fallback to a sample folder.
-        string directoryPath = args.Length > 0 ? args[0] : "Barcodes";
+        // Determine the directory to scan. Use the first argument if provided; otherwise, use the current directory.
+        string directoryPath = args.Length > 0 ? args[0] : Directory.GetCurrentDirectory();
 
         // Verify that the directory exists before proceeding.
         if (!Directory.Exists(directoryPath))
         {
-            Console.WriteLine($"Directory not found: {directoryPath}");
+            Console.WriteLine($"Directory does not exist: {directoryPath}");
             return;
         }
 
-        // Define the set of image file extensions that will be processed.
-        string[] extensions = new[] { ".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff" };
-
-        // Retrieve all files in the target directory.
+        // Retrieve all files in the directory (non‑recursive). Adjust the filter if you want to limit to specific image extensions.
         string[] files = Directory.GetFiles(directoryPath);
         if (files.Length == 0)
         {
@@ -35,41 +37,43 @@ class Program
             return;
         }
 
-        // Iterate over each file and attempt barcode detection on supported image types.
+        // Process each file individually.
         foreach (string filePath in files)
         {
-            // Skip files whose extensions are not in the supported list.
-            if (Array.IndexOf(extensions, Path.GetExtension(filePath).ToLowerInvariant()) < 0)
-                continue;
-
-            // Double‑check that the file still exists (it may have been removed concurrently).
+            // Skip non‑existing files (should not happen) and filter out unsupported extensions.
             if (!File.Exists(filePath))
-            {
-                Console.WriteLine($"File not found: {filePath}");
                 continue;
-            }
 
-            // Create a barcode reader for the current image, configured to detect all supported types.
-            using (var reader = new BarCodeReader(filePath, DecodeType.AllSupportedTypes))
+            string extension = Path.GetExtension(filePath).ToLowerInvariant();
+            if (extension != ".png" && extension != ".jpg" && extension != ".jpeg" && extension != ".bmp" && extension != ".tif" && extension != ".tiff")
+                continue;
+
+            // Use BarCodeReader to decode barcodes in the current image file.
+            using (BarCodeReader reader = new BarCodeReader(filePath, DecodeType.AllSupportedTypes))
             {
-                // Ensure that FNC characters are preserved in the decoded text.
+                // Ensure FNC characters are not stripped (set to false as required).
                 reader.BarcodeSettings.StripFNC = false;
 
-                // Perform the barcode detection.
+                // Perform the recognition and obtain all results.
                 BarCodeResult[] results = reader.ReadBarCodes();
 
-                // If no barcodes were found, report and move to the next file.
+                // If no barcodes were detected, report and continue to the next file.
                 if (results.Length == 0)
                 {
-                    Console.WriteLine($"No barcodes detected in: {Path.GetFileName(filePath)}");
+                    Console.WriteLine($"[File: {Path.GetFileName(filePath)}] No barcodes detected.");
                     continue;
                 }
 
-                // Output the detected barcodes for the current image.
-                Console.WriteLine($"Barcodes in {Path.GetFileName(filePath)}:");
-                foreach (var result in results)
+                // Output summary information for the current file.
+                Console.WriteLine($"[File: {Path.GetFileName(filePath)}] Detected {results.Length} barcode(s):");
+
+                // Iterate through each detected barcode and display detailed information.
+                foreach (BarCodeResult result in results)
                 {
-                    Console.WriteLine($"  Type: {result.CodeTypeName}, Text: {result.CodeText}");
+                    Console.WriteLine($"  Type: {result.CodeTypeName}");
+                    Console.WriteLine($"  CodeText: {result.CodeText}");
+                    Console.WriteLine($"  Confidence: {result.Confidence}");
+                    Console.WriteLine($"  ReadingQuality: {result.ReadingQuality}");
                 }
             }
         }

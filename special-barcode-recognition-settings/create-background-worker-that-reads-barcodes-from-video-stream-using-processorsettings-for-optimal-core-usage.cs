@@ -1,103 +1,88 @@
+// Title: Background Worker Barcode Reader from Video Stream
+// Description: Demonstrates reading barcodes from simulated video frames using a BackgroundWorker and ProcessorSettings to control core usage.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, showcasing how to generate barcodes, process them in a background thread, and fine‑tune multi‑core utilization via ProcessorSettings. Developers often need to handle high‑throughput image streams (e.g., video) and require optimal CPU usage while recognizing multiple symbologies using BarCodeReader, BarcodeGenerator, and QualitySettings.
+// Prompt: Create a background worker that reads barcodes from a video stream using ProcessorSettings for optimal core usage.
+// Tags: code128, read, console, barcodegenerator, barcodereader, processorsettings, qualitysettings
+
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
-using System.Threading.Tasks;
+using System.Threading;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating barcode images, treating them as video frames,
-/// and processing each frame to recognize barcodes using Aspose.BarCode.
+/// Example program that generates barcode images, simulates video frames,
+/// and reads them in a background worker using Aspose.BarCode APIs.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Configures processor settings, generates sample frames, and processes them asynchronously.
+    /// Entry point. Generates sample frames, configures processor settings,
+    /// and processes frames asynchronously.
     /// </summary>
     static void Main()
     {
-        // Use all available CPU cores for barcode processing (optimal performance)
-        BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount = Environment.ProcessorCount;
-
-        // Generate a small collection of barcode images that simulate video frames
-        List<MemoryStream> frameStreams = GenerateSampleFrames(5);
-
-        // Run the frame processing on a background task (simulating a background worker)
-        Task processingTask = Task.Run(() => ProcessFrames(frameStreams));
-
-        // Wait for the background task to complete before exiting the program
-        processingTask.Wait();
-    }
-
-    /// <summary>
-    /// Generates the specified number of barcode images and returns them as memory streams.
-    /// </summary>
-    /// <param name="count">Number of barcode frames to generate.</param>
-    /// <returns>List of memory streams containing PNG barcode images.</returns>
-    private static List<MemoryStream> GenerateSampleFrames(int count)
-    {
-        var frames = new List<MemoryStream>();
-
-        for (int i = 0; i < count; i++)
+        // Generate a few barcode images to simulate video frames
+        var frames = new List<byte[]>();
+        for (int i = 0; i < 3; i++)
         {
-            // Create a unique code text for each frame (e.g., FRAME01, FRAME02, ...)
-            string codeText = $"FRAME{i + 1:D2}";
-
-            // Initialize a barcode generator for Code128 with the specified text
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+            // Create a barcode generator for Code128 with unique text
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, $"Sample{i + 1}"))
             {
-                // Set a consistent image size for all generated barcodes
-                generator.Parameters.ImageWidth.Point = 300f;
-                generator.Parameters.ImageHeight.Point = 150f;
-
-                // Save the generated barcode image to a memory stream in PNG format
-                var ms = new MemoryStream();
-                generator.Save(ms, BarCodeImageFormat.Png);
-                ms.Position = 0; // Reset stream position for subsequent reading
-
-                // Add the memory stream to the collection of frames
-                frames.Add(ms);
-            }
-        }
-
-        return frames;
-    }
-
-    /// <summary>
-    /// Processes each barcode frame, reads any barcodes present, and writes the results to the console.
-    /// </summary>
-    /// <param name="frameStreams">List of memory streams representing barcode frames.</param>
-    private static void ProcessFrames(List<MemoryStream> frameStreams)
-    {
-        int frameIndex = 0;
-
-        // Iterate over each frame stream
-        foreach (var stream in frameStreams)
-        {
-            frameIndex++;
-
-            // Load the image from the memory stream
-            using (var bitmap = new Bitmap(stream))
-            {
-                // Initialize a barcode reader that supports all barcode types
-                using (var reader = new BarCodeReader(bitmap, DecodeType.AllSupportedTypes))
+                // Set a simple visual dimension
+                generator.Parameters.Barcode.XDimension.Point = 2f;
+                // Render the barcode to a bitmap
+                using (var bitmap = generator.GenerateBarCodeImage())
                 {
-                    // Apply a high-performance quality preset for faster processing
-                    reader.QualitySettings = QualitySettings.HighPerformance;
-
-                    // Read all barcodes found in the current frame
-                    foreach (var result in reader.ReadBarCodes())
+                    // Save bitmap to memory stream as PNG
+                    using (var ms = new MemoryStream())
                     {
-                        // Output the detected barcode type and its text value
-                        Console.WriteLine($"Frame {frameIndex}: Detected {result.CodeTypeName} - Text: {result.CodeText}");
+                        bitmap.Save(ms, ImageFormat.Png);
+                        frames.Add(ms.ToArray());
                     }
                 }
             }
-
-            // Release the memory stream resources after processing the frame
-            stream.Dispose();
         }
+
+        // Synchronization primitive to wait for background work completion
+        var doneEvent = new ManualResetEventSlim(false);
+
+        // BackgroundWorker that processes the simulated video frames
+        var worker = new BackgroundWorker();
+        worker.DoWork += (sender, args) =>
+        {
+            // Configure processor settings for optimal core usage
+            BarCodeReader.ProcessorSettings.UseAllCores = false;
+            BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount = Math.Max(1, Environment.ProcessorCount / 2);
+
+            // Iterate over each simulated frame
+            foreach (var frameData in frames)
+            {
+                // Create a memory stream from the frame bytes
+                using (var stream = new MemoryStream(frameData))
+                // Initialize the barcode reader for all supported symbologies
+                using (var reader = new BarCodeReader(stream, DecodeType.AllSupportedTypes))
+                {
+                    // Apply a high‑performance quality preset
+                    reader.QualitySettings = QualitySettings.HighPerformance;
+
+                    // Read and output all detected barcodes
+                    foreach (var result in reader.ReadBarCodes())
+                    {
+                        Console.WriteLine($"Detected: {result.CodeTypeName} - {result.CodeText}");
+                    }
+                }
+            }
+        };
+        // Signal completion when background work finishes
+        worker.RunWorkerCompleted += (s, e) => doneEvent.Set();
+
+        // Start processing and wait until it finishes
+        worker.RunWorkerAsync();
+        doneEvent.Wait();
     }
 }

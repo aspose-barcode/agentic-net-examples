@@ -1,81 +1,66 @@
+// Title: Switch AustraliaPost CustomerInformationInterpretingType at Runtime
+// Description: Demonstrates how to set the CustomerInformationInterpretingType for Australia Post barcodes based on a command‑line argument, then generate and read the barcode using the same setting.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It shows how to work with the AustraliaPostSettings class, specifically the CustomerInformationInterpretingType property, which controls how customer information is interpreted during encoding and decoding. Developers creating shipping labels or postal barcodes often need to switch this setting at runtime to match different postal service requirements.
+// Prompt: Write code that switches AustraliaPostSettings.CustomerInformationInterpretingType at runtime based on user selection.
+// Tags: barcode symbology, australia post, runtime configuration, generation, recognition, aspose.barcode
+
 using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Example program that switches <c>AustraliaPostSettings.CustomerInformationInterpretingType</c> at runtime,
+/// generates an Australia Post barcode, and then reads it back using the same interpreting type.
+/// </summary>
 class Program
 {
-    static void Main()
+    /// <summary>
+    /// Entry point. Accepts an optional command‑line argument specifying the desired <c>CustomerInformationInterpretingType</c>.
+    /// </summary>
+    /// <param name="args">Command‑line arguments; first argument should be a valid <c>CustomerInformationInterpretingType</c> value.</param>
+    static void Main(string[] args)
     {
-        var samples = new (CustomerInformationInterpretingType Type, string CodeText, string FileName)[]
+        // Determine interpreting type from command‑line argument; default to Other if parsing fails.
+        CustomerInformationInterpretingType interpretingType;
+        if (args.Length > 0 && Enum.TryParse(args[0], true, out CustomerInformationInterpretingType parsed))
         {
-            (CustomerInformationInterpretingType.CTable, "5912345678ABCde", "AustraliaPost_CTable.png"),
-            (CustomerInformationInterpretingType.NTable, "4512345678", "AustraliaPost_NTable.png"),
-            (CustomerInformationInterpretingType.Other, "6212", "AustraliaPost_Other.png")
-        };
-
-        foreach (var sample in samples)
+            interpretingType = parsed;
+        }
+        else
         {
-            if (!IsValidForInterpretingType(sample.Type, sample.CodeText))
-            {
-                Console.WriteLine($"Skipping generation for {sample.Type}: invalid code text \"{sample.CodeText}\".");
-                continue;
-            }
+            interpretingType = CustomerInformationInterpretingType.Other;
+        }
 
-            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.AustraliaPost))
-            {
-                generator.Parameters.Barcode.AustralianPost.EncodingTable = sample.Type;
-                generator.CodeText = sample.CodeText;
-                generator.Save(sample.FileName, BarCodeImageFormat.Png);
-                Console.WriteLine($"Saved barcode image: {sample.FileName}");
-            }
+        // Sample Australia Post code text (FCC=11, DPID=8 digits, no customer info).
+        const string codeText = "1100000000";
 
-            using (Bitmap image = (Bitmap)Image.FromFile(sample.FileName))
-            using (BarCodeReader reader = new BarCodeReader(image, DecodeType.AustraliaPost))
+        // Generate barcode with the selected interpreting type.
+        using (var generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, codeText))
+        {
+            // Apply the runtime interpreting type to the generator settings.
+            generator.Parameters.Barcode.AustralianPost.EncodingTable = interpretingType;
+
+            const string imagePath = "AustraliaPost.png";
+
+            // Save the generated barcode image to disk.
+            generator.Save(imagePath);
+            Console.WriteLine($"Barcode generated with CustomerInformationInterpretingType = {interpretingType}");
+            Console.WriteLine($"Image saved to: {imagePath}");
+
+            // Recognize the barcode and apply the same interpreting type for decoding.
+            using (var reader = new BarCodeReader(imagePath, DecodeType.AustraliaPost))
             {
-                reader.BarcodeSettings.AustraliaPost.CustomerInformationInterpretingType = sample.Type;
+                // Configure the reader to use the same interpreting type as the generator.
+                reader.BarcodeSettings.AustraliaPost.CustomerInformationInterpretingType = interpretingType;
+
+                // Iterate through all detected barcodes (should be one) and output details.
                 foreach (BarCodeResult result in reader.ReadBarCodes())
                 {
-                    Console.WriteLine($"Decoded [{sample.Type}] - Type: {result.CodeType}, CodeText: {result.CodeText}");
+                    Console.WriteLine($"Decoded Type: {result.CodeType}");
+                    Console.WriteLine($"Decoded Text: {result.CodeText}");
                 }
             }
-        }
-    }
-
-    static bool IsValidForInterpretingType(CustomerInformationInterpretingType type, string text)
-    {
-        switch (type)
-        {
-            case CustomerInformationInterpretingType.CTable:
-                foreach (char c in text)
-                {
-                    if (!(char.IsLetterOrDigit(c) || c == ' ' || c == '#'))
-                        return false;
-                }
-                return true;
-
-            case CustomerInformationInterpretingType.NTable:
-                foreach (char c in text)
-                {
-                    if (!char.IsDigit(c))
-                        return false;
-                }
-                return true;
-
-            case CustomerInformationInterpretingType.Other:
-                if (text.Length > 3)
-                    return false;
-                foreach (char c in text)
-                {
-                    if (c < '0' || c > '3')
-                        return false;
-                }
-                return true;
-
-            default:
-                return false;
         }
     }
 }

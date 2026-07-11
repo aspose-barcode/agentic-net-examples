@@ -1,118 +1,98 @@
+// Title: Generate GS1 Code128 barcode with embedded FNC symbols for StripFNC testing
+// Description: This example creates a PNG barcode image containing GS1 FNC symbols and demonstrates reading it with and without stripping those symbols.
+// Category-Description: Demonstrates Aspose.BarCode generation and recognition for GS1 Code128 symbology, focusing on the StripFNC setting. It uses BarcodeGenerator, BarCodeReader, and related parameter classes to control appearance and decoding behavior, a common need for developers testing barcode data preprocessing.
+// Prompt: Write a script that generates synthetic barcode images containing embedded FNC symbols for testing StripFNC behavior.
+// Tags: gs1code128, fnc, stripfnc, barcode generation, barcode recognition, png, aspose.barcode
+
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating QR codes with FNC1 symbols and reading them
-/// with and without stripping the FNC characters using Aspose.BarCode.
+/// Demonstrates how to generate a GS1 Code128 barcode containing FNC symbols
+/// and how to read it with and without stripping those symbols using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates QR barcodes, saves them to disk, and reads them back
-    /// demonstrating the effect of the StripFNC setting.
+    /// Entry point of the example. Generates a barcode image, then reads it twice:
+    /// once with the default StripFNC behavior and once with StripFNC enabled.
     /// </summary>
     static void Main()
     {
         // --------------------------------------------------------------------
-        // Prepare output directory for generated barcode images
+        // Prepare output directory
         // --------------------------------------------------------------------
-        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "output");
         if (!Directory.Exists(outputDir))
         {
             Directory.CreateDirectory(outputDir);
         }
 
         // --------------------------------------------------------------------
-        // Define descriptions for the two barcode variants and allocate array
-        // to hold the file paths of the generated images
+        // Define barcode parameters
         // --------------------------------------------------------------------
-        string[] descriptions = { "FNC1_FirstPosition", "FNC1_SecondPosition" };
-        string[] filePaths = new string[descriptions.Length];
+        string filePath = Path.Combine(outputDir, "gs1code128.png");
+        // Sample GS1 Code128 data containing FNC1 (parentheses) delimiters
+        string codeText = "(02)04006664241007(37)1(400)7019590754";
 
         // --------------------------------------------------------------------
-        // Generate each QR barcode variant
+        // Generate barcode with embedded FNC characters (GS1 Code128)
         // --------------------------------------------------------------------
-        for (int i = 0; i < descriptions.Length; i++)
+        using (var generator = new BarcodeGenerator(EncodeTypes.GS1Code128, codeText))
         {
-            // Build extended codetext using QrExtCodetextBuilder
-            var builder = new QrExtCodetextBuilder();
+            // Basic appearance settings
+            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
+            generator.Parameters.BackColor = Aspose.Drawing.Color.White;
 
-            if (i == 0)
+            // Size settings
+            generator.Parameters.AutoSizeMode = AutoSizeMode.None;
+            generator.Parameters.Barcode.BarHeight.Point = 50f;
+            generator.Parameters.Barcode.XDimension.Point = 2f;
+
+            // Disable filled bars to keep thin lines
+            generator.Parameters.Barcode.FilledBars = false;
+
+            // Prevent exceptions on automatic correction of the code text
+            generator.Parameters.Barcode.ThrowExceptionWhenCodeTextIncorrect = false;
+
+            // Human‑readable text styling (optional)
+            generator.Parameters.Barcode.CodeTextParameters.Font.FamilyName = "Arial";
+            generator.Parameters.Barcode.CodeTextParameters.Font.Size.Point = 10f;
+            generator.Parameters.Barcode.CodeTextParameters.Alignment = TextAlignment.Center;
+
+            // Save the generated barcode image as PNG
+            generator.Save(filePath, BarCodeImageFormat.Png);
+        }
+
+        Console.WriteLine($"Barcode image saved to: {filePath}");
+
+        // --------------------------------------------------------------------
+        // Read barcode without stripping FNC characters (default behavior)
+        // --------------------------------------------------------------------
+        using (var reader = new BarCodeReader(filePath, DecodeType.Code128))
+        {
+            Console.WriteLine("\nReading without StripFNC (default):");
+            foreach (BarCodeResult result in reader.ReadBarCodes())
             {
-                // Variant 1: FNC1 placed in the first position, followed by plain data
-                builder.AddFNC1FirstPosition();
-                builder.AddPlainCodetext("DATA123");
+                Console.WriteLine($"CodeText: {result.CodeText}");
             }
-            else
-            {
-                // Variant 2: FNC1 placed in the second position with value "12"
-                builder.AddFNC1SecondPosition("12");
-                builder.AddPlainCodetext("MOREDATA");
-            }
-
-            // Retrieve the full extended codetext string
-            string extendedCode = builder.GetExtendedCodetext();
-
-            // Define the output file path for the current barcode image
-            string filePath = Path.Combine(outputDir, $"{descriptions[i]}.png");
-
-            // Generate the QR barcode image using the extended codetext
-            using (var generator = new BarcodeGenerator(EncodeTypes.QR, extendedCode))
-            {
-                // Set QR encoding mode to Extended to support FNC1 symbols
-                generator.Parameters.Barcode.QR.EncodeMode = QREncodeMode.Extended;
-                // Use low error correction level (Level L)
-                generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelL;
-                // Save the generated barcode as a PNG file
-                generator.Save(filePath, BarCodeImageFormat.Png);
-            }
-
-            // Store the generated file path for later reading
-            filePaths[i] = filePath;
-            Console.WriteLine($"Generated barcode: {filePath}");
         }
 
         // --------------------------------------------------------------------
-        // Read each generated barcode twice:
-        //   1. Without stripping FNC characters (StripFNC = false)
-        //   2. With stripping FNC characters (StripFNC = true)
+        // Read barcode with StripFNC enabled
         // --------------------------------------------------------------------
-        foreach (var path in filePaths)
+        using (var reader = new BarCodeReader(filePath, DecodeType.Code128))
         {
-            if (!File.Exists(path))
+            // Enable stripping of FNC symbols during decoding
+            reader.BarcodeSettings.StripFNC = true;
+            Console.WriteLine("\nReading with StripFNC = true:");
+            foreach (BarCodeResult result in reader.ReadBarCodes())
             {
-                Console.WriteLine($"File not found: {path}");
-                continue;
-            }
-
-            Console.WriteLine($"\nReading barcode: {Path.GetFileName(path)}");
-
-            // ------------------------------------------------------------
-            // Read barcode without stripping FNC characters
-            // ------------------------------------------------------------
-            using (var reader = new BarCodeReader(path, DecodeType.QR))
-            {
-                reader.BarcodeSettings.StripFNC = false;
-                foreach (var result in reader.ReadBarCodes())
-                {
-                    Console.WriteLine($"StripFNC = false => CodeText: {result.CodeText}");
-                }
-            }
-
-            // ------------------------------------------------------------
-            // Read barcode with stripping FNC characters
-            // ------------------------------------------------------------
-            using (var reader = new BarCodeReader(path, DecodeType.QR))
-            {
-                reader.BarcodeSettings.StripFNC = true;
-                foreach (var result in reader.ReadBarCodes())
-                {
-                    Console.WriteLine($"StripFNC = true  => CodeText: {result.CodeText}");
-                }
+                Console.WriteLine($"CodeText: {result.CodeText}");
             }
         }
     }

@@ -1,91 +1,97 @@
+// Title: Demonstrate StripFNC behavior in GS1 Code128 barcode reading
+// Description: Shows how BarCodeReader handles FNC characters when StripFNC is false versus true, using a GS1 Code128 sample.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, illustrating the use of BarCodeReader and BarcodeSettings to control FNC character stripping. Developers working with GS1 symbologies often need to preserve or remove FNC1 separators depending on downstream processing. The snippet demonstrates typical API usage for reading raw and stripped barcode data, useful for unit testing and integration scenarios.
+// Prompt: Write a unit test verifying BarCodeReader removes FNC symbols when StripFNC is false.
+// Tags: gs1code128, stripfnc, barcoderecognition, aspose.barcode, unit-test, fnc1
+
 using System;
-using System.IO;
 using System.Linq;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generation and recognition of a GS1 Code128 barcode,
-/// showing the effect of the StripFNC setting on FNC1 characters.
+/// Example program that reads a GS1 Code128 barcode and demonstrates the effect of the StripFNC setting.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a barcode, reads it twice with different StripFNC settings,
-    /// and outputs verification results to the console.
+    /// Generates a barcode image in memory and reads it twice: once with StripFNC disabled (default) and once with it enabled,
+    /// printing verification results to the console.
     /// </summary>
     static void Main()
     {
-        // Sample GS1 Code128 text containing Application Identifiers.
-        const string codeText = "(02)04006664241007(37)1(400)7019590754";
+        // Sample GS1 Code128 data containing multiple Application Identifier (AI) groups.
+        string sourceCodeText = "(02)04006664241007(37)1(400)7019590754";
 
-        // Create a memory stream to hold the generated barcode image.
-        using (var ms = new MemoryStream())
+        // Create a barcode generator for GS1 Code128 and produce the image in memory.
+        using (var generator = new BarcodeGenerator(EncodeTypes.GS1Code128, sourceCodeText))
+        using (Bitmap barcodeImage = generator.GenerateBarCodeImage())
         {
-            // Generate the barcode image using Aspose.BarCode.
-            using (var generator = new BarcodeGenerator(EncodeTypes.GS1Code128, codeText))
+            // ------------------------------------------------------------
+            // Test case 1: StripFNC = false (default behavior)
+            // ------------------------------------------------------------
+            using (var reader = new BarCodeReader(barcodeImage, DecodeType.Code128))
             {
-                // Save the barcode as PNG (any format works for recognition).
-                generator.Save(ms, BarCodeImageFormat.Png);
-            }
-
-            // Reset stream position to the beginning for reading.
-            ms.Position = 0;
-
-            // ---------- First read: StripFNC = false ----------
-            // FNC characters should be retained in the decoded text.
-            string codeWithoutStrip;
-            using (var reader = new BarCodeReader(ms, DecodeType.GS1Code128))
-            {
-                // Configure reader to keep FNC characters.
+                // Explicitly ensure that FNC characters are NOT stripped.
                 reader.BarcodeSettings.StripFNC = false;
 
-                // Read the first barcode found (there should be only one).
-                var result = reader.ReadBarCodes().FirstOrDefault();
+                // Read the first barcode result from the image.
+                BarCodeResult result = reader.ReadBarCodes().FirstOrDefault();
 
-                // Extract the decoded text, or use empty string if none.
-                codeWithoutStrip = result?.CodeText ?? string.Empty;
+                // Verify that a result was obtained.
+                if (result == null)
+                {
+                    Console.WriteLine("Failed to read barcode with StripFNC = false.");
+                    return;
+                }
+
+                // Expected raw text includes FNC1 separators (ASCII 29, represented as \x1D).
+                string expectedRaw = "\x1D04006664241007\x1D1\x1D7019590754";
+
+                // Compare the actual CodeText with the expected raw string.
+                bool rawMatches = result.CodeText == expectedRaw;
+                Console.WriteLine($"StripFNC = false => CodeText matches expected: {rawMatches}");
+
+                // Output detailed mismatch information if the comparison fails.
+                if (!rawMatches)
+                {
+                    Console.WriteLine($"Actual:   [{result.CodeText}]");
+                    Console.WriteLine($"Expected: [{expectedRaw}]");
+                }
             }
 
-            // Reset stream position again for the second read.
-            ms.Position = 0;
-
-            // ---------- Second read: StripFNC = true ----------
-            // FNC characters should be removed from the decoded text.
-            string codeWithStrip;
-            using (var reader = new BarCodeReader(ms, DecodeType.GS1Code128))
+            // ------------------------------------------------------------
+            // Test case 2: StripFNC = true
+            // ------------------------------------------------------------
+            using (var reader = new BarCodeReader(barcodeImage, DecodeType.Code128))
             {
-                // Configure reader to strip FNC characters.
+                // Enable stripping of FNC characters.
                 reader.BarcodeSettings.StripFNC = true;
 
-                // Read the first barcode found.
-                var result = reader.ReadBarCodes().FirstOrDefault();
+                // Read the first barcode result from the image.
+                BarCodeResult result = reader.ReadBarCodes().FirstOrDefault();
 
-                // Extract the decoded text, or use empty string if none.
-                codeWithStrip = result?.CodeText ?? string.Empty;
-            }
+                // Verify that a result was obtained.
+                if (result == null)
+                {
+                    Console.WriteLine("Failed to read barcode with StripFNC = true.");
+                    return;
+                }
 
-            // The FNC1 character is represented by char value 241 in Aspose.BarCode.
-            char fncChar = (char)241;
+                // Expected text after stripping FNC1 separators: concatenated data without delimiters.
+                string expectedStripped = "0400666424100717019590754";
 
-            // Determine whether the unstripped result contains the FNC1 character.
-            bool containsFnc = codeWithoutStrip.Contains(fncChar.ToString());
+                // Compare the actual CodeText with the expected stripped string.
+                bool strippedMatches = result.CodeText == expectedStripped;
+                Console.WriteLine($"StripFNC = true => CodeText matches expected: {strippedMatches}");
 
-            // Output verification information to the console.
-            Console.WriteLine("CodeText with StripFNC = false: " + codeWithoutStrip);
-            Console.WriteLine("Contains FNC1 character: " + containsFnc);
-            Console.WriteLine("CodeText with StripFNC = true : " + codeWithStrip);
-            Console.WriteLine("CodeTexts are different: " + (codeWithoutStrip != codeWithStrip));
-
-            // Simple assertion to confirm expected behavior.
-            if (containsFnc && codeWithoutStrip != codeWithStrip)
-            {
-                Console.WriteLine("Test passed: FNC characters are retained when StripFNC is false and removed when true.");
-            }
-            else
-            {
-                Console.WriteLine("Test failed: Unexpected StripFNC behavior.");
+                // Output detailed mismatch information if the comparison fails.
+                if (!strippedMatches)
+                {
+                    Console.WriteLine($"Actual:   [{result.CodeText}]");
+                    Console.WriteLine($"Expected: [{expectedStripped}]");
+                }
             }
         }
     }
