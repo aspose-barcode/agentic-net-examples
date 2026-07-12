@@ -1,63 +1,64 @@
+// Title: Strip FNC Characters from Barcode Decoding
+// Description: Demonstrates how to prevent stripping of FNC symbols when reading a GS1 Code128 barcode using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It shows how to generate a GS1 Code128 barcode containing FNC1 characters, save it as a PNG image, and read it back while configuring BarCodeReader.StripFNC to retain those symbols. Developers working with GS1 symbologies often need to preserve FNC characters for accurate data extraction, making this pattern common in inventory, logistics, and retail applications.
+// Prompt: Set BarCodeReader.StripFNC to false to remove FNC symbols from decoded results.
+// Tags: gs1, code128, stripfnc, barcode decoding, aspose.barcode, image generation, png
+
 using System;
 using System.IO;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.BarCode;
 
 /// <summary>
-/// Demonstrates generating a GS1 Code128 barcode with FNC1 characters,
-/// saving it to a temporary PNG file, reading it back while preserving
-/// FNC characters, and cleaning up the temporary file.
+/// Generates a GS1 Code128 barcode containing FNC1 characters, saves it as an image,
+/// and reads it back while preserving the FNC symbols in the decoded text.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a barcode, reads it, displays results, and deletes the temporary image.
+    /// Entry point of the example. Executes barcode generation, recognition, and cleanup.
     /// </summary>
     static void Main()
     {
-        // Define path for a temporary PNG file to store the generated barcode image
-        string tempImagePath = Path.Combine(Path.GetTempPath(), "sample_barcode.png");
+        // Define the full path for the generated barcode image.
+        string imagePath = Path.Combine(Directory.GetCurrentDirectory(), "sample_barcode.png");
 
-        // Generate a GS1 Code128 barcode containing FNC1 characters
+        // Create a GS1 Code128 barcode that includes FNC1 characters (represented by parentheses).
         using (var generator = new BarcodeGenerator(EncodeTypes.GS1Code128, "(01)12345678901231(10)ABC123"))
         {
-            // Save the generated barcode image to the temporary file
-            generator.Save(tempImagePath);
+            // Save the barcode image to a PNG file.
+            generator.Save(imagePath, BarCodeImageFormat.Png);
         }
 
-        // Verify that the barcode image file was successfully created
-        if (!File.Exists(tempImagePath))
+        // Verify that the image file was successfully created.
+        if (!File.Exists(imagePath))
         {
-            Console.WriteLine("Failed to create barcode image.");
+            Console.WriteLine($"Failed to create barcode image at '{imagePath}'.");
             return;
         }
 
-        // Initialize a barcode reader for Code128 and configure it to retain FNC characters
-        using (var reader = new BarCodeReader(tempImagePath, DecodeType.Code128))
+        // Initialize a barcode reader for Code128 and configure it to retain FNC characters.
+        using (var reader = new BarCodeReader(imagePath, DecodeType.Code128))
         {
-            // Ensure FNC characters are not stripped during decoding
+            // According to the task, set StripFNC to false (do not strip FNC characters).
             reader.BarcodeSettings.StripFNC = false;
 
-            // Read all barcodes found in the image
+            // Iterate through all detected barcodes in the image.
             foreach (var result in reader.ReadBarCodes())
             {
-                // Output the detected barcode type
                 Console.WriteLine($"Detected Type: {result.CodeTypeName}");
-                // Output the decoded text with FNC characters retained
-                Console.WriteLine($"CodeText (FNC retained): {result.CodeText}");
+                Console.WriteLine($"Decoded Text: {result.CodeText}");
             }
         }
 
-        // Attempt to delete the temporary image file; ignore any exceptions
+        // Optional cleanup: delete the generated image file.
         try
         {
-            File.Delete(tempImagePath);
+            File.Delete(imagePath);
         }
         catch
         {
-            // Suppress any errors that occur during cleanup
+            // Suppress any exceptions that occur during cleanup.
         }
     }
 }

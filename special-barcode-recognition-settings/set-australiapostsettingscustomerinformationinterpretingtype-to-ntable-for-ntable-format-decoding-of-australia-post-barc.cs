@@ -1,52 +1,62 @@
+// Title: Decode Australia Post barcode using NTable format
+// Description: Demonstrates setting CustomerInformationInterpretingType to NTable for both generation and decoding of Australia Post barcodes.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases how to configure the AustraliaPostSettings.CustomerInformationInterpretingType property for NTable format, a common requirement when working with Australia Post barcodes that include customer information. Developers often need to generate barcodes with specific encoding tables and then decode them accurately using matching settings.
+// Prompt: Set AustraliaPostSettings.CustomerInformationInterpretingType to NTable for NTable format decoding of Australia Post barcodes.
+// Tags: barcode symbology, australia post, ntable, generation, recognition, aspose.barcode
+
 using System;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generation and recognition of an Australia Post barcode using NTable encoding.
+/// Example program that generates an Australia Post barcode using the NTable encoding
+/// and then decodes it with the same NTable interpreting type.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates an Australia Post barcode, saves it to a file, and then reads it back.
+    /// Entry point of the example. Generates a barcode image, verifies its creation,
+    /// and reads the barcode back using NTable decoding settings.
     /// </summary>
     static void Main()
     {
-        // Sample Australia Post barcode data (digits only for NTable decoding)
-        string codeText = "5912345678";
-        string imagePath = "australiapost.png";
+        // Sample Australia Post barcode text (FCC 59, DPID 8 digits, no customer info)
+        string codeText = "5980123456";
 
-        // -------------------------------------------------
-        // Generate the barcode image with NTable encoding
-        // -------------------------------------------------
+        // Output image path
+        string imagePath = "AustraliaPost_NTable.png";
+
+        // Generate the barcode with NTable encoding table
         using (var generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, codeText))
         {
-            // Set the encoding table to NTable for Australian Post barcodes
-            generator.Parameters.Barcode.AustralianPost.AustralianPostEncodingTable = CustomerInformationInterpretingType.NTable;
+            // Set the encoding table to NTable for generation
+            generator.Parameters.Barcode.AustralianPost.EncodingTable = CustomerInformationInterpretingType.NTable;
 
-            // Save the generated barcode image to the specified path
+            // Save the barcode image to the specified path
             generator.Save(imagePath);
         }
 
-        // -------------------------------------------------
-        // Read the barcode and set decoding to NTable format
-        // -------------------------------------------------
+        // Verify that the image file was created successfully
+        if (!File.Exists(imagePath))
+        {
+            Console.WriteLine($"Failed to create barcode image at '{imagePath}'.");
+            return;
+        }
+
+        // Read and decode the barcode, setting the decoding interpreting type to NTable
         using (var reader = new BarCodeReader(imagePath, DecodeType.AustraliaPost))
         {
-            // Configure the reader to interpret customer information using NTable
+            // Apply NTable interpreting type for decoding
             reader.BarcodeSettings.AustraliaPost.CustomerInformationInterpretingType = CustomerInformationInterpretingType.NTable;
 
-            // Iterate through all detected barcodes in the image
-            foreach (var result in reader.ReadBarCodes())
+            // Iterate through detected barcodes and output their details
+            foreach (BarCodeResult result in reader.ReadBarCodes())
             {
-                // Output the type of barcode detected
-                Console.WriteLine($"Detected Type: {result.CodeType}");
-
-                // Output the decoded text of the barcode
-                Console.WriteLine($"CodeText: {result.CodeText}");
+                Console.WriteLine($"Detected Barcode Type: {result.CodeType}");
+                Console.WriteLine($"Decoded CodeText: {result.CodeText}");
             }
         }
     }

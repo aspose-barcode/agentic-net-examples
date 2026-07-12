@@ -1,99 +1,99 @@
+// Title: Benchmark decoding speed with and without multi‑core processing
+// Description: Demonstrates measuring the time required to decode a set of Code128 barcodes using Aspose.BarCode, comparing ProcessorSettings.UseAllCores true vs false.
+// Category-Description: This example belongs to the Aspose.BarCode decoding performance category. It shows how to generate barcodes, configure the BarCodeReader processor settings, and benchmark decoding using BarCodeReader and DecodeType. Developers often need to evaluate multi‑core decoding impact for bulk barcode processing scenarios.
+// Prompt: Write a benchmark comparing decoding speed when ProcessorSettings.UseAllCores is true versus false.
+// Tags: barcode symbology, decoding, performance, benchmark, code128, aspnet, aspose.barcode, processorsettings, useallcores
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
+using Aspose.BarCode.Common;
 
 /// <summary>
-/// Demonstrates barcode generation and decoding performance
-/// with Aspose.BarCode using different processor core settings.
+/// Provides a simple benchmark that compares barcode decoding speed when
+/// <see cref="BarCodeReader.ProcessorSettings.UseAllCores"/> is enabled versus disabled.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates sample barcodes, then measures decoding time
-    /// with <c>UseAllCores</c> enabled and disabled.
+    /// Entry point of the benchmark application.
+    /// Generates sample Code128 barcodes, runs two decoding measurements,
+    /// and writes the elapsed times to the console.
     /// </summary>
     static void Main()
     {
-        const int sampleCount = 5; // safe sample size for the runner
+        // --------------------------------------------------------------------
+        // 1. Generate a collection of in‑memory barcode images (PNG format)
+        // --------------------------------------------------------------------
+        List<MemoryStream> barcodeStreams = new List<MemoryStream>();
+        for (int i = 0; i < 5; i++)
+        {
+            // Create a Code128 barcode with distinct text for each iteration
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, $"Sample{i}"))
+            {
+                MemoryStream ms = new MemoryStream();
+                generator.Save(ms, BarCodeImageFormat.Png);
+                ms.Position = 0; // Reset stream for later reading
+                barcodeStreams.Add(ms);
+            }
+        }
 
-        // Generate a collection of barcode images stored as byte arrays.
-        List<byte[]> barcodeImages = GenerateSampleBarcodes(sampleCount);
-
-        // Benchmark decoding with all processor cores enabled.
+        // ---------------------------------------------------------------
+        // 2. Measure decoding time with multi‑core processing enabled
+        // ---------------------------------------------------------------
         BarCodeReader.ProcessorSettings.UseAllCores = true;
-        TimeSpan timeAllCores = MeasureDecodingTime(barcodeImages);
-        Console.WriteLine($"Decoding with UseAllCores = true: {timeAllCores.TotalMilliseconds} ms");
+        double timeAllCores = MeasureDecodingTime(barcodeStreams);
 
-        // Benchmark decoding with only a single core used.
+        // ---------------------------------------------------------------
+        // 3. Measure decoding time with single‑core processing
+        // ---------------------------------------------------------------
         BarCodeReader.ProcessorSettings.UseAllCores = false;
-        TimeSpan timeSingleCore = MeasureDecodingTime(barcodeImages);
-        Console.WriteLine($"Decoding with UseAllCores = false: {timeSingleCore.TotalMilliseconds} ms");
+        double timeSingleCore = MeasureDecodingTime(barcodeStreams);
+
+        // ---------------------------------------------------------------
+        // 4. Output benchmark results
+        // ---------------------------------------------------------------
+        Console.WriteLine($"Decoding time with UseAllCores = true : {timeAllCores} ms");
+        Console.WriteLine($"Decoding time with UseAllCores = false: {timeSingleCore} ms");
+
+        // ---------------------------------------------------------------
+        // 5. Release all memory streams
+        // ---------------------------------------------------------------
+        foreach (MemoryStream ms in barcodeStreams)
+        {
+            ms.Dispose();
+        }
     }
 
     /// <summary>
-    /// Generates a list of barcode images (PNG) stored as byte arrays.
+    /// Measures the total time required to decode a list of barcode image streams.
     /// </summary>
-    /// <param name="count">Number of barcodes to generate.</param>
-    /// <returns>List of byte arrays, each representing a PNG barcode image.</returns>
-    private static List<byte[]> GenerateSampleBarcodes(int count)
+    /// <param name="streams">The collection of barcode image streams to decode.</param>
+    /// <returns>Total elapsed time in milliseconds.</returns>
+    private static double MeasureDecodingTime(List<MemoryStream> streams)
     {
-        var images = new List<byte[]>();
+        Stopwatch sw = Stopwatch.StartNew();
 
-        // Create each barcode image and add its byte representation to the list.
-        for (int i = 0; i < count; i++)
+        foreach (MemoryStream ms in streams)
         {
-            string codeText = $"Sample{i}";
+            // Ensure the stream is positioned at the beginning before each read
+            ms.Position = 0;
 
-            // Initialize a barcode generator for Code128 with the specified text.
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+            // Initialize a reader that supports all barcode types
+            using (BarCodeReader reader = new BarCodeReader(ms, DecodeType.AllSupportedTypes))
             {
-                // Save the generated barcode to a memory stream in PNG format.
-                using (var ms = new MemoryStream())
+                // Iterate through all detected barcodes (results are ignored)
+                foreach (var result in reader.ReadBarCodes())
                 {
-                    generator.Save(ms, BarCodeImageFormat.Png);
-                    images.Add(ms.ToArray()); // Store the image bytes.
+                    // No additional processing required; iteration forces decoding
                 }
             }
         }
 
-        return images;
-    }
-
-    /// <summary>
-    /// Measures the total time required to decode all provided barcode images.
-    /// </summary>
-    /// <param name="images">List of barcode image byte arrays to decode.</param>
-    /// <returns>Elapsed time as a <see cref="TimeSpan"/>.</returns>
-    private static TimeSpan MeasureDecodingTime(List<byte[]> images)
-    {
-        var stopwatch = Stopwatch.StartNew();
-
-        // Iterate over each image and decode its barcode(s).
-        foreach (var imgData in images)
-        {
-            // Load the image bytes into a memory stream for the reader.
-            using (var ms = new MemoryStream(imgData))
-            {
-                // Initialize the barcode reader for all supported types.
-                using (var reader = new BarCodeReader(ms, DecodeType.AllSupportedTypes))
-                {
-                    // ReadBarCodes returns an array of results; iterate to ensure processing.
-                    foreach (var result in reader.ReadBarCodes())
-                    {
-                        // Access result properties to simulate work; output can be omitted.
-                        Console.WriteLine($"Decoded: {result.CodeText}");
-                    }
-                }
-            }
-        }
-
-        stopwatch.Stop();
-        return stopwatch.Elapsed;
+        sw.Stop();
+        return sw.Elapsed.TotalMilliseconds;
     }
 }

@@ -1,69 +1,89 @@
+// Title: Load ProcessorSettings from JSON Configuration
+// Description: Demonstrates loading Aspose.BarCode processor settings from a JSON file at application startup and applying them to the BarCodeReader.
+// Category-Description: This example belongs to the Aspose.BarCode configuration management category. It shows how to use the BarCodeReader.ProcessorSettings class to control multithreading behavior. Typical use cases include optimizing performance on multi‑core machines by toggling UseAllCores or limiting the number of cores. Developers often need to read such settings from external configuration files (e.g., JSON) to make the application adaptable without recompilation.
+// Prompt: Write a configuration loader that reads ProcessorSettings values from a JSON file at application startup.
+// Tags: processor settings, configuration, json, aspose.barcode, barcodereader
+
 using System;
 using System.IO;
 using System.Text.Json;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Represents the configuration settings for processor cores.
+/// Represents the processor configuration that can be loaded from a JSON file.
 /// </summary>
-class ProcessorSettingsConfig
+class ProcessorConfig
 {
-    /// <summary>
-    /// Gets or sets the number of cores to be used by the processor.
-    /// </summary>
-    public int UseOnlyThisCoresCount { get; set; }
+    // Indicates whether the BarCodeReader should use all available CPU cores.
+    public bool UseAllCores { get; set; } = true;
+
+    // Specifies the exact number of cores to use when UseAllCores is false.
+    public int UseOnlyThisCoresCount { get; set; } = Environment.ProcessorCount;
 }
 
 /// <summary>
-/// Entry point of the application that loads processor settings from a JSON file
-/// and applies them to the Aspose.BarCode BarCodeReader.
+/// Entry point of the application that loads processor settings and applies them to Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Main method that orchestrates reading the configuration and applying it.
+    /// Application startup method. Loads configuration, applies settings, and reports the applied values.
     /// </summary>
     static void Main()
     {
-        // Path to the JSON configuration file
         const string configPath = "processorSettings.json";
 
-        // Verify that the configuration file exists before attempting to read it
-        if (!File.Exists(configPath))
+        // Load configuration from JSON file (or use defaults if missing/invalid).
+        ProcessorConfig config = LoadConfig(configPath);
+
+        // Apply the loaded settings to the Aspose.BarCode processor.
+        ApplyProcessorSettings(config);
+
+        // Output the effective processor settings.
+        Console.WriteLine(
+            $"ProcessorSettings applied: UseAllCores={BarCodeReader.ProcessorSettings.UseAllCores}, " +
+            $"UseOnlyThisCoresCount={BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount}");
+    }
+
+    /// <summary>
+    /// Reads the processor configuration from the specified JSON file.
+    /// </summary>
+    /// <param name="path">Path to the JSON configuration file.</param>
+    /// <returns>A <see cref="ProcessorConfig"/> instance populated with values from the file or defaults.</returns>
+    static ProcessorConfig LoadConfig(string path)
+    {
+        if (!File.Exists(path))
         {
-            Console.WriteLine($"Configuration file not found: {configPath}");
-            return;
+            // Config file missing; fall back to default settings.
+            return new ProcessorConfig();
         }
 
-        // Read the entire JSON content from the file
-        string json = File.ReadAllText(configPath);
-        ProcessorSettingsConfig? config;
-
-        // Attempt to deserialize the JSON into a ProcessorSettingsConfig instance
-        try
+        // Open the file for reading within a using block to ensure proper disposal.
+        using (FileStream stream = new FileStream(path, FileMode.Open, FileAccess.Read))
         {
-            config = JsonSerializer.Deserialize<ProcessorSettingsConfig>(json);
+            try
+            {
+                // Deserialize JSON into ProcessorConfig; handle null result gracefully.
+                ProcessorConfig? cfg = JsonSerializer.Deserialize<ProcessorConfig>(stream);
+                return cfg ?? new ProcessorConfig();
+            }
+            catch (JsonException ex)
+            {
+                // Invalid JSON format; log the error and use default settings.
+                Console.WriteLine($"Error parsing config: {ex.Message}");
+                return new ProcessorConfig();
+            }
         }
-        catch (Exception ex)
-        {
-            // Output any parsing errors and abort execution
-            Console.WriteLine($"Failed to parse configuration: {ex.Message}");
-            return;
-        }
+    }
 
-        // Ensure that deserialization produced a non‑null object
-        if (config == null)
-        {
-            Console.WriteLine("Configuration is empty or invalid.");
-            return;
-        }
-
-        // Apply the deserialized settings to the Aspose.BarCode BarCodeReader processor
-        // ProcessorSettings is a static property of BarCodeReader that controls core usage
+    /// <summary>
+    /// Applies the provided processor configuration to the Aspose.BarCode BarCodeReader.
+    /// </summary>
+    /// <param name="config">The configuration to apply.</param>
+    static void ApplyProcessorSettings(ProcessorConfig config)
+    {
+        // Transfer settings to the static ProcessorSettings used by BarCodeReader.
+        BarCodeReader.ProcessorSettings.UseAllCores = config.UseAllCores;
         BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount = config.UseOnlyThisCoresCount;
-
-        // Confirm successful loading and display the applied setting
-        Console.WriteLine("Processor settings loaded successfully.");
-        Console.WriteLine($"UseOnlyThisCoresCount = {BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount}");
     }
 }

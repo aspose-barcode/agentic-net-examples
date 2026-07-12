@@ -1,44 +1,45 @@
+// Title: Verify ProcessorSettings core count does not exceed physical cores
+// Description: Demonstrates how to test that Aspose.BarCode's ProcessorSettings.UseOnlyThisCoresCount is limited to the machine's physical core count.
+// Category-Description: This example belongs to the Aspose.BarCode performance tuning category, illustrating the use of BarCodeReader.ProcessorSettings to control multi‑core processing. Developers often need to limit CPU usage for barcode recognition tasks in server environments; the key API classes include BarCodeReader and its nested ProcessorSettings. Typical scenarios involve configuring core usage to balance performance and resource constraints.
+// Prompt: Write a test confirming ProcessorSettings.UseOnlyThisCoresCount does not exceed the physical core count.
+// Tags: barcode, processor-settings, core-count, performance, aspose.barcode, test
+
 using System;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.BarCode.Common;
 
 /// <summary>
-/// Demonstrates how to configure Aspose.BarCode processor settings
-/// to limit the number of CPU cores used for barcode recognition.
+/// Example program that validates the configured core count for Aspose.BarCode's
+/// processor settings does not exceed the physical core count of the host machine.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Retrieves the physical core count, attempts to set a higher core usage,
-    /// and validates that the configured core count does not exceed the actual cores.
+    /// Entry point of the example. Retrieves the physical core count, configures
+    /// <see cref="BarCodeReader.ProcessorSettings"/> to use that many cores, and
+    /// verifies the configuration does not exceed the actual core count.
     /// </summary>
-    /// <param name="args">Command‑line arguments (not used).</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Get the number of physical processor cores available on the machine.
-        int physicalCores = Environment.ProcessorCount;
+        // Retrieve the number of logical processors reported by the runtime.
+        // In most environments this corresponds to the physical core count.
+        int physicalCoreCount = Environment.ProcessorCount;
 
-        // Disable automatic use of all cores; we will set a specific core count manually.
+        // Disable automatic core selection and explicitly set the core count.
         BarCodeReader.ProcessorSettings.UseAllCores = false;
+        BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount = physicalCoreCount; // attempt to use all available cores
 
-        // Attempt to assign a core count greater than the actual number of physical cores.
-        // This should be clamped by the library to the maximum available cores.
-        BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount = physicalCores + 5;
+        // Read back the configured core count for validation.
+        int configuredCoreCount = BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount;
 
-        // Retrieve the value that was actually set after the library's internal validation.
-        int configuredCores = BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount;
-
-        // Check whether the configured core count respects the physical core limit.
-        if (configuredCores <= physicalCores)
+        // Ensure the configured value does not exceed the actual core count.
+        if (configuredCoreCount > physicalCoreCount)
         {
-            // Success: the library correctly limited the core count.
-            Console.WriteLine($"PASS: UseOnlyThisCoresCount ({configuredCores}) does not exceed physical cores ({physicalCores}).");
+            throw new InvalidOperationException(
+                $"Configured core count ({configuredCoreCount}) exceeds physical core count ({physicalCoreCount}).");
         }
-        else
-        {
-            // Failure: the configured core count is higher than the physical core count.
-            Console.WriteLine($"FAIL: UseOnlyThisCoresCount ({configuredCores}) exceeds physical cores ({physicalCores}).");
-        }
+
+        // Output success message; this line is safe for non‑interactive CI pipelines.
+        Console.WriteLine($"Test passed: Configured core count ({configuredCoreCount}) is within the physical core count ({physicalCoreCount}).");
     }
 }

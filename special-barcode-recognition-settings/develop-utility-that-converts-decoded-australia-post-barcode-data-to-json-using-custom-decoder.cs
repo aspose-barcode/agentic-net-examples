@@ -1,104 +1,82 @@
+// Title: Australia Post Barcode to JSON Converter Using Custom Decoder
+// Description: Demonstrates decoding Australia Post barcodes and converting the extracted customer information into JSON format.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases how to use BarcodeGenerator, BarCodeReader, and custom decoder classes (AustraliaPostCustomerInformationDecoder) to process Australia Post symbology, a common requirement for logistics and mailing applications. Developers often need to extract embedded customer data from barcodes and transform it into structured formats such as JSON.
+// Prompt: Develop a utility that converts decoded Australia Post barcode data to JSON using a custom decoder.
+// Tags: australia post, barcode, decoding, json, custom decoder, aspose.barcode
+
 using System;
+using System.IO;
 using System.Text.Json;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
-namespace AustraliaPostBarcodeJsonDemo
+namespace AustraliaPostBarcodeUtility
 {
     /// <summary>
-    /// Custom decoder implementing the Aspose <see cref="AustraliaPostCustomerInformationDecoder"/> interface.
-    /// This example simply maps digits 0‑9 to letters A‑J.
+    /// Custom decoder implementing the Aspose interface for Australia Post customer information.
     /// </summary>
-    public class SimpleCustomerInfoDecoder : AustraliaPostCustomerInformationDecoder
+    public class CustomCustomerInfoDecoder : AustraliaPostCustomerInformationDecoder
     {
-        /// <summary>
-        /// Decodes the supplied data by converting numeric characters to corresponding letters.
-        /// Non‑numeric characters are left unchanged.
-        /// </summary>
-        /// <param name="data">The raw customer information string.</param>
-        /// <returns>The decoded string.</returns>
-        public string Decode(string data)
+        // Simple example: just return the raw bar values as decoded text.
+        public string Decode(string barValues)
         {
-            // Return empty string if input is null or empty
-            if (string.IsNullOrEmpty(data))
-                return string.Empty;
-
-            // Allocate a character array for the result
-            char[] result = new char[data.Length];
-
-            // Iterate over each character and apply the simple mapping
-            for (int i = 0; i < data.Length; i++)
-            {
-                char ch = data[i];
-                if (ch >= '0' && ch <= '9')
-                {
-                    // Map 0->A, 1->B, ..., 9->J
-                    result[i] = (char)('A' + (ch - '0'));
-                }
-                else
-                {
-                    // Preserve non‑numeric characters
-                    result[i] = ch;
-                }
-            }
-
-            // Convert the character array back to a string
-            return new string(result);
+            // In a real scenario, translate bar values (0‑3) to meaningful data here.
+            return barValues;
         }
     }
 
+    /// <summary>
+    /// Example utility that generates an Australia Post barcode, reads it using a custom decoder,
+    /// and outputs the decoded customer information as JSON.
+    /// </summary>
     class Program
     {
         /// <summary>
-        /// Entry point of the demo application.
-        /// Generates an Australia Post barcode, reads it back, applies a custom decoder,
-        /// and outputs the results as formatted JSON.
+        /// Entry point of the example. Generates a barcode, reads it, decodes customer info,
+        /// and prints the JSON representation to the console.
         /// </summary>
         static void Main()
         {
-            // Sample Australia Post barcode text (includes customer information part)
-            const string barcodeText = "5912345678AB";
+            // Sample Australia Post barcode text (routing + identifier + customer info).
+            const string barcodeText = "5912345678ABCde";
 
-            // Create a barcode generator for the Australia Post symbology
+            // Create the barcode generator for Australia Post symbology.
             using (var generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, barcodeText))
             {
-                // Set the interpreting type to CTable for demonstration purposes
-                generator.Parameters.Barcode.AustralianPost.AustralianPostEncodingTable = CustomerInformationInterpretingType.CTable;
+                // Use CTable interpreting type for customer information.
+                generator.Parameters.Barcode.AustralianPost.EncodingTable = CustomerInformationInterpretingType.CTable;
 
-                // Generate the barcode image
+                // Generate the barcode image in memory.
                 using (var image = generator.GenerateBarCodeImage())
                 {
-                    // Initialize a reader configured for Australia Post barcodes
+                    // Set up the reader with the custom decoder.
                     using (var reader = new BarCodeReader(image, DecodeType.AustraliaPost))
                     {
-                        // Assign the custom decoder and interpreting type to the reader settings
-                        reader.BarcodeSettings.AustraliaPost.CustomerInformationDecoder = new SimpleCustomerInfoDecoder();
+                        // Configure reader to use CTable and the custom decoder.
                         reader.BarcodeSettings.AustraliaPost.CustomerInformationInterpretingType = CustomerInformationInterpretingType.CTable;
+                        reader.BarcodeSettings.AustraliaPost.CustomerInformationDecoder = new CustomCustomerInfoDecoder();
 
-                        // Perform barcode recognition
-                        var results = reader.ReadBarCodes();
-
-                        // Process each recognized barcode
-                        foreach (var result in results)
+                        // Perform recognition and process each detected barcode.
+                        foreach (var result in reader.ReadBarCodes())
                         {
-                            // Decode the raw code text using the custom decoder (demo purpose)
-                            string decodedInfo = ((SimpleCustomerInfoDecoder)reader.BarcodeSettings.AustraliaPost.CustomerInformationDecoder)
-                                .Decode(result.CodeText);
+                            // Full code text from the barcode (may be null).
+                            string fullCode = result.CodeText ?? string.Empty;
 
-                            // Build an anonymous object for JSON serialization
-                            var jsonObject = new
-                            {
-                                CodeText = result.CodeText,
-                                DecodedCustomerInformation = decodedInfo,
-                                InterpretingType = reader.BarcodeSettings.AustraliaPost.CustomerInformationInterpretingType.ToString()
-                            };
+                            // Extract the customer information part (after first 10 characters).
+                            string customerInfoRaw = fullCode.Length > 10 ? fullCode.Substring(10) : string.Empty;
 
-                            // Serialize the object to indented JSON
-                            string json = JsonSerializer.Serialize(jsonObject, new JsonSerializerOptions { WriteIndented = true });
+                            // Decode using the custom decoder.
+                            string decodedInfo = ((CustomCustomerInfoDecoder)reader.BarcodeSettings.AustraliaPost.CustomerInformationDecoder)
+                                .Decode(customerInfoRaw);
 
-                            // Output the JSON to the console
+                            // Convert decoded information to formatted JSON.
+                            string json = JsonSerializer.Serialize(
+                                new { CustomerInfo = decodedInfo },
+                                new JsonSerializerOptions { WriteIndented = true });
+
+                            // Output the JSON to the console.
                             Console.WriteLine(json);
                         }
                     }

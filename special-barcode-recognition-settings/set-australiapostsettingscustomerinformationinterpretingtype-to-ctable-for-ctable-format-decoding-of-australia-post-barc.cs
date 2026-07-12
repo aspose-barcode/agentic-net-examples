@@ -1,44 +1,48 @@
+// Title: Decode Australia Post barcode using CTable format
+// Description: Demonstrates setting CustomerInformationInterpretingType to CTable for decoding Australia Post barcodes and prints the decoded values.
+// Category-Description: This example belongs to the Aspose.BarCode barcode decoding category, focusing on Australia Post symbology. It showcases the use of BarcodeGenerator, BarCodeReader, and related settings to generate and decode barcodes, a common task for developers handling postal services integration.
+// Prompt: Set AustraliaPostSettings.CustomerInformationInterpretingType to CTable for CTable format decoding of Australia Post barcodes.
+// Tags: barcode symbology, australia post, decoding, ctable, aspose.barcode, generation, recognition
+
 using System;
-using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generation and reading of an Australia Post barcode using the CTable interpreting type.
+/// Program demonstrating generation and CTable decoding of an Australia Post barcode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a barcode, saves it to a memory stream,
-    /// then reads and decodes it using the same interpreting type.
+    /// Entry point. Generates a barcode, decodes it using CTable interpreting type, and writes results to console.
     /// </summary>
     static void Main()
     {
-        // Create a barcode generator for Australia Post format with sample data.
-        using (var generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, "5912345678AB"))
+        // Sample Australia Post barcode text (postal code + customer info)
+        const string codeText = "5912345678AB";
+
+        // Initialize a barcode generator for Australia Post symbology
+        using (var generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, codeText))
         {
-            // Configure the generator to use the CTable encoding table.
-            generator.Parameters.Barcode.AustralianPost.AustralianPostEncodingTable = CustomerInformationInterpretingType.CTable;
+            // Configure the generator to use CTable encoding for the customer information segment
+            generator.Parameters.Barcode.AustralianPost.EncodingTable = CustomerInformationInterpretingType.CTable;
 
-            // Prepare a memory stream to hold the generated barcode image.
-            using (var ms = new MemoryStream())
+            // Generate the barcode image in memory
+            using (Bitmap image = generator.GenerateBarCodeImage())
             {
-                // Save the generated barcode as a PNG image into the memory stream.
-                generator.Save(ms, BarCodeImageFormat.Png);
-                // Reset stream position to the beginning for reading.
-                ms.Position = 0;
-
-                // Initialize a barcode reader to decode the image from the memory stream.
-                using (var reader = new BarCodeReader(ms, DecodeType.AustraliaPost))
+                // Create a barcode reader for the generated image, specifying Australia Post decoding
+                using (var reader = new BarCodeReader(image, DecodeType.AustraliaPost))
                 {
-                    // Set the reader to interpret customer information using the CTable type.
+                    // Set the reader to interpret the customer information using CTable format
                     reader.BarcodeSettings.AustraliaPost.CustomerInformationInterpretingType = CustomerInformationInterpretingType.CTable;
 
-                    // Iterate through all decoded barcodes and output their text.
+                    // Iterate through all decoded barcode results
                     foreach (var result in reader.ReadBarCodes())
                     {
-                        Console.WriteLine("Decoded CodeText: " + result.CodeText);
+                        Console.WriteLine("BarCode Type: " + result.CodeType);
+                        Console.WriteLine("BarCode CodeText: " + result.CodeText);
                     }
                 }
             }
