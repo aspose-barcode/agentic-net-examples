@@ -12,5 +12,6 @@
     <PackageReference Include="Aspose.PDF.Drawing" Version="26.5.0" />
     <PackageReference Include="Aspose.Slides.NET6.CrossPlatform" Version="26.6.0" />
     <PackageReference Include="Aspose.Words" Version="26.6.0" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="2.88.8" />
   </ItemGroup>
 </Project>
