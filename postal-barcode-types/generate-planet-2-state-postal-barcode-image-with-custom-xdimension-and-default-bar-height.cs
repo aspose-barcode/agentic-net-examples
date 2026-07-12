@@ -1,38 +1,47 @@
-// Title: Generate Planet 2‑state postal barcode with custom XDimension
-// Description: Demonstrates creating a Planet 2‑state postal barcode image, customizing the XDimension while using the default bar height.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating how to configure barcode parameters such as XDimension for postal symbologies. It uses the BarcodeGenerator class with EncodeTypes.Planet, a common scenario for generating printable postal barcodes in logistics and mailing applications. Developers often need to adjust module width for scanner compatibility while keeping other settings default.
+// Title: Generate Planet 2‑state Postal Barcode with Custom XDimension
+// Description: Creates a Planet 2‑state postal barcode image using Aspose.BarCode, applying a custom XDimension while keeping the default bar height.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, demonstrating how to configure barcode parameters such as XDimension for postal symbologies. It showcases the use of BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes, which developers commonly employ to produce printable barcode images for mailing and logistics applications.
 // Prompt: Generate a Planet 2‑state postal barcode image with custom XDimension and default bar height.
-// Tags: planet, postal, barcode, generation, xdimension, png, aspose.barcode
+// Tags: planet, postal, barcode, generation, png, xdimension
 
 using System;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Example program that generates a Planet 2‑state postal barcode image
-/// with a custom XDimension (module width) while retaining the default bar height.
+/// Demonstrates generation of a Planet 2‑state postal barcode with a custom XDimension.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Creates the barcode, configures its XDimension,
-    /// saves it as a PNG file, and writes a confirmation message to the console.
+    /// Entry point of the example. Generates and saves the barcode image.
     /// </summary>
     static void Main()
     {
-        // Initialize the barcode generator for the Planet symbology with sample data.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Planet, "123456789012"))
+        // Define the output file name
+        string outputPath = "planet.png";
+
+        // Resolve the full directory path and ensure it exists
+        string outputDir = Path.GetDirectoryName(Path.GetFullPath(outputPath));
+        if (!Directory.Exists(outputDir))
         {
-            // Set a custom XDimension (module width) in points (2 points = 0.28 mm).
-            generator.Parameters.Barcode.XDimension.Point = 2f;
-
-            // No explicit bar height is set; the default value will be used.
-
-            // Save the generated barcode image to a PNG file.
-            generator.Save("planet.png");
+            Directory.CreateDirectory(outputDir);
         }
 
-        // Inform the user that the barcode image has been created.
-        Console.WriteLine("Planet barcode generated: planet.png");
+        // Initialize the barcode generator for Planet symbology with sample data
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Planet, "1234567890"))
+        {
+            // Set a custom XDimension (module width) in points; 2 points = 0.028 mm
+            generator.Parameters.Barcode.XDimension.Point = 2f;
+
+            // No explicit BarHeight is set, so the default height is used
+
+            // Save the generated barcode as a PNG image
+            generator.Save(outputPath, BarCodeImageFormat.Png);
+        }
+
+        // Inform the user where the file was saved
+        Console.WriteLine($"Planet barcode saved to {outputPath}");
     }
 }
