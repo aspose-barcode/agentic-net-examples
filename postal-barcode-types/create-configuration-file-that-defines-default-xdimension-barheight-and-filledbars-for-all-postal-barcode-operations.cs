@@ -1,40 +1,48 @@
+// Title: Generate default configuration XML for postal barcode parameters
+// Description: Demonstrates how to create an XML file that defines default XDimension, BarHeight, and FilledBars settings for postal barcode generation using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode configuration management category, illustrating the use of BarcodeGenerator and its Parameters to set common properties for postal symbologies such as Postnet. Developers often need to define default barcode appearance settings in a reusable XML configuration file for consistent rendering across applications.
+// Prompt: Create a configuration file that defines default XDimension, BarHeight, and FilledBars for all postal barcode operations.
+// Tags: postal barcode, configuration, xml, generation, aspnet.barcode, xdimension, barheight, filledbars
+
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generating a POSTNET barcode and exporting its configuration to XML.
+/// Example program that creates an XML configuration file containing default
+/// barcode parameters for postal symbologies (e.g., Postnet). The generated
+/// file can be reused across projects to ensure consistent barcode appearance.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Application entry point. Generates a barcode with predefined settings and saves its configuration.
+    /// Entry point of the application. Generates the XML configuration file
+    /// with predefined XDimension, BarHeight, and FilledBars values.
     /// </summary>
     static void Main()
     {
-        // Default barcode parameters
-        const float defaultXDimension = 2f;   // module width in points
-        const float defaultBarHeight = 40f;   // bar height in points
-        const bool defaultFilledBars = true; // bars are filled
+        // Define the full path for the output XML configuration file.
+        string configPath = Path.Combine(Directory.GetCurrentDirectory(), "PostalBarcodeDefaults.xml");
 
-        // Initialize the barcode generator with POSTNET type and data "12345"
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Postnet, "12345"))
+        // Initialize a BarcodeGenerator for the Postnet postal symbology.
+        // This instance is used only to set default parameters; no barcode is generated.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Postnet))
         {
-            // Set the X dimension (module width)
-            generator.Parameters.Barcode.XDimension.Point = defaultXDimension;
+            // Set the default module width (XDimension) in points.
+            generator.Parameters.Barcode.XDimension.Point = 2f;
 
-            // Disable auto sizing and set a fixed bar height
-            generator.Parameters.AutoSizeMode = AutoSizeMode.None;
-            generator.Parameters.Barcode.BarHeight.Point = defaultBarHeight;
+            // Set the default height of the bars for 1D barcodes in points.
+            generator.Parameters.Barcode.BarHeight.Point = 40f;
 
-            // Specify whether the bars should be filled
-            generator.Parameters.Barcode.FilledBars = defaultFilledBars;
+            // Specify that bars should be rendered as filled shapes.
+            generator.Parameters.Barcode.FilledBars = true;
 
-            // Build the full path for the XML configuration file
-            string configPath = Path.Combine(Directory.GetCurrentDirectory(), "postal_defaults.xml");
-
-            // Export the current generator settings to the XML file
+            // Export the configured parameters to an XML file at the specified path.
             generator.ExportToXml(configPath);
         }
+
+        // Inform the user where the configuration file has been created.
+        Console.WriteLine($"Configuration file created at: {configPath}");
     }
 }

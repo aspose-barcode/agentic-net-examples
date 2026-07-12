@@ -1,96 +1,92 @@
+// Title: Generate postal barcodes in parallel
+// Description: Demonstrates creating a batch of postal barcodes using Aspose.BarCode with parallel processing, ensuring each thread uses its own generator instance.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on postal symbologies such as Postnet, Planet, AustraliaPost, SingaporePost, and USPS Intelligent Mail. It showcases the use of BarcodeGenerator, EncodeTypes, and related parameter settings to produce PNG images. Developers often need thread‑safe barcode creation for high‑throughput scenarios, and this sample illustrates best practices for parallel execution.
+// Prompt: Generate a batch of postal barcodes using parallel processing and ensure thread‑safe handling of generator instances.
+// Tags: postal, barcode, parallel, thread-safe, generation, png, aspose.barcode, encode-types
+
 using System;
-using System.Collections.Generic;
 using System.IO;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates batch generation of various postal barcodes using Aspose.BarCode
-/// and optional verification by reading a generated barcode.
+/// Example program that generates a batch of postal barcodes in parallel,
+/// demonstrating thread‑safe usage of <see cref="BarcodeGenerator"/> instances.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Represents a single barcode generation request.
-    /// </summary>
-    private class BarcodeTask
-    {
-        public BaseEncodeType Symbology { get; }
-        public string CodeText { get; }
-        public string FileName { get; }
-
-        public BarcodeTask(BaseEncodeType symbology, string codeText, string fileName)
-        {
-            Symbology = symbology;
-            CodeText = codeText;
-            FileName = fileName;
-        }
-    }
-
-    /// <summary>
-    /// Entry point of the application. Generates a set of postal barcodes in parallel
-    /// and optionally reads back one of them for verification.
+    /// Entry point of the application. Prepares barcode data, creates an output folder,
+    /// and processes the batch concurrently, saving each barcode as a PNG file.
     /// </summary>
     static void Main()
     {
-        // Determine output folder for generated barcode images.
+        // Define a small collection of postal barcode specifications.
+        var barcodeData = new List<(string Symbology, string CodeText)>
+        {
+            ("Postnet", "12345"),
+            ("Planet", "12345678"),
+            ("AustraliaPost", "5912345678ABCde"),
+            ("SingaporePost", "1234567890"),
+            ("USPSIntelligentMail", "12345678901234567890")
+        };
+
+        // Determine the output directory and ensure it exists.
         string outputFolder = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
         if (!Directory.Exists(outputFolder))
         {
-            // Create the folder if it does not exist.
             Directory.CreateDirectory(outputFolder);
         }
 
-        // Prepare a small batch of postal barcode tasks (safe sample size).
-        var tasks = new List<BarcodeTask>
+        // Process each barcode definition in parallel.
+        // Each iteration creates its own BarcodeGenerator instance, which is thread‑safe.
+        Parallel.For(0, barcodeData.Count, i =>
         {
-            // Postnet (US postal barcode) – 5-digit ZIP code.
-            new BarcodeTask(EncodeTypes.Postnet, "12345", "postnet.png"),
-            // Planet (US postal barcode) – 5-digit ZIP code.
-            new BarcodeTask(EncodeTypes.Planet, "54321", "planet.png"),
-            // AustraliaPost – sample customer information.
-            new BarcodeTask(EncodeTypes.AustraliaPost, "5912345678ABCde", "australiapost.png"),
-            // OneCode (USPS) – numeric string (20 digits).
-            new BarcodeTask(EncodeTypes.OneCode, "12345678901234567890", "onecode.png"),
-            // RM4SCC (UK Royal Mail) – sample alphanumeric.
-            new BarcodeTask(EncodeTypes.RM4SCC, "AB12C3", "rm4scc.png")
-        };
+            var (symbologyName, codeText) = barcodeData[i];
 
-        // Parallel generation – each iteration creates its own BarcodeGenerator (thread‑safe).
-        Parallel.ForEach(tasks, task =>
-        {
-            // Build full path for the output image.
-            string outputPath = Path.Combine(outputFolder, task.FileName);
-
-            // Each thread gets its own generator instance.
-            using (var generator = new BarcodeGenerator(task.Symbology, task.CodeText))
+            // Resolve the EncodeTypes enum value by name using reflection.
+            var field = typeof(EncodeTypes).GetField(symbologyName);
+            if (field == null)
             {
-                // Optional: set a higher resolution for better quality.
-                generator.Parameters.Resolution = 300f;
+                Console.WriteLine($"Unknown symbology: {symbologyName}");
+                return;
+            }
 
-                // Save the barcode image (PNG by default).
-                generator.Save(outputPath);
-                Console.WriteLine($"Generated {task.FileName}");
+            // Cast the reflected value to BaseEncodeType.
+            BaseEncodeType encodeType = (BaseEncodeType)field.GetValue(null);
+
+            // Create a generator for the current barcode.
+            using (var generator = new BarcodeGenerator(encodeType, codeText))
+            {
+                // Configure basic visual appearance.
+                generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
+                generator.Parameters.BackColor = Aspose.Drawing.Color.White;
+                generator.Parameters.Barcode.XDimension.Point = 2f; // module size
+                generator.Parameters.Barcode.Padding.Left.Point = 5f;
+                generator.Parameters.Barcode.Padding.Top.Point = 5f;
+                generator.Parameters.Barcode.Padding.Right.Point = 5f;
+                generator.Parameters.Barcode.Padding.Bottom.Point = 5f;
+
+                // Example of a symbology‑specific setting: AustraliaPost encoding table.
+                if (encodeType == EncodeTypes.AustraliaPost)
+                {
+                    generator.Parameters.Barcode.AustralianPost.AustralianPostEncodingTable = CustomerInformationInterpretingType.CTable;
+                }
+
+                // Build a unique file name for the output image.
+                string fileName = $"{symbologyName}_{i + 1}.png";
+                string filePath = Path.Combine(outputFolder, fileName);
+
+                // Save the generated barcode as a PNG file.
+                generator.Save(filePath);
+                Console.WriteLine($"Saved {filePath}");
             }
         });
 
-        // Demonstrate reading back one of the generated barcodes (optional verification).
-        string samplePath = Path.Combine(outputFolder, "postnet.png");
-        if (File.Exists(samplePath))
-        {
-            // Initialize a reader for the specific barcode type.
-            using (var reader = new BarCodeReader(samplePath, DecodeType.Postnet))
-            {
-                // Iterate through all decoded results (normally one per image).
-                foreach (var result in reader.ReadBarCodes())
-                {
-                    Console.WriteLine($"Read from {Path.GetFileName(samplePath)}: {result.CodeText}");
-                }
-            }
-        }
-
+        // Indicate that the batch processing has finished.
         Console.WriteLine("Barcode batch generation completed.");
     }
 }

@@ -1,70 +1,69 @@
+// Title: Generate Swiss Post Parcel Service Barcodes as SVG
+// Description: Demonstrates creating Swiss Post Parcel additional service code barcodes for various service descriptions and saving them as SVG files.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use the BarcodeGenerator with EncodeTypes.SwissPostParcel. It covers setting visual parameters, handling output directories, and saving barcodes in vector SVG format—common tasks for developers integrating postal barcode printing into applications.
+// Prompt: Generate Swiss Post Parcel additional service code barcodes for multiple service descriptions and save as SVG files.
+// Tags: swisspostparcel, barcode, generation, svg, aspose.barcode, encode types
+
 using System;
-using System.Collections.Generic;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generation of Swiss Post Parcel barcodes for a set of service codes
-/// and saves them as SVG files in an output directory.
+/// Generates Swiss Post Parcel additional service code barcodes for multiple service descriptions and saves them as SVG files.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates barcodes for predefined service codes
-    /// and writes them to SVG files.
+    /// Entry point of the example.
     /// </summary>
     static void Main()
     {
-        // Define the output directory relative to the current working directory
-        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "SwissPostParcelBarcodes");
+        // Define sample service descriptions and their corresponding Swiss Post Parcel code texts.
+        var services = new (string Description, string CodeText)[]
+        {
+            ("Standard Delivery", "123456789012"),
+            ("Express Delivery", "234567890123"),
+            ("Cash on Delivery", "345678901234"),
+            ("Registered Mail", "456789012345")
+        };
 
-        // Ensure the output directory exists; create it if it does not
+        // Ensure the output directory exists.
+        string outputDir = "SwissPostParcelBarcodes";
         if (!Directory.Exists(outputDir))
         {
             Directory.CreateDirectory(outputDir);
         }
 
-        // List of sample service codes for Swiss Post Parcel additional services
-        List<string> serviceCodes = new List<string>
+        // Iterate over each service and generate its barcode.
+        foreach (var service in services)
         {
-            "D01", // Example: Domestic mail
-            "I02", // Example: International mail
-            "A03", // Example: Additional service 1
-            "B04", // Example: Additional service 2
-            "C05"  // Example: Additional service 3
-        };
-
-        // Iterate over each service code and generate a corresponding barcode
-        foreach (string code in serviceCodes)
-        {
-            // Construct the file name and full path for the SVG output
-            string fileName = $"SwissPostParcel_{code}.svg";
-            string filePath = Path.Combine(outputDir, fileName);
-
-            // Create a barcode generator for the Swiss Post Parcel format using the current code
-            using (var generator = new BarcodeGenerator(EncodeTypes.SwissPostParcel, code))
+            // Create a barcode generator for the Swiss Post Parcel symbology.
+            using (var generator = new BarcodeGenerator(EncodeTypes.SwissPostParcel, service.CodeText))
             {
-                // Optional: adjust visual appearance of the barcode
-                generator.Parameters.Barcode.XDimension.Point = 2f;   // Width of a single module
-                generator.Parameters.Barcode.BarHeight.Point = 30f; // Height of the barcode
+                // Configure basic visual settings.
+                generator.Parameters.Barcode.BarColor = Color.Black;   // Barcode bars color
+                generator.Parameters.BackColor = Color.White;          // Background color
+                generator.Parameters.Barcode.XDimension.Point = 2f;   // Module size (point size)
 
+                // Build a safe file name by replacing spaces with underscores.
+                string safeDescription = service.Description.Replace(' ', '_');
+                string outputPath = Path.Combine(outputDir, $"{safeDescription}.svg");
+
+                // Attempt to save the barcode as an SVG file.
                 try
                 {
-                    // Save the generated barcode as an SVG file
-                    generator.Save(filePath, BarCodeImageFormat.Svg);
-                    Console.WriteLine($"Saved barcode for code '{code}' to '{filePath}'.");
+                    generator.Save(outputPath, BarCodeImageFormat.Svg);
+                    Console.WriteLine($"Saved {service.Description} barcode to {outputPath}");
                 }
                 catch (Exception ex)
                 {
-                    // Handle potential errors (e.g., licensing restrictions on SVG output)
-                    Console.WriteLine($"Failed to save barcode for code '{code}': {ex.Message}");
+                    // Inform the user if the format is not supported (e.g., evaluation license limitation).
+                    Console.WriteLine($"Failed to save {service.Description} barcode as SVG: {ex.Message}");
                 }
             }
         }
-
-        // Indicate that the barcode generation process has finished
-        Console.WriteLine("Barcode generation completed.");
     }
 }

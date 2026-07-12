@@ -1,38 +1,45 @@
+// Title: Generate Swiss Post Parcel International barcode with checksum correction
+// Description: Demonstrates creating a Swiss Post Parcel barcode, automatically correcting its checksum, and saving it as a JPEG image.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating the use of BarcodeGenerator with EncodeTypes.SwissPostParcel. It shows how to configure automatic checksum handling and export the result to a JPEG file, a common requirement for integrating barcode images into documents, web pages, or printing workflows.
+// Prompt: Generate a Swiss Post Parcel international barcode with automatic checksum correction and save as JPEG.
+// Tags: swisspostparcel, barcode, generation, jpeg, checksum, aspnet, aspnetcore, aspose.barcode
+
 using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generating a Swiss Post Parcel barcode using Aspose.BarCode.
+/// Example program that generates a Swiss Post Parcel International barcode,
+/// lets the library automatically correct the checksum, and saves the result as a JPEG image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a barcode image and saves it to disk.
+    /// Entry point of the application.
     /// </summary>
     static void Main()
     {
-        // Define the codetext for the Swiss Post Parcel barcode.
-        // Replace this sample value with a valid Swiss Post Parcel code as needed.
-        string codeText = "123456789012345678901234567890";
+        // Define the raw code text; the library will adjust the checksum if needed.
+        const string codeText = "1234567890123456";
 
-        // Define the output file path for the generated barcode image.
-        string outputPath = "SwissPostParcel.jpg";
+        // Specify the output file path for the generated JPEG image.
+        const string outputPath = "SwissPostParcel.jpeg";
 
-        // Initialize the barcode generator with the Swiss Post Parcel symbology and the provided codetext.
-        using (var generator = new BarcodeGenerator(EncodeTypes.SwissPostParcel, codeText))
+        // Choose the Swiss Post Parcel symbology for barcode generation.
+        BaseEncodeType symbology = EncodeTypes.SwissPostParcel;
+
+        // Initialize the barcode generator with the selected symbology and code text.
+        using (var generator = new BarcodeGenerator(symbology, codeText))
         {
-            // Configure the generator to ignore codetext validation errors (no exception will be thrown).
-            generator.Parameters.Barcode.ThrowExceptionWhenCodeTextIncorrect = false;
+            // Automatic checksum correction is enabled by default.
+            // If you need to enforce strict validation, you could set:
+            // generator.Parameters.ThrowExceptionWhenCodeTextIncorrect = false;
 
-            // Enable checksum generation for the barcode.
-            generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
-
-            // Save the generated barcode as a JPEG image to the specified path.
+            // Save the generated barcode image as a JPEG file.
             generator.Save(outputPath, BarCodeImageFormat.Jpeg);
         }
 
-        // Inform the user that the barcode image has been saved.
-        Console.WriteLine($"Barcode saved to {outputPath}");
+        // Inform the user where the barcode image has been saved.
+        Console.WriteLine($"Swiss Post Parcel barcode saved to: {outputPath}");
     }
 }

@@ -1,117 +1,126 @@
+// Title: Decode barcodes from encrypted images in memory
+// Description: Demonstrates decrypting AES‑encrypted image files in memory and using Aspose.BarCode to read any barcodes they contain.
+// Category-Description: This example belongs to the Aspose.BarCode image processing and barcode recognition category. It shows how to work with the BarCodeReader, DecodeType, and QualitySettings classes to extract barcode data from images that are first decrypted in memory. Typical use cases include secure storage of barcode images and on‑the‑fly decoding without writing decrypted files to disk.
+// Prompt: Decode a set of barcodes from encrypted image files after decrypting them in memory.
+// Tags: barcode, decryption, aes, memory, aspose.barcode, decode, image
+
 using System;
 using System.IO;
-using Aspose.BarCode.Generation;
+using System.Security.Cryptography;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating barcodes, encrypting the images with a simple XOR cipher,
-/// saving them to disk, then decrypting and reading the barcodes back.
+/// Example program that decrypts AES‑encrypted image files in memory
+/// and decodes any barcodes they contain using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Performs a simple XOR transformation on the supplied byte array using the given key.
-    /// This method is used for both encryption and decryption.
+    /// Performs simple AES‑CBC decryption. This method is for demonstration
+    /// purposes only and uses a hard‑coded key/IV.
     /// </summary>
-    /// <param name="data">The input byte array to transform.</param>
-    /// <param name="key">The XOR key.</param>
-    /// <returns>A new byte array containing the transformed data.</returns>
-    static byte[] XorTransform(byte[] data, byte key)
+    /// <param name="cipherData">Encrypted byte array.</param>
+    /// <param name="key">AES key (256‑bit).</param>
+    /// <param name="iv">AES initialization vector (128‑bit).</param>
+    /// <returns>Decrypted byte array.</returns>
+    private static byte[] DecryptAes(byte[] cipherData, byte[] key, byte[] iv)
     {
-        byte[] result = new byte[data.Length];
-        for (int i = 0; i < data.Length; i++)
+        using (var aes = Aes.Create())
         {
-            // Apply XOR operation per byte
-            result[i] = (byte)(data[i] ^ key);
+            aes.Key = key;
+            aes.IV = iv;
+            aes.Mode = CipherMode.CBC;
+            aes.Padding = PaddingMode.PKCS7;
+
+            using (var decryptor = aes.CreateDecryptor())
+            using (var msInput = new MemoryStream(cipherData))
+            using (var msOutput = new MemoryStream())
+            {
+                using (var cryptoStream = new CryptoStream(msInput, decryptor, CryptoStreamMode.Read))
+                {
+                    cryptoStream.CopyTo(msOutput);
+                }
+                return msOutput.ToArray();
+            }
         }
-        return result;
     }
 
     /// <summary>
-    /// Entry point of the program. Generates sample barcodes, encrypts them,
-    /// saves to files, then decrypts and reads the barcodes.
+    /// Entry point. Decrypts each encrypted image file, loads it into a bitmap,
+    /// and uses <see cref="BarCodeReader"/> to detect and output barcode information.
     /// </summary>
     static void Main()
     {
-        // Encryption key (example)
-        const byte xorKey = 0xAA;
-
-        // Sample barcode definitions: (symbology, text, output file name)
-        var samples = new (BaseEncodeType type, string text, string file)[]
+        // Paths to sample encrypted image files (replace with actual file locations)
+        string[] encryptedFiles = new string[]
         {
-            (EncodeTypes.Code128, "Sample123", "encrypted1.bin"),
-            (EncodeTypes.QR, "HelloWorld", "encrypted2.bin"),
-            (EncodeTypes.DataMatrix, "DataMatrixTest", "encrypted3.bin")
+            "encrypted1.bin",
+            "encrypted2.bin",
+            "encrypted3.bin"
         };
 
-        // -----------------------------------------------------------------
-        // Step 1: Generate sample barcode images, encrypt them and save to files
-        // -----------------------------------------------------------------
-        foreach (var (type, text, filePath) in samples)
+        // Hard‑coded AES key and IV for the example (must match the encryption side)
+        byte[] aesKey = new byte[32]; // 256‑bit key (all zeros for demo)
+        byte[] aesIv  = new byte[16]; // 128‑bit IV (all zeros for demo)
+
+        foreach (var encPath in encryptedFiles)
         {
-            // Generate barcode image into a memory stream
-            using (var ms = new MemoryStream())
+            // Verify that the encrypted file exists before attempting to process it
+            if (!File.Exists(encPath))
             {
-                using (var generator = new BarcodeGenerator(type, text))
-                {
-                    // Save the barcode as PNG into the memory stream
-                    generator.Save(ms, BarCodeImageFormat.Png);
-                }
-
-                // Encrypt the image bytes using XOR
-                byte[] encryptedBytes = XorTransform(ms.ToArray(), xorKey);
-
-                // Write the encrypted bytes to the specified file
-                File.WriteAllBytes(filePath, encryptedBytes);
-            }
-        }
-
-        // -----------------------------------------------------------------
-        // Step 2: Decrypt each file in memory and decode barcodes
-        // -----------------------------------------------------------------
-        foreach (var (_, _, filePath) in samples)
-        {
-            if (!File.Exists(filePath))
-            {
-                Console.WriteLine($"File not found: {filePath}");
+                Console.WriteLine($"File not found: {encPath}");
                 continue;
             }
 
-            // Read the encrypted bytes from disk
-            byte[] encryptedData = File.ReadAllBytes(filePath);
-
-            // Decrypt the bytes using the same XOR key
-            byte[] decryptedData = XorTransform(encryptedData, xorKey);
-
-            // Load the decrypted image into a Bitmap for barcode reading
-            using (var imageStream = new MemoryStream(decryptedData))
-            using (var bitmap = new Bitmap(imageStream))
-            // Create a BarCodeReader that supports all barcode types
-            using (var reader = new BarCodeReader(bitmap, DecodeType.AllSupportedTypes))
+            try
             {
-                // Enable checksum validation (optional but recommended)
-                reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
+                // Read the encrypted file bytes from disk
+                byte[] encryptedBytes = File.ReadAllBytes(encPath);
 
-                // Attempt to read all barcodes from the image
-                var results = reader.ReadBarCodes();
+                // Decrypt the bytes to obtain the original image (e.g., PNG)
+                byte[] imageBytes = DecryptAes(encryptedBytes, aesKey, aesIv);
 
-                if (results.Length == 0)
+                // Load the decrypted image into a bitmap using a memory stream
+                using (var imageStream = new MemoryStream(imageBytes))
+                using (var bitmap = new Bitmap(imageStream))
+                using (var reader = new BarCodeReader())
                 {
-                    Console.WriteLine($"No barcode detected in file: {filePath}");
-                }
-                else
-                {
-                    foreach (var result in results)
+                    // Configure the reader to detect all supported barcode symbologies
+                    reader.BarCodeReadType = DecodeType.AllSupportedTypes;
+
+                    // Use high‑quality settings to improve recognition on low‑quality images
+                    reader.QualitySettings = QualitySettings.HighQuality;
+
+                    // Assign the bitmap image to the reader
+                    reader.SetBarCodeImage(bitmap);
+
+                    // Perform the barcode decoding operation
+                    var results = reader.ReadBarCodes();
+
+                    if (results.Length == 0)
                     {
-                        Console.WriteLine($"File: {filePath}");
-                        Console.WriteLine($"  Type: {result.CodeTypeName}");
-                        Console.WriteLine($"  Text: {result.CodeText}");
-                        Console.WriteLine($"  Confidence: {result.Confidence}");
-                        Console.WriteLine($"  ReadingQuality: {result.ReadingQuality}");
+                        Console.WriteLine($"No barcodes detected in file: {encPath}");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Barcodes found in file: {encPath}");
+                        foreach (var result in results)
+                        {
+                            Console.WriteLine($"  Type: {result.CodeTypeName}");
+                            Console.WriteLine($"  Text: {result.CodeText}");
+
+                            // Output the region bounds of the detected barcode
+                            var bounds = result.Region.Rectangle;
+                            Console.WriteLine($"  Region: X={bounds.X}, Y={bounds.Y}, W={bounds.Width}, H={bounds.Height}");
+                        }
                     }
                 }
+            }
+            catch (Exception ex)
+            {
+                // Report any errors that occur during processing of the current file
+                Console.WriteLine($"Error processing file {encPath}: {ex.Message}");
             }
         }
     }

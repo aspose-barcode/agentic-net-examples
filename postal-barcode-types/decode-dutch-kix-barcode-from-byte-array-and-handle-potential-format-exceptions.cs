@@ -1,95 +1,80 @@
+// Title: Decode Dutch KIX barcode from byte array
+// Description: Demonstrates generating a Dutch KIX barcode, storing it in a byte array, and decoding it while handling format exceptions.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator to create a Dutch KIX symbology image and BarCodeReader to decode it from a memory stream. Developers working with postal code barcodes often need to generate barcodes programmatically and later validate or extract the encoded data, making this pattern common for batch processing and automated verification scenarios.
+// Prompt: Decode a Dutch KIX barcode from a byte array and handle potential format exceptions.
+// Tags: dutchkix, barcode, decode, png, barcodereader, barcodegenerator, exception-handling
+
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates decoding a Dutch KIX barcode from a byte array using Aspose.BarCode.
+/// Example program that generates a Dutch KIX barcode, stores it in a byte array,
+/// and then decodes it while handling possible format exceptions.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Reads a barcode image from a byte array,
-    /// attempts to decode Dutch KIX barcodes, and outputs the results to the console.
+    /// Entry point of the example. Generates, stores, and decodes a Dutch KIX barcode.
     /// </summary>
     static void Main()
     {
-        // Obtain a sample byte array containing a Dutch KIX barcode image.
-        // In production, replace this with actual image data.
-        byte[] barcodeImageBytes = GetSampleBarcodeImageBytes();
+        // Sample data to encode – Dutch KIX requires numeric postal code format.
+        string sampleCode = "12345678";
 
-        // Validate that image data was provided.
-        if (barcodeImageBytes == null || barcodeImageBytes.Length == 0)
+        // Generate a Dutch KIX barcode image and store it in a memory stream.
+        byte[] barcodeBytes;
+        using (var generator = new BarcodeGenerator(EncodeTypes.DutchKIX, sampleCode))
         {
-            Console.WriteLine("No barcode image data provided.");
-            return;
+            using (var ms = new MemoryStream())
+            {
+                // Save the generated barcode as PNG into the memory stream.
+                generator.Save(ms, BarCodeImageFormat.Png);
+                barcodeBytes = ms.ToArray(); // Convert the stream to a byte array.
+            }
         }
 
+        // Decode the barcode from the byte array.
         try
         {
-            // Wrap the byte array in a memory stream for the reader.
-            using (var ms = new MemoryStream(barcodeImageBytes))
+            using (var imageStream = new MemoryStream(barcodeBytes))
             {
-                // Initialize the barcode reader for Dutch KIX type.
-                using (var reader = new BarCodeReader(ms, DecodeType.DutchKIX))
+                // Initialize the reader for Dutch KIX symbology.
+                using (var reader = new BarCodeReader(imageStream, DecodeType.DutchKIX))
                 {
-                    // Enable checksum validation (optional; set to Off if not required).
-                    reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
+                    // Optionally set a quality preset (default is NormalQuality).
+                    reader.QualitySettings = QualitySettings.NormalQuality;
 
-                    // Perform the barcode recognition.
+                    // Perform the recognition.
                     var results = reader.ReadBarCodes();
 
-                    // Check if any barcodes were detected.
                     if (results.Length == 0)
                     {
                         Console.WriteLine("No Dutch KIX barcode detected.");
                     }
                     else
                     {
-                        // Output each detected barcode's type and decoded text.
                         foreach (var result in results)
                         {
-                            Console.WriteLine($"Barcode Type: {result.CodeTypeName}");
-                            Console.WriteLine($"Decoded Text: {result.CodeText}");
+                            // result.CodeText will be null if decoding failed; check for that.
+                            if (!string.IsNullOrEmpty(result.CodeText))
+                            {
+                                Console.WriteLine($"Decoded Dutch KIX CodeText: {result.CodeText}");
+                            }
+                            else
+                            {
+                                Console.WriteLine("Barcode detected but CodeText could not be read.");
+                            }
                         }
                     }
                 }
             }
         }
-        catch (ArgumentException ex)
-        {
-            // Thrown when the byte array does not represent a valid image.
-            Console.WriteLine($"Invalid image data: {ex.Message}");
-        }
         catch (Exception ex)
         {
-            // General exception handling for unexpected errors.
+            // Handle possible format or processing exceptions.
             Console.WriteLine($"Error during barcode decoding: {ex.Message}");
-        }
-    }
-
-    /// <summary>
-    /// Generates a sample Dutch KIX barcode image and returns its byte representation.
-    /// This helper method is for demonstration purposes only.
-    /// </summary>
-    /// <returns>Byte array containing a PNG image of a generated Dutch KIX barcode.</returns>
-    static byte[] GetSampleBarcodeImageBytes()
-    {
-        const string sampleCodeText = "1234567890123"; // Example KIX code text.
-
-        // Create a memory stream to hold the generated barcode image.
-        using (var ms = new MemoryStream())
-        {
-            // Generate the barcode using Aspose.BarCode.
-            using (var generator = new BarcodeGenerator(EncodeTypes.DutchKIX, sampleCodeText))
-            {
-                // Save the generated barcode to the memory stream in PNG format.
-                generator.Save(ms, BarCodeImageFormat.Png);
-            }
-
-            // Return the image bytes.
-            return ms.ToArray();
         }
     }
 }

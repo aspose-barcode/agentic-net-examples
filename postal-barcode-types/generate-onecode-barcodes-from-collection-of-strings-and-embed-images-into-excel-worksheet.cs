@@ -1,3 +1,9 @@
+// Title: Generate OneCode Barcodes and Embed into Excel
+// Description: Demonstrates creating OneCode barcodes from numeric strings and inserting them as images into an Excel worksheet using Aspose.BarCode and Aspose.Cells.
+// Category-Description: This example belongs to the Aspose.BarCode generation and Aspose.Cells integration category. It shows how to use BarcodeGenerator (EncodeTypes.OneCode) to produce PNG images, and how to embed those images into an Excel file via the Workbook and Pictures API. Developers often need to automate barcode creation and reporting in spreadsheets for inventory, tracking, or labeling scenarios.
+// Prompt: Generate OneCode barcodes from a collection of strings and embed the images into an Excel worksheet.
+// Tags: onecode, barcode, generation, excel, aspose.barcode, aspose.cells, png
+
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -7,64 +13,67 @@ using Aspose.Cells;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating OneCode barcodes and embedding them into an Excel workbook.
+/// Program that generates OneCode barcodes from a list of strings and embeds them into an Excel worksheet.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates barcode images for a set of numeric strings,
-    /// inserts them into an Excel worksheet, and saves the workbook to disk.
+    /// Entry point. Creates barcodes, inserts them into an Excel file, and saves the workbook.
     /// </summary>
     static void Main()
     {
-        // Define sample OneCode numeric strings of varying lengths (20, 25, 29, 31 digits)
+        // Sample OneCode numeric strings (20, 25, 29, 31 digits)
         var oneCodeValues = new List<string>
         {
-            "12345678901234567890",               // 20 digits
-            "1234567890123456789012345",          // 25 digits
-            "12345678901234567890123456789",      // 29 digits
-            "1234567890123456789012345678901"     // 31 digits
+            "12345678901234567890",                     // 20 digits
+            "1234567890123456789012345",                // 25 digits
+            "12345678901234567890123456789",            // 29 digits
+            "1234567890123456789012345678901"           // 31 digits
         };
 
-        // Create a new Excel workbook within a using block to ensure proper disposal
+        // Create a new Excel workbook
         using (var workbook = new Workbook())
         {
-            // Access the first worksheet (index 0)
             var worksheet = workbook.Worksheets[0];
+            worksheet.Name = "OneCode Barcodes";
 
-            int rowIndex = 0; // Tracks the current row for inserting data
+            // Header row
+            worksheet.Cells[0, 0].PutValue("Code Text");
+            worksheet.Cells[0, 1].PutValue("Barcode Image");
 
-            // Iterate over each OneCode value to generate and embed its barcode
+            int rowIndex = 1; // start after header
+
+            // Iterate over each code string and generate its barcode
             foreach (var code in oneCodeValues)
             {
-                // Generate a OneCode barcode image and store it in a memory stream
+                // Generate OneCode barcode for the current string
                 using (var generator = new BarcodeGenerator(EncodeTypes.OneCode, code))
                 {
-                    // Set image resolution (dots per inch) if higher quality is required
-                    generator.Parameters.Resolution = 300f;
+                    // Enable automatic sizing using interpolation mode
+                    generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
 
-                    using (var ms = new MemoryStream())
+                    // Save the generated barcode to a memory stream in PNG format
+                    using (var pngStream = new MemoryStream())
                     {
-                        // Save the barcode as a PNG image into the memory stream
-                        generator.Save(ms, BarCodeImageFormat.Png);
-                        ms.Position = 0; // Reset stream position before reading
+                        generator.Save(pngStream, BarCodeImageFormat.Png);
+                        pngStream.Position = 0; // Reset stream position for reading
 
-                        // Insert the barcode image into the worksheet at the current row, column 0
-                        worksheet.Pictures.Add(rowIndex, 0, ms);
+                        // Write the raw code text into the first column
+                        worksheet.Cells[rowIndex, 0].PutValue(code);
+
+                        // Insert the barcode image into the second column; the picture is anchored to the cell
+                        worksheet.Pictures.Add(rowIndex, 1, pngStream);
                     }
                 }
 
-                // Add a text label in column 2 (C) with the original code for reference
-                worksheet.Cells[rowIndex, 2].PutValue(code);
-
-                rowIndex++; // Move to the next row for the subsequent barcode
+                rowIndex++; // Move to the next row for the next barcode
             }
 
-            // Persist the workbook to a file named "OneCodeBarcodes.xlsx"
+            // Save the Excel file containing all barcodes
             workbook.Save("OneCodeBarcodes.xlsx");
         }
 
-        // Inform the user that the Excel file has been created successfully
+        // Indicate completion
         Console.WriteLine("Excel file with OneCode barcodes has been created.");
     }
 }

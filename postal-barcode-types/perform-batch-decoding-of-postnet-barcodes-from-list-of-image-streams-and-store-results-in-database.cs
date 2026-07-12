@@ -1,89 +1,115 @@
+// Title: Batch decode Postnet barcodes from image streams and save results
+// Description: Demonstrates how to read multiple Postnet barcodes from a collection of image files, extract details, and persist them as JSON (simulating database storage).
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, showcasing the BarCodeReader class for batch decoding of Postnet symbology. Typical use cases include processing shipments, mail sorting, or any bulk scanning scenario where many barcode images need to be read and stored. Developers often need to iterate over image streams, extract barcode metadata, and integrate results with databases or services.
+// Prompt: Perform batch decoding of Postnet barcodes from a list of image streams and store results in a database.
+// Tags: postnet, barcode, batch decoding, json, aspose.barcode, barcodereader, decoding, database
+
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
-using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
+using Aspose.Drawing; // Required for Bitmap if needed
 
-namespace PostnetBatchDecoding
+namespace PostnetBatchDecode
 {
-    // Simple DTO to hold decoding results
-    public class DecodedResult
+    /// <summary>
+    /// Simple record to hold decoding results for each processed image.
+    /// </summary>
+    public class DecodeRecord
     {
+        public string FileName { get; set; }
         public string CodeText { get; set; }
         public string CodeTypeName { get; set; }
+        public double ReadingQuality { get; set; }
+        public int RegionX { get; set; }
+        public int RegionY { get; set; }
+        public int RegionWidth { get; set; }
+        public int RegionHeight { get; set; }
     }
 
     /// <summary>
-    /// Demonstrates generating Postnet barcodes, decoding them, and saving results as JSON.
+    /// Demonstrates batch decoding of Postnet barcodes from image files and persisting results.
     /// </summary>
     class Program
     {
         /// <summary>
-        /// Entry point of the application.
-        /// Generates barcode images from sample ZIP codes, decodes them, and writes results to a JSON file.
+        /// Entry point. Reads a list of image files, decodes Postnet barcodes, and writes results to a JSON file.
         /// </summary>
         static void Main()
         {
-            // Sample Postnet code texts (ZIP codes) to be encoded into barcodes
-            string[] sampleCodes = new string[]
+            // Define a sample list of image file paths containing Postnet barcodes.
+            // In production these streams could be retrieved from a database, cloud storage, etc.
+            var imageFiles = new List<string>
             {
-                "12345",
-                "67890",
-                "24680",
-                "13579",
-                "11223"
+                "postnet1.png",
+                "postnet2.png",
+                "postnet3.png"
             };
 
-            // Generate barcode images and keep them as memory streams for later decoding
-            var imageStreams = new List<MemoryStream>();
-            foreach (var code in sampleCodes)
-            {
-                // Create a barcode generator for the current code using Postnet symbology
-                using (var generator = new BarcodeGenerator(EncodeTypes.Postnet, code))
-                {
-                    // Save the generated barcode to a memory stream in PNG format
-                    using (var ms = new MemoryStream())
-                    {
-                        generator.Save(ms, BarCodeImageFormat.Png);
-                        ms.Position = 0; // Reset stream position to the beginning
+            // Collection to store decoding results.
+            var results = new List<DecodeRecord>();
 
-                        // Store a copy of the stream for later decoding (avoid disposing the original)
-                        var copy = new MemoryStream(ms.ToArray());
-                        imageStreams.Add(copy);
-                    }
+            // Process each image file individually.
+            foreach (var filePath in imageFiles)
+            {
+                // Verify that the file exists before attempting to read it.
+                if (!File.Exists(filePath))
+                {
+                    Console.WriteLine($"File not found: {filePath}");
+                    continue;
                 }
-            }
 
-            // Decode each image stream using Postnet symbology
-            var decodedResults = new List<DecodedResult>();
-            foreach (var stream in imageStreams)
-            {
-                // Initialize a barcode reader for the current stream
-                using (var reader = new BarCodeReader(stream, DecodeType.Postnet))
+                // Open the image file as a read‑only stream.
+                using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read))
                 {
-                    // Read all barcodes found in the stream
-                    foreach (var result in reader.ReadBarCodes())
+                    // Initialize BarCodeReader for the Postnet symbology.
+                    using (BarCodeReader reader = new BarCodeReader(fs, DecodeType.Postnet))
                     {
-                        // Add the decoded information to the results list
-                        decodedResults.Add(new DecodedResult
+                        // Read all barcodes present in the image.
+                        BarCodeResult[] barcodes = reader.ReadBarCodes();
+
+                        // Iterate through each detected barcode.
+                        foreach (var result in barcodes)
                         {
-                            CodeText = result.CodeText,
-                            CodeTypeName = result.CodeTypeName
-                        });
+                            // Extract the bounding rectangle of the barcode region.
+                            var rect = result.Region.Rectangle;
+
+                            // Populate a DecodeRecord with relevant information.
+                            var record = new DecodeRecord
+                            {
+                                FileName = Path.GetFileName(filePath),
+                                CodeText = result.CodeText,
+                                CodeTypeName = result.CodeTypeName,
+                                ReadingQuality = result.ReadingQuality,
+                                RegionX = rect.X,
+                                RegionY = rect.Y,
+                                RegionWidth = rect.Width,
+                                RegionHeight = rect.Height
+                            };
+
+                            // Add the record to the results collection.
+                            results.Add(record);
+
+                            // Output a brief summary to the console.
+                            Console.WriteLine($"Decoded from {record.FileName}: {record.CodeText} (Type: {record.CodeTypeName})");
+                        }
                     }
                 }
             }
 
-            // Serialize the decoding results to JSON and write to a file (simulating a database)
-            string outputPath = "decoded_results.json";
+            // Serialize the results to JSON (acting as a stand‑in for database storage).
+            string outputPath = "postnet_decode_results.json";
             var jsonOptions = new JsonSerializerOptions { WriteIndented = true };
-            string json = JsonSerializer.Serialize(decodedResults, jsonOptions);
+            string json = JsonSerializer.Serialize(results, jsonOptions);
             File.WriteAllText(outputPath, json);
+            Console.WriteLine($"Decoding results saved to {outputPath}");
 
-            // Inform the user about the operation outcome
-            Console.WriteLine($"Decoded {decodedResults.Count} Postnet barcodes. Results saved to '{outputPath}'.");
+            // Real database storage could be implemented here, e.g., using SQLite or another DB.
+            // Example (commented out because the required NuGet package is not available in the runner):
+            // using var connection = new SqliteConnection("Data Source=postnet.db");
+            // connection.Open();
+            // // Create table and insert records...
         }
     }
 }

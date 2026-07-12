@@ -1,32 +1,53 @@
+// Title: Generate OneCode 2‑state postal barcode with 8‑digit numeric string
+// Description: Demonstrates creating a OneCode 2‑state postal barcode using Aspose.BarCode with default settings.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on postal symbologies. It showcases the use of EncodeTypes, BaseEncodeType, and BarcodeGenerator classes to produce OneCode barcodes, a common requirement for mailing applications where developers need to generate compliant postal barcodes quickly.
+// Prompt: Generate a OneCode 2‑state postal barcode using an 8‑digit numeric string and default settings.
+// Tags: onecode, postal barcode, generation, png, aspose.barcode, csharp
+
 using System;
-using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generation of a OneCode 2‑state barcode using Aspose.BarCode.
+/// Demonstrates generating a OneCode 2‑state postal barcode using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a OneCode barcode and saves it as a PNG file.
+    /// Entry point. Generates the barcode and saves it as a PNG file.
     /// </summary>
     static void Main()
     {
-        // 20‑digit numeric string required for OneCode 2‑state barcode
-        string codeText = "12345678901234567890";
+        // 8‑digit numeric string for the OneCode 2‑state postal barcode
+        string codeText = "12345678";
 
-        // Specify the barcode type as OneCode
-        BaseEncodeType encodeType = EncodeTypes.OneCode;
-
-        // Create a generator instance with the specified type and data
-        using (BarcodeGenerator generator = new BarcodeGenerator(encodeType, codeText))
+        // OneCode requires the codetext length to be exactly 20, 25, 29, or 31 digits.
+        int length = codeText.Length;
+        if (length != 20 && length != 25 && length != 29 && length != 31)
         {
-            // Define the output file name
-            string outputPath = "onecode.png";
+            Console.WriteLine($"Invalid OneCode codetext length: {length}. Allowed lengths are 20, 25, 29, or 31 digits.");
+            return;
+        }
 
-            // Save the generated barcode image to the file system
+        // Resolve the OneCode symbology using reflection (EncodeTypes.OneCode)
+        const string symbologyName = "OneCode";
+        var field = typeof(EncodeTypes).GetField(symbologyName);
+        if (field == null)
+        {
+            Console.WriteLine($"Symbology '{symbologyName}' not found in EncodeTypes.");
+            return;
+        }
+
+        // Cast the reflected value to BaseEncodeType
+        BaseEncodeType encodeType = (BaseEncodeType)field.GetValue(null);
+
+        // Generate the barcode with default settings
+        using (var generator = new BarcodeGenerator(encodeType, codeText))
+        {
+            // Save the barcode image (default format is PNG)
+            string outputPath = "onecode.png";
             generator.Save(outputPath);
+            Console.WriteLine($"OneCode barcode saved to '{outputPath}'.");
         }
     }
 }

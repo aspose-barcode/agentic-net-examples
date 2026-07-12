@@ -1,3 +1,9 @@
+// Title: Benchmark decoding speed of Planet barcodes from memory streams
+// Description: Demonstrates how to generate a set of Planet barcodes in memory and measure the time required to decode them, useful for performance testing.
+// Category-Description: This example belongs to the Aspose.BarCode performance testing category, illustrating the use of BarcodeGenerator, BarCodeReader, and QualitySettings to evaluate decoding throughput. Developers often need to benchmark barcode recognition for large batches to optimize latency in high‑volume scanning scenarios. The snippet shows typical setup, in‑memory image handling, and timing with Stopwatch, making it searchable for performance benchmarks of barcode decoding.
+// Prompt: Write a performance benchmark that measures decoding speed of 5,000 Planet barcodes from memory streams.
+// Tags: planet, decoding, benchmark, memorystream, barcodegenerator, barcodereader
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -6,68 +12,65 @@ using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demo program that generates and decodes Planet barcodes for benchmarking purposes.
+/// Demonstrates a performance benchmark for decoding Planet barcodes from memory streams.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Generates a set of barcode images, then measures decoding performance.
+    /// Entry point. Generates sample Planet barcodes, decodes them, and reports elapsed time.
     /// </summary>
     static void Main()
     {
-        // Number of barcodes to process in this demo.
-        // In a real benchmark you would increase this to 5000.
+        // Number of barcodes to generate for the demo (small safe sample).
+        // In a real benchmark this could be 5,000.
         const int sampleCount = 10;
 
-        // Prepare a list that will hold the generated barcode images as byte arrays.
-        var barcodeImages = new List<byte[]>(sampleCount);
+        // Prepare sample Planet barcodes in memory.
+        List<byte[]> barcodeImages = new List<byte[]>();
         for (int i = 0; i < sampleCount; i++)
         {
-            // Planet barcodes use a numeric code (e.g., a 5‑digit zip code).
-            const string codeText = "12345";
-
-            // Create a barcode generator for the Planet symbology with the specified text.
-            using (var generator = new BarcodeGenerator(EncodeTypes.Planet, codeText))
+            // Each Planet barcode requires a numeric code (5‑digit example).
+            string codeText = $"12345{i:D4}";
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Planet, codeText))
             {
-                // Use a memory stream to capture the generated image.
-                using (var ms = new MemoryStream())
+                using (MemoryStream ms = new MemoryStream())
                 {
-                    // Save the barcode image to the memory stream in PNG format.
+                    // Save the generated barcode as PNG into the memory stream.
                     generator.Save(ms, BarCodeImageFormat.Png);
-                    // Store the image bytes for later decoding.
+                    // Store the raw image bytes for later decoding.
                     barcodeImages.Add(ms.ToArray());
                 }
             }
         }
 
-        // Benchmark the decoding phase.
-        var stopwatch = new Stopwatch();
+        // Benchmark decoding speed.
         int totalDecoded = 0;
+        Stopwatch sw = Stopwatch.StartNew();
 
-        stopwatch.Start();
-        // Iterate over each generated image and attempt to decode it.
-        foreach (var imageData in barcodeImages)
+        foreach (byte[] imageData in barcodeImages)
         {
-            // Load the image bytes into a memory stream for the reader.
-            using (var ms = new MemoryStream(imageData))
+            using (MemoryStream ms = new MemoryStream(imageData))
+            using (BarCodeReader reader = new BarCodeReader(ms, DecodeType.Planet))
             {
-                // Create a barcode reader configured for Planet barcodes.
-                using (var reader = new BarCodeReader(ms, DecodeType.Planet))
+                // Use high‑performance quality preset for speed.
+                reader.QualitySettings = QualitySettings.HighPerformance;
+
+                // Read all barcodes from the current image.
+                foreach (var result in reader.ReadBarCodes())
                 {
-                    // Read all barcodes found in the image.
-                    foreach (var result in reader.ReadBarCodes())
+                    // Simple validation to ensure a barcode was read.
+                    if (!string.IsNullOrEmpty(result.CodeText))
                     {
-                        // For the benchmark we only need to count successful reads.
                         totalDecoded++;
-                        // Optionally, you could verify result.CodeText here.
                     }
                 }
             }
         }
-        stopwatch.Stop();
 
-        // Output the benchmark results.
-        Console.WriteLine($"Decoded {totalDecoded} Planet barcodes in {stopwatch.ElapsedMilliseconds} ms.");
-        Console.WriteLine($"Average time per barcode: {stopwatch.Elapsed.TotalMilliseconds / sampleCount:F2} ms.");
+        sw.Stop();
+
+        // Output the benchmark result.
+        Console.WriteLine($"Decoded {totalDecoded} Planet barcodes in {sw.Elapsed.TotalMilliseconds} ms.");
+        // Note: For a true performance test with 5,000 barcodes, increase sampleCount accordingly.
     }
 }

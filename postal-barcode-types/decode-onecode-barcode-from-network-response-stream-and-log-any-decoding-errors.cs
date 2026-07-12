@@ -1,83 +1,69 @@
+// Title: Decode OneCode barcode from a network response stream
+// Description: Downloads an image containing a OneCode barcode, decodes it using Aspose.BarCode, and logs any decoding errors.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, demonstrating how to use BarCodeReader with DecodeType.OneCode to read barcodes from streams. Typical use cases include processing images received over HTTP, handling real‑time scanning scenarios, and integrating barcode decoding into web services. Developers often need to retrieve image data from a network source, instantiate a BarCodeReader for a specific symbology, and handle possible errors gracefully.
+// Prompt: Decode a OneCode barcode from a network response stream and log any decoding errors.
+// Tags: onecode, barcode, decode, network, stream, aspose.barcode, barcoderecognition
+
 using System;
 using System.Net.Http;
-using System.Threading.Tasks;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates downloading an image and recognizing OneCode barcodes using Aspose.BarCode.
+/// Demonstrates downloading an image containing a OneCode barcode,
+/// decoding it with Aspose.BarCode, and logging any errors that occur.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Downloads an image (from a provided URL or a default sample) and attempts to read OneCode barcodes.
+    /// Entry point of the example. Performs the download, decoding, and logging.
     /// </summary>
-    /// <param name="args">Command‑line arguments; the first argument can be a URL to an image.</param>
-    static async Task Main(string[] args)
+    static void Main()
     {
-        // Determine the image URL: use the first command‑line argument if supplied,
-        // otherwise fall back to a predefined sample URL.
-        string url = args.Length > 0 ? args[0] : "https://example.com/onecode.png";
+        // URL of the image that contains a OneCode barcode.
+        const string imageUrl = "https://example.com/onecode.png";
 
-        // HttpClient implements IDisposable; wrap it in a using block to ensure proper disposal.
-        using (var httpClient = new HttpClient())
+        try
         {
-            try
+            // Create an HttpClient to download the image.
+            using (HttpClient httpClient = new HttpClient())
             {
-                // Send an asynchronous GET request to download the image.
-                using (var response = await httpClient.GetAsync(url))
+                // Send a synchronous GET request and obtain the response.
+                using (HttpResponseMessage response = httpClient.GetAsync(imageUrl).Result)
                 {
-                    // Verify that the HTTP request succeeded.
-                    if (!response.IsSuccessStatusCode)
-                    {
-                        Console.WriteLine($"Failed to download image. HTTP status: {response.StatusCode}");
-                        return;
-                    }
+                    // Throw if the HTTP status is not successful.
+                    response.EnsureSuccessStatusCode();
 
-                    // Read the response content as a stream for barcode processing.
-                    using (var imageStream = await response.Content.ReadAsStreamAsync())
+                    // Get the response content as a stream.
+                    using (System.IO.Stream imageStream = response.Content.ReadAsStreamAsync().Result)
                     {
-                        // Initialize the BarCodeReader for the OneCode symbology using the image stream.
-                        using (var reader = new BarCodeReader(imageStream, DecodeType.OneCode))
+                        // Initialize BarCodeReader for the OneCode symbology using the image stream.
+                        using (BarCodeReader reader = new BarCodeReader(imageStream, DecodeType.OneCode))
                         {
-                            // Perform the barcode recognition operation.
-                            var results = reader.ReadBarCodes();
+                            // Read all barcodes found in the image.
+                            BarCodeResult[] results = reader.ReadBarCodes();
 
-                            // If no barcodes were found, inform the user and exit.
-                            if (results == null || results.Length == 0)
+                            // If no barcodes were detected, inform the user.
+                            if (results.Length == 0)
                             {
-                                Console.WriteLine("No barcodes detected.");
-                                return;
+                                Console.WriteLine("No OneCode barcode detected in the image.");
                             }
-
-                            // Iterate through each detected barcode result.
-                            foreach (var result in results)
+                            else
                             {
-                                // If the decoded text is missing, log a decoding error.
-                                if (string.IsNullOrEmpty(result.CodeText))
+                                // Iterate through each detected barcode and log its text.
+                                foreach (BarCodeResult result in results)
                                 {
-                                    Console.WriteLine($"Decoding error for barcode type {result.CodeTypeName}: CodeText is empty.");
-                                }
-                                else
-                                {
-                                    // Output the successfully decoded barcode information.
-                                    Console.WriteLine($"Detected OneCode barcode. Type: {result.CodeTypeName}, Text: {result.CodeText}");
+                                    Console.WriteLine($"Detected OneCode barcode: {result.CodeText}");
                                 }
                             }
                         }
                     }
                 }
             }
-            // Handle network‑related exceptions such as DNS failures or connectivity issues.
-            catch (HttpRequestException ex)
-            {
-                Console.WriteLine($"Network error while downloading image: {ex.Message}");
-            }
-            // Catch any other unexpected exceptions to prevent the application from crashing.
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Unexpected error: {ex.Message}");
-            }
+        }
+        catch (Exception ex)
+        {
+            // Log any exceptions that occurred during download or decoding.
+            Console.WriteLine($"Error: {ex.Message}");
         }
     }
 }
