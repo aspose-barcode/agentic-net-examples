@@ -1,49 +1,49 @@
+// Title: QR Code Recognition from PNG using BarCodeReader
+// Description: Demonstrates loading a saved QR Code PNG image and recognizing its content with Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode recognition category, illustrating how to use BarCodeReader with DecodeType to identify QR symbology. It shows typical steps such as file validation, reader initialization, and result processing—common tasks for developers integrating barcode scanning into .NET applications.
+// Prompt: Load a saved QR Code PNG image into BarCodeReader and set DecodeType to QR for recognition.
+// Tags: qr, barcode, recognition, png, decode, aspose.barcode, csharp
+
 using System;
 using System.IO;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates how to read a QR code from an image file using Aspose.BarCode.
+/// Demonstrates loading a saved QR Code PNG image and recognizing it using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
+    /// Entry point. Validates the image file, reads QR codes, and prints detected values.
     /// </summary>
-    /// <param name="args">Command‑line arguments (not used).</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Define the path to the QR code image (PNG format)
+        // Path to the saved QR Code PNG image
         string imagePath = "qr.png";
 
-        // Check that the image file exists before attempting to read it
+        // Verify that the image file exists before attempting to read it
         if (!File.Exists(imagePath))
         {
-            // Inform the user if the file cannot be found and exit
-            Console.WriteLine($"Image file not found: {imagePath}");
+            Console.WriteLine($"File not found: {imagePath}");
             return;
         }
 
-        // Create a BarCodeReader for the specified image, limiting decoding to QR codes
-        using (var reader = new BarCodeReader(imagePath, DecodeType.QR))
+        // Initialize BarCodeReader with the image file and specify QR as the decode type
+        using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.QR))
         {
-            // Read all barcodes present in the image
+            // Perform the recognition operation
             BarCodeResult[] results = reader.ReadBarCodes();
 
-            // Determine whether any QR codes were detected
+            // Check if any QR codes were detected and output the results
             if (results.Length == 0)
             {
-                // No QR code found – notify the user
-                Console.WriteLine("No QR code detected in the image.");
+                Console.WriteLine("No QR code detected.");
             }
             else
             {
-                // Iterate through each detected barcode and display its details
-                foreach (var result in results)
+                foreach (BarCodeResult result in results)
                 {
-                    Console.WriteLine($"BarCode Type: {result.CodeTypeName}");
-                    Console.WriteLine($"BarCode CodeText: {result.CodeText}");
+                    Console.WriteLine($"Detected QR Code: {result.CodeText}");
                 }
             }
         }

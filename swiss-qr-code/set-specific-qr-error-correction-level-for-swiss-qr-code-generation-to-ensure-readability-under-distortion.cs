@@ -1,42 +1,45 @@
+// Title: Swiss QR Code Generation with High Error Correction
+// Description: Demonstrates generating a Swiss QR Bill and setting QR error correction level H to improve readability under distortion.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category, showcasing the use of ComplexBarcodeGenerator and SwissQRCodetext for creating Swiss QR Codes. Developers commonly need to generate QR codes for payment bills, adjust error correction levels, and export images in various formats. The example highlights key API classes and typical steps for QR code customization.
+// Prompt: Set a specific QR error correction level for Swiss QR Code generation to ensure readability under distortion.
+// Tags: qr code, swiss qr, error correction, barcode generation, aspose.barcode, png
+
 using System;
-using System.IO;
-using Aspose.BarCode;
-using Aspose.BarCode.Generation;
 using Aspose.BarCode.ComplexBarcode;
+using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generating a Swiss QR code using Aspose.BarCode library.
+/// Generates a Swiss QR Bill with a high error correction level (Level H) and saves it as a PNG image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Creates a Swiss QR code with mandatory fields,
-    /// configures high error correction, and saves the barcode image to disk.
+    /// Entry point of the example. Creates the Swiss QR codetext, configures error correction, and saves the barcode image.
     /// </summary>
     static void Main()
     {
-        // Initialize Swiss QR codetext and populate required bill information
+        // Create Swiss QR codetext and populate mandatory bill fields
         var swissQr = new SwissQRCodetext();
-        swissQr.Bill.Creditor.Name = "John Doe";               // Creditor's name
-        swissQr.Bill.Creditor.CountryCode = "CH";             // Creditor's country code (Switzerland)
-        swissQr.Bill.Account = "CH9300762011623852957";        // IBAN account number
-        swissQr.Bill.Amount = 199.95m;                         // Invoice amount
-        swissQr.Bill.Version = SwissQRBill.QrBillStandardVersion.V2_0; // QR bill version
+        swissQr.Bill.Creditor.Name = "John Doe";
+        swissQr.Bill.Creditor.CountryCode = "CH";
+        swissQr.Bill.Account = "CH9300762011623852957";
+        swissQr.Bill.Amount = 199.95m;
+        swissQr.Bill.Version = SwissQRBill.QrBillStandardVersion.V2_0;
 
-        // Create a barcode generator for the Swiss QR code
+        // Initialize ComplexBarcodeGenerator with the codetext
         using (var generator = new ComplexBarcodeGenerator(swissQr))
         {
-            // Set QR error correction level to high (Level H) for better resilience
+            // Set high error correction level (Level H) for better readability under distortion
             generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
 
-            // Determine output file path in the current working directory
-            string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "SwissQR.png");
+            // Define output file path
+            string outputPath = "SwissQR.png";
 
-            // Save the generated barcode image to the specified path
-            generator.Save(outputPath);
+            // Save the generated Swiss QR Code image in PNG format
+            generator.Save(outputPath, BarCodeImageFormat.Png);
 
-            // Inform the user where the file was saved
-            Console.WriteLine($"Swiss QR code saved to: {outputPath}");
+            // Inform the user where the image was saved
+            Console.WriteLine($"Swiss QR Code saved to {outputPath}");
         }
     }
 }

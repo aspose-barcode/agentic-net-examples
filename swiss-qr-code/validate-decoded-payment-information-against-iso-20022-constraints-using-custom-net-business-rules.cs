@@ -1,215 +1,217 @@
+// Title: Validate payment barcode against ISO 20022 rules
+// Description: Demonstrates generating a Code128 barcode with payment data, decoding it, and validating fields per ISO 20022 constraints using custom .NET business rules.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It shows how to use BarcodeGenerator, BarCodeReader, and related parameter classes to create, read, and process barcodes. Typical use cases include encoding payment information, scanning, and applying business‑level validation such as ISO 20022 compliance. Developers often need to generate barcodes, extract data, and enforce domain‑specific rules.
+// Prompt: Validate decoded payment information against ISO 20022 constraints using custom .NET business rules.
+// Tags: barcode, code128, generation, recognition, iso20022, validation, payment, aspnet, aspose.barcode
+
 using System;
+using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
-using System.Text.RegularExpressions;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates generating a QR code containing simple ISO 20022‑like payment data,
-/// reading it back, and validating the extracted information.
+/// Generates a Code128 barcode containing simple payment data, decodes it,
+/// and validates the extracted fields against a subset of ISO 20022 rules.
 /// </summary>
 class Program
 {
-    // Sample payment data in a simple "key:value" per line format.
-    private const string SamplePaymentData =
-        "BIC:DEUTDEFF" + "\n" +
-        "IBAN:DE89370400440532013000" + "\n" +
-        "Amount:1234.56" + "\n" +
-        "Currency:EUR";
-
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a QR code, reads it, validates the decoded payment information,
-    /// and cleans up the temporary image file.
+    /// Entry point of the example. Performs barcode creation, decoding, and validation.
     /// </summary>
     static void Main()
     {
-        // Define a temporary file path for the generated QR code image.
-        string imagePath = Path.Combine(Path.GetTempPath(), "payment_qr.png");
+        // Sample payment data encoded in a simple key=value; format
+        string paymentData = "IBAN=DE89370400440532013000;BIC=DEUTDEFF;Amt=123.45;Ccy=EUR";
 
-        // ------------------------------------------------------------
-        // Generate QR code containing the sample payment data.
-        // ------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, SamplePaymentData))
+        // Prepare temporary file path for the barcode image
+        string tempFolder = Path.GetTempPath();
+        string barcodePath = Path.Combine(tempFolder, "payment.png");
+
+        // Generate a Code128 barcode containing the payment data
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, paymentData))
         {
-            // Use a high error correction level to improve readability.
-            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
-            generator.Save(imagePath);
+            // Optional: set barcode appearance
+            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
+            generator.Parameters.BackColor = Aspose.Drawing.Color.White;
+
+            // Save the barcode image to the temporary location
+            generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        // Verify that the image file was successfully created.
-        if (!File.Exists(imagePath))
+        // Verify that the barcode image was created successfully
+        if (!File.Exists(barcodePath))
         {
             Console.WriteLine("Failed to create barcode image.");
             return;
         }
 
-        // ------------------------------------------------------------
-        // Read and decode the QR code from the generated image.
-        // ------------------------------------------------------------
-        using (var reader = new BarCodeReader(imagePath, DecodeType.QR))
+        // Decode the barcode from the saved image
+        using (BarCodeReader reader = new BarCodeReader(barcodePath, DecodeType.Code128))
         {
-            // Disable checksum validation (not required for QR codes).
+            // Disable checksum validation for this simple example
             reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.Off;
 
-            var results = reader.ReadBarCodes();
-            if (results.Length == 0)
+            // Read barcodes (there should be exactly one)
+            BarCodeResult[] results = reader.ReadBarCodes();
+            if (results == null || results.Length == 0)
             {
                 Console.WriteLine("No barcode detected.");
                 return;
             }
 
-            foreach (var result in results)
-            {
-                Console.WriteLine("Decoded Text:");
-                Console.WriteLine(result.CodeText);
-                Console.WriteLine();
+            // Extract the decoded text
+            string decodedText = results[0].CodeText;
+            Console.WriteLine("Decoded text: " + decodedText);
 
-                // Validate the decoded payment information.
-                var validation = ValidatePaymentInfo(result.CodeText);
-                Console.WriteLine("Validation Result: " + (validation.IsValid ? "Valid" : "Invalid"));
-                if (!validation.IsValid)
+            // Parse key=value pairs into a dictionary
+            Dictionary<string, string> fields = ParseKeyValuePairs(decodedText);
+
+            // Validate the extracted fields according to simplified ISO 20022 rules
+            List<string> validationErrors = ValidatePaymentFields(fields);
+
+            // Output validation results
+            if (validationErrors.Count == 0)
+            {
+                Console.WriteLine("Payment information is valid.");
+            }
+            else
+            {
+                Console.WriteLine("Validation errors:");
+                foreach (string err in validationErrors)
                 {
-                    Console.WriteLine("Errors:");
-                    foreach (var err in validation.Errors)
-                    {
-                        Console.WriteLine("- " + err);
-                    }
+                    Console.WriteLine("- " + err);
                 }
             }
         }
 
-        // ------------------------------------------------------------
-        // Clean up the temporary QR code image file.
-        // ------------------------------------------------------------
-        try { File.Delete(imagePath); } catch { }
-    }
-
-    // ------------------------------------------------------------------------
-    // Helper classes and methods for validation.
-    // ------------------------------------------------------------------------
-
-    /// <summary>
-    /// Represents the outcome of validating payment information.
-    /// </summary>
-    private class ValidationResult
-    {
-        /// <summary>
-        /// Gets a value indicating whether the validation succeeded (no errors).
-        /// </summary>
-        public bool IsValid => Errors.Count == 0;
-
-        /// <summary>
-        /// Collection of validation error messages.
-        /// </summary>
-        public System.Collections.Generic.List<string> Errors { get; } = new System.Collections.Generic.List<string>();
-    }
-
-    /// <summary>
-    /// Validates raw payment text against simple ISO 20022‑like rules.
-    /// </summary>
-    /// <param name="rawText">The decoded QR code text.</param>
-    /// <returns>A <see cref="ValidationResult"/> containing validation status and errors.</returns>
-    private static ValidationResult ValidatePaymentInfo(string rawText)
-    {
-        var result = new ValidationResult();
-
-        // Ensure the text is not null, empty, or whitespace.
-        if (string.IsNullOrWhiteSpace(rawText))
+        // Clean up the temporary barcode image file
+        try
         {
-            result.Errors.Add("Code text is empty.");
-            return result;
+            File.Delete(barcodePath);
         }
-
-        // Split the text into lines and parse each "Key:Value" pair.
-        var lines = rawText.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
-        var dict = new System.Collections.Generic.Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var line in lines)
+        catch
         {
-            var parts = line.Split(new[] { ':' }, 2);
-            if (parts.Length != 2)
+            // Ignored – best effort cleanup
+        }
+    }
+
+    /// <summary>
+    /// Parses a string formatted as "Key1=Value1;Key2=Value2" into a case‑insensitive dictionary.
+    /// </summary>
+    /// <param name="input">The input string containing key/value pairs.</param>
+    /// <returns>A dictionary of parsed fields.</returns>
+    private static Dictionary<string, string> ParseKeyValuePairs(string input)
+    {
+        var dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        string[] pairs = input.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+        foreach (string pair in pairs)
+        {
+            int idx = pair.IndexOf('=');
+            if (idx > 0 && idx < pair.Length - 1)
             {
-                result.Errors.Add($"Invalid line format: '{line}'. Expected 'Key:Value'.");
-                continue;
+                string key = pair.Substring(0, idx).Trim();
+                string value = pair.Substring(idx + 1).Trim();
+                dict[key] = value;
             }
-            dict[parts[0].Trim()] = parts[1].Trim();
         }
-
-        // Validate each required field.
-        ValidateBic(dict, result);
-        ValidateIban(dict, result);
-        ValidateAmount(dict, result);
-        ValidateCurrency(dict, result);
-
-        return result;
+        return dict;
     }
 
-    private static void ValidateBic(System.Collections.Generic.Dictionary<string, string> dict, ValidationResult result)
+    /// <summary>
+    /// Performs simple ISO 20022‑style validation on payment fields.
+    /// </summary>
+    /// <param name="fields">Dictionary containing payment fields.</param>
+    /// <returns>List of validation error messages; empty if all checks pass.</returns>
+    private static List<string> ValidatePaymentFields(Dictionary<string, string> fields)
     {
-        // Check for presence of BIC.
-        if (!dict.TryGetValue("BIC", out var bic))
+        var errors = new List<string>();
+
+        // IBAN validation (basic length and format)
+        if (fields.TryGetValue("IBAN", out string iban))
         {
-            result.Errors.Add("Missing BIC.");
-            return;
+            if (iban.Length != 22)
+                errors.Add("IBAN must be 22 characters long.");
+            else if (!char.IsLetter(iban[0]) || !char.IsLetter(iban[1]))
+                errors.Add("IBAN must start with two letters.");
+            else if (!IsAllAlphanumeric(iban))
+                errors.Add("IBAN must contain only alphanumeric characters.");
+        }
+        else
+        {
+            errors.Add("IBAN field is missing.");
         }
 
-        // BIC must be 8 or 11 alphanumeric characters.
-        if (!Regex.IsMatch(bic, @"^[A-Z0-9]{8}([A-Z0-9]{3})?$"))
+        // BIC validation (8 or 11 characters, letters/digits)
+        if (fields.TryGetValue("BIC", out string bic))
         {
-            result.Errors.Add($"Invalid BIC format: '{bic}'.");
+            if (bic.Length != 8 && bic.Length != 11)
+                errors.Add("BIC must be 8 or 11 characters long.");
+            else if (!IsAllLettersOrDigits(bic))
+                errors.Add("BIC must contain only letters and digits.");
         }
+        else
+        {
+            errors.Add("BIC field is missing.");
+        }
+
+        // Amount validation (positive decimal)
+        if (fields.TryGetValue("Amt", out string amtStr))
+        {
+            if (!decimal.TryParse(amtStr, NumberStyles.Number, CultureInfo.InvariantCulture, out decimal amt) || amt <= 0)
+                errors.Add("Amount must be a positive decimal number.");
+        }
+        else
+        {
+            errors.Add("Amt (amount) field is missing.");
+        }
+
+        // Currency validation (3 uppercase letters)
+        if (fields.TryGetValue("Ccy", out string ccy))
+        {
+            if (ccy.Length != 3 || !IsAllUppercaseLetters(ccy))
+                errors.Add("Currency code must be three uppercase letters.");
+        }
+        else
+        {
+            errors.Add("Ccy (currency) field is missing.");
+        }
+
+        return errors;
     }
 
-    private static void ValidateIban(System.Collections.Generic.Dictionary<string, string> dict, ValidationResult result)
+    // Helper: checks that a string contains only letters or digits
+    private static bool IsAllAlphanumeric(string s)
     {
-        // Check for presence of IBAN.
-        if (!dict.TryGetValue("IBAN", out var iban))
+        foreach (char c in s)
         {
-            result.Errors.Add("Missing IBAN.");
-            return;
+            if (!char.IsLetterOrDigit(c))
+                return false;
         }
-
-        // Basic IBAN pattern: 2 letters, 2 digits, up to 30 alphanumerics.
-        if (!Regex.IsMatch(iban, @"^[A-Z]{2}\d{2}[A-Z0-9]{1,30}$"))
-        {
-            result.Errors.Add($"Invalid IBAN format: '{iban}'.");
-        }
+        return true;
     }
 
-    private static void ValidateAmount(System.Collections.Generic.Dictionary<string, string> dict, ValidationResult result)
+    // Helper: duplicate of IsAllAlphanumeric (kept for semantic clarity)
+    private static bool IsAllLettersOrDigits(string s)
     {
-        // Check for presence of Amount.
-        if (!dict.TryGetValue("Amount", out var amountStr))
+        foreach (char c in s)
         {
-            result.Errors.Add("Missing Amount.");
-            return;
+            if (!char.IsLetterOrDigit(c))
+                return false;
         }
-
-        // Ensure the amount is a positive decimal number.
-        if (!decimal.TryParse(
-                amountStr,
-                System.Globalization.NumberStyles.AllowDecimalPoint,
-                System.Globalization.CultureInfo.InvariantCulture,
-                out var amount) || amount <= 0)
-        {
-            result.Errors.Add($"Invalid Amount value: '{amountStr}'. Must be a positive number.");
-        }
+        return true;
     }
 
-    private static void ValidateCurrency(System.Collections.Generic.Dictionary<string, string> dict, ValidationResult result)
+    // Helper: checks that a string contains only uppercase letters
+    private static bool IsAllUppercaseLetters(string s)
     {
-        // Check for presence of Currency.
-        if (!dict.TryGetValue("Currency", out var currency))
+        foreach (char c in s)
         {
-            result.Errors.Add("Missing Currency.");
-            return;
+            if (!char.IsUpper(c) || !char.IsLetter(c))
+                return false;
         }
-
-        // Currency must be three uppercase letters (ISO 4217).
-        if (!Regex.IsMatch(currency, @"^[A-Z]{3}$"))
-        {
-            result.Errors.Add($"Invalid Currency code: '{currency}'.");
-        }
+        return true;
     }
 }

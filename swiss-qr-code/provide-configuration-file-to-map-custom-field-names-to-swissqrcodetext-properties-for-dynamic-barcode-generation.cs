@@ -1,123 +1,93 @@
+// Title: Dynamic Swiss QR Code Generation Using Configuration Mapping
+// Description: Demonstrates how to map custom configuration fields to SwissQRCodetext properties and generate a Swiss QR barcode.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It showcases the use of Aspose.BarCode.Generation.ComplexBarcodeGenerator together with SwissQRCodetext to create Swiss QR bills. Developers often need to populate QR code data dynamically from configuration files or user input, and this pattern illustrates typical mapping, validation, and image output steps.
+// Prompt: Provide a configuration file to map custom field names to SwissQRCodetext properties for dynamic barcode generation.
+// Tags: barcode, swissqr, configuration, dynamic, generation, aspose.barcode, complexbarcode
+
 using System;
 using System.Collections.Generic;
-using System.Globalization;
+using System.IO;
 using Aspose.BarCode;
-using Aspose.BarCode.ComplexBarcode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
+using Aspose.BarCode.ComplexBarcode;
 
 /// <summary>
-/// Demonstrates generating a Swiss QR barcode using Aspose.BarCode with
-/// dynamic field mapping from a dictionary of input values.
+/// Example program that reads a dictionary of custom field names,
+/// maps them to <see cref="SwissQRCodetext"/> properties, validates required data,
+/// and generates a Swiss QR barcode image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Builds a <see cref="SwissQRCodetext"/>
-    /// instance from custom input data, validates required fields, and generates
-    /// a Swiss QR barcode image saved to disk.
+    /// Entry point of the example. Performs configuration mapping,
+    /// validation, and barcode generation.
     /// </summary>
     static void Main()
     {
-        // ------------------------------------------------------------
-        // 1. Prepare sample input data using custom field names.
-        // ------------------------------------------------------------
-        var inputData = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        // Sample configuration mapping custom field names to values
+        var config = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
             { "CreditorName", "John Doe" },
-            { "CountryCode", "CH" },
+            { "CreditorCountryCode", "CH" },
             { "Account", "CH9300762011623852957" },
             { "Amount", "199.95" },
-            { "Version", "V2_0" } // corresponds to SwissQRBill.QrBillStandardVersion.V2_0
+            { "Version", "V2_0" } // maps to SwissQRBill.QrBillStandardVersion.V2_0
         };
 
-        // ------------------------------------------------------------
-        // 2. Define mapping from custom field names to actions that set
-        //    properties on a SwissQRCodetext instance.
-        // ------------------------------------------------------------
-        var fieldMappings = new Dictionary<string, Action<SwissQRCodetext, string>>(StringComparer.OrdinalIgnoreCase)
-        {
-            { "CreditorName", (s, v) => s.Bill.Creditor.Name = v },
-            { "CountryCode", (s, v) => s.Bill.Creditor.CountryCode = v },
-            { "Account", (s, v) => s.Bill.Account = v },
-            {
-                "Amount",
-                (s, v) =>
-                {
-                    // Parse amount using invariant culture; report if invalid.
-                    if (decimal.TryParse(v, NumberStyles.Any, CultureInfo.InvariantCulture, out var amt))
-                        s.Bill.Amount = amt;
-                    else
-                        Console.WriteLine($"Invalid amount value: {v}");
-                }
-            },
-            {
-                "Version",
-                (s, v) =>
-                {
-                    // Convert enum name (e.g., "V2_0") to SwissQRBill.QrBillStandardVersion.
-                    if (Enum.TryParse<SwissQRBill.QrBillStandardVersion>(v, out var ver))
-                        s.Bill.Version = ver;
-                    else
-                        Console.WriteLine($"Invalid version value: {v}");
-                }
-            }
-        };
-
-        // ------------------------------------------------------------
-        // 3. Create a SwissQRCodetext object and populate it using the mapping.
-        // ------------------------------------------------------------
+        // Create an empty SwissQRCodetext instance
         var swissQr = new SwissQRCodetext();
 
-        foreach (var kvp in inputData)
+        // Apply configuration values to the corresponding SwissQRCodetext properties
+        foreach (var kvp in config)
         {
-            if (fieldMappings.TryGetValue(kvp.Key, out var setter))
+            switch (kvp.Key)
             {
-                try
-                {
-                    // Apply the mapped setter action.
-                    setter(swissQr, kvp.Value);
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Error setting field '{kvp.Key}': {ex.Message}");
-                }
-            }
-            else
-            {
-                Console.WriteLine($"No mapping defined for field '{kvp.Key}'.");
+                case "CreditorName":
+                    swissQr.Bill.Creditor.Name = kvp.Value;
+                    break;
+                case "CreditorCountryCode":
+                    swissQr.Bill.Creditor.CountryCode = kvp.Value;
+                    break;
+                case "Account":
+                    swissQr.Bill.Account = kvp.Value;
+                    break;
+                case "Amount":
+                    // Parse amount string to decimal; throw if invalid
+                    if (decimal.TryParse(kvp.Value, out var amount))
+                        swissQr.Bill.Amount = amount;
+                    else
+                        throw new ArgumentException($"Invalid amount value: {kvp.Value}");
+                    break;
+                case "Version":
+                    // Convert string to enum; fall back to default if parsing fails
+                    if (Enum.TryParse<SwissQRBill.QrBillStandardVersion>(kvp.Value, out var version))
+                        swissQr.Bill.Version = version;
+                    else
+                        swissQr.Bill.Version = SwissQRBill.QrBillStandardVersion.V2_0;
+                    break;
+                default:
+                    // Unknown field – ignore or handle as needed
+                    break;
             }
         }
 
-        // ------------------------------------------------------------
-        // 4. Validate that all mandatory fields are present and correct.
-        // ------------------------------------------------------------
+        // Verify that all mandatory fields have been populated
         if (string.IsNullOrWhiteSpace(swissQr.Bill.Creditor.Name) ||
             string.IsNullOrWhiteSpace(swissQr.Bill.Creditor.CountryCode) ||
             string.IsNullOrWhiteSpace(swissQr.Bill.Account) ||
-            swissQr.Bill.Amount <= 0 ||
-            swissQr.Bill.Version == 0)
+            swissQr.Bill.Amount <= 0m)
         {
-            Console.WriteLine("Missing required SwissQR fields. Barcode generation aborted.");
+            Console.WriteLine("Missing required Swiss QR bill information.");
             return;
         }
 
-        // ------------------------------------------------------------
-        // 5. Generate the Swiss QR barcode and save it to a PNG file.
-        // ------------------------------------------------------------
+        // Generate the Swiss QR barcode and save it as a PNG file
         const string outputPath = "SwissQR.png";
-
         using (var generator = new ComplexBarcodeGenerator(swissQr))
         {
-            try
-            {
-                generator.Save(outputPath);
-                Console.WriteLine($"Swiss QR barcode saved to '{outputPath}'.");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Failed to generate barcode: {ex.Message}");
-            }
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
+
+        Console.WriteLine($"Swiss QR barcode generated and saved to '{Path.GetFullPath(outputPath)}'.");
     }
 }

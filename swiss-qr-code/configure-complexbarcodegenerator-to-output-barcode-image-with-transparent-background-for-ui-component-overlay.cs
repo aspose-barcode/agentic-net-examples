@@ -1,45 +1,51 @@
+// Title: Generate Swiss QR barcode with transparent background
+// Description: Demonstrates configuring ComplexBarcodeGenerator to produce a PNG barcode image with a transparent background, suitable for overlay in UI components.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to use ComplexBarcodeGenerator with Swiss QR codetext, set visual parameters like background transparency, and save to PNG. Developers working with QR codes for payment standards or UI overlays often need to customize colors and output formats using the Aspose.BarCode.Generation and Aspose.BarCode.ComplexBarcode APIs.
+// Prompt: Configure ComplexBarcodeGenerator to output a barcode image with transparent background for UI component overlay.
+// Tags: swissqr, qr, transparent background, png, complexbarcodegenerator, aspnet, aspnetcore, barcode generation
+
 using System;
 using System.IO;
 using Aspose.BarCode;
-using Aspose.BarCode.ComplexBarcode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode.ComplexBarcode;
 using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a Swiss QR code barcode with a transparent background
-/// and saving it as a PNG image.
+/// Example program that creates a Swiss QR barcode with a transparent background using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates the barcode and writes the output file path to the console.
+    /// Entry point. Generates the barcode image and saves it as a PNG with transparency.
     /// </summary>
     static void Main()
     {
-        // Define the output file path for the generated barcode image.
-        string outputPath = "transparent_barcode.png";
-
-        // Create and configure the Swiss QR code text with required bill details.
+        // Prepare SwissQR codetext with required fields
         var swissQr = new SwissQRCodetext();
-        swissQr.Bill.Creditor.Name = "John Doe";               // Creditor's name
-        swissQr.Bill.Creditor.CountryCode = "CH";             // Creditor's country code (Switzerland)
-        swissQr.Bill.Account = "CH9300762011623852957";       // IBAN account number
-        swissQr.Bill.Amount = 199.95m;                         // Invoice amount
-        swissQr.Bill.Version = SwissQRBill.QrBillStandardVersion.V2_0; // QR bill version
+        swissQr.Bill.Creditor.Name = "John Doe";
+        swissQr.Bill.Creditor.CountryCode = "CH";
+        swissQr.Bill.Account = "CH9300762011623852957";
+        swissQr.Bill.Amount = 199.95m;
+        swissQr.Bill.Version = SwissQRBill.QrBillStandardVersion.V2_0;
 
-        // Generate the barcode using the configured Swiss QR code text.
+        // Create ComplexBarcodeGenerator with the codetext
         using (var generator = new ComplexBarcodeGenerator(swissQr))
         {
-            // Set the background color of the barcode to transparent.
+            // Set transparent background for the image
             generator.Parameters.BackColor = Color.Transparent;
 
-            // Save the barcode as a PNG file with the specified output path.
+            // Optionally set the barcode (foreground) color
+            generator.Parameters.Barcode.BarColor = Color.Black;
+
+            // Define the output file path (current directory)
+            string outputPath = Path.Combine(Environment.CurrentDirectory, "transparent_qr.png");
+
+            // Save the barcode as PNG, which supports transparency
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user where the barcode image has been saved.
-        Console.WriteLine($"Barcode image saved to: {outputPath}");
+        Console.WriteLine("Barcode image generated with transparent background.");
     }
 }
