@@ -1,109 +1,106 @@
+// Title: QR Code Batch Reader to JSON Export
+// Description: Reads QR code images from a folder, extracts barcode data, and writes payment details to a JSON file.
+// Category-Description: Demonstrates Aspose.BarCode barcode recognition for QR codes, covering image file enumeration, barcode extraction using BarCodeReader, and JSON serialization with System.Text.Json. This example belongs to the “Barcode Recognition and Data Export” category, useful for developers automating payment processing or inventory tracking by converting scanned QR codes into structured data.
+// Prompt: Create a console app that reads QR code images from a folder and writes payment details to JSON.
+// Tags: qr, barcode, recognition, json, aspose.barcode, system.text.json
+
 using System;
-using System.IO;
 using System.Collections.Generic;
+using System.IO;
 using System.Text.Json;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Entry point for the QR code extraction utility.
-/// Scans a folder for image files, extracts QR code text, and writes results to a JSON file.
+/// Represents extracted payment information from a QR code image.
+/// </summary>
+class PaymentInfo
+{
+    public string FileName { get; set; }
+    public string CodeText { get; set; }
+    public string CodeTypeName { get; set; }
+    public int X { get; set; }
+    public int Y { get; set; }
+    public int Width { get; set; }
+    public int Height { get; set; }
+}
+
+/// <summary>
+/// Entry point of the console application that processes QR code images and outputs JSON.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Simple DTO to hold extracted QR code data.
+    /// Main method parses optional input folder argument, reads QR codes, and writes results to JSON.
     /// </summary>
-    private class PaymentInfo
-    {
-        public string FileName { get; set; }
-        public string CodeText { get; set; }
-    }
-
-    /// <summary>
-    /// Main method processes command‑line arguments, reads images, extracts QR codes, and writes JSON output.
-    /// </summary>
-    /// <param name="args">
-    /// args[0] – optional input folder path (default: "QRCodes").
-    /// args[1] – optional output JSON file path (default: "paymentDetails.json").
-    /// </param>
+    /// <param name="args">Command‑line arguments; first argument can specify the input folder.</param>
     static void Main(string[] args)
     {
-        // Resolve input folder: use first argument if provided, otherwise default.
-        string inputFolder = args.Length > 0 && !string.IsNullOrWhiteSpace(args[0])
-            ? args[0]
-            : "QRCodes";
+        // Determine the folder containing QR code images; allow override via command‑line argument.
+        string inputFolder = "QrImages";
+        if (args.Length > 0 && !string.IsNullOrWhiteSpace(args[0]))
+        {
+            inputFolder = args[0];
+        }
 
-        // Resolve output JSON file path: use second argument if provided, otherwise default.
-        string outputJsonPath = args.Length > 1 && !string.IsNullOrWhiteSpace(args[1])
-            ? args[1]
-            : "paymentDetails.json";
-
-        // Verify that the input folder exists before proceeding.
+        // Verify that the input folder exists.
         if (!Directory.Exists(inputFolder))
         {
-            Console.WriteLine($"Input folder does not exist: {inputFolder}");
+            Console.WriteLine($"Folder not found: {inputFolder}");
             return;
         }
 
-        // Define supported image file extensions.
-        string[] extensions = new[] { ".png", ".jpg", ".jpeg", ".bmp", ".gif" };
+        // Define supported image extensions.
+        string[] imageExtensions = new[] { ".png", ".jpg", ".jpeg", ".bmp", ".gif" };
+        var files = Directory.GetFiles(inputFolder);
         var paymentList = new List<PaymentInfo>();
 
-        // Enumerate all files in the input folder.
-        foreach (string filePath in Directory.GetFiles(inputFolder))
+        // Iterate over each file in the folder.
+        foreach (var file in files)
         {
             // Skip files that do not have a supported image extension.
-            if (Array.IndexOf(extensions, Path.GetExtension(filePath).ToLowerInvariant()) < 0)
+            string ext = Path.GetExtension(file).ToLowerInvariant();
+            if (Array.IndexOf(imageExtensions, ext) < 0)
                 continue;
 
-            // Defensive check: ensure the file still exists.
-            if (!File.Exists(filePath))
-            {
-                Console.WriteLine($"File not found (skipped): {filePath}");
+            // Ensure the file still exists before processing.
+            if (!File.Exists(file))
                 continue;
-            }
 
-            try
+            // Open the image with BarCodeReader configured for QR codes.
+            using (var reader = new BarCodeReader(file, DecodeType.QR))
             {
-                // Load the image using Aspose.Drawing.Bitmap (IDisposable).
-                using (var bitmap = new Bitmap(filePath))
+                // Read all barcodes found in the image.
+                var results = reader.ReadBarCodes();
+                foreach (var result in results)
                 {
-                    // Initialize a barcode reader configured for QR codes only.
-                    using (var reader = new BarCodeReader(bitmap, DecodeType.QR))
+                    // Extract the bounding rectangle of the detected barcode.
+                    var rect = result.Region.Rectangle;
+
+                    // Populate a PaymentInfo instance with extracted data.
+                    var info = new PaymentInfo
                     {
-                        // Iterate over all detected QR codes in the image.
-                        foreach (var result in reader.ReadBarCodes())
-                        {
-                            // Add a new record containing the file name and extracted QR code text.
-                            paymentList.Add(new PaymentInfo
-                            {
-                                FileName = Path.GetFileName(filePath),
-                                CodeText = result.CodeText
-                            });
-                        }
-                    }
+                        FileName = Path.GetFileName(file),
+                        CodeText = result.CodeText,
+                        CodeTypeName = result.CodeTypeName,
+                        X = rect.X,
+                        Y = rect.Y,
+                        Width = rect.Width,
+                        Height = rect.Height
+                    };
+
+                    // Add the info to the collection.
+                    paymentList.Add(info);
                 }
             }
-            catch (Exception ex)
-            {
-                // Log any errors encountered while processing the current file.
-                Console.WriteLine($"Error processing '{filePath}': {ex.Message}");
-            }
         }
 
-        // Serialize the collected payment information to a formatted JSON string.
-        try
-        {
-            var jsonOptions = new JsonSerializerOptions { WriteIndented = true };
-            string json = JsonSerializer.Serialize(paymentList, jsonOptions);
-            File.WriteAllText(outputJsonPath, json);
-            Console.WriteLine($"Successfully wrote {paymentList.Count} record(s) to '{outputJsonPath}'.");
-        }
-        catch (Exception ex)
-        {
-            // Log any errors that occur during JSON serialization or file writing.
-            Console.WriteLine($"Failed to write JSON output: {ex.Message}");
-        }
+        // Serialize the collected payment details to a formatted JSON string.
+        string outputPath = Path.Combine(inputFolder, "payment_details.json");
+        var jsonOptions = new JsonSerializerOptions { WriteIndented = true };
+        string json = JsonSerializer.Serialize(paymentList, jsonOptions);
+        File.WriteAllText(outputPath, json);
+
+        // Inform the user of the processing result.
+        Console.WriteLine($"Processed {paymentList.Count} barcode(s). Output written to {outputPath}");
     }
 }

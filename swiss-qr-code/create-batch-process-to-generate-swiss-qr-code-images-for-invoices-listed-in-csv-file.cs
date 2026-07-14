@@ -1,127 +1,108 @@
+// Title: Batch Generation of Swiss QR Code Images from CSV Invoices
+// Description: Generates Swiss QR Code barcodes for each invoice listed in a CSV file and saves them as PNG images.
+// Category-Description: This example demonstrates batch processing using Aspose.BarCode to create Swiss QR Code (QR‑Bill) images. It utilizes the ComplexBarcodeGenerator and SwissQRCodetext classes to encode creditor, account, amount, and reference data. Typical use cases include automating invoice QR‑Bill creation for Swiss payment standards, where developers need to read data sources (e.g., CSV) and produce barcode images in bulk.
+// Prompt: Create a batch process to generate Swiss QR Code images for invoices listed in a CSV file.
+// Tags: swiss qr code, barcode generation, csv processing, aspose.barcode, png output, batch processing
+
 using System;
 using System.IO;
 using System.Collections.Generic;
-using Aspose.BarCode.ComplexBarcode;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode.ComplexBarcode;
 
 /// <summary>
-/// Demonstrates reading invoice data from a CSV file and generating Swiss QR Code images for each invoice.
+/// Demonstrates batch generation of Swiss QR Code images from invoice data stored in a CSV file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Simple invoice data model.
-    /// </summary>
-    class Invoice
-    {
-        public string InvoiceNumber { get; set; }
-        public string Account { get; set; }
-        public decimal Amount { get; set; }
-        public string CreditorName { get; set; }
-    }
-
-    /// <summary>
-    /// Application entry point. Reads invoices, creates output folder, and generates QR code images.
+    /// Entry point. Reads invoice records, builds Swiss QR codetext, and saves PNG barcode images.
     /// </summary>
     static void Main()
     {
-        // Input CSV file containing invoice data
+        // Define the input CSV file path; create a sample file if it does not exist.
         string inputCsv = "invoices.csv";
-
-        // Folder where generated QR code images will be saved
-        string outputFolder = "SwissQRImages";
-
-        // Ensure the output directory exists; create it if missing
-        if (!Directory.Exists(outputFolder))
-        {
-            Directory.CreateDirectory(outputFolder);
-        }
-
-        // If the CSV file does not exist, create a small sample file for demonstration purposes
         if (!File.Exists(inputCsv))
         {
-            var sampleLines = new[]
+            var sampleLines = new List<string>
             {
-                "InvoiceNumber,Account,Amount,CreditorName",
-                "INV001,CH9300762011623852957,199.95,John Doe",
-                "INV002,CH9300762011623852958,250.00,Acme Corp",
-                "INV003,CH9300762011623852959,75.50,Global Ltd"
+                "CreditorName,CountryCode,Account,Amount,Reference",
+                "John Doe,CH,CH9300762011623852957,199.95,RF18539007547034",
+                "Acme Corp,CH,CH5604835012345678009,2500.00,RF18000012345678",
+                "Global Ltd,CH,CH3709000000304442225,123.45,RF19000098765432",
+                "Tech Solutions,CH,CH6209000000001234567,999.99,RF20000123456789",
+                "Finance AG,CH,CH9300762011623852957,75.00,RF21000111223344"
             };
             File.WriteAllLines(inputCsv, sampleLines);
-            Console.WriteLine($"Sample CSV created at '{inputCsv}'.");
         }
 
-        // Read invoices from the CSV file into a list
-        List<Invoice> invoices = new List<Invoice>();
-        try
+        // Ensure the output directory exists for the generated QR images.
+        string outputDir = "SwissQRImages";
+        if (!Directory.Exists(outputDir))
         {
-            using (var reader = new StreamReader(inputCsv))
-            {
-                bool isHeader = true; // Skip the first line (header)
-                while (!reader.EndOfStream)
-                {
-                    string line = reader.ReadLine();
-                    if (string.IsNullOrWhiteSpace(line))
-                        continue; // Ignore empty lines
-
-                    if (isHeader)
-                    {
-                        isHeader = false;
-                        continue; // Skip header line
-                    }
-
-                    // Split CSV line into fields
-                    string[] parts = line.Split(',');
-                    if (parts.Length < 4)
-                        continue; // Skip malformed lines
-
-                    // Create an Invoice object from the parsed fields
-                    invoices.Add(new Invoice
-                    {
-                        InvoiceNumber = parts[0].Trim(),
-                        Account = parts[1].Trim(),
-                        Amount = decimal.Parse(parts[2].Trim()),
-                        CreditorName = parts[3].Trim()
-                    });
-                }
-            }
+            Directory.CreateDirectory(outputDir);
         }
-        catch (Exception ex)
+
+        // Read all lines from the CSV file.
+        string[] allLines = File.ReadAllLines(inputCsv);
+        if (allLines.Length <= 1)
         {
-            Console.WriteLine($"Error reading CSV: {ex.Message}");
+            Console.WriteLine("No invoice data found.");
             return;
         }
 
-        // Process each invoice and generate a Swiss QR Code image
-        foreach (var inv in invoices)
+        // Iterate over each invoice record, skipping the header line.
+        for (int i = 1; i < allLines.Length; i++)
         {
-            try
+            string line = allLines[i];
+            if (string.IsNullOrWhiteSpace(line))
+                continue; // Skip empty lines.
+
+            // Split the CSV line into its constituent fields.
+            string[] parts = line.Split(',');
+            if (parts.Length < 5)
             {
-                // Build Swiss QR code data structure
-                var swissQr = new SwissQRCodetext();
-                swissQr.Bill.Creditor.Name = inv.CreditorName;
-                swissQr.Bill.Creditor.CountryCode = "CH";
-                swissQr.Bill.Account = inv.Account;
-                swissQr.Bill.Amount = inv.Amount;
-                swissQr.Bill.Version = SwissQRBill.QrBillStandardVersion.V2_0;
-
-                // Determine output file path for the QR code image
-                string outputPath = Path.Combine(outputFolder, $"{inv.InvoiceNumber}.png");
-
-                // Generate and save the QR code image
-                using (var generator = new ComplexBarcodeGenerator(swissQr))
-                {
-                    generator.Save(outputPath, BarCodeImageFormat.Png);
-                }
-
-                Console.WriteLine($"Generated QR for invoice {inv.InvoiceNumber} -> {outputPath}");
+                Console.WriteLine($"Skipping malformed line {i + 1}.");
+                continue;
             }
-            catch (Exception ex)
+
+            // Trim and assign each field to a variable.
+            string creditorName = parts[0].Trim();
+            string countryCode = parts[1].Trim();
+            string account = parts[2].Trim();
+            string amountStr = parts[3].Trim();
+            string reference = parts[4].Trim();
+
+            // Parse the amount; if invalid, skip this record.
+            if (!decimal.TryParse(amountStr, out decimal amount))
             {
-                Console.WriteLine($"Failed to generate QR for invoice {inv.InvoiceNumber}: {ex.Message}");
+                Console.WriteLine($"Invalid amount on line {i + 1}, skipping.");
+                continue;
+            }
+
+            // Build the Swiss QR codetext using the parsed data.
+            var swissQr = new SwissQRCodetext();
+            swissQr.Bill.Creditor.Name = creditorName;
+            swissQr.Bill.Creditor.CountryCode = countryCode;
+            swissQr.Bill.Account = account;
+            swissQr.Bill.Amount = amount;
+            swissQr.Bill.Version = SwissQRBill.QrBillStandardVersion.V2_0;
+            if (!string.IsNullOrEmpty(reference))
+                swissQr.Bill.Reference = reference; // Optional reference.
+
+            // Define the output file name for this invoice's QR code.
+            string outputFile = Path.Combine(outputDir, $"Invoice_{i}.png");
+
+            // Generate the QR code image and save it as PNG.
+            using (var generator = new ComplexBarcodeGenerator(swissQr))
+            {
+                // Example: set module size (X dimension) if desired.
+                generator.Parameters.Barcode.XDimension.Point = 2f;
+                generator.Save(outputFile, BarCodeImageFormat.Png);
             }
         }
 
-        Console.WriteLine("Processing completed.");
+        Console.WriteLine("Swiss QR code generation completed.");
     }
 }

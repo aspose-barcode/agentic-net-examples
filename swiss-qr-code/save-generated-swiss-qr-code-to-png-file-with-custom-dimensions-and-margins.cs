@@ -1,51 +1,54 @@
+// Title: Generate Swiss QR Code with custom size and margins
+// Description: Demonstrates creating a Swiss QR Bill barcode, customizing its image dimensions and padding, and saving it as a PNG file.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category, showcasing the use of ComplexBarcodeGenerator with SwissQRCodetext. Developers often need to generate QR codes for payment bills, adjust image size, margins, and colors before exporting to common image formats like PNG.
+// Prompt: Save the generated Swiss QR Code to a PNG file with custom dimensions and margins.
+// Tags: barcode symbology, generation, png, swissqr, complexbarcodegenerator, aspose.barcode
+
 using System;
-using System.IO;
 using Aspose.BarCode;
-using Aspose.BarCode.Generation;
 using Aspose.BarCode.ComplexBarcode;
+using Aspose.BarCode.Generation;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a Swiss QR Code barcode using Aspose.BarCode.
+/// Demonstrates generating a Swiss QR Bill barcode with custom dimensions and margins, then saving it as a PNG file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a Swiss QR Code and saves it as a PNG file.
+    /// Entry point that builds the QR bill data, configures the generator, and writes the image to disk.
     /// </summary>
     static void Main()
     {
-        // Define the output file name for the generated barcode image.
-        string outputPath = "SwissQR.png";
-
-        // Create a Swiss QR code text object and populate mandatory bill fields.
+        // Prepare Swiss QR bill data
         var swissQr = new SwissQRCodetext();
-        swissQr.Bill.Creditor.Name = "John Doe";               // Creditor's name
-        swissQr.Bill.Creditor.CountryCode = "CH";             // Creditor's country (Switzerland)
-        swissQr.Bill.Account = "CH9300762011623852957";       // IBAN account number
-        swissQr.Bill.Amount = 199.95m;                         // Invoice amount
-        swissQr.Bill.Version = SwissQRBill.QrBillStandardVersion.V2_0; // QR bill version
+        swissQr.Bill.Creditor.Name = "John Doe";
+        swissQr.Bill.Creditor.CountryCode = "CH";
+        swissQr.Bill.Account = "CH9300762011623852957";
+        swissQr.Bill.Amount = 199.95m;
+        swissQr.Bill.Version = SwissQRBill.QrBillStandardVersion.V2_0;
 
-        // Initialize the barcode generator with the prepared Swiss QR code text.
+        // Create generator for the complex Swiss QR code
         using (var generator = new ComplexBarcodeGenerator(swissQr))
         {
-            // Configure image dimensions (in points). 1 point = 1/72 inch.
-            generator.Parameters.ImageWidth.Point = 400f;
-            generator.Parameters.ImageHeight.Point = 400f;
+            // Set custom image dimensions (points)
+            generator.Parameters.ImageWidth.Point = 300f;
+            generator.Parameters.ImageHeight.Point = 300f;
 
-            // Set padding (margins) around the barcode to ensure proper whitespace.
+            // Set custom margins (padding) around the barcode (points)
             generator.Parameters.Barcode.Padding.Left.Point = 10f;
             generator.Parameters.Barcode.Padding.Top.Point = 10f;
             generator.Parameters.Barcode.Padding.Right.Point = 10f;
             generator.Parameters.Barcode.Padding.Bottom.Point = 10f;
 
-            // Optional: define the image resolution (dots per inch).
-            generator.Parameters.Resolution = 300f;
+            // Optional: set background and bar colors
+            generator.Parameters.BackColor = Aspose.Drawing.Color.White;
+            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
 
-            // Save the generated barcode as a PNG file at the specified path.
+            // Save the generated Swiss QR code as PNG
+            const string outputPath = "SwissQR.png";
             generator.Save(outputPath, BarCodeImageFormat.Png);
+            Console.WriteLine($"Swiss QR Code saved to '{outputPath}'.");
         }
-
-        // Output the full path of the saved image to the console for verification.
-        Console.WriteLine($"Swiss QR Code saved to: {Path.GetFullPath(outputPath)}");
     }
 }

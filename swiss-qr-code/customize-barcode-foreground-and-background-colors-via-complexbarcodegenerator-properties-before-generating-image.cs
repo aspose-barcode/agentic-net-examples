@@ -1,54 +1,51 @@
+// Title: Customize SwissQR barcode colors with ComplexBarcodeGenerator
+// Description: Demonstrates how to set foreground and background colors for a SwissQR barcode before generating a PNG image.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category, showcasing the use of ComplexBarcodeGenerator and its Parameters to customize visual appearance such as bar and background colors. Developers often need to tailor barcode colors to match branding or UI themes while generating QR codes for payments or data exchange. The snippet illustrates typical steps: creating codetext, configuring colors, and saving the image.
+// Prompt: Customize barcode foreground and background colors via ComplexBarcodeGenerator properties before generating the image.
+// Tags: swissqr, complexbarcode, color, png, generation, aspose.barcode, aspose.drawing
+
 using System;
+using System.IO;
 using Aspose.BarCode.ComplexBarcode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a Swiss QR code barcode with custom colors using Aspose.BarCode.
+/// Example program that creates a SwissQR barcode, customizes its colors,
+/// and saves the result as a PNG image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Creates a Swiss QR code, configures barcode colors,
-    /// and saves the generated image to a file.
+    /// Entry point of the application.
     /// </summary>
     static void Main()
     {
-        // ------------------------------------------------------------
-        // 1. Prepare a Swiss QR codetext with required fields
-        // ------------------------------------------------------------
+        // Prepare a SwissQR codetext with required mandatory fields
         var swissQr = new SwissQRCodetext();
-
-        // Set creditor (payee) details
         swissQr.Bill.Creditor.Name = "John Doe";
         swissQr.Bill.Creditor.CountryCode = "CH";
-
-        // Set account number (IBAN) and payment amount
         swissQr.Bill.Account = "CH9300762011623852957";
         swissQr.Bill.Amount = 199.95m;
-
-        // Specify the QR bill version to use
         swissQr.Bill.Version = SwissQRBill.QrBillStandardVersion.V2_0;
 
-        // ------------------------------------------------------------
-        // 2. Generate the barcode with custom colors
-        // ------------------------------------------------------------
+        // Define the output file path for the generated barcode image
+        string outputPath = "SwissQR.png";
+
+        // Create a ComplexBarcodeGenerator instance using the prepared codetext
         using (var generator = new ComplexBarcodeGenerator(swissQr))
         {
             // Set the foreground (bars) color to blue
-            generator.Parameters.Barcode.BarColor = Color.Blue;
+            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Blue;
 
             // Set the background color to yellow
-            generator.Parameters.BackColor = Color.Yellow;
+            generator.Parameters.BackColor = Aspose.Drawing.Color.Yellow;
 
-            // Define the output file path
-            string outputPath = "complex_barcode.png";
-
-            // Save the barcode image as PNG
+            // Save the barcode image as a PNG file
             generator.Save(outputPath, BarCodeImageFormat.Png);
-
-            // Inform the user where the image was saved
-            Console.WriteLine($"Barcode image saved to {outputPath}");
         }
+
+        // Inform the user where the image has been saved
+        Console.WriteLine($"Barcode image saved to: {Path.GetFullPath(outputPath)}");
     }
 }

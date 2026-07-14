@@ -1,53 +1,70 @@
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
-/// <summary>
-/// Demonstrates generating a Code128 barcode and saving it as an image file.
-/// </summary>
 class Program
 {
-    /// <summary>
-    /// Entry point of the application. Generates a barcode with specified parameters and saves it to disk.
-    /// </summary>
     static void Main()
     {
-        // Define the barcode symbology (Code128) and the text to encode.
+        // Prepare output directory
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "output");
+        if (!Directory.Exists(outputDir))
+        {
+            Directory.CreateDirectory(outputDir);
+        }
+
+        string imagePath = Path.Combine(outputDir, "barcode.png");
+        string logPath = Path.Combine(outputDir, "audit.log");
+
+        // Start log
+        File.AppendAllText(logPath, $"--- Barcode generation started at {DateTime.UtcNow:u} ---{Environment.NewLine}");
+
+        // Define barcode settings
         BaseEncodeType encodeType = EncodeTypes.Code128;
         string codeText = "123ABC";
 
-        // Output file path for the generated barcode image.
-        string outputPath = "barcode.png";
-
         try
         {
-            // Create a BarcodeGenerator instance with the chosen symbology and text.
-            using (BarcodeGenerator generator = new BarcodeGenerator(encodeType, codeText))
+            using (var generator = new BarcodeGenerator(encodeType, codeText))
             {
-                // Set barcode generation parameters.
-                generator.Parameters.Resolution = 300;                     // Image resolution in DPI.
-                generator.Parameters.RotationAngle = 0;                  // No rotation applied.
-                generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes; // Enable checksum.
+                // Configure generation parameters
+                generator.Parameters.Barcode.XDimension.Point = 2f;
+                generator.Parameters.Barcode.BarHeight.Point = 50f;
+                generator.Parameters.Barcode.FilledBars = false;
+                generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Blue;
+                generator.Parameters.BackColor = Aspose.Drawing.Color.White;
+                generator.Parameters.AutoSizeMode = AutoSizeMode.None;
+                generator.Parameters.Resolution = 300f;
 
-                // Output the configuration details to the console for verification.
-                Console.WriteLine("Generating barcode:");
-                Console.WriteLine($"  Symbology: {encodeType}");
-                Console.WriteLine($"  CodeText: {codeText}");
-                Console.WriteLine($"  Resolution: {generator.Parameters.Resolution} DPI");
-                Console.WriteLine($"  RotationAngle: {generator.Parameters.RotationAngle} degrees");
-                Console.WriteLine($"  ChecksumEnabled: {generator.Parameters.Barcode.IsChecksumEnabled}");
+                // Log parameters
+                string paramLog = $"EncodeType: {encodeType.TypeName}, CodeText: {codeText}, XDimension: {generator.Parameters.Barcode.XDimension.Point}pt, BarHeight: {generator.Parameters.Barcode.BarHeight.Point}pt, FilledBars: {generator.Parameters.Barcode.FilledBars}, BarColor: {generator.Parameters.Barcode.BarColor}, BackColor: {generator.Parameters.BackColor}, Resolution: {generator.Parameters.Resolution}dpi";
+                Console.WriteLine(paramLog);
+                File.AppendAllText(logPath, paramLog + Environment.NewLine);
 
-                // Save the generated barcode image to the specified file.
-                generator.Save(outputPath);
+                // Generate and save barcode image
+                using (var bitmap = generator.GenerateBarCodeImage())
+                {
+                    bitmap.Save(imagePath, Aspose.Drawing.Imaging.ImageFormat.Png);
+                }
+
+                // Log success
+                string successLog = $"Barcode image saved to {imagePath}";
+                Console.WriteLine(successLog);
+                File.AppendAllText(logPath, successLog + Environment.NewLine);
             }
-
-            // Inform the user that the barcode was generated successfully and display the full path.
-            Console.WriteLine($"Barcode generated successfully. Saved to '{Path.GetFullPath(outputPath)}'.");
         }
         catch (Exception ex)
         {
-            // Write any errors that occur during barcode generation to the error output stream.
-            Console.Error.WriteLine($"Failed to generate barcode: {ex.Message}");
+            // Log any errors
+            string errorLog = $"Error during barcode generation: {ex.Message}";
+            Console.WriteLine(errorLog);
+            File.AppendAllText(logPath, errorLog + Environment.NewLine);
         }
+
+        // End log
+        File.AppendAllText(logPath, $"--- Barcode generation finished at {DateTime.UtcNow:u} ---{Environment.NewLine}");
     }
 }

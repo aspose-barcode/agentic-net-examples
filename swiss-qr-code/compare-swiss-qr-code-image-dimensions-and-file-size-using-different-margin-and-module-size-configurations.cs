@@ -1,29 +1,62 @@
+// Title: Compare Swiss QR Code image dimensions and file size with varying margins and module sizes
+// Description: Demonstrates how different margin and module size settings affect the generated Swiss QR Code image dimensions and PNG file size.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on Swiss QR Code creation using ComplexBarcodeGenerator. It shows how to configure padding and XDimension (module size) to control image size, a common requirement for developers generating payment QR codes for Swiss QR‑bill standards.
+// Prompt: Compare Swiss QR Code image dimensions and file size using different margin and module size configurations.
+// Tags: swiss qr code, barcode generation, image dimensions, file size, margin, module size, aspnet.barcode, complexbarcodegenerator, png
+
 using System;
-using System.Collections.Generic;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.ComplexBarcode;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generation of Swiss QR Code images with varying margins and module sizes,
-/// and reports their dimensions and file sizes.
+/// Demonstrates how margin and module size affect Swiss QR Code image dimensions and file size.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Generates a Swiss QR Code image with the specified margin (padding) and module size (XDimension).
-    /// The image is saved to <paramref name="filePath"/> and the same path is returned.
+    /// Entry point. Generates Swiss QR Codes with default and custom configurations and prints their dimensions and file sizes.
     /// </summary>
-    /// <param name="filePath">Full path where the PNG image will be saved.</param>
-    /// <param name="marginPoints">Margin (padding) to apply on all sides, expressed in points.</param>
-    /// <param name="moduleSizePoints">Size of a single QR module (XDimension), expressed in points.</param>
-    /// <returns>The file path of the saved image.</returns>
-    static string GenerateSwissQr(string filePath, float marginPoints, float moduleSizePoints)
+    static void Main()
     {
-        // Prepare Swiss QR bill data (valid sample values)
+        // Define two configurations: a default setting and a custom one with larger margin and module size.
+        var configs = new (string Name, float Margin, float ModuleSize)[]
+        {
+            ("Default", 5f, 2f),   // small margin, default module size
+            ("Custom", 20f, 5f)    // larger margin and larger modules
+        };
+
+        // Iterate over each configuration, generate the barcode, and display results.
+        foreach (var cfg in configs)
+        {
+            try
+            {
+                var result = GenerateSwissQR(cfg.Name, cfg.Margin, cfg.ModuleSize);
+                Console.WriteLine($"{cfg.Name} Configuration:");
+                Console.WriteLine($"  Image Width : {result.Width} px");
+                Console.WriteLine($"  Image Height: {result.Height} px");
+                Console.WriteLine($"  File Size   : {result.FileSize} bytes");
+                Console.WriteLine();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error generating {cfg.Name} configuration: {ex.Message}");
+            }
+        }
+    }
+
+    /// <summary>
+    /// Generates a Swiss QR Code using the specified margin and module size, then returns its dimensions and PNG file size.
+    /// </summary>
+    /// <param name="configName">Name of the configuration (used for logging only).</param>
+    /// <param name="margin">Padding (margin) to apply on all sides, in points.</param>
+    /// <param name="moduleSize">Size of a single QR module (XDimension), in points.</param>
+    /// <returns>Tuple containing image width, height, and file size in bytes.</returns>
+    private static (int Width, int Height, long FileSize) GenerateSwissQR(string configName, float margin, float moduleSize)
+    {
+        // Prepare Swiss QR code text with mandatory bill fields.
         var swissQr = new SwissQRCodetext();
         swissQr.Bill.Creditor.Name = "John Doe";
         swissQr.Bill.Creditor.CountryCode = "CH";
@@ -31,83 +64,31 @@ class Program
         swissQr.Bill.Amount = 199.95m;
         swissQr.Bill.Version = SwissQRBill.QrBillStandardVersion.V2_0;
 
-        // Create a ComplexBarcodeGenerator for the Swiss QR data
+        // Create a ComplexBarcodeGenerator for the Swiss QR code.
         using (var generator = new ComplexBarcodeGenerator(swissQr))
         {
-            // Apply uniform margin (padding) on all four sides
-            generator.Parameters.Barcode.Padding.Left.Point = marginPoints;
-            generator.Parameters.Barcode.Padding.Top.Point = marginPoints;
-            generator.Parameters.Barcode.Padding.Right.Point = marginPoints;
-            generator.Parameters.Barcode.Padding.Bottom.Point = marginPoints;
+            // Apply uniform padding (margin) on all sides.
+            generator.Parameters.Barcode.Padding.Left.Point = margin;
+            generator.Parameters.Barcode.Padding.Top.Point = margin;
+            generator.Parameters.Barcode.Padding.Right.Point = margin;
+            generator.Parameters.Barcode.Padding.Bottom.Point = margin;
 
-            // Set the module size (XDimension) for the QR code
-            generator.Parameters.Barcode.XDimension.Point = moduleSizePoints;
+            // Set the module size (XDimension) for the QR code.
+            generator.Parameters.Barcode.XDimension.Point = moduleSize;
 
-            // Save the generated barcode as a PNG file
-            generator.Save(filePath, BarCodeImageFormat.Png);
+            // Generate the barcode image.
+            using (Image image = generator.GenerateBarCodeImage())
+            {
+                // Save the image to a memory stream to determine the PNG file size.
+                using (var ms = new MemoryStream())
+                {
+                    generator.Save(ms, BarCodeImageFormat.Png);
+                    long fileSize = ms.Length;
+
+                    // Return the image dimensions and file size.
+                    return (image.Width, image.Height, fileSize);
+                }
+            }
         }
-
-        return filePath;
-    }
-
-    /// <summary>
-    /// Retrieves the width and height (in pixels) of an image file.
-    /// </summary>
-    /// <param name="imagePath">Path to the image file.</param>
-    /// <returns>A tuple containing the width and height.</returns>
-    static (int width, int height) GetImageDimensions(string imagePath)
-    {
-        using (var img = Image.FromFile(imagePath))
-        {
-            return (img.Width, img.Height);
-        }
-    }
-
-    /// <summary>
-    /// Entry point of the application. Generates Swiss QR Code images with different
-    /// margin and module size configurations, then prints their dimensions and file sizes.
-    /// </summary>
-    static void Main()
-    {
-        // Define configurations: (margin in points, module size in points)
-        var configurations = new List<(float margin, float module)>
-        {
-            (5f, 2f),
-            (5f, 3f),
-            (10f, 2f),
-            (10f, 3f)
-        };
-
-        // Create a temporary directory to store the generated images
-        string outputDir = Path.Combine(Path.GetTempPath(), "SwissQrDemo");
-        Directory.CreateDirectory(outputDir);
-
-        // Header for console output
-        Console.WriteLine("Swiss QR Code dimension and file size comparison:");
-        Console.WriteLine("-------------------------------------------------");
-        Console.WriteLine("{0,8} {1,8} | {2,6} {3,6} | {4,10}", "Margin", "Module", "Width", "Height", "FileSize");
-
-        // Process each configuration
-        foreach (var cfg in configurations)
-        {
-            // Build a descriptive file name based on the current configuration
-            string fileName = $"SwissQR_M{cfg.margin}_X{cfg.module}.png";
-            string filePath = Path.Combine(outputDir, fileName);
-
-            // Generate the QR code image
-            GenerateSwissQr(filePath, cfg.margin, cfg.module);
-
-            // Retrieve image dimensions
-            var (width, height) = GetImageDimensions(filePath);
-
-            // Determine file size in bytes
-            long fileSize = new FileInfo(filePath).Length;
-
-            // Output the results for this configuration
-            Console.WriteLine("{0,8} {1,8} | {2,6} {3,6} | {4,10} bytes", cfg.margin, cfg.module, width, height, fileSize);
-        }
-
-        // Inform the user where the images have been saved
-        Console.WriteLine("\nImages saved to: " + outputDir);
     }
 }
