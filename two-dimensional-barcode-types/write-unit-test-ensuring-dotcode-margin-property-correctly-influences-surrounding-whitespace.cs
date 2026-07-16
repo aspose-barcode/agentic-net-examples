@@ -1,128 +1,92 @@
+// Title: DotCode Margin Influence Test
+// Description: Demonstrates how the DotCode barcode margin property adds whitespace around the generated image.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on margin and padding settings for 2D symbologies like DotCode. It showcases the use of BarcodeGenerator, EncodeTypes, and BarcodeParameters to control image dimensions, a common requirement for developers needing precise layout control in reports or UI components.
+// Prompt: Write unit test ensuring DotCode margin property correctly influences surrounding whitespace.
+// Tags: dotcode, margin, padding, barcode, generation, unit-test, aspnet, aspose.barcode
+
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generation of a DotCode barcode with custom padding,
-/// then validates that the padding is reflected in the resulting image.
+/// Provides a console application that verifies the effect of the DotCode margin property on image size.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a barcode, reads its dimensions, and verifies padding.
+    /// Generates a DotCode barcode bitmap with specified padding (in points).
+    /// </summary>
+    /// <param name="codeText">The text to encode in the barcode.</param>
+    /// <param name="left">Left padding in points.</param>
+    /// <param name="top">Top padding in points.</param>
+    /// <param name="right">Right padding in points.</param>
+    /// <param name="bottom">Bottom padding in points.</param>
+    /// <returns>A <see cref="Bitmap"/> containing the generated barcode.</returns>
+    static Bitmap GenerateDotCode(string codeText, float left, float top, float right, float bottom)
+    {
+        // Create a generator for the DotCode symbology.
+        using (var generator = new BarcodeGenerator(EncodeTypes.DotCode, codeText))
+        {
+            // Disable automatic sizing to keep padding effects visible.
+            generator.Parameters.AutoSizeMode = AutoSizeMode.None;
+
+            // Apply the specified padding (margin) values.
+            generator.Parameters.Barcode.Padding.Left.Point = left;
+            generator.Parameters.Barcode.Padding.Top.Point = top;
+            generator.Parameters.Barcode.Padding.Right.Point = right;
+            generator.Parameters.Barcode.Padding.Bottom.Point = bottom;
+
+            // Generate and return the barcode image.
+            return generator.GenerateBarCodeImage();
+        }
+    }
+
+    /// <summary>
+    /// Entry point that generates two DotCode images with and without padding and validates the size difference.
     /// </summary>
     static void Main()
     {
-        // --------------------------------------------------------------------
-        // Define test parameters
-        // --------------------------------------------------------------------
-        const string codeText = "123456";          // Text to encode in the barcode
-        const float paddingPoints = 20f;           // Desired margin (padding) in points
-        const string outputPath = "dotcode_test.png"; // Output image file name
+        // Sample text to encode.
+        const string sampleText = "Test";
 
-        // --------------------------------------------------------------------
-        // Generate DotCode barcode with the specified padding
-        // --------------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.DotCode, codeText))
+        // Generate a barcode with no padding.
+        using (var bmpNoPad = GenerateDotCode(sampleText, 0f, 0f, 0f, 0f))
+        // Generate a barcode with 20 points of padding on each side.
+        using (var bmpPad = GenerateDotCode(sampleText, 20f, 20f, 20f, 20f))
         {
-            // Apply uniform padding (margin) on all four sides
-            generator.Parameters.Barcode.Padding.Left.Point   = paddingPoints;
-            generator.Parameters.Barcode.Padding.Top.Point    = paddingPoints;
-            generator.Parameters.Barcode.Padding.Right.Point  = paddingPoints;
-            generator.Parameters.Barcode.Padding.Bottom.Point = paddingPoints;
+            // Default DPI used by the generator (96). Adjust if generator DPI changes.
+            const float dpi = 96f;
 
-            // Save the generated barcode image as PNG
-            generator.Save(outputPath, BarCodeImageFormat.Png);
-        }
+            // Convert points to pixels (1 point = dpi / 72 pixels).
+            float pointsToPixels = dpi / 72f;
 
-        // --------------------------------------------------------------------
-        // Load the generated image to obtain its pixel dimensions
-        // --------------------------------------------------------------------
-        int imageWidthPixels;
-        int imageHeightPixels;
-        using (var bitmap = new Bitmap(outputPath))
-        {
-            imageWidthPixels  = bitmap.Width;
-            imageHeightPixels = bitmap.Height;
-        }
+            // Expected pixel increase due to left+right and top+bottom padding.
+            float expectedWidthIncrease = (20f + 20f) * pointsToPixels;
+            float expectedHeightIncrease = (20f + 20f) * pointsToPixels;
 
-        // --------------------------------------------------------------------
-        // Recognize the barcode to retrieve its bounding box (region) within the image
-        // --------------------------------------------------------------------
-        RectangleF barcodeRegion;
-        using (var reader = new BarCodeReader(outputPath, DecodeType.DotCode))
-        {
-            var results = reader.ReadBarCodes();
-            if (results.Length == 0)
+            // Actual dimensions of the generated images.
+            int widthNoPad = bmpNoPad.Width;
+            int heightNoPad = bmpNoPad.Height;
+            int widthPad = bmpPad.Width;
+            int heightPad = bmpPad.Height;
+
+            // Allow a tolerance of 1 pixel because of rounding.
+            bool widthOk = Math.Abs(widthPad - (widthNoPad + expectedWidthIncrease)) <= 1;
+            bool heightOk = Math.Abs(heightPad - (heightNoPad + expectedHeightIncrease)) <= 1;
+
+            if (widthOk && heightOk)
             {
-                Console.WriteLine("Failed to read the generated DotCode barcode.");
-                return;
+                Console.WriteLine("PASS: DotCode margin influences surrounding whitespace as expected.");
             }
-
-            // Region.Rectangle provides the bounding box in points
-            barcodeRegion = results[0].Region.Rectangle;
-        }
-
-        // --------------------------------------------------------------------
-        // Retrieve the resolution (DPI) used during generation (default is 96 DPI)
-        // --------------------------------------------------------------------
-        float resolutionDpi;
-        using (var gen = new BarcodeGenerator(EncodeTypes.DotCode, codeText))
-        {
-            resolutionDpi = gen.Parameters.Resolution;
-        }
-
-        // --------------------------------------------------------------------
-        // Convert padding from points to pixels (1 point = 1/72 inch)
-        // --------------------------------------------------------------------
-        float pointsToPixels      = resolutionDpi / 72f;
-        float expectedPaddingPixels = paddingPoints * pointsToPixels;
-
-        // --------------------------------------------------------------------
-        // Calculate actual padding based on image size and barcode region size
-        // --------------------------------------------------------------------
-        float actualHorizontalPadding = (imageWidthPixels  - barcodeRegion.Width)  / 2f;
-        float actualVerticalPadding   = (imageHeightPixels - barcodeRegion.Height) / 2f;
-
-        // Allow a small tolerance due to rounding errors
-        const float tolerance = 1.0f;
-
-        bool horizontalOk = Math.Abs(actualHorizontalPadding - expectedPaddingPixels) <= tolerance;
-        bool verticalOk   = Math.Abs(actualVerticalPadding   - expectedPaddingPixels) <= tolerance;
-
-        // --------------------------------------------------------------------
-        // Output verification results
-        // --------------------------------------------------------------------
-        Console.WriteLine($"Image size (pixels): {imageWidthPixels}x{imageHeightPixels}");
-        Console.WriteLine($"Barcode region size (points): {barcodeRegion.Width}x{barcodeRegion.Height}");
-        Console.WriteLine($"Resolution (dpi): {resolutionDpi}");
-        Console.WriteLine($"Expected padding (pixels): {expectedPaddingPixels:F2}");
-        Console.WriteLine($"Actual horizontal padding (pixels): {actualHorizontalPadding:F2}");
-        Console.WriteLine($"Actual vertical padding (pixels): {actualVerticalPadding:F2}");
-
-        if (horizontalOk && verticalOk)
-        {
-            Console.WriteLine("PASS: DotCode margin property correctly influences surrounding whitespace.");
-        }
-        else
-        {
-            Console.WriteLine("FAIL: Margin influence does not match expected values.");
-        }
-
-        // --------------------------------------------------------------------
-        // Clean up the generated file
-        // --------------------------------------------------------------------
-        try
-        {
-            File.Delete(outputPath);
-        }
-        catch
-        {
-            // Ignore any cleanup errors
+            else
+            {
+                Console.WriteLine("FAIL: DotCode margin did not produce the expected image size.");
+                Console.WriteLine($"No padding size: {widthNoPad}x{heightNoPad}");
+                Console.WriteLine($"With padding size: {widthPad}x{heightPad}");
+                Console.WriteLine($"Expected increase: {expectedWidthIncrease}x{expectedHeightIncrease} pixels");
+            }
         }
     }
 }

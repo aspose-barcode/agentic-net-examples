@@ -1,3 +1,9 @@
+// Title: Generate QR Code with restricted file permissions
+// Description: This example creates a QR Code barcode image and then limits the file's access rights so only the current Windows user can read or modify it.
+// Category-Description: Demonstrates how to use Aspose.BarCode to generate a barcode image and apply Windows file system security. The example covers barcode generation (BarcodeGenerator, EncodeTypes), image saving, and modifying file ACLs (FileSecurity, FileSystemAccessRule). Ideal for developers needing to protect generated barcode files from unauthorized access in desktop or server applications.
+// Prompt: Generate QR Code barcode and ensure generated file permissions restrict unauthorized access.
+// Tags: qr code, barcode generation, file security, windows, aspose.barcode, png
+
 using System;
 using System.IO;
 using System.Security.AccessControl;
@@ -6,65 +12,56 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generating a QR code image and restricting its file permissions to the current user.
+/// Demonstrates QR Code generation and file permission restriction using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a QR code, saves it to a file, and applies restrictive ACLs.
+    /// Entry point of the example. Generates a QR Code image and restricts its file permissions to the current user.
     /// </summary>
     static void Main()
     {
-        const string outputPath = "qr.png";
+        // Define the output file path for the generated QR Code image.
+        string outputPath = "qr_code.png";
 
-        try
+        // Create a QR Code generator with the desired text (URL in this case).
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
         {
-            // -------------------------------------------------
-            // Generate QR code and save it to a PNG file
-            // -------------------------------------------------
-            using (var generator = new BarcodeGenerator(EncodeTypes.QR))
-            {
-                // Text to be encoded in the QR code
-                generator.CodeText = "https://example.com";
+            // Set a high error correction level to improve readability under adverse conditions.
+            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
 
-                // Optional settings: error correction level and image resolution
-                generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
-                generator.Parameters.Resolution = 300f;
+            // Save the generated barcode image to the specified file.
+            generator.Save(outputPath);
+        }
 
-                // Write the QR code image to the specified path
-                generator.Save(outputPath);
-            }
+        // Restrict file permissions so that only the current Windows user has full control.
+        var fileInfo = new FileInfo(outputPath);
+        var currentUser = WindowsIdentity.GetCurrent().User;
 
-            // -------------------------------------------------
-            // Restrict file permissions so only the current user can read the file
-            // -------------------------------------------------
-            var fileInfo = new FileInfo(outputPath);
-            var security = fileInfo.GetAccessControl();
+        if (currentUser != null)
+        {
+            // Create a new security descriptor without inheriting existing rules.
+            var security = new FileSecurity();
 
-            // Disable inheritance and remove any existing access rules
-            security.SetAccessRuleProtection(isProtected: true, preserveInheritance: false);
+            // Define a rule granting full control to the current user.
+            var rule = new FileSystemAccessRule(
+                currentUser,
+                FileSystemRights.FullControl,
+                AccessControlType.Allow);
 
-            // Retrieve the SID of the current Windows user
-            var currentUser = WindowsIdentity.GetCurrent().User;
-            if (currentUser != null)
-            {
-                // Grant read permission to the current user
-                var rule = new FileSystemAccessRule(
-                    currentUser,
-                    FileSystemRights.Read,
-                    AccessControlType.Allow);
-                security.AddAccessRule(rule);
-            }
+            // Add the rule to the security descriptor.
+            security.AddAccessRule(rule);
 
-            // Apply the modified ACL to the file
+            // Apply the security settings to the file.
             fileInfo.SetAccessControl(security);
-
-            Console.WriteLine($"QR code generated and saved to '{outputPath}'. File permissions restricted to the current user.");
         }
-        catch (Exception ex)
+        else
         {
-            // Output any errors that occur during generation or permission setting
-            Console.WriteLine($"Error: {ex.Message}");
+            // If the current user cannot be determined, inform the user that permissions were not changed.
+            Console.WriteLine("Unable to determine the current user. File permissions were not modified.");
         }
+
+        // Inform the user that the QR Code has been generated and secured.
+        Console.WriteLine($"QR Code generated and saved to '{outputPath}'. File permissions restricted to the current user.");
     }
 }

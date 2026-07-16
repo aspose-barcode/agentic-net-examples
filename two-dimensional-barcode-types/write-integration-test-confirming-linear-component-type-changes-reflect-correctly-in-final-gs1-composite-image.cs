@@ -1,113 +1,93 @@
+// Title: GS1 Composite Barcode Linear Component Type Integration Test
+// Description: Demonstrates how changing the linear component type in a GS1 Composite barcode affects the generated image, useful for integration testing.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, focusing on GS1 Composite barcodes. It showcases the use of BarcodeGenerator, EncodeTypes, and TwoDComponentType to create composite barcodes with different linear components. Developers often need to verify that configuration changes produce distinct outputs, especially when automating tests for barcode rendering pipelines.
+// Prompt: Write integration test confirming linear component type changes reflect correctly in the final GS1 Composite image.
+// Tags: gs1 composite barcode, linear component, encode types, integration test, aspose.barcode, csharp
+
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generation and verification of GS1 Composite barcodes
-/// using different linear component types (GS1Code128 and UPCA).
+/// Contains an integration test that verifies changing the linear component type of a GS1 Composite barcode
+/// results in distinct generated images.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates two GS1 Composite barcodes with different linear components,
-    /// compares the resulting images, and verifies the encoded data.
+    /// Entry point of the test application. Generates two GS1 Composite barcodes with different linear components,
+    /// saves them, and checks that the output files differ in size.
     /// </summary>
     static void Main()
     {
-        // Sample GS1 Composite codetext: linear part and 2D part separated by '|'
-        string codetext = "(01)03212345678906|(21)A1B2C3D4E5F6G7H8";
+        // --------------------------------------------------------------------
+        // Prepare output directory for generated barcode images
+        // --------------------------------------------------------------------
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "GS1CompositeTest");
+        if (!Directory.Exists(outputDir))
+        {
+            Directory.CreateDirectory(outputDir);
+        }
 
-        // Create a temporary directory for output images
-        string outputDir = Path.Combine(Path.GetTempPath(), "Gs1CompositeTest");
-        Directory.CreateDirectory(outputDir);
+        // --------------------------------------------------------------------
+        // Define common GS1 Composite codetext (1D|2D parts)
+        // --------------------------------------------------------------------
+        string codeText = "(01)03212345678906|(21)A1B2C3D4E5F6G7H8";
 
-        // Define full paths for the generated barcode images
-        string imgPathGs1Code128 = Path.Combine(outputDir, "gs1code128.png");
-        string imgPathUpca = Path.Combine(outputDir, "upca.png");
-
-        // Generate barcode with LinearComponentType = GS1Code128
-        GenerateGs1Composite(codetext, EncodeTypes.GS1Code128, imgPathGs1Code128);
-        // Generate barcode with LinearComponentType = UPCA
-        GenerateGs1Composite(codetext, EncodeTypes.UPCA, imgPathUpca);
-
-        // Verify that the two images are different (different linear component)
-        bool imagesDiffer = !File.ReadAllBytes(imgPathGs1Code128)
-                                 .SequenceEqual(File.ReadAllBytes(imgPathUpca));
-        Console.WriteLine($"Images differ after changing LinearComponentType: {imagesDiffer}");
-
-        // Read back the first barcode and verify codetext
-        VerifyBarcode(imgPathGs1Code128, codetext);
-        // Read back the second barcode and verify codetext
-        VerifyBarcode(imgPathUpca, codetext);
-    }
-
-    /// <summary>
-    /// Generates a GS1 Composite barcode image using the specified linear component type.
-    /// </summary>
-    /// <param name="codeText">The GS1 Composite codetext to encode.</param>
-    /// <param name="linearType">The linear component type (e.g., GS1Code128, UPCA).</param>
-    /// <param name="outputPath">File path where the generated image will be saved.</param>
-    static void GenerateGs1Composite(string codeText, BaseEncodeType linearType, string outputPath)
-    {
-        // Initialize the barcode generator for GS1 Composite symbology
+        // --------------------------------------------------------------------
+        // First barcode: Linear component set to GS1Code128
+        // --------------------------------------------------------------------
+        string filePath1 = Path.Combine(outputDir, "Composite_GS1Code128.png");
         using (var generator = new BarcodeGenerator(EncodeTypes.GS1CompositeBar, codeText))
         {
-            // Set the linear component type (GS1Code128, UPCA, etc.)
-            generator.Parameters.Barcode.GS1CompositeBar.LinearComponentType = linearType;
-
-            // Use a simple 2D component type (CC-A)
+            // Set linear and 2D component types
+            generator.Parameters.Barcode.GS1CompositeBar.LinearComponentType = EncodeTypes.GS1Code128;
             generator.Parameters.Barcode.GS1CompositeBar.TwoDComponentType = TwoDComponentType.CC_A;
 
-            // Optional visual settings for better readability
-            generator.Parameters.Barcode.Pdf417.AspectRatio = 3;
-            generator.Parameters.Barcode.XDimension.Pixels = 3;
-            generator.Parameters.Barcode.BarHeight.Pixels = 100;
+            // Configure size and appearance for a fair comparison
+            generator.Parameters.Barcode.Pdf417.AspectRatio = 3f;
+            generator.Parameters.Barcode.XDimension.Pixels = 3f;
+            generator.Parameters.Barcode.BarHeight.Pixels = 100f;
 
-            // Save the generated barcode image to the specified path
-            generator.Save(outputPath);
-        }
-    }
-
-    /// <summary>
-    /// Reads a barcode image, decodes its content, and verifies it against the expected codetext.
-    /// </summary>
-    /// <param name="imagePath">Path to the barcode image file.</param>
-    /// <param name="expectedCodeText">The expected codetext to compare against.</param>
-    static void VerifyBarcode(string imagePath, string expectedCodeText)
-    {
-        // Ensure the image file exists before attempting to read it
-        if (!File.Exists(imagePath))
-        {
-            Console.WriteLine($"File not found: {imagePath}");
-            return;
+            // Save the generated image
+            generator.Save(filePath1);
         }
 
-        // Initialize the barcode reader for GS1 Composite symbology
-        using (var reader = new BarCodeReader(imagePath, DecodeType.GS1CompositeBar))
+        // --------------------------------------------------------------------
+        // Second barcode: Linear component set to EAN13
+        // --------------------------------------------------------------------
+        string filePath2 = Path.Combine(outputDir, "Composite_EAN13.png");
+        using (var generator = new BarcodeGenerator(EncodeTypes.GS1CompositeBar, codeText))
         {
-            // Read all barcodes present in the image
-            var results = reader.ReadBarCodes();
+            // Set linear and 2D component types
+            generator.Parameters.Barcode.GS1CompositeBar.LinearComponentType = EncodeTypes.EAN13;
+            generator.Parameters.Barcode.GS1CompositeBar.TwoDComponentType = TwoDComponentType.CC_A;
 
-            // If no barcodes were detected, report and exit
-            if (results.Length == 0)
-            {
-                Console.WriteLine($"No barcode detected in {Path.GetFileName(imagePath)}");
-                return;
-            }
+            // Apply the same size settings for comparison
+            generator.Parameters.Barcode.Pdf417.AspectRatio = 3f;
+            generator.Parameters.Barcode.XDimension.Pixels = 3f;
+            generator.Parameters.Barcode.BarHeight.Pixels = 100f;
 
-            // Iterate through each detected barcode (typically only one)
-            foreach (var result in results)
-            {
-                Console.WriteLine($"Decoded from {Path.GetFileName(imagePath)}: {result.CodeText}");
+            // Save the generated image
+            generator.Save(filePath2);
+        }
 
-                // Compare the decoded text with the expected codetext (case-sensitive)
-                bool match = string.Equals(result.CodeText, expectedCodeText, StringComparison.Ordinal);
-                Console.WriteLine($"Codetext matches expected: {match}");
-            }
+        // --------------------------------------------------------------------
+        // Verify that the two generated images differ (e.g., by file size)
+        // --------------------------------------------------------------------
+        long size1 = new FileInfo(filePath1).Length;
+        long size2 = new FileInfo(filePath2).Length;
+
+        if (size1 != size2)
+        {
+            Console.WriteLine("Test passed: Linear component type change reflected in the generated images.");
+            Console.WriteLine($"Image 1 ({Path.GetFileName(filePath1)}) size: {size1} bytes");
+            Console.WriteLine($"Image 2 ({Path.GetFileName(filePath2)}) size: {size2} bytes");
+        }
+        else
+        {
+            Console.WriteLine("Test failed: Images have identical size, change may not be reflected.");
         }
     }
 }

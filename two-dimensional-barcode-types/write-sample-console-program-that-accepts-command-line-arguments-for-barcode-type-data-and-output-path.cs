@@ -1,3 +1,9 @@
+// Title: Generate barcode image from command‑line arguments
+// Description: Demonstrates how to create a barcode image using Aspose.BarCode by specifying symbology, data, and output path via command‑line.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and BaseEncodeType to produce barcode images. Typical use cases include automating barcode creation in batch scripts, CI pipelines, or backend services where input parameters are supplied at runtime. Developers often need to map symbology names to EncodeTypes and ensure output directories exist.
+// Prompt: Write a sample console program that accepts command‑line arguments for barcode type, data, and output path.
+// Tags: barcode generation command-line symbology encode-types output-file aspose.barcode
+
 using System;
 using System.IO;
 using System.Reflection;
@@ -5,71 +11,61 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generating a barcode image using Aspose.BarCode based on command‑line arguments.
+/// Sample console application that generates a barcode image based on command‑line arguments.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Accepts optional arguments: symbology name, code text, and output file path.
-    /// Generates the specified barcode and saves it to the given location.
+    /// Entry point of the program.
+    /// Accepts three optional arguments: symbology name, data to encode, and output file path.
+    /// Returns 0 on success, 1 on error.
     /// </summary>
-    /// <param name="args">
-    /// args[0] – symbology name (e.g., "Code128").
-    /// args[1] – text to encode in the barcode.
-    /// args[2] – output file path for the generated image.
-    /// </param>
-    static void Main(string[] args)
+    /// <param name="args">Command‑line arguments.</param>
+    /// <returns>Exit code indicating success or failure.</returns>
+    static int Main(string[] args)
     {
-        // Determine symbology, text, and output path, using defaults when arguments are missing.
+        // --------------------------------------------------------------------
+        // Resolve input arguments or fall back to default values
+        // --------------------------------------------------------------------
         string symbologyName = args.Length > 0 ? args[0] : "Code128";
         string codeText = args.Length > 1 ? args[1] : "Sample123";
         string outputPath = args.Length > 2 ? args[2] : "barcode.png";
 
-        // Resolve the symbology name to a BaseEncodeType enum value via reflection.
-        FieldInfo field = typeof(EncodeTypes).GetField(symbologyName,
-            BindingFlags.Public | BindingFlags.Static | BindingFlags.IgnoreCase);
+        // --------------------------------------------------------------------
+        // Convert the symbology name to the corresponding EncodeTypes value using reflection
+        // --------------------------------------------------------------------
+        FieldInfo field = typeof(EncodeTypes).GetField(symbologyName);
         if (field == null)
         {
-            Console.WriteLine($"Unknown barcode type: {symbologyName}");
-            return;
+            Console.WriteLine($"Unknown symbology: {symbologyName}");
+            return 1;
         }
 
-        // Retrieve the enum value from the reflected field.
         BaseEncodeType encodeType = (BaseEncodeType)field.GetValue(null);
         if (encodeType == null)
         {
             Console.WriteLine($"Failed to obtain encode type for: {symbologyName}");
-            return;
+            return 1;
         }
 
-        // Ensure the directory for the output file exists; create it if necessary.
-        try
+        // --------------------------------------------------------------------
+        // Ensure the directory for the output file exists
+        // --------------------------------------------------------------------
+        string? directory = Path.GetDirectoryName(outputPath);
+        if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
         {
-            string directory = Path.GetDirectoryName(Path.GetFullPath(outputPath));
-            if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
-            {
-                Directory.CreateDirectory(directory);
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error preparing output directory: {ex.Message}");
-            return;
+            Directory.CreateDirectory(directory);
         }
 
-        // Create a barcode generator, generate the image, and save it to the specified path.
-        using (var generator = new BarcodeGenerator(encodeType, codeText))
+        // --------------------------------------------------------------------
+        // Generate the barcode and save it to the specified path
+        // --------------------------------------------------------------------
+        using (BarcodeGenerator generator = new BarcodeGenerator(encodeType, codeText))
         {
-            try
-            {
-                generator.Save(outputPath);
-                Console.WriteLine($"Barcode saved to: {outputPath}");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error generating barcode: {ex.Message}");
-            }
+            generator.Save(outputPath);
         }
+
+        Console.WriteLine($"Barcode saved to: {outputPath}");
+        return 0;
     }
 }

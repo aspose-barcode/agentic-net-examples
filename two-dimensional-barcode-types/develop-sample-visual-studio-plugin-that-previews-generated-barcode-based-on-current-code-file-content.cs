@@ -1,60 +1,74 @@
+// Title: Visual Studio Plugin Sample: Barcode Preview from Code File
+// Description: Demonstrates generating a barcode image from the contents of a source file, illustrating the core Aspose.BarCode API used in a Visual Studio extension preview.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to create barcodes programmatically with the BarcodeGenerator class. Typical use cases include previewing barcodes in IDE extensions, generating labels, or embedding barcodes in documents. Developers often need to select symbologies, configure dimensions, and output common image formats such as PNG.
+// Prompt: Develop a sample Visual Studio plugin that previews generated barcode based on current code file content.
+// Tags: barcode symbology, generation, png, aspose.barcode, aspose.drawing
+
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a Code128 barcode from the source code of this file
-/// and saving it as a PNG image.
+/// Sample console application that mimics the core barcode generation logic
+/// which would be used inside a Visual Studio extension to preview a barcode
+/// based on the current code file's content.
 /// </summary>
 class Program
 {
     /// <summary>
     /// Entry point of the application.
-    /// Reads this source file, truncates its content, creates a barcode, and saves it.
+    /// Reads a source file (if provided), selects a barcode symbology,
+    /// generates the barcode image, and saves it as PNG.
     /// </summary>
-    static void Main()
+    /// <param name="args">
+    /// args[0] – optional path to a source file whose text will be encoded.
+    /// args[1] – optional name of the barcode symbology (e.g., "Code128").
+    /// </param>
+    static void Main(string[] args)
     {
-        // Determine the full path to the current source file (Program.cs)
-        string sourcePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Program.cs");
+        // Determine the source file to read. If a valid path is supplied as the first argument,
+        // use its contents; otherwise fall back to a sample text.
+        string sourcePath = args.Length > 0 ? args[0] : null;
+        string codeText;
 
-        // Verify that the source file exists before attempting to read it
-        if (!File.Exists(sourcePath))
+        if (!string.IsNullOrEmpty(sourcePath) && File.Exists(sourcePath))
         {
-            Console.WriteLine("Source file not found: " + sourcePath);
-            return;
+            // Read the entire file content to encode into the barcode.
+            codeText = File.ReadAllText(sourcePath);
+        }
+        else
+        {
+            // Use a default placeholder when no file is provided.
+            codeText = "SampleBarcode";
         }
 
-        // Read the entire content of the source file into a string
-        string codeContent = File.ReadAllText(sourcePath);
-
-        // Limit the text length to a reasonable size for barcode generation
-        const int maxLength = 100;
-        if (codeContent.Length > maxLength)
+        // Determine the barcode symbology. If a second argument is supplied,
+        // resolve it to an EncodeTypes field via reflection; otherwise default to Code128.
+        string symbologyName = args.Length > 1 ? args[1] : "Code128";
+        var field = typeof(EncodeTypes).GetField(symbologyName);
+        if (field == null)
         {
-            // Truncate the string to the maximum allowed length
-            codeContent = codeContent.Substring(0, maxLength);
+            Console.WriteLine($"Unknown symbology '{symbologyName}'. Defaulting to Code128.");
+            field = typeof(EncodeTypes).GetField("Code128");
         }
 
-        // Define the output path for the generated barcode image (barcode.png)
-        string outputPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "barcode.png");
+        // Cast the reflected field value to the base encode type used by the generator.
+        BaseEncodeType encodeType = (BaseEncodeType)field.GetValue(null);
 
-        // Create a barcode generator using the Code128 symbology
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128))
+        // Create the barcode generator, configure a few basic parameters, and save the image.
+        using (var generator = new BarcodeGenerator(encodeType, codeText))
         {
-            // Assign the (possibly truncated) source code as the barcode text
-            generator.CodeText = codeContent;
+            // Example of setting module size and image dimensions.
+            generator.Parameters.Barcode.XDimension.Point = 2f;
+            generator.Parameters.ImageWidth.Point = 300f;
+            generator.Parameters.ImageHeight.Point = 150f;
 
-            // Configure image dimensions and disable automatic sizing
-            generator.Parameters.AutoSizeMode = AutoSizeMode.None;
-            generator.Parameters.ImageWidth.Point = 300f;   // Width in points
-            generator.Parameters.ImageHeight.Point = 150f;  // Height in points
-
-            // Save the generated barcode as a PNG file at the specified location
-            generator.Save(outputPath);
+            // Save the barcode as a PNG file in the current directory.
+            string outputFile = "barcode.png";
+            generator.Save(outputFile);
+            Console.WriteLine($"Barcode generated and saved to '{outputFile}'.");
         }
-
-        // Inform the user where the barcode image has been saved
-        Console.WriteLine("Barcode image generated at: " + outputPath);
     }
 }

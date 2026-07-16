@@ -1,65 +1,63 @@
+// Title: Generate QR Code with Geographic Coordinates
+// Description: Creates a QR Code containing a geo URI for location sharing and saves it as an image.
+// Category-Description: This example demonstrates Aspose.BarCode's QR code generation and recognition capabilities. It shows how to embed geographic coordinates using the geo URI scheme, configure error correction, and read back the encoded data. Developers working with location-based services, mobile apps, or any scenario requiring QR code sharing of map coordinates will find this pattern useful.
+// Prompt: Generate QR Code barcode and embed geographic coordinates for location sharing.
+// Tags: qr, geo, barcode, generation, recognition, png, aspose.barcode
+
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a QR code containing geographic coordinates,
-/// saving it to a file, and then reading it back to verify the content.
+/// Demonstrates how to generate a QR Code containing geographic coordinates,
+/// save it as an image, and then read back the encoded data using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a QR code with latitude/longitude data, saves it,
-    /// and reads it back to display the decoded text.
+    /// Entry point of the example. Generates a QR Code with a geo URI, saves it,
+    /// and verifies the content by decoding the saved image.
     /// </summary>
     static void Main()
     {
-        // Define sample geographic coordinates (latitude, longitude)
-        string latitude = "37.7749";
-        string longitude = "-122.4194";
+        // Define geographic coordinates (example: Eiffel Tower) and build the geo URI.
+        double latitude = 48.8584;
+        double longitude = 2.2945;
+        string geoCodeText = $"geo:{latitude},{longitude}";
 
-        // Build the QR code text using the "geo:" URI scheme
-        string codeText = $"geo:{latitude},{longitude}";
-
-        // Destination file for the generated QR code image
-        string outputPath = "qr_location.png";
-
-        // ------------------------------------------------------------
-        // Generate QR Code with the geographic coordinates
-        // ------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, codeText))
+        // Generate a QR Code that encodes the geo URI.
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, geoCodeText))
         {
-            // Use high error correction level (Level H) for better readability
+            // Use high error correction level to improve scanning reliability.
             generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
 
-            // Save the generated barcode image to the specified path
+            // Ensure the QR Code uses UTF-8 encoding for the text payload.
+            generator.Parameters.Barcode.QR.ECIEncoding = ECIEncodings.UTF8;
+
+            // Define the output file name and save the QR Code as a PNG image.
+            string outputPath = "qr_location.png";
             generator.Save(outputPath);
+            Console.WriteLine($"QR Code saved to: {Path.GetFullPath(outputPath)}");
         }
 
-        // ------------------------------------------------------------
-        // Verify the generated QR Code by reading it back
-        // ------------------------------------------------------------
-        if (File.Exists(outputPath))
+        // Verify that the QR Code image was created before attempting to read it.
+        if (!File.Exists("qr_location.png"))
         {
-            // Initialize a barcode reader for QR codes
-            using (var reader = new BarCodeReader(outputPath, DecodeType.QR))
-            {
-                // Iterate through all detected barcodes (should be one)
-                foreach (var result in reader.ReadBarCodes())
-                {
-                    // Output the decoded text to the console
-                    Console.WriteLine($"Decoded CodeText: {result.CodeText}");
-                }
-            }
+            Console.WriteLine("Generated QR Code image not found.");
+            return;
         }
-        else
+
+        // Read the saved QR Code image and output the decoded text and region.
+        using (BarCodeReader reader = new BarCodeReader("qr_location.png", DecodeType.QR))
         {
-            // Inform the user if the image file could not be created
-            Console.WriteLine($"Failed to create barcode image at {outputPath}");
+            foreach (var result in reader.ReadBarCodes())
+            {
+                Console.WriteLine($"Detected QR Code Text: {result.CodeText}");
+                var bounds = result.Region.Rectangle;
+                Console.WriteLine($"Region - X:{bounds.X}, Y:{bounds.Y}, Width:{bounds.Width}, Height:{bounds.Height}");
+            }
         }
     }
 }

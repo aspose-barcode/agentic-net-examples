@@ -1,5 +1,10 @@
+// Title: Generate MaxiCode Mode 5 barcode with embedded logo
+// Description: Demonstrates creating a MaxiCode barcode in mode five and placing a custom company logo at its center.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on complex barcode types such as MaxiCode. It showcases the use of ComplexBarcodeGenerator, MaxiCodeStandardCodetext, and image manipulation via Aspose.Drawing to embed graphics into a barcode. Developers often need to combine barcodes with branding elements for packaging or shipping labels, and this snippet provides a clear pattern for doing so.
+// Prompt: Generate a MaxiCode barcode with mode five and embed a custom company logo at the center.
+// Tags: maxicode, barcode generation, image embedding, complexbarcode, aspose.barcode, aspose.drawing
+
 using System;
-using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.ComplexBarcode;
@@ -7,78 +12,63 @@ using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a MaxiCode barcode with an optional embedded logo using Aspose.BarCode.
+/// Example program that creates a MaxiCode barcode (mode 5) and embeds a custom logo at its center.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a MaxiCode barcode, optionally embeds a logo, and saves the result.
+    /// Entry point. Generates the barcode, draws a placeholder logo, embeds it, and saves the result.
     /// </summary>
     static void Main()
     {
-        // Define file paths for the output barcode image and the optional logo image.
-        string outputPath = "maxicode_mode5_with_logo.png";
-        string logoPath = "logo.png";
-
-        // Create a MaxiCode standard codetext object and configure it for Mode5.
-        var maxiCode = new MaxiCodeStandardCodetext
+        // Prepare MaxiCode codetext for mode 5 with a sample message.
+        var maxiCodeCodetext = new MaxiCodeStandardCodetext
         {
             Mode = MaxiCodeMode.Mode5,
-            Message = "Sample MaxiCode with logo"
+            Message = "Sample MaxiCode Mode5"
         };
 
-        // Generate the barcode image and store it in a memory stream.
-        using (var barcodeStream = new MemoryStream())
+        // Use ComplexBarcodeGenerator to create the MaxiCode image.
+        using (var complexGenerator = new ComplexBarcodeGenerator(maxiCodeCodetext))
         {
-            // Use ComplexBarcodeGenerator to create the barcode based on the MaxiCode settings.
-            using (var complexGenerator = new ComplexBarcodeGenerator(maxiCode))
+            using (var barcodeImage = complexGenerator.GenerateBarCodeImage())
             {
-                // Save the generated barcode as PNG into the memory stream.
-                complexGenerator.Save(barcodeStream, BarCodeImageFormat.Png);
-            }
-
-            // Reset the stream position to the beginning for subsequent reading.
-            barcodeStream.Position = 0;
-
-            // Load the barcode image from the stream into a Bitmap object.
-            using (var barcodeBitmap = new Bitmap(barcodeStream))
-            {
-                // Check if the logo file exists before attempting to embed it.
-                if (File.Exists(logoPath))
+                // Create a simple placeholder logo (100x100) with the word "Logo".
+                using (var logo = new Bitmap(100, 100))
                 {
-                    // Load the logo image from file.
-                    using (var logoImage = (Bitmap)Image.FromFile(logoPath))
+                    using (var logoGraphics = Graphics.FromImage(logo))
                     {
-                        // Calculate logo width as 20% of the barcode width.
-                        int logoWidth = (int)(barcodeBitmap.Width * 0.2f);
-                        // Preserve the logo's aspect ratio when calculating height.
-                        int logoHeight = (int)((float)logoImage.Height / logoImage.Width * logoWidth);
+                        // Fill the logo background with white.
+                        logoGraphics.Clear(Color.White);
 
-                        // Resize the logo to the calculated dimensions.
-                        using (var resizedLogo = new Bitmap(logoImage, new Size(logoWidth, logoHeight)))
+                        // Draw the text "Logo" centered in the placeholder.
+                        using (var font = new Font("Arial", 20))
                         {
-                            // Create a graphics object to draw onto the barcode bitmap.
-                            using (var graphics = Graphics.FromImage(barcodeBitmap))
-                            {
-                                // Determine the top-left coordinates to center the logo.
-                                int x = (barcodeBitmap.Width - logoWidth) / 2;
-                                int y = (barcodeBitmap.Height - logoHeight) / 2;
-
-                                // Draw the resized logo onto the barcode bitmap.
-                                graphics.DrawImage(resizedLogo, x, y, logoWidth, logoHeight);
-                            }
+                            const string text = "Logo";
+                            var textSize = logoGraphics.MeasureString(text, font);
+                            var textRect = new RectangleF(
+                                (logo.Width - textSize.Width) / 2,
+                                (logo.Height - textSize.Height) / 2,
+                                textSize.Width,
+                                textSize.Height);
+                            logoGraphics.DrawString(text, font, new SolidBrush(Color.Black), textRect);
                         }
                     }
-                }
-                else
-                {
-                    // Inform the user that the logo file was not found; continue without embedding a logo.
-                    Console.WriteLine($"Logo file not found at '{logoPath}'. Barcode will be saved without a logo.");
+
+                    // Determine the coordinates to place the logo at the center of the barcode.
+                    int posX = (barcodeImage.Width - logo.Width) / 2;
+                    int posY = (barcodeImage.Height - logo.Height) / 2;
+
+                    // Draw the logo onto the barcode image.
+                    using (var barcodeGraphics = Graphics.FromImage(barcodeImage))
+                    {
+                        barcodeGraphics.DrawImage(logo, posX, posY, logo.Width, logo.Height);
+                    }
                 }
 
-                // Save the final barcode image (with or without logo) to the specified output file.
-                barcodeBitmap.Save(outputPath, ImageFormat.Png);
-                Console.WriteLine($"MaxiCode barcode saved to '{outputPath}'.");
+                // Save the final image with the embedded logo.
+                barcodeImage.Save("MaxiCodeMode5_WithLogo.png", ImageFormat.Png);
+                Console.WriteLine("MaxiCode barcode with embedded logo saved as 'MaxiCodeMode5_WithLogo.png'.");
             }
         }
     }

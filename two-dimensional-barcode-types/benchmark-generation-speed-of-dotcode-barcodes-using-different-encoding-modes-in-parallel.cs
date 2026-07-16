@@ -1,3 +1,9 @@
+// Title: Benchmark DotCode barcode generation speed across encoding modes in parallel
+// Description: Demonstrates measuring the time required to generate DotCode barcodes using various encoding modes, running each mode concurrently.
+// Category-Description: This example belongs to the Aspose.BarCode generation performance category. It showcases the use of BarcodeGenerator, EncodeTypes, and DotCodeEncodeMode to create DotCode symbols. Developers often need to benchmark different encoding settings to choose the optimal configuration for high‑throughput applications, such as bulk label printing or real‑time scanning systems.
+// Prompt: Benchmark generation speed of DotCode barcodes using different encoding modes in parallel.
+// Tags: dotcode, benchmark, parallel, generation, aspnet, aspose.barcode, png
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -5,104 +11,82 @@ using System.IO;
 using System.Threading.Tasks;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates benchmarking of different DotCode encoding modes using Aspose.BarCode.
-/// Generates a small number of barcodes per mode and measures execution time.
+/// Provides a benchmark for generating DotCode barcodes using various encoding modes in parallel.
 /// </summary>
 class Program
 {
-    // Sample text to encode in each DotCode barcode.
-    private const string SampleCodeText = "DOTCODE123";
-
-    // Number of barcodes generated per encoding mode (kept low for quick execution).
-    private const int BarcodesPerMode = 5;
-
     /// <summary>
-    /// Entry point of the application. Sets up encoding modes and runs benchmarks in parallel.
+    /// Entry point of the benchmark application.
     /// </summary>
     static void Main()
     {
-        // Mapping of mode names to configuration actions for the BarcodeGenerator.
-        var modes = new Dictionary<string, Action<BarcodeGenerator>>
+        // Define the DotCode encoding modes to benchmark.
+        var modes = new Dictionary<string, DotCodeEncodeMode>
         {
-            {
-                "Auto", generator =>
-                {
-                    // Default mode; no additional configuration required.
-                }
-            },
-            {
-                "Binary", generator =>
-                {
-                    // Configure generator for Binary encoding.
-                    generator.Parameters.Barcode.DotCode.DotCodeEncodeMode = DotCodeEncodeMode.Binary;
-                }
-            },
-            {
-                "ECI", generator =>
-                {
-                    // Configure generator for ECI encoding with UTF-8 character set.
-                    generator.Parameters.Barcode.DotCode.DotCodeEncodeMode = DotCodeEncodeMode.ECI;
-                    generator.Parameters.Barcode.DotCode.ECIEncoding = ECIEncodings.UTF8;
-                }
-            },
-            {
-                "Extended", generator =>
-                {
-                    // Configure generator for Extended encoding.
-                    generator.Parameters.Barcode.DotCode.DotCodeEncodeMode = DotCodeEncodeMode.Extended;
-                }
-            }
+            { "Auto", DotCodeEncodeMode.Auto },
+            { "Binary", DotCodeEncodeMode.Binary },
+            { "ECI", DotCodeEncodeMode.ECI },
+            { "Extended", DotCodeEncodeMode.Extended },
+            { "ExtendedCodetext", DotCodeEncodeMode.ExtendedCodetext }
         };
 
-        // Launch a benchmark task for each mode concurrently.
+        // List to store benchmark results (mode name and elapsed time in milliseconds).
+        var results = new List<(string Mode, long ElapsedMs)>();
+        // Collection of tasks that will run each mode concurrently.
         var tasks = new List<Task>();
+
+        // Create a task for each encoding mode.
         foreach (var kvp in modes)
         {
             string modeName = kvp.Key;
-            Action<BarcodeGenerator> configure = kvp.Value;
+            DotCodeEncodeMode mode = kvp.Value;
 
-            tasks.Add(Task.Run(() => BenchmarkMode(modeName, configure)));
+            tasks.Add(Task.Run(() =>
+            {
+                var stopwatch = Stopwatch.StartNew();
+
+                // Generate a small number of barcodes for the current mode.
+                for (int i = 0; i < 5; i++)
+                {
+                    using (var generator = new BarcodeGenerator(EncodeTypes.DotCode, "Sample"))
+                    {
+                        // Apply the specific DotCode encoding mode.
+                        generator.Parameters.Barcode.DotCode.DotCodeEncodeMode = mode;
+
+                        // Set ECI encoding when the mode requires it.
+                        if (mode == DotCodeEncodeMode.ECI)
+                        {
+                            generator.Parameters.Barcode.DotCode.ECIEncoding = ECIEncodings.UTF8;
+                        }
+
+                        // Save the barcode image to a memory stream (no file I/O).
+                        using (var ms = new MemoryStream())
+                        {
+                            generator.Save(ms, BarCodeImageFormat.Png);
+                        }
+                    }
+                }
+
+                stopwatch.Stop();
+
+                // Record the elapsed time for this mode in a thread‑safe manner.
+                lock (results)
+                {
+                    results.Add((modeName, stopwatch.ElapsedMilliseconds));
+                }
+            }));
         }
 
-        // Wait for all benchmark tasks to complete.
+        // Wait for all parallel tasks to finish.
         Task.WaitAll(tasks.ToArray());
 
-        Console.WriteLine("Benchmark completed.");
-    }
-
-    /// <summary>
-    /// Generates a set of barcodes for a specific encoding mode and measures the time taken.
-    /// </summary>
-    /// <param name="modeName">Human‑readable name of the encoding mode.</param>
-    /// <param name="configure">Action that applies mode‑specific settings to a BarcodeGenerator instance.</param>
-    private static void BenchmarkMode(string modeName, Action<BarcodeGenerator> configure)
-    {
-        var stopwatch = new Stopwatch();
-        stopwatch.Start();
-
-        // Generate the defined number of barcodes for the given mode.
-        for (int i = 0; i < BarcodesPerMode; i++)
+        // Output the benchmark results to the console.
+        Console.WriteLine("DotCode generation benchmark (5 barcodes per mode):");
+        foreach (var result in results)
         {
-            // Create a fresh generator for each barcode to avoid residual state.
-            using (var generator = new BarcodeGenerator(EncodeTypes.DotCode, SampleCodeText))
-            {
-                // Apply the mode‑specific configuration.
-                configure(generator);
-
-                // Save the barcode image to a memory stream (no disk I/O required for benchmarking).
-                using (var ms = new MemoryStream())
-                {
-                    generator.Save(ms, BarCodeImageFormat.Png);
-                    // The memory stream is discarded after this point; it could be used for further processing if needed.
-                }
-            }
+            Console.WriteLine($"{result.Mode}: {result.ElapsedMs} ms");
         }
-
-        stopwatch.Stop();
-        Console.WriteLine($"{modeName} mode: Generated {BarcodesPerMode} barcodes in {stopwatch.ElapsedMilliseconds} ms");
     }
 }

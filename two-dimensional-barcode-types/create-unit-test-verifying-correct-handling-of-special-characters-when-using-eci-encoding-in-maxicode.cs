@@ -1,68 +1,83 @@
+// Title: Unit test for ECI encoding handling in MaxiCode
+// Description: Demonstrates generating a MaxiCode barcode with UTF-8 ECI encoding containing special characters and verifies correct decoding.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category, focusing on MaxiCode symbology with ECI (Extended Channel Interpretation) support. It showcases using BarcodeGenerator, setting MaxiCode parameters, saving as PNG, and reading back with BarCodeReader. Developers often need to ensure special characters are correctly encoded and decoded in high‑density barcodes.
+// Prompt: Create unit test verifying correct handling of special characters when using ECI encoding in MaxiCode.
+// Tags: maxicode, eci encoding, png, barcodegenerator, barcodereader, barcoderesult
+
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a MaxiCode barcode with UTF‑8 ECI encoding,
-/// saving it to a memory stream, and then recognizing it to verify
-/// that the decoded text matches the original input.
+/// Demonstrates generating and validating a MaxiCode barcode with UTF-8 ECI encoding containing special characters.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a barcode, reads it back, and validates the result.
+    /// Entry point that creates the barcode, reads it back, and reports pass/fail.
     /// </summary>
     static void Main()
     {
-        // Original text containing special Unicode characters (Japanese kanji and English)
-        string originalText = "犬Right狗";
+        // Original text containing special characters (accented and non‑Latin characters)
+        string originalText = "Café 漢字";
 
-        // Create a barcode generator for MaxiCode with the original text
+        // Temporary file path for the generated barcode image
+        string imagePath = Path.Combine(Path.GetTempPath(), "maxicode_test.png");
+
+        // Generate MaxiCode barcode with ECI UTF-8 encoding
         using (var generator = new BarcodeGenerator(EncodeTypes.MaxiCode, originalText))
         {
-            // Configure the generator to use UTF‑8 ECI encoding and ECI mode
+            // Configure ECI encoding to UTF-8 and enable ECI mode for MaxiCode
             generator.Parameters.Barcode.MaxiCode.ECIEncoding = ECIEncodings.UTF8;
             generator.Parameters.Barcode.MaxiCode.MaxiCodeEncodeMode = MaxiCodeEncodeMode.ECI;
 
-            // Save the generated barcode image to a memory stream in PNG format
-            using (var ms = new MemoryStream())
+            // Save the generated barcode as a PNG image
+            generator.Save(imagePath, BarCodeImageFormat.Png);
+        }
+
+        // Flag indicating whether the decoded text matches the original
+        bool testPassed = false;
+
+        // Read the barcode back from the image and verify the decoded text
+        using (var reader = new BarCodeReader(imagePath, DecodeType.MaxiCode))
+        {
+            foreach (BarCodeResult result in reader.ReadBarCodes())
             {
-                generator.Save(ms, BarCodeImageFormat.Png);
-                ms.Position = 0; // Reset stream position for reading
-
-                // Initialize a barcode reader to decode MaxiCode from the memory stream
-                using (var reader = new BarCodeReader(ms, DecodeType.MaxiCode))
+                string decodedText = result.CodeText;
+                if (decodedText == originalText)
                 {
-                    // Read all barcodes found in the stream
-                    var results = reader.ReadBarCodes();
-                    bool success = false;
-
-                    // Iterate through each decoded result
-                    foreach (var result in results)
-                    {
-                        // Compare the decoded text with the original input
-                        if (result.CodeText == originalText)
-                        {
-                            success = true;
-                            Console.WriteLine("Test Passed: Decoded text matches original.");
-                        }
-                        else
-                        {
-                            Console.WriteLine($"Test Failed: Decoded text '{result.CodeText}' does not match original '{originalText}'.");
-                        }
-                    }
-
-                    // If no barcodes were detected, report failure
-                    if (!success && results.Length == 0)
-                    {
-                        Console.WriteLine("Test Failed: No barcode detected.");
-                    }
+                    testPassed = true;
+                }
+                else
+                {
+                    Console.WriteLine($"FAIL: Decoded text does not match. Expected '{originalText}', got '{decodedText}'.");
                 }
             }
+        }
+
+        // Output the overall test result
+        if (!testPassed)
+        {
+            Console.WriteLine("FAIL: No barcode was read or text mismatch.");
+        }
+        else
+        {
+            Console.WriteLine("PASS: Decoded text matches original.");
+        }
+
+        // Clean up the temporary image file
+        try
+        {
+            if (File.Exists(imagePath))
+            {
+                File.Delete(imagePath);
+            }
+        }
+        catch
+        {
+            // Ignore any cleanup errors
         }
     }
 }

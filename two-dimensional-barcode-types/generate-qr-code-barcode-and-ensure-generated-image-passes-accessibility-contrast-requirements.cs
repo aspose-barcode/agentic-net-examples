@@ -1,44 +1,36 @@
+// Title: Generate QR Code with High Contrast for Accessibility
+// Description: Creates a QR Code barcode with black foreground and white background, ensuring it meets accessibility contrast guidelines.
+// Category-Description: This example demonstrates how to use Aspose.BarCode's generation API to produce QR Code barcodes. It covers setting error correction levels, customizing foreground and background colors for optimal contrast, and saving the result as a PNG image. Developers working with barcode creation, especially for accessibility‑compliant outputs, will find this pattern useful when integrating Aspose.BarCode into .NET applications.
+// Prompt: Generate QR Code barcode and ensure generated image passes accessibility contrast requirements.
+// Tags: qr code, barcode generation, accessibility, contrast, png, aspose.barcode, aspose.drawing, qr error correction
+
 using System;
-using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a QR code image using Aspose.BarCode and saving it to a file.
+/// Demonstrates generating a QR Code barcode with high contrast colors to satisfy accessibility requirements.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Application entry point. Generates a QR code and writes it to <c>qr.png</c>.
+    /// Entry point of the example. Generates a QR Code, configures contrast settings, and saves it as a PNG file.
     /// </summary>
     static void Main()
     {
-        // Define the output file path for the QR code image.
-        string outputPath = "qr.png";
-
-        // Ensure the directory for the output file exists.
-        string directory = Path.GetDirectoryName(outputPath);
-        if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
-        {
-            Directory.CreateDirectory(directory);
-        }
-
-        // Initialize a QR code generator with the desired text.
+        // Initialize the barcode generator for QR Code with the desired data.
         using (var generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
         {
-            // Configure barcode appearance: black bars on a white background.
-            generator.Parameters.Barcode.BarColor = Color.Black;
-            generator.Parameters.BackColor = Color.White;
-
-            // Set the highest error correction level (Level H) for better resilience.
+            // Set a high error correction level (Level H) to improve readability under adverse conditions.
             generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
 
-            // Save the generated QR code as a PNG image to the specified path.
-            generator.Save(outputPath);
-        }
+            // Configure maximum contrast: black bars on a white background.
+            generator.Parameters.Barcode.BarColor = Color.Black;   // Foreground (bars) color
+            generator.Parameters.BackColor = Color.White;          // Background color
 
-        // Inform the user where the QR code image has been saved.
-        Console.WriteLine($"QR code image saved to: {outputPath}");
+            // Save the generated QR Code image to a PNG file.
+            generator.Save("qr.png");
+        }
     }
 }

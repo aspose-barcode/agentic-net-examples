@@ -1,44 +1,39 @@
+// Title: Generate QR Code for Wi‑Fi Connection
+// Description: Demonstrates creating a QR Code that encodes Wi‑Fi SSID and password, enabling quick network connection when scanned.
+// Category-Description: This example belongs to the Aspose.BarCode QR Code generation category, illustrating how to use BarcodeGenerator with EncodeTypes.QR and configure QR error correction. Developers often need to embed configuration data such as Wi‑Fi credentials, URLs, or contact info into QR codes for mobile scanning scenarios.
+/// Prompt: Generate QR Code barcode and embed Wi‑Fi network SSID and password for quick connection.
+/// Tags: qr code, wifi, barcode generation, aspnet, aspose.barcode, png output
+
 using System;
-using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing; // Required for color definitions if needed
 
 /// <summary>
-/// Demonstrates generating a Wi‑Fi QR code using Aspose.BarCode.
+/// Demonstrates generating a QR Code that contains Wi‑Fi network credentials.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a QR code containing Wi‑Fi credentials and saves it as a PNG file.
+    /// Entry point. Creates the QR Code image file "wifi_qr.png".
     /// </summary>
     static void Main()
     {
         // Define Wi‑Fi network details
         string ssid = "MyNetworkSSID";
         string password = "MySecretPassword";
-        string authentication = "WPA"; // Options: WEP, WPA, nopass
 
-        // Build the Wi‑Fi QR code payload string in the required format
-        string wifiPayload = $"WIFI:T:{authentication};S:{ssid};P:{password};;";
-
-        // Determine the output file path (saved in the executable's directory)
-        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "wifi_qr.png");
+        // Build the Wi‑Fi QR code payload using the standard format:
+        // WIFI:T:WPA;S:<SSID>;P:<Password>;;
+        string wifiCodeText = $"WIFI:T:WPA;S:{ssid};P:{password};;";
 
         // Initialize the QR code generator with the payload
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, wifiPayload))
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, wifiCodeText))
         {
-            // Set a high error correction level to improve readability under adverse conditions
-            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
+            // Configure error correction level to Medium (Level M)
+            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
 
-            // Increase the image resolution for a sharper PNG output
-            generator.Parameters.Resolution = 300f;
-
-            // Save the generated QR code image to the specified path
-            generator.Save(outputPath);
+            // Save the generated QR code as a PNG image
+            generator.Save("wifi_qr.png");
         }
-
-        // Inform the user where the QR code image has been saved
-        Console.WriteLine($"Wi‑Fi QR code generated and saved to: {outputPath}");
     }
 }

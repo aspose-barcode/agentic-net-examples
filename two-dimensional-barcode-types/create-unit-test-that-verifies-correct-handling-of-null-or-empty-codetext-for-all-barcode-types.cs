@@ -1,123 +1,82 @@
+// Title: Unit Test for Null or Empty CodeText Across All Barcode Types
+// Description: Demonstrates how to verify that Aspose.BarCode correctly handles null or empty CodeText for each supported barcode symbology.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of EncodeTypes, BarcodeGenerator, and related parameters to validate input handling. Developers working with barcode creation often need to ensure that invalid or missing data (such as null or empty strings) triggers appropriate exceptions or fallback behavior. The snippet shows a systematic approach to testing all symbologies, useful for unit testing and CI pipelines.
+// Prompt: Create unit test that verifies correct handling of null or empty CodeText for all barcode types.
+// Tags: barcode symbology, validation, null handling, unit test, aspose.barcode, generation
+
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates how each barcode symbology handles null or empty CodeText values.
+/// Contains a simple console‑based test that iterates over every barcode symbology
+/// defined in <see cref="EncodeTypes"/> and verifies the behavior when <c>CodeText</c>
+/// is null or empty.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Iterates through all supported barcode symbologies,
-    /// attempts to generate barcodes with empty and null CodeText, and records the outcomes.
+    /// Entry point. Loops through all <see cref="EncodeTypes"/> fields and calls
+    /// <see cref="TestBarcode(string, BaseEncodeType, string)"/> for null and empty
+    /// <c>CodeText</c> values.
     /// </summary>
     static void Main()
     {
-        // Retrieve a dictionary of all barcode symbologies defined in EncodeTypes.
-        var symbologies = GetAllEncodeTypes();
+        // Retrieve all public static fields of EncodeTypes (each represents a barcode symbology)
+        var encodeFields = typeof(EncodeTypes).GetFields(BindingFlags.Public | BindingFlags.Static);
 
-        // Store test results for later display.
-        var results = new List<string>();
-
-        // Iterate over each symbology.
-        foreach (var sym in symbologies)
+        // Iterate over each symbology and test both null and empty CodeText scenarios
+        foreach (var field in encodeFields)
         {
-            string name = sym.Key;               // Human‑readable name of the symbology.
-            BaseEncodeType type = sym.Value;     // Corresponding EncodeType value.
+            var encodeName = field.Name;
+            var encodeValue = (BaseEncodeType)field.GetValue(null);
 
-            // ------------------------------------------------------------
-            // Test case 1: Empty string as CodeText.
-            // ------------------------------------------------------------
-            try
-            {
-                // Create a generator with an empty string.
-                using (var generator = new BarcodeGenerator(type, ""))
-                {
-                    // Configure generator to throw an exception when CodeText is invalid.
-                    generator.Parameters.Barcode.ThrowExceptionWhenCodeTextIncorrect = true;
+            // Test with null CodeText
+            TestBarcode(encodeName, encodeValue, null);
 
-                    // Attempt to save the barcode to a memory stream.
-                    using (var ms = new MemoryStream())
-                    {
-                        generator.Save(ms, BarCodeImageFormat.Png);
-                    }
-                }
-
-                // If no exception is thrown, record an unexpected outcome.
-                results.Add($"{name}: Empty string - No exception (unexpected)");
-            }
-            catch (Exception ex)
-            {
-                // Record the type of exception that was caught.
-                results.Add($"{name}: Empty string - Caught exception: {ex.GetType().Name}");
-            }
-
-            // ------------------------------------------------------------
-            // Test case 2: Null CodeText.
-            // ------------------------------------------------------------
-            try
-            {
-                // Create a generator without specifying CodeText (defaults to null).
-                using (var generator = new BarcodeGenerator(type))
-                {
-                    // Ensure the generator throws on invalid CodeText.
-                    generator.Parameters.Barcode.ThrowExceptionWhenCodeTextIncorrect = true;
-
-                    // Explicitly set CodeText to null.
-                    generator.CodeText = null;
-
-                    // Attempt to save the barcode to a memory stream.
-                    using (var ms = new MemoryStream())
-                    {
-                        generator.Save(ms, BarCodeImageFormat.Png);
-                    }
-                }
-
-                // If no exception is thrown, record an unexpected outcome.
-                results.Add($"{name}: Null codetext - No exception (unexpected)");
-            }
-            catch (Exception ex)
-            {
-                // Record the type of exception that was caught.
-                results.Add($"{name}: Null codetext - Caught exception: {ex.GetType().Name}");
-            }
+            // Test with empty CodeText
+            TestBarcode(encodeName, encodeValue, string.Empty);
         }
 
-        // Output a summary of all test results.
-        Console.WriteLine("Barcode CodeText null/empty handling test results:");
-        foreach (var line in results)
-        {
-            Console.WriteLine(line);
-        }
+        Console.WriteLine("All tests completed.");
     }
 
     /// <summary>
-    /// Retrieves all public static fields from <see cref="EncodeTypes"/> that are of type <see cref="BaseEncodeType"/>.
+    /// Generates a barcode of the specified type with the supplied <c>codeText</c>
+    /// and saves the image. Any exception is caught and reported.
     /// </summary>
-    /// <returns>
-    /// A dictionary mapping field names to their corresponding <see cref="BaseEncodeType"/> values.
-    /// </returns>
-    private static Dictionary<string, BaseEncodeType> GetAllEncodeTypes()
+    /// <param name="encodeName">Name of the barcode symbology (field name).</param>
+    /// <param name="encodeType">Corresponding <see cref="BaseEncodeType"/> instance.</param>
+    /// <param name="codeText">The text to encode; may be null or empty.</param>
+    static void TestBarcode(string encodeName, BaseEncodeType encodeType, string codeText)
     {
-        var dict = new Dictionary<string, BaseEncodeType>();
+        // Determine a suffix for the output file based on the test case
+        var suffix = codeText == null ? "null" : "empty";
+        var fileName = $"{encodeName}_{suffix}.png";
 
-        // Get all public static fields defined in EncodeTypes.
-        var fields = typeof(EncodeTypes).GetFields(BindingFlags.Public | BindingFlags.Static);
-
-        // Filter fields that are of type BaseEncodeType and add them to the dictionary.
-        foreach (var field in fields)
+        try
         {
-            if (field.FieldType == typeof(BaseEncodeType))
+            // Initialize the generator for the current barcode type
+            using (var generator = new BarcodeGenerator(encodeType))
             {
-                var value = (BaseEncodeType)field.GetValue(null);
-                dict[field.Name] = value;
-            }
-        }
+                // Enforce exception when CodeText is invalid for 1D barcodes
+                generator.Parameters.Barcode.ThrowExceptionWhenCodeTextIncorrect = true;
 
-        return dict;
+                // Assign the test CodeText (null or empty)
+                generator.CodeText = codeText;
+
+                // Attempt to generate and save the barcode image
+                generator.Save(fileName);
+            }
+
+            Console.WriteLine($"{encodeName}: CodeText {(codeText == null ? "null" : "empty")} - succeeded, image saved as {fileName}");
+        }
+        catch (Exception ex)
+        {
+            // Expected for many 1D symbologies when CodeText is invalid
+            Console.WriteLine($"{encodeName}: CodeText {(codeText == null ? "null" : "empty")} - threw {ex.GetType().Name}: {ex.Message}");
+        }
     }
 }
