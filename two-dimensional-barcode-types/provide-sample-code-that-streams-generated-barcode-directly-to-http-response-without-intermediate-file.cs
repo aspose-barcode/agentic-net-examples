@@ -1,72 +1,46 @@
+// Title: Stream barcode image directly to HTTP response without intermediate file
+// Description: Demonstrates generating a barcode in memory and converting it to a Base64 string that can be sent as an HTTP response body.
+// Category-Description: This example belongs to the Aspose.BarCode image generation category, illustrating how to use BarcodeGenerator, set barcode parameters, and save the image to a stream. Developers often need to embed barcodes in web pages or APIs without writing temporary files, and this pattern shows the typical workflow for such scenarios.
+// Prompt: Provide sample code that streams generated barcode directly to HTTP response without intermediate file.
+// Tags: barcode, code128, streaming, http response, memory stream, base64, aspnet, aspose.barcode
+
 using System;
 using System.IO;
-using System.Net;
-using System.Net.Http;
-using System.Net.Http.Headers;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generating a Code128 barcode and returning it as an HTTP response.
+/// Demonstrates generating a Code128 barcode in memory and outputting it as a Base64 string suitable for HTTP response.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a barcode, obtains the HTTP response,
-    /// and displays basic information about the returned image.
+    /// Entry point of the example. Generates the barcode, writes it to a memory stream, converts to Base64, and writes to console.
     /// </summary>
     static void Main()
     {
-        // Generate a barcode and obtain an HTTP response containing the image.
-        HttpResponseMessage response = CreateBarcodeResponse("123ABC");
-
-        // Output the HTTP status code to confirm the response was successful.
-        Console.WriteLine($"Response status: {response.StatusCode}");
-
-        // Read the image bytes from the response content synchronously.
-        byte[] imageBytes = response.Content.ReadAsByteArrayAsync().Result;
-
-        // Display the size of the barcode image in bytes.
-        Console.WriteLine($"Barcode image size: {imageBytes.Length} bytes");
-
-        // Show a short Base64 preview of the image for verification.
-        Console.WriteLine($"Base64 preview: {Convert.ToBase64String(imageBytes).Substring(0, 30)}...");
-    }
-
-    /// <summary>
-    /// Generates a Code128 barcode, writes it to a memory stream,
-    /// and wraps the stream content in an <see cref="HttpResponseMessage"/>.
-    /// </summary>
-    /// <param name="codeText">The text to encode in the barcode.</param>
-    /// <returns>An HTTP response containing the barcode image as PNG.</returns>
-    static HttpResponseMessage CreateBarcodeResponse(string codeText)
-    {
-        // Initialize the barcode generator with the specified encoding type and text.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+        // Create a BarcodeGenerator for Code128 with the desired text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
         {
-            // Create a memory stream to hold the generated PNG image.
-            using (var ms = new MemoryStream())
+            // Optional: customize barcode appearance.
+            generator.Parameters.Barcode.XDimension.Point = 2f;
+            generator.Parameters.ImageWidth.Point = 300f;
+            generator.Parameters.ImageHeight.Point = 100f;
+
+            // Use a MemoryStream to hold the generated image in PNG format.
+            using (var memoryStream = new MemoryStream())
             {
-                // Save the barcode directly to the memory stream in PNG format.
-                generator.Save(ms, BarCodeImageFormat.Png);
+                // Save the barcode image directly to the memory stream.
+                generator.Save(memoryStream, BarCodeImageFormat.Png);
 
-                // Reset the stream position to the beginning for reading.
-                ms.Position = 0;
+                // Reset the stream position to the beginning before reading.
+                memoryStream.Position = 0;
 
-                // Create HTTP content from the stream's byte array.
-                var content = new ByteArrayContent(ms.ToArray());
+                // Convert the image bytes to a Base64 string.
+                string base64Image = Convert.ToBase64String(memoryStream.ToArray());
 
-                // Set the appropriate MIME type for a PNG image.
-                content.Headers.ContentType = new MediaTypeHeaderValue("image/png");
-
-                // Construct the HTTP response with a 200 OK status and the image content.
-                var response = new HttpResponseMessage(HttpStatusCode.OK)
-                {
-                    Content = content
-                };
-
-                // Return the prepared response to the caller.
-                return response;
+                // Output the Base64 string (simulating an HTTP response body).
+                Console.WriteLine(base64Image);
             }
         }
     }

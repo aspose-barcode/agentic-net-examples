@@ -1,32 +1,31 @@
+// Title: Generate QR Code with Automatic Version Selection and Save as JPEG
+// Description: Demonstrates creating a QR Code barcode using Aspose.BarCode with automatic version selection and exporting it to a JPEG file.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on QR Code symbology. It showcases the use of the BarcodeGenerator class to encode data, rely on the library's automatic version selection, and save the result in a common image format. Developers often need to generate QR codes for URLs, product information, or contact data and export them for web or print usage.
+// Prompt: Generate a QR Code barcode with automatic version selection and export as JPEG.
+// Tags: qr code, barcode generation, jpeg output, aspose.barcode, encode types, barcodegenerator
+
 using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generating a QR code image using Aspose.BarCode and saving it as a JPEG file.
+/// Example program that generates a QR Code barcode and saves it as a JPEG image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Application entry point. Generates a QR code for a sample URL and writes it to disk.
+    /// Entry point of the application.
     /// </summary>
-    /// <param name="args">Command‑line arguments (not used).</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Define the output file path for the generated QR code image.
-        string outputPath = "qr_code.jpeg";
-
-        // Initialize a BarcodeGenerator for QR encoding with the desired text (URL).
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
+        // Initialize a BarcodeGenerator for QR Code (automatic version selection is the default behavior)
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR))
         {
-            // Set QR version to automatic selection (default behavior) to let the library choose the optimal size.
-            generator.Parameters.Barcode.QR.Version = QRVersion.Auto;
+            // Set the data to be encoded in the QR Code
+            generator.CodeText = "https://example.com";
 
-            // Save the generated QR code image to the specified path in JPEG format.
-            generator.Save(outputPath, BarCodeImageFormat.Jpeg);
+            // Save the generated QR Code as a JPEG image file
+            generator.Save("qr.jpg");
         }
-
-        // Inform the user where the QR code image has been saved.
-        Console.WriteLine($"QR Code saved to: {outputPath}");
     }
 }

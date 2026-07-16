@@ -1,24 +1,27 @@
+// Title: Generate DotCode barcodes from a text file in batch
+// Description: This example reads each line from a text file and creates a DotCode barcode image for it, saving the results to an output folder.
+// Category-Description: Demonstrates batch processing of barcode generation using Aspose.BarCode for .NET. It showcases the BarcodeGenerator class with EncodeTypes.DotCode, file I/O, and image saving, typical for scenarios where multiple barcodes need to be produced automatically from a data source. Developers often use this pattern to integrate barcode creation into scripts, services, or build pipelines.
+// Prompt: Create a batch script that reads lines from a text file and generates corresponding DotCode images.
+// Tags: dotcode, barcode, generation, image, aspose.barcodes, csharp
+
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Generates DotCode barcodes from a list of codes read from a text file.
-/// Each code is saved as a PNG image in the specified output directory.
+/// Batch processes a text file to generate DotCode barcode images using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Application entry point.
-    /// Reads codes from "codes.txt", creates a PNG barcode for each non‑empty line,
-    /// and stores the images in the "DotCodeImages" folder.
+    /// Entry point of the application. Reads input lines, generates barcodes, and saves them as PNG files.
     /// </summary>
-    /// <param name="args">Command‑line arguments (not used).</param>
+    /// <param name="args">Optional command‑line arguments. The first argument can specify the input file path.</param>
     static void Main(string[] args)
     {
-        // Path to the input text file containing one code per line.
-        string inputPath = "codes.txt";
+        // Determine input file path: use first argument if provided, otherwise default to "input.txt".
+        string inputPath = args.Length > 0 ? args[0] : "input.txt";
 
         // Verify that the input file exists before proceeding.
         if (!File.Exists(inputPath))
@@ -27,53 +30,41 @@ class Program
             return;
         }
 
-        // Directory where generated barcode images will be saved.
-        string outputDir = "DotCodeImages";
+        // Ensure the output directory exists; create it if necessary.
+        string outputDir = "output";
+        Directory.CreateDirectory(outputDir);
 
-        // Create the output directory if it does not already exist.
-        if (!Directory.Exists(outputDir))
+        const int maxItems = 10; // Safety cap to limit the number of barcodes generated in a single run.
+        int processed = 0;       // Counter for successfully processed lines.
+
+        // Open the input file for reading line by line.
+        using (var reader = new StreamReader(inputPath))
         {
-            Directory.CreateDirectory(outputDir);
-        }
-
-        // Read all lines from the input file into an array.
-        string[] lines = File.ReadAllLines(inputPath);
-        int lineNumber = 0;
-
-        // Process each line from the input file.
-        foreach (string rawLine in lines)
-        {
-            lineNumber++;
-            // Trim whitespace to obtain the actual code text.
-            string codeText = rawLine.Trim();
-
-            // Skip empty lines and report the omission.
-            if (string.IsNullOrEmpty(codeText))
+            string line;
+            // Continue reading until end of file or the maximum item count is reached.
+            while ((line = reader.ReadLine()) != null && processed < maxItems)
             {
-                Console.WriteLine($"Line {lineNumber}: empty, skipped.");
-                continue;
-            }
+                // Skip empty or whitespace‑only lines.
+                if (string.IsNullOrWhiteSpace(line))
+                    continue;
 
-            // Build a safe output file name using the line number.
-            string outputPath = Path.Combine(outputDir, $"dotcode_{lineNumber}.png");
+                // Trim the line to obtain the barcode text.
+                string codeText = line.Trim();
 
-            try
-            {
-                // Initialize the barcode generator for DotCode with the current text.
+                // Build the output file path, naming files sequentially.
+                string outputPath = Path.Combine(outputDir, $"dotcode_{processed + 1}.png");
+
+                // Create a BarcodeGenerator for DotCode symbology and save the image.
                 using (var generator = new BarcodeGenerator(EncodeTypes.DotCode, codeText))
                 {
-                    // Optional: set any DotCode‑specific parameters here if needed.
                     generator.Save(outputPath);
                 }
 
-                // Report successful generation.
-                Console.WriteLine($"Line {lineNumber}: generated {outputPath}");
-            }
-            catch (Exception ex)
-            {
-                // Report any errors that occur during barcode generation.
-                Console.WriteLine($"Line {lineNumber}: error generating barcode - {ex.Message}");
+                Console.WriteLine($"Generated: {outputPath}");
+                processed++;
             }
         }
+
+        Console.WriteLine($"Processing complete. {processed} barcode(s) generated.");
     }
 }

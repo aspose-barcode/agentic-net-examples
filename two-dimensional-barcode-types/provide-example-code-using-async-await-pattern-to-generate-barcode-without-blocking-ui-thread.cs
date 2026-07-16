@@ -1,3 +1,9 @@
+// Title: Async Barcode Generation Example
+// Description: Demonstrates generating a Code128 barcode asynchronously using Aspose.BarCode to avoid UI thread blocking.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to create barcode images without freezing the UI. It highlights the use of BarcodeGenerator, BaseEncodeType, and async/await patterns, which are common when integrating barcode creation into desktop or web applications that require responsive interfaces.
+// Prompt: Provide example code using async/await pattern to generate barcode without blocking UI thread.
+// Tags: code128, generation, png, async, await, aspose.barcode, barcodegenerator, baseencodetype
+
 using System;
 using System.Threading.Tasks;
 using Aspose.BarCode;
@@ -9,49 +15,36 @@ using Aspose.BarCode.Generation;
 class Program
 {
     /// <summary>
-    /// Generates a barcode image asynchronously on a background thread.
-    /// </summary>
-    /// <param name="type">The barcode symbology to use.</param>
-    /// <param name="codeText">The text to encode in the barcode.</param>
-    /// <param name="outputPath">The file path where the image will be saved.</param>
-    /// <returns>A task that resolves to the output file path.</returns>
-    static async Task<string> GenerateBarcodeAsync(BaseEncodeType type, string codeText, string outputPath)
-    {
-        // Offload the generation to a thread‑pool thread to avoid blocking the caller.
-        return await Task.Run(() =>
-        {
-            // Create a BarcodeGenerator with the specified type and text.
-            using (var generator = new BarcodeGenerator(type, codeText))
-            {
-                // Optional: set image resolution (dots per inch).
-                generator.Parameters.Resolution = 300f;
-
-                // Save the generated barcode image to the specified path.
-                generator.Save(outputPath);
-            }
-
-            // Return the path of the saved file to the caller.
-            return outputPath;
-        });
-    }
-
-    /// <summary>
-    /// Asynchronous entry point of the console application.
+    /// Entry point of the application. Generates a barcode asynchronously and writes a completion message.
     /// </summary>
     /// <param name="args">Command‑line arguments (not used).</param>
     static async Task Main(string[] args)
     {
-        // Define the barcode symbology and the text to encode.
-        BaseEncodeType barcodeType = EncodeTypes.Code128;
-        string sampleText = "123ABC";
+        // Asynchronously generate a barcode without blocking the calling thread.
+        await GenerateBarcodeAsync("async_barcode.png", EncodeTypes.Code128, "AsyncDemo");
 
-        // Define the output file name for the generated image.
-        string outputFile = "barcode.png";
+        // Inform the user that the operation has finished.
+        Console.WriteLine("Barcode generation completed.");
+    }
 
-        // Generate the barcode image without blocking the main thread.
-        string savedPath = await GenerateBarcodeAsync(barcodeType, sampleText, outputFile);
-
-        // Output the location of the saved barcode image.
-        Console.WriteLine($"Barcode image saved to: {savedPath}");
+    /// <summary>
+    /// Generates a barcode image on a background thread.
+    /// </summary>
+    /// <param name="outputPath">File path where the barcode image will be saved.</param>
+    /// <param name="encodeType">The barcode symbology to use (e.g., Code128).</param>
+    /// <param name="codeText">The text to encode in the barcode.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    private static Task GenerateBarcodeAsync(string outputPath, BaseEncodeType encodeType, string codeText)
+    {
+        // Offload the generation to a background thread to keep the UI responsive.
+        return Task.Run(() =>
+        {
+            // BarcodeGenerator implements IDisposable; ensure resources are released promptly.
+            using (var generator = new BarcodeGenerator(encodeType, codeText))
+            {
+                // Save the generated barcode image to the specified file.
+                generator.Save(outputPath);
+            }
+        });
     }
 }

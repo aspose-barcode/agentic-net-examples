@@ -1,3 +1,9 @@
+// Title: GS1 Composite barcode unit test for zero‑suppressed GTIN‑12
+// Description: Demonstrates generating a GS1 Composite barcode containing a zero‑suppressed GTIN‑12 and verifies the encoded data using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode GS1 Composite operations collection, illustrating how to use BarcodeGenerator with EncodeTypes.GS1CompositeBar, configure linear and 2D components, and validate the result with BarCodeReader. Developers working with GS1 standards often need to embed GTINs, serial numbers, and other AI data in composite symbols for logistics and retail applications.
+// Prompt: Create a unit test verifying correct handling of zero‑suppressed GTIN‑12 in the 2D component of GS1 Composite.
+// Tags: gs1 composite, barcode generation, barcode recognition, gtin, zero-suppressed, unit test, csharp
+
 using System;
 using System.IO;
 using Aspose.BarCode;
@@ -5,100 +11,98 @@ using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demo program that generates and validates a GS1 Composite barcode using Aspose.BarCode.
+/// Generates a GS1 Composite barcode containing a zero‑suppressed GTIN‑12 and validates it.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a GS1 Composite barcode with a zero‑suppressed GTIN‑12,
-    /// saves it to a temporary file, reads it back for verification, and cleans up.
+    /// Entry point of the example. Generates the barcode, reads it back, and reports the test result.
     /// </summary>
     static void Main()
     {
-        // Prepare temporary file path for the generated barcode image
-        string tempPath = Path.Combine(Path.GetTempPath(), "gs1composite.png");
+        // Prepare GTIN‑12 (12 digits) and pad with two leading zeros to satisfy AI (01) requirement (14 digits)
+        string gtin12 = "123456789012";
+        string paddedGtin = "00" + gtin12; // 14‑digit GTIN for AI (01)
 
-        // Zero‑suppressed GTIN‑12 example (12‑digit GTIN)
-        string gtin12 = "012345678905"; // GTIN‑12
+        // Linear component (GS1‑128) – only the GTIN
+        string linearComponent = $"(01){paddedGtin}";
 
-        // Composite code consists of a linear part and a 2D part separated by '|'
-        string compositeCode = $"(01){gtin12}|(21)ABC123";
+        // 2D component – GTIN plus a serial number (AI (21))
+        string twoDComponent = $"(01){paddedGtin}(21)A12345678";
 
-        // ------------------------------------------------------------
-        // Generate GS1 Composite barcode and save it to the temporary file
-        // ------------------------------------------------------------
-        try
+        // GS1 Composite codetext: linear | 2D
+        string compositeCodeText = $"{linearComponent}|{twoDComponent}";
+
+        // Output file (in the current directory)
+        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "gs1composite.png");
+
+        // -----------------------------------------------------------------
+        // Generate the GS1 Composite barcode
+        // -----------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.GS1CompositeBar, compositeCodeText))
         {
-            using (var generator = new BarcodeGenerator(EncodeTypes.GS1CompositeBar, compositeCode))
-            {
-                // Set linear component to GS1 Code128
-                generator.Parameters.Barcode.GS1CompositeBar.LinearComponentType = EncodeTypes.GS1Code128;
+            // Use GS1‑Code128 for the linear part
+            generator.Parameters.Barcode.GS1CompositeBar.LinearComponentType = EncodeTypes.GS1Code128;
+            // Use CC‑A (MicroPDF417) for the 2D part
+            generator.Parameters.Barcode.GS1CompositeBar.TwoDComponentType = TwoDComponentType.CC_A;
 
-                // Set 2D component to CC_A (MicroPDF417)
-                generator.Parameters.Barcode.GS1CompositeBar.TwoDComponentType = TwoDComponentType.CC_A;
+            // Reasonable size settings
+            generator.Parameters.Barcode.XDimension.Pixels = 3f;
+            generator.Parameters.Barcode.BarHeight.Pixels = 100f;
 
-                // Use interpolation mode so the engine automatically sizes the image
-                generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
-
-                // Save the generated barcode image to the temporary path
-                generator.Save(tempPath);
-            }
+            // Save the image
+            generator.Save(outputPath);
         }
-        catch (Exception ex)
+
+        // -----------------------------------------------------------------
+        // Read and verify the barcode
+        // -----------------------------------------------------------------
+        int passed = 0;
+        int failed = 0;
+
+        // Ensure the image was created before attempting to read it
+        if (!File.Exists(outputPath))
         {
-            Console.WriteLine($"FAILED: Barcode generation error - {ex.Message}");
+            Console.WriteLine($"FAILED: Barcode image was not created at '{outputPath}'.");
             return;
         }
 
-        // ------------------------------------------------------------
-        // Verify the generated barcode by reading it back
-        // ------------------------------------------------------------
-        try
+        using (var reader = new BarCodeReader(outputPath, DecodeType.GS1CompositeBar))
         {
-            using (var reader = new BarCodeReader(tempPath, DecodeType.GS1CompositeBar))
+            foreach (var result in reader.ReadBarCodes())
             {
-                // Read all barcodes found in the image
-                var results = reader.ReadBarCodes();
-
-                // Ensure at least one barcode was detected
-                if (results.Length == 0)
+                // The decoded CodeText should contain the padded GTIN‑12 (14 digits)
+                if (!string.IsNullOrEmpty(result.CodeText) && result.CodeText.Contains(paddedGtin))
                 {
-                    Console.WriteLine("FAILED: No barcode detected.");
-                    return;
-                }
-
-                // Examine the first (and expected only) result
-                var result = results[0];
-
-                // Check that the recognized CodeText contains the expected linear part
-                if (result.CodeText.Contains($"(01){gtin12}"))
-                {
-                    Console.WriteLine("PASSED: Zero‑suppressed GTIN‑12 correctly handled in 2D component.");
+                    passed++;
                 }
                 else
                 {
-                    Console.WriteLine($"FAILED: Expected GTIN not found. Detected CodeText: {result.CodeText}");
+                    failed++;
                 }
             }
         }
-        catch (Exception ex)
+
+        // -----------------------------------------------------------------
+        // Report the test outcome
+        // -----------------------------------------------------------------
+        if (failed == 0 && passed > 0)
         {
-            Console.WriteLine($"FAILED: Barcode recognition error - {ex.Message}");
+            Console.WriteLine($"PASSED: All {passed} barcode(s) correctly contain the zero‑suppressed GTIN‑12.");
         }
-        finally
+        else
         {
-            // Clean up the temporary file if it still exists
-            if (File.Exists(tempPath))
-            {
-                try
-                {
-                    File.Delete(tempPath);
-                }
-                catch
-                {
-                    // Suppress any exceptions during cleanup
-                }
-            }
+            Console.WriteLine($"FAILED: {failed} barcode(s) did not contain the expected GTIN. Passed: {passed}.");
+        }
+
+        // Clean up the generated image (optional)
+        try
+        {
+            File.Delete(outputPath);
+        }
+        catch
+        {
+            // Ignored – cleanup failure should not affect test result
         }
     }
 }

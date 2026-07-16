@@ -1,72 +1,67 @@
+// Title: Encode Unicode characters in DataMatrix barcode with UTF‑8 ECI
+// Description: Demonstrates encoding Unicode text into a DataMatrix barcode using UTF‑8 ECI encoding and verifies the result by decoding the generated image.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating DataMatrix barcodes with specific ECI settings and BarCodeReader for extracting encoded data. Developers often need to handle Unicode content, select appropriate ECI encodings, and validate barcode integrity in automated workflows.
+// Prompt: Encode Unicode characters in DataMatrix barcode using UTF‑8 ECI encoding and verify the output.
+// Tags: datamatrix, unicode, eci, encoding, generation, recognition, csharp
+
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a DataMatrix barcode with Unicode (Japanese + emoji) content,
-/// saving it as a PNG image, and then reading it back to verify the encoded text.
+/// Example program that creates a DataMatrix barcode containing Unicode characters,
+/// applies UTF‑8 ECI encoding, saves the image, and then verifies the content by decoding it.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a barcode, saves it, and verifies it by decoding.
+    /// Entry point of the example. Generates the barcode, saves it, and validates the encoded text.
     /// </summary>
     static void Main()
     {
-        // Unicode text to encode (Japanese greeting + Earth emoji)
-        string unicodeText = "こんにちは世界 🌍";
-
-        // Destination file path for the generated barcode image
+        // Define the Unicode text to encode and the output image file name.
+        string originalText = "犬Right狗";
         string imagePath = "datamatrix.png";
 
-        // ------------------------------------------------------------
-        // Generate a DataMatrix barcode with UTF-8 ECI encoding
-        // ------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, unicodeText))
+        // --------------------------------------------------------------------
+        // Generate a DataMatrix barcode with UTF‑8 ECI encoding.
+        // --------------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, originalText))
         {
-            // Specify that the barcode should use UTF-8 encoding (ECI)
+            // Set the ECI (Extended Channel Interpretation) to UTF‑8.
             generator.Parameters.Barcode.DataMatrix.ECIEncoding = ECIEncodings.UTF8;
 
-            // Save the generated barcode as a PNG file
-            generator.Save(imagePath, BarCodeImageFormat.Png);
+            // Save the generated barcode image to the specified path.
+            generator.Save(imagePath);
         }
 
-        // ------------------------------------------------------------
-        // Verify that the barcode image was created successfully
-        // ------------------------------------------------------------
+        // --------------------------------------------------------------------
+        // Verify that the barcode image was created successfully.
+        // --------------------------------------------------------------------
         if (!File.Exists(imagePath))
         {
-            Console.WriteLine($"Error: Barcode image not found at '{imagePath}'.");
+            Console.WriteLine("Barcode image was not created.");
             return;
         }
 
-        // ------------------------------------------------------------
-        // Read and decode the barcode from the saved image
-        // ------------------------------------------------------------
+        // --------------------------------------------------------------------
+        // Decode the barcode from the saved image and compare with the original text.
+        // --------------------------------------------------------------------
         using (var reader = new BarCodeReader(imagePath, DecodeType.DataMatrix))
         {
-            // Attempt to read all barcodes present in the image
-            var results = reader.ReadBarCodes();
+            bool anyFound = false;
 
-            // If no barcodes were detected, inform the user
-            if (results.Length == 0)
+            // Iterate through all detected barcodes (should be only one).
+            foreach (var result in reader.ReadBarCodes())
             {
-                Console.WriteLine("No barcode detected.");
-                return;
-            }
+                anyFound = true;
+                string decodedText = result.CodeText;
+                Console.WriteLine($"Decoded text: {decodedText}");
 
-            // Iterate through each detected barcode (should be only one in this case)
-            foreach (var result in results)
-            {
-                // Output the decoded text
-                Console.WriteLine($"Decoded CodeText: {result.CodeText}");
-
-                // Compare the decoded text with the original Unicode string
-                if (result.CodeText == unicodeText)
+                // Check if the decoded text matches the original Unicode string.
+                if (decodedText == originalText)
                 {
                     Console.WriteLine("Verification succeeded: decoded text matches original.");
                 }
@@ -74,6 +69,12 @@ class Program
                 {
                     Console.WriteLine("Verification failed: decoded text does not match original.");
                 }
+            }
+
+            // If no barcodes were detected, inform the user.
+            if (!anyFound)
+            {
+                Console.WriteLine("No DataMatrix barcode detected in the image.");
             }
         }
     }

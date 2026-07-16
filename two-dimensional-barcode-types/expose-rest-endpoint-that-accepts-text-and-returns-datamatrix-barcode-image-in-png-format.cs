@@ -1,57 +1,47 @@
+// Title: Generate DataMatrix Barcode PNG via REST-like Endpoint
+// Description: Demonstrates generating a DataMatrix barcode image in PNG format from input text, simulating a REST endpoint.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use the BarcodeGenerator class with EncodeTypes.DataMatrix to create barcode images. Typical use cases include creating printable labels, embedding barcodes in documents, or serving barcode images through web APIs. Developers often need to configure symbol properties, select output formats, and integrate the generation logic into REST services.
+// Prompt: Expose a REST endpoint that accepts text and returns a DataMatrix barcode image in PNG format.
+// Tags: datamatrix, barcode, generation, png, aspnet, rest, aspose.barcode
+
 using System;
-using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generating a DataMatrix barcode, saving it as a PNG file,
-/// and outputting its Base64 representation. Intended for console usage.
+/// Simulates a REST endpoint that generates a DataMatrix barcode image in PNG format from supplied text.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a DataMatrix barcode from the provided text (or a default),
-    /// writes the PNG to disk, and prints the Base64 string to the console.
+    /// Entry point of the application. Reads input text from command‑line arguments,
+    /// creates a DataMatrix barcode, and saves it as a PNG file.
     /// </summary>
-    /// <param name="args">Command‑line arguments; first argument is used as input text.</param>
+    /// <param name="args">Command‑line arguments where the first element is the text to encode.</param>
     static void Main(string[] args)
     {
-        // Determine the text to encode: use first argument if present, otherwise a sample.
-        string inputText = args.Length > 0 ? args[0] : "Sample Text";
+        // In a real application this would be a REST endpoint.
+        // Here we simulate the endpoint by reading the text from command‑line arguments
+        // and generating a DataMatrix PNG image.
 
-        // Generate the barcode image as a PNG byte array.
-        byte[] pngBytes = GenerateDataMatrixBarcode(inputText);
+        // Use the first argument as the barcode text; fall back to a default value if none provided.
+        string codeText = args.Length > 0 ? args[0] : "Sample Text";
 
-        // Define the output file name and write the PNG bytes to disk.
-        const string outputFile = "datamatrix.png";
-        File.WriteAllBytes(outputFile, pngBytes);
-        Console.WriteLine($"Barcode image saved to {outputFile}");
-
-        // Convert the PNG bytes to a Base64 string to simulate a REST response payload.
-        string base64 = Convert.ToBase64String(pngBytes);
-        Console.WriteLine("Base64 PNG:");
-        Console.WriteLine(base64);
-    }
-
-    /// <summary>
-    /// Generates a DataMatrix barcode in PNG format from the specified text.
-    /// </summary>
-    /// <param name="text">The text to encode into the barcode.</param>
-    /// <returns>A byte array containing the PNG image data.</returns>
-    static byte[] GenerateDataMatrixBarcode(string text)
-    {
-        // BarcodeGenerator implements IDisposable; ensure proper disposal with using.
-        using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, text))
+        // Create a DataMatrix barcode generator with the provided text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, codeText))
         {
-            // Use a memory stream to capture the PNG output.
-            using (var ms = new MemoryStream())
-            {
-                // Save the generated barcode to the memory stream in PNG format.
-                generator.Save(ms, BarCodeImageFormat.Png);
-                // Return the stream contents as a byte array.
-                return ms.ToArray();
-            }
+            // Configure a square DataMatrix symbol (aspect ratio = 1) and a specific size.
+            generator.Parameters.Barcode.DataMatrix.AspectRatio = 1f;
+            generator.Parameters.Barcode.DataMatrix.DataMatrixVersion = DataMatrixVersion.ECC200_20x20;
+
+            // Define the output file path.
+            string outputPath = "datamatrix.png";
+
+            // Save the barcode image as PNG.
+            generator.Save(outputPath, BarCodeImageFormat.Png);
+
+            // Inform the user where the file was saved.
+            Console.WriteLine($"DataMatrix barcode saved to: {outputPath}");
         }
     }
 }

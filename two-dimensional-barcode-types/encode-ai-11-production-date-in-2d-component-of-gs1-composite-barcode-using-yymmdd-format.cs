@@ -1,43 +1,52 @@
+// Title: Encode AI 11 Production Date in GS1 Composite Barcode
+// Description: Demonstrates encoding AI 11 (production date) in the 2D component of a GS1 Composite barcode using YYMMDD format and saving the result as a PNG image.
+// Category-Description: This example belongs to the Aspose.BarCode GS1 Composite barcode generation category. It illustrates how to combine linear and 2D components, configure component types, and adjust dimensions using the BarcodeGenerator, EncodeTypes, and TwoDComponentType classes. Developers creating GS1 Composite barcodes for product labeling, inventory, or logistics can use this pattern to embed additional data such as production dates.
+// Prompt: Encode AI 11 (production date) in the 2D component of a GS1 Composite barcode using YYMMDD format.
+// Tags: gs1 composite, barcode generation, encode types, two d component, png output, aspose.barcode
+
 using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
-/// <summary>
-/// Demonstrates generation of a GS1 Composite barcode using Aspose.BarCode.
-/// </summary>
-class Program
+namespace GS1CompositeExample
 {
     /// <summary>
-    /// Entry point of the application. Generates and saves a GS1 Composite barcode image.
+    /// Demonstrates encoding AI 11 (production date) in the 2D component of a GS1 Composite barcode.
     /// </summary>
-    static void Main()
+    class Program
     {
-        // Define the linear component (GTIN) and the 2D component (AI 11 - production date) in YYMMDD format.
-        string linearPart = "(01)01234567890123";
-        string twoDPart   = "(11)230915"; // production date: 15 Sep 2023
-
-        // Combine linear and 2D parts using the '|' separator required for GS1 Composite barcodes.
-        string codeText = $"{linearPart}|{twoDPart}";
-
-        // Initialize the barcode generator for a GS1 Composite barcode with the combined data.
-        using (var generator = new BarcodeGenerator(EncodeTypes.GS1CompositeBar, codeText))
+        /// <summary>
+        /// Entry point. Generates a GS1 Composite barcode with a linear GTIN component and a 2D AI‑11 production date component, then saves it as a PNG file.
+        /// </summary>
+        static void Main()
         {
-            // Configure the linear component to use GS1 Code 128 encoding.
-            generator.Parameters.Barcode.GS1CompositeBar.LinearComponentType = EncodeTypes.GS1Code128;
+            // Linear component (e.g., GTIN) – required for the GS1 Composite barcode
+            string linearComponent = "(01)01234567890123";
 
-            // Configure the 2D component to use MicroPDF417 with CC_A mode.
-            generator.Parameters.Barcode.GS1CompositeBar.TwoDComponentType = TwoDComponentType.CC_A;
+            // 2D component: AI 11 (production date) in YYMMDD format, e.g., 2023‑07‑31 => 230731
+            string twoDComponent = "(11)230731";
 
-            // Optional visual settings: set module width (X dimension) and bar height in pixels.
-            generator.Parameters.Barcode.XDimension.Pixels = 3f;
-            generator.Parameters.Barcode.BarHeight.Pixels = 100f;
+            // Combine linear and 2D parts with the '|' separator required for GS1 Composite barcodes
+            string codeText = $"{linearComponent}|{twoDComponent}";
 
-            // Define the output file path and save the generated barcode image.
-            string outputPath = "gs1composite.png";
-            generator.Save(outputPath);
+            // Create the barcode generator for a GS1 Composite Bar with the combined codetext
+            using (var generator = new BarcodeGenerator(EncodeTypes.GS1CompositeBar, codeText))
+            {
+                // Set the linear component type (GS1 Code 128 is typical for the linear part)
+                generator.Parameters.Barcode.GS1CompositeBar.LinearComponentType = EncodeTypes.GS1Code128;
 
-            // Inform the user where the barcode image has been saved.
-            Console.WriteLine($"GS1 Composite barcode saved to: {outputPath}");
+                // Choose a 2D component type; CC_A corresponds to a MicroPDF417 variant
+                generator.Parameters.Barcode.GS1CompositeBar.TwoDComponentType = TwoDComponentType.CC_A;
+
+                // Optional: adjust dimensions for better readability
+                generator.Parameters.Barcode.XDimension.Pixels = 3f;   // module width
+                generator.Parameters.Barcode.BarHeight.Pixels = 100f; // height of the linear part
+
+                // Save the generated barcode image to a PNG file
+                generator.Save("gs1composite.png");
+            }
+
+            Console.WriteLine("GS1 Composite barcode generated: gs1composite.png");
         }
     }
 }

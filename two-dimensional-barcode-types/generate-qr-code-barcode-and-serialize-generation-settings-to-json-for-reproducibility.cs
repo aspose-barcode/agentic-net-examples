@@ -1,103 +1,74 @@
+// Title: Generate QR Code and Serialize Settings to JSON
+// Description: Demonstrates creating a QR Code barcode with Aspose.BarCode, customizing its parameters, saving the image, and exporting the generation settings as a JSON string for reproducibility.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on QR Code creation and configuration. It showcases key API classes such as BarcodeGenerator, EncodeTypes, and generation parameters (ErrorLevel, ECIEncoding, AutoSizeMode). Typical use cases include generating QR codes for URLs or data payloads and persisting the exact settings to JSON so that the same barcode can be regenerated later, a common requirement for automated testing or documentation.
+// Prompt: Generate QR Code barcode and serialize generation settings to JSON for reproducibility.
+// Tags: qr code, barcode, generation, json, aspose.barcode
+
 using System;
 using System.IO;
 using System.Text.Json;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing;
 
-namespace BarcodeExample
+/// <summary>
+/// Example program that generates a QR Code barcode, saves it as an image,
+/// and serializes the generation settings to JSON for later reproducibility.
+/// </summary>
+class Program
 {
     /// <summary>
-    /// Demonstrates generating a QR code barcode, saving the image, and persisting the generation settings to JSON.
+    /// Entry point of the example. Creates a QR Code, configures its parameters,
+    /// saves the image, and outputs the settings as formatted JSON.
     /// </summary>
-    class Program
+    static void Main()
     {
-        /// <summary>
-        /// Entry point of the application. Generates a QR code, saves it as an image, and writes the generation settings to a JSON file.
-        /// </summary>
-        static void Main()
+        // Define the output image file path.
+        const string imagePath = "qr.png";
+
+        // Initialize a QR Code generator with the desired text (e.g., a URL).
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
         {
-            // Define the content to encode and the barcode symbology (QR code).
-            string codeText = "https://example.com";
-            BaseEncodeType symbology = EncodeTypes.QR;
+            // Configure QR‑specific options.
+            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH; // High error correction.
+            generator.Parameters.Barcode.QR.ECIEncoding = ECIEncodings.UTF8;   // Use UTF‑8 encoding.
 
-            // Create a BarcodeGenerator instance with the specified symbology and content.
-            using (var generator = new BarcodeGenerator(symbology, codeText))
+            // Set image rendering options.
+            generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation; // Use interpolation for scaling.
+            generator.Parameters.ImageWidth.Point = 300f;                    // Width in points.
+            generator.Parameters.ImageHeight.Point = 300f;                   // Height in points.
+
+            // Optional: adjust the size of individual QR modules.
+            generator.Parameters.Barcode.XDimension.Point = 2f;
+
+            // Hide the human‑readable text beneath the barcode.
+            generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.None;
+
+            // Save the generated QR Code image to the specified path.
+            generator.Save(imagePath);
+
+            // Create an anonymous object containing the relevant generation settings.
+            var settings = new
             {
-                // ------------------------------
-                // QR‑specific configuration
-                // ------------------------------
+                Symbology = "QR",
+                CodeText = generator.CodeText,
+                ErrorLevel = generator.Parameters.Barcode.QR.ErrorLevel.ToString(),
+                ECIEncoding = generator.Parameters.Barcode.QR.ECIEncoding.ToString(),
+                ImageWidth = generator.Parameters.ImageWidth.Point,
+                ImageHeight = generator.Parameters.ImageHeight.Point,
+                XDimension = generator.Parameters.Barcode.XDimension.Point,
+                AutoSizeMode = generator.Parameters.AutoSizeMode.ToString()
+            };
 
-                // Set the error correction level to high (Level H) for better resilience.
-                generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
+            // Serialize the settings object to a formatted JSON string.
+            string json = JsonSerializer.Serialize(settings, new JsonSerializerOptions { WriteIndented = true });
 
-                // Use automatic encoding mode to let the library choose the optimal mode.
-                generator.Parameters.Barcode.QR.EncodeMode = QREncodeMode.Auto;
-
-                // Specify UTF‑8 as the ECI (Extended Channel Interpretation) encoding.
-                generator.Parameters.Barcode.QR.ECIEncoding = ECIEncodings.UTF8;
-
-                // ------------------------------
-                // General image settings
-                // ------------------------------
-
-                // Set image dimensions (points) – 300 pt width and height.
-                generator.Parameters.ImageWidth.Point = 300f;
-                generator.Parameters.ImageHeight.Point = 300f;
-
-                // Define the image resolution (dots per inch).
-                generator.Parameters.Resolution = 300f;
-
-                // ------------------------------
-                // Save the generated barcode image
-                // ------------------------------
-
-                string imagePath = "qr.png";
-                generator.Save(imagePath);
-
-                // ------------------------------
-                // Capture settings for reproducibility
-                // ------------------------------
-
-                var settings = new BarcodeSettingsDto
-                {
-                    Symbology = "QR",
-                    CodeText = codeText,
-                    ErrorLevel = generator.Parameters.Barcode.QR.ErrorLevel.ToString(),
-                    EncodeMode = generator.Parameters.Barcode.QR.EncodeMode.ToString(),
-                    ECIEncoding = generator.Parameters.Barcode.QR.ECIEncoding.ToString(),
-                    ImageWidth = generator.Parameters.ImageWidth.Point,
-                    ImageHeight = generator.Parameters.ImageHeight.Point,
-                    Resolution = generator.Parameters.Resolution
-                };
-
-                // Serialize the settings object to a formatted JSON string.
-                string json = JsonSerializer.Serialize(
-                    settings,
-                    new JsonSerializerOptions { WriteIndented = true });
-
-                // Write the JSON to a file.
-                string jsonPath = "qr_settings.json";
-                File.WriteAllText(jsonPath, json);
-
-                // Output the locations of the generated files.
-                Console.WriteLine($"Barcode image saved to: {Path.GetFullPath(imagePath)}");
-                Console.WriteLine($"Generation settings saved to: {Path.GetFullPath(jsonPath)}");
-            }
+            // Output the JSON representation to the console.
+            Console.WriteLine("QR Code generation settings (JSON):");
+            Console.WriteLine(json);
         }
-    }
 
-    /// <summary>
-    /// Data Transfer Object (DTO) used to serialize barcode generation parameters to JSON.
-    /// </summary>
-    public class BarcodeSettingsDto
-    {
-        public string Symbology { get; set; }
-        public string CodeText { get; set; }
-        public string ErrorLevel { get; set; }
-        public string EncodeMode { get; set; }
-        public string ECIEncoding { get; set; }
-        public float ImageWidth { get; set; }
-        public float ImageHeight { get; set; }
-        public float Resolution { get; set; }
+        // Inform the user where the QR Code image has been saved.
+        Console.WriteLine($"QR Code image saved to '{Path.GetFullPath(imagePath)}'.");
     }
 }

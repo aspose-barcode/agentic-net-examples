@@ -1,31 +1,33 @@
+// Title: Generate QR Code Barcode at 200 DPI and Save as JPEG
+// Description: Demonstrates creating a QR Code barcode with a custom resolution of 200 DPI and exporting it as a JPEG image.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, showcasing how to configure image resolution and output format using the BarcodeGenerator class. Typical use cases include generating high‑resolution QR codes for print media, marketing materials, or product labeling. Developers often need to adjust DPI settings and choose appropriate image formats such as JPEG for web or print distribution.
+// Prompt: Generate a QR Code barcode scaled to two hundred DPI and save as JPEG.
+// Tags: qr code, barcode generation, jpeg output, resolution, aspose.barcode, encode types
+
 using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates generating a QR code with a specific resolution using Aspose.BarCode.
+/// Example program that creates a QR Code barcode, sets its resolution to 200 DPI,
+/// and saves the result as a JPEG image using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a QR code image with 200 DPI resolution and saves it as a JPEG file.
+    /// Entry point of the application.
     /// </summary>
     static void Main()
     {
-        // Initialize a QR code generator with the desired text.
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Hello World"))
+        // Initialize a QR code generator with the desired text/content.
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
         {
-            // Configure the image resolution (dots per inch).
+            // Configure the image resolution to 200 DPI for higher quality output.
             generator.Parameters.Resolution = 200f;
 
-            // Set the QR code error correction level to Medium (Level M).
-            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
-
-            // Save the generated QR code to a JPEG file.
-            generator.Save("qr_200dpi.jpg");
+            // Persist the generated barcode to a JPEG file.
+            generator.Save("qr_code.jpeg");
         }
-
-        // Inform the user that the QR code has been saved.
-        Console.WriteLine("QR code saved as qr_200dpi.jpg with 200 DPI.");
     }
 }

@@ -1,55 +1,52 @@
+// Title: Get barcode image dimensions in pixels
+// Description: Demonstrates how to generate a barcode using Aspose.BarCode and retrieve its width and height in pixels.
+// Category-Description: This example belongs to the Aspose.BarCode image generation category, illustrating the use of BarcodeGenerator and Bitmap classes to create barcode images and extract their size. Developers often need to know exact pixel dimensions for layout, UI integration, or further image processing, making this pattern common in barcode rendering scenarios.
+// Prompt: Develop a function that returns barcode dimensions (width, height) in pixels after generation.
+// Tags: barcode, dimensions, image, generation, aspose.barcode, bitmap, csharp
+
 using System;
-using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates how to generate a barcode image and retrieve its pixel dimensions using Aspose.BarCode.
+/// Demonstrates retrieving barcode dimensions after generation using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Generates a barcode image for the specified encode type and text, then returns its width and height in pixels.
+    /// Returns the width and height (in pixels) of a generated barcode image.
     /// </summary>
-    /// <param name="encodeType">The barcode symbology to use (e.g., Code128).</param>
     /// <param name="codeText">The text to encode in the barcode.</param>
-    /// <returns>A tuple containing the image width and height.</returns>
-    static (int width, int height) GetBarcodeDimensions(BaseEncodeType encodeType, string codeText)
+    /// <param name="encodeType">The barcode symbology to use.</param>
+    /// <returns>A tuple containing the width and height in pixels.</returns>
+    static (int width, int height) GetBarcodeDimensions(string codeText, BaseEncodeType encodeType)
     {
-        // Create a BarcodeGenerator with the requested type and text.
+        // Initialize the barcode generator with the specified symbology and text.
         using (var generator = new BarcodeGenerator(encodeType, codeText))
         {
-            // Disable automatic resizing so the saved image reflects the true pixel size.
-            generator.Parameters.AutoSizeMode = AutoSizeMode.None;
-
-            // Save the generated barcode to a memory stream in PNG format.
-            using (var ms = new MemoryStream())
+            // Generate the barcode image as a Bitmap.
+            using (Bitmap bitmap = generator.GenerateBarCodeImage())
             {
-                generator.Save(ms, BarCodeImageFormat.Png);
-                ms.Position = 0; // Reset stream position for reading.
-
-                // Load the image from the memory stream to access its dimensions.
-                using (var bitmap = (Bitmap)Image.FromStream(ms))
-                {
-                    // Return the width and height of the bitmap.
-                    return (bitmap.Width, bitmap.Height);
-                }
+                // Bitmap.Width and Bitmap.Height are measured in pixels.
+                return (bitmap.Width, bitmap.Height);
             }
         }
     }
 
     /// <summary>
-    /// Entry point of the program. Generates a sample barcode and prints its dimensions.
+    /// Entry point. Generates a sample Code128 barcode and prints its pixel dimensions.
     /// </summary>
     static void Main()
     {
-        // Generate dimensions for a Code128 barcode containing "123ABC".
-        var dimensions = GetBarcodeDimensions(EncodeTypes.Code128, "123ABC");
+        // Sample barcode data: Code128 symbology with text "123ABC".
+        string sampleText = "123ABC";
+        BaseEncodeType encodeType = EncodeTypes.Code128;
 
-        // Output the width and height to the console.
-        Console.WriteLine($"Barcode Width: {dimensions.width} px");
-        Console.WriteLine($"Barcode Height: {dimensions.height} px");
+        // Retrieve dimensions of the generated barcode.
+        var (width, height) = GetBarcodeDimensions(sampleText, encodeType);
+
+        // Output the dimensions to the console.
+        Console.WriteLine($"Barcode dimensions: Width = {width}px, Height = {height}px");
     }
 }

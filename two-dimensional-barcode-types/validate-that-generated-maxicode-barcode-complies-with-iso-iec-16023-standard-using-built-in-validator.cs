@@ -1,83 +1,98 @@
+// Title: Validate MaxiCode barcode against ISO/IEC 16023 using Aspose.BarCode validator
+// Description: Demonstrates generating a MaxiCode (Mode 2) barcode, saving it to a PNG stream, and validating its contents with the built‑in MaxiCode validator to ensure compliance with ISO/IEC 16023.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category, focusing on complex barcode types such as MaxiCode. It showcases the use of ComplexBarcodeGenerator for creating a MaxiCode, Image saving via Aspose.Drawing, and BarCodeReader with DecodeType.MaxiCode for decoding. Developers often need to generate MaxiCode for shipping labels and verify the encoded data programmatically; this snippet illustrates the typical workflow and key API classes (ComplexBarcodeGenerator, MaxiCodeCodetextMode2, BarCodeReader, ComplexCodetextReader).
+// Prompt: Validate that the generated MaxiCode barcode complies with ISO/IEC 16023 standard using built‑in validator.
+// Tags: maxicode, barcode, validation, generation, decoding, iso/iec 16023, aspnet, aspose.barcode
+
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.BarCode.ComplexBarcode;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generation, saving, and validation of a MaxiCode barcode using Aspose.BarCode.
+/// Example program that generates a MaxiCode barcode (Mode 2), saves it to a PNG stream,
+/// and validates the encoded data using Aspose.BarCode's built‑in validator to ensure
+/// compliance with ISO/IEC 16023.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a MaxiCode (Mode 2), saves it to a file, and validates the encoded data.
+    /// Entry point of the example. Performs barcode generation, image handling,
+    /// decoding, and validation of the MaxiCode data.
     /// </summary>
     static void Main()
     {
-        // --------------------------------------------------------------------
-        // 1. Prepare the MaxiCode codetext for Mode 2 (postal information + data)
-        // --------------------------------------------------------------------
-        var maxiCodeCodetext = new MaxiCodeCodetextMode2
+        // ------------------------------------------------------------
+        // 1. Prepare MaxiCode codetext (Mode 2) with a standard second message
+        // ------------------------------------------------------------
+        var maxiCode = new MaxiCodeCodetextMode2
         {
             PostalCode = "524032140",   // 9‑digit US postal code
-            CountryCode = 56,           // Example country code
-            ServiceCategory = 999,      // Example service category
-            // Standard second message (free‑form text)
-            SecondMessage = new MaxiCodeStandardSecondMessage { Message = "Sample MaxiCode message" }
+            CountryCode = 56,           // Country code
+            ServiceCategory = 999       // Service category
         };
 
-        // --------------------------------------------------------------------
-        // 2. Generate the MaxiCode barcode image and write it to a memory stream
-        // --------------------------------------------------------------------
-        using (var generator = new ComplexBarcodeGenerator(maxiCodeCodetext))
+        var secondMessage = new MaxiCodeStandardSecondMessage
         {
-            using (var ms = new MemoryStream())
+            Message = "Test message"
+        };
+        maxiCode.SecondMessage = secondMessage;
+
+        // ------------------------------------------------------------
+        // 2. Generate the MaxiCode barcode image using ComplexBarcodeGenerator
+        // ------------------------------------------------------------
+        using (var generator = new ComplexBarcodeGenerator(maxiCode))
+        {
+            using (var image = generator.GenerateBarCodeImage())
             {
-                // Save the generated barcode as PNG into the memory stream
-                generator.Save(ms, BarCodeImageFormat.Png);
-                ms.Position = 0; // Reset stream position for subsequent reads
-
-                // ----------------------------------------------------------------
-                // 3. Optionally write the image to disk for visual inspection
-                // ----------------------------------------------------------------
-                File.WriteAllBytes("maxicode.png", ms.ToArray());
-
-                // ----------------------------------------------------------------
-                // 4. Recognize the barcode from the memory stream and validate it
-                // ----------------------------------------------------------------
-                using (var reader = new BarCodeReader(ms, DecodeType.MaxiCode))
+                // ------------------------------------------------------------
+                // 3. Save the image to a memory stream in PNG format
+                // ------------------------------------------------------------
+                using (var ms = new MemoryStream())
                 {
-                    // Read all detected barcodes (should be one)
-                    var results = reader.ReadBarCodes();
+                    image.Save(ms, ImageFormat.Png);
+                    ms.Position = 0; // Reset stream position for subsequent reading
 
-                    if (results.Length == 0)
+                    // ------------------------------------------------------------
+                    // 4. Validate the generated barcode by decoding it
+                    // ------------------------------------------------------------
+                    using (var reader = new BarCodeReader(ms, DecodeType.MaxiCode))
                     {
-                        Console.WriteLine("No MaxiCode barcode detected.");
-                        return;
-                    }
+                        bool anyResult = false;
 
-                    // Iterate through each detected barcode (normally just one)
-                    foreach (var result in results)
-                    {
-                        // Decode the complex codetext using the built‑in decoder
-                        var decoded = ComplexCodetextReader.TryDecodeMaxiCode(
-                            result.Extended.MaxiCode.MaxiCodeMode,
-                            result.CodeText);
-
-                        if (decoded != null)
+                        foreach (BarCodeResult result in reader.ReadBarCodes())
                         {
-                            // Successful validation – output decoded fields
-                            Console.WriteLine("MaxiCode validation succeeded.");
-                            Console.WriteLine($"Postal Code: {((MaxiCodeCodetextMode2)decoded).PostalCode}");
-                            Console.WriteLine($"Country Code: {((MaxiCodeCodetextMode2)decoded).CountryCode}");
-                            Console.WriteLine($"Service Category: {((MaxiCodeCodetextMode2)decoded).ServiceCategory}");
+                            anyResult = true;
+
+                            // Decode the complex codetext using the built‑in validator
+                            var decoded = ComplexCodetextReader.TryDecodeMaxiCode(
+                                result.Extended.MaxiCode.MaxiCodeMode,
+                                result.CodeText);
+
+                            if (decoded is MaxiCodeCodetextMode2 decodedMode2)
+                            {
+                                // Compare each field with the original data
+                                bool isValid = decodedMode2.PostalCode == maxiCode.PostalCode &&
+                                               decodedMode2.CountryCode == maxiCode.CountryCode &&
+                                               decodedMode2.ServiceCategory == maxiCode.ServiceCategory &&
+                                               ((MaxiCodeStandardSecondMessage)decodedMode2.SecondMessage).Message == secondMessage.Message;
+
+                                Console.WriteLine(isValid
+                                    ? "Validation passed: decoded data matches original."
+                                    : "Validation failed: decoded data does not match original.");
+                            }
+                            else
+                            {
+                                Console.WriteLine("Validation failed: decoded codetext type is not MaxiCodeCodetextMode2.");
+                            }
                         }
-                        else
+
+                        if (!anyResult)
                         {
-                            // Decoding failed – barcode does not meet ISO/IEC 16023 spec
-                            Console.WriteLine("MaxiCode validation failed.");
+                            Console.WriteLine("Validation failed: no barcode detected in the generated image.");
                         }
                     }
                 }

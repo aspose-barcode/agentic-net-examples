@@ -1,34 +1,34 @@
+// Title: Generate and Rotate QR Code, Export as PNG
+// Description: Demonstrates creating a QR Code barcode, rotating it 90 degrees clockwise, and saving it as a PNG image.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use the BarcodeGenerator class to encode data into QR Code symbology, apply rotation via the Parameters.RotationAngle property, and export the result in PNG format. Typical use cases include creating rotated barcodes for label designs, packaging, or UI elements where orientation matters. Developers often need to adjust barcode orientation and output format using the generation API.
+// Prompt: Generate a QR Code barcode rotated ninety degrees clockwise and export as PNG.
+// Tags: qr code, rotation, png, generation, aspose.barcode
+
 using System;
-using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generating a QR code, rotating it, and saving it as a PNG file.
+/// Example program that creates a QR Code, rotates it, and saves it as a PNG file.
 /// </summary>
 class Program
 {
     /// <summary>
     /// Entry point of the application.
-    /// Generates a QR code with sample text, rotates it 90 degrees clockwise,
-    /// saves it to the current directory, and writes the output path to the console.
     /// </summary>
     static void Main()
     {
-        // Define the full path for the output PNG file in the current working directory.
-        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "qr_rotated.png");
-
         // Initialize a QR Code generator with the desired text.
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Hello Aspose!"))
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Hello, Aspose!"))
         {
-            // Set the rotation angle to 90 degrees (clockwise) for the generated barcode.
+            // Set rotation angle to 90 degrees clockwise.
             generator.Parameters.RotationAngle = 90f;
 
-            // Save the rotated QR code image to the specified file path in PNG format.
-            generator.Save(outputPath);
+            // Save the rotated QR Code image as a PNG file.
+            generator.Save("qr_rotated.png");
         }
 
-        // Inform the user where the QR code image has been saved.
-        Console.WriteLine($"QR Code saved to: {outputPath}");
+        // Inform the user that the operation completed successfully.
+        Console.WriteLine("QR Code generated and saved as 'qr_rotated.png'.");
     }
 }

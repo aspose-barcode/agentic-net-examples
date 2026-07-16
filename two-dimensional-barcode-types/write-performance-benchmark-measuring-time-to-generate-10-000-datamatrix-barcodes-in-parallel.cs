@@ -1,52 +1,60 @@
+// Title: Parallel generation of DataMatrix barcodes benchmark
+// Description: Demonstrates measuring the time required to generate a large number of DataMatrix barcodes concurrently.
+// Category-Description: This example belongs to the Aspose.BarCode performance benchmarking category, showcasing how to use BarcodeGenerator, EncodeTypes, and image handling classes (Bitmap, ImageFormat) to create barcodes in parallel. Developers often need to assess throughput when generating thousands of barcodes for batch processing, printing, or inventory systems. The snippet illustrates typical use of Parallel.For, Stopwatch, and memory streams for high‑volume barcode creation.
+// Prompt: Write performance benchmark measuring time to generate 10,000 DataMatrix barcodes in parallel.
+// Tags: datamatrix, performance, benchmark, parallel, generation, aspose.barcode, bitmap, png
+
 using System;
 using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates parallel generation of DataMatrix barcodes using Aspose.BarCode.
+/// Provides a simple performance benchmark that generates a configurable number of DataMatrix barcodes in parallel
+/// and reports the elapsed time. Useful for evaluating throughput of the Aspose.BarCode generation API.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a set number of barcodes in parallel and measures execution time.
+    /// Entry point of the benchmark application.
+    /// Accepts an optional command‑line argument specifying how many barcodes to generate (default is 10).
     /// </summary>
-    static void Main()
+    /// <param name="args">Command‑line arguments; first argument may be an integer count.</param>
+    static void Main(string[] args)
     {
-        // Number of barcodes to generate; kept small for sample runner constraints
-        const int barcodeCount = 10;
+        // Determine how many barcodes to generate; default to 10 for quick execution.
+        int barcodeCount = 10;
+        if (args.Length > 0 && int.TryParse(args[0], out int parsed) && parsed > 0)
+        {
+            barcodeCount = parsed;
+        }
 
-        // Stopwatch to measure total generation time
-        var stopwatch = new Stopwatch();
-        stopwatch.Start();
+        // Start measuring elapsed time.
+        var stopwatch = Stopwatch.StartNew();
 
-        // Parallel loop to generate barcodes concurrently
+        // Generate barcodes concurrently using Parallel.For for maximum CPU utilization.
         Parallel.For(0, barcodeCount, i =>
         {
-            // Create a new barcode generator for each iteration to avoid shared state
-            using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, $"Data{i:D4}"))
+            // Create a DataMatrix generator with a unique code text for each iteration.
+            using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, $"Sample{i:D5}"))
             {
-                // Use a memory stream to hold the generated PNG image (no disk I/O)
-                using (var ms = new MemoryStream())
+                // Produce the barcode image as a Bitmap.
+                using (Bitmap bitmap = generator.GenerateBarCodeImage())
                 {
-                    // Save the barcode image into the memory stream
-                    generator.Save(ms, BarCodeImageFormat.Png);
-
-                    // Reset stream position to the beginning for any subsequent read operations
-                    ms.Position = 0;
-                } // MemoryStream disposed here
-            } // BarcodeGenerator disposed here
+                    // Encode the bitmap to PNG format via a memory stream (forces image encoding).
+                    using (var ms = new MemoryStream())
+                    {
+                        bitmap.Save(ms, ImageFormat.Png);
+                    }
+                }
+            }
         });
 
-        // Stop timing after all parallel tasks complete
+        // Stop timing and output the result.
         stopwatch.Stop();
-
-        // Output results to console
-        Console.WriteLine($"Generated {barcodeCount} DataMatrix barcodes in parallel.");
-        Console.WriteLine($"Elapsed time: {stopwatch.ElapsedMilliseconds} ms");
+        Console.WriteLine($"Generated {barcodeCount} DataMatrix barcodes in {stopwatch.ElapsedMilliseconds} ms.");
     }
 }

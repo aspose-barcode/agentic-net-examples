@@ -1,108 +1,97 @@
+// Title: Batch generation of GS1 Composite barcodes from CSV
+// Description: Demonstrates reading a CSV file and creating a GS1 Composite barcode image for each record, saving them as PNG files.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on GS1 Composite symbology. It showcases the use of BarcodeGenerator, EncodeTypes, and TwoDComponentType classes to produce combined linear and 2D barcodes. Developers often need batch processing to automate barcode creation for inventory, shipping, or product labeling scenarios.
+// Prompt: Create a batch job that reads a CSV file and produces GS1 Composite barcodes for each record.
+// Tags: gs1 composite, batch processing, png output, barcode generation, aspose.barcode, encode types, twodcomponenttype
+
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode.BarCodeRecognition;
+using Aspose.BarCode;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating GS1 Composite barcodes from a CSV file using Aspose.BarCode.
+/// Demonstrates batch creation of GS1 Composite barcodes from a CSV file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Reads a CSV file, creates sample data if needed,
-    /// and generates barcode images for each data row.
+    /// Entry point of the program. Reads input CSV, generates barcodes, and saves them as PNG files.
     /// </summary>
     static void Main()
     {
-        // Path to the input CSV file
-        string csvPath = "data.csv";
+        // Define input CSV file name and output directory for barcode images
+        string inputCsv = "input.csv";
+        string outputFolder = "Barcodes";
 
-        // Directory where generated barcode images will be saved
-        string outputDir = "Barcodes";
-
-        // Ensure the output directory exists; create it if it does not
-        if (!Directory.Exists(outputDir))
+        // Ensure the output directory exists
+        if (!Directory.Exists(outputFolder))
         {
-            Directory.CreateDirectory(outputDir);
+            Directory.CreateDirectory(outputFolder);
         }
 
-        // If the CSV file is missing, create a sample file with a header and a few records
-        if (!File.Exists(csvPath))
+        // If the CSV file does not exist, create a sample file with a few records
+        if (!File.Exists(inputCsv))
         {
             string[] sampleLines =
             {
-                "LinearPart,TwoDPart",
-                "(01)03212345678906,(21)A1B2C3D4E5F6G7H8",
-                "(01)12345678901231,(21)B9876543210",
-                "(01)09876543210987,(21)C1122334455"
+                "01012345678901, (21)A12345678",
+                "01098765432109, (21)B87654321",
+                "01055555555555, (21)C55555555",
+                "01011111111111, (21)D11111111",
+                "01022222222222, (21)E22222222"
             };
-            File.WriteAllLines(csvPath, sampleLines);
-            Console.WriteLine($"Sample CSV created at '{csvPath}'.");
+            File.WriteAllLines(inputCsv, sampleLines);
         }
 
         // Read all lines from the CSV file
-        string[] lines = File.ReadAllLines(csvPath);
+        string[] lines = File.ReadAllLines(inputCsv);
+        int index = 1;
 
-        // Verify that there is at least one data row (excluding the header)
-        if (lines.Length <= 1)
+        // Process each non‑empty line
+        foreach (string line in lines)
         {
-            Console.WriteLine("CSV file contains no data rows.");
-            return;
-        }
-
-        // Iterate over each data row, starting after the header (index 1)
-        for (int i = 1; i < lines.Length; i++)
-        {
-            string line = lines[i];
-
-            // Skip empty or whitespace-only lines
             if (string.IsNullOrWhiteSpace(line))
                 continue;
 
-            // Split the line into linear and 2D components using a comma delimiter
+            // Expect two columns separated by a comma: linear part and 2D part
             string[] parts = line.Split(',');
-
-            // Validate that both components are present
             if (parts.Length < 2)
             {
-                Console.WriteLine($"Skipping malformed line {i + 1}: '{line}'");
+                Console.WriteLine($"Skipping invalid line {index}: {line}");
+                index++;
                 continue;
             }
 
-            // Trim whitespace from each component
+            // Trim whitespace from each part
             string linearPart = parts[0].Trim();
             string twoDPart = parts[1].Trim();
 
-            // Combine linear and 2D parts with the '|' separator required for GS1 Composite barcodes
+            // Combine linear and 2D components using '|' as required for GS1 Composite
             string codeText = $"{linearPart}|{twoDPart}";
 
-            // Set the barcode type to GS1 Composite Bar
-            BaseEncodeType encodeType = EncodeTypes.GS1CompositeBar;
-
-            // Create a barcode generator instance with the specified type and data
-            using (var generator = new BarcodeGenerator(encodeType, codeText))
+            // Generate the GS1 Composite barcode
+            using (var generator = new BarcodeGenerator(EncodeTypes.GS1CompositeBar, codeText))
             {
-                // Configure the linear component to use GS1-128 encoding
+                // Set the linear component to GS1‑Code128 and the 2D component to CC‑A
                 generator.Parameters.Barcode.GS1CompositeBar.LinearComponentType = EncodeTypes.GS1Code128;
-
-                // Configure the 2D component to use CC-A (Composite Component A)
                 generator.Parameters.Barcode.GS1CompositeBar.TwoDComponentType = TwoDComponentType.CC_A;
 
-                // Example additional settings for visual appearance
+                // Optional: adjust additional barcode settings
                 generator.Parameters.Barcode.Pdf417.AspectRatio = 3f;
                 generator.Parameters.Barcode.XDimension.Pixels = 3f;
                 generator.Parameters.Barcode.BarHeight.Pixels = 100f;
 
-                // Determine the output file path for the current barcode image
-                string outputPath = Path.Combine(outputDir, $"barcode_{i}.png");
-
-                // Save the generated barcode image to the file system
+                // Build the output file path and save the barcode as PNG
+                string outputPath = Path.Combine(outputFolder, $"barcode_{index}.png");
                 generator.Save(outputPath);
-                Console.WriteLine($"Generated barcode for line {i + 1}: {outputPath}");
+                Console.WriteLine($"Saved barcode {index} to {outputPath}");
             }
+
+            index++;
         }
 
-        // Indicate that the barcode generation process has finished
-        Console.WriteLine("Barcode generation completed.");
+        // All barcodes have been generated
     }
 }

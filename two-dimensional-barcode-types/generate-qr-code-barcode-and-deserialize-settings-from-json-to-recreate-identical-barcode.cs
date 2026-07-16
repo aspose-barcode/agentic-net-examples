@@ -1,122 +1,123 @@
+// Title: Generate QR Code and Recreate from JSON Settings
+// Description: Demonstrates creating a QR Code barcode, saving its image, serializing its configuration to JSON, then deserializing to regenerate an identical barcode.
+// Category-Description: This example belongs to the Aspose.BarCode generation and serialization category. It showcases the use of BarcodeGenerator, EncodeTypes, and QR‑specific parameters (QRErrorLevel, QREncodeMode). Typical scenarios include persisting barcode configurations, sharing settings across services, or recreating barcodes after a round‑trip. Developers often need to serialize settings to JSON or XML and later restore them without manual re‑configuration.
+// Prompt: Generate QR Code barcode and deserialize settings from JSON to recreate identical barcode.
+// Tags: qr code, barcode generation, json serialization, aspose.barcode, c#
+
 using System;
 using System.IO;
+using System.Reflection;
 using System.Text.Json;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
-/// <summary>
-/// Demonstrates generating a QR code, persisting its settings to JSON,
-/// and recreating the QR code from those settings using Aspose.BarCode.
-/// </summary>
-class Program
+namespace AsposeBarcodeQrJsonDemo
 {
     /// <summary>
-    /// Simple DTO for serializing QR barcode settings.
+    /// Data transfer object used to serialize and deserialize QR Code generation settings.
     /// </summary>
-    private class QrSettings
+    public class BarcodeSettings
     {
+        public string EncodeType { get; set; }
         public string CodeText { get; set; }
-        public QRErrorLevel? ErrorLevel { get; set; }
-        public float? XDimension { get; set; }
+        public string ErrorLevel { get; set; }
+        public string EncodeMode { get; set; }
     }
 
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a QR code, saves its configuration, and recreates the QR code from the saved configuration.
+    /// Demonstrates QR Code generation, JSON serialization of its settings, and recreation of the same barcode from the JSON data.
     /// </summary>
-    static void Main()
+    class Program
     {
-        const string qrImagePath = "qr.png";
-        const string jsonPath = "qr_settings.json";
-        const string recreatedImagePath = "qr_from_json.png";
-
-        // ------------------------------------------------------------
-        // Step 1: Generate a QR code with custom settings and save it.
-        // ------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR))
+        /// <summary>
+        /// Entry point of the demo. Generates a QR Code, saves its settings to JSON, then restores the barcode from the JSON file.
+        /// </summary>
+        static void Main()
         {
-            // Set the data to encode.
-            generator.CodeText = "https://example.com";
+            // File names used in the demo
+            const string originalImage = "qr_original.png";
+            const string restoredImage = "qr_restored.png";
+            const string jsonFile = "qr_settings.json";
 
-            // Configure high error correction level.
-            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
+            // -----------------------------------------------------------------
+            // 1. Create a QR Code barcode, configure QR‑specific settings,
+            //    save the image and serialize the settings to JSON.
+            // -----------------------------------------------------------------
+            using (var generator = new BarcodeGenerator(EncodeTypes.QR))
+            {
+                // Set the data to encode
+                generator.CodeText = "Hello Aspose!";
 
-            // Set the module size (XDimension) to 3 points.
-            generator.Parameters.Barcode.XDimension.Point = 3f;
+                // Example QR‑specific settings
+                generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
+                generator.Parameters.Barcode.QR.EncodeMode = QREncodeMode.Auto;
 
-            // Save the generated QR code image.
-            generator.Save(qrImagePath);
+                // Save the barcode image
+                generator.Save(originalImage, BarCodeImageFormat.Png);
+
+                // Capture the relevant settings into a DTO for serialization
+                var settings = new BarcodeSettings
+                {
+                    EncodeType = nameof(EncodeTypes.QR),
+                    CodeText = generator.CodeText,
+                    ErrorLevel = generator.Parameters.Barcode.QR.ErrorLevel.ToString(),
+                    EncodeMode = generator.Parameters.Barcode.QR.EncodeMode.ToString()
+                };
+
+                // Serialize to JSON (pretty printed) and write to file
+                var json = JsonSerializer.Serialize(settings, new JsonSerializerOptions { WriteIndented = true });
+                File.WriteAllText(jsonFile, json);
+            }
+
+            // -----------------------------------------------------------------
+            // 2. Read the JSON, deserialize it, recreate the barcode with the
+            //    same settings, and save a second image.
+            // -----------------------------------------------------------------
+            if (!File.Exists(jsonFile))
+            {
+                Console.WriteLine($"Settings file not found: {jsonFile}");
+                return;
+            }
+
+            // Load JSON content from file
+            var jsonContent = File.ReadAllText(jsonFile);
+            var deserializedSettings = JsonSerializer.Deserialize<BarcodeSettings>(jsonContent);
+            if (deserializedSettings == null)
+            {
+                Console.WriteLine("Failed to deserialize barcode settings.");
+                return;
+            }
+
+            // Resolve the symbology name to a BaseEncodeType using reflection
+            var fieldInfo = typeof(EncodeTypes).GetField(deserializedSettings.EncodeType);
+            if (fieldInfo == null)
+            {
+                Console.WriteLine($"Unknown symbology: {deserializedSettings.EncodeType}");
+                return;
+            }
+
+            var encodeType = (BaseEncodeType)fieldInfo.GetValue(null);
+
+            // Recreate the barcode generator with the deserialized settings
+            using (var generator = new BarcodeGenerator(encodeType, deserializedSettings.CodeText))
+            {
+                // Apply QR‑specific settings if they can be parsed from the JSON values
+                if (Enum.TryParse<QRErrorLevel>(deserializedSettings.ErrorLevel, out var errLevel))
+                {
+                    generator.Parameters.Barcode.QR.ErrorLevel = errLevel;
+                }
+
+                if (Enum.TryParse<QREncodeMode>(deserializedSettings.EncodeMode, out var encMode))
+                {
+                    generator.Parameters.Barcode.QR.EncodeMode = encMode;
+                }
+
+                // Save the restored barcode image
+                generator.Save(restoredImage, BarCodeImageFormat.Png);
+            }
+
+            // Indicate successful completion (no interactive wait)
+            Console.WriteLine("Barcode generation and JSON round‑trip completed.");
         }
-
-        // ------------------------------------------------------------
-        // Step 2: Serialize the used settings to a JSON file.
-        // ------------------------------------------------------------
-        var settingsToSave = new QrSettings
-        {
-            CodeText = "https://example.com",
-            ErrorLevel = QRErrorLevel.LevelH,
-            XDimension = 3f
-        };
-
-        // Convert the settings object to a formatted JSON string.
-        string json = JsonSerializer.Serialize(
-            settingsToSave,
-            new JsonSerializerOptions { WriteIndented = true });
-
-        // Write the JSON string to disk.
-        File.WriteAllText(jsonPath, json);
-
-        // ------------------------------------------------------------
-        // Step 3: Load settings from JSON and recreate the QR code.
-        // ------------------------------------------------------------
-        if (!File.Exists(jsonPath))
-        {
-            Console.WriteLine($"Settings file not found: {jsonPath}");
-            return;
-        }
-
-        // Read the JSON content from the file.
-        string loadedJson = File.ReadAllText(jsonPath);
-        QrSettings loadedSettings;
-
-        try
-        {
-            // Deserialize JSON back into a QrSettings object.
-            loadedSettings = JsonSerializer.Deserialize<QrSettings>(loadedJson);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Failed to deserialize JSON settings: {ex.Message}");
-            return;
-        }
-
-        // Validate that essential data is present.
-        if (loadedSettings == null || string.IsNullOrEmpty(loadedSettings.CodeText))
-        {
-            Console.WriteLine("Invalid settings data.");
-            return;
-        }
-
-        // Recreate the QR code using the deserialized settings.
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR))
-        {
-            generator.CodeText = loadedSettings.CodeText;
-
-            if (loadedSettings.ErrorLevel.HasValue)
-                generator.Parameters.Barcode.QR.ErrorLevel = loadedSettings.ErrorLevel.Value;
-
-            if (loadedSettings.XDimension.HasValue)
-                generator.Parameters.Barcode.XDimension.Point = loadedSettings.XDimension.Value;
-
-            // Save the recreated QR code image.
-            generator.Save(recreatedImagePath);
-        }
-
-        // ------------------------------------------------------------
-        // Output summary of operations.
-        // ------------------------------------------------------------
-        Console.WriteLine($"Original QR saved to: {qrImagePath}");
-        Console.WriteLine($"Settings saved to JSON: {jsonPath}");
-        Console.WriteLine($"Recreated QR saved to: {recreatedImagePath}");
     }
 }
