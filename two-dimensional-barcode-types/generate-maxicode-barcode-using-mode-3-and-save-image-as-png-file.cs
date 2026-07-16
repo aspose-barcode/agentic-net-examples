@@ -1,50 +1,51 @@
+// Title: Generate MaxiCode Mode 3 Barcode and Save as PNG
+// Description: Demonstrates creating a MaxiCode barcode in mode 3 using Aspose.BarCode and saving it as a PNG image.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It showcases the use of ComplexBarcodeGenerator with MaxiCodeCodetextMode3, a common scenario for shipping and logistics applications where MaxiCode symbols are required. Developers often need to configure postal codes, country codes, and service categories before rendering the barcode to an image format.
+// Prompt: Generate a MaxiCode barcode using mode 3 and save the image as PNG file.
+// Tags: maxicode, barcode, generation, png, aspose.barcode, complexbarcode
+
 using System;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.ComplexBarcode;
-using Aspose.BarCode;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generation of a MaxiCode (Mode 3) barcode and saves it as a PNG file.
+/// Example program that creates a MaxiCode barcode (mode 3) and saves it as a PNG file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a MaxiCode barcode and writes it to disk.
+    /// Entry point of the application.
     /// </summary>
     static void Main()
     {
-        // Define the output file path where the generated PNG will be saved.
-        string outputPath = "maxicode_mode3.png";
+        // Initialize MaxiCode codetext for mode 3
+        var maxiCodeCodetext = new MaxiCodeCodetextMode3();
 
-        // Create a MaxiCode codetext object for Mode 3 and populate its required fields.
-        var maxiCodeCodetext = new MaxiCodeCodetextMode3
-        {
-            PostalCode = "B1050",   // 6 alphanumeric characters required for Mode 3
-            CountryCode = 56,       // Example country code (numeric)
-            ServiceCategory = 999   // Example service category (numeric)
-        };
+        // Set required fields: postal code (6 alphanumeric characters)
+        maxiCodeCodetext.PostalCode = "B1050";
 
-        // Create a standard second message and assign it to the codetext.
+        // Set 3‑digit country code
+        maxiCodeCodetext.CountryCode = 56;
+
+        // Set 3‑digit service category
+        maxiCodeCodetext.ServiceCategory = 999;
+
+        // Create and assign a standard second message
         var secondMessage = new MaxiCodeStandardSecondMessage
         {
-            Message = "Sample MaxiCode message"
+            Message = "Sample message"
         };
         maxiCodeCodetext.SecondMessage = secondMessage;
 
-        // Use ComplexBarcodeGenerator to generate the barcode image from the codetext.
-        using (var complexGenerator = new ComplexBarcodeGenerator(maxiCodeCodetext))
+        // Generate the barcode using ComplexBarcodeGenerator and save as PNG
+        using (var generator = new ComplexBarcodeGenerator(maxiCodeCodetext))
         {
-            // Generate the barcode image; the returned Bitmap implements IDisposable.
-            using (var bitmap = complexGenerator.GenerateBarCodeImage())
-            {
-                // Save the bitmap as a PNG file using Aspose.Drawing.Imaging.ImageFormat.
-                bitmap.Save(outputPath, ImageFormat.Png);
-            }
+            // The file extension determines the output image format (PNG)
+            generator.Save("maxicode.png");
         }
 
-        // Inform the user that the barcode has been saved.
-        Console.WriteLine($"MaxiCode (Mode 3) barcode saved to: {outputPath}");
+        // Inform the user that the barcode has been saved
+        Console.WriteLine("MaxiCode barcode (mode 3) saved as maxicode.png");
     }
 }

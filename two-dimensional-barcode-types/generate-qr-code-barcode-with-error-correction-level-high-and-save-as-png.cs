@@ -1,32 +1,32 @@
+// Title: Generate QR Code with High Error Correction and Save as PNG
+// Description: Demonstrates creating a QR Code barcode with high error correction level (Level H) and saving it as a PNG image file.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to use the BarcodeGenerator class with QR Code symbology. It shows setting QR-specific parameters such as error correction level, a common requirement for developers needing robust QR codes for marketing, product tracking, or data encoding where damage tolerance is critical. Typical use cases include generating QR codes for URLs, contact info, or inventory data in automated workflows.
+// Prompt: Generate a QR Code barcode with error correction level high and save as PNG.
+// Tags: qr code, error correction, png, generation, aspose.barcode, barcodegenerator
+
 using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generating a QR code image using the Aspose.BarCode library.
+/// Example program that generates a QR Code barcode with high error correction
+/// and saves it as a PNG image using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a QR code with sample text,
-    /// sets a high error correction level, saves it as a PNG file, and writes the output path to the console.
+    /// Entry point of the application.
     /// </summary>
     static void Main()
     {
-        // Path where the generated QR code image will be saved
-        string outputPath = "qr.png";
-
-        // Initialize the barcode generator for a QR code with the desired text
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Sample QR Code"))
+        // Initialize a BarcodeGenerator for QR Code with the desired text.
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "Sample QR Code"))
         {
-            // Configure the QR code to use the highest error correction level (Level H)
+            // Configure the QR Code to use the highest error correction level (Level H).
             generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
 
-            // Persist the generated QR code image to the specified file in PNG format
-            generator.Save(outputPath);
+            // Persist the generated barcode to a PNG file named "qr.png".
+            generator.Save("qr.png");
         }
-
-        // Inform the user about the location of the saved QR code image
-        Console.WriteLine($"QR Code saved to {outputPath}");
     }
 }

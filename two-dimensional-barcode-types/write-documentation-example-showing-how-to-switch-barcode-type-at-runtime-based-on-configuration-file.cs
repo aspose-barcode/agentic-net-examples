@@ -1,88 +1,92 @@
+// Title: Runtime Barcode Type Switching Example
+// Description: Demonstrates how to read a barcode type from a JSON configuration file and generate the corresponding barcode at runtime.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating dynamic selection of symbology using EncodeTypes and BarcodeGenerator. Developers often need to switch barcode formats based on external settings such as config files, databases, or user input; this snippet shows how to resolve a symbology name via reflection and produce an image file.
+// Prompt: Write documentation example showing how to switch barcode type at runtime based on configuration file.
+// Tags: barcode symbology, runtime configuration, aspose.barcode, encode types, json, generation, png
+
 using System;
 using System.IO;
 using System.Reflection;
+using System.Text.Json;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
-/// <summary>
-/// Demonstrates reading a simple configuration file and generating a barcode
-/// using Aspose.BarCode based on the specified symbology and text.
-/// </summary>
-class Program
+namespace BarcodeRuntimeSwitchExample
 {
     /// <summary>
-    /// Application entry point. Reads configuration, resolves the barcode symbology,
-    /// generates the barcode image, and saves it to disk.
+    /// Simple POCO representing the JSON configuration for barcode generation.
     /// </summary>
-    static void Main()
+    public class BarcodeConfig
     {
-        // Path to the simple configuration file
-        string configPath = "barcodeConfig.txt";
+        public string BarcodeType { get; set; }
+        public string CodeText { get; set; }
+    }
 
-        // Ensure the configuration file exists; create a default one if missing
-        if (!File.Exists(configPath))
+    /// <summary>
+    /// Demonstrates runtime selection of barcode symbology based on a JSON configuration file.
+    /// </summary>
+    class Program
+    {
+        /// <summary>
+        /// Entry point. Reads configuration, resolves barcode type, generates and saves the barcode image.
+        /// </summary>
+        static void Main()
         {
-            // Default configuration: Code128 barcode with sample text
-            File.WriteAllText(configPath, "Symbology=Code128\nCodeText=HelloWorld");
-            Console.WriteLine($"Created default config file at '{configPath}'.");
+            // Path to the configuration file
+            const string configPath = "barcodeConfig.json";
+
+            // Ensure a sample configuration exists if the file is missing
+            if (!File.Exists(configPath))
+            {
+                var sampleConfig = new BarcodeConfig
+                {
+                    BarcodeType = "Code128", // Name of a field in EncodeTypes
+                    CodeText = "Sample123"
+                };
+                var json = JsonSerializer.Serialize(sampleConfig, new JsonSerializerOptions { WriteIndented = true });
+                File.WriteAllText(configPath, json);
+                Console.WriteLine($"Created sample config file at '{configPath}'.");
+            }
+
+            // Read and deserialize the configuration
+            BarcodeConfig config;
+            try
+            {
+                var configJson = File.ReadAllText(configPath);
+                config = JsonSerializer.Deserialize<BarcodeConfig>(configJson);
+                if (config == null ||
+                    string.IsNullOrWhiteSpace(config.BarcodeType) ||
+                    string.IsNullOrWhiteSpace(config.CodeText))
+                {
+                    throw new ArgumentException("Configuration file is missing required fields.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to read configuration: {ex.Message}");
+                return;
+            }
+
+            // Resolve the symbology name to a BaseEncodeType using reflection
+            var fieldInfo = typeof(EncodeTypes).GetField(config.BarcodeType);
+            if (fieldInfo == null)
+            {
+                Console.WriteLine($"Unknown barcode type: '{config.BarcodeType}'.");
+                return;
+            }
+
+            var encodeType = (BaseEncodeType)fieldInfo.GetValue(null);
+
+            // Generate the barcode based on the runtime configuration
+            using (var generator = new BarcodeGenerator(encodeType))
+            {
+                generator.CodeText = config.CodeText;
+
+                // Save the barcode image; filename includes the barcode type for clarity
+                string outputFile = $"barcode_{config.BarcodeType}.png";
+                generator.Save(outputFile);
+                Console.WriteLine($"Barcode saved to '{outputFile}'.");
+            }
         }
-
-        // Read all lines from the configuration file
-        string[] lines = File.ReadAllLines(configPath);
-        string symbologyName = null;
-        string codeText = null;
-
-        // Parse each line to extract key/value pairs
-        foreach (string line in lines)
-        {
-            // Skip empty lines or lines without an '=' delimiter
-            if (string.IsNullOrWhiteSpace(line) || !line.Contains("="))
-                continue;
-
-            // Split the line into key and value (limit to 2 parts)
-            string[] parts = line.Split(new[] { '=' }, 2);
-            string key = parts[0].Trim();
-            string value = parts[1].Trim();
-
-            // Assign values based on recognized keys (case‑insensitive)
-            if (key.Equals("Symbology", StringComparison.OrdinalIgnoreCase))
-                symbologyName = value;
-            else if (key.Equals("CodeText", StringComparison.OrdinalIgnoreCase))
-                codeText = value;
-        }
-
-        // Validate that required configuration fields were provided
-        if (string.IsNullOrEmpty(symbologyName) || string.IsNullOrEmpty(codeText))
-        {
-            Console.WriteLine("Configuration is missing required fields 'Symbology' or 'CodeText'.");
-            return;
-        }
-
-        // Resolve the symbology name to a BaseEncodeType using reflection
-        FieldInfo field = typeof(EncodeTypes).GetField(symbologyName);
-        if (field == null)
-        {
-            Console.WriteLine($"Unknown symbology: {symbologyName}");
-            return;
-        }
-
-        // Cast the reflected field value to the appropriate enum type
-        BaseEncodeType encodeType = (BaseEncodeType)field.GetValue(null);
-
-        // Define the output file path for the generated barcode image
-        string outputPath = "generated_barcode.png";
-
-        // Create a barcode generator with the resolved type and provided text
-        using (var generator = new BarcodeGenerator(encodeType, codeText))
-        {
-            // Example: set a simple property (optional)
-            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-
-            // Save the generated barcode image to the specified file
-            generator.Save(outputPath);
-        }
-
-        // Inform the user that the barcode has been generated
-        Console.WriteLine($"Barcode generated: {outputPath}");
     }
 }

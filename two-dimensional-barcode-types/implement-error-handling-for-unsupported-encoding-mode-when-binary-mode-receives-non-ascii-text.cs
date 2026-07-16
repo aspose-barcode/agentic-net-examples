@@ -1,60 +1,76 @@
+// Title: QR Code Generation with Binary Mode Error Handling
+// Description: Demonstrates generating a QR code in Binary mode, handling unsupported non‑ASCII characters, and falling back to Auto mode with UTF‑8 encoding.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to work with the BarcodeGenerator class to create QR codes. It illustrates typical use cases such as setting encoding modes, handling exceptions for unsupported characters, and using ECI encoding for Unicode support. Developers often need to manage encoding constraints when generating barcodes for internationalized data.
+// Prompt: Implement error handling for unsupported encoding mode when Binary mode receives non‑ASCII text.
+// Tags: qr, binary, error handling, fallback, eciencoding, aspose.barcode, png
+
 using System;
-using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates generating QR barcodes with ASCII and non‑ASCII text using Aspose.BarCode.
+/// Example program that generates a QR code, handles unsupported characters in Binary mode,
+/// and falls back to Auto mode with UTF‑8 ECI encoding when necessary.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates two QR codes: one with ASCII text and one with non‑ASCII text.
+    /// Entry point of the application. Generates a QR barcode, catches encoding errors,
+    /// and retries with a compatible encoding mode.
     /// </summary>
     static void Main()
     {
-        // Define sample texts
-        string asciiText = "HelloWorld123";   // ASCII only
-        string nonAsciiText = "Hello世界";    // Contains non‑ASCII characters
+        // Sample non‑ASCII text that is not allowed in Binary mode (Japanese characters)
+        string nonAsciiText = "テスト";
 
-        // Determine output file paths in the current directory
-        string asciiOutput = Path.Combine(Directory.GetCurrentDirectory(), "qr_ascii.png");
-        string nonAsciiOutput = Path.Combine(Directory.GetCurrentDirectory(), "qr_nonascii.png");
+        // Destination file for the generated barcode image
+        string outputPath = "qr_binary.png";
 
-        // Generate QR code for ASCII text (expected to succeed)
-        GenerateQrBarcode(asciiText, asciiOutput);
-
-        // Generate QR code for non‑ASCII text using Binary mode (should be handled gracefully)
-        GenerateQrBarcode(nonAsciiText, nonAsciiOutput);
-    }
-
-    /// <summary>
-    /// Generates a QR barcode from the specified text and saves it to the given path.
-    /// </summary>
-    /// <param name="codeText">The text to encode in the QR barcode.</param>
-    /// <param name="outputPath">The file path where the barcode image will be saved.</param>
-    static void GenerateQrBarcode(string codeText, string outputPath)
-    {
+        // Attempt to generate the QR barcode using Binary encoding mode
         try
         {
-            // Initialize the barcode generator for QR type
             using (var generator = new BarcodeGenerator(EncodeTypes.QR))
             {
-                // Configure the QR generator to use Binary encoding mode
+                // Set Binary encoding mode – will throw if text contains non‑ASCII characters
                 generator.Parameters.Barcode.QR.EncodeMode = QREncodeMode.Binary;
 
-                // Set the text to be encoded
-                generator.CodeText = codeText;
+                // Assign the non‑ASCII code text
+                generator.CodeText = nonAsciiText;
 
-                // Save the generated barcode image to the specified file
-                generator.Save(outputPath);
-                Console.WriteLine($"Barcode saved: {outputPath}");
+                // Save the barcode image as PNG
+                generator.Save(outputPath, BarCodeImageFormat.Png);
+                Console.WriteLine($"Barcode saved successfully to '{outputPath}'.");
             }
         }
         catch (Exception ex)
         {
-            // Log any errors, such as unsupported encoding for non‑ASCII characters
-            Console.WriteLine($"Failed to generate barcode for text \"{codeText}\": {ex.Message}");
+            // Handle the expected exception for unsupported characters in Binary mode
+            Console.WriteLine($"Error generating barcode in Binary mode: {ex.Message}");
+            Console.WriteLine("Falling back to Auto mode with the same text.");
+
+            // Retry using Auto mode, which supports Unicode via ECI encoding
+            try
+            {
+                using (var generator = new BarcodeGenerator(EncodeTypes.QR))
+                {
+                    // Set Auto encoding mode and specify UTF‑8 ECI encoding
+                    generator.Parameters.Barcode.QR.EncodeMode = QREncodeMode.Auto;
+                    generator.Parameters.Barcode.QR.ECIEncoding = ECIEncodings.UTF8;
+
+                    // Reassign the same non‑ASCII text
+                    generator.CodeText = nonAsciiText;
+
+                    // Save the barcode image as PNG
+                    generator.Save(outputPath, BarCodeImageFormat.Png);
+                    Console.WriteLine($"Barcode saved in Auto mode to '{outputPath}'.");
+                }
+            }
+            catch (Exception fallbackEx)
+            {
+                // Report failure of the fallback attempt
+                Console.WriteLine($"Fallback also failed: {fallbackEx.Message}");
+            }
         }
     }
 }

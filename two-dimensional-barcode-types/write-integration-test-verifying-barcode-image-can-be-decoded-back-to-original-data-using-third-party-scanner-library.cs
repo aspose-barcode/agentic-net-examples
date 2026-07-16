@@ -1,83 +1,64 @@
+// Title: Integration test for barcode generation and verification
+// Description: Generates a Code128 barcode, decodes it, and verifies the decoded data matches the original input.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It demonstrates how to use BarcodeGenerator to create a barcode image and BarCodeReader to decode it. Developers commonly need to validate that generated barcodes can be read by third‑party scanners, ensuring interoperability in inventory, logistics, and retail applications.
+// Prompt: Write integration test verifying barcode image can be decoded back to original data using third‑party scanner library.
+// Tags: code128, generation, recognition, png, aspose.barcode, integration-test, barcode
+
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a Code128 barcode, saving it to a temporary file,
-/// decoding it back, and verifying the result using Aspose.BarCode.
+/// Demonstrates an integration test that generates a barcode, decodes it, and validates the result.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a barcode, decodes it, compares with original text, and cleans up.
+    /// Entry point of the test. Generates a Code128 barcode, reads it back, and checks the decoded text.
     /// </summary>
     static void Main()
     {
-        // Define the text that will be encoded into the barcode.
+        // Sample data to encode
         const string originalText = "Test12345";
 
-        // Build a temporary file path for the barcode image.
-        string tempImagePath = Path.Combine(Path.GetTempPath(), "temp_barcode.png");
-
-        // ------------------------------------------------------------
-        // Generate the barcode image using Aspose.BarCode.
-        // ------------------------------------------------------------
+        // Create a barcode generator for Code128 with the sample data
         using (var generator = new BarcodeGenerator(EncodeTypes.Code128, originalText))
         {
-            // Set image resolution (dots per inch) – optional but improves quality.
-            generator.Parameters.Resolution = 300f;
-
-            // Save the generated barcode as a PNG file.
-            generator.Save(tempImagePath, BarCodeImageFormat.Png);
-        }
-
-        // Verify that the image file was successfully created.
-        if (!File.Exists(tempImagePath))
-        {
-            Console.WriteLine("Failed to create barcode image.");
-            return;
-        }
-
-        // ------------------------------------------------------------
-        // Decode the barcode.
-        // In a real project you might use a different library (e.g., ZXing.Net).
-        // Here we use Aspose.BarCode for simplicity.
-        // ------------------------------------------------------------
-        string decodedText = null;
-        using (var reader = new BarCodeReader(tempImagePath, DecodeType.AllSupportedTypes))
-        {
-            // Read all barcodes found in the image; we expect only one.
-            foreach (BarCodeResult result in reader.ReadBarCodes())
+            // Save the generated barcode to a memory stream in PNG format
+            using (var ms = new MemoryStream())
             {
-                decodedText = result.CodeText;
-                break; // Stop after the first barcode.
+                generator.Save(ms, BarCodeImageFormat.Png);
+                ms.Position = 0; // Reset stream position for reading
+
+                // Initialize a barcode reader that supports all available symbologies
+                using (var reader = new BarCodeReader(ms, DecodeType.AllSupportedTypes))
+                {
+                    // Read all barcodes found in the image
+                    var results = reader.ReadBarCodes();
+
+                    // If no barcode is detected, report and exit
+                    if (results.Length == 0)
+                    {
+                        Console.WriteLine("No barcode detected.");
+                        return;
+                    }
+
+                    // Take the first detected barcode (the one we generated)
+                    var decodedText = results[0].CodeText;
+
+                    // Compare the decoded text with the original input
+                    if (decodedText == originalText)
+                    {
+                        Console.WriteLine("Success: Decoded text matches original.");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Failure: Decoded text '{decodedText}' does not match original '{originalText}'.");
+                    }
+                }
             }
-        }
-
-        // Compare the decoded text with the original text and output the result.
-        if (decodedText == originalText)
-        {
-            Console.WriteLine("Success: Decoded text matches original.");
-        }
-        else
-        {
-            Console.WriteLine($"Failure: Decoded text '{decodedText ?? "null"}' does not match original '{originalText}'.");
-        }
-
-        // ------------------------------------------------------------
-        // Clean up: delete the temporary barcode image file.
-        // ------------------------------------------------------------
-        try
-        {
-            File.Delete(tempImagePath);
-        }
-        catch
-        {
-            // Suppress any exceptions during cleanup.
         }
     }
 }

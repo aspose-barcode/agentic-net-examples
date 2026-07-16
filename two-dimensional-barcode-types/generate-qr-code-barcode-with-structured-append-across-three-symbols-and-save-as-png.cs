@@ -1,73 +1,48 @@
+// Title: Generate QR Code with Structured Append (3 symbols)
+// Description: Demonstrates creating a QR Code split into three parts using Structured Append and saving each part as a PNG image.
+// Category-Description: This example belongs to the Aspose.BarCode QR Code generation category, showcasing the use of BarcodeGenerator, QR structured append parameters, and image export. Developers often need to split large data across multiple QR symbols while preserving order, using the QR structured append feature to reconstruct the original message. The snippet illustrates setting total count, sequence indicator, parity byte, and error correction level, useful for applications like multi‑part data transmission or packaging labels.
+// Prompt: Generate a QR Code barcode with structured append across three symbols and save as PNG.
+// Tags: qr code, structured append, png, aspose.barcode, generation
+
 using System;
-using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates creating a structured-append QR code split into multiple symbols using Aspose.BarCode.
+/// Demonstrates generating a QR Code split into three symbols using Structured Append and saving each as a PNG file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates three QR code parts from a sample string and saves them as PNG files.
+    /// Entry point. Creates three QR Code parts with structured append settings and writes them to disk.
     /// </summary>
     static void Main()
     {
-        // Sample data to be split into three QR symbols
-        const string fullData = "HelloWorldStructuredAppendExample";
+        // Define the data fragments that will be combined via Structured Append
+        string[] parts = { "Hello ", "World", "!" };
+        const int totalCount = 3;          // Total number of QR symbols in the sequence
+        const byte parityByte = 0;         // Parity byte (any value is acceptable; 0 is used here)
 
-        // Split the data into three roughly equal parts
-        string[] parts = SplitIntoParts(fullData, 3);
-
-        // Common structured append settings
-        const int totalSymbols = 3;
-        const byte parityByte = 0; // parity can be calculated, using 0 for simplicity
-
-        // Generate each QR part
+        // Iterate over each fragment and generate a separate QR symbol
         for (int i = 0; i < parts.Length; i++)
         {
-            // Determine output file name for the current part
-            string outputPath = $"qr_part{i + 1}.png";
-
-            // Create a barcode generator for QR code with the current data segment
+            // Initialize the generator with QR encoding and the current fragment
             using (var generator = new BarcodeGenerator(EncodeTypes.QR, parts[i]))
             {
-                // Configure structured append parameters
-                generator.Parameters.Barcode.QR.StructuredAppend.TotalCount = totalSymbols;
-                generator.Parameters.Barcode.QR.StructuredAppend.SequenceIndicator = i; // index starts from 0
+                // Configure Structured Append parameters for this symbol
+                generator.Parameters.Barcode.QR.StructuredAppend.TotalCount = totalCount;
+                generator.Parameters.Barcode.QR.StructuredAppend.SequenceIndicator = i; // Zero‑based index
                 generator.Parameters.Barcode.QR.StructuredAppend.ParityByte = parityByte;
 
-                // Save the QR symbol as a PNG file
-                generator.Save(outputPath);
-                Console.WriteLine($"Saved QR part {i + 1} to {Path.GetFullPath(outputPath)}");
+                // Optional: set the desired error correction level (Level M is a common choice)
+                generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
+
+                // Build the output file name (e.g., qr_part1.png, qr_part2.png, ...)
+                string fileName = $"qr_part{i + 1}.png";
+
+                // Save the generated QR symbol as a PNG image
+                generator.Save(fileName, BarCodeImageFormat.Png);
             }
         }
-    }
-
-    /// <summary>
-    /// Splits the specified text into the given number of parts.
-    /// The last part may be longer if the text length is not evenly divisible.
-    /// </summary>
-    /// <param name="text">The text to split.</param>
-    /// <param name="partsCount">The number of parts to create.</param>
-    /// <returns>An array containing the split text segments.</returns>
-    private static string[] SplitIntoParts(string text, int partsCount)
-    {
-        if (partsCount <= 0) throw new ArgumentOutOfRangeException(nameof(partsCount));
-
-        string[] result = new string[partsCount];
-        int partLength = text.Length / partsCount;
-        int remainder = text.Length % partsCount;
-        int index = 0;
-
-        // Distribute characters across parts, adding one extra character to the first 'remainder' parts
-        for (int i = 0; i < partsCount; i++)
-        {
-            int currentPartLength = partLength + (i < remainder ? 1 : 0);
-            result[i] = text.Substring(index, currentPartLength);
-            index += currentPartLength;
-        }
-
-        return result;
     }
 }

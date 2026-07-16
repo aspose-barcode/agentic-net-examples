@@ -1,34 +1,45 @@
+// Title: Generate square DataMatrix barcode with default size
+// Description: Demonstrates creating a DataMatrix barcode with a square shape and default size for an alphanumeric string.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating how to configure DataMatrix symbology using the BarcodeGenerator class. It shows setting aspect ratio and version to produce a square ECC200 barcode, a common requirement for labeling and inventory systems. Developers often need to customize size, shape, and encoding options when generating barcodes programmatically.
+// Prompt: Generate a DataMatrix barcode with square shape and default size for given alphanumeric CodeText.
+// Tags: datamatrix, barcode, generation, square, png, aspose.barcode
+
 using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a DataMatrix barcode and saving it as an image file.
+/// Example program that generates a square DataMatrix barcode and saves it as a PNG image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a DataMatrix barcode with specific settings and writes it to a PNG file.
+    /// Entry point of the application. Creates a DataMatrix barcode with a square shape and default size,
+    /// then writes the image to disk.
     /// </summary>
     static void Main()
     {
-        // Define the output file path for the generated barcode image.
-        string outputPath = "datamatrix.png";
+        // Alphanumeric text to encode
+        string codeText = "ABC123XYZ";
 
-        // Initialize a BarcodeGenerator for DataMatrix with the desired encoded text.
-        using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, "ABC123XYZ"))
+        // Initialize the barcode generator for DataMatrix with the provided text
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.DataMatrix, codeText))
         {
-            // Set the aspect ratio to 1 to enforce a square shape for the barcode.
+            // Set the barcode to have a square aspect ratio (1:1)
             generator.Parameters.Barcode.DataMatrix.AspectRatio = 1f;
 
-            // Choose a specific DataMatrix version (20x20 modules) to control the size.
+            // Choose a square ECC200 version (20x20 modules) for default size
             generator.Parameters.Barcode.DataMatrix.DataMatrixVersion = DataMatrixVersion.ECC200_20x20;
 
-            // Save the barcode image to the specified path (PNG format is used by default).
-            generator.Save(outputPath);
+            // Define the output file name and format (PNG)
+            string outputFile = "datamatrix.png";
+
+            // Save the generated barcode image to the specified file
+            generator.Save(outputFile, BarCodeImageFormat.Png);
         }
 
-        // Inform the user that the barcode has been saved.
-        Console.WriteLine($"DataMatrix barcode saved to {outputPath}");
+        // Inform the user that the barcode was generated successfully
+        Console.WriteLine("DataMatrix barcode generated successfully.");
     }
 }

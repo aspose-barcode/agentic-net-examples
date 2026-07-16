@@ -1,72 +1,50 @@
+// Title: Azure Function sample generating GS1 Composite barcode
+// Description: Demonstrates how to create a GS1 Composite barcode from an HTTP request payload using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on GS1 Composite symbology. It showcases the BarcodeGenerator class with EncodeTypes.GS1CompositeBar, configuring linear and 2D components, and saving the result as an image. Developers building web services or Azure Functions that need to produce barcodes on‑the‑fly can use this pattern as a reference.
+// Prompt: Develop a sample Azure Function that generates GS1 Composite barcode from HTTP request payload.
+// Tags: gs1 composite, barcode generation, png output, aspose.barcode, barcodegenerator
+
 using System;
-using System.IO;
-using System.Text.Json;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generation and verification of a GS1 Composite barcode using Aspose.BarCode.
+/// Sample console application illustrating the core barcode generation logic
+/// that would be used inside an Azure Function to produce a GS1 Composite barcode.
 /// </summary>
 class Program
 {
-    // Simple model representing the expected HTTP JSON payload
-    private class Gs1CompositeRequest
-    {
-        public string Linear { get; set; }
-        public string TwoD { get; set; }
-    }
-
     /// <summary>
-    /// Entry point of the application. Generates a GS1 Composite barcode from a JSON payload,
-    /// saves it to a file, and then reads it back to verify the content.
+    /// Entry point of the sample application.
+    /// Generates a GS1 Composite barcode from a hard‑coded payload and saves it as a PNG file.
     /// </summary>
     static void Main()
     {
-        // Sample JSON payload (simulating an HTTP request body)
-        string jsonPayload = @"{ ""Linear"": ""(01)03212345678906"", ""TwoD"": ""(21)A1B2C3D4E5F6G7H8"" }";
+        // NOTE: Azure Functions cannot be demonstrated in this console runner.
+        // The core logic below generates a GS1 Composite barcode from a sample payload.
 
-        // Deserialize the payload into a strongly‑typed request object
-        Gs1CompositeRequest request = JsonSerializer.Deserialize<Gs1CompositeRequest>(jsonPayload);
-        if (request == null || string.IsNullOrWhiteSpace(request.Linear) || string.IsNullOrWhiteSpace(request.TwoD))
+        // Sample payload representing linear and 2D components separated by '|'
+        string payload = "(01)03212345678906|(21)A1B2C3D4E5F6G7H8";
+
+        // Initialize the barcode generator with GS1 Composite symbology and the payload
+        using (var generator = new BarcodeGenerator(EncodeTypes.GS1CompositeBar, payload))
         {
-            Console.WriteLine("Invalid request payload.");
-            return;
-        }
-
-        // Combine linear and 2D parts using the required '|' separator for GS1 Composite
-        string codetext = $"{request.Linear}|{request.TwoD}";
-
-        // Determine the output file path for the generated barcode image
-        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "gs1composite.png");
-
-        // Generate the GS1 Composite barcode
-        using (var generator = new BarcodeGenerator(EncodeTypes.GS1CompositeBar, codetext))
-        {
-            // Configure the linear component (GS1 Code128) and the 2D component (CC_A)
+            // Configure the linear component (e.g., GS1 Code128)
             generator.Parameters.Barcode.GS1CompositeBar.LinearComponentType = EncodeTypes.GS1Code128;
+
+            // Configure the 2D component (e.g., Composite Component A)
             generator.Parameters.Barcode.GS1CompositeBar.TwoDComponentType = TwoDComponentType.CC_A;
 
-            // Example additional settings for the barcode appearance
-            generator.Parameters.Barcode.Pdf417.AspectRatio = 3f;          // Aspect ratio of the 2D component
-            generator.Parameters.Barcode.XDimension.Pixels = 3f;          // X‑Dimension for both components
-            generator.Parameters.Barcode.BarHeight.Pixels = 100f;        // Height of the linear component
+            // Set visual properties: X‑dimension and bar height
+            generator.Parameters.Barcode.XDimension.Pixels = 3f;
+            generator.Parameters.Barcode.BarHeight.Pixels = 100f;
 
-            // Save the generated barcode image to the specified path
+            // Define the output file path and save the barcode image
+            string outputPath = "gs1composite.png";
             generator.Save(outputPath);
-        }
 
-        Console.WriteLine($"Barcode image saved to: {outputPath}");
-
-        // Verify the generated barcode by reading it back from the saved image
-        using (var reader = new BarCodeReader(outputPath, DecodeType.GS1CompositeBar))
-        {
-            foreach (var result in reader.ReadBarCodes())
-            {
-                Console.WriteLine($"Detected CodeText: {result.CodeText}");
-                Console.WriteLine($"Barcode Type: {result.CodeTypeName}");
-            }
+            // Inform the user where the file was saved
+            Console.WriteLine($"GS1 Composite barcode saved to {outputPath}");
         }
     }
 }

@@ -1,58 +1,54 @@
+// Title: Retrieve extended CodeText for MaxiCode and generate barcode
+// Description: Demonstrates building an extended CodeText for a MaxiCode barcode using MaxiCodeExtCodetextBuilder and generating the barcode image.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on MaxiCode symbology and extended CodeText handling. It showcases the use of BarcodeGenerator, MaxiCodeExtCodetextBuilder, and related parameter classes to create barcodes with multiple ECI encodings and plain text. Developers often need to generate MaxiCode barcodes for logistics and shipping applications where extended character sets are required.
+// Prompt: Retrieve extended CodeText for MaxiCode using GetExtendedCodetext method and include it in generation.
+// Tags: maximicode, extendedcodetext, barcode generation, png, aspose.barcode, eciencoding
+
 using System;
-using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing.Imaging;
+using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates creation of a MaxiCode barcode with extended codetext using Aspose.BarCode.
+/// Example program that builds an extended CodeText for a MaxiCode barcode,
+/// configures the generator for extended encoding, and saves the barcode as a PNG image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Builds extended codetext, generates a MaxiCode barcode, and saves it as a PNG file.
+    /// Entry point of the example. Constructs extended CodeText, generates a MaxiCode barcode,
+    /// and writes the output image to disk.
     /// </summary>
     static void Main()
     {
-        // ------------------------------------------------------------
-        // Build extended codetext for MaxiCode
-        // ------------------------------------------------------------
-        var textBuilder = new MaxiCodeExtCodetextBuilder();
+        // Build extended CodeText for MaxiCode using the builder.
+        var extBuilder = new MaxiCodeExtCodetextBuilder();
 
-        // Add ECIs (Extended Channel Interpretations) with different encodings
-        textBuilder.AddECICodetext(ECIEncodings.Win1251, "Will");          // Windows-1251 encoding
-        textBuilder.AddECICodetext(ECIEncodings.UTF8, "犬Right狗");        // UTF-8 encoding with Unicode characters
-        textBuilder.AddECICodetext(ECIEncodings.UTF16BE, "犬Power狗");    // UTF-16BE encoding with Unicode characters
+        // Add ECI-encoded segments with different character sets.
+        extBuilder.AddECICodetext(ECIEncodings.Win1251, "Will");
+        extBuilder.AddECICodetext(ECIEncodings.UTF8, "犬Right狗");
+        extBuilder.AddECICodetext(ECIEncodings.UTF16BE, "犬Power狗");
 
-        // Add plain (non‑ECI) text segment
-        textBuilder.AddPlainCodetext("Plain text");
+        // Add a plain (non‑ECI) segment.
+        extBuilder.AddPlainCodetext("Plain text");
 
-        // Retrieve the combined extended codetext string
-        string extendedCodeText = textBuilder.GetExtendedCodetext();
+        // Retrieve the generated extended CodeText string.
+        string extendedCodeText = extBuilder.GetExtendedCodetext();
+        Console.WriteLine("Extended CodeText: " + extendedCodeText);
 
-        // ------------------------------------------------------------
-        // Output the extended codetext to the console for verification
-        // ------------------------------------------------------------
-        Console.WriteLine("Extended CodeText for MaxiCode:");
-        Console.WriteLine(extendedCodeText);
-
-        // ------------------------------------------------------------
-        // Generate MaxiCode barcode using the extended codetext
-        // ------------------------------------------------------------
+        // Create a MaxiCode barcode generator with the extended CodeText.
         using (var generator = new BarcodeGenerator(EncodeTypes.MaxiCode, extendedCodeText))
         {
-            // Optional: set human‑readable text displayed below the barcode
-            generator.Parameters.Barcode.CodeTextParameters.TwoDDisplayText = "My Text";
+            // Enable extended encoding mode to correctly process the extended CodeText.
+            generator.Parameters.Barcode.MaxiCode.MaxiCodeEncodeMode = MaxiCodeEncodeMode.Extended;
 
-            // Determine output file path (current directory)
-            string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "maxicode.png");
+            // Set human‑readable text that will be displayed without control characters.
+            generator.Parameters.Barcode.CodeTextParameters.TwoDDisplayText = "Sample MaxiCode";
 
-            // Save the generated barcode as a PNG image
+            // Define output file path and save the barcode as a PNG image.
+            string outputPath = "maxicode_extended.png";
             generator.Save(outputPath, BarCodeImageFormat.Png);
-
-            // Inform the user where the image was saved
-            Console.WriteLine($"Barcode image saved to: {outputPath}");
+            Console.WriteLine("Barcode saved to: " + outputPath);
         }
     }
 }
