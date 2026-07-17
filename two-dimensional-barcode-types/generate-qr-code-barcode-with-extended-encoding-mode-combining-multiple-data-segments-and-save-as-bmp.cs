@@ -1,53 +1,59 @@
+// Title: Generate QR Code with Extended Encoding and Save as BMP
+// Description: Demonstrates creating a QR Code barcode using the Extended encoding mode, combining multiple data segments, and saving the result as a BMP image.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on QR Code creation with advanced encoding options. It showcases the use of BarcodeGenerator, QrExtCodetextBuilder, and QR encoding settings (QREncodeMode, QRErrorLevel) to build multi‑segment QR codes. Developers often need such patterns for encoding mixed data types, applying ECI, or inserting function characters in QR symbols.
+// Prompt: Generate a QR Code barcode with Extended encoding mode combining multiple data segments and save as BMP.
+// Tags: qr code, extended encoding, bmp, aspose.barcode, barcode generation, qrextcodetextbuilder, qrencondemode
+
 using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generating a QR code with extended codetext using Aspose.BarCode.
+/// Example program that creates a QR Code using the Extended encoding mode,
+/// combines several data segments (plain text, function characters, ECI),
+/// and saves the barcode as a BMP file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that builds an extended codetext with multiple segments and generates a QR code image.
+    /// Entry point of the example. Builds an extended QR code text,
+    /// configures the generator, and writes the image to disk.
     /// </summary>
     static void Main()
     {
-        // Create a builder for constructing an extended QR codetext with multiple data segments.
-        var builder = new QrExtCodetextBuilder();
+        // Build an extended QR code text with multiple segments:
+        // - FNC1 in first position
+        // - Plain text segment "ABC123"
+        // - Group separator (GS)
+        // - Plain text segment "XYZ"
+        // - ECI segment (UTF‑8) containing Cyrillic text "Привет"
+        var extBuilder = new QrExtCodetextBuilder();
+        extBuilder.AddFNC1FirstPosition();                     // <FNC1> at the start
+        extBuilder.AddPlainCodetext("ABC123");                 // first plain data segment
+        extBuilder.AddFNC1GroupSeparator();                   // group separator (0x1D)
+        extBuilder.AddPlainCodetext("XYZ");                    // second plain data segment
+        extBuilder.AddECICodetext(ECIEncodings.UTF8, "Привет"); // ECI segment with Cyrillic text
 
-        // Add an FNC1 character at the first position (required for certain GS1 applications).
-        builder.AddFNC1FirstPosition();
+        // Retrieve the combined extended codetext string.
+        string extendedCodeText = extBuilder.GetExtendedCodetext();
 
-        // Append a plain alphanumeric segment.
-        builder.AddPlainCodetext("ABC123");
-
-        // Insert a group separator (FNC1) to delimit segments.
-        builder.AddFNC1GroupSeparator();
-
-        // Append another plain alphanumeric segment.
-        builder.AddPlainCodetext("DEF456");
-
-        // Add an ECI segment with UTF‑8 encoding containing Japanese text.
-        builder.AddECICodetext(ECIEncodings.UTF8, "こんにちは");
-
-        // Retrieve the fully constructed extended codetext string.
-        string extendedCode = builder.GetExtendedCodetext();
-
-        // Generate the QR code using the extended encoding mode.
+        // Create a QR barcode generator and configure it for Extended mode.
         using (var generator = new BarcodeGenerator(EncodeTypes.QR))
         {
             // Assign the extended codetext to the generator.
-            generator.CodeText = extendedCode;
+            generator.CodeText = extendedCodeText;
 
-            // Set QR-specific parameters: use Extended mode and medium error correction level.
+            // Set QR encoding mode to Extended (supports multi‑segment codetext).
             generator.Parameters.Barcode.QR.EncodeMode = QREncodeMode.Extended;
-            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM; // optional error correction
 
-            // Save the generated QR code as a BMP image file.
+            // Optional: set error correction level (e.g., LevelM).
+            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
+
+            // Save the generated barcode image as a BMP file.
             generator.Save("qr_extended.bmp");
         }
 
-        // Inform the user that the QR code image has been saved.
-        Console.WriteLine("QR code saved as qr_extended.bmp");
+        // Inform the user that the file has been created.
+        Console.WriteLine("QR code saved to 'qr_extended.bmp'.");
     }
 }

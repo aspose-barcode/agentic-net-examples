@@ -1,31 +1,31 @@
+// Title: Generate and rotate QR Code barcode 180° for upside-down display
+// Description: Demonstrates creating a QR Code barcode with Aspose.BarCode and rotating it 180 degrees so it appears upside down.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on image manipulation and orientation. It showcases the use of BarcodeGenerator, EncodeTypes, and rotation parameters to produce rotated barcode images, a common requirement for custom label designs, packaging, or display scenarios where barcode orientation must be altered.
+// Prompt: Generate QR Code barcode and rotate barcode 180 degrees for upside‑down display.
+// Tags: qr code, rotation, image generation, aspose.barcode, barcodegenerator, encode types
+
 using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generating a QR code image and rotating it 180 degrees using Aspose.BarCode.
+/// Demonstrates generating a QR Code barcode and rotating it 180 degrees for upside‑down display using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Application entry point. Generates a QR code, rotates it, saves to file, and writes the path to console.
+    /// Entry point of the example. Creates a QR Code, applies a 180° rotation, and saves the image.
     /// </summary>
     static void Main()
     {
-        // Define the output file path for the generated QR code image.
-        string outputPath = "qr_rotated.png";
-
-        // Initialize a BarcodeGenerator for QR code with the desired text.
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Sample QR Code"))
+        // Initialize the barcode generator with QR code symbology and the desired text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Hello World"))
         {
-            // Set rotation angle to 180 degrees to display the QR code upside‑down.
+            // Apply a 180-degree rotation to make the barcode appear upside down.
             generator.Parameters.RotationAngle = 180f;
 
-            // Save the rotated QR code image to the specified file.
-            generator.Save(outputPath);
+            // Save the rotated barcode image to a PNG file.
+            generator.Save("qr_upside_down.png");
         }
-
-        // Output the location of the saved QR code image to the console.
-        Console.WriteLine($"QR Code saved to: {outputPath}");
     }
 }

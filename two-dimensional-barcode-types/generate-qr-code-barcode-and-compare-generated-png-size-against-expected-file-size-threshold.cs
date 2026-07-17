@@ -1,66 +1,66 @@
+// Title: Generate QR Code and Validate PNG File Size
+// Description: Creates a QR Code barcode, saves it as a PNG image, and checks that the resulting file size stays within a predefined threshold.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, demonstrating how to use the BarcodeGenerator class with QR Code symbology, configure error correction levels, and output PNG files. Developers often need to generate barcodes for web links or product information and verify output constraints such as file size for storage or transmission limits. The snippet showcases typical steps: initializing the generator, setting parameters, saving the image, and performing simple file validation.
+// Prompt: Generate QR Code barcode and compare generated PNG size against expected file size threshold.
+// Tags: qr code, barcode generation, png, file size validation, aspose.barcode, generation
+
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates generating a QR code image, verifying its file size,
-/// and cleaning up the generated file using Aspose.BarCode.
+/// Demonstrates QR Code generation using Aspose.BarCode and validates the PNG file size against a threshold.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a QR code, checks its size against a threshold,
-    /// and optionally deletes the created file.
+    /// Entry point of the example. Generates a QR Code, saves it as PNG, and checks its size.
     /// </summary>
     static void Main()
     {
-        // Define the temporary output file path for the QR code image.
-        string outputPath = Path.Combine(Path.GetTempPath(), "qr_code.png");
+        // Define the output file path and the acceptable size threshold (in bytes).
+        const string outputPath = "qr_code.png";
+        const long sizeThreshold = 5000L; // Example threshold.
 
-        // Expected maximum file size in bytes (5 KB).
-        const long sizeThreshold = 5000L;
-
-        // Create a QR code generator with the desired content.
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
-        {
-            // Optional: set error correction level if desired.
-            // generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
-
-            // Save the generated QR code as a PNG file.
-            generator.Save(outputPath, BarCodeImageFormat.Png);
-        }
-
-        // Verify that the QR code image file was successfully created.
-        if (!File.Exists(outputPath))
-        {
-            Console.WriteLine("Failed to generate the QR code image.");
-            return;
-        }
-
-        // Retrieve the actual file size of the generated image.
-        long actualSize = new FileInfo(outputPath).Length;
-
-        // Compare the actual size with the defined threshold and report the result.
-        if (actualSize <= sizeThreshold)
-        {
-            Console.WriteLine($"Success: QR code image size ({actualSize} bytes) is within the threshold ({sizeThreshold} bytes).");
-        }
-        else
-        {
-            Console.WriteLine($"Warning: QR code image size ({actualSize} bytes) exceeds the threshold ({sizeThreshold} bytes).");
-        }
-
-        // Attempt to delete the generated file; ignore any errors that occur during cleanup.
-        try
+        // Remove any existing file to ensure a clean run.
+        if (File.Exists(outputPath))
         {
             File.Delete(outputPath);
         }
-        catch
+
+        // Create a QR Code barcode generator.
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR))
         {
-            // Cleanup errors are intentionally ignored.
+            // Set the data to encode.
+            generator.CodeText = "https://www.example.com";
+
+            // Configure a high error correction level for better resilience.
+            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
+
+            // Save the generated barcode as a PNG image.
+            generator.Save(outputPath);
+        }
+
+        // Verify that the PNG file was successfully created.
+        if (!File.Exists(outputPath))
+        {
+            Console.WriteLine("Failed to generate QR code image.");
+            return;
+        }
+
+        // Retrieve the file size of the generated PNG.
+        long fileSize = new FileInfo(outputPath).Length;
+        Console.WriteLine($"Generated QR code size: {fileSize} bytes.");
+
+        // Compare the actual file size with the predefined threshold.
+        if (fileSize <= sizeThreshold)
+        {
+            Console.WriteLine("Size is within the expected threshold.");
+        }
+        else
+        {
+            Console.WriteLine("Size exceeds the expected threshold.");
         }
     }
 }

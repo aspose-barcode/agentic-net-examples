@@ -1,64 +1,56 @@
+// Title: Han Xin Barcode Generation with Capacity Exception Handling
+// Description: Demonstrates generating a Han Xin barcode and handling cases where the input data exceeds the symbol's maximum capacity.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, focusing on Han Xin (Chinese Postal) symbology. It showcases the use of BarcodeGenerator, EncodeTypes, and HanXin parameters to create a barcode image, while illustrating typical developer needs such as automatic version selection, error correction configuration, and robust exception handling for data overflow scenarios. Ideal for developers searching for barcode generation patterns, error handling techniques, and Han Xin specific API usage.
+/// Prompt: Implement exception handling for data exceeding maximum capacity of selected Han Xin symbol size.
+/// Tags: barcode, hansin, exception-handling, generation, png, aspose.barcode
+
 using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates generating a Han Xin barcode with a long payload,
-/// handling version selection and fallback to automatic sizing.
+/// Provides an example of generating a Han Xin barcode and handling data capacity overflow exceptions.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a barcode, first attempting a specific small version,
-    /// then falling back to automatic version selection if needed.
+    /// Entry point of the application. Generates a Han Xin barcode and writes the result to a PNG file.
     /// </summary>
     static void Main()
     {
-        const string outputPath = "hanxin.png";
+        // Path where the generated barcode image will be saved
+        const string outputPath = "HanXinBarcode.png";
 
-        // Create a code text that is intentionally long to exceed the capacity of a small Han Xin version.
-        string longCodeText = new string('A', 2000);
+        // Create a long string that is likely to exceed the capacity of the automatically selected Han Xin version
+        string longCodeText = new string('A', 5000); // Adjust length to trigger capacity overflow
 
-        // First attempt: use a specific small version (Version01) which will likely be insufficient.
-        try
+        // Initialize the barcode generator for Han Xin symbology with the provided text
+        using (var generator = new BarcodeGenerator(EncodeTypes.HanXin, longCodeText))
         {
-            // Initialize the barcode generator with Han Xin encoding and the long payload.
-            using (var generator = new BarcodeGenerator(EncodeTypes.HanXin, longCodeText))
-            {
-                // Force a small symbol size.
-                generator.Parameters.Barcode.HanXin.Version = HanXinVersion.Version01;
+            // Set a high error correction level (optional, improves readability at the cost of capacity)
+            generator.Parameters.Barcode.HanXin.ErrorLevel = HanXinErrorLevel.L4;
 
-                // Optional: set an error correction level.
-                generator.Parameters.Barcode.HanXin.ErrorLevel = HanXinErrorLevel.L2;
+            // Allow the library to automatically select the appropriate Han Xin version based on data length
+            generator.Parameters.Barcode.HanXin.Version = HanXinVersion.Auto;
 
-                // Save the generated barcode to the specified file.
-                generator.Save(outputPath);
-                Console.WriteLine($"Barcode saved successfully to '{outputPath}' using Version01.");
-            }
-        }
-        catch (Exception ex)
-        {
-            // Log the error from the first attempt.
-            Console.WriteLine($"Error with selected Han Xin version: {ex.Message}");
-
-            // Fallback: let the library choose the appropriate version automatically.
             try
             {
-                using (var generator = new BarcodeGenerator(EncodeTypes.HanXin, longCodeText))
-                {
-                    // Set version to Auto so the library determines the required size.
-                    generator.Parameters.Barcode.HanXin.Version = HanXinVersion.Auto;
-
-                    // Save the barcode using the automatically selected version.
-                    generator.Save(outputPath);
-                    Console.WriteLine($"Barcode saved successfully to '{outputPath}' using auto version.");
-                }
+                // Attempt to generate and save the barcode image as PNG
+                generator.Save(outputPath, BarCodeImageFormat.Png);
+                Console.WriteLine($"Barcode generated successfully: {outputPath}");
             }
-            catch (Exception fallbackEx)
+            catch (BarCodeException ex)
             {
-                // Log any errors that occur during the fallback attempt.
-                Console.WriteLine($"Failed to generate barcode with auto version: {fallbackEx.Message}");
+                // Specific handling when the input data exceeds the maximum capacity of the selected symbol size
+                Console.WriteLine("Error: The provided data exceeds the maximum capacity of the selected Han Xin symbol size.");
+                Console.WriteLine($"Exception message: {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                // General fallback for any other unexpected errors during barcode generation
+                Console.WriteLine("An unexpected error occurred while generating the barcode.");
+                Console.WriteLine($"Exception message: {ex.Message}");
             }
         }
     }

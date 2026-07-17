@@ -1,82 +1,81 @@
+// Title: Generate QR Code and download thumbnail for web UI
+// Description: Demonstrates creating a QR Code barcode with Aspose.BarCode and downloading a thumbnail image from cloud storage, suitable for displaying in a web application.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and image handling category. It showcases the use of BarcodeGenerator, QR code parameters, and standard .NET HttpClient to retrieve external images. Developers often need to generate barcodes server‑side and combine them with remote assets for UI rendering, making this pattern common in ASP.NET web projects.
+// Prompt: Generate QR Code barcode and retrieve thumbnail from cloud storage for display in web UI.
+// Tags: qr code, barcode generation, thumbnail, cloud storage, aspnet, aspose.barcode, image retrieval
+
 using System;
 using System.IO;
+using System.Net.Http;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
-using Aspose.Drawing.Drawing2D;
 
 /// <summary>
-/// Demonstrates generating a QR code, creating a thumbnail, and outputting the thumbnail as a Base64 string.
+/// Demonstrates generating a QR Code barcode and downloading a thumbnail image from a cloud URL.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a QR code image, creates a thumbnail, saves both to disk,
-    /// and prints the thumbnail as a Base64 string for UI display.
+    /// Entry point. Generates QR code, saves it locally, downloads a thumbnail, and writes file paths to console.
     /// </summary>
-    static void Main()
+    /// <param name="args">Command‑line arguments (not used).</param>
+    static void Main(string[] args)
     {
-        // Define file paths for the QR code image and its thumbnail.
-        string qrPath = "qr.png";
-        string thumbPath = "qr_thumb.png";
+        // --------------------------------------------------------------------
+        // 1. Generate a QR Code barcode and save it locally.
+        // --------------------------------------------------------------------
+        const string qrFilePath = "qr.png";
+        const string qrText = "https://example.com";
 
-        // ------------------------------------------------------------
-        // Generate QR Code barcode using Aspose.BarCode
-        // ------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
+        // Initialize the barcode generator with QR encoding and the desired text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, qrText))
         {
-            // Optional: set QR error correction level to Medium.
-            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
+            // Configure a high error‑correction level to improve readability after damage.
+            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
 
-            // Set image resolution to 300 DPI for high quality.
-            generator.Parameters.Resolution = 300f;
-
-            // Save the generated QR code to the specified file.
-            generator.Save(qrPath);
+            // Persist the generated QR code image to the file system.
+            generator.Save(qrFilePath);
         }
 
-        // Verify that the QR code image was successfully created.
-        if (!File.Exists(qrPath))
-        {
-            Console.WriteLine("Failed to generate QR code image.");
-            return;
-        }
+        Console.WriteLine($"QR code saved to: {Path.GetFullPath(qrFilePath)}");
 
-        // ------------------------------------------------------------
-        // Load the QR code image and create a 100x100 thumbnail.
-        // ------------------------------------------------------------
-        using (var original = (Bitmap)Image.FromFile(qrPath))
-        {
-            int thumbWidth = 100;
-            int thumbHeight = 100;
+        // --------------------------------------------------------------------
+        // 2. Retrieve a thumbnail image from a cloud URL (simulated with a placeholder).
+        // --------------------------------------------------------------------
+        const string thumbnailUrl = "https://via.placeholder.com/150";
+        const string thumbnailFilePath = "thumbnail.png";
 
-            // Create a new bitmap that will hold the thumbnail.
-            using (var thumbnail = new Bitmap(thumbWidth, thumbHeight))
+        // Use HttpClient to download the image data.
+        using (var httpClient = new HttpClient())
+        {
+            try
             {
-                // Draw the original image onto the thumbnail bitmap with high-quality scaling.
-                using (var graphics = Graphics.FromImage(thumbnail))
+                // Synchronously request the image; in production code consider async/await.
+                using (var response = httpClient.GetAsync(thumbnailUrl).Result)
                 {
-                    graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
-                    graphics.DrawImage(original, new Rectangle(0, 0, thumbWidth, thumbHeight));
+                    // Throw if the HTTP status is not successful.
+                    response.EnsureSuccessStatusCode();
+
+                    // Read the response stream and write it directly to a local file.
+                    using (var stream = response.Content.ReadAsStreamAsync().Result)
+                    using (var fileStream = new FileStream(thumbnailFilePath, FileMode.Create, FileAccess.Write))
+                    {
+                        stream.CopyTo(fileStream);
+                    }
                 }
 
-                // Save the thumbnail to a file (simulating cloud storage retrieval).
-                thumbnail.Save(thumbPath, ImageFormat.Png);
-
-                // --------------------------------------------------------
-                // Convert the thumbnail to a Base64 string for web UI display.
-                // --------------------------------------------------------
-                using (var ms = new MemoryStream())
-                {
-                    thumbnail.Save(ms, ImageFormat.Png);
-                    string base64 = Convert.ToBase64String(ms.ToArray());
-
-                    Console.WriteLine("Thumbnail Base64:");
-                    Console.WriteLine(base64);
-                }
+                Console.WriteLine($"Thumbnail downloaded to: {Path.GetFullPath(thumbnailFilePath)}");
+            }
+            catch (Exception ex)
+            {
+                // Log any errors that occur during the download process.
+                Console.WriteLine($"Failed to download thumbnail: {ex.Message}");
             }
         }
+
+        // Note: In a real web UI, the generated QR code and the downloaded thumbnail would be
+        // served to the client (e.g., via an ASP.NET controller). This console example demonstrates
+        // the core barcode generation and image retrieval logic required for such a scenario.
     }
 }

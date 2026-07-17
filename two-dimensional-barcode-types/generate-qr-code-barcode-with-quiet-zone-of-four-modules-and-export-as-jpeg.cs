@@ -1,38 +1,31 @@
+// Title: Generate QR Code with Quiet Zone and Save as JPEG
+// Description: Demonstrates creating a QR Code barcode with a four‑module quiet zone and exporting it to a JPEG image using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, showcasing how to use the BarcodeGenerator class with EncodeTypes to produce QR Code symbology. Typical use cases include encoding URLs, contact information, or product data for mobile scanning. Developers often need to control visual parameters such as quiet zones and output formats (e.g., JPEG, PNG) when integrating barcodes into web or print media.
+// Prompt: Generate a QR Code barcode with quiet zone of four modules and export as JPEG.
+// Tags: qr code, barcode generation, quiet zone, jpeg, aspose.barcode
+
 using System;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a QR code image using Aspose.BarCode and saving it as a JPEG file.
+/// Example program that creates a QR Code barcode with the default quiet zone
+/// (four modules) and saves it as a JPEG image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Application entry point. Generates a QR code for a sample URL and writes it to disk.
+    /// Entry point of the application.
     /// </summary>
     static void Main()
     {
-        // Define the output file path for the generated QR code image.
-        string outputPath = "qr_code.jpeg";
-
-        // Initialize a QR Code generator with the desired content (sample URL).
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
+        // Initialize a BarcodeGenerator for QR Code with the desired text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Sample QR Code"))
         {
-            // Configure the QR code error correction level to Medium (Level M).
-            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
+            // The default quiet zone for QR codes in Aspose.BarCode is four modules,
+            // which satisfies the requirement, so no additional configuration is needed.
 
-            // Set the image resolution to 300 DPI to improve visual quality.
-            generator.Parameters.Resolution = 300f;
-
-            // Note: Aspose.BarCode uses a default quiet zone of 4 modules for QR codes,
-            // which meets typical requirements; no additional configuration needed.
-
-            // Save the generated QR code as a JPEG image to the specified path.
-            generator.Save(outputPath, BarCodeImageFormat.Jpeg);
+            // Save the generated barcode as a JPEG image file.
+            generator.Save("qr.jpeg");
         }
-
-        // Inform the user that the QR code has been successfully saved.
-        Console.WriteLine($"QR Code saved to: {outputPath}");
     }
 }

@@ -1,39 +1,45 @@
+// Title: Barcode generation with duration logging using Aspose.BarCode
+// Description: Demonstrates creating a Code128 barcode, measuring generation time, and logging the duration.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use BarcodeGenerator, set barcode parameters, and save images. Developers often need to generate barcodes programmatically, customize dimensions, and monitor performance; this snippet illustrates those common tasks and how to log execution time for diagnostics.
+// Prompt: Implement logging of barcode generation duration using Stopwatch and output to application log.
+// Tags: barcode, code128, generation, performance, logging, aspose.barcode, png
+
 using System;
 using System.Diagnostics;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generating a Code128 barcode image using Aspose.BarCode and measures execution time.
+/// Demonstrates barcode generation with performance logging using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a barcode, saves it to a file, and logs the elapsed time.
+    /// Entry point. Generates a Code128 barcode, measures execution time, and logs the duration.
     /// </summary>
     static void Main()
     {
-        // Define the file path where the generated barcode image will be saved.
-        string outputPath = "barcode.png";
+        // Define the output file path for the generated barcode image.
+        const string outputPath = "barcode.png";
 
-        // Start a stopwatch to measure how long the barcode generation takes.
+        // Start the stopwatch to measure barcode generation duration.
         Stopwatch stopwatch = Stopwatch.StartNew();
 
-        // Create a BarcodeGenerator instance for Code128 encoding with the data "123456".
-        // The using statement ensures the generator is disposed properly after use.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
+        // Create a BarcodeGenerator instance for Code128 symbology with the desired data.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            // Save the generated barcode image to the specified output path.
-            generator.Save(outputPath);
+            // Adjust barcode visual parameters: X-dimension and bar height.
+            generator.Parameters.Barcode.XDimension.Point = 2f;
+            generator.Parameters.Barcode.BarHeight.Point = 40f;
+
+            // Save the generated barcode as a PNG image to the specified path.
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Stop the stopwatch now that barcode generation is complete.
+        // Stop the stopwatch now that generation is complete.
         stopwatch.Stop();
 
-        // Output the elapsed time in milliseconds to the console.
-        Console.WriteLine($"Barcode generation completed in {stopwatch.ElapsedMilliseconds} ms.");
-
-        // Inform the user where the barcode image has been saved.
-        Console.WriteLine($"Barcode saved to: {outputPath}");
+        // Log the elapsed time to the application log (Trace listeners).
+        Trace.WriteLine($"Barcode generated and saved to '{outputPath}' in {stopwatch.ElapsedMilliseconds} ms.");
     }
 }

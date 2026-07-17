@@ -1,3 +1,9 @@
+// Title: Verify MaxiCode Aspect Ratio Impact on Dimensions
+// Description: Demonstrates generating MaxiCode barcodes with different aspect ratios and checking that height changes while width stays constant.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and manipulation category, focusing on MaxiCode symbology. It shows how to adjust the AspectRatio property via the BarcodeGenerator.Parameters.Barcode.MaxiCode API, a common task when customizing barcode size for packaging or labeling. Developers often need unit‑style checks to ensure dimension changes behave as expected.
+// Prompt: Write unit tests to verify aspect ratio adjustments affect MaxiCode barcode dimensions as expected.
+// Tags: barcode symbology, aspect ratio, maxicode, dimension testing, aspose.barcode, image generation
+
 using System;
 using System.IO;
 using Aspose.BarCode;
@@ -5,69 +11,79 @@ using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating MaxiCode barcodes with different aspect ratios
-/// and retrieving their pixel dimensions.
+/// Demonstrates unit‑style tests for MaxiCode aspect‑ratio effects on image dimensions.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Generates a MaxiCode barcode using the specified aspect ratio
-    /// and returns its width and height in pixels.
+    /// Entry point that runs dimension verification tests for MaxiCode barcodes.
     /// </summary>
-    /// <param name="aspectRatio">The desired aspect ratio (height / width) for the barcode modules.</param>
-    /// <returns>A tuple containing the image width and height.</returns>
-    static (int Width, int Height) GenerateMaxiCodeDimensions(float aspectRatio)
+    static void Main()
     {
-        // Sample codetext for MaxiCode; any non‑empty string is acceptable.
-        const string codeText = "Sample MaxiCode";
+        int failedTests = 0;
 
-        // Create a barcode generator for MaxiCode with the sample text.
-        using (var generator = new BarcodeGenerator(EncodeTypes.MaxiCode, codeText))
+        // Test 1: Generate barcode with default aspect ratio (1.0)
+        var imgDefault = GenerateMaxiCode(1.0f);
+        int heightDefault = imgDefault.Height;
+        int widthDefault = imgDefault.Width;
+        imgDefault.Dispose();
+
+        // Test 2: Generate barcode with increased aspect ratio (2.0)
+        var imgHigh = GenerateMaxiCode(2.0f);
+        int heightHigh = imgHigh.Height;
+        int widthHigh = imgHigh.Width;
+        imgHigh.Dispose();
+
+        // Verify that increasing the aspect ratio raises the height proportionally
+        if (heightHigh <= heightDefault)
         {
-            // Apply the requested aspect ratio to the generator's parameters.
-            generator.Parameters.Barcode.MaxiCode.AspectRatio = aspectRatio;
+            Console.WriteLine("FAILED: Height did not increase with higher aspect ratio.");
+            failedTests++;
+        }
 
-            // Use a memory stream to hold the generated PNG image.
-            using (var ms = new MemoryStream())
-            {
-                // Save the barcode image to the memory stream in PNG format.
-                generator.Save(ms, BarCodeImageFormat.Png);
-                ms.Position = 0; // Reset stream position for reading.
+        // Verify that the width remains unchanged (aspect ratio should affect height only)
+        if (widthHigh != widthDefault)
+        {
+            Console.WriteLine("FAILED: Width changed when only aspect ratio was modified.");
+            failedTests++;
+        }
 
-                // Load the image from the stream to obtain its actual pixel dimensions.
-                using (var image = Image.FromStream(ms))
-                {
-                    return (image.Width, image.Height);
-                }
-            }
+        // Output test summary
+        if (failedTests == 0)
+        {
+            Console.WriteLine("All tests passed.");
+        }
+        else
+        {
+            Console.WriteLine($"FAILED: {failedTests} test(s) failed.");
         }
     }
 
     /// <summary>
-    /// Entry point of the program. Generates barcodes with two different aspect ratios,
-    /// prints their dimensions, and verifies that the dimensions change accordingly.
+    /// Generates a MaxiCode barcode image with the specified aspect ratio.
     /// </summary>
-    static void Main()
+    /// <param name="aspectRatio">The desired aspect ratio to apply to the barcode.</param>
+    /// <returns>An <see cref="Image"/> containing the generated barcode.</returns>
+    static Image GenerateMaxiCode(float aspectRatio)
     {
-        // Generate two barcodes with different aspect ratios.
-        var dimsRatio1 = GenerateMaxiCodeDimensions(1.0f);
-        var dimsRatio2 = GenerateMaxiCodeDimensions(2.0f);
+        // Sample codetext; actual content is not important for dimension testing
+        const string sampleCodeText = "1234567890";
 
-        // Output the dimensions for each aspect ratio.
-        Console.WriteLine($"AspectRatio 1.0 -> Width: {dimsRatio1.Width}, Height: {dimsRatio1.Height}");
-        Console.WriteLine($"AspectRatio 2.0 -> Width: {dimsRatio2.Width}, Height: {dimsRatio2.Height}");
-
-        // Simple verification: the heights (or widths) should differ when the aspect ratio changes.
-        bool heightChanged = dimsRatio1.Height != dimsRatio2.Height;
-        bool widthChanged = dimsRatio1.Width != dimsRatio2.Width;
-
-        if (heightChanged || widthChanged)
+        // Create a generator for MaxiCode (EncodeTypes.MaxiCode is assumed to exist)
+        using (var generator = new BarcodeGenerator(EncodeTypes.MaxiCode, sampleCodeText))
         {
-            Console.WriteLine("PASS: Changing the aspect ratio affects the barcode dimensions.");
-        }
-        else
-        {
-            Console.WriteLine("FAIL: Barcode dimensions did not change with aspect ratio adjustments.");
+            // Apply the aspect ratio via the MaxiCode parameters
+            generator.Parameters.Barcode.MaxiCode.AspectRatio = aspectRatio;
+
+            // Save the barcode to a memory stream in PNG format
+            using (var ms = new MemoryStream())
+            {
+                generator.Save(ms, BarCodeImageFormat.Png);
+                ms.Position = 0;
+
+                // Load and return the image using Aspose.Drawing
+                return Aspose.Drawing.Image.FromStream(ms);
+            }
         }
     }
 }

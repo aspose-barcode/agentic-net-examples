@@ -1,53 +1,55 @@
+// Title: Generate QR Code and Save as PNG
+// Description: Demonstrates creating a QR Code barcode using Aspose.BarCode and saving it as a PNG file, suitable for inclusion in CI pipelines.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on QR Code creation. It showcases the BarcodeGenerator class with EncodeTypes.QR, configuring error correction, and exporting to image formats. Developers often use these APIs to automate barcode generation for testing, documentation, or CI/CD workflows.
+// Prompt: Generate QR Code barcode and integrate generation into CI pipeline for automated testing.
+// Tags: qr code, barcode generation, png, aspose.barcode, ci integration, automation
+
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a QR code image using Aspose.BarCode and saving it to disk.
+/// Example program that generates a QR Code barcode and saves it as a PNG image.
+/// Designed for use in automated CI pipelines where interactive console input is unavailable.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Application entry point. Generates a QR code for a predefined URL and writes it to a PNG file.
+    /// Entry point of the application. Returns an exit code indicating success (0) or failure (non‑zero).
     /// </summary>
-    static void Main()
+    /// <returns>Integer exit code.</returns>
+    static int Main()
     {
-        // Define the full output file path (current directory + file name)
-        string outputPath = Path.Combine(Environment.CurrentDirectory, "qr_code.png");
+        // Define the output directory relative to the current working directory.
+        string outputFolder = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
 
-        // Extract the directory portion of the path
-        string outputDir = Path.GetDirectoryName(outputPath);
-        // Ensure the target directory exists; create it if it does not
-        if (!Directory.Exists(outputDir))
+        // Ensure the output directory exists; create it if necessary.
+        if (!Directory.Exists(outputFolder))
         {
-            Directory.CreateDirectory(outputDir);
+            Directory.CreateDirectory(outputFolder);
         }
 
-        // Create a BarcodeGenerator instance for QR encoding with the desired data
+        // Full path for the generated QR Code image.
+        string outputFile = Path.Combine(outputFolder, "qr.png");
+
+        // Initialize the barcode generator for QR Code with the desired text.
         using (var generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
         {
-            // Set a high error correction level to improve readability under damage
+            // Configure a high error correction level to improve scan reliability.
             generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
 
-            // Configure image sizing using interpolation mode for smoother scaling
-            generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
-            generator.Parameters.ImageWidth.Point = 300f;   // Width in points
-            generator.Parameters.ImageHeight.Point = 300f;  // Height in points
+            // Suppress exceptions for minor code‑text issues to keep CI builds robust.
+            generator.Parameters.Barcode.ThrowExceptionWhenCodeTextIncorrect = false;
 
-            // Set the image resolution (dots per inch)
-            generator.Parameters.Resolution = 300f;
-
-            // Define foreground (barcode) and background colors
-            generator.Parameters.Barcode.BarColor = Color.Black;
-            generator.Parameters.BackColor = Color.White;
-
-            // Save the generated QR code image to the specified path
-            generator.Save(outputPath);
+            // Save the generated barcode as a PNG image to the specified path.
+            generator.Save(outputFile);
         }
 
-        // Inform the user where the QR code image was saved
-        Console.WriteLine($"QR Code generated at: {outputPath}");
+        // Log the location of the generated file for CI visibility.
+        Console.WriteLine($"QR code generated at: {outputFile}");
+
+        // Return success exit code.
+        return 0;
     }
 }

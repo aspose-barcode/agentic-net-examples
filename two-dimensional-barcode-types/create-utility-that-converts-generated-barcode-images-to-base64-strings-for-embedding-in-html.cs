@@ -1,40 +1,59 @@
+// Title: Convert generated barcode images to Base64 strings for HTML embedding
+// Description: Demonstrates generating barcodes with Aspose.BarCode, converting the PNG image to a Base64 string, and outputting an HTML <img> tag.
+// Category-Description: This example belongs to the Aspose.BarCode image generation and encoding category. It shows how to use BarcodeGenerator, Bitmap, and ImageFormat classes to create barcode images, then encode them as Base64 for web integration. Developers often need to embed barcodes directly into HTML or JSON payloads without saving files, making this pattern common for reporting, email, or UI rendering scenarios.
+// Prompt: Create a utility that converts generated barcode images to Base64 strings for embedding in HTML.
+// Tags: barcode symbology, generation, png, base64, aspose.barcode, aspose.drawing
+
 using System;
 using System.IO;
+using System.Collections.Generic;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a Code128 barcode, converting it to a Base64 string, and outputting it.
+/// Demonstrates barcode generation and conversion of the resulting image to a Base64 string
+/// suitable for embedding directly in HTML markup.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a barcode, encodes it as PNG, converts to Base64, and writes to console.
+    /// Entry point of the utility. Generates sample barcodes, converts each image to Base64,
+    /// and writes an HTML <img> tag with the embedded data URI to the console.
     /// </summary>
     static void Main()
     {
-        // Specify the barcode symbology and the text to encode.
-        BaseEncodeType encodeType = EncodeTypes.Code128;
-        string codeText = "Sample123";
-
-        // Create a BarcodeGenerator instance with the defined type and text.
-        using (var generator = new BarcodeGenerator(encodeType, codeText))
+        // Define a collection of sample barcodes (symbology type and associated text)
+        var samples = new List<(BaseEncodeType type, string text)>
         {
-            // Use a memory stream to hold the generated PNG image.
-            using (var ms = new MemoryStream())
+            (EncodeTypes.Code128, "123ABC"),
+            (EncodeTypes.QR, "https://example.com"),
+            (EncodeTypes.DataMatrix, "DataMatrixSample")
+        };
+
+        // Iterate over each sample, generate the barcode image, and output as Base64
+        foreach (var (type, text) in samples)
+        {
+            // Initialize the barcode generator with the specified symbology and data
+            using (var generator = new BarcodeGenerator(type, text))
             {
-                // Save the barcode image to the memory stream in PNG format.
-                generator.Save(ms, BarCodeImageFormat.Png);
+                // Generate the barcode as a bitmap image
+                using (Bitmap bitmap = generator.GenerateBarCodeImage())
+                {
+                    // Encode the bitmap to PNG format using a memory stream
+                    using (var ms = new MemoryStream())
+                    {
+                        bitmap.Save(ms, ImageFormat.Png);
+                        byte[] imageBytes = ms.ToArray();
 
-                // Reset stream position to the beginning before reading.
-                ms.Position = 0;
+                        // Convert the PNG byte array to a Base64 string
+                        string base64 = Convert.ToBase64String(imageBytes);
 
-                // Convert the image bytes from the memory stream to a Base64 string.
-                string base64 = Convert.ToBase64String(ms.ToArray());
-
-                // Write the Base64 string to the console (suitable for embedding in HTML as a data URI).
-                Console.WriteLine(base64);
+                        // Write an HTML <img> tag with the Base64-encoded image data
+                        Console.WriteLine($"<img src=\"data:image/png;base64,{base64}\" alt=\"{text}\" />");
+                    }
+                }
             }
         }
     }

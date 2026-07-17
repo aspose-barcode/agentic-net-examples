@@ -1,103 +1,108 @@
+// Title: Validate DotCode Barcode Quiet Zone
+// Description: Generates a DotCode barcode, saves it, and verifies that the quiet zone around the barcode meets the minimum required size for reliable scanning.
+// Category-Description: This example demonstrates Aspose.BarCode generation and recognition for DotCode symbology. It uses BarcodeGenerator to create the barcode, configures XDimension and padding to ensure adequate quiet zones, and employs BarCodeReader to detect the barcode region. Developers working with barcode printing or scanning often need to validate quiet zone dimensions to guarantee scanner compatibility, making this a common task in barcode workflow automation.
+/// Prompt: Validate that generated DotCode barcode meets minimum quiet zone requirements for scanner compatibility.
+/// Tags: dotcode, quiet zone, barcode generation, barcode recognition, aspose.barcode, aspose.drawing, image processing
+
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a DotCode barcode with a specified quiet zone,
-/// saving it to an image file, and then validating the quiet zone by reading the barcode back.
+/// Demonstrates how to generate a DotCode barcode, save it as an image,
+/// and validate that the quiet zone around the barcode satisfies the minimum
+/// size requirements for scanner compatibility.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a DotCode barcode, saves it, and validates its quiet zone.
+    /// Entry point of the example. Generates the barcode, saves it,
+    /// and checks the quiet zone dimensions.
     /// </summary>
     static void Main()
     {
-        // Path for the generated barcode image
+        // Define the output file path for the generated barcode image.
         string outputPath = "dotcode.png";
 
-        // Minimum quiet zone required (in points)
-        float minQuietZonePoints = 10f;
-
-        // Create a DotCode barcode generator with the desired data
-        BaseEncodeType encodeType = EncodeTypes.DotCode;
-        using (var generator = new BarcodeGenerator(encodeType, "1234567890"))
+        // ------------------------------------------------------------
+        // Generate a DotCode barcode with explicit XDimension and padding.
+        // ------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.DotCode, "1234567890"))
         {
-            // Apply the same quiet zone (padding) to all four sides
-            generator.Parameters.Barcode.Padding.Left.Point   = minQuietZonePoints;
-            generator.Parameters.Barcode.Padding.Top.Point    = minQuietZonePoints;
-            generator.Parameters.Barcode.Padding.Right.Point  = minQuietZonePoints;
-            generator.Parameters.Barcode.Padding.Bottom.Point = minQuietZonePoints;
+            // Set XDimension to ensure sufficient bar size (2 points per module).
+            generator.Parameters.Barcode.XDimension.Point = 2f;
 
-            // Save the generated barcode image to the specified file
+            // Configure padding (quiet zone) of at least 10 points on each side.
+            generator.Parameters.Barcode.Padding.Left.Point   = 10f;
+            generator.Parameters.Barcode.Padding.Top.Point    = 10f;
+            generator.Parameters.Barcode.Padding.Right.Point  = 10f;
+            generator.Parameters.Barcode.Padding.Bottom.Point = 10f;
+
+            // Save the generated barcode image to the specified path.
             generator.Save(outputPath);
         }
 
-        // Ensure the image file was created successfully
+        // ------------------------------------------------------------
+        // Verify that the barcode image file was created successfully.
+        // ------------------------------------------------------------
         if (!File.Exists(outputPath))
         {
-            Console.WriteLine($"Failed to generate barcode image at '{outputPath}'.");
+            Console.WriteLine($"Error: Barcode image not found at '{outputPath}'.");
             return;
         }
 
-        // Load the saved image to obtain its dimensions (width & height in pixels)
-        using (var image = Image.FromFile(outputPath))
+        // ------------------------------------------------------------
+        // Load the image to obtain its dimensions for quiet zone calculation.
+        // ------------------------------------------------------------
+        using (var image = (Bitmap)Image.FromFile(outputPath))
         {
             int imageWidth  = image.Width;
             int imageHeight = image.Height;
 
-            // Initialize a barcode reader for DotCode type on the saved image
+            // --------------------------------------------------------
+            // Read the barcode from the saved image using BarCodeReader.
+            // --------------------------------------------------------
             using (var reader = new BarCodeReader(outputPath, DecodeType.DotCode))
             {
-                // Attempt to read all barcodes present in the image
                 var results = reader.ReadBarCodes();
 
-                // If no barcode is detected, report and exit
                 if (results.Length == 0)
                 {
-                    Console.WriteLine("No DotCode barcode detected in the image.");
+                    Console.WriteLine("No barcode detected.");
                     return;
                 }
 
-                // Assume the first detected barcode corresponds to the one we generated
+                // Assume the first detected result corresponds to the generated barcode.
                 var result = results[0];
-                var region = result.Region.Rectangle; // RectangleF representing barcode bounds
+                var bounds = result.Region.Rectangle; // Rectangle with X, Y, Width, Height
 
-                // Compute quiet zones: distance from barcode edges to image edges
-                float leftQuiet   = region.X;
-                float topQuiet    = region.Y;
-                float rightQuiet  = imageWidth  - (region.X + region.Width);
-                float bottomQuiet = imageHeight - (region.Y + region.Height);
+                // --------------------------------------------------------
+                // Calculate quiet zone margins based on the detected region.
+                // --------------------------------------------------------
+                int leftMargin   = bounds.X;
+                int topMargin    = bounds.Y;
+                int rightMargin  = imageWidth  - (bounds.X + bounds.Width);
+                int bottomMargin = imageHeight - (bounds.Y + bounds.Height);
 
-                // Determine the smallest quiet zone among all sides
-                float smallestQuiet = Math.Min(
-                    Math.Min(leftQuiet, rightQuiet),
-                    Math.Min(topQuiet, bottomQuiet));
+                const int MinimumQuietZonePoints = 10;
 
-                // Convert required quiet zone from points to pixels (assuming 96 DPI)
-                // 1 point = 1/72 inch; 96 DPI => 1 point = 96/72 = 1.3333 pixels
-                float pointsToPixels = 96f / 72f;
-                float requiredPixels = minQuietZonePoints * pointsToPixels;
+                bool quietZoneValid =
+                    leftMargin   >= MinimumQuietZonePoints &&
+                    topMargin    >= MinimumQuietZonePoints &&
+                    rightMargin  >= MinimumQuietZonePoints &&
+                    bottomMargin >= MinimumQuietZonePoints;
 
-                // Output diagnostic information
-                Console.WriteLine($"Image size: {imageWidth}x{imageHeight} pixels");
-                Console.WriteLine($"Detected barcode region: X={region.X}, Y={region.Y}, Width={region.Width}, Height={region.Height}");
-                Console.WriteLine($"Quiet zones (pixels) - Left: {leftQuiet}, Top: {topQuiet}, Right: {rightQuiet}, Bottom: {bottomQuiet}");
-                Console.WriteLine($"Smallest quiet zone: {smallestQuiet} pixels");
-
-                // Validate whether the smallest quiet zone meets the required minimum
-                if (smallestQuiet >= requiredPixels)
-                {
-                    Console.WriteLine("Validation passed: Quiet zone meets the minimum requirement.");
-                }
-                else
-                {
-                    Console.WriteLine($"Validation failed: Quiet zone is smaller than the required {minQuietZonePoints} points.");
-                }
+                // --------------------------------------------------------
+                // Output diagnostic information.
+                // --------------------------------------------------------
+                Console.WriteLine($"Barcode Type: {result.CodeTypeName}");
+                Console.WriteLine($"Code Text: {result.CodeText}");
+                Console.WriteLine($"Image Size: {imageWidth}x{imageHeight} points");
+                Console.WriteLine($"Detected Region: X={bounds.X}, Y={bounds.Y}, Width={bounds.Width}, Height={bounds.Height}");
+                Console.WriteLine($"Quiet Zone Margins (points) - Left: {leftMargin}, Top: {topMargin}, Right: {rightMargin}, Bottom: {bottomMargin}");
+                Console.WriteLine($"Quiet zone meets minimum requirement of {MinimumQuietZonePoints} points on each side: {quietZoneValid}");
             }
         }
     }

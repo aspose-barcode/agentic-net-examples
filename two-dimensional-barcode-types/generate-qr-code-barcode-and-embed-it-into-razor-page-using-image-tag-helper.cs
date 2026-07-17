@@ -1,56 +1,41 @@
+// Title: Generate QR Code and embed in Razor page
+// Description: Demonstrates creating a QR Code image with Aspose.BarCode and shows how to embed it in a Razor view using an <img> tag helper.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating how to use the BarcodeGenerator class to produce QR Code images. Typical use cases include generating scannable codes for URLs, product information, or authentication tokens, which developers often embed directly into ASP.NET Razor pages via image tag helpers. The snippet highlights setting QR error correction levels and saving the output in PNG format, a common workflow for web applications.
+// Prompt: Generate QR Code barcode and embed it into a Razor page using image tag helper.
+// Tags: qr code, barcode generation, image output, aspnet razor, tag helper, aspose.barcode, qr error correction
+
 using System;
-using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.Generation; // BarCodeImageFormat is in this namespace
 
 /// <summary>
-/// Demonstrates generating a QR code image, converting it to a Base64 data URI,
-/// and outputting an HTML <img> tag that can be embedded in a Razor view.
+/// Example program that creates a QR Code image and provides an HTML snippet
+/// for embedding the image in an ASP.NET Razor view using an <img> tag helper.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a QR code, saves it as a PNG, creates a Base64 data URI,
-    /// and prints an HTML <img> tag.
+    /// Generates a QR Code PNG file and writes an <img> tag snippet to the console.
     /// </summary>
     static void Main()
     {
-        // NOTE: Full Razor page integration cannot be demonstrated in a console application.
-        // The example generates a QR code image, converts it to a Base64 data URI,
-        // and prints an HTML <img> tag that can be used in a Razor view.
+        // Define the output file name for the generated QR Code image.
+        string outputPath = "qr.png";
 
-        // Define QR code content and temporary output file path
-        string qrContent = "https://example.com";
-        string tempFile = Path.Combine(Path.GetTempPath(), "qr_code.png");
-
-        // Generate QR code and save it as a PNG file
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, qrContent))
+        // Create a BarcodeGenerator for QR encoding with the desired data.
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
         {
-            // Optional: set error correction level to high (Level H)
+            // Configure a high error correction level (Level H) for better resilience.
             generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
-            // Save the generated QR code image to the temporary file
-            generator.Save(tempFile, BarCodeImageFormat.Png);
+
+            // Save the QR Code as a PNG image to the specified path.
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Verify that the PNG file was successfully created
-        if (!File.Exists(tempFile))
-        {
-            Console.WriteLine("Failed to generate QR code image.");
-            return;
-        }
+        // Build an HTML <img> tag that references the generated PNG file.
+        string htmlSnippet = $"<img src=\"{outputPath}\" alt=\"QR Code\" />";
 
-        // Read the image bytes from the file
-        byte[] imageBytes = File.ReadAllBytes(tempFile);
-        // Convert the image bytes to a Base64 string
-        string base64 = Convert.ToBase64String(imageBytes);
-        // Build a data URI that embeds the Base64-encoded PNG image
-        string dataUri = $"data:image/png;base64,{base64}";
-
-        // Construct an HTML <img> tag using the data URI as the source
-        string imgTag = $"<img src=\"{dataUri}\" alt=\"QR Code\" />";
-        // Output the <img> tag to the console (can be copied into a Razor view)
-        Console.WriteLine(imgTag);
+        // Output the HTML snippet so it can be copied into a Razor view.
+        Console.WriteLine(htmlSnippet);
     }
 }

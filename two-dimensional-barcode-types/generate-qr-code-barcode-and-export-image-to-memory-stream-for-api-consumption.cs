@@ -1,48 +1,43 @@
+// Title: Generate QR Code and Export to MemoryStream
+// Description: Demonstrates creating a QR Code barcode with Aspose.BarCode and saving it directly to a MemoryStream in PNG format for API consumption.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, showcasing how to use the BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes to produce QR Code images. Typical use cases include generating barcodes for web services, APIs, or any scenario where an image needs to be transmitted or stored in memory without writing to disk. Developers often need to create barcodes on the fly and pass the resulting image streams to other components or external systems.
+// Prompt: Generate QR Code barcode and export image to memory stream for API consumption.
+// Tags: qr code, generation, png, memory stream, aspose.barcode, barcode generation
+
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generating a QR code image using Aspose.BarCode,
-/// converting it to a Base64 string, and outputting basic information.
+/// Example program that creates a QR Code barcode and writes the image to a memory stream.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a QR code, stores it in a memory stream, and prints its size and a Base64 preview.
+    /// Entry point of the example. Generates a QR Code, saves it as PNG into a MemoryStream,
+    /// and outputs the stream size.
     /// </summary>
     static void Main()
     {
-        // Sample QR code text to encode
-        string qrText = "Hello, World!";
-
-        // Create a memory stream to hold the generated barcode image
-        using (MemoryStream memoryStream = new MemoryStream())
+        // Create a memory stream to hold the generated QR code image.
+        using (var memoryStream = new MemoryStream())
         {
-            // Initialize the barcode generator for a QR code with the sample text
-            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, qrText))
+            // Initialize the QR code generator with the desired text.
+            using (var generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
             {
-                // Optional: set a high error correction level for better resilience
-                generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
+                // Set QR error correction level (optional, LevelM provides a good balance).
+                generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
 
-                // Save the generated QR code image directly into the memory stream in PNG format
+                // Save the QR code image directly to the memory stream in PNG format.
                 generator.Save(memoryStream, BarCodeImageFormat.Png);
             }
 
-            // Reset the stream position to the beginning for subsequent reads
+            // Reset stream position for any subsequent reading.
             memoryStream.Position = 0;
 
-            // Convert the image bytes from the memory stream to a Base64 string (useful for API payloads)
-            byte[] imageBytes = memoryStream.ToArray();
-            string base64Image = Convert.ToBase64String(imageBytes);
-
-            // Output the size of the generated image in bytes
-            Console.WriteLine($"Generated QR code image size: {imageBytes.Length} bytes");
-
-            // Output the first 100 characters of the Base64 string as a preview
-            Console.WriteLine($"Base64 representation (first 100 chars): {base64Image.Substring(0, Math.Min(100, base64Image.Length))}...");
+            // Example output: display the size of the generated image.
+            Console.WriteLine($"QR code image generated. Stream length: {memoryStream.Length} bytes.");
         }
     }
 }

@@ -1,65 +1,55 @@
+// Title: Generate QR Code with Embedded Binary Data
+// Description: Demonstrates creating a QR Code that encodes a small binary file for data transfer.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, focusing on QR Code creation and embedding binary payloads. It showcases the use of BarcodeGenerator, EncodeTypes.QR, and QRErrorLevel classes to produce robust QR images suitable for small data exchanges. Developers often need to embed binary content in barcodes for quick, offline data transfer between devices.
+// Prompt: Generate QR Code barcode and embed binary file content for small data transfer.
+// Tags: qr code, binary embed, image output, aspose.barcode, generation
+
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a QR code from binary data and reading it back using Aspose.BarCode.
+/// Generates a QR Code that contains the binary content of a file, useful for small data transfers.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a QR code from a binary file, saves it, and reads it back.
+    /// Entry point of the example. Creates a sample binary file if missing, reads its bytes,
+    /// encodes them into a QR Code, and saves the resulting image.
     /// </summary>
     static void Main()
     {
-        // Define file paths for the binary source and the generated QR image.
-        string binaryFilePath = "sample.bin";
-        string qrImagePath = "qr_binary.png";
+        // Define the path for the binary file to embed.
+        const string binaryFilePath = "sample.bin";
 
-        // Ensure a small binary file exists; create one with sample data if missing.
+        // Ensure the binary file exists; create a small sample if it does not.
         if (!File.Exists(binaryFilePath))
         {
             byte[] sampleData = new byte[] { 0x01, 0x02, 0x03, 0x04, 0x05 };
             File.WriteAllBytes(binaryFilePath, sampleData);
         }
 
-        // Read the entire binary content into a byte array.
+        // Read the binary content from the file.
         byte[] fileBytes = File.ReadAllBytes(binaryFilePath);
 
-        // Generate a QR code that embeds the binary payload.
+        // Initialize the QR Code generator.
         using (var generator = new BarcodeGenerator(EncodeTypes.QR))
         {
-            // Set the binary data as the code text for the QR code.
+            // Assign the binary payload as the code text.
             generator.SetCodeText(fileBytes);
 
-            // Use a high error correction level to improve robustness of the QR code.
+            // Set a higher error correction level for increased robustness.
             generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
 
-            // Save the generated QR code as a PNG image.
-            generator.Save(qrImagePath, BarCodeImageFormat.Png);
+            // Define the output image file name.
+            const string outputImage = "qr_binary.png";
+
+            // Save the generated QR Code image to disk.
+            generator.Save(outputImage);
         }
 
-        // Read and decode the QR code image to verify the embedded data.
-        using (var reader = new BarCodeReader(qrImagePath, DecodeType.QR))
-        {
-            var results = reader.ReadBarCodes();
-
-            // Iterate through all decoded results (typically one for this example).
-            foreach (var result in results)
-            {
-                // Output the length of the decoded text.
-                Console.WriteLine($"Decoded CodeText Length: {result.CodeText.Length}");
-
-                // Convert the decoded string back to bytes (UTF-8) and display as hexadecimal.
-                byte[] decodedBytes = System.Text.Encoding.UTF8.GetBytes(result.CodeText);
-                Console.WriteLine("Decoded Bytes (hex): " + BitConverter.ToString(decodedBytes));
-            }
-        }
-
-        // Inform the user where the QR code image has been saved.
-        Console.WriteLine($"QR code image saved to: {qrImagePath}");
+        // Inform the user that the QR Code has been generated.
+        Console.WriteLine("QR Code with embedded binary data has been generated.");
     }
 }

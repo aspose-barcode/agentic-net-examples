@@ -1,79 +1,62 @@
+// Title: Fallback to DataMatrix when MaxiCode generation fails
+// Description: Demonstrates generating a MaxiCode barcode and automatically switching to a DataMatrix barcode if the data exceeds MaxiCode limits.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on error handling and fallback strategies. It showcases the use of BarcodeGenerator, EncodeTypes, and barcode parameter classes to create different symbologies. Developers often need to ensure barcode creation succeeds even when input data constraints prevent a specific symbology, making fallback mechanisms essential.
+// Prompt: Implement fallback mechanism that switches to DataMatrix when MaxiCode generation fails due to data size.
+// Tags: maxicode, datamatrix, fallback, generation, png, barcodegenerator, parameters, aspose.barcode
+
 using System;
-using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
-using Aspose.BarCode.ComplexBarcode;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a MaxiCode barcode and falling back to DataMatrix if needed.
+/// Example program that attempts to generate a MaxiCode barcode and falls back to a DataMatrix barcode
+/// when the input data exceeds MaxiCode size limitations.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a MaxiCode barcode with sample data,
-    /// and if generation fails, falls back to generating a DataMatrix barcode.
+    /// Entry point of the example. Generates a MaxiCode barcode; on failure, generates a DataMatrix barcode instead.
     /// </summary>
     static void Main()
     {
-        // Prepare sample data that exceeds typical MaxiCode capacity.
-        string longData = new string('A', 200);
+        // Prepare a large data string that exceeds MaxiCode capacity to trigger a failure.
+        string largeData = new string('A', 2000);
 
-        // Attempt to generate a MaxiCode (Mode 2) using ComplexBarcodeGenerator.
+        // Try to create a MaxiCode barcode with the provided data.
         try
         {
-            // Configure MaxiCode parameters.
-            var maxiCode = new MaxiCodeCodetextMode2
+            using (var maxiGenerator = new BarcodeGenerator(EncodeTypes.MaxiCode, largeData))
             {
-                PostalCode = "524032140", // Required 9‑digit postal code for Mode 2.
-                CountryCode = 56,
-                ServiceCategory = 999,
-                // Place the long data in the standard second message field.
-                SecondMessage = new MaxiCodeStandardSecondMessage { Message = longData }
-            };
+                // Set the MaxiCode mode to Mode4 (data-only mode). This is optional; Mode4 is the default.
+                maxiGenerator.Parameters.Barcode.MaxiCode.Mode = MaxiCodeMode.Mode4;
 
-            // Create a generator for the configured MaxiCode.
-            using (var complexGenerator = new ComplexBarcodeGenerator(maxiCode))
-            {
-                // Generate the barcode image.
-                using (var image = complexGenerator.GenerateBarCodeImage())
-                {
-                    // Save the image to a PNG file via a memory stream.
-                    using (var ms = new MemoryStream())
-                    {
-                        image.Save(ms, ImageFormat.Png);
-                        File.WriteAllBytes("maxicode.png", ms.ToArray());
-                    }
-                }
+                // Save the generated MaxiCode image to a PNG file.
+                maxiGenerator.Save("maxicode.png");
+                Console.WriteLine("MaxiCode barcode generated successfully: maxicode.png");
             }
-
-            Console.WriteLine("MaxiCode generated successfully: maxicode.png");
         }
         catch (Exception ex)
         {
-            // Generation failed (e.g., data too large). Log the error and fall back.
+            // MaxiCode generation failed (likely due to data size). Log the error and prepare to fallback.
             Console.WriteLine($"MaxiCode generation failed: {ex.Message}");
-            Console.WriteLine("Falling back to DataMatrix...");
+            Console.WriteLine("Falling back to DataMatrix barcode.");
 
+            // Attempt to generate a DataMatrix barcode using the same data.
             try
             {
-                // Generate a DataMatrix barcode with the same data.
-                using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, longData))
+                using (var dmGenerator = new BarcodeGenerator(EncodeTypes.DataMatrix, largeData))
                 {
-                    // Optional: set a specific DataMatrix version if desired.
-                    // generator.Parameters.Barcode.DataMatrix.DataMatrixVersion = DataMatrixVersion.ECC200_20x20;
+                    // Use automatic encoding mode for DataMatrix.
+                    dmGenerator.Parameters.Barcode.DataMatrix.EncodeMode = DataMatrixEncodeMode.Auto;
 
-                    // Save the DataMatrix image directly to a file.
-                    generator.Save("datamatrix.png");
+                    // Save the fallback DataMatrix image to a PNG file.
+                    dmGenerator.Save("datamatrix.png");
+                    Console.WriteLine("DataMatrix barcode generated as fallback: datamatrix.png");
                 }
-
-                Console.WriteLine("DataMatrix generated successfully: datamatrix.png");
             }
             catch (Exception fallbackEx)
             {
-                // Log any errors that occur during the fallback generation.
+                // Fallback also failed; report the error.
                 Console.WriteLine($"DataMatrix generation also failed: {fallbackEx.Message}");
             }
         }
