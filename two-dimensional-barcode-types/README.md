@@ -1,12 +1,10 @@
-# Two Dimensional Barcode Types — Aspose.BarCode for .NET C# Examples
+# Two Dimensional Barcode Types C# Examples — Aspose.BarCode for .NET
 
 [![NuGet](https://img.shields.io/nuget/v/Aspose.BarCode?label=Aspose.BarCode)](https://www.nuget.org/packages/Aspose.BarCode/)
 [![.NET](https://img.shields.io/badge/.NET-10.0-blue)](https://dotnet.microsoft.com/)
 [![Examples](https://img.shields.io/badge/examples-214-green)](./)
 
-Standalone, build-validated C# code examples for **Two Dimensional Barcode Types** using
-[Aspose.BarCode for .NET](https://products.aspose.com/barcode/net/).
-Each file is a complete console application — copy it, run `dotnet run`, and it works.
+Standalone, build-validated C# code examples for **Two Dimensional Barcode Types** using [Aspose.BarCode for .NET](https://products.aspose.com/barcode/net/). Each file is a complete console application — copy it, run `dotnet run`, and it works.
 
 ## Examples (214 files)
 
@@ -15,8 +13,8 @@ Each file is a complete console application — copy it, run `dotnet run`, and i
 | [allow-users-to-select-linear-component-type-via-configuration-file-and-generate-corresponding-gs1-composite-barcode.cs](./allow-users-to-select-linear-component-type-via-configuration-file-and-generate-corresponding-gs1-composite-barcode.cs) | Allow users to select linear component type via configuration file and generate corresponding GS1 Composite barcode. |
 | [benchmark-generation-speed-of-dotcode-barcodes-using-different-encoding-modes-in-parallel.cs](./benchmark-generation-speed-of-dotcode-barcodes-using-different-encoding-modes-in-parallel.cs) | Benchmark generation speed of DotCode barcodes using different encoding modes in parallel. |
 | [configure-column-count-for-cc-c-2d-component-to-30-columns-when-generating-gs1-composite-barcode.cs](./configure-column-count-for-cc-c-2d-component-to-30-columns-when-generating-gs1-composite-barcode.cs) | Configure column count for CC_C 2D component to 30 columns when generating a GS1 Composite barcode. |
-| [configure-datamatrix-barcode-to-use-rectangular-shape-with-10-rows-and-30-columns.cs](./configure-datamatrix-barcode-to-use-rectangular-shape-with-10-rows-and-30-columns.cs) |  |
-| [configure-dotcode-to-use-rectangular-layout-with-20-columns-for-increased-data-capacity.cs](./configure-dotcode-to-use-rectangular-layout-with-20-columns-for-increased-data-capacity.cs) |  |
+| [configure-datamatrix-barcode-to-use-rectangular-shape-with-10-rows-and-30-columns.cs](./configure-datamatrix-barcode-to-use-rectangular-shape-with-10-rows-and-30-columns.cs) | Configure DataMatrix barcode to use rectangular shape with 10 rows and 30 columns. |
+| [configure-dotcode-to-use-rectangular-layout-with-20-columns-for-increased-data-capacity.cs](./configure-dotcode-to-use-rectangular-layout-with-20-columns-for-increased-data-capacity.cs) | Configure DotCode to use rectangular layout with 20 columns for increased data capacity. |
 | [configure-han-xin-to-use-rectangular-shape-with-15-rows-and-40-columns-for-larger-payload.cs](./configure-han-xin-to-use-rectangular-shape-with-15-rows-and-40-columns-for-larger-payload.cs) | Configure Han Xin to use rectangular shape with 15 rows and 40 columns for larger payload. |
 | [configure-maxicodeparametersmode-property-dynamically-based-on-api-request-input-parameter.cs](./configure-maxicodeparametersmode-property-dynamically-based-on-api-request-input-parameter.cs) | Configure MaxiCodeParameters.Mode property dynamically based on an API request input parameter. |
 | [create-batch-job-that-reads-csv-file-and-produces-gs1-composite-barcodes-for-each-record.cs](./create-batch-job-that-reads-csv-file-and-produces-gs1-composite-barcodes-for-each-record.cs) | Create a batch job that reads a CSV file and produces GS1 Composite barcodes for each record. |
@@ -74,14 +72,14 @@ Each file is a complete console application — copy it, run `dotnet run`, and i
 | [generate-qr-code-barcode-and-catch-and-log-encoding-exceptions-for-audit-trail.cs](./generate-qr-code-barcode-and-catch-and-log-encoding-exceptions-for-audit-trail.cs) | Generate QR Code barcode and catch and log encoding exceptions for audit trail. |
 | [generate-qr-code-barcode-and-compare-generated-png-size-against-expected-file-size-threshold.cs](./generate-qr-code-barcode-and-compare-generated-png-size-against-expected-file-size-threshold.cs) | Generate QR Code barcode and compare generated PNG size against expected file size threshold. |
 | [generate-qr-code-barcode-and-configure-generation-parameters-through-appsettings-json-file.cs](./generate-qr-code-barcode-and-configure-generation-parameters-through-appsettings-json-file.cs) | Generate a QR Code barcode and configure generation parameters through appsettings JSON file. |
-| [generate-qr-code-barcode-and-configure-quiet-zone-size-to-eight-modules-for-scanner-tolerance.cs](./generate-qr-code-barcode-and-configure-quiet-zone-size-to-eight-modules-for-scanner-tolerance.cs) |  |
+| [generate-qr-code-barcode-and-configure-quiet-zone-size-to-eight-modules-for-scanner-tolerance.cs](./generate-qr-code-barcode-and-configure-quiet-zone-size-to-eight-modules-for-scanner-tolerance.cs) | Generate QR Code barcode and configure quiet zone size to eight modules for scanner tolerance. |
 | [generate-qr-code-barcode-and-create-pdf-portfolio-containing-multiple-barcode-pages.cs](./generate-qr-code-barcode-and-create-pdf-portfolio-containing-multiple-barcode-pages.cs) | Generate QR Code barcode and create a PDF portfolio containing multiple barcode pages. |
 | [generate-qr-code-barcode-and-create-thumbnail-version-with-reduced-dimensions-for-preview.cs](./generate-qr-code-barcode-and-create-thumbnail-version-with-reduced-dimensions-for-preview.cs) | Generate QR Code barcode and create a thumbnail version with reduced dimensions for preview. |
 | [generate-qr-code-barcode-and-deserialize-settings-from-json-to-recreate-identical-barcode.cs](./generate-qr-code-barcode-and-deserialize-settings-from-json-to-recreate-identical-barcode.cs) | Generate QR Code barcode and deserialize settings from JSON to recreate identical barcode. |
 | [generate-qr-code-barcode-and-disable-automatic-size-to-enforce-fixed-dimensions.cs](./generate-qr-code-barcode-and-disable-automatic-size-to-enforce-fixed-dimensions.cs) | Generate QR Code barcode and disable automatic size to enforce fixed dimensions. |
 | [generate-qr-code-barcode-and-document-generation-workflow-in-readme-with-code-snippets.cs](./generate-qr-code-barcode-and-document-generation-workflow-in-readme-with-code-snippets.cs) | Generate QR Code barcode and document generation workflow in README with code snippets. |
 | [generate-qr-code-barcode-and-embed-barcode-into-email-template-using-inline-base64-image.cs](./generate-qr-code-barcode-and-embed-barcode-into-email-template-using-inline-base64-image.cs) | Generate QR Code barcode and embed barcode into an email template using inline base64 image. |
-| [generate-qr-code-barcode-and-embed-barcode-into-pdf-form-field-for-interactive-documents.cs](./generate-qr-code-barcode-and-embed-barcode-into-pdf-form-field-for-interactive-documents.cs) |  |
+| [generate-qr-code-barcode-and-embed-barcode-into-pdf-form-field-for-interactive-documents.cs](./generate-qr-code-barcode-and-embed-barcode-into-pdf-form-field-for-interactive-documents.cs) | Generate QR Code barcode and embed barcode into PDF form field for interactive documents. |
 | [generate-qr-code-barcode-and-embed-barcode-into-powerpoint-slide-using-open-xml.cs](./generate-qr-code-barcode-and-embed-barcode-into-powerpoint-slide-using-open-xml.cs) | Generate QR Code barcode and embed barcode into PowerPoint slide using Open XML. |
 | [generate-qr-code-barcode-and-embed-binary-file-content-for-small-data-transfer.cs](./generate-qr-code-barcode-and-embed-binary-file-content-for-small-data-transfer.cs) | Generate QR Code barcode and embed binary file content for small data transfer. |
 | [generate-qr-code-barcode-and-embed-calendar-event-details-for-appointment-scheduling.cs](./generate-qr-code-barcode-and-embed-calendar-event-details-for-appointment-scheduling.cs) | Generate QR Code barcode and embed calendar event details for appointment scheduling. |
@@ -93,7 +91,7 @@ Each file is a complete console application — copy it, run `dotnet run`, and i
 | [generate-qr-code-barcode-and-embed-it-into-json-payload-as-base64-string.cs](./generate-qr-code-barcode-and-embed-it-into-json-payload-as-base64-string.cs) | Generate QR Code barcode and embed it into a JSON payload as base64 string. |
 | [generate-qr-code-barcode-and-embed-it-into-pdf-report-alongside-descriptive-text.cs](./generate-qr-code-barcode-and-embed-it-into-pdf-report-alongside-descriptive-text.cs) | Generate QR Code barcode and embed it into a PDF report alongside descriptive text. |
 | [generate-qr-code-barcode-and-embed-it-into-razor-page-using-image-tag-helper.cs](./generate-qr-code-barcode-and-embed-it-into-razor-page-using-image-tag-helper.cs) | Generate QR Code barcode and embed it into a Razor page using image tag helper. |
-| [generate-qr-code-barcode-and-embed-it-into-word-document-using-open-xml-sdk.cs](./generate-qr-code-barcode-and-embed-it-into-word-document-using-open-xml-sdk.cs) |  |
+| [generate-qr-code-barcode-and-embed-it-into-word-document-using-open-xml-sdk.cs](./generate-qr-code-barcode-and-embed-it-into-word-document-using-open-xml-sdk.cs) | Generate QR Code barcode and embed it into a Word document using Open XML SDK. |
 | [generate-qr-code-barcode-and-embed-plain-text-message-for-quick-note-distribution.cs](./generate-qr-code-barcode-and-embed-plain-text-message-for-quick-note-distribution.cs) | Generate QR Code barcode and embed plain text message for quick note distribution. |
 | [generate-qr-code-barcode-and-embed-url-containing-utf-8-characters-for-international-link.cs](./generate-qr-code-barcode-and-embed-url-containing-utf-8-characters-for-international-link.cs) | Generate QR Code barcode and embed a URL containing UTF‑8 characters for international link. |
 | [generate-qr-code-barcode-and-embed-vcard-contact-information-for-digital-business-card.cs](./generate-qr-code-barcode-and-embed-vcard-contact-information-for-digital-business-card.cs) | Generate QR Code barcode and embed vCard contact information for digital business card. |
@@ -155,11 +153,11 @@ Each file is a complete console application — copy it, run `dotnet run`, and i
 | [generate-qr-code-barcode-with-manual-module-size-of-4-pixels-and-export-as-png.cs](./generate-qr-code-barcode-with-manual-module-size-of-4-pixels-and-export-as-png.cs) | Generate a QR Code barcode with manual module size of 4 pixels and export as PNG. |
 | [generate-qr-code-barcode-with-margin-set-to-zero-and-save-as-jpeg-image.cs](./generate-qr-code-barcode-with-margin-set-to-zero-and-save-as-jpeg-image.cs) | Generate a QR Code barcode with margin set to zero and save as JPEG image. |
 | [generate-qr-code-barcode-with-mask-pattern-three-applied-and-export-as-bmp.cs](./generate-qr-code-barcode-with-mask-pattern-three-applied-and-export-as-bmp.cs) | Generate a QR Code barcode with mask pattern three applied and export as BMP. |
-| [generate-qr-code-barcode-with-quiet-zone-disabled-and-save-as-bmp.cs](./generate-qr-code-barcode-with-quiet-zone-disabled-and-save-as-bmp.cs) |  |
+| [generate-qr-code-barcode-with-quiet-zone-disabled-and-save-as-bmp.cs](./generate-qr-code-barcode-with-quiet-zone-disabled-and-save-as-bmp.cs) | Generate a QR Code barcode with quiet zone disabled and save as BMP. |
 | [generate-qr-code-barcode-with-quiet-zone-of-four-modules-and-export-as-jpeg.cs](./generate-qr-code-barcode-with-quiet-zone-of-four-modules-and-export-as-jpeg.cs) | Generate a QR Code barcode with quiet zone of four modules and export as JPEG. |
 | [generate-qr-code-barcode-with-structured-append-across-three-symbols-and-save-as-png.cs](./generate-qr-code-barcode-with-structured-append-across-three-symbols-and-save-as-png.cs) | Generate a QR Code barcode with structured append across three symbols and save as PNG. |
 | [generate-qr-code-barcode-with-version-forty-specified-and-save-as-png.cs](./generate-qr-code-barcode-with-version-forty-specified-and-save-as-png.cs) | Generate a QR Code barcode with version forty specified and save as PNG. |
-| [generate-qr-code-barcode-with-version-ten-specified-and-export-as-bmp.cs](./generate-qr-code-barcode-with-version-ten-specified-and-export-as-bmp.cs) |  |
+| [generate-qr-code-barcode-with-version-ten-specified-and-export-as-bmp.cs](./generate-qr-code-barcode-with-version-ten-specified-and-export-as-bmp.cs) | Generate a QR Code barcode with version ten specified and export as BMP. |
 | [generate-qr-code-barcodes-in-batch-from-api-request-list-and-return-base64-strings-in-response.cs](./generate-qr-code-barcodes-in-batch-from-api-request-list-and-return-base64-strings-in-response.cs) | Generate QR Code barcodes in batch from API request list and return base64 strings in response. |
 | [generate-qr-code-barcodes-in-batch-from-csv-file-and-compile-them-into-single-pdf-report.cs](./generate-qr-code-barcodes-in-batch-from-csv-file-and-compile-them-into-single-pdf-report.cs) | Generate QR Code barcodes in batch from CSV file and compile them into a single PDF report. |
 | [generate-qr-code-barcodes-in-batch-from-database-query-and-store-each-as-jpeg-in-folder.cs](./generate-qr-code-barcodes-in-batch-from-database-query-and-store-each-as-jpeg-in-folder.cs) | Generate QR Code barcodes in batch from database query and store each as JPEG in folder. |
@@ -203,7 +201,7 @@ Each file is a complete console application — copy it, run `dotnet run`, and i
 | [provide-sample-code-that-streams-generated-barcode-directly-to-http-response-without-intermediate-file.cs](./provide-sample-code-that-streams-generated-barcode-directly-to-http-response-without-intermediate-file.cs) | Provide sample code that streams generated barcode directly to HTTP response without intermediate file. |
 | [provide-sample-code-that-uses-dependency-injection-to-supply-barcode-generator-instances-in-aspnet-core.cs](./provide-sample-code-that-uses-dependency-injection-to-supply-barcode-generator-instances-in-aspnet-core.cs) | Provide sample code that uses dependency injection to supply barcode generator instances in ASP.NET Core. |
 | [retrieve-extended-codetext-for-maxicode-using-getextendedcodetext-method-and-include-it-in-generation.cs](./retrieve-extended-codetext-for-maxicode-using-getextendedcodetext-method-and-include-it-in-generation.cs) | Retrieve extended CodeText for MaxiCode using GetExtendedCodetext method and include it in generation. |
-| [save-dotcode-barcode-as-tiff-with-ccitt-group-4-compression-for-archival-storage.cs](./save-dotcode-barcode-as-tiff-with-ccitt-group-4-compression-for-archival-storage.cs) |  |
+| [save-dotcode-barcode-as-tiff-with-ccitt-group-4-compression-for-archival-storage.cs](./save-dotcode-barcode-as-tiff-with-ccitt-group-4-compression-for-archival-storage.cs) | Save DotCode barcode as TIFF with CCITT Group 4 compression for archival storage. |
 | [save-generated-datamatrix-barcode-as-png-file-with-transparent-background-for-overlay-usage.cs](./save-generated-datamatrix-barcode-as-png-file-with-transparent-background-for-overlay-usage.cs) | Save generated DataMatrix barcode as PNG file with transparent background for overlay usage. |
 | [save-generated-maxicode-barcode-to-memorystream-and-return-byte-array-to-caller.cs](./save-generated-maxicode-barcode-to-memorystream-and-return-byte-array-to-caller.cs) | Save generated MaxiCode barcode to a MemoryStream and return the byte array to the caller. |
 | [save-gs1-composite-barcode-image-as-jpeg-with-quality-level-90-for-web-display.cs](./save-gs1-composite-barcode-image-as-jpeg-with-quality-level-90-for-web-display.cs) | Save GS1 Composite barcode image as JPEG with quality level 90 for web display. |
@@ -248,5 +246,5 @@ dotnet run
 - 🤖 [Agent Instructions](./agents.md)
 
 <!-- AUTOGENERATED:START -->
-Updated: 2026-07-04 | Examples: 214
+Updated: 2026-07-17 | Examples: 214
 <!-- AUTOGENERATED:END -->
