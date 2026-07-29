@@ -1,113 +1,72 @@
-// Title: Barcode Generation with Configurable Appearance Settings
-// Description: Demonstrates reading barcode appearance options from a JSON configuration file and applying them to an Aspose.BarCode generator.
+// Title: Barcode appearance configuration export/import example
+// Description: Demonstrates how to configure barcode appearance settings, export them to an XML file, and reuse them for generating barcodes.
+// Category-Description: This example belongs to the Aspose.BarCode configuration management category, showcasing the use of BarcodeGenerator, its Parameters, and XML import/export APIs. Developers often need to persist barcode visual settings such as AutoSizeMode, XDimension, and padding for reuse across applications or environments. The snippet illustrates typical workflows for saving and loading these settings.
 // Prompt: Design a configuration file format to store barcode appearance settings such as AutoSizeMode, XDimension, and padding values.
-// Tags: barcode, configuration, json, autosizemode, xdimension, padding, aspose.barcode, c#
+// Tags: barcode, configuration, autosizemode, xdimension, padding, export, import, aspose.barcode, code128, png
 
 using System;
 using System.IO;
-using System.Text.Json;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
-namespace BarcodeConfigDemo
+/// <summary>
+/// Demonstrates exporting and importing barcode appearance settings using Aspose.BarCode.
+/// </summary>
+class Program
 {
     /// <summary>
-    /// Represents the structure of the configuration file.
-    /// The file is a simple JSON document, e.g.:
-    /// {
-    ///   "AutoSizeMode": "Interpolation",
-    ///   "XDimension": 2.5,
-    ///   "Padding": { "Left": 5, "Top": 5, "Right": 5, "Bottom": 5 }
-    /// }
+    /// Entry point. Creates a barcode, saves its appearance to XML, generates an image, then reloads the settings to create another barcode.
     /// </summary>
-    public class BarcodeConfig
+    static void Main()
     {
-        // AutoSizeMode as a string; will be parsed to the corresponding enum.
-        public string AutoSizeMode { get; set; } = "None";
+        // Define file paths for the configuration XML and generated images
+        string xmlPath = "barcodeSettings.xml";
+        string imagePath = "barcode.png";
 
-        // Module size of the barcode (in points).
-        public float XDimension { get; set; } = 1.0f;
-
-        // Padding values around the barcode.
-        public PaddingConfig Padding { get; set; } = new PaddingConfig();
-    }
-
-    /// <summary>
-    /// Holds padding values for each side of the barcode.
-    /// </summary>
-    public class PaddingConfig
-    {
-        public float Left { get; set; } = 0f;
-        public float Top { get; set; } = 0f;
-        public float Right { get; set; } = 0f;
-        public float Bottom { get; set; } = 0f;
-    }
-
-    class Program
-    {
-        /// <summary>
-        /// Entry point of the demo. Reads configuration, creates a barcode, and saves it as an image.
-        /// </summary>
-        static void Main()
+        // -----------------------------------------------------------------
+        // Create a barcode generator, configure appearance settings, and save
+        // the configuration to an XML file.
+        // -----------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
         {
-            const string configFile = "barcodeConfig.json";
+            // Auto-size the barcode using interpolation mode
+            generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
 
-            // Ensure a configuration file exists; create a default one if missing.
-            if (!File.Exists(configFile))
+            // Set the module size (XDimension) to 2 points
+            generator.Parameters.Barcode.XDimension.Point = 2f;
+
+            // Apply uniform padding of 5 points on all sides
+            generator.Parameters.Barcode.Padding.Left.Point = 5f;
+            generator.Parameters.Barcode.Padding.Top.Point = 5f;
+            generator.Parameters.Barcode.Padding.Right.Point = 5f;
+            generator.Parameters.Barcode.Padding.Bottom.Point = 5f;
+
+            // Export the current settings to an XML configuration file
+            generator.ExportToXml(xmlPath);
+
+            // Save a sample barcode image using the configured settings
+            generator.Save(imagePath, BarCodeImageFormat.Png);
+        }
+
+        // -----------------------------------------------------------------
+        // Load the barcode appearance settings from the XML file and generate
+        // a new barcode to demonstrate that the configuration is applied.
+        // -----------------------------------------------------------------
+        if (File.Exists(xmlPath))
+        {
+            using (var loadedGenerator = BarcodeGenerator.ImportFromXml(xmlPath))
             {
-                var defaultConfig = new BarcodeConfig
-                {
-                    AutoSizeMode = "Interpolation",
-                    XDimension = 2.5f,
-                    Padding = new PaddingConfig { Left = 5f, Top = 5f, Right = 5f, Bottom = 5f }
-                };
-                var json = JsonSerializer.Serialize(defaultConfig, new JsonSerializerOptions { WriteIndented = true });
-                File.WriteAllText(configFile, json);
-                Console.WriteLine($"Created default configuration file: {configFile}");
+                // Change the encoded text to verify that settings are retained
+                loadedGenerator.CodeText = "Loaded123";
+
+                string loadedImagePath = "barcode_loaded.png";
+                loadedGenerator.Save(loadedImagePath, BarCodeImageFormat.Png);
+                Console.WriteLine($"Barcode generated with loaded settings saved to {loadedImagePath}");
             }
-
-            // Load configuration from the JSON file.
-            BarcodeConfig config;
-            try
-            {
-                var json = File.ReadAllText(configFile);
-                config = JsonSerializer.Deserialize<BarcodeConfig>(json);
-                if (config == null)
-                    throw new InvalidOperationException("Configuration deserialization resulted in null.");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Failed to read configuration: {ex.Message}");
-                return;
-            }
-
-            // Convert the AutoSizeMode string to the corresponding enum value.
-            if (!Enum.TryParse<AutoSizeMode>(config.AutoSizeMode, ignoreCase: true, out var autoSizeMode))
-            {
-                Console.WriteLine($"Invalid AutoSizeMode value: {config.AutoSizeMode}");
-                return;
-            }
-
-            // Create a barcode generator and apply settings from the configuration.
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
-            {
-                // Apply AutoSizeMode.
-                generator.Parameters.AutoSizeMode = autoSizeMode;
-
-                // Apply XDimension (module size) using the Point unit.
-                generator.Parameters.Barcode.XDimension.Point = config.XDimension;
-
-                // Apply padding for each side.
-                generator.Parameters.Barcode.Padding.Left.Point = config.Padding.Left;
-                generator.Parameters.Barcode.Padding.Top.Point = config.Padding.Top;
-                generator.Parameters.Barcode.Padding.Right.Point = config.Padding.Right;
-                generator.Parameters.Barcode.Padding.Bottom.Point = config.Padding.Bottom;
-
-                // Save the generated barcode image.
-                const string outputFile = "barcode.png";
-                generator.Save(outputFile);
-                Console.WriteLine($"Barcode generated and saved to {outputFile}");
-            }
+        }
+        else
+        {
+            Console.WriteLine($"Configuration file not found: {xmlPath}");
         }
     }
 }

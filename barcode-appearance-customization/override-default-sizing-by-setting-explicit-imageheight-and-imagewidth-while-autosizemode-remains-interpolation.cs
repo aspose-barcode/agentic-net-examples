@@ -1,38 +1,39 @@
-// Title: Explicit Image Size with Interpolation AutoSizeMode
-// Description: Demonstrates overriding the default barcode image dimensions by setting ImageWidth and ImageHeight while keeping AutoSizeMode set to Interpolation.
+// Title: Override barcode image size with explicit dimensions while using Interpolation auto-size mode
+// Description: Demonstrates how to set ImageWidth and ImageHeight on a BarcodeGenerator, keeping AutoSizeMode set to Interpolation, and save the result as PNG.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating image sizing controls. It showcases the BarcodeGenerator class, its Parameters property, and the AutoSizeMode enumeration. Developers often need to produce barcodes with specific dimensions for UI layout, printing, or integration with other graphics pipelines.
 // Prompt: Override default sizing by setting explicit ImageHeight and ImageWidth while AutoSizeMode remains Interpolation.
-// Tags: barcode, code128, explicit sizing, interpolation, aspose.barcode, image generation
+// Tags: code128, barcode generation, image sizing, autosizemode, png, aspose.barcode
 
 using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Generates a Code128 barcode with custom image dimensions while using the Interpolation auto‑size mode.
+/// Generates a Code128 barcode with custom image dimensions while retaining the Interpolation auto‑size mode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Creates a barcode, sets explicit size parameters, and saves the image.
+    /// Entry point of the example. Creates a barcode, configures sizing, and saves it as a PNG file.
     /// </summary>
     static void Main()
     {
-        // Initialize a barcode generator for Code128 with sample text
+        // Initialize the barcode generator with Code128 symbology and sample data.
         using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            // Keep automatic sizing mode as Interpolation (default behavior)
+            // Preserve automatic sizing behavior using the Interpolation mode.
             generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
 
-            // Override default size by setting explicit image dimensions (points)
+            // Explicitly set the desired image dimensions (in points).
+            // The API expects float values, hence the 'f' suffix.
             generator.Parameters.ImageWidth.Point = 300f;   // Width = 300 points
-            generator.Parameters.ImageHeight.Point = 150f;  // Height = 150 points
+            generator.Parameters.ImageHeight.Point = 150f; // Height = 150 points
 
-            // Save the generated barcode image to a PNG file
+            // Persist the generated barcode to a PNG file.
             generator.Save("barcode.png");
         }
 
-        // Inform the user that the barcode has been created
-        Console.WriteLine("Barcode generated and saved as barcode.png");
+        // Inform the user that the barcode has been created.
+        Console.WriteLine("Barcode generated and saved as 'barcode.png'.");
     }
 }

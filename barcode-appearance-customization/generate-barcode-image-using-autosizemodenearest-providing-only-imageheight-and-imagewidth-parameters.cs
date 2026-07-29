@@ -1,37 +1,43 @@
-// Title: Generate barcode with AutoSizeMode.Nearest using only image dimensions
-// Description: Demonstrates creating a Code128 barcode image by setting AutoSizeMode to Nearest and specifying only ImageWidth and ImageHeight. Useful for quickly generating barcodes with desired size without manual scaling.
+// Title: Generate barcode with AutoSizeMode.Nearest using image dimensions
+// Description: Demonstrates creating a Code128 barcode image by specifying only the image height and width while using AutoSizeMode.Nearest for automatic sizing.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to configure AutoSizeMode and image dimensions. It uses BarcodeGenerator, EncodeTypes, AutoSizeMode, and BarCodeImageFormat classes. Typical use cases include generating barcode images for labels, invoices, or web applications where precise image size is required. Developers often need to control output size while letting the library adjust barcode scaling automatically.
 // Prompt: Generate a barcode image using AutoSizeMode.Nearest, providing only ImageHeight and ImageWidth parameters.
-// Tags: code128, barcode, autosizemode, nearest, imagegeneration, aspnet, csharp
+// Tags: code128, autosizemode, nearest, imagewidth, imageheight, png, generation, aspose.barcode
 
 using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Example program that generates a Code128 barcode image using AutoSizeMode.Nearest.
+/// Example program that generates a Code128 barcode image using AutoSizeMode.Nearest,
+/// specifying only the desired image width and height.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Creates a barcode generator, configures size, saves the image, and writes a confirmation to console.
+    /// Entry point of the application. Creates a barcode, configures sizing, and saves it as PNG.
     /// </summary>
     static void Main()
     {
-        // Initialize a barcode generator for Code128 with sample text.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+        // Define the output file path for the generated barcode image.
+        const string outputPath = "barcode.png";
+
+        // Initialize the barcode generator with Code128 symbology and sample data.
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            // Set AutoSizeMode to Nearest to let the library choose the best size.
+            // Set the automatic sizing mode to Nearest so the library adjusts the barcode
+            // to best fit the specified image dimensions.
             generator.Parameters.AutoSizeMode = AutoSizeMode.Nearest;
 
-            // Define only the image dimensions (width and height) in points.
-            generator.Parameters.ImageWidth.Point = 300f;   // Width in points.
-            generator.Parameters.ImageHeight.Point = 150f; // Height in points.
+            // Specify the desired image width and height in points (1 point = 1/72 inch).
+            generator.Parameters.ImageWidth.Point = 300f;
+            generator.Parameters.ImageHeight.Point = 150f;
 
-            // Save the generated barcode image to a PNG file.
-            generator.Save("barcode.png");
+            // Save the generated barcode image to the specified path in PNG format.
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user that the barcode image has been created.
-        Console.WriteLine("Barcode image generated: barcode.png");
+        // Inform the user that the barcode image has been saved.
+        Console.WriteLine($"Barcode image saved to '{outputPath}'.");
     }
 }

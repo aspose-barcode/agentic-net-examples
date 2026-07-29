@@ -1,45 +1,48 @@
-// Title: High‑Resolution QR Code Barcode Generation with Interpolation Auto‑Size
+// Title: Generate High‑Resolution PNG Barcode with Interpolation AutoSizeMode
 // Description: Demonstrates configuring AutoSizeMode to Interpolation, setting image dimensions, and saving a high‑resolution PNG barcode using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, showcasing how to use the BarcodeGenerator class with EncodeTypes, AutoSizeMode, and resolution settings. Typical use cases include creating printable barcodes for inventory, shipping, or product labeling where high‑resolution output is required. Developers often need to control image size, DPI, and rendering mode to meet quality standards.
 // Prompt: Configure AutoSizeMode to Interpolation, set ImageWidth and ImageHeight, and generate a high‑resolution PNG barcode.
-// Tags: qr, barcode, autosizemode, interpolation, highresolution, png, aspose.barcode, csharp
+// Tags: code128, generation, png, autosizemode, resolution, aspose.barcode, barcodegenerator
 
 using System;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates a high‑resolution QR code barcode.
+/// Example program that generates a high‑resolution PNG barcode using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Configures the barcode generator and saves a PNG image.
+    /// Entry point. Configures barcode parameters, generates the image, and saves it to disk.
     /// </summary>
     static void Main()
     {
-        // Initialize a barcode generator for a QR code with the desired text
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
+        // Define the output file path in the current working directory.
+        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "high_res_barcode.png");
+
+        // Create a BarcodeGenerator for Code128 symbology with sample text.
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            // Set the output resolution to 300 DPI for high‑quality rendering
+            // Set the desired resolution (e.g., 300 DPI) for high‑quality output.
             generator.Parameters.Resolution = 300f;
 
-            // Enable Interpolation auto‑size mode to improve scaling quality
+            // Enable interpolation auto‑size mode and specify canvas dimensions in points.
             generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
+            generator.Parameters.ImageWidth.Point = 600f;   // Width in points.
+            generator.Parameters.ImageHeight.Point = 300f;  // Height in points.
 
-            // Define the canvas size in points (1 point = 1/72 inch)
-            generator.Parameters.ImageWidth.Point = 600f;   // Width: 600 points
-            generator.Parameters.ImageHeight.Point = 600f;  // Height: 600 points
-
-            // Optional: specify foreground (barcode) and background colors
+            // Optional: define barcode and background colors.
             generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
             generator.Parameters.BackColor = Aspose.Drawing.Color.White;
 
-            // Save the generated barcode as a high‑resolution PNG file
-            generator.Save("high_res_barcode.png");
+            // Save the generated barcode as a PNG image to the specified path.
+            generator.Save(outputPath);
         }
 
-        // Inform the user that the barcode has been created
-        Console.WriteLine("Barcode generated successfully.");
+        // Inform the user where the barcode image has been saved.
+        Console.WriteLine($"Barcode image saved to: {outputPath}");
     }
 }

@@ -1,79 +1,81 @@
-// Title: Generate customizable barcode image with rotation, padding, and size
-// Description: Demonstrates creating a barcode image using Aspose.BarCode with user-defined rotation, padding, and dimensions, useful for generating consistent barcode graphics.
+// Title: Generate Custom Rotated Barcode with Padding and Size
+// Description: Demonstrates creating a barcode image with a specified rotation angle, uniform padding, and custom dimensions, then saving it as PNG.
+// Category-Description: This example belongs to the Aspose.BarCode image generation category, illustrating how to use the BarcodeGenerator class together with its Parameters property to control rotation, padding, and image size. Developers often need to produce barcodes that fit specific layout constraints, such as rotated labels or fixed-size graphics, and this snippet shows the typical API usage for those scenarios.
 // Prompt: Create a reusable library function that accepts rotation angle, padding, and size parameters to produce customized barcode images.
-// Tags: barcode, code128, rotation, padding, size, png, aspose.barcode, csharp
+// Tags: barcode symbology, image generation, rotation, padding, size, aspose.barcode, png, c#
 
 using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing;
 
-/// <summary>
-/// Demonstrates barcode generation with customizable parameters.
-/// </summary>
-class Program
+namespace BarcodeDemo
 {
     /// <summary>
-    /// Generates a barcode image with custom rotation, padding, and size.
+    /// Demonstrates generating a barcode with custom rotation, padding, and image size.
     /// </summary>
-    /// <param name="rotationAngle">Rotation in degrees (e.g., 0, 90, 180, 270).</param>
-    /// <param name="padding">Uniform padding in points applied to all sides.</param>
-    /// <param name="width">Image width in points.</param>
-    /// <param name="height">Image height in points.</param>
-    /// <param name="codeText">Text to encode in the barcode.</param>
-    /// <param name="outputPath">File path to save the PNG image.</param>
-    static void GenerateBarcode(float rotationAngle, float padding, float width, float height, string codeText, string outputPath)
+    class Program
     {
-        // Validate required parameters.
-        if (string.IsNullOrWhiteSpace(codeText))
-            throw new ArgumentException("codeText cannot be null or empty.", nameof(codeText));
-        if (string.IsNullOrWhiteSpace(outputPath))
-            throw new ArgumentException("outputPath cannot be null or empty.", nameof(outputPath));
-
-        // Use Code128 as a common 1D symbology.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+        /// <summary>
+        /// Entry point of the example. Sets up parameters and creates a barcode image.
+        /// </summary>
+        static void Main()
         {
-            // Apply rotation.
-            generator.Parameters.RotationAngle = rotationAngle;
+            // Define sample parameters for the barcode generation
+            string outputPath = "custom_barcode.png";
+            BaseEncodeType encodeType = EncodeTypes.Code128;
+            string codeText = "1234567890";
+            float rotationAngle = 45f;   // degrees
+            float padding = 10f;         // points
+            float imageWidth = 300f;     // points
+            float imageHeight = 150f;    // points
 
-            // Set size control via interpolation mode.
-            generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
-            generator.Parameters.ImageWidth.Point = width;
-            generator.Parameters.ImageHeight.Point = height;
+            // Generate the barcode with the specified customizations
+            CreateBarcode(outputPath, encodeType, codeText, rotationAngle, padding, imageWidth, imageHeight);
 
-            // Apply uniform padding on all sides.
-            generator.Parameters.Barcode.Padding.Left.Point = padding;
-            generator.Parameters.Barcode.Padding.Top.Point = padding;
-            generator.Parameters.Barcode.Padding.Right.Point = padding;
-            generator.Parameters.Barcode.Padding.Bottom.Point = padding;
-
-            // Save the generated barcode as a PNG file.
-            generator.Save(outputPath, BarCodeImageFormat.Png);
+            // Inform the user where the barcode image was saved
+            Console.WriteLine($"Barcode saved to: {outputPath}");
         }
-    }
 
-    /// <summary>
-    /// Entry point that calls <see cref="GenerateBarcode"/> with sample parameters and handles errors.
-    /// </summary>
-    static void Main()
-    {
-        // Sample parameters.
-        float rotation = 90f;          // Rotate 90 degrees.
-        float padding = 5f;            // 5 points padding on each side.
-        float imgWidth = 300f;         // 300 points width.
-        float imgHeight = 150f;        // 150 points height.
-        string text = "Sample123";     // Text to encode.
-        string file = "custom_barcode.png"; // Output file name.
+        /// <summary>
+        /// Generates a barcode image with custom rotation, uniform padding, and image size.
+        /// </summary>
+        /// <param name="outputPath">File path to save the barcode image.</param>
+        /// <param name="encodeType">Symbology type (e.g., EncodeTypes.Code128).</param>
+        /// <param name="codeText">Text to encode.</param>
+        /// <param name="rotationAngle">Rotation angle in degrees.</param>
+        /// <param name="padding">Uniform padding applied to all sides (points).</param>
+        /// <param name="imageWidth">Desired image width (points).</param>
+        /// <param name="imageHeight">Desired image height (points).</param>
+        static void CreateBarcode(string outputPath, BaseEncodeType encodeType, string codeText,
+                                  float rotationAngle, float padding,
+                                  float imageWidth, float imageHeight)
+        {
+            // Validate arguments to ensure required values are provided
+            if (string.IsNullOrWhiteSpace(outputPath))
+                throw new ArgumentException("Output path must be provided.", nameof(outputPath));
+            if (codeText == null)
+                throw new ArgumentNullException(nameof(codeText));
 
-        try
-        {
-            // Generate the barcode with the specified settings.
-            GenerateBarcode(rotation, padding, imgWidth, imgHeight, text, file);
-            Console.WriteLine($"Barcode generated and saved to '{file}'.");
-        }
-        catch (Exception ex)
-        {
-            // Output any errors that occur during generation.
-            Console.WriteLine($"Error: {ex.Message}");
+            // Initialize the barcode generator with the chosen symbology and text
+            using (var generator = new BarcodeGenerator(encodeType, codeText))
+            {
+                // Apply rotation to the barcode image
+                generator.Parameters.RotationAngle = rotationAngle;
+
+                // Set uniform padding on all sides
+                generator.Parameters.Barcode.Padding.Left.Point = padding;
+                generator.Parameters.Barcode.Padding.Top.Point = padding;
+                generator.Parameters.Barcode.Padding.Right.Point = padding;
+                generator.Parameters.Barcode.Padding.Bottom.Point = padding;
+
+                // Define the output image dimensions
+                generator.Parameters.ImageWidth.Point = imageWidth;
+                generator.Parameters.ImageHeight.Point = imageHeight;
+
+                // Save the generated barcode as a PNG file
+                generator.Save(outputPath, BarCodeImageFormat.Png);
+            }
         }
     }
 }
