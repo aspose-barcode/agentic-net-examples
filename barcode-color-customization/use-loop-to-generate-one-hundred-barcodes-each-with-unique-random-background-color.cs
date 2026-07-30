@@ -1,7 +1,8 @@
-// Title: Generate multiple barcodes with random background colors
-// Description: Demonstrates creating barcode images, each with a unique random background color, and saving them as PNG files.
+// Title: Generate 100 Barcodes with Random Background Colors
+// Description: This example creates 100 Code128 barcodes, each saved as a PNG with a unique random background color.
+// Category-Description: Demonstrates Aspose.BarCode generation for bulk barcode creation. It uses BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes to produce images. Typical use cases include batch processing of product codes, inventory labeling, or testing visual variations. Developers often need loops, randomization, and file handling to automate large‑scale barcode output.
 // Prompt: Use a loop to generate one hundred barcodes each with a unique random background color.
-// Tags: barcode, code128, random background, png, aspose.barcode, aspose.drawing
+// Tags: barcode symbology, generation, png, random background, loop, aspose.barcode, aspose.drawing, code128
 
 using System;
 using System.IO;
@@ -10,55 +11,51 @@ using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates barcode images with random background colors.
+/// Generates a set of barcode images with random background colors using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a set of barcode PNG files with random backgrounds.
+    /// Entry point of the application. Creates 100 Code128 barcodes, each with a distinct random background color,
+    /// and saves them as PNG files in the "Barcodes" directory.
     /// </summary>
     static void Main()
     {
-        // Define the output directory for generated barcode images
+        // Ensure the output directory exists
         string outputDir = "Barcodes";
+        Directory.CreateDirectory(outputDir);
 
-        // Ensure the output directory exists; create it if it does not
-        if (!Directory.Exists(outputDir))
+        // Random number generator for background colors
+        Random rand = new Random();
+
+        // Loop to generate 100 barcodes
+        for (int i = 0; i < 100; i++)
         {
-            Directory.CreateDirectory(outputDir);
-        }
+            // Build a unique text value for the barcode (e.g., Code001, Code002, ...)
+            string codeText = $"Code{i:D3}";
 
-        // Initialize a random number generator for creating random colors
-        Random rnd = new Random();
-
-        // Generate a safe sample of 10 barcodes (large batches should be limited)
-        for (int i = 1; i <= 10; i++)
-        {
-            // Create a unique code text for each barcode (e.g., Sample1, Sample2, ...)
-            string codeText = $"Sample{i}";
-
-            // Generate a random background color using RGB components
+            // Generate a random RGB color for the barcode background
             Aspose.Drawing.Color bgColor = Aspose.Drawing.Color.FromArgb(
-                rnd.Next(256), // Red component (0-255)
-                rnd.Next(256), // Green component (0-255)
-                rnd.Next(256)  // Blue component (0-255)
+                rand.Next(256), // Red component (0‑255)
+                rand.Next(256), // Green component (0‑255)
+                rand.Next(256)  // Blue component (0‑255)
             );
 
-            // Use a using block to ensure the BarcodeGenerator is properly disposed
+            // Initialize the barcode generator with Code128 symbology and the unique text
             using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
             {
-                // Apply the randomly generated background color to the barcode
+                // Apply the random background color to the barcode image
                 generator.Parameters.BackColor = bgColor;
 
-                // Construct the full file path for the PNG output
-                string filePath = Path.Combine(outputDir, $"barcode_{i}.png");
+                // Define the full file path for the PNG output
+                string filePath = Path.Combine(outputDir, $"barcode_{i:D3}.png");
 
-                // Save the barcode image in PNG format
+                // Save the generated barcode as a PNG file
                 generator.Save(filePath, BarCodeImageFormat.Png);
             }
         }
 
-        // Inform the user that barcode generation has completed
-        Console.WriteLine("Barcode generation completed.");
+        // Notify the user that generation is complete
+        Console.WriteLine("Generated 100 barcode images in the 'Barcodes' folder.");
     }
 }

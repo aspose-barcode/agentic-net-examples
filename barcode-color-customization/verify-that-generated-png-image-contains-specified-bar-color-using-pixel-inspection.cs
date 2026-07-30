@@ -1,73 +1,64 @@
-// Title: Barcode generation with custom bar color and verification
-// Description: Demonstrates creating a Code128 barcode PNG with a blue bar color and verifies the color by inspecting pixels.
+// Title: Verify barcode bar color in generated PNG
+// Description: Demonstrates generating a Code128 barcode with a custom bar color and programmatically confirming the color exists in the saved PNG image.
+// Category-Description: This example belongs to the Aspose.BarCode image generation and recognition category, illustrating how to use BarcodeGenerator to set visual properties (e.g., BarColor) and how to employ Aspose.Drawing.Bitmap for pixel-level inspection. Developers often need to customize barcode appearance and validate output images in automated tests or CI pipelines.
 // Prompt: Verify that the generated PNG image contains the specified bar color using pixel inspection.
-// Tags: barcode, code128, color, png, verification, aspose.barcode, aspose.drawing
+// Tags: barcode, code128, barcolor, png, pixel-inspection, aspose.barcode, aspose.drawing, image-generation
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
+using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Generates a Code128 barcode with a custom bar color, saves it as a PNG,
+/// Generates a Code128 barcode with a custom bar color, saves it as PNG,
 /// and verifies that the specified color appears in the resulting image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Performs barcode generation, saving, and color verification.
+    /// Entry point of the example. Performs barcode creation, saving, and color verification.
     /// </summary>
     static void Main()
     {
-        // --------------------------------------------------------------------
-        // Define output file path
-        // --------------------------------------------------------------------
+        // Define the output file path for the generated barcode image.
         string outputPath = "barcode.png";
 
-        // --------------------------------------------------------------------
-        // Desired bar color (blue)
-        // --------------------------------------------------------------------
-        Color barColor = Color.Blue;
-
-        // --------------------------------------------------------------------
-        // Generate barcode with the specified bar color and save as PNG
-        // --------------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
+        // Create a barcode generator for the Code128 symbology.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128))
         {
-            generator.Parameters.Barcode.BarColor = barColor;
-            generator.Save(outputPath);
+            // Set the text to be encoded in the barcode.
+            generator.CodeText = "1234567890";
+
+            // Apply a custom bar color (red) to the barcode.
+            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Red;
+
+            // Save the generated barcode as a PNG image.
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // --------------------------------------------------------------------
-        // Verify that the generated image file exists
-        // --------------------------------------------------------------------
+        // Ensure the image file was created before attempting verification.
         if (!File.Exists(outputPath))
         {
-            Console.WriteLine("Barcode image file was not created.");
+            Console.WriteLine("Error: Barcode image file was not created.");
             return;
         }
 
-        // --------------------------------------------------------------------
-        // Scan the image pixel by pixel to find the expected bar color
-        // --------------------------------------------------------------------
+        // Flag indicating whether the expected color was found in the image.
         bool colorFound = false;
-        using (var image = Image.FromFile(outputPath) as Bitmap)
-        {
-            if (image == null)
-            {
-                Console.WriteLine("Failed to load the barcode image as a bitmap.");
-                return;
-            }
+        Aspose.Drawing.Color expectedColor = Aspose.Drawing.Color.Red;
 
-            // Iterate over each pixel until the color is found
-            for (int y = 0; y < image.Height && !colorFound; y++)
+        // Load the PNG image for pixel-level inspection.
+        using (var bitmap = new Bitmap(outputPath))
+        {
+            // Iterate over each pixel until the expected color is found.
+            for (int y = 0; y < bitmap.Height && !colorFound; y++)
             {
-                for (int x = 0; x < image.Width && !colorFound; x++)
+                for (int x = 0; x < bitmap.Width && !colorFound; x++)
                 {
-                    // Compare the pixel's ARGB value with the expected bar color's ARGB value
-                    if (image.GetPixel(x, y).ToArgb() == barColor.ToArgb())
+                    Aspose.Drawing.Color pixelColor = bitmap.GetPixel(x, y);
+                    if (pixelColor.ToArgb() == expectedColor.ToArgb())
                     {
                         colorFound = true;
                     }
@@ -75,11 +66,9 @@ class Program
             }
         }
 
-        // --------------------------------------------------------------------
-        // Output verification result
-        // --------------------------------------------------------------------
+        // Output the verification result to the console.
         Console.WriteLine(colorFound
-            ? "Verification succeeded: bar color is present in the image."
-            : "Verification failed: bar color not found in the image.");
+            ? "Verification succeeded: Bar color is present in the image."
+            : "Verification failed: Bar color not found in the image.");
     }
 }

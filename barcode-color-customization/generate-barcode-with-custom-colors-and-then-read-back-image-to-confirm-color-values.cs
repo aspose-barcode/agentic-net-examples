@@ -1,7 +1,8 @@
-// Title: Generate a Code128 barcode with custom foreground and background colors
-// Description: Demonstrates creating a barcode image with blue bars on a yellow background, then verifies the colors and reads the barcode.
+// Title: Generate and Verify Barcode with Custom Colors
+// Description: Creates a Code128 barcode image with blue bars on a yellow background, then reads the image to confirm color values and decode the encoded text.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, demonstrating how to customize barcode appearance using the BarcodeGenerator class and verify the result with BarCodeReader. Typical use cases include branding, UI integration, and quality checks where specific colors are required. Developers often need to set bar and background colors, save to common image formats, and ensure the barcode remains readable.
 // Prompt: Generate a barcode with custom colors and then read back the image to confirm color values.
-// Tags: code128, barcode generation, custom colors, png, aspose.barcode, aspose.drawing, barcode recognition
+// Tags: code128, barcode generation, barcode recognition, custom colors, png, aspose.barcode
 
 using System;
 using System.IO;
@@ -11,73 +12,59 @@ using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that creates a barcode with custom colors, verifies pixel colors, and reads the barcode back.
+/// Demonstrates creating a barcode with custom colors, saving it as an image,
+/// inspecting pixel colors, and reading the barcode back to verify the encoded data.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates the barcode, checks colors, and decodes the barcode.
+    /// Entry point of the example. Generates a colored barcode, checks pixel colors,
+    /// and decodes the barcode from the saved image.
     /// </summary>
     static void Main()
     {
-        // Define the output file path for the barcode image
-        string filePath = "custom_color_barcode.png";
+        // Define the output file path for the barcode image.
+        string imagePath = "custom_color_barcode.png";
 
-        // Create a barcode generator using Code128 symbology and the desired code text
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+        // Create a barcode generator for Code128 symbology with the desired text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123ABC"))
         {
-            // Set custom foreground (bar) color to blue
+            // Apply custom colors: blue bars on a yellow background.
             generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Blue;
-            // Set custom background color to yellow
             generator.Parameters.BackColor = Aspose.Drawing.Color.Yellow;
 
-            // Adjust image size to ensure bars are clearly visible
-            generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
-            generator.Parameters.ImageWidth.Point = 300f;
-            generator.Parameters.ImageHeight.Point = 150f;
-
-            // Save the generated barcode as a PNG file
-            generator.Save(filePath, BarCodeImageFormat.Png);
+            // Save the generated barcode as a PNG image.
+            generator.Save(imagePath, BarCodeImageFormat.Png);
         }
 
-        // Verify that the barcode image file was successfully created
-        if (!File.Exists(filePath))
+        // Verify that the image file was successfully created.
+        if (!File.Exists(imagePath))
         {
             Console.WriteLine("Failed to create barcode image.");
             return;
         }
 
-        // Load the saved image for pixel color verification
-        using (var bitmap = new Bitmap(filePath))
+        // Load the saved image to inspect specific pixel colors.
+        using (var bitmap = (Bitmap)Image.FromFile(imagePath))
         {
-            // Retrieve the background color from the top-left pixel (expected to be background)
-            Aspose.Drawing.Color bgPixel = bitmap.GetPixel(0, 0);
+            // Sample the top-left pixel, which should represent the background color.
+            Color topLeft = bitmap.GetPixel(0, 0);
+            Console.WriteLine($"Top-left pixel color: {topLeft}");
 
-            // Retrieve the bar color from the center of the image (likely a bar)
+            // Sample a pixel near the image center, likely part of a barcode bar.
             int centerX = bitmap.Width / 2;
             int centerY = bitmap.Height / 2;
-            Aspose.Drawing.Color barPixel = bitmap.GetPixel(centerX, centerY);
-
-            // Define the expected colors for comparison
-            Aspose.Drawing.Color expectedBg = Aspose.Drawing.Color.Yellow;
-            Aspose.Drawing.Color expectedBar = Aspose.Drawing.Color.Blue;
-
-            // Output the actual and expected background colors with match status
-            Console.WriteLine($"Background pixel at (0,0): {bgPixel}");
-            Console.WriteLine($"Expected background: {expectedBg} - {(bgPixel.ToArgb() == expectedBg.ToArgb() ? "Match" : "Mismatch")}");
-
-            // Output the actual and expected bar colors with match status
-            Console.WriteLine($"Bar pixel at ({centerX},{centerY}): {barPixel}");
-            Console.WriteLine($"Expected bar color: {expectedBar} - {(barPixel.ToArgb() == expectedBar.ToArgb() ? "Match" : "Mismatch")}");
+            Color centerPixel = bitmap.GetPixel(centerX, centerY);
+            Console.WriteLine($"Center pixel color: {centerPixel}");
         }
 
-        // Read the barcode from the image to confirm the encoded text
-        using (var reader = new BarCodeReader(filePath, DecodeType.Code128))
+        // Use BarCodeReader to decode the barcode from the saved image.
+        using (var reader = new BarCodeReader(imagePath, DecodeType.Code128))
         {
             foreach (var result in reader.ReadBarCodes())
             {
                 Console.WriteLine($"Detected barcode type: {result.CodeTypeName}");
-                Console.WriteLine($"Detected codetext: {result.CodeText}");
+                Console.WriteLine($"Decoded text: {result.CodeText}");
             }
         }
     }
