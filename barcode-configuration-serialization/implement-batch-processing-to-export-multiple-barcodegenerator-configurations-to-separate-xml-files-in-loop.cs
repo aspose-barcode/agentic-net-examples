@@ -1,49 +1,53 @@
-// Title: Batch Export of Barcode Configurations to XML
-// Description: Demonstrates how to loop through multiple barcode generator settings and export each configuration to a separate XML file.
+// Title: Batch export of multiple barcode configurations to XML
+// Description: Demonstrates how to generate several barcodes with different symbologies and export each generator's settings to separate XML files.
+// Category-Description: This example belongs to the Aspose.BarCode configuration export category, illustrating the use of BarcodeGenerator, its Parameters, and the ExportToXml method. Developers often need to persist barcode settings for later reuse, batch processing, or integration with other systems; this snippet shows a typical loop‑based approach for handling multiple configurations in one run.
 // Prompt: Implement batch processing to export multiple BarcodeGenerator configurations to separate XML files in a loop.
-// Tags: barcode symbology, export, xml, batch processing, aspnet barcodes, generator
+// Tags: barcode symbology, export, xml, batch processing, aspnet, aspose.barcode, generator
 
 using System;
-using System.Collections.Generic;
-using Aspose.BarCode.Generation;
+using System.IO;
 using Aspose.BarCode;
+using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Example program that creates several barcode generators with different
-/// symbologies and exports each configuration to its own XML file.
+/// Provides an example of batch processing multiple barcode configurations
+/// and exporting each configuration to a separate XML file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Iterates over a collection of barcode
-    /// configurations, generates each barcode, and saves the generator settings
-    /// to an XML file.
+    /// Entry point of the application. Iterates over a set of barcode configurations,
+    /// creates a <see cref="BarcodeGenerator"/> for each, and exports its settings to XML.
     /// </summary>
     static void Main()
     {
-        // Define a list of barcode configurations (symbology, codetext, output XML file)
-        var configs = new List<(BaseEncodeType type, string codeText, string xmlPath)>
+        // Define a collection of barcode configurations to be processed.
+        var configurations = new (BaseEncodeType EncodeType, string CodeText, string XmlFile)[]
         {
             (EncodeTypes.Code128, "ABC123", "code128.xml"),
             (EncodeTypes.QR, "https://example.com", "qr.xml"),
             (EncodeTypes.DataMatrix, "DM12345", "datamatrix.xml"),
             (EncodeTypes.Pdf417, "PDF417 Sample Text", "pdf417.xml"),
-            (EncodeTypes.Aztec, "AztecDemo", "aztec.xml")
+            (EncodeTypes.Aztec, "AztecSample", "aztec.xml")
         };
 
-        // Process each configuration in the list
-        foreach (var (type, codeText, xmlPath) in configs)
+        // Process each configuration in the collection.
+        foreach (var config in configurations)
         {
-            // Create a BarcodeGenerator with the specified type and codetext
-            using (var generator = new BarcodeGenerator(type, codeText))
+            // Create a barcode generator with the specified symbology and data.
+            using (var generator = new BarcodeGenerator(config.EncodeType, config.CodeText))
             {
-                // Set common visual parameters (optional)
-                generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-                generator.Parameters.BackColor = Aspose.Drawing.Color.White;
+                // Set a common parameter (optional) – X dimension in points.
+                generator.Parameters.Barcode.XDimension.Point = 2f;
 
-                // Export the generator configuration to an XML file
+                // Build the absolute path for the output XML file.
+                string xmlPath = Path.Combine(Directory.GetCurrentDirectory(), config.XmlFile);
+
+                // Export the generator's configuration to the XML file.
                 bool success = generator.ExportToXml(xmlPath);
-                Console.WriteLine($"{xmlPath}: {(success ? "Exported" : "Failed")}");
+
+                // Output the result of the export operation.
+                Console.WriteLine($"Exported {config.EncodeType.TypeName} to '{xmlPath}': {(success ? "Success" : "Failed")}");
             }
         }
     }

@@ -1,105 +1,70 @@
-// Title: Import Barcode Generator from XML with Validation
-// Description: Demonstrates importing a barcode configuration from an XML file, validating required properties, and handling errors.
+// Title: Import barcode configuration from XML with validation
+// Description: Demonstrates importing barcode settings from an XML file, checking for missing required properties, and generating a barcode image.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use BarcodeGenerator.ImportFromXml to load configuration, validate essential properties such as CodeText, and produce an image. Developers often need to load barcode definitions from external XML, ensure completeness, and handle errors gracefully. Typical use cases include batch processing, dynamic barcode creation, and integration with configuration management systems.
 // Prompt: Implement error handling for ImportFromXml when the XML file is missing required barcode properties.
-// Tags: barcode symbology, import, xml, error handling, aspose.barcodes
+// Tags: barcode, import, xml, validation, code128, aspose.barcode, generation, png
 
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Example program that imports a barcode generator configuration from an XML file,
+/// Example program that imports barcode settings from an XML file,
 /// validates required properties, and generates a barcode image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the program.
+    /// Entry point of the application.
     /// </summary>
     static void Main()
     {
         // Path to the XML configuration file
         string xmlPath = "barcodeConfig.xml";
 
-        // Verify that the file exists before attempting to import
+        // Create a sample XML file that intentionally omits required properties (e.g., CodeText)
         if (!File.Exists(xmlPath))
         {
-            Console.WriteLine($"Error: XML file '{xmlPath}' does not exist.");
-            return;
+            string xmlContent = @"<?xml version=""1.0"" encoding=""utf-8""?>
+<BarcodeGenerator>
+  <EncodeType>Code128</EncodeType>
+  <!-- CodeText element is missing on purpose -->
+</BarcodeGenerator>";
+            File.WriteAllText(xmlPath, xmlContent);
+            Console.WriteLine($"Sample XML created at '{xmlPath}'.");
         }
 
-        // Attempt to import the BarcodeGenerator from the XML file
-        BarcodeGenerator generator = null;
         try
         {
-            generator = BarcodeGenerator.ImportFromXml(xmlPath);
-        }
-        catch (BarCodeException ex)
-        {
-            // Handle known barcode-specific errors during import
-            Console.WriteLine($"BarCodeException while importing XML: {ex.Message}");
-            return;
-        }
-        catch (Exception ex)
-        {
-            // Handle any other unexpected errors during import
-            Console.WriteLine($"Unexpected error while importing XML: {ex.Message}");
-            return;
-        }
-
-        // Ensure the generator was created successfully
-        if (generator == null)
-        {
-            Console.WriteLine("Error: ImportFromXml returned null.");
-            return;
-        }
-
-        // Validate required barcode properties
-        // For this example, EncodeType (BarcodeType) and CodeText are required
-        bool hasError = false;
-
-        // Check that the EncodeType (BarcodeType) is present
-        if (generator.BarcodeType == null)
-        {
-            Console.WriteLine("Error: Encode type is missing in the XML configuration.");
-            hasError = true;
-        }
-
-        // Check that the CodeText (data to encode) is present and not empty
-        if (string.IsNullOrWhiteSpace(generator.CodeText))
-        {
-            Console.WriteLine("Error: CodeText (data to encode) is missing or empty in the XML configuration.");
-            hasError = true;
-        }
-
-        // If any validation errors were found, clean up and exit
-        if (hasError)
-        {
-            generator.Dispose();
-            return;
-        }
-
-        // Validation passed – generate and save the barcode image
-        string outputPath = "generatedBarcode.png";
-        try
-        {
-            // Use a using block to ensure proper disposal of the generator
-            using (generator)
+            // Import barcode settings from the XML file
+            using (var generator = BarcodeGenerator.ImportFromXml(xmlPath))
             {
+                // Ensure the import succeeded
+                if (generator == null)
+                {
+                    Console.WriteLine("Import returned null. Cannot continue.");
+                    return;
+                }
+
+                // Validate that required properties are present (e.g., CodeText)
+                if (string.IsNullOrWhiteSpace(generator.CodeText))
+                {
+                    Console.WriteLine("Error: Imported configuration is missing required 'CodeText' property.");
+                    return;
+                }
+
+                // Additional validation can be added here (e.g., check EncodeType, parameters, etc.)
+
+                // Generate and save the barcode image
+                string outputPath = "generatedBarcode.png";
                 generator.Save(outputPath);
-                Console.WriteLine($"Barcode generated and saved to '{outputPath}'.");
+                Console.WriteLine($"Barcode generated successfully and saved to '{outputPath}'.");
             }
         }
-        catch (BarCodeException ex)
-        {
-            // Handle barcode-specific errors during generation or saving
-            Console.WriteLine($"BarCodeException while generating/saving barcode: {ex.Message}");
-        }
         catch (Exception ex)
         {
-            // Handle any other unexpected errors during generation or saving
-            Console.WriteLine($"Unexpected error while generating/saving barcode: {ex.Message}");
+            // Handle any errors that occur during import or generation
+            Console.WriteLine($"Failed to import barcode from XML. Exception: {ex.Message}");
         }
     }
 }

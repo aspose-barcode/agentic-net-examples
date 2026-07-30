@@ -1,7 +1,8 @@
-// Title: Restore BarcodeGenerator from XML in MemoryStream
-// Description: Demonstrates exporting a BarcodeGenerator's settings to XML, storing it in a MemoryStream, and recreating the generator via ImportFromXml.
+// Title: Restore BarcodeGenerator from XML using ImportFromXml
+// Description: Demonstrates exporting a BarcodeGenerator's settings to XML stored in a MemoryStream and then restoring a new instance via ImportFromXml.
+// Category-Description: This example belongs to the Aspose.BarCode configuration management category, illustrating how to serialize and deserialize barcode generator settings using XML. It showcases key API classes such as BarcodeGenerator, EncodeTypes, and BarCodeImageFormat, which developers use to persist barcode configurations, share them across services, or recreate barcodes without reapplying settings manually.
 // Prompt: Restore a BarcodeGenerator instance from XML data stored in a MemoryStream via ImportFromXml(Stream).
-// Tags: barcode, symbology, code128, xml, import, export, memorystream, aspose.barcodes, generation
+// Tags: barcode, code128, xml, import, export, memorystream, aspose.barcode, generator, png
 
 using System;
 using System.IO;
@@ -9,40 +10,39 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Example program that shows how to export a <see cref="BarcodeGenerator"/> configuration to XML,
-/// store it in a <see cref="MemoryStream"/>, and then restore a new generator instance from that XML.
+/// Example program that exports a BarcodeGenerator's configuration to XML,
+/// then restores a new generator instance from that XML using a MemoryStream.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates a barcode, exports its settings to XML,
-    /// imports the settings back, and saves the resulting barcode image.
+    /// Entry point of the example. Performs export, import, and saves the restored barcode image.
     /// </summary>
     static void Main()
     {
-        // Initialize a barcode generator with Code128 symbology and sample text.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+        // Initialize the original barcode generator with Code128 symbology and sample text.
+        using (BarcodeGenerator originalGenerator = new BarcodeGenerator(EncodeTypes.Code128, "123ABC"))
         {
-            // Optionally configure image dimensions.
-            generator.Parameters.ImageWidth.Point = 300f;
-            generator.Parameters.ImageHeight.Point = 150f;
-
-            // Export the generator's configuration to an in‑memory XML stream.
-            using (var xmlStream = new MemoryStream())
+            // Create a memory stream to hold the XML representation of the generator.
+            using (MemoryStream xmlStream = new MemoryStream())
             {
-                generator.ExportToXml(xmlStream);
+                // Export the generator's settings to the memory stream as XML.
+                originalGenerator.ExportToXml(xmlStream);
 
-                // Rewind the stream so it can be read from the beginning.
+                // Reset the stream position to the beginning so it can be read.
                 xmlStream.Position = 0;
 
-                // Create a new generator instance by importing the XML data.
-                using (var importedGenerator = BarcodeGenerator.ImportFromXml(xmlStream))
-                {
-                    // Save the barcode image generated from the imported settings.
-                    string outputPath = "imported_barcode.png";
-                    importedGenerator.Save(outputPath);
-                    Console.WriteLine($"Barcode image saved to: {outputPath}");
-                }
+                // Import a new BarcodeGenerator instance from the XML data in the stream.
+                BarcodeGenerator importedGenerator = BarcodeGenerator.ImportFromXml(xmlStream);
+
+                // Save the restored barcode image to a PNG file.
+                importedGenerator.Save("restored.png", BarCodeImageFormat.Png);
+
+                // Release resources used by the imported generator.
+                importedGenerator.Dispose();
+
+                // Inform the user that the process completed successfully.
+                Console.WriteLine("Barcode restored from XML and saved as 'restored.png'.");
             }
         }
     }

@@ -1,58 +1,64 @@
 // Title: Initialize BarcodeGenerator from XML string
-// Description: Demonstrates reading barcode configuration XML from a string, converting it to a stream, and creating a BarcodeGenerator via ImportFromXml. Useful for dynamically configuring barcodes.
+// Description: Demonstrates reading barcode configuration XML from a string and creating a BarcodeGenerator via ImportFromXml.
+// Category-Description: This example belongs to the Aspose.BarCode XML configuration category, illustrating how to use the BarcodeGenerator.ImportFromXml(Stream) method. It shows developers how to define barcode settings (such as symbology and text) in XML, load it from memory, and generate a barcode image. Typical use cases include dynamic barcode creation from stored XML templates or configuration files.
 // Prompt: Develop a function that reads XML from a string and initializes a BarcodeGenerator using ImportFromXml(Stream).
-// Tags: barcode symbology, import, xml, stream, aspose.barcodes, csharp
+// Tags: code128, barcode generation, xml import, importfromxml, aspose.barcode, png output
 
 using System;
 using System.IO;
 using System.Text;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Example program that creates a <see cref="BarcodeGenerator"/> from XML configuration
-/// and saves the generated barcode image to a file.
+/// Example program that creates a BarcodeGenerator from an XML string using ImportFromXml.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Reads XML from a string, creates a <see cref="MemoryStream"/>, and initializes a <see cref="BarcodeGenerator"/>
-    /// using <see cref="BarcodeGenerator.ImportFromXml(Stream)"/>.
+    /// Entry point of the example. Generates a barcode from XML and saves it as a PNG file.
     /// </summary>
-    /// <param name="xmlContent">The XML string containing barcode configuration.</param>
-    /// <returns>A new instance of <see cref="BarcodeGenerator"/> configured according to the XML.</returns>
-    static BarcodeGenerator CreateGeneratorFromXml(string xmlContent)
+    static void Main()
     {
-        // Convert the XML string to UTF‑8 encoded bytes.
-        byte[] xmlBytes = Encoding.UTF8.GetBytes(xmlContent);
+        // XML definition for a Code128 barcode with sample text.
+        string xml = @"<?xml version=""1.0"" encoding=""utf-8""?>
+<BarcodeGenerator>
+  <EncodeType>Code128</EncodeType>
+  <CodeText>1234567890</CodeText>
+</BarcodeGenerator>";
 
-        // Wrap the byte array in a MemoryStream; the stream is disposed after ImportFromXml finishes.
-        using (var xmlStream = new MemoryStream(xmlBytes))
+        try
         {
-            // ImportFromXml reads the stream and returns a new BarcodeGenerator instance.
-            BarcodeGenerator generator = BarcodeGenerator.ImportFromXml(xmlStream);
-            return generator; // Caller is responsible for disposing the generator.
+            // Create a BarcodeGenerator instance from the XML string.
+            using (var generator = CreateGeneratorFromXml(xml))
+            {
+                // Save the generated barcode image to verify successful creation.
+                generator.Save("generated_from_xml.png");
+                Console.WriteLine("Barcode generated and saved as generated_from_xml.png");
+            }
+        }
+        catch (Exception ex)
+        {
+            // Output any errors that occur during generation.
+            Console.WriteLine($"Error: {ex.Message}");
         }
     }
 
     /// <summary>
-    /// Entry point of the program. Demonstrates creating a barcode from XML and saving it as an image file.
+    /// Reads XML content from a string, wraps it in a MemoryStream, and imports it into a new BarcodeGenerator.
     /// </summary>
-    static void Main()
+    /// <param name="xmlContent">The XML string containing barcode configuration.</param>
+    /// <returns>A BarcodeGenerator initialized with the settings defined in the XML.</returns>
+    static BarcodeGenerator CreateGeneratorFromXml(string xmlContent)
     {
-        // Sample XML that defines a Code128 barcode with the text "12345".
-        string xml = @"
-<BarcodeGenerator>
-    <EncodeType>Code128</EncodeType>
-    <CodeText>12345</CodeText>
-</BarcodeGenerator>";
+        // Convert the XML string to a UTF-8 byte array.
+        byte[] bytes = Encoding.UTF8.GetBytes(xmlContent);
 
-        // Initialize the generator from the XML string.
-        using (var generator = CreateGeneratorFromXml(xml))
+        // Use a MemoryStream to provide the XML data to ImportFromXml.
+        using (var stream = new MemoryStream(bytes))
         {
-            // Save the generated barcode image to a file.
-            generator.Save("barcode_from_xml.png");
-            Console.WriteLine("Barcode generated and saved as 'barcode_from_xml.png'.");
+            // ImportFromXml parses the XML and returns a configured BarcodeGenerator instance.
+            BarcodeGenerator generator = BarcodeGenerator.ImportFromXml(stream);
+            return generator;
         }
     }
 }

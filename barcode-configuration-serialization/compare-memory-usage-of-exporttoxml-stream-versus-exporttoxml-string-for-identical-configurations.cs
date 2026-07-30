@@ -1,86 +1,74 @@
-// Title: Memory Usage Comparison of ExportToXml Overloads
-// Description: Demonstrates how to compare memory consumption when exporting barcode configuration to XML using a file path versus a stream.
+// Title: Compare memory usage of ExportToXml(Stream) vs ExportToXml(string)
+// Description: Demonstrates how to measure and compare the memory consumption of Aspose.BarCode's ExportToXml method when using a Stream versus a file path.
+// Category-Description: This example belongs to the Aspose.BarCode configuration export category, illustrating the use of BarcodeGenerator and its ExportToXml API. Developers often need to persist barcode settings to XML for later reuse, and choosing between stream or file output can impact memory usage. The snippet shows typical patterns for measuring memory impact in .NET applications.
 // Prompt: Compare memory usage of ExportToXml(Stream) versus ExportToXml(string) for identical configurations.
-// Tags: barcode, export, xml, memory, aspose.barcode, stream, file
+// Tags: barcode symbology, export, xml, memory usage, aspose.barcode, barcodegenerator
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 
 /// <summary>
-/// Sample program that measures and compares the memory allocation of
-/// <c>BarcodeGenerator.ExportToXml</c> when using a file path versus a stream.
+/// Example program that compares the memory usage of ExportToXml when writing to a <see cref="Stream"/>
+/// versus writing directly to a file path, using identical barcode configurations.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Configures a barcode generator, exports its configuration
-    /// to XML using both overloads, and reports the memory used by each operation.
+    /// Entry point of the example. Creates a barcode generator, exports its configuration to XML
+    /// using both a memory stream and a temporary file, and reports the memory consumption of each approach.
     /// </summary>
     static void Main()
     {
-        // Initialize a barcode generator with a sample symbology and value.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+        // Initialize a barcode generator with Code128 symbology and sample data.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
         {
-            // Apply non‑default visual settings to make the configuration meaningful.
-            generator.Parameters.Barcode.BarColor = Color.Blue;
+            // Adjust a non‑default parameter to ensure the configuration is not the default state.
             generator.Parameters.Barcode.XDimension.Point = 2f;
-            generator.Parameters.Barcode.BarHeight.Point = 40f;
-            generator.Parameters.Resolution = 150;
 
-            // Force a clean GC state before the first measurement.
+            // -------------------- Measure memory for ExportToXml(Stream) --------------------
+            // Force a full garbage collection to get a clean baseline.
             GC.Collect();
             GC.WaitForPendingFinalizers();
+            long memoryBeforeStream = GC.GetTotalMemory(true);
 
-            // -------------------- ExportToXml(string) --------------------
-            // Record memory before the export.
-            long beforeString = GC.GetTotalMemory(true);
-            // Export configuration to a physical XML file.
-            bool resultString = generator.ExportToXml("barcode_config.xml");
-            // Record memory after the export.
-            long afterString = GC.GetTotalMemory(true);
-            // Calculate the memory delta.
-            long diffString = afterString - beforeString;
-
-            // Output the result and memory usage for the string overload.
-            Console.WriteLine($"ExportToXml(string) succeeded: {resultString}");
-            Console.WriteLine($"Memory allocated (bytes) for ExportToXml(string): {diffString}");
-
-            // -------------------- ExportToXml(Stream) --------------------
-            // Use a memory stream to capture the XML output in memory.
+            // Export the configuration to a memory stream.
             using (var memoryStream = new MemoryStream())
             {
-                // Clean up before the second measurement.
-                GC.Collect();
-                GC.WaitForPendingFinalizers();
-
-                // Record memory before the stream export.
-                long beforeStream = GC.GetTotalMemory(true);
-                // Export configuration to the provided stream.
-                bool resultStream = generator.ExportToXml(memoryStream);
-                // Record memory after the export.
-                long afterStream = GC.GetTotalMemory(true);
-                // Calculate the memory delta.
-                long diffStream = afterStream - beforeStream;
-
-                // Output the result and memory usage for the stream overload.
-                Console.WriteLine($"ExportToXml(Stream) succeeded: {resultStream}");
-                Console.WriteLine($"Memory allocated (bytes) for ExportToXml(Stream): {diffStream}");
+                bool streamResult = generator.ExportToXml(memoryStream);
+                Console.WriteLine($"ExportToXml(Stream) succeeded: {streamResult}");
             }
 
-            // Clean up the temporary file created by ExportToXml(string).
-            try
+            // Capture memory after the stream export.
+            long memoryAfterStream = GC.GetTotalMemory(true);
+            long memoryUsedStream = memoryAfterStream - memoryBeforeStream;
+
+            // -------------------- Measure memory for ExportToXml(string) --------------------
+            // Force another garbage collection before the second measurement.
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            long memoryBeforeFile = GC.GetTotalMemory(true);
+
+            // Define a temporary file path for the XML output.
+            string tempFilePath = Path.Combine(Path.GetTempPath(), "barcode_config.xml");
+
+            // Export the configuration directly to a file.
+            bool fileResult = generator.ExportToXml(tempFilePath);
+            Console.WriteLine($"ExportToXml(string) succeeded: {fileResult}");
+
+            // Capture memory after the file export.
+            long memoryAfterFile = GC.GetTotalMemory(true);
+            long memoryUsedFile = memoryAfterFile - memoryBeforeFile;
+
+            // -------------------- Output comparison results --------------------
+            Console.WriteLine($"Memory used by ExportToXml(Stream): {memoryUsedStream} bytes");
+            Console.WriteLine($"Memory used by ExportToXml(string): {memoryUsedFile} bytes");
+
+            // Clean up the temporary XML file.
+            if (File.Exists(tempFilePath))
             {
-                if (File.Exists("barcode_config.xml"))
-                {
-                    File.Delete("barcode_config.xml");
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Failed to delete temporary file: {ex.Message}");
+                File.Delete(tempFilePath);
             }
         }
     }

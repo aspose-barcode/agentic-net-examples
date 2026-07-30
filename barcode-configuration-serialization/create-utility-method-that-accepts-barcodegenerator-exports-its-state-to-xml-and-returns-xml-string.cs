@@ -1,60 +1,60 @@
 // Title: Export BarcodeGenerator State to XML
-// Description: Demonstrates how to export the configuration of an Aspose.BarCode BarcodeGenerator to an XML string for persistence or inspection.
+// Description: Demonstrates how to export the configuration of a BarcodeGenerator to an XML string using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode configuration export category. It shows how to use the BarcodeGenerator class together with its Parameters property and the ExportToXml method to serialize the generator’s state. Developers often need to persist barcode settings for later reuse, debugging, or sharing across services, making XML export a common task in barcode automation workflows.
 // Prompt: Create a utility method that accepts a BarcodeGenerator, exports its state to XML, and returns the XML string.
-// Tags: barcode symbology, export, xml, aspose.barcode, utility
+// Tags: barcode symbology, export, xml, configuration, aspose.barcode, barcodegenerator
 
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 
 /// <summary>
-/// Example program that creates a barcode, modifies its appearance,
-/// and exports the generator's state to an XML string.
+/// Sample program that creates a barcode generator, configures it, and exports its state to an XML string.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
+    /// Entry point of the application. Demonstrates barcode generation and XML export.
     /// </summary>
     static void Main()
     {
-        // Initialize a BarcodeGenerator for Code128 with sample data
+        // Initialize a BarcodeGenerator with Code128 symbology and sample text.
         using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
         {
-            // Set the barcode color to blue (demonstrates property modification)
-            generator.Parameters.Barcode.BarColor = Color.Blue;
+            // Configure barcode appearance and behavior.
+            generator.Parameters.Barcode.XDimension.Point = 2f;                     // Width of the smallest bar.
+            generator.Parameters.Barcode.BarHeight.Point = 40f;                    // Height of the barcode.
+            generator.Parameters.Barcode.FilledBars = false;                       // Use unfilled bars.
+            generator.Parameters.Barcode.ThrowExceptionWhenCodeTextIncorrect = false; // Suppress validation exceptions.
 
-            // Export the current generator configuration to an XML string
+            // Export the generator's current configuration to an XML string.
             string xml = ExportGeneratorToXml(generator);
-
-            // Write the resulting XML to the console
             Console.WriteLine(xml);
         }
     }
 
     /// <summary>
-    /// Exports the state of the provided <see cref="BarcodeGenerator"/> to an XML string.
+    /// Exports the provided <see cref="BarcodeGenerator"/> instance to an XML string.
     /// </summary>
-    /// <param name="generator">The barcode generator whose configuration will be exported.</param>
-    /// <returns>An XML string representing the generator's current state.</returns>
+    /// <param name="generator">The barcode generator whose state will be serialized.</param>
+    /// <returns>XML representation of the generator's configuration.</returns>
     /// <exception cref="InvalidOperationException">Thrown when the export operation fails.</exception>
     static string ExportGeneratorToXml(BarcodeGenerator generator)
     {
-        // Use a memory stream as the destination for the XML data
+        // Use a memory stream to capture the XML output.
         using (var memoryStream = new MemoryStream())
         {
-            // Perform the export; the method returns true on success
+            // Perform the export; the method returns true on success.
             bool exported = generator.ExportToXml(memoryStream);
             if (!exported)
                 throw new InvalidOperationException("Failed to export barcode generator to XML.");
 
-            // Reset the stream position to the beginning before reading
+            // Reset stream position to the beginning before reading.
             memoryStream.Position = 0;
-
-            // Read the entire XML content from the memory stream
             using (var reader = new StreamReader(memoryStream))
             {
+                // Read the entire XML content and return it.
                 return reader.ReadToEnd();
             }
         }

@@ -1,75 +1,70 @@
-// Title: XML Export Performance Comparison for Barcode Configurations
-// Description: Demonstrates measuring and comparing the time taken to export a large barcode configuration to XML using file‑based and stream‑based approaches.
+// Title: Measure performance of file vs stream XML export for large barcode configurations
+// Description: Demonstrates how to export a complex barcode generator configuration to XML using both file‑based and stream‑based methods, and measures the time taken for each approach.
+// Category-Description: This example belongs to the Aspose.BarCode configuration management category, illustrating the use of BarcodeGenerator, ExportToXml, and ImportFromXml APIs. Developers often need to persist and restore barcode settings for batch processing or configuration sharing, and comparing file and memory‑stream exports helps choose the most efficient method for large configurations.
 // Prompt: Measure performance differences between file‑based and stream‑based XML export for large barcode configurations.
-// Tags: barcode symbology, export, xml, performance, file, stream, aspose.barcode
+// Tags: barcode symbology, export, xml, performance, file, stream, aspose.barcode, configuration
 
 using System;
-using System.Diagnostics;
 using System.IO;
+using System.Diagnostics;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 
 /// <summary>
-/// Program that benchmarks file‑based vs stream‑based XML export of a barcode configuration.
+/// Demonstrates measuring performance differences between file‑based and stream‑based XML export for a large barcode configuration.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Creates a barcode generator with a complex configuration, exports it to XML via file and memory stream,
-    /// measures execution time for each method, and outputs the results.
+    /// Entry point. Creates a complex barcode generator, exports its configuration to XML via file and memory stream,
+    /// measures execution time for each, and validates import from the stream.
     /// </summary>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Initialize a barcode generator with a relatively complex configuration
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample1234567890"))
+        // Initialize a barcode generator with a complex configuration to simulate a large setup
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123456"))
         {
-            // Configure various parameters to simulate a large configuration
+            // Set various barcode parameters
             generator.Parameters.Barcode.XDimension.Point = 2f;
-            generator.Parameters.ImageWidth.Point = 300f;
-            generator.Parameters.ImageHeight.Point = 150f;
-            generator.Parameters.Resolution = 300;
-            generator.Parameters.Barcode.BarColor = Color.Blue;
-            generator.Parameters.BackColor = Color.White;
+            generator.Parameters.Barcode.BarHeight.Point = 50f;
+            generator.Parameters.Barcode.FilledBars = false;
+            generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
+            generator.Parameters.Barcode.CodeTextParameters.Font.FamilyName = "Helvetica";
+            generator.Parameters.Barcode.CodeTextParameters.Font.Size.Point = 10f;
+            generator.Parameters.Barcode.CodeTextParameters.Alignment = TextAlignment.Center;
+            generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.Below;
             generator.Parameters.Barcode.Padding.Left.Point = 5f;
             generator.Parameters.Barcode.Padding.Top.Point = 5f;
             generator.Parameters.Barcode.Padding.Right.Point = 5f;
             generator.Parameters.Barcode.Padding.Bottom.Point = 5f;
-            generator.Parameters.Barcode.CodeTextParameters.Font.FamilyName = "Arial";
-            generator.Parameters.Barcode.CodeTextParameters.Font.Size.Point = 10f;
-            generator.Parameters.Barcode.CodeTextParameters.Alignment = TextAlignment.Center;
-            generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.Below;
+            generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
+            generator.Parameters.Resolution = 300f;
 
-            // ------------------------------
-            // Measure file‑based XML export
-            // ------------------------------
+            // Measure file‑based XML export performance
             var stopwatch = Stopwatch.StartNew();
             bool fileExportSuccess = generator.ExportToXml("barcode_config.xml");
             stopwatch.Stop();
-            long fileExportMs = stopwatch.ElapsedMilliseconds;
+            long fileExportTimeMs = stopwatch.ElapsedMilliseconds;
 
-            // -------------------------------
-            // Measure stream‑based XML export
-            // -------------------------------
-            bool streamExportSuccess;
-            long streamExportMs;
+            // Measure stream‑based XML export performance
             using (var memoryStream = new MemoryStream())
             {
                 stopwatch.Restart();
-                streamExportSuccess = generator.ExportToXml(memoryStream);
+                bool streamExportSuccess = generator.ExportToXml(memoryStream);
                 stopwatch.Stop();
-                streamExportMs = stopwatch.ElapsedMilliseconds;
+                long streamExportTimeMs = stopwatch.ElapsedMilliseconds;
 
-                // Reset stream position and import back to verify correctness
+                // Verify that the exported stream can be imported back successfully
                 memoryStream.Position = 0;
-                var importedGenerator = BarcodeGenerator.ImportFromXml(memoryStream);
-                // Dispose imported generator (it implements IDisposable)
-                importedGenerator.Dispose();
-            }
+                using (var importedGenerator = BarcodeGenerator.ImportFromXml(memoryStream))
+                {
+                    // Import validation only; no further actions required
+                }
 
-            // Output the benchmark results
-            Console.WriteLine($"File export:   {(fileExportSuccess ? "Success" : "Failed")} in {fileExportMs} ms");
-            Console.WriteLine($"Stream export: {(streamExportSuccess ? "Success" : "Failed")} in {streamExportMs} ms");
+                // Output the results
+                Console.WriteLine($"File export success: {fileExportSuccess}, time: {fileExportTimeMs} ms");
+                Console.WriteLine($"Stream export success: {streamExportSuccess}, time: {streamExportTimeMs} ms");
+            }
         }
     }
 }

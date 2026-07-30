@@ -1,43 +1,44 @@
 // Title: Serialize barcode generation settings to XML in memory
-// Description: Demonstrates exporting Aspose.BarCode generator settings to a MemoryStream using ExportToXml.
+// Description: Demonstrates exporting Aspose.BarCode generation settings to a MemoryStream as XML, useful for persisting or transmitting configuration.
+// Category-Description: This example belongs to the Aspose.BarCode configuration serialization category, illustrating how to use BarcodeGenerator and its ExportToXml method to capture generation parameters. Developers often need to save or share barcode settings across services, and this pattern shows the typical API usage with MemoryStream for in‑memory handling.
 // Prompt: Serialize barcode generation settings to a MemoryStream by calling ExportToXml(Stream) method directly.
-// Tags: barcode, serialization, xml, memorystream, aspose.barcode, export
+// Tags: barcode, serialization, xml, memorystream, aspnet, aspnetcore, aspose.barcode, code128, generation
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 
-namespace BarcodeExportExample
+/// <summary>
+/// Demonstrates exporting barcode generation settings to an in‑memory XML representation.
+/// </summary>
+class Program
 {
     /// <summary>
-    /// Provides an example of exporting barcode generation settings to a MemoryStream as XML.
+    /// Entry point that creates a Code128 barcode generator, configures parameters, and exports its settings to XML via a MemoryStream.
     /// </summary>
-    class Program
+    static void Main()
     {
-        /// <summary>
-        /// Entry point of the example. Creates a barcode generator, customizes settings,
-        /// and serializes those settings to a memory stream using ExportToXml.
-        /// </summary>
-        static void Main()
+        // Initialize a barcode generator for Code128 with sample text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
         {
-            // Initialize a barcode generator for Code128 symbology with sample data.
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
+            // Set specific generation parameters (X dimension and bar height).
+            generator.Parameters.Barcode.XDimension.Point = 2f;
+            generator.Parameters.Barcode.BarHeight.Point = 40f;
+
+            // Export the generator's configuration to a MemoryStream as XML.
+            using (var memoryStream = new MemoryStream())
             {
-                // Customize generation parameters (e.g., bar color and module size).
-                generator.Parameters.Barcode.BarColor = Color.Blue;          // Set the barcode bars to blue.
-                generator.Parameters.Barcode.XDimension.Point = 2f;        // Define the X-dimension (module width) in points.
+                bool success = generator.ExportToXml(memoryStream);
+                Console.WriteLine($"Export to XML successful: {success}");
 
-                // Prepare a memory stream to hold the exported XML.
-                using (var memoryStream = new MemoryStream())
+                // Rewind the stream to the beginning to read the XML content.
+                memoryStream.Position = 0;
+                using (var reader = new StreamReader(memoryStream))
                 {
-                    // Export the current generator settings to the memory stream as XML.
-                    bool exportResult = generator.ExportToXml(memoryStream);
-
-                    // Output the result of the export operation and the size of the generated XML.
-                    Console.WriteLine($"Export successful: {exportResult}");
-                    Console.WriteLine($"XML size in bytes: {memoryStream.Length}");
+                    string xmlContent = reader.ReadToEnd();
+                    Console.WriteLine("Exported XML:");
+                    Console.WriteLine(xmlContent);
                 }
             }
         }
