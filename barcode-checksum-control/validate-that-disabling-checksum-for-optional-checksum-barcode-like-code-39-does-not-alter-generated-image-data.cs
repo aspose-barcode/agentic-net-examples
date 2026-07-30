@@ -1,7 +1,8 @@
-// Title: Code39 checksum disabling does not affect image output
-// Description: Demonstrates that turning off the checksum for an optional‑checksum symbology (Code 39) yields the same PNG image as the default configuration.
+// Title: Code39 checksum disabling does not affect generated image
+// Description: Demonstrates that disabling the optional checksum for a Code 39 barcode yields the same image as the default configuration.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use BarcodeGenerator with EncodeTypes, configure checksum settings, and compare output images. Developers often need to verify that optional features like checksum toggling do not alter visual results, especially when integrating barcode creation into automated pipelines.
 // Prompt: Validate that disabling checksum for an optional‑checksum barcode like Code 39 does not alter the generated image data.
-// Tags: barcode, code39, checksum, image, png, aspose.barcode
+// Tags: code39, checksum, barcode generation, png, aspose.barcode, image comparison
 
 using System;
 using System.IO;
@@ -9,63 +10,47 @@ using System.Linq;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates Code 39 bar‑codes with and without an explicit checksum
-/// setting and verifies that the resulting images are identical.
+/// Example program that generates a Code 39 barcode with and without checksum
+/// and verifies that the resulting images are identical.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates two barcode images and compares their binary data.
+    /// Entry point of the example. Generates two barcode images and compares them.
     /// </summary>
     static void Main()
     {
-        // Sample Code39 text (no checksum character)
-        const string codeText = "CODE39";
+        // Sample text to encode in the Code 39 barcode
+        const string codeText = "ABC123";
 
-        // Generate image with checksum explicitly disabled
-        byte[] imageWithoutChecksum = GenerateBarcodeImage(EncodeTypes.Code39FullASCII, codeText, EnableChecksum.No);
-
-        // Generate image with default settings (checksum not used for Code39)
-        byte[] imageDefault = GenerateBarcodeImage(EncodeTypes.Code39FullASCII, codeText, null);
-
-        // Compare the two images byte‑by‑byte
-        bool areIdentical = imageWithoutChecksum.SequenceEqual(imageDefault);
-
-        // Output the comparison result
-        Console.WriteLine($"Images are identical: {areIdentical}");
-    }
-
-    /// <summary>
-    /// Creates a barcode image using the specified encoding type, text, and optional checksum setting.
-    /// </summary>
-    /// <param name="type">The barcode symbology to use.</param>
-    /// <param name="text">The data to encode.</param>
-    /// <param name="checksumSetting">
-    /// Optional flag indicating whether to enable or disable the checksum.
-    /// If null, the generator's default behavior is applied.
-    /// </param>
-    /// <returns>A byte array containing the PNG image data.</returns>
-    private static byte[] GenerateBarcodeImage(BaseEncodeType type, string text, EnableChecksum? checksumSetting)
-    {
-        // Initialize the barcode generator with the requested type and text
-        using (var generator = new BarcodeGenerator(type, text))
+        // Create a barcode generator with default settings (checksum enabled by default for Code 39)
+        using (var generatorDefault = new BarcodeGenerator(EncodeTypes.Code39FullASCII, codeText))
         {
-            // Apply checksum setting only when a value is provided
-            if (checksumSetting.HasValue)
+            // Save the default barcode image to a memory stream
+            using (var msDefault = new MemoryStream())
             {
-                // Disable or enable checksum as requested
-                generator.Parameters.Barcode.IsChecksumEnabled = checksumSetting.Value;
-            }
+                generatorDefault.Save(msDefault, BarCodeImageFormat.Png);
+                byte[] imageDefault = msDefault.ToArray();
 
-            // Write the generated barcode to a memory stream in PNG format
-            using (var ms = new MemoryStream())
-            {
-                generator.Save(ms, BarCodeImageFormat.Png);
-                // Return the raw image bytes
-                return ms.ToArray();
+                // Create a second generator and explicitly disable the checksum
+                using (var generatorNoChecksum = new BarcodeGenerator(EncodeTypes.Code39FullASCII, codeText))
+                {
+                    generatorNoChecksum.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.No;
+
+                    // Save the no‑checksum barcode image to another memory stream
+                    using (var msNoChecksum = new MemoryStream())
+                    {
+                        generatorNoChecksum.Save(msNoChecksum, BarCodeImageFormat.Png);
+                        byte[] imageNoChecksum = msNoChecksum.ToArray();
+
+                        // Compare the two image byte arrays for equality
+                        bool imagesIdentical = imageDefault.SequenceEqual(imageNoChecksum);
+                        Console.WriteLine("Images identical: " + imagesIdentical);
+                    }
+                }
             }
         }
     }

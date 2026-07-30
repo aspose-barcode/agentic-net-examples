@@ -1,87 +1,103 @@
-// Title: Generate visible‑checksum Code 39 barcodes from CSV data
-// Description: Reads a CSV file, creates Code 39 Full ASCII barcodes with visible checksum, and saves each as a BMP image.
+// Title: Generate visible‑checksum Code 39 barcodes from CSV and save BMP
+// Description: Reads a CSV file, creates Code 39 barcodes with visible checksum, and writes each barcode to a BMP image.
+// Category-Description: Demonstrates Aspose.BarCode barcode generation using BarcodeGenerator, EncodeTypes.Code39FullASCII, and image export. This example belongs to the “Barcode Generation” category, showing how to configure checksum, colors, and file handling for batch processing. Developers often need to generate multiple barcodes from data sources such as CSV files, customize appearance, and save them in common image formats.
 // Prompt: Develop a process that reads a CSV, creates visible‑checksum Code 39 barcodes, and saves BMP files.
-// Tags: barcode symbology, code39, checksum, bmp, csv, aspose.barcode, aspose.drawing
+// Tags: barcode symbology, generation, code39, checksum, bmp, csv, aspose.barcode, aspose.drawing
 
 using System;
 using System.IO;
-using System.Linq;
+using System.Collections.Generic;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates reading a CSV file, generating Code 39 barcodes with a visible checksum,
-/// and saving each barcode as a BMP image.
+/// Program that reads a CSV file, generates Code 39 barcodes with visible checksum, and saves them as BMP images.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Processes the CSV and creates barcode images.
+    /// Entry point. Handles directory setup, CSV reading, barcode generation, and file saving.
     /// </summary>
     static void Main()
     {
-        // Path to the CSV file (adjust as needed)
+        // Define input CSV path and output directory
         string csvPath = "input.csv";
-
-        // Verify that the CSV file exists before proceeding
-        if (!File.Exists(csvPath))
-        {
-            Console.WriteLine($"CSV file not found: {csvPath}");
-            return;
-        }
-
-        // Directory where generated BMP files will be stored
         string outputDir = "Barcodes";
+
+        // Ensure output directory exists
         if (!Directory.Exists(outputDir))
         {
             Directory.CreateDirectory(outputDir);
         }
 
-        // Read all non‑empty lines from the CSV file
-        var lines = File.ReadAllLines(csvPath)
-                        .Where(l => !string.IsNullOrWhiteSpace(l))
-                        .ToArray();
-
-        // Process each line in the CSV
-        foreach (var line in lines)
+        // If CSV does not exist, create a sample file with a few entries
+        if (!File.Exists(csvPath))
         {
-            // Assume the first column contains the text to encode
-            var columns = line.Split(',');
-            if (columns.Length == 0) continue;
-
-            string codeText = columns[0].Trim();
-            if (string.IsNullOrEmpty(codeText)) continue;
-
-            // Create a barcode generator for Code39FullASCII
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code39FullASCII, codeText))
+            var sampleLines = new List<string>
             {
-                // Enable checksum and make it visible in the human‑readable text
-                generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
-                generator.Parameters.Barcode.ChecksumAlwaysShow = true;
+                "ABC123",
+                "XYZ789",
+                "CODE39",
+                "HELLO WORLD",
+                "1234567890"
+            };
+            File.WriteAllLines(csvPath, sampleLines);
+        }
 
-                // Optional visual settings: black bars on white background
-                generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-                generator.Parameters.BackColor = Aspose.Drawing.Color.White;
+        // Read CSV lines
+        var lines = new List<string>();
+        using (var reader = new StreamReader(csvPath))
+        {
+            string line;
+            while ((line = reader.ReadLine()) != null)
+            {
+                // Trim and skip empty lines
+                line = line.Trim();
+                if (line.Length == 0) continue;
 
-                // Build a safe file name from the code text (remove invalid characters, replace spaces)
-                string safeFileName = string.Concat(codeText.Split(Path.GetInvalidFileNameChars()))
-                                            .Replace(' ', '_');
-                if (string.IsNullOrWhiteSpace(safeFileName))
-                {
-                    // Fallback to a GUID if the resulting name is empty
-                    safeFileName = Guid.NewGuid().ToString();
-                }
-
-                // Full path for the output BMP file
-                string outputPath = Path.Combine(outputDir, $"{safeFileName}.bmp");
-
-                // Save the barcode as BMP
-                generator.Save(outputPath, BarCodeImageFormat.Bmp);
-                Console.WriteLine($"Saved barcode for \"{codeText}\" to {outputPath}");
+                // Use first column as code text (comma‑separated)
+                string[] parts = line.Split(',');
+                lines.Add(parts[0]);
             }
         }
 
-        Console.WriteLine("Processing completed.");
+        // Process each code text
+        foreach (var codeText in lines)
+        {
+            // Create barcode generator for Code39FullASCII
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code39FullASCII, codeText))
+            {
+                // Enable checksum generation
+                generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
+                // Show checksum in human‑readable text
+                generator.Parameters.Barcode.ChecksumAlwaysShow = true;
+
+                // Optional: set colors
+                generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
+                generator.Parameters.BackColor = Aspose.Drawing.Color.White;
+
+                // Build safe file name
+                string safeFileName = GetSafeFileName(codeText) + ".bmp";
+                string outputPath = Path.Combine(outputDir, safeFileName);
+
+                // Save as BMP
+                generator.Save(outputPath, BarCodeImageFormat.Bmp);
+                Console.WriteLine($"Saved barcode for \"{codeText}\" to \"{outputPath}\"");
+            }
+        }
+    }
+
+    // Replace characters that are invalid in file names and limit length
+    private static string GetSafeFileName(string name)
+    {
+        foreach (char c in Path.GetInvalidFileNameChars())
+        {
+            name = name.Replace(c, '_');
+        }
+        // Limit length to avoid overly long paths
+        if (name.Length > 100)
+            name = name.Substring(0, 100);
+        return name;
     }
 }

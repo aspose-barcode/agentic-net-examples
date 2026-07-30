@@ -1,7 +1,8 @@
-// Title: Code39 Barcode Generation Performance Benchmark
-// Description: Measures the time required to generate Code 39 barcodes with checksum enabled versus disabled.
+// Title: Benchmark Code 39 barcode generation with and without checksum
+// Description: Measures the time required to generate Code 39 barcodes using Aspose.BarCode, comparing checksum enabled versus disabled.
+// Category-Description: Demonstrates performance testing of Aspose.BarCode generation APIs, focusing on the BarcodeGenerator class, EncodeTypes, and checksum settings. Useful for developers evaluating encoding speed for Code 39 in high‑throughput scenarios, such as batch processing or real‑time scanning applications.
 // Prompt: Write a performance benchmark measuring barcode generation time with checksum enabled versus disabled for Code 39.
-// Tags: code39, checksum, performance, benchmark, barcode, aspose.barcode, generation, csharp
+// Tags: code39, checksum, performance, benchmark, aspnet, aspose.barcode, generation, png
 
 using System;
 using System.Diagnostics;
@@ -10,62 +11,73 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates a simple performance benchmark for Code 39 barcode generation
-/// with and without checksum using Aspose.BarCode.
+/// Contains the entry point and benchmark logic for measuring barcode generation performance.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the benchmark application.
+    /// Executes the performance benchmark for Code 39 barcode generation with checksum enabled and disabled.
     /// </summary>
     static void Main()
     {
-        // Define the barcode text and number of iterations for the benchmark.
-        const string codeText = "ABC123";
-        const int iterations = 5;
+        const int iterations = 5;               // Number of times each test is run
+        string codeText = "CODE39";             // Text to encode in the barcode
 
-        // Measure generation time with checksum enabled.
-        long timeWithChecksum = MeasureGenerationTime(codeText, iterations, EnableChecksum.Yes);
-        // Measure generation time with checksum disabled.
-        long timeWithoutChecksum = MeasureGenerationTime(codeText, iterations, EnableChecksum.No);
+        // Benchmark with checksum enabled
+        long enabledTicks = Benchmark(iterations, codeText, EnableChecksum.Yes);
+        // Benchmark with checksum disabled
+        long disabledTicks = Benchmark(iterations, codeText, EnableChecksum.No);
 
-        // Output the measured times to the console.
-        Console.WriteLine($"Code39 generation time with checksum enabled: {timeWithChecksum} ms");
-        Console.WriteLine($"Code39 generation time with checksum disabled: {timeWithoutChecksum} ms");
+        // Convert elapsed ticks to milliseconds for reporting
+        double enabledMs = enabledTicks * 1000.0 / Stopwatch.Frequency;
+        double disabledMs = disabledTicks * 1000.0 / Stopwatch.Frequency;
+
+        // Output total and average times for each scenario
+        Console.WriteLine($"Checksum Enabled:  Total {enabledMs:F2} ms for {iterations} runs (avg {enabledMs / iterations:F2} ms)");
+        Console.WriteLine($"Checksum Disabled: Total {disabledMs:F2} ms for {iterations} runs (avg {disabledMs / iterations:F2} ms)");
     }
 
     /// <summary>
-    /// Measures the time taken to generate a barcode a specified number of times.
+    /// Runs the barcode generation loop <paramref name="count"/> times using the specified checksum setting.
     /// </summary>
-    /// <param name="text">The text to encode in the barcode.</param>
     /// <param name="count">Number of barcode generations to perform.</param>
-    /// <param name="checksumSetting">Whether to enable checksum for the barcode.</param>
-    /// <returns>Elapsed time in milliseconds.</returns>
-    static long MeasureGenerationTime(string text, int count, EnableChecksum checksumSetting)
+    /// <param name="text">The text to encode in the barcode.</param>
+    /// <param name="checksumSetting">Whether to enable checksum calculation.</param>
+    /// <returns>Total elapsed ticks for the benchmark run.</returns>
+    static long Benchmark(int count, string text, EnableChecksum checksumSetting)
     {
-        // Initialize a stopwatch to capture elapsed time.
-        var stopwatch = new Stopwatch();
-        stopwatch.Start();
+        // Choose the Code 39 full ASCII symbology
+        BaseEncodeType encodeType = EncodeTypes.Code39FullASCII;
 
-        // Generate the barcode repeatedly according to the count.
+        // Warm‑up the generator to mitigate JIT compilation overhead
+        using (var warmGen = new BarcodeGenerator(encodeType, text))
+        {
+            warmGen.Parameters.Barcode.IsChecksumEnabled = checksumSetting;
+            using (var warmMs = new MemoryStream())
+            {
+                warmGen.Save(warmMs, BarCodeImageFormat.Png);
+            }
+        }
+
+        // Start timing the actual benchmark
+        Stopwatch sw = Stopwatch.StartNew();
+
         for (int i = 0; i < count; i++)
         {
-            // Create a new barcode generator for Code39FullASCII symbology.
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code39FullASCII, text))
+            // Create a new generator for each iteration to simulate typical usage
+            using (var generator = new BarcodeGenerator(encodeType, text))
             {
-                // Apply the checksum setting.
                 generator.Parameters.Barcode.IsChecksumEnabled = checksumSetting;
-
-                // Save the generated barcode to a memory stream (PNG format) to force rendering.
                 using (var ms = new MemoryStream())
                 {
+                    // Generate the barcode image in PNG format
                     generator.Save(ms, BarCodeImageFormat.Png);
                 }
             }
         }
 
-        // Stop the stopwatch and return the elapsed milliseconds.
-        stopwatch.Stop();
-        return stopwatch.ElapsedMilliseconds;
+        // Stop timing and return the elapsed ticks
+        sw.Stop();
+        return sw.ElapsedTicks;
     }
 }

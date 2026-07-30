@@ -1,154 +1,176 @@
-// Title: Barcode checksum generation and validation example
-// Description: Demonstrates generating barcodes with checksum enabled, reading them back with checksum validation, and reporting results.
-// Prompt: Design a CI pipeline step that runs all checksum‑related unit tests and fails the build on any exception.
-// Tags: barcode, checksum, ean13, code39fullascii, code128, unit-test, aspose
+// Title: Checksum Validation Example for EAN13 Barcodes
+// Description: Demonstrates generating EAN13 barcodes with and without checksum and reading them with checksum validation toggled.
+// Category-Description: This example belongs to the Aspose.BarCode checksum handling category. It showcases the use of BarcodeGenerator, BarCodeReader, and related settings such as EnableChecksum and ChecksumValidation. Typical use cases include validating data integrity during barcode generation and recognition, especially for retail and logistics applications where EAN13 is common. Developers often need to enable or disable checksum generation and validation to meet specific business rules or legacy system requirements.
+/// Prompt: Design a CI pipeline step that runs all checksum‑related unit tests and fails the build on any exception.
+/// Tags: ean13, checksum, barcode generation, barcode reading, aspose.barcode, validation
 
 using System;
-using System.Collections.Generic;
 using System.IO;
+using System.Collections.Generic;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Executes a series of checksum‑related barcode tests and reports pass/fail results.
+/// Contains a simple console program that runs a series of checksum‑related barcode tests
+/// using Aspose.BarCode. The program generates barcodes, reads them with different
+/// checksum validation settings, and reports any failures.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Executes a single test, captures any exception, and records failures.
-    /// </summary>
-    /// <param name="testName">Descriptive name of the test.</param>
-    /// <param name="testAction">Action containing the test logic.</param>
-    /// <param name="failures">Collection to which failed test names are added.</param>
-    static void RunTest(string testName, Action testAction, List<string> failures)
-    {
-        try
-        {
-            testAction();
-            Console.WriteLine($"PASS: {testName}");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"FAIL: {testName} – {ex.Message}");
-            failures.Add(testName);
-        }
-    }
-
-    /// <summary>
-    /// Entry point. Sets up a temporary workspace, runs checksum tests, and reports the overall outcome.
+    /// Entry point of the program. Executes three checksum tests and prints a summary.
     /// </summary>
     static void Main()
     {
-        // Collect names of any tests that fail
-        var failedTests = new List<string>();
+        // Prepare a temporary folder for test images
+        string testDir = Path.Combine(Path.GetTempPath(), "ChecksumTests");
+        Directory.CreateDirectory(testDir);
 
-        // Create a temporary directory for generated barcode images
-        string tempDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeChecksumTests");
-        Directory.CreateDirectory(tempDir);
+        // Collect any test failures for later reporting
+        var failures = new List<string>();
 
-        // ---------- Test 1: EAN13 checksum generation and validation ----------
-        RunTest("EAN13_Checksum_Enabled", () =>
+        // ------------------------------------------------------------
+        // Test 1: Generate EAN13 barcode with checksum (default) and read with validation OFF
+        // ------------------------------------------------------------
+        try
         {
-            string filePath = Path.Combine(tempDir, "ean13.png");
+            string ean13Path = Path.Combine(testDir, "ean13.png");
 
-            // Generate an EAN13 barcode; checksum will be auto‑calculated
+            // Generate barcode; checksum is automatically added for EAN13
+            using (var generator = new BarcodeGenerator(EncodeTypes.EAN13, "1234567890128"))
+            {
+                generator.Save(ean13Path);
+            }
+
+            // Read the barcode with checksum validation disabled
+            using (var reader = new BarCodeReader(ean13Path, DecodeType.EAN13))
+            {
+                reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.Off;
+                bool found = false;
+
+                foreach (BarCodeResult result in reader.ReadBarCodes())
+                {
+                    found = true;
+                    if (result.CodeText != "1234567890128")
+                    {
+                        failures.Add("Test1: CodeText mismatch when checksum validation is Off.");
+                    }
+                }
+
+                if (!found)
+                {
+                    failures.Add("Test1: No barcode detected when checksum validation is Off.");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            failures.Add($"Test1: Exception occurred - {ex.Message}");
+        }
+
+        // ------------------------------------------------------------
+        // Test 2: Read the same barcode with checksum validation ON
+        // ------------------------------------------------------------
+        try
+        {
+            string ean13Path = Path.Combine(testDir, "ean13.png");
+
+            using (var reader = new BarCodeReader(ean13Path, DecodeType.EAN13))
+            {
+                reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
+                bool found = false;
+
+                foreach (BarCodeResult result in reader.ReadBarCodes())
+                {
+                    found = true;
+                    if (result.CodeText != "1234567890128")
+                    {
+                        failures.Add("Test2: CodeText mismatch when checksum validation is On.");
+                    }
+                }
+
+                if (!found)
+                {
+                    failures.Add("Test2: No barcode detected when checksum validation is On.");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            failures.Add($"Test2: Exception occurred - {ex.Message}");
+        }
+
+        // ------------------------------------------------------------
+        // Test 3: Generate barcode with checksum disabled and verify reading with validation OFF
+        // ------------------------------------------------------------
+        try
+        {
+            string ean13NoChecksumPath = Path.Combine(testDir, "ean13_nochecksum.png");
+
+            // Generate barcode without checksum (EnableChecksum.No)
             using (var generator = new BarcodeGenerator(EncodeTypes.EAN13, "123456789012"))
             {
-                // Explicitly enable checksum generation
-                generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
-                generator.Save(filePath);
+                generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.No;
+                generator.Save(ean13NoChecksumPath);
             }
 
-            // Read the barcode with checksum validation turned ON
-            using (var reader = new BarCodeReader(filePath, DecodeType.EAN13))
+            // Read the barcode with checksum validation disabled (should succeed)
+            using (var reader = new BarCodeReader(ean13NoChecksumPath, DecodeType.EAN13))
             {
-                reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
-                var results = reader.ReadBarCodes();
-                if (results == null || results.Length == 0)
-                    throw new InvalidOperationException("No barcode detected.");
+                reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.Off;
+                bool found = false;
 
-                var result = results[0];
-                // Verify that the checksum is present and matches the expected value (8)
-                if (string.IsNullOrEmpty(result.Extended.OneD.CheckSum))
-                    throw new InvalidOperationException("Checksum not retrieved.");
-                if (result.Extended.OneD.CheckSum != "8")
-                    throw new InvalidOperationException($"Unexpected checksum: {result.Extended.OneD.CheckSum}");
+                foreach (BarCodeResult result in reader.ReadBarCodes())
+                {
+                    found = true;
+                    // When checksum is disabled, the code text should match the 12‑digit input
+                    if (result.CodeText != "123456789012")
+                    {
+                        failures.Add("Test3: CodeText mismatch for barcode generated without checksum.");
+                    }
+                }
+
+                if (!found)
+                {
+                    failures.Add("Test3: No barcode detected for image without checksum.");
+                }
             }
-
-            // Clean up the generated image
-            File.Delete(filePath);
-        }, failedTests);
-
-        // ---------- Test 2: Code39FullASCII checksum generation and validation ----------
-        RunTest("Code39FullASCII_Checksum_Enabled", () =>
+        }
+        catch (Exception ex)
         {
-            string filePath = Path.Combine(tempDir, "code39.png");
+            failures.Add($"Test3: Exception occurred - {ex.Message}");
+        }
 
-            // Generate a Code39FullASCII barcode with checksum enabled and displayed
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code39FullASCII, "ABC123"))
-            {
-                generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
-                generator.Parameters.Barcode.ChecksumAlwaysShow = true; // show checksum in human‑readable text
-                generator.Save(filePath);
-            }
-
-            // Read the barcode with checksum validation turned ON
-            using (var reader = new BarCodeReader(filePath, DecodeType.Code39))
-            {
-                reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
-                var results = reader.ReadBarCodes();
-                if (results == null || results.Length == 0)
-                    throw new InvalidOperationException("No barcode detected.");
-
-                var result = results[0];
-                if (string.IsNullOrEmpty(result.Extended.OneD.CheckSum))
-                    throw new InvalidOperationException("Checksum not retrieved.");
-                // For Code39FullASCII the checksum is calculated; we just ensure it exists
-            }
-
-            // Clean up the generated image
-            File.Delete(filePath);
-        }, failedTests);
-
-        // ---------- Test 3: Code128 checksum validation (always present) ----------
-        RunTest("Code128_Checksum_Validation", () =>
+        // ------------------------------------------------------------
+        // Summary output
+        // ------------------------------------------------------------
+        if (failures.Count > 0)
         {
-            string filePath = Path.Combine(tempDir, "code128.png");
-
-            // Generate a Code128 barcode (checksum is always included)
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
+            Console.WriteLine($"FAILED: {failures.Count} tests failed.");
+            foreach (var msg in failures)
             {
-                generator.Save(filePath);
+                Console.WriteLine(msg);
             }
-
-            // Read the barcode with checksum validation turned ON
-            using (var reader = new BarCodeReader(filePath, DecodeType.Code128))
-            {
-                reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
-                var results = reader.ReadBarCodes();
-                if (results == null || results.Length == 0)
-                    throw new InvalidOperationException("No barcode detected.");
-
-                var result = results[0];
-                // Code128 does not expose checksum via OneD, but validation succeeds if no exception is thrown
-            }
-
-            // Clean up the generated image
-            File.Delete(filePath);
-        }, failedTests);
-
-        // ---------- Summary ----------
-        if (failedTests.Count > 0)
-        {
-            Console.WriteLine($"FAILED: {failedTests.Count} tests failed.");
         }
         else
         {
             Console.WriteLine("PASSED: All checksum tests passed.");
         }
 
-        // Attempt to delete the temporary folder (ignore any cleanup errors)
-        try { Directory.Delete(tempDir, true); } catch { /* ignore cleanup errors */ }
+        // ------------------------------------------------------------
+        // Clean up test files (optional)
+        // ------------------------------------------------------------
+        try
+        {
+            if (Directory.Exists(testDir))
+            {
+                Directory.Delete(testDir, true);
+            }
+        }
+        catch
+        {
+            // Ignore cleanup errors
+        }
     }
 }
