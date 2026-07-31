@@ -1,66 +1,61 @@
-// Title: Adjust DPI for Accurate Barcode Region Detection
-// Description: Demonstrates generating a Code128 barcode, adjusting image DPI, and recognizing the barcode with region details.
+// Title: Adjust DPI Settings for Accurate Barcode Detection
+// Description: Demonstrates how to set and adjust DPI when generating and loading a barcode image to ensure correct region detection.
+// Category-Description: This example belongs to the Aspose.BarCode image processing category, illustrating the use of BarcodeGenerator, Bitmap, and BarCodeReader classes. It shows typical scenarios where developers need to control image resolution for reliable barcode recognition, such as scanning high‑resolution documents or preparing images for OCR pipelines.
 // Prompt: Adjust DPI settings when loading images to ensure accurate barcode region detection.
-// Tags: barcode, code128, dpi, region detection, generation, recognition, aspose.barcode, aspose.drawing
+// Tags: barcode, dpi, resolution, cod128, generation, recognition, aspose.barcode, aspose.drawing
 
 using System;
 using System.IO;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates a barcode, adjusts image DPI, and reads the barcode region.
+/// Demonstrates adjusting DPI settings when loading a barcode image to ensure accurate detection of barcode regions.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a barcode image, sets its DPI, and reads barcode information.
+    /// Entry point of the example. Generates a high‑resolution barcode, adjusts DPI on load, and reads the barcode.
     /// </summary>
     static void Main()
     {
-        // Define the file path for the generated barcode image
-        string imagePath = "sample.png";
-
-        // ------------------------------------------------------------
-        // Generate a simple Code128 barcode and save it to disk
-        // ------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
+        // Generate a sample barcode image with a high resolution (300 DPI)
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
         {
-            // Optional: set generation resolution (DPI) if needed
-            generator.Parameters.Resolution = 96;
-            generator.Save(imagePath);
-        }
+            // Set the generation resolution (DPI)
+            generator.Parameters.Resolution = 300;
 
-        // Verify that the image file was created successfully
-        if (!File.Exists(imagePath))
-        {
-            Console.WriteLine($"Error: File not found - {imagePath}");
-            return;
-        }
-
-        // ------------------------------------------------------------
-        // Load the image, adjust its DPI, and perform barcode recognition
-        // ------------------------------------------------------------
-        using (var bitmap = new Bitmap(imagePath))
-        {
-            // Adjust DPI to 300x300 for more accurate region detection
-            bitmap.SetResolution(300f, 300f);
-
-            // Initialize the reader to detect all supported barcode types
-            using (var reader = new BarCodeReader(bitmap, DecodeType.AllSupportedTypes))
+            // Save the generated barcode to a memory stream in PNG format
+            using (var ms = new MemoryStream())
             {
-                // Iterate through all detected barcodes
-                foreach (var result in reader.ReadBarCodes())
-                {
-                    // Retrieve the detected barcode region (rectangle)
-                    var region = result.Region.Rectangle;
+                generator.Save(ms, BarCodeImageFormat.Png);
+                ms.Position = 0; // Reset stream position for reading
 
-                    // Output barcode details and region coordinates
-                    Console.WriteLine($"Detected Barcode:");
-                    Console.WriteLine($"  Type: {result.CodeTypeName}");
-                    Console.WriteLine($"  Text: {result.CodeText}");
-                    Console.WriteLine($"  Region - X: {region.X}, Y: {region.Y}, Width: {region.Width}, Height: {region.Height}");
+                // Load the image from the memory stream into a Bitmap
+                using (var bitmap = new Bitmap(ms))
+                {
+                    // Adjust DPI after loading to match the generation DPI
+                    bitmap.SetResolution(300f, 300f);
+
+                    // Initialize the barcode reader
+                    using (var reader = new BarCodeReader())
+                    {
+                        // Provide the bitmap to the reader
+                        reader.SetBarCodeImage(bitmap);
+
+                        // Iterate through all detected barcodes
+                        foreach (var result in reader.ReadBarCodes())
+                        {
+                            Console.WriteLine($"Detected Type: {result.CodeTypeName}");
+                            Console.WriteLine($"Code Text: {result.CodeText}");
+
+                            // Output the location and size of the detected barcode region
+                            var rect = result.Region.Rectangle;
+                            Console.WriteLine($"Region - X:{rect.X}, Y:{rect.Y}, Width:{rect.Width}, Height:{rect.Height}");
+                        }
+                    }
                 }
             }
         }

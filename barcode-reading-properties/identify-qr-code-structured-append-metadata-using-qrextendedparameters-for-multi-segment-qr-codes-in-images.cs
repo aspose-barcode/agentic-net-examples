@@ -1,63 +1,89 @@
-// Title: Identify QR Code Structured-Append Metadata
-// Description: Demonstrates how to read QR code structured‑append information from an image using Aspose.BarCode.
+// Title: Identify QR Code Structured Append Metadata
+// Description: Demonstrates generating multi‑segment QR codes with structured‑append parameters and reading back the metadata using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode QR code operations collection. It shows how to use the BarcodeGenerator class to set QR structured‑append properties and the BarCodeReader class with QrExtendedParameters to retrieve segment information. Developers working with multi‑segment QR codes for data splitting, batch processing, or enhanced error correction can use these APIs to create and decode structured‑append QR symbols.
 // Prompt: Identify QR Code structured‑append metadata using QrExtendedParameters for multi‑segment QR codes in images.
-// Tags: qr code, structured-append, barcode recognition, aspose.barcode, c#
+// Tags: qr code, structured-append, generation, recognition, aspose.barcode
 
 using System;
 using System.IO;
 using Aspose.BarCode;
+using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Sample program that reads QR codes from an image and extracts structured‑append metadata
-/// using the <c>QrExtendedParameters</c> provided by Aspose.BarCode.
+/// Generates QR code segments with Structured Append parameters,
+/// then reads each segment to display the associated metadata.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
+    /// Entry point of the example. Creates QR segments, saves them,
+    /// and extracts Structured Append information using QrExtendedParameters.
     /// </summary>
     static void Main()
     {
-        // Path to the image containing multi‑segment QR codes.
-        const string imagePath = "qr_multi.png";
-
-        // Verify that the file exists before attempting to read it.
-        if (!File.Exists(imagePath))
+        // Define folder for generated QR code images
+        string outputFolder = Path.Combine(Directory.GetCurrentDirectory(), "QrSegments");
+        if (!Directory.Exists(outputFolder))
         {
-            Console.WriteLine($"File not found: {imagePath}");
-            return;
+            Directory.CreateDirectory(outputFolder);
         }
 
-        // Create a BarCodeReader configured to decode QR codes only.
-        using (var reader = new BarCodeReader(imagePath, DecodeType.QR))
+        // Number of QR code segments (structured append) and base text for each segment
+        int segmentCount = 2;
+        string baseText = "Hello from segment ";
+
+        // --------------------------------------------------------------------
+        // Generate each QR segment with Structured Append parameters
+        // --------------------------------------------------------------------
+        for (int i = 0; i < segmentCount; i++)
         {
-            // Iterate through all barcodes detected in the image.
-            foreach (BarCodeResult result in reader.ReadBarCodes())
+            // Build file path for the current segment image
+            string filePath = Path.Combine(outputFolder, $"qr_segment_{i}.png");
+
+            // Create a QR code generator for the segment text
+            using (var generator = new BarcodeGenerator(EncodeTypes.QR, baseText + (i + 1)))
             {
-                // Output basic barcode information.
-                Console.WriteLine($"BarCode Type: {result.CodeTypeName}");
-                Console.WriteLine($"BarCode CodeText: {result.CodeText}");
+                // Configure Structured Append settings
+                generator.Parameters.Barcode.QR.StructuredAppend.TotalCount = segmentCount;      // total number of segments
+                generator.Parameters.Barcode.QR.StructuredAppend.SequenceIndicator = i;        // zero‑based index of this segment
+                generator.Parameters.Barcode.QR.StructuredAppend.ParityByte = 0;               // optional parity byte (0 = none)
 
-                // Access QR structured‑append metadata via the extended parameters.
-                var qrExt = result.Extended?.QR;
-                if (qrExt != null)
-                {
-                    // Display the quantity of QR codes that belong to the same structured‑append group.
-                    Console.WriteLine($"Structured Append Quantity: {qrExt.QRStructuredAppendModeBarCodesQuantity}");
-                    // Display the index of the current QR code within the group (zero‑based).
-                    Console.WriteLine($"Structured Append Index: {qrExt.QRStructuredAppendModeBarCodeIndex}");
-                    // Display the parity data used for error detection across the group.
-                    Console.WriteLine($"Structured Append Parity Data: {qrExt.QRStructuredAppendModeParityData}");
-                }
-                else
-                {
-                    // No extended QR parameters were found for this barcode.
-                    Console.WriteLine("No QR extended parameters available.");
-                }
-
-                Console.WriteLine(); // Separator between results.
+                // Save the generated QR image to disk
+                generator.Save(filePath);
+                Console.WriteLine($"Generated QR segment {i + 1} at: {filePath}");
             }
         }
+
+        Console.WriteLine();
+        Console.WriteLine("Reading QR segments and extracting Structured Append metadata...");
+
+        // --------------------------------------------------------------------
+        // Read each generated QR image and display Structured Append metadata
+        // --------------------------------------------------------------------
+        foreach (string file in Directory.GetFiles(outputFolder, "*.png"))
+        {
+            // Initialize a QR code reader for the current image file
+            using (var reader = new BarCodeReader(file, DecodeType.QR))
+            {
+                // Iterate through all detected barcodes (should be one per image)
+                foreach (var result in reader.ReadBarCodes())
+                {
+                    // Access QR‑specific extended parameters
+                    var qrExt = result.Extended.QR;
+
+                    Console.WriteLine($"File: {Path.GetFileName(file)}");
+                    Console.WriteLine($"  Code Text: {result.CodeText}");
+                    Console.WriteLine($"  Structured Append Quantity: {qrExt.StructuredAppendModeBarCodesQuantity}");
+                    Console.WriteLine($"  Structured Append Index   : {qrExt.StructuredAppendModeBarCodeIndex}");
+                    Console.WriteLine($"  Structured Append Parity  : {qrExt.StructuredAppendModeParityData}");
+                    Console.WriteLine();
+                }
+            }
+        }
+
+        // Optional cleanup: remove generated files and folder
+        // foreach (var f in Directory.GetFiles(outputFolder)) File.Delete(f);
+        // Directory.Delete(outputFolder);
     }
 }

@@ -1,82 +1,75 @@
-// Title: Read Barcodes from Encrypted PDF using Aspose.BarCode
-// Description: Demonstrates how to supply a password for an encrypted PDF and extract barcode data using BarCodeReader.
+// Title: Extract barcodes from password-protected PDF using Aspose.BarCode
+// Description: Demonstrates how to open an encrypted PDF with a password, render each page to an image, and read any barcodes present.
+// Category-Description: This example belongs to the Aspose.BarCode PDF processing category, illustrating the use of Aspose.Pdf.Document, PdfConverter, and Aspose.BarCode.BarCodeRecognition.BarCodeReader to decode barcodes from secured PDF files. Typical scenarios include scanning invoices, tickets, or forms that are password-protected, where developers need to extract barcode data without manual decryption.
 // Prompt: Process encrypted PDF files by providing password to BarCodeReader and extracting barcode data.
-// Tags: pdf, encryption, barcode, reading, aspose.barcode, aspose.pdf, decode
+// Tags: pdf, encryption, barcode, decoding, aspnet, aspose.barcode, aspose.pdf
 
 using System;
 using System.IO;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Pdf;
+using Aspose.Pdf.Facades;
 
 /// <summary>
-/// Example program that reads barcodes from a PDF file. 
-/// It shows how to handle encrypted PDFs by providing a password (commented out) 
-/// and how to extract barcode information using Aspose.BarCode.
+/// Example program that opens an encrypted PDF, renders each page to an image,
+/// and extracts any barcodes using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Performs file validation, demonstrates
-    /// both the password‑protected PDF workflow (commented) and the simple direct
-    /// reading approach, then processes any detected barcodes.
+    /// Entry point of the application.
     /// </summary>
-    static void Main()
+    /// <param name="args">Command‑line arguments (not used).</param>
+    static void Main(string[] args)
     {
-        // Path to the encrypted PDF file.
+        // Path to the encrypted PDF file (adjust as needed)
         string pdfPath = "encrypted.pdf";
 
-        // Verify that the file exists before attempting to read it.
+        // Password for the encrypted PDF (adjust as needed)
+        string password = "myPassword";
+
+        // Verify that the PDF file exists before attempting to open it
         if (!File.Exists(pdfPath))
         {
             Console.WriteLine($"File not found: {pdfPath}");
             return;
         }
 
-        // --------------------------------------------------------------------
-        // Encrypted PDF handling (requires Aspose.Pdf). The code is provided as
-        // a reference and is commented out because the Aspose.Pdf assembly may
-        // not be available in the execution environment.
-        // --------------------------------------------------------------------
-        // string pdfPassword = "yourPassword";
-        // using (var pdfDocument = new Aspose.Pdf.Document(pdfPath, new Aspose.Pdf.LoadOptions { Password = pdfPassword }))
-        // {
-        //     // Iterate through each page, render it to an image stream, and feed it to BarCodeReader.
-        //     for (int pageIndex = 1; pageIndex <= pdfDocument.Pages.Count; pageIndex++)
-        //     {
-        //         using (var imageStream = new MemoryStream())
-        //         {
-        //             pdfDocument.Pages[pageIndex].ConvertToImage(imageStream, Aspose.Pdf.Devices.Resolution.Default);
-        //             imageStream.Position = 0;
-        //             using (var reader = new BarCodeReader(imageStream, DecodeType.AllSupportedTypes))
-        //             {
-        //                 ProcessBarcodes(reader);
-        //             }
-        //         }
-        //     }
-        // }
-
-        // --------------------------------------------------------------------
-        // Simple direct reading (suitable for unencrypted PDFs or when the
-        // library can handle the password internally). This demonstrates the
-        // core barcode extraction logic.
-        // --------------------------------------------------------------------
-        using (var reader = new BarCodeReader(pdfPath, DecodeType.AllSupportedTypes))
+        // Open the encrypted PDF document using the provided password
+        using (var pdfDocument = new Document(pdfPath, password))
         {
-            ProcessBarcodes(reader);
-        }
-    }
+            // Initialize the PDF converter which will render pages to images
+            using (var pdfConverter = new PdfConverter(pdfDocument))
+            {
+                // Enable barcode optimization to improve rendering speed for barcode detection
+                pdfConverter.RenderingOptions.BarcodeOptimization = true;
 
-    /// <summary>
-    /// Reads all barcodes from the provided <see cref="BarCodeReader"/> instance
-    /// and writes their type and decoded text to the console.
-    /// </summary>
-    /// <param name="reader">Initialized BarCodeReader configured with the source document.</param>
-    private static void ProcessBarcodes(BarCodeReader reader)
-    {
-        // Iterate through detected barcodes and output their type and decoded text.
-        foreach (var result in reader.ReadBarCodes())
-        {
-            Console.WriteLine($"BarCode Type: {result.CodeTypeName}");
-            Console.WriteLine($"BarCode CodeText: {result.CodeText}");
+                // Process each page in the PDF sequentially
+                for (int pageNumber = 1; pageNumber <= pdfDocument.Pages.Count; pageNumber++)
+                {
+                    // Configure the converter to render only the current page
+                    pdfConverter.StartPage = pageNumber;
+                    pdfConverter.EndPage = pageNumber;
+                    pdfConverter.DoConvert();
+
+                    // Capture the rendered page image into a memory stream
+                    using (var imageStream = new MemoryStream())
+                    {
+                        pdfConverter.GetNextImage(imageStream);
+                        imageStream.Position = 0; // Reset stream position for reading
+
+                        // Create a barcode reader for the image stream, detecting all supported types
+                        using (var reader = new BarCodeReader(imageStream, DecodeType.AllSupportedTypes))
+                        {
+                            // Iterate through all detected barcodes on the current page
+                            foreach (var result in reader.ReadBarCodes())
+                            {
+                                Console.WriteLine($"Page {pageNumber}: Type = {result.CodeTypeName}, Text = {result.CodeText}");
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }

@@ -1,7 +1,8 @@
 // Title: Barcode detection with custom region of interest
 // Description: Demonstrates limiting barcode recognition to a specific area of an image using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode image processing and barcode recognition category. It shows how to use BarCodeReader with a region of interest to improve detection performance and accuracy. Developers often need to restrict scanning to a portion of an image when multiple barcodes are present or when background noise is high. Key classes include BarCodeReader, DecodeType, and Rectangle.
 // Prompt: Use custom region of interest to limit barcode detection to a specific area of an image.
-// Tags: barcode, region of interest, detection, aspose.barcode, csharp
+// Tags: barcode, region of interest, detection, code128, aspose.barcode, image processing
 
 using System;
 using System.IO;
@@ -12,56 +13,61 @@ using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates a barcode (if needed) and reads it using a custom region of interest.
+/// Example program that generates a barcode image (if missing) and then
+/// detects the barcode using a custom region of interest to limit the scanning area.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a sample barcode image if missing, then reads barcodes within the top‑left quarter of the image.
+    /// Entry point of the application.
     /// </summary>
     static void Main()
     {
-        // Path for the sample barcode image
-        string imagePath = "sample_barcode.png";
+        // Path to the sample barcode image.
+        string imagePath = "barcode.png";
 
-        // Generate a barcode image if it does not exist
+        // Generate a barcode image if it does not already exist.
         if (!File.Exists(imagePath))
         {
             using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
             {
-                // Set a simple black bar color
+                // Optional: set barcode foreground and background colors.
                 generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-                // Save as PNG
+                generator.Parameters.BackColor = Aspose.Drawing.Color.White;
+
+                // Save the generated barcode as a PNG file.
                 generator.Save(imagePath, BarCodeImageFormat.Png);
-                Console.WriteLine($"Barcode image generated: {imagePath}");
+                Console.WriteLine($"Generated barcode image at: {Path.GetFullPath(imagePath)}");
             }
         }
 
-        // Verify the image file exists before attempting recognition
-        if (!File.Exists(imagePath))
-        {
-            Console.WriteLine($"Error: Image file '{imagePath}' not found.");
-            return;
-        }
-
-        // Load the image and define a custom region of interest (top‑left quarter)
+        // Load the image into a Bitmap object for processing.
         using (var bitmap = new Bitmap(imagePath))
         {
-            // Define a rectangle covering the top‑left quarter of the image
-            var roi = new Rectangle(0, 0, bitmap.Width / 2, bitmap.Height / 2);
+            // Define a custom region of interest (top‑left quarter of the image).
+            int roiWidth = bitmap.Width / 2;
+            int roiHeight = bitmap.Height / 2;
+            var region = new Rectangle(0, 0, roiWidth, roiHeight);
 
-            // Create a reader and set the image with the region of interest
+            // Initialize the barcode reader.
             using (var reader = new BarCodeReader())
             {
-                reader.SetBarCodeImage(bitmap, roi);
+                // Restrict decoding to the Code128 symbology.
+                reader.BarCodeReadType = DecodeType.Code128;
 
-                // Read barcodes within the specified region
+                // Assign the bitmap and the region of interest to the reader.
+                reader.SetBarCodeImage(bitmap, new Rectangle[] { region });
+
+                // Perform barcode recognition within the specified region.
                 foreach (var result in reader.ReadBarCodes())
                 {
                     Console.WriteLine($"Detected Type: {result.CodeTypeName}");
                     Console.WriteLine($"Detected Text: {result.CodeText}");
-                    var bounds = result.Region.Rectangle;
-                    Console.WriteLine($"Region - X:{bounds.X}, Y:{bounds.Y}, Width:{bounds.Width}, Height:{bounds.Height}");
+
+                    // Output the bounds of the region where the barcode was found.
+                    var rect = result.Region.Rectangle;
+                    Console.WriteLine($"Region - X:{rect.X}, Y:{rect.Y}, Width:{rect.Width}, Height:{rect.Height}");
+                    Console.WriteLine($"Angle: {result.Region.Angle}");
                 }
             }
         }

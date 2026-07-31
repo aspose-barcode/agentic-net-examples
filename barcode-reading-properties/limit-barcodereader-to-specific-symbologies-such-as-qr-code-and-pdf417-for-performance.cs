@@ -1,76 +1,80 @@
-// Title: Limit BarCodeReader to Specific Symbologies (QR and PDF417)
-// Description: Demonstrates generating QR and PDF417 barcodes, then reading them while restricting the BarCodeReader to those symbologies for better performance.
+// Title: Limit BarCodeReader to specific symbologies for faster decoding
+// Description: Demonstrates generating QR, PDF417, and Code128 barcodes, then reading only QR and PDF417 types to improve performance.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, showcasing how to use BarcodeGenerator to create images and BarCodeReader with selective DecodeType parameters. Developers often need to limit symbology detection to reduce processing time when only certain barcode types are expected, such as QR Code and PDF417 in mobile scanning or document processing scenarios.
 // Prompt: Limit BarCodeReader to specific symbologies such as QR Code and PDF417 for performance.
-// Tags: barcode symbology, read, qr, pdf417, performance, aspnet
+// Tags: barcode symbology, read, png, barcodegenerator, barcodereader, qr, pdf417
 
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
+using Aspose.BarCode;
 
 /// <summary>
-/// Example program that creates QR Code and PDF417 barcode images,
-/// then reads them back while limiting the reader to those two symbologies
-/// to improve decoding performance.
+/// Demonstrates generating sample barcodes and reading only selected symbologies (QR and PDF417) to improve performance.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates sample barcode images and decodes them using a restricted BarCodeReader.
+    /// Entry point of the example. Generates barcode images, then reads them while limiting detection to QR and PDF417.
     /// </summary>
     static void Main()
     {
-        // ---------- Generate sample QR Code image ----------
-        string qrPath = "qr.png";
-        using (var qrGenerator = new BarcodeGenerator(EncodeTypes.QR, "Sample QR Text"))
+        // Define file paths for the generated barcode images
+        string qrPath = Path.Combine(Directory.GetCurrentDirectory(), "qr.png");
+        string pdf417Path = Path.Combine(Directory.GetCurrentDirectory(), "pdf417.png");
+        string code128Path = Path.Combine(Directory.GetCurrentDirectory(), "code128.png");
+
+        // -------------------------------------------------
+        // Generate a QR Code image
+        // -------------------------------------------------
+        using (var qrGenerator = new BarcodeGenerator(EncodeTypes.QR, "Sample QR Code"))
         {
-            // Save the QR Code image to disk
-            qrGenerator.Save(qrPath);
+            qrGenerator.Save(qrPath, BarCodeImageFormat.Png);
         }
 
-        // ---------- Generate sample PDF417 image ----------
-        string pdf417Path = "pdf417.png";
+        // -------------------------------------------------
+        // Generate a PDF417 image
+        // -------------------------------------------------
         using (var pdf417Generator = new BarcodeGenerator(EncodeTypes.Pdf417, "Sample PDF417 Text"))
         {
-            // Save the PDF417 image to disk
-            pdf417Generator.Save(pdf417Path);
+            pdf417Generator.Save(pdf417Path, BarCodeImageFormat.Png);
         }
 
-        // ---------- Prepare list of images to process ----------
-        string[] imageFiles = { qrPath, pdf417Path };
-
-        // ---------- Iterate over each image and decode ----------
-        foreach (var imageFile in imageFiles)
+        // -------------------------------------------------
+        // Generate a Code128 image (will be ignored during reading)
+        // -------------------------------------------------
+        using (var code128Generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            // Verify that the image file exists before attempting to read it
-            if (!File.Exists(imageFile))
+            code128Generator.Save(code128Path, BarCodeImageFormat.Png);
+        }
+
+        // -------------------------------------------------
+        // Read barcodes, limiting detection to QR and PDF417 only
+        // -------------------------------------------------
+        string[] filesToRead = { qrPath, pdf417Path, code128Path };
+        foreach (string file in filesToRead)
+        {
+            // Verify that the file exists before attempting to read it
+            if (!File.Exists(file))
             {
-                Console.WriteLine($"File not found: {imageFile}");
+                Console.WriteLine($"File not found: {file}");
                 continue;
             }
 
-            // Load the image into a Bitmap object
-            using (var bitmap = new Bitmap(imageFile))
+            // Construct BarCodeReader with the desired decode types.
+            // Only QR and PDF417 symbologies will be processed, improving performance.
+            using (var reader = new BarCodeReader(file, DecodeType.QR, DecodeType.Pdf417))
             {
-                // Initialize BarCodeReader limited to QR and PDF417 symbologies
-                using (var reader = new BarCodeReader(bitmap, DecodeType.QR, DecodeType.Pdf417))
+                foreach (var result in reader.ReadBarCodes())
                 {
-                    // Read all barcodes detected in the image
-                    foreach (var result in reader.ReadBarCodes())
-                    {
-                        Console.WriteLine($"Image: {imageFile}");
-                        Console.WriteLine($"Detected Type: {result.CodeTypeName}");
-                        Console.WriteLine($"Code Text: {result.CodeText}");
-                        Console.WriteLine();
-                    }
+                    Console.WriteLine($"File: {Path.GetFileName(file)}");
+                    Console.WriteLine($"  Detected Type : {result.CodeTypeName}");
+                    Console.WriteLine($"  Code Text     : {result.CodeText}");
                 }
             }
         }
 
-        // Indicate that the program has completed successfully
-        Console.WriteLine("Processing completed.");
+        // End of program
     }
 }

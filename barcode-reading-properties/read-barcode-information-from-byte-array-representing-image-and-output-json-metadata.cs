@@ -1,69 +1,71 @@
-// Title: Read barcode from image byte array and output JSON
-// Description: Generates a Code128 barcode, reads it from an in‑memory byte array, and prints the decoded information as formatted JSON.
+// Title: Read barcode from byte array and output JSON metadata
+// Description: Demonstrates generating a barcode image, converting it to a byte array, reading the barcode from that array, and serializing the detection results to JSON.
+// Category-Description: This example belongs to the Aspose.BarCode reading and serialization category. It shows how to use BarcodeGenerator to create barcodes, BarCodeReader to decode them from streams, and System.Text.Json to produce structured JSON output. Developers often need to process barcode images received as byte arrays (e.g., from databases or web services) and extract metadata for logging, analytics, or further processing.
 // Prompt: Read barcode information from a byte array representing an image and output JSON metadata.
-// Tags: barcode, code128, read, json, aspose.barcode, memorystream
+// Tags: code128, barcode, read, json, aspose.barcode, aspose.drawing, serialization
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
-using System.Collections.Generic;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates how to generate a barcode, read it from a byte array, and output the decoded data as JSON.
+/// Example program that generates a barcode, reads it from a byte array,
+/// and outputs the detection metadata as formatted JSON.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a barcode image, reads it from memory, and prints JSON metadata.
+    /// Entry point of the example. Generates a sample barcode, reads it from memory,
+    /// collects detection details, and prints them as JSON.
     /// </summary>
-    static void Main()
+    /// <param name="args">Command‑line arguments (not used).</param>
+    static void Main(string[] args)
     {
-        // Generate a sample barcode image and store it in a byte array.
+        // Generate a sample Code128 barcode and store it in a memory stream.
         using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
         {
-            using (var generationStream = new MemoryStream())
+            using (var memoryStream = new MemoryStream())
             {
-                // Save the generated barcode as PNG into the memory stream.
-                generator.Save(generationStream, BarCodeImageFormat.Png);
-                byte[] imageBytes = generationStream.ToArray();
+                // Save the barcode image as PNG into the memory stream.
+                generator.Save(memoryStream, BarCodeImageFormat.Png);
+                // Convert the stream contents to a byte array.
+                byte[] imageBytes = memoryStream.ToArray();
 
-                // Read barcode information from the byte array.
-                using (var readStream = new MemoryStream(imageBytes))
+                // Initialize a barcode reader to decode all supported types from the byte array.
+                using (var reader = new BarCodeReader(new MemoryStream(imageBytes), DecodeType.AllSupportedTypes))
                 {
-                    // Initialize the reader to decode all supported barcode types.
-                    using (var reader = new BarCodeReader(readStream, DecodeType.AllSupportedTypes))
+                    var barcodeInfos = new List<object>();
+
+                    // Iterate over each detected barcode and collect its metadata.
+                    foreach (var result in reader.ReadBarCodes())
                     {
-                        var results = new List<object>();
-
-                        // Iterate over each detected barcode.
-                        foreach (var result in reader.ReadBarCodes())
+                        var rect = result.Region.Rectangle;
+                        var info = new
                         {
-                            var rect = result.Region.Rectangle;
-                            var info = new
+                            CodeType = result.CodeTypeName,
+                            CodeText = result.CodeText,
+                            Confidence = result.Confidence,
+                            ReadingQuality = result.ReadingQuality,
+                            Region = new
                             {
-                                CodeType = result.CodeTypeName,
-                                CodeText = result.CodeText,
-                                Confidence = result.Confidence,
-                                ReadingQuality = result.ReadingQuality,
-                                Angle = result.Region.Angle,
-                                Region = new
-                                {
-                                    X = rect.X,
-                                    Y = rect.Y,
-                                    Width = rect.Width,
-                                    Height = rect.Height
-                                }
-                            };
-                            results.Add(info);
-                        }
-
-                        // Serialize the collected barcode data to formatted JSON.
-                        string json = JsonSerializer.Serialize(results, new JsonSerializerOptions { WriteIndented = true });
-                        Console.WriteLine(json);
+                                X = rect.X,
+                                Y = rect.Y,
+                                Width = rect.Width,
+                                Height = rect.Height
+                            }
+                        };
+                        barcodeInfos.Add(info);
                     }
+
+                    // Serialize the collected metadata to indented JSON and output it.
+                    string json = JsonSerializer.Serialize(
+                        barcodeInfos,
+                        new JsonSerializerOptions { WriteIndented = true });
+                    Console.WriteLine(json);
                 }
             }
         }

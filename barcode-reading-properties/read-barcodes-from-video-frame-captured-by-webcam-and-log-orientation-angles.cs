@@ -1,63 +1,60 @@
-// Title: Barcode Orientation Detection from Rotated Image
-// Description: Generates a Code128 barcode, rotates it to simulate a tilted webcam capture, then reads the barcode and logs its orientation angle.
+// Title: Read QR barcode from image and log orientation angle
+// Description: Generates a QR code, saves it to disk, reads it back, and logs the barcode type, text, and detected orientation angle.
+// Category-Description: This example demonstrates Aspose.BarCode generation and recognition APIs. It shows how to create a barcode using BarcodeGenerator, save it as an image, and then use BarCodeReader to decode the barcode and retrieve its Region.Angle property. Developers working with barcode imaging, scanning, or orientation detection can use these patterns for QR, DataMatrix, and other symbologies in desktop or server applications.
 // Prompt: Read barcodes from a video frame captured by a webcam and log orientation angles.
-// Tags: barcode, orientation, code128, aspose.barcode, image processing
+// Tags: qr, barcode, generation, recognition, orientation, console, aspose.barcode
 
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
+using Aspose.BarCode;
 
 /// <summary>
-/// Demonstrates how to generate a barcode, rotate it, and read its orientation angle using Aspose.BarCode.
+/// Demonstrates generating a QR barcode, saving it, and reading it back to log orientation information.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a barcode, applies a rotation, reads it back, and prints the detected angle.
+    /// Entry point of the example. Generates a QR code, saves it, reads it, and outputs detection details.
     /// </summary>
     static void Main()
     {
-        // Generate a simple Code128 barcode image in memory.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Test123"))
+        // Define the output directory and barcode image path
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Output");
+        string barcodePath = Path.Combine(outputDir, "sample_barcode.png");
+
+        // Ensure the output directory exists
+        if (!Directory.Exists(outputDir))
         {
-            using (var originalBmp = generator.GenerateBarCodeImage())
+            Directory.CreateDirectory(outputDir);
+        }
+
+        // Generate a simple QR barcode and save it to a PNG file
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Aspose.BarCode Sample"))
+        {
+            // Set QR error correction level (optional visual parameter)
+            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
+            generator.Save(barcodePath, BarCodeImageFormat.Png);
+        }
+
+        // Verify that the barcode image was successfully created
+        if (!File.Exists(barcodePath))
+        {
+            Console.WriteLine($"Failed to create barcode image at '{barcodePath}'.");
+            return;
+        }
+
+        // Read the barcode from the saved image and log its orientation angle
+        using (var reader = new BarCodeReader(barcodePath, DecodeType.QR))
+        {
+            foreach (var result in reader.ReadBarCodes())
             {
-                // Create a bitmap to hold the rotated image.
-                using (var rotatedBmp = new Bitmap(originalBmp.Width, originalBmp.Height))
-                {
-                    // Obtain a graphics object for drawing onto the rotated bitmap.
-                    using (var graphics = Graphics.FromImage(rotatedBmp))
-                    {
-                        // Set high‑quality rendering options.
-                        graphics.SmoothingMode = Aspose.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-                        graphics.InterpolationMode = Aspose.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
-
-                        // Translate the origin to the center, rotate, then translate back.
-                        graphics.TranslateTransform(originalBmp.Width / 2f, originalBmp.Height / 2f);
-                        graphics.RotateTransform(45f);
-                        graphics.TranslateTransform(-originalBmp.Width / 2f, -originalBmp.Height / 2f);
-
-                        // Draw the original barcode onto the rotated canvas.
-                        graphics.DrawImage(originalBmp, 0, 0, originalBmp.Width, originalBmp.Height);
-                    }
-
-                    // Initialize a barcode reader for the rotated image, supporting all barcode types.
-                    using (var reader = new BarCodeReader(rotatedBmp, DecodeType.AllSupportedTypes))
-                    {
-                        // Iterate through all detected barcodes.
-                        foreach (var result in reader.ReadBarCodes())
-                        {
-                            // Output the decoded text.
-                            Console.WriteLine($"Detected CodeText: {result.CodeText}");
-                            // Output the orientation angle of the barcode region.
-                            Console.WriteLine($"Detected Angle: {result.Region.Angle}");
-                        }
-                    }
-                }
+                // The Region.Angle property indicates the detected orientation of the barcode
+                Console.WriteLine($"Detected Barcode Type : {result.CodeTypeName}");
+                Console.WriteLine($"Detected Code Text    : {result.CodeText}");
+                Console.WriteLine($"Detected Angle (deg)  : {result.Region.Angle}");
+                Console.WriteLine();
             }
         }
     }

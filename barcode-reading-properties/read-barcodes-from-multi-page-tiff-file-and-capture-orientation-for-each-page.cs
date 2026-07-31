@@ -1,7 +1,8 @@
-// Title: Read barcodes from each page of a multi‑page TIFF and report orientation
-// Description: Demonstrates loading a multi‑page TIFF, iterating through its pages, reading any barcodes present, and outputting the barcode type, text, and rotation angle for each page.
+// Title: Read barcodes from a multi‑page TIFF and capture orientation per page
+// Description: Demonstrates how to load a multi‑page TIFF, iterate through its pages, detect barcodes, and retrieve each barcode's orientation angle.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, showcasing the use of BarCodeReader, DecodeType, and image handling classes such as Image, Bitmap, and FrameDimension. Typical use cases include processing scanned documents, invoices, or multi‑page forms where barcodes may appear on any page and orientation information is required for downstream processing. Developers often need to extract barcode data and its rotation to correctly align or validate the content.
 // Prompt: Read barcodes from a multi‑page TIFF file and capture orientation for each page.
-// Tags: barcode, tiff, orientation, multiframe, aspose.barcode, aspose.drawing
+// Tags: barcode, recognition, tiff, multiframe, orientation, aspose.barcode, decode type, image processing
 
 using System;
 using System.IO;
@@ -10,66 +11,73 @@ using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Sample console application that reads barcodes from a multi‑page TIFF file
-/// and prints each barcode's type, text, and orientation (angle) per page.
+/// Example program that reads barcodes from each page of a multi‑page TIFF file
+/// and reports the barcode type, text, and orientation angle.
 /// </summary>
 class Program
 {
     /// <summary>
     /// Entry point of the application.
-    /// Loads the TIFF, iterates through its pages, and uses Aspose.BarCode to detect barcodes.
+    /// Loads the TIFF, iterates through its frames, and uses <see cref="BarCodeReader"/>
+    /// to detect and report barcodes along with their orientation.
     /// </summary>
     static void Main()
     {
-        // Path to the multi‑page TIFF file (adjust as needed)
-        const string tiffPath = "sample.tif";
+        // Path to the multi‑page TIFF file.
+        string tiffPath = "sample.tiff";
 
-        // Verify that the file exists before attempting to load it
+        // Verify that the file exists before attempting to load it.
         if (!File.Exists(tiffPath))
         {
             Console.WriteLine($"File not found: {tiffPath}");
             return;
         }
 
-        // Load the TIFF image using Aspose.Drawing
+        // Load the TIFF image from disk.
         using (Image tiffImage = Image.FromFile(tiffPath))
         {
-            // Determine the number of pages/frames in the TIFF
+            // Get the total number of pages (frames) in the TIFF.
             int pageCount = tiffImage.GetFrameCount(FrameDimension.Page);
 
-            // Iterate over each page in the TIFF
+            // Process each page sequentially.
             for (int pageIndex = 0; pageIndex < pageCount; pageIndex++)
             {
-                // Select the current page as the active frame
+                // Activate the current page so it can be read.
                 tiffImage.SelectActiveFrame(FrameDimension.Page, pageIndex);
 
-                // Create a bitmap representation of the current page for barcode scanning
+                // Clone the active frame into a Bitmap, which BarCodeReader requires.
                 using (Bitmap pageBitmap = new Bitmap(tiffImage))
                 {
-                    // Initialize the barcode reader to detect all supported barcode types
-                    using (BarCodeReader reader = new BarCodeReader(pageBitmap, DecodeType.AllSupportedTypes))
+                    // Initialize the barcode reader.
+                    using (BarCodeReader reader = new BarCodeReader())
                     {
-                        // Optional: set quality settings (default is NormalQuality)
-                        // reader.QualitySettings = QualitySettings.NormalQuality;
+                        // Configure the reader to attempt decoding all supported symbologies.
+                        reader.BarCodeReadType = DecodeType.AllSupportedTypes;
 
-                        // Perform the barcode detection
-                        BarCodeResult[] results = reader.ReadBarCodes();
+                        // Provide the bitmap image to the reader.
+                        reader.SetBarCodeImage(pageBitmap);
 
-                        // Output results for the current page
-                        if (results.Length == 0)
+                        int barcodeCount = 0;
+
+                        // Iterate over all detected barcodes on the current page.
+                        foreach (var result in reader.ReadBarCodes())
+                        {
+                            barcodeCount++;
+
+                            // Retrieve the orientation angle (in degrees) of the barcode region.
+                            double orientation = result.Region.Angle;
+
+                            Console.WriteLine(
+                                $"Page {pageIndex + 1}, Barcode {barcodeCount}: " +
+                                $"Type = {result.CodeTypeName}, " +
+                                $"Text = {result.CodeText}, " +
+                                $"Orientation = {orientation}°");
+                        }
+
+                        // If no barcodes were found, inform the user.
+                        if (barcodeCount == 0)
                         {
                             Console.WriteLine($"Page {pageIndex + 1}: No barcodes detected.");
-                        }
-                        else
-                        {
-                            foreach (BarCodeResult result in results)
-                            {
-                                // Retrieve the orientation angle of the detected barcode region
-                                double orientation = result.Region.Angle; // orientation in degrees
-
-                                // Print barcode details including type, text, and orientation
-                                Console.WriteLine($"Page {pageIndex + 1}: Type = {result.CodeTypeName}, Text = {result.CodeText}, Orientation = {orientation}°");
-                            }
                         }
                     }
                 }

@@ -1,67 +1,58 @@
-// Title: Read barcode from image (local fallback)
-// Description: Demonstrates fetching an image (placeholder for Azure Blob) and extracting barcode type and text using Aspose.BarCode.
+// Title: Extract barcode information from an image stored in Azure Blob Storage
+// Description: Demonstrates how to download an image from Azure Blob storage (illustrated as a placeholder) and use Aspose.BarCode to recognize barcode type and text.
+// Category-Description: This example belongs to the Aspose.BarCode recognition category, showcasing the BarCodeReader class for decoding various symbologies from image streams. Typical use cases include processing scanned documents, inventory images, or any media retrieved from cloud storage. Developers often need to integrate Azure Blob retrieval with barcode extraction for automated workflows.
 // Prompt: Fetch image from Azure Blob storage and extract barcode type and code text.
-// Tags: barcode symbology, read, console, aspose.barcode, azure blob
+// Tags: barcode recognition, azure blob storage, decode type, image processing, aspose.barcode
 
 using System;
 using System.IO;
-using Aspose.BarCode.Generation;
+using Aspose.BarCode;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Example program that reads barcodes from an image.
-/// In a real scenario the image would be downloaded from Azure Blob storage,
-/// but this demo uses a local file as a fallback.
+/// Sample program that demonstrates how to obtain an image from Azure Blob storage
+/// (shown as a commented placeholder) and extract barcode information using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Loads an image, scans for barcodes, and prints their type and text.
+    /// Entry point of the example. Reads an image, creates a BarCodeReader,
+    /// and prints detected barcode types and their corresponding text values.
     /// </summary>
     static void Main()
     {
-        // NOTE: In a real environment you would download the image from Azure Blob Storage
-        // using Azure.Storage.Blobs. The required SDK is not available in the snippet runner,
-        // so the code is provided as a comment for reference.
+        // NOTE: In a real environment you would download the image from Azure Blob Storage.
+        // The Azure SDK is not available in the snippet runner, so the code is shown as a comment.
         /*
-        // Real Azure Blob download (requires Azure.Storage.Blobs NuGet package)
-        string connectionString = "<your_connection_string>";
-        string containerName = "<your_container_name>";
-        string blobName = "<your_blob_name>";
-        var blobClient = new BlobClient(connectionString, containerName, blobName);
-        using (var downloadStream = new MemoryStream())
-        {
-            blobClient.DownloadTo(downloadStream);
-            downloadStream.Position = 0;
-            // Proceed with barcode reading using the stream
-        }
+        // Azure Blob Storage example (requires Azure.Storage.Blobs NuGet package)
+        // string connectionString = "<your_connection_string>";
+        // string containerName = "<your_container_name>";
+        // string blobName = "<your_blob_name>";
+        // var blobClient = new BlobClient(connectionString, containerName, blobName);
+        // using var memoryStream = new MemoryStream();
+        // blobClient.DownloadTo(memoryStream);
+        // memoryStream.Position = 0;
+        // ProcessImageStream(memoryStream);
         */
 
-        // Fallback: use a local image file for demonstration
-        string localImagePath = "sample.png";
+        // Local fallback image for the runnable example
+        string imagePath = "sample.png";
 
-        // Verify that the image file exists before proceeding
-        if (!File.Exists(localImagePath))
+        // Verify that the image file exists before attempting to read it
+        if (!File.Exists(imagePath))
         {
-            Console.WriteLine($"Image file not found: {localImagePath}");
+            Console.WriteLine($"Image file not found: {imagePath}");
             return;
         }
 
-        // Load the image into a Bitmap (Aspose.Drawing)
-        using (Bitmap bitmap = new Bitmap(localImagePath))
+        // Initialize BarCodeReader to scan all supported barcode types in the image file
+        using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
         {
-            // Initialize the barcode reader with the bitmap and enable all supported types
-            using (BarCodeReader reader = new BarCodeReader(bitmap, DecodeType.AllSupportedTypes))
+            // Iterate through all detected barcodes and output their type and text
+            foreach (var result in reader.ReadBarCodes())
             {
-                // Iterate through detected barcodes
-                foreach (BarCodeResult result in reader.ReadBarCodes())
-                {
-                    // Output the barcode type (e.g., QR, Code128) and its decoded text
-                    Console.WriteLine($"BarCode Type: {result.CodeTypeName}");
-                    Console.WriteLine($"BarCode CodeText: {result.CodeText}");
-                }
+                Console.WriteLine($"BarCode Type: {result.CodeTypeName}");
+                Console.WriteLine($"BarCode CodeText: {result.CodeText}");
             }
         }
     }
