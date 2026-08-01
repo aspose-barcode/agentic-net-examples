@@ -1,49 +1,63 @@
-// Title: Read Barcodes from JPEG using BarCodeReader
-// Description: Demonstrates how to load a JPEG image, detect all supported barcodes, and output their type, text, and location.
+// Title: Read barcodes from JPEG using BarCodeReader
+// Description: Demonstrates how to load a JPEG image, generate a sample barcode if missing, and read all supported barcode types using Aspose.BarCode's BarCodeReader.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, showcasing the BarCodeReader class for detecting and extracting barcode data from image files. Typical use cases include inventory scanning, document processing, and automated data capture where developers need to read multiple symbologies from various image formats. The snippet illustrates initializing the reader, iterating over detection results, and accessing barcode type, text, and region information.
 // Prompt: Read barcodes from a JPEG file using BarCodeReader constructor and retrieve detection results.
-// Tags: barcode, read, jpeg, aspose, barcodereader, detection, console
+// Tags: barcode, jpeg, read, detection, aspnet, aspnetcore, aspose.barcode, barcodereader, decode, allsupportedtypes
 
 using System;
 using System.IO;
+using Aspose.BarCode;
+using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Example program that reads all supported barcodes from a JPEG image
-/// and prints their type, decoded text, and bounding region to the console.
+/// Example program that reads barcodes from a JPEG image using Aspose.BarCode's <see cref="BarCodeReader"/>.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
+    /// Entry point. Accepts an optional image path argument, generates a sample barcode if the file is missing,
+    /// and prints detection results for all supported barcode types.
     /// </summary>
-    static void Main()
+    /// <param name="args">Command‑line arguments; first argument can be a custom image path.</param>
+    static void Main(string[] args)
     {
-        // Path to the JPEG image containing barcodes.
-        const string imagePath = "sample.jpg";
+        // Determine the image file to process: use the first argument if supplied, otherwise default to "sample.jpg".
+        string imagePath = args.Length > 0 ? args[0] : "sample.jpg";
 
-        // Verify that the file exists before attempting to read it.
+        // If the specified file does not exist, create a simple Code128 barcode image for demonstration purposes.
+        if (!File.Exists(imagePath))
+        {
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
+            {
+                generator.Save(imagePath, BarCodeImageFormat.Jpeg);
+            }
+            Console.WriteLine($"Generated sample barcode image at '{imagePath}'.");
+        }
+
+        // Double‑check that the file now exists before attempting to read it.
         if (!File.Exists(imagePath))
         {
             Console.WriteLine($"File not found: {imagePath}");
             return;
         }
 
-        // Initialize the BarCodeReader for all supported barcode types.
-        // The using statement ensures the reader is disposed properly.
+        // Initialize the reader to scan the image for all supported barcode symbologies.
         using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
         {
-            // Iterate through all detected barcodes in the image.
+            // Optional: configure quality settings (default is NormalQuality).
+            // reader.QualitySettings = QualitySettings.NormalQuality;
+
+            // Iterate through each detected barcode and output its details.
             foreach (var result in reader.ReadBarCodes())
             {
-                // Output the barcode type (symbology) and the decoded text.
                 Console.WriteLine($"BarCode Type: {result.CodeTypeName}");
                 Console.WriteLine($"BarCode Text: {result.CodeText}");
 
-                // Retrieve and display the bounding rectangle of the detected barcode.
-                var rect = result.Region.Rectangle;
-                Console.WriteLine($"Region - X:{rect.X}, Y:{rect.Y}, Width:{rect.Width}, Height:{rect.Height}");
-
-                Console.WriteLine(); // Blank line for readability between results.
+                // Retrieve and display the bounding rectangle of the detected barcode region.
+                var bounds = result.Region.Rectangle;
+                Console.WriteLine($"Region - X:{bounds.X}, Y:{bounds.Y}, Width:{bounds.Width}, Height:{bounds.Height}");
+                Console.WriteLine();
             }
         }
     }

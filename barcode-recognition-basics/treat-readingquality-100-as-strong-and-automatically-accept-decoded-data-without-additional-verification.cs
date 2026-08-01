@@ -1,7 +1,8 @@
-// Title: QR Code Generation and Strong Quality Barcode Reading
-// Description: Generates a QR code, reads it back, and automatically accepts data when reading quality is 100, demonstrating quality-based validation.
+// Title: QR Code Generation and Reading with Strong ReadingQuality Handling
+// Description: Generates a QR code, saves it as a PNG file, then reads the barcode back and automatically accepts codes with maximum reading quality.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, demonstrating how to use BarcodeGenerator (for creating barcodes) and BarCodeReader (for decoding). Typical use cases include creating QR codes for data exchange and validating them with high confidence. Developers often need to assess reading quality to decide whether additional verification is required.
 // Prompt: Treat ReadingQuality 100 as strong and automatically accept the decoded data without additional verification.
-// Tags: qr, barcode, generation, recognition, readingquality, console
+// Tags: qr, generation, recognition, readingquality, aspose.barcode, png
 
 using System;
 using System.IO;
@@ -10,60 +11,51 @@ using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates creating a QR code, reading it, and handling strong reading quality automatically.
+/// Demonstrates generating a QR code, saving it to a file, and reading it back while
+/// automatically accepting results with a ReadingQuality of 100.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a QR code, reads it, and processes results based on reading quality.
+    /// Entry point of the example. Generates a QR code, saves it, and reads it using
+    /// Aspose.BarCode APIs, applying a strong quality rule.
     /// </summary>
     static void Main()
     {
-        // Define a temporary file path for the generated barcode image
-        string imagePath = Path.Combine(Path.GetTempPath(), "sample_barcode.png");
+        // Define the output path for the generated barcode image.
+        string imagePath = "barcode.png";
 
-        // Generate a QR code barcode with known content
+        // Generate a QR code barcode with the text "StrongQualityTest" and save it as PNG.
         using (var generator = new BarcodeGenerator(EncodeTypes.QR, "StrongQualityTest"))
         {
-            // Save the barcode image to the temporary file
             generator.Save(imagePath);
         }
 
-        // Verify that the image file was created
+        // Ensure the image file was created before attempting to read it.
         if (!File.Exists(imagePath))
         {
-            Console.WriteLine("Failed to create barcode image.");
+            Console.WriteLine($"Image file not found: {imagePath}");
             return;
         }
 
-        // Read the barcode from the generated image
+        // Initialize a barcode reader that attempts to decode all supported barcode types.
         using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
         {
-            // Iterate through all detected barcodes
+            // Iterate through each detected barcode in the image.
             foreach (var result in reader.ReadBarCodes())
             {
-                double readingQuality = result.ReadingQuality;
+                double quality = result.ReadingQuality;
 
-                // Treat ReadingQuality of 100 as strong and accept automatically
-                if (readingQuality == 100.0)
+                // Accept the result automatically if the reading quality is perfect (100).
+                if (quality == 100.0)
                 {
-                    Console.WriteLine($"Accepted (Strong Quality): {result.CodeText}");
+                    Console.WriteLine($"Accepted: {result.CodeText}");
                 }
                 else
                 {
-                    Console.WriteLine($"Detected (Quality {readingQuality}): {result.CodeText}");
+                    Console.WriteLine($"Rejected (ReadingQuality {quality}): {result.CodeText}");
                 }
             }
-        }
-
-        // Clean up the temporary image file
-        try
-        {
-            File.Delete(imagePath);
-        }
-        catch
-        {
-            // Ignore any errors during cleanup
         }
     }
 }

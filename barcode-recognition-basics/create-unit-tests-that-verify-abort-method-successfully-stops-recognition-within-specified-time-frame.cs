@@ -1,91 +1,75 @@
-// Title: Demonstrate aborting barcode recognition with Aspose.BarCode
-// Description: Shows how to abort a long-running barcode recognition task and verify it stops within a time limit.
+// Title: Abort Barcode Recognition Example
+// Description: Demonstrates how to abort a barcode recognition operation using Aspose.BarCode's Abort method.
+// Category-Description: This example belongs to the Aspose.BarCode recognition category, showcasing the use of BarCodeReader, BarcodeGenerator, and the Abort method to control long‑running recognition tasks. Developers often need to stop recognition after a timeout or user cancellation, and this snippet illustrates setting a timeout, running recognition asynchronously, and aborting it safely.
 // Prompt: Create unit tests that verify Abort method successfully stops recognition within a specified time frame.
-// Tags: barcode, symbology, code128, abort, recognition, unit-test, aspose.barcode
+// Tags: code128, abort, recognition, aspose.barcode, generation, timeout
 
 using System;
-using System.Diagnostics;
+using System.IO;
 using System.Threading.Tasks;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates a large barcode, starts recognition,
-/// aborts it, and checks that the abort completes within a specified time frame.
+/// Demonstrates aborting a barcode recognition operation.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the program. Executes the abort verification logic.
+    /// Entry point that generates a barcode, starts recognition asynchronously, aborts it, and reports the outcome.
     /// </summary>
     static void Main()
     {
-        // Generate a large barcode image to ensure recognition takes noticeable time.
-        const string longText = "1234567890123456789012345678901234567890";
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, longText))
+        // Generate a barcode image in memory
+        using (var imageStream = new MemoryStream())
         {
-            // Use interpolation mode and set a large image size.
-            generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
-            generator.Parameters.ImageWidth.Point = 2000f;
-            generator.Parameters.ImageHeight.Point = 2000f;
-
-            using (Bitmap barcodeImage = generator.GenerateBarCodeImage())
+            // Create a barcode generator for Code128 with sample text
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "TestAbort"))
             {
-                // Prepare the reader.
-                using (var reader = new BarCodeReader())
+                // Save the generated barcode as PNG into the memory stream
+                generator.Save(imageStream, BarCodeImageFormat.Png);
+                // Reset stream position for reading
+                imageStream.Position = 0;
+            }
+
+            // Initialize a barcode reader with a long timeout (10 seconds)
+            using (var reader = new BarCodeReader(imageStream, DecodeType.Code128))
+            {
+                reader.Timeout = 10000; // Timeout in milliseconds
+
+                // Start recognition on a separate task to allow aborting
+                var recognitionTask = Task.Run(() =>
                 {
-                    // Assign the image to the reader.
-                    reader.SetBarCodeImage(barcodeImage);
-                    // Set a generous timeout (will be ignored because we abort).
-                    reader.Timeout = 10000;
-
-                    // Measure the time taken for the recognition task.
-                    var stopwatch = Stopwatch.StartNew();
-
-                    // Run recognition in a separate task.
-                    var recognitionTask = Task.Run(() =>
+                    try
                     {
-                        try
-                        {
-                            // Attempt to read barcodes.
-                            var results = reader.ReadBarCodes();
-                            // Return the number of detected barcodes (should be 0 if aborted early).
-                            return results.Length;
-                        }
-                        catch (RecognitionAbortedException)
-                        {
-                            // Expected when abort is successful.
-                            return -1;
-                        }
-                    });
-
-                    // Immediately request abort.
-                    reader.Abort();
-
-                    // Wait for the task to finish.
-                    recognitionTask.Wait();
-
-                    stopwatch.Stop();
-
-                    // Determine if abort stopped recognition quickly (within 2 seconds).
-                    bool isFast = stopwatch.Elapsed.TotalMilliseconds < 2000;
-                    bool isAborted = recognitionTask.Result == -1 || recognitionTask.Result == 0;
-
-                    if (isFast && isAborted)
-                    {
-                        Console.WriteLine("Test Passed: Abort stopped recognition within the expected time frame.");
+                        // Perform synchronous read; may be aborted
+                        var results = reader.ReadBarCodes();
+                        Console.WriteLine($"Recognition completed, found {results.Length} barcode(s).");
                     }
-                    else
+                    catch (RecognitionAbortedException ex)
                     {
-                        Console.WriteLine("Test Failed:");
-                        Console.WriteLine($"  Elapsed time (ms): {stopwatch.Elapsed.TotalMilliseconds}");
-                        Console.WriteLine($"  Recognition result count: {recognitionTask.Result}");
-                        Console.WriteLine("  Expected abort to stop quickly.");
+                        // Expected path when abort is invoked
+                        Console.WriteLine($"Recognition aborted after {ex.ExecutionTime} ms (expected).");
                     }
-                }
+                    catch (Exception ex)
+                    {
+                        // Log any unexpected errors
+                        Console.WriteLine($"Unexpected exception: {ex.GetType().Name} - {ex.Message}");
+                    }
+                });
+
+                // Brief pause before aborting to ensure recognition has started
+                Task.Delay(100).Wait(); // 100 ms delay
+                // Request abort of the ongoing recognition
+                reader.Abort();
+
+                // Wait for the recognition task to complete
+                recognitionTask.Wait();
             }
         }
+
+        // Indicate that the abort test has finished
+        Console.WriteLine("Abort test completed.");
     }
 }

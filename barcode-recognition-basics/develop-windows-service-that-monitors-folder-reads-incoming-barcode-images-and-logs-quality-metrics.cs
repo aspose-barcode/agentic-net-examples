@@ -1,96 +1,98 @@
-// Title: Folder Monitoring Barcode Reader
-// Description: Demonstrates reading barcode images from a folder and logging quality metrics for each detected barcode.
+// Title: Barcode generation, recognition, and logging example
+// Description: Demonstrates creating barcode images, reading them, and logging quality metrics to a file.
+// Category-Description: This example belongs to the Aspose.BarCode image processing category, showcasing how to generate barcodes, recognize multiple symbologies, and extract reading quality using BarcodeGenerator, BarCodeReader, and related classes. Developers often need to batch‑process barcode images, monitor directories, and log results for quality assurance or analytics, making this pattern useful for automation scripts and services.
 // Prompt: Develop a Windows service that monitors a folder, reads incoming barcode images, and logs quality metrics.
-// Tags: barcode symbology, reading, console, aspose.barcode, folder monitoring
+// Tags: barcode generation, barcode recognition, quality metrics, file monitoring, aspose.barcode, csharp
 
 using System;
 using System.IO;
 using Aspose.BarCode;
+using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Simple console application that scans a folder for barcode images,
-/// reads any barcodes using Aspose.BarCode, and logs quality metrics.
+/// Demonstrates generating sample barcode images, reading them, and logging quality metrics.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Accepts an optional folder path argument, processes up to five image files,
-    /// and writes barcode type, text, reading quality, and confidence to the console.
+    /// Entry point of the application. Generates barcodes, reads them, and writes log entries.
     /// </summary>
-    /// <param name="args">Command‑line arguments; first argument may specify the folder to monitor.</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Determine the folder to monitor. Use a default if not provided.
-        string folderPath = args.Length > 0 ? args[0] : "Barcodes";
+        // Define the folder to store and read barcode images
+        string folderPath = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
+        Directory.CreateDirectory(folderPath);
 
-        // Verify that the folder exists before proceeding.
-        if (!Directory.Exists(folderPath))
-        {
-            Console.WriteLine($"Folder not found: {folderPath}");
-            return;
-        }
+        // Path for the log file
+        string logFilePath = Path.Combine(folderPath, "barcode_log.txt");
 
-        // Define supported image extensions and collect up to five matching files.
-        string[] supportedExtensions = new[] { ".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff", ".gif" };
-        string[] allFiles = Directory.GetFiles(folderPath);
-        var imageFiles = new System.Collections.Generic.List<string>();
-        foreach (var file in allFiles)
+        // Sample barcode data to generate
+        string[] sampleCodes = new string[]
         {
-            if (imageFiles.Count >= 5) break; // Limit to five files.
-            if (Array.Exists(supportedExtensions, ext => ext.Equals(Path.GetExtension(file), StringComparison.OrdinalIgnoreCase)))
+            "CODE128-12345",
+            "QR-HELLO",
+            "DATAMATRIX-987654321"
+        };
+
+        // Generate sample barcode images
+        foreach (string code in sampleCodes)
+        {
+            // Choose symbology based on code prefix
+            BaseEncodeType encodeType;
+            if (code.StartsWith("CODE128"))
+                encodeType = EncodeTypes.Code128;
+            else if (code.StartsWith("QR"))
+                encodeType = EncodeTypes.QR;
+            else
+                encodeType = EncodeTypes.DataMatrix;
+
+            string fileName = $"{code}.png";
+            string filePath = Path.Combine(folderPath, fileName);
+
+            // Create and save the barcode image as PNG
+            using (var generator = new BarcodeGenerator(encodeType, code))
             {
-                imageFiles.Add(file);
+                generator.Save(filePath);
             }
         }
 
-        // If no supported images were found, inform the user and exit.
-        if (imageFiles.Count == 0)
+        // Process each PNG file in the folder
+        string[] imageFiles = Directory.GetFiles(folderPath, "*.png");
+        foreach (string imageFile in imageFiles)
         {
-            Console.WriteLine("No barcode image files found in the folder.");
-            return;
-        }
-
-        // Process each image file individually.
-        foreach (var imagePath in imageFiles)
-        {
-            // Ensure the file still exists before attempting to read it.
-            if (!File.Exists(imagePath))
+            if (!File.Exists(imageFile))
             {
-                Console.WriteLine($"File not found: {imagePath}");
+                Console.WriteLine($"File not found: {imageFile}");
                 continue;
             }
 
-            Console.WriteLine($"Processing file: {Path.GetFileName(imagePath)}");
-
-            // Create a barcode reader for the image, enabling all supported decode types.
-            using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
+            // Initialize the barcode reader for all supported types
+            using (var reader = new BarCodeReader(imageFile, DecodeType.AllSupportedTypes))
             {
-                // Apply normal quality settings for reading.
-                reader.QualitySettings = QualitySettings.NormalQuality;
-
-                // Attempt to read all barcodes present in the image.
-                var results = reader.ReadBarCodes();
-
-                // If no barcodes were detected, report and continue to the next file.
-                if (results == null || results.Length == 0)
+                // Read all barcodes in the image
+                foreach (var result in reader.ReadBarCodes())
                 {
-                    Console.WriteLine("  No barcodes detected.");
-                    continue;
-                }
+                    // Prepare log entry with file name, barcode type, text, and quality
+                    string logEntry = $"File: {Path.GetFileName(imageFile)} | Type: {result.CodeTypeName} | Text: {result.CodeText} | Quality: {result.ReadingQuality}";
 
-                // Log quality metrics for each detected barcode.
-                foreach (var result in results)
-                {
-                    Console.WriteLine($"  Type: {result.CodeTypeName}");
-                    Console.WriteLine($"  CodeText: {result.CodeText}");
-                    Console.WriteLine($"  ReadingQuality: {result.ReadingQuality}%");
-                    Console.WriteLine($"  Confidence: {result.Confidence}");
+                    // Output to console for immediate feedback
+                    Console.WriteLine(logEntry);
+
+                    // Append the log entry to the log file
+                    try
+                    {
+                        File.AppendAllText(logFilePath, logEntry + Environment.NewLine);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Failed to write log: {ex.Message}");
+                    }
                 }
             }
         }
 
-        // Indicate that processing of all files has completed.
-        Console.WriteLine("Processing completed.");
+        // Indicate completion of processing
+        Console.WriteLine("Barcode processing completed.");
     }
 }

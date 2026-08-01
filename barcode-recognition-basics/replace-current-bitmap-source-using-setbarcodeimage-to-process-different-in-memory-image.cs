@@ -1,69 +1,70 @@
-// Title: Demonstrate SetBarCodeImage to replace barcode source
-// Description: Shows how to generate two barcode images in memory, read the first, then replace the reader's image with a second barcode using SetBarCodeImage.
+// Title: Replace barcode image source using SetBarCodeImage
+// Description: Demonstrates how to replace the image source of a BarCodeReader with a different in‑memory bitmap.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator to create a barcode, BarCodeReader to decode it, and the SetBarCodeImage method to swap the source image at runtime. Developers working with dynamic image streams, in‑memory processing, or custom image pipelines commonly need these APIs to read barcodes without persisting intermediate files.
 // Prompt: Replace the current bitmap source using SetBarCodeImage to process a different in‑memory image.
-// Tags: barcode, setbarcodeimage, in-memory, code128, aspose.barcode
+// Tags: barcode, setbarcodeimage, in-memory image, code128, generation, recognition, aspose.barcode
 
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that demonstrates replacing the bitmap source of a <see cref="BarCodeReader"/>
-/// with a different in‑memory image using <c>SetBarCodeImage</c>.
+/// Example program that generates a Code128 barcode, reads it, then replaces the
+/// source image with a new in‑memory bitmap using <c>SetBarCodeImage</c>.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates two Code128 barcodes in memory, reads the first,
-    /// then swaps the reader's image to the second barcode and reads again.
+    /// Entry point of the example. Generates a barcode, reads it, swaps the image,
+    /// and attempts to read again.
     /// </summary>
     static void Main()
     {
-        // Generate the first barcode image (Code128) and keep it in a memory stream
-        using (var generator1 = new BarcodeGenerator(EncodeTypes.Code128, "First123"))
+        // Generate a simple Code128 barcode and keep it in memory
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123ABC"))
         {
-            using (var stream1 = new MemoryStream())
+            using (Bitmap originalBitmap = generator.GenerateBarCodeImage())
             {
-                generator1.Save(stream1, BarCodeImageFormat.Png);
-                stream1.Position = 0; // Reset stream position for reading
+                // Save the original image to a file (optional, just for visual verification)
+                const string originalPath = "original.png";
+                originalBitmap.Save(originalPath, ImageFormat.Png);
+                Console.WriteLine($"Original barcode saved to {originalPath}");
 
-                // Load the first image into a Bitmap object
-                using (var bitmap1 = new Bitmap(stream1))
+                // Create a BarCodeReader using the generated bitmap
+                using (var reader = new BarCodeReader(originalBitmap, DecodeType.Code128))
                 {
-                    // Create a reader for the first bitmap, configured for Code128 decoding
-                    using (var reader = new BarCodeReader(bitmap1, DecodeType.Code128))
+                    // Read and display the first detected barcode from the original image
+                    foreach (BarCodeResult result in reader.ReadBarCodes())
                     {
-                        Console.WriteLine("Reading first barcode:");
-                        foreach (BarCodeResult result in reader.ReadBarCodes())
+                        Console.WriteLine($"Detected barcode (original image): Type={result.CodeTypeName}, Text={result.CodeText}");
+                    }
+
+                    // Create a different in‑memory image (blank white bitmap)
+                    using (Bitmap newBitmap = new Bitmap(200, 100, PixelFormat.Format32bppArgb))
+                    {
+                        using (Graphics graphics = Graphics.FromImage(newBitmap))
                         {
-                            Console.WriteLine($"  Type: {result.CodeTypeName}, Text: {result.CodeText}");
+                            // Fill the bitmap with white background
+                            graphics.Clear(Color.White);
                         }
 
-                        // Generate the second barcode image (Code128) in a new memory stream
-                        using (var generator2 = new BarcodeGenerator(EncodeTypes.Code128, "Second456"))
+                        // Replace the bitmap source of the reader with the new image
+                        reader.SetBarCodeImage(newBitmap);
+
+                        // Attempt to read barcodes from the new image
+                        bool anyFound = false;
+                        foreach (BarCodeResult result in reader.ReadBarCodes())
                         {
-                            using (var stream2 = new MemoryStream())
-                            {
-                                generator2.Save(stream2, BarCodeImageFormat.Png);
-                                stream2.Position = 0; // Reset stream position for reading
+                            anyFound = true;
+                            Console.WriteLine($"Detected barcode (new image): Type={result.CodeTypeName}, Text={result.CodeText}");
+                        }
 
-                                // Load the second image into a Bitmap object
-                                using (var bitmap2 = new Bitmap(stream2))
-                                {
-                                    // Replace the bitmap source of the existing reader with the second image
-                                    reader.SetBarCodeImage(bitmap2);
-
-                                    Console.WriteLine("Reading after replacing bitmap source:");
-                                    foreach (BarCodeResult result in reader.ReadBarCodes())
-                                    {
-                                        Console.WriteLine($"  Type: {result.CodeTypeName}, Text: {result.CodeText}");
-                                    }
-                                }
-                            }
+                        if (!anyFound)
+                        {
+                            Console.WriteLine("No barcode detected in the new image after SetBarCodeImage.");
                         }
                     }
                 }

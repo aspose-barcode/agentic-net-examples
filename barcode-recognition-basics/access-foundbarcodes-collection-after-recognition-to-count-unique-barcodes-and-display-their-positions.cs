@@ -1,81 +1,84 @@
-// Title: Barcode Generation, Recognition, and Position Reporting
-// Description: Generates a Code128 barcode image, reads it back, counts unique barcodes, and prints their positions.
+// Title: Count Unique Barcodes and Display Their Positions
+// Description: Generates a Code128 barcode image, recognizes all barcodes in the image, counts unique entries, and prints each barcode's text with its location.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It demonstrates how to use BarcodeGenerator to create barcodes and BarCodeReader to detect them, covering typical use cases such as inventory scanning, document processing, and quality control where developers need to extract barcode data and spatial information from images.
 // Prompt: Access FoundBarCodes collection after recognition to count unique barcodes and display their positions.
-// Tags: code128, barcode generation, barcode recognition, unique count, position output, aspose.barcode
+// Tags: code128, barcode recognition, console output, barcodelibrary, barcodelgeneration, barcoderecognition
 
 using System;
-using System.Collections.Generic;
 using System.IO;
-using Aspose.BarCode;
+using System.Linq;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates how to generate a barcode, recognize it, count unique values,
-/// and display the position of each detected barcode using Aspose.BarCode.
+/// Demonstrates barcode generation, recognition, unique count, and position reporting using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a barcode image, reads it,
-    /// and outputs detection details to the console.
+    /// Entry point. Generates a barcode, reads it, counts unique codes, and prints their positions.
     /// </summary>
     static void Main()
     {
-        // ------------------------------------------------------------
-        // Step 1: Generate a sample barcode image (Code128, text "ABC123")
-        // ------------------------------------------------------------
+        // Define a temporary file path for the generated barcode image.
         string imagePath = "sample_barcode.png";
+
+        // Generate a Code128 barcode image with the text "ABC123".
         using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "ABC123"))
         {
-            // Save the generated barcode as a PNG file
-            generator.Save(imagePath, BarCodeImageFormat.Png);
+            generator.Save(imagePath);
         }
 
-        // ------------------------------------------------------------
-        // Step 2: Verify that the image file was created successfully
-        // ------------------------------------------------------------
+        // Verify that the image file was successfully created.
         if (!File.Exists(imagePath))
         {
             Console.WriteLine("Failed to create barcode image.");
             return;
         }
 
-        // ------------------------------------------------------------
-        // Step 3: Read barcodes from the generated image
-        // ------------------------------------------------------------
+        // Initialize a barcode reader to detect all supported barcode types in the image.
         using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
         {
-            // Perform recognition of all supported barcode types
+            // Perform the recognition process.
             reader.ReadBarCodes();
 
-            // --------------------------------------------------------
-            // Step 4: Access the FoundBarCodes collection
-            // --------------------------------------------------------
-            BarCodeResult[] results = reader.FoundBarCodes;
-            int totalCount = results.Length;
-            Console.WriteLine($"Total barcodes detected: {totalCount}");
+            // Retrieve the collection of detected barcodes.
+            var foundBarCodes = reader.FoundBarCodes;
+            int totalDetected = foundBarCodes?.Length ?? 0;
+            Console.WriteLine($"Total barcodes detected: {totalDetected}");
 
-            // --------------------------------------------------------
-            // Step 5: Count unique barcodes based on their CodeText
-            // --------------------------------------------------------
-            var uniqueSet = new HashSet<string>();
-            foreach (var result in results)
+            // Exit early if no barcodes were found.
+            if (totalDetected == 0)
             {
-                uniqueSet.Add(result.CodeText);
+                return;
             }
-            Console.WriteLine($"Unique barcodes count: {uniqueSet.Count}");
 
-            // --------------------------------------------------------
-            // Step 6: Display positions (region) of each detected barcode
-            // --------------------------------------------------------
-            for (int i = 0; i < totalCount; i++)
+            // Determine the number of unique barcodes based on their CodeText values.
+            var uniqueBarCodes = foundBarCodes
+                .GroupBy(r => r.CodeText)
+                .Select(g => g.First())
+                .ToArray();
+
+            Console.WriteLine($"Unique barcodes count: {uniqueBarCodes.Length}");
+
+            // Iterate through all detected barcodes and display their text and bounding rectangle.
+            foreach (var result in foundBarCodes)
             {
-                var result = results[i];
                 var rect = result.Region.Rectangle;
-                Console.WriteLine(
-                    $"Barcode {i + 1}: Text = '{result.CodeText}', Position = (X={rect.X}, Y={rect.Y}, Width={rect.Width}, Height={rect.Height})");
+                Console.WriteLine($"CodeText: {result.CodeText}");
+                Console.WriteLine($"Position - X:{rect.X}, Y:{rect.Y}, Width:{rect.Width}, Height:{rect.Height}");
+                Console.WriteLine();
             }
+        }
+
+        // Clean up the temporary image file.
+        try
+        {
+            File.Delete(imagePath);
+        }
+        catch
+        {
+            // Suppress any exceptions that occur during cleanup.
         }
     }
 }

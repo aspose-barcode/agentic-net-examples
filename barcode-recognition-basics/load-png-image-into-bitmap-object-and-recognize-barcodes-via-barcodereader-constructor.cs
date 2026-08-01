@@ -1,43 +1,54 @@
-// Title: Barcode Recognition from PNG using Aspose.BarCode
-// Description: Loads a PNG image into a Bitmap and uses BarCodeReader to detect and output all supported barcode types found in the image.
+// Title: Barcode generation and recognition from a PNG bitmap
+// Description: Demonstrates creating a Code128 barcode, loading it into a Bitmap, and recognizing it using BarCodeReader.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator, BarCodeReader, and related classes to produce a barcode image in memory, load it via Aspose.Drawing.Bitmap, and decode it. Developers often need to process barcode images without writing to disk, making in‑memory operations essential for web services and automated pipelines.
 // Prompt: Load a PNG image into a Bitmap object and recognize barcodes via BarCodeReader constructor.
-// Tags: barcode, recognition, png, aspose, csharp
+// Tags: code128, barcode generation, barcode recognition, png, aspose.barcode, aspose.drawing
 
 using System;
 using System.IO;
-using Aspose.Drawing;
+using Aspose.BarCode;
+using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates loading a PNG image and recognizing any barcodes it contains using Aspose.BarCode.
+/// Example program that generates a Code128 barcode, loads it into a Bitmap,
+/// and reads the barcode using Aspose.BarCode's BarCodeReader.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Loads the image, creates a reader, and prints detected barcode information.
+    /// Entry point of the example. Generates a barcode, creates a bitmap from it,
+    /// and prints the detected barcode type and text to the console.
     /// </summary>
     static void Main()
     {
-        // Path to the PNG image file
-        const string imagePath = "sample.png";
+        // Define the barcode content.
+        string codeText = "1234567890";
 
-        // Verify that the image file exists before attempting to load it
-        if (!File.Exists(imagePath))
+        // Generate the barcode image in memory using a PNG format.
+        using (MemoryStream ms = new MemoryStream())
         {
-            Console.WriteLine($"File not found: {imagePath}");
-            return;
-        }
-
-        // Load the PNG image into an Aspose.Drawing.Bitmap instance
-        using (Bitmap bitmap = new Bitmap(imagePath))
-        // Initialize BarCodeReader with the bitmap, configuring it to detect all supported barcode types
-        using (BarCodeReader reader = new BarCodeReader(bitmap, DecodeType.AllSupportedTypes))
-        {
-            // Iterate through all detected barcodes and output their type and decoded text
-            foreach (var result in reader.ReadBarCodes())
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
             {
-                Console.WriteLine($"BarCode Type: {result.CodeTypeName}");
-                Console.WriteLine($"BarCode Text: {result.CodeText}");
+                generator.Save(ms, BarCodeImageFormat.Png);
+                ms.Position = 0; // Reset stream position for reading.
+            }
+
+            // Load the generated PNG image into an Aspose.Drawing.Bitmap.
+            using (Bitmap bitmap = new Bitmap(ms))
+            {
+                // Initialize the BarCodeReader to decode Code128 barcodes from the bitmap.
+                using (var reader = new BarCodeReader(bitmap, DecodeType.Code128))
+                {
+                    // Iterate through all detected barcodes and output their details.
+                    foreach (var result in reader.ReadBarCodes())
+                    {
+                        Console.WriteLine($"Detected Type: {result.CodeTypeName}");
+                        Console.WriteLine($"Code Text: {result.CodeText}");
+                    }
+                }
             }
         }
     }

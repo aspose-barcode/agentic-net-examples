@@ -1,7 +1,8 @@
-// Title: Barcode quality assessment integration for inventory records
-// Description: Demonstrates generating barcodes, reading them, capturing reading quality, and storing it with inventory data.
+// Title: Barcode Quality Assessment for Warehouse Inventory
+// Description: Demonstrates generating Code128 barcodes, reading them, capturing reading quality, and storing results with inventory data.
+// Category-Description: This example belongs to Aspose.BarCode generation and recognition operations. It shows how to use BarcodeGenerator to create barcodes, BarCodeReader to decode them, and retrieve the ReadingQuality metric. Typical use cases include inventory management, quality control, and integration of barcode data into business systems. Developers often need to generate barcodes, assess scan reliability, and persist the information alongside product records.
 // Prompt: Integrate barcode quality assessment into a warehouse management system by storing ReadingQuality alongside inventory records.
-// Tags: barcode, quality-assessment, inventory, json, aspose.barcode, code128
+// Tags: code128, barcode generation, barcode recognition, readingquality, png, json, inventory, aspose.barcode, aspose.barcode.generation, aspose.barcode.recognition
 
 using System;
 using System.Collections.Generic;
@@ -10,83 +11,80 @@ using System.Text.Json;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
-/// <summary>
-/// Represents an inventory item with barcode and reading quality information.
-/// </summary>
-class InventoryItem
+namespace WarehouseBarcodeDemo
 {
-    public int Id { get; set; }
-    public string Name { get; set; }
-    public string BarcodeValue { get; set; }
-    public double ReadingQuality { get; set; }
-}
-
-/// <summary>
-/// Entry point of the sample program that generates barcodes, evaluates their reading quality, and saves inventory data to JSON.
-/// </summary>
-class Program
-{
-    static void Main()
+    /// <summary>
+    /// Simple inventory record that includes barcode reading quality.
+    /// </summary>
+    public class InventoryRecord
     {
-        // Sample inventory records to be processed
-        var items = new List<InventoryItem>
-        {
-            new InventoryItem { Id = 1, Name = "Widget A", BarcodeValue = "WGT001" },
-            new InventoryItem { Id = 2, Name = "Widget B", BarcodeValue = "WGT002" },
-            new InventoryItem { Id = 3, Name = "Widget C", BarcodeValue = "WGT003" }
-        };
+        public int Id { get; set; }
+        public string Name { get; set; }
+        public string CodeText { get; set; }
+        public double ReadingQuality { get; set; }
+    }
 
-        // Directory for temporary barcode images
-        string tempDir = Path.Combine(Path.GetTempPath(), "BarcodeSamples");
-        if (!Directory.Exists(tempDir))
+    /// <summary>
+    /// Demonstrates barcode generation, recognition, and quality capture for inventory items.
+    /// </summary>
+    class Program
+    {
+        /// <summary>
+        /// Entry point. Generates barcodes for sample inventory, reads them to obtain quality metrics,
+        /// and serializes the enriched records to a JSON file.
+        /// </summary>
+        static void Main()
         {
-            // Ensure the temporary directory exists
-            Directory.CreateDirectory(tempDir);
-        }
-
-        // Process each inventory item
-        foreach (var item in items)
-        {
-            // Path for the generated barcode image
-            string imagePath = Path.Combine(tempDir, $"barcode_{item.Id}.png");
-
-            // Generate barcode image for the current item
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, item.BarcodeValue))
+            // Define sample inventory items.
+            var inventory = new List<InventoryRecord>
             {
-                // Optional visual settings for better contrast
-                generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-                generator.Parameters.BackColor = Aspose.Drawing.Color.White;
-                generator.Save(imagePath);
+                new InventoryRecord { Id = 1, Name = "Widget A", CodeText = "WIDGETA123" },
+                new InventoryRecord { Id = 2, Name = "Gadget B", CodeText = "GADGETB456" }
+            };
+
+            // Ensure the output directory for barcode images exists.
+            string barcodeDir = "Barcodes";
+            if (!Directory.Exists(barcodeDir))
+            {
+                Directory.CreateDirectory(barcodeDir);
             }
 
-            // Read the generated barcode and capture its reading quality
-            using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
+            // Process each inventory item: generate barcode, read it, and store quality.
+            foreach (var item in inventory)
             {
-                foreach (var result in reader.ReadBarCodes())
+                // Build the file path for the barcode image.
+                string imagePath = Path.Combine(barcodeDir, $"barcode_{item.Id}.png");
+
+                // Generate a Code128 barcode image from the item's CodeText.
+                using (var generator = new BarcodeGenerator(EncodeTypes.Code128, item.CodeText))
                 {
-                    // Assuming the first detected barcode corresponds to our generated one
-                    item.ReadingQuality = result.ReadingQuality;
-                    break;
+                    generator.Save(imagePath, BarCodeImageFormat.Png);
+                }
+
+                // Read the generated barcode and capture its reading quality.
+                using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
+                {
+                    // Iterate over detected barcodes (expecting one per image).
+                    foreach (var result in reader.ReadBarCodes())
+                    {
+                        // ReadingQuality is a double representing the quality percentage.
+                        item.ReadingQuality = result.ReadingQuality;
+                        // Process only the first detected barcode for this image.
+                        break;
+                    }
                 }
             }
 
-            // Clean up the temporary image file
-            if (File.Exists(imagePath))
-            {
-                File.Delete(imagePath);
-            }
+            // Serialize the enriched inventory records to a formatted JSON file.
+            string jsonPath = "inventory.json";
+            string json = JsonSerializer.Serialize(inventory, new JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText(jsonPath, json);
+
+            // Output summary information to the console.
+            Console.WriteLine($"Processed {inventory.Count} inventory items.");
+            Console.WriteLine($"Barcode images saved in '{barcodeDir}'.");
+            Console.WriteLine($"Inventory data with reading quality saved to '{jsonPath}'.");
         }
-
-        // Serialize the inventory list, including reading quality, to a JSON file
-        string jsonPath = Path.Combine(Environment.CurrentDirectory, "inventory.json");
-        var jsonOptions = new JsonSerializerOptions { WriteIndented = true };
-        string json = JsonSerializer.Serialize(items, jsonOptions);
-        File.WriteAllText(jsonPath, json);
-
-        // Inform the user where the output has been saved
-        Console.WriteLine("Inventory records with barcode reading quality have been saved to:");
-        Console.WriteLine(jsonPath);
     }
 }

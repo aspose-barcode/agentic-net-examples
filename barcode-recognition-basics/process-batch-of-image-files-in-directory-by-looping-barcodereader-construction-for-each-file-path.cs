@@ -1,64 +1,75 @@
-// Title: Batch Barcode Reading from Directory
-// Description: Demonstrates reading barcodes from multiple image files in a folder by creating a BarCodeReader for each file.
+// Title: Batch barcode reading from image files
+// Description: Generates sample Code128 barcodes as PNG images, then reads each image to extract barcode data.
+// Category-Description: This example demonstrates combined barcode generation and recognition using Aspose.BarCode. It showcases the BarcodeGenerator for creating barcodes and BarCodeReader for decoding them, a common workflow for batch processing of scanned documents, inventory images, or automated data entry systems. Developers often need to loop through files, construct readers per image, and handle multiple symbologies efficiently.
 // Prompt: Process a batch of image files in a directory by looping BarCodeReader construction for each file path.
-// Tags: barcode, batch processing, image, aspose, barcodereader, console
+// Tags: code128, batch-processing, png, barcodegenerator, barcodereader, decode, encode
 
 using System;
 using System.IO;
+using Aspose.BarCode;
+using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Example program that scans a set of image files for barcodes using Aspose.BarCode.
+/// Demonstrates how to generate a set of barcode images and then read them in a batch
+/// using Aspose.BarCode's <see cref="BarcodeGenerator"/> and <see cref="BarCodeReader"/> classes.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Loops through a limited number of image files in a directory,
-    /// creates a <see cref="BarCodeReader"/> for each, and prints detected barcode information.
+    /// Entry point of the example. Creates sample barcode PNG files, then iterates over each file,
+    /// constructs a <see cref="BarCodeReader"/> for it, and outputs the decoded information.
     /// </summary>
-    /// <param name="args">
-    /// Optional command‑line argument specifying the directory path containing barcode images.
-    /// If omitted, the program defaults to a folder named "Barcodes".
-    /// </param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Determine the directory containing barcode images.
-        // Use the first command‑line argument if provided; otherwise default to "Barcodes".
-        string directoryPath = args.Length > 0 ? args[0] : "Barcodes";
-
-        // Verify that the directory exists before proceeding.
-        if (!Directory.Exists(directoryPath))
+        // --------------------------------------------------------------------
+        // Set up a folder to store generated barcode images
+        // --------------------------------------------------------------------
+        string folderPath = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
+        if (!Directory.Exists(folderPath))
         {
-            Console.WriteLine($"Directory not found: {directoryPath}");
-            return;
+            Directory.CreateDirectory(folderPath);
         }
 
-        // Retrieve all files in the directory (any extension).
-        string[] files = Directory.GetFiles(directoryPath);
-
-        // Limit processing to a safe sample size (up to 5 files) to avoid long runtimes.
-        int maxFiles = Math.Min(5, files.Length);
-
-        // Iterate over each selected file.
-        for (int i = 0; i < maxFiles; i++)
+        // --------------------------------------------------------------------
+        // Generate a few sample Code128 barcode images (self‑contained example)
+        // --------------------------------------------------------------------
+        for (int i = 1; i <= 5; i++)
         {
-            string filePath = files[i];
+            string fileName = $"barcode{i}.png";
+            string filePath = Path.Combine(folderPath, fileName);
 
-            // Ensure the file still exists (it could have been removed after the initial listing).
-            if (!File.Exists(filePath))
+            // Create a barcode generator for Code128 with sample text
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, $"Sample{i}"))
             {
-                Console.WriteLine($"File not found: {filePath}");
+                // Save the generated barcode as a PNG file
+                generator.Save(filePath);
+            }
+        }
+
+        // --------------------------------------------------------------------
+        // Retrieve all PNG files from the folder for processing
+        // --------------------------------------------------------------------
+        string[] imageFiles = Directory.GetFiles(folderPath, "*.png");
+        foreach (string imageFile in imageFiles)
+        {
+            // Verify that the file still exists before attempting to read it
+            if (!File.Exists(imageFile))
+            {
+                Console.WriteLine($"File not found: {imageFile}");
                 continue;
             }
 
-            // Create a BarCodeReader for the current image file.
-            using (BarCodeReader reader = new BarCodeReader(filePath))
+            // ----------------------------------------------------------------
+            // Create a BarCodeReader for the current image and decode all supported types
+            // ----------------------------------------------------------------
+            using (var reader = new BarCodeReader(imageFile, DecodeType.AllSupportedTypes))
             {
-                // Read all barcodes detected in the image.
+                // Iterate through all detected barcodes in the image
                 foreach (var result in reader.ReadBarCodes())
                 {
-                    // Output file name, barcode type, and decoded text.
-                    Console.WriteLine($"File: {Path.GetFileName(filePath)} | Type: {result.CodeTypeName} | Text: {result.CodeText}");
+                    Console.WriteLine($"File: {Path.GetFileName(imageFile)} | Type: {result.CodeTypeName} | Text: {result.CodeText}");
                 }
             }
         }

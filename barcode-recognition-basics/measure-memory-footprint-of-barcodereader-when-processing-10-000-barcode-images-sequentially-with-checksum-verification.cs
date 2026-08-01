@@ -1,74 +1,93 @@
 // Title: Measure memory usage of BarCodeReader with checksum validation
-// Description: Demonstrates generating and reading Code128 barcodes while measuring the process memory before and after handling a set of images.
+// Description: Demonstrates how to generate 10,000 Code128 barcode images, read them sequentially with checksum verification, and measure the memory footprint of BarCodeReader.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, illustrating the use of BarCodeReader and BarcodeGenerator for bulk processing. It shows typical scenarios where developers need to evaluate memory consumption while decoding large numbers of barcodes with checksum validation enabled, using classes such as BarcodeGenerator, BarCodeReader, and related settings.
 // Prompt: Measure memory footprint of BarCodeReader when processing 10,000 barcode images sequentially with checksum verification enabled.
-// Tags: barcode, code128, memory, checksum, barcodereader, barcodegenerator
+// Tags: code128, checksum, memory, barcodereader, barcodegenerator, png, aspose.barcode
 
 using System;
-using System.Diagnostics;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates a few Code128 barcodes, reads them with checksum validation,
-/// and reports the memory consumption before and after processing.
+/// Demonstrates measuring the memory footprint of <see cref="BarCodeReader"/> when processing a large number of barcode images with checksum validation enabled.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Measures memory usage while processing barcode images.
+    /// Entry point of the example. Generates sample barcode images, reads them with checksum validation, and reports memory usage.
     /// </summary>
     static void Main()
     {
-        // Sample barcode texts (Code128 includes checksum automatically)
-        string[] codes = new string[]
+        // --------------------------------------------------------------------
+        // Create a temporary folder for sample barcode images
+        // --------------------------------------------------------------------
+        string folder = Path.Combine(Path.GetTempPath(), "AsposeBarCodeSample");
+        if (!Directory.Exists(folder))
         {
-            "123456789012",
-            "987654321098",
-            "555555555555",
-            "111111111111",
-            "222222222222"
-        };
+            Directory.CreateDirectory(folder);
+        }
 
-        // Force garbage collection and capture baseline memory usage
-        GC.Collect();
-        GC.WaitForPendingFinalizers();
+        // --------------------------------------------------------------------
+        // Number of images to process (scaled down for demo; replace with 10000 for real measurement)
+        // --------------------------------------------------------------------
+        int sampleCount = 10;
+
+        // --------------------------------------------------------------------
+        // Generate sample barcode images (Code128) and save them as PNG files
+        // --------------------------------------------------------------------
+        for (int i = 0; i < sampleCount; i++)
+        {
+            string filePath = Path.Combine(folder, $"barcode_{i}.png");
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, $"CODE{i:D5}"))
+            {
+                generator.Save(filePath, BarCodeImageFormat.Png);
+            }
+        }
+
+        // --------------------------------------------------------------------
+        // Record memory usage before processing the images
+        // --------------------------------------------------------------------
         long memoryBefore = GC.GetTotalMemory(true);
 
-        // Process each barcode image sequentially
-        foreach (string code in codes)
+        // --------------------------------------------------------------------
+        // Process each image sequentially with checksum validation enabled
+        // --------------------------------------------------------------------
+        for (int i = 0; i < sampleCount; i++)
         {
-            // Generate barcode image into a memory stream
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, code))
+            string filePath = Path.Combine(folder, $"barcode_{i}.png");
+            if (!File.Exists(filePath))
             {
-                using (var ms = new MemoryStream())
-                {
-                    generator.Save(ms, BarCodeImageFormat.Png);
-                    ms.Position = 0; // Reset stream position for reading
+                Console.WriteLine($"File not found: {filePath}");
+                continue;
+            }
 
-                    // Read the barcode with checksum validation enabled
-                    using (var reader = new BarCodeReader(ms, DecodeType.Code128))
-                    {
-                        reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
-                        foreach (var result in reader.ReadBarCodes())
-                        {
-                            Console.WriteLine($"Detected: Type={result.CodeTypeName}, Text={result.CodeText}");
-                        }
-                    }
+            using (var reader = new BarCodeReader(filePath, DecodeType.Code128))
+            {
+                // Enable checksum validation for each read operation
+                reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
+
+                // Iterate through all detected barcodes in the image
+                foreach (var result in reader.ReadBarCodes())
+                {
+                    // Output the type and text of the decoded barcode
+                    Console.WriteLine($"Read {result.CodeTypeName}: {result.CodeText}");
                 }
             }
         }
 
-        // Force garbage collection and capture final memory usage
-        GC.Collect();
-        GC.WaitForPendingFinalizers();
+        // --------------------------------------------------------------------
+        // Record memory usage after processing and calculate the difference
+        // --------------------------------------------------------------------
         long memoryAfter = GC.GetTotalMemory(true);
+        long memoryUsed = memoryAfter - memoryBefore;
 
+        // --------------------------------------------------------------------
         // Output memory consumption details
-        Console.WriteLine($"Memory before processing: {memoryBefore / 1024} KB");
-        Console.WriteLine($"Memory after processing:  {memoryAfter / 1024} KB");
-        Console.WriteLine($"Memory increase: { (memoryAfter - memoryBefore) / 1024 } KB");
+        // --------------------------------------------------------------------
+        Console.WriteLine($"Memory before: {memoryBefore} bytes");
+        Console.WriteLine($"Memory after: {memoryAfter} bytes");
+        Console.WriteLine($"Memory used during processing: {memoryUsed} bytes");
     }
 }

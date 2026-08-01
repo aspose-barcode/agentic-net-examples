@@ -1,65 +1,59 @@
 // Title: Read Barcode from Remote Image via Network Stream
-// Description: Demonstrates using Aspose.BarCode to read barcodes directly from a network stream without saving the image locally.
+// Description: Demonstrates downloading a barcode image from a URL and decoding it directly from the network stream without saving to disk.
+// Category-Description: This example belongs to the Aspose.BarCode recognition category, showcasing how to use the BarCodeReader class to extract barcode data from images obtained over HTTP. Typical use cases include processing barcodes from web services, cloud storage, or any remote source where persisting the image locally is undesirable. Developers often need to stream image data directly into the reader to improve performance and reduce I/O overhead.
 // Prompt: Provide a network stream to SetBarCodeImage for reading barcodes from remote image data without saving locally.
-// Tags: barcode, read, network stream, aspose, c#
+// Tags: barcode symbology, read, console, barcodereader, httpclient
 
 using System;
 using System.IO;
 using System.Net.Http;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Example program that downloads a barcode image from a remote URL and reads barcodes using a network stream.
+/// Example program that downloads a barcode image from a remote URL and reads all supported barcode types directly from the network stream.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Downloads an image, sets it as the source for BarCodeReader, and outputs detected barcodes.
+    /// Entry point of the application. Performs HTTP download, streams the image to BarCodeReader, and prints detected barcode information.
     /// </summary>
     static void Main()
     {
-        // Remote image URL containing a barcode
+        // URL of the remote barcode image. Replace with a valid image URL.
         const string imageUrl = "https://example.com/barcode.png";
 
-        // Create an HttpClient to download the image as a stream without writing to disk
+        // Create an HttpClient instance for downloading the image.
         using (var httpClient = new HttpClient())
         {
             try
             {
-                // Retrieve the image data as a stream (synchronous wait for simplicity)
-                using (Stream imageStream = httpClient.GetStreamAsync(imageUrl).Result)
+                // Synchronously send GET request to the image URL.
+                using (var response = httpClient.GetAsync(imageUrl).Result)
                 {
-                    // Initialize the barcode reader
-                    using (var reader = new BarCodeReader())
+                    // Throw if the HTTP response indicates failure.
+                    response.EnsureSuccessStatusCode();
+
+                    // Retrieve the response content as a stream.
+                    using (var imageStream = response.Content.ReadAsStreamAsync().Result)
                     {
-                        // Configure the reader to detect all supported barcode types
-                        reader.SetBarCodeReadType(DecodeType.AllSupportedTypes);
-
-                        // Assign the network stream as the image source for barcode detection
-                        reader.SetBarCodeImage(imageStream);
-
-                        // Process up to 5 detected barcodes and output their type and text
-                        int processed = 0;
-                        foreach (var result in reader.ReadBarCodes())
+                        // Initialize BarCodeReader with the image stream, decoding all supported barcode types.
+                        using (var reader = new BarCodeReader(imageStream, DecodeType.AllSupportedTypes))
                         {
-                            Console.WriteLine($"Detected Type: {result.CodeTypeName}, Text: {result.CodeText}");
-                            processed++;
-                            if (processed >= 5) break;
-                        }
-
-                        // Inform the user if no barcodes were found
-                        if (processed == 0)
-                        {
-                            Console.WriteLine("No barcodes were detected in the image.");
+                            // Iterate through each detected barcode and output its type and text.
+                            foreach (var result in reader.ReadBarCodes())
+                            {
+                                Console.WriteLine($"Barcode Type: {result.CodeTypeName}");
+                                Console.WriteLine($"Barcode Text: {result.CodeText}");
+                                Console.WriteLine();
+                            }
                         }
                     }
                 }
             }
             catch (Exception ex)
             {
-                // Handle any errors that occur during download or processing
-                Console.WriteLine($"Error retrieving or processing the image: {ex.Message}");
+                // Output any errors that occur during download or barcode recognition.
+                Console.WriteLine($"Error: {ex.Message}");
             }
         }
     }
