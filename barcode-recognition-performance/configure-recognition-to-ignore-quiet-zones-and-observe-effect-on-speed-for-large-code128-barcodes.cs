@@ -1,7 +1,8 @@
-// Title: Code128 barcode generation and recognition speed comparison
-// Description: Demonstrates generating a large Code128 barcode, then measuring recognition time with normal and high‑performance quality settings to observe speed impact.
+// Title: Code128 Barcode Recognition Speed with Quiet Zone Variations
+// Description: Demonstrates how disabling quiet zones affects recognition speed for large Code128 barcodes.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating Code128 barcodes, BarCodeReader for decoding them, and QualitySettings to control recognition performance. Developers often need to tune quiet zone padding and quality settings to balance accuracy and speed in high‑volume scanning scenarios.
 // Prompt: Configure recognition to ignore quiet zones and observe effect on speed for large Code128 barcodes.
-// Tags: barcode symbology, recognition speed, code128, quiet zones, qualitysettings, aspose.barcode
+// Tags: code128, quiet zone, recognition speed, performance, generation, Aspose.BarCode, barcode, qualitysettings
 
 using System;
 using System.Diagnostics;
@@ -12,81 +13,91 @@ using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates a large Code128 barcode, then measures recognition speed using different quality settings.
+/// Generates two large Code128 barcodes—one with the default quiet zone and one without—and
+/// measures the recognition time using different quality settings to illustrate the impact of quiet zones on performance.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a barcode, verifies the image, and times recognition with normal and high‑performance settings.
+    /// Entry point of the example. Creates barcode images, runs recognition benchmarks, and prints the results.
     /// </summary>
     static void Main()
     {
-        // Prepare a large Code128 barcode text (200 characters)
-        string codeText = new string('A', 200);
+        // Prepare a long Code128 text (200 characters) to simulate a large barcode.
+        string longText = new string('A', 200);
 
-        // Output image file path
-        string imagePath = "code128.png";
+        // Define file names for the generated images.
+        string imageWithQuietZone = "code128_with_quietzone.png";
+        string imageNoQuietZone = "code128_no_quietzone.png";
 
-        // Generate the barcode image and save as PNG
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+        // --------------------------------------------------------------------
+        // Generate a barcode with the default quiet zone (non‑zero padding).
+        // --------------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, longText))
         {
-            generator.Save(imagePath, BarCodeImageFormat.Png);
+            // The default padding is retained; no changes required.
+            generator.Save(imageWithQuietZone, BarCodeImageFormat.Png);
         }
 
-        // Verify that the image file was created successfully
-        if (!File.Exists(imagePath))
+        // --------------------------------------------------------------------
+        // Generate a barcode with all padding set to zero (effectively no quiet zone).
+        // --------------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, longText))
         {
-            Console.WriteLine("Failed to create barcode image.");
-            return;
+            generator.Parameters.Barcode.Padding.Left.Point = 0f;
+            generator.Parameters.Barcode.Padding.Top.Point = 0f;
+            generator.Parameters.Barcode.Padding.Right.Point = 0f;
+            generator.Parameters.Barcode.Padding.Bottom.Point = 0f;
+            generator.Save(imageNoQuietZone, BarCodeImageFormat.Png);
         }
 
-        // -----------------------------------------------------------------
-        // NOTE: Aspose.BarCode does not expose a property to ignore quiet zones
-        // during recognition (generator.Parameters.Barcode.QuietZone does not exist).
-        // Therefore we proceed with standard recognition and focus on measuring
-        // speed differences using different QualitySettings presets.
-        // -----------------------------------------------------------------
-
-        // Measure recognition time with default (NormalQuality) settings
-        TimeSpan normalTime;
-        using (var reader = new BarCodeReader(imagePath, DecodeType.Code128))
+        // --------------------------------------------------------------------
+        // Local function that measures the time required to read all barcodes
+        // from an image using the specified quality settings.
+        // --------------------------------------------------------------------
+        double MeasureRecognition(string imagePath, QualitySettings settings)
         {
-            var sw = Stopwatch.StartNew();
-
-            // Read barcodes; break after first result to keep timing focused
-            foreach (var result in reader.ReadBarCodes())
+            if (!File.Exists(imagePath))
             {
-                // Output detection details for verification
-                Console.WriteLine($"[Normal] Detected: {result.CodeTypeName}, Text: {result.CodeText}");
-                break;
+                Console.WriteLine($"File not found: {imagePath}");
+                return -1;
             }
 
-            sw.Stop();
-            normalTime = sw.Elapsed;
-        }
-
-        // Measure recognition time with HighPerformance preset (faster, lower quality)
-        TimeSpan highPerfTime;
-        using (var reader = new BarCodeReader(imagePath, DecodeType.Code128))
-        {
-            // Apply high‑performance preset to the reader
-            reader.QualitySettings = QualitySettings.HighPerformance;
-
-            var sw = Stopwatch.StartNew();
-
-            // Read barcodes; break after first result
-            foreach (var result in reader.ReadBarCodes())
+            using (var reader = new BarCodeReader(imagePath, DecodeType.Code128))
             {
-                Console.WriteLine($"[HighPerf] Detected: {result.CodeTypeName}, Text: {result.CodeText}");
-                break;
-            }
+                // Apply the requested quality configuration.
+                reader.QualitySettings = settings;
 
-            sw.Stop();
-            highPerfTime = sw.Elapsed;
+                var stopwatch = Stopwatch.StartNew();
+
+                // Iterate through all detected barcodes to ensure full processing.
+                foreach (var result in reader.ReadBarCodes())
+                {
+                    // Output the decoded text (optional, but forces full decode).
+                    Console.WriteLine($"Detected: {result.CodeText}");
+                }
+
+                stopwatch.Stop();
+                return stopwatch.Elapsed.TotalMilliseconds;
+            }
         }
 
-        // Output timing comparison between the two quality settings
-        Console.WriteLine($"Recognition time (NormalQuality): {normalTime.TotalMilliseconds} ms");
-        Console.WriteLine($"Recognition time (HighPerformance): {highPerfTime.TotalMilliseconds} ms");
+        // --------------------------------------------------------------------
+        // Run recognition benchmarks with different quality settings and quiet zone configurations.
+        // --------------------------------------------------------------------
+        double timeWithQuietZone = MeasureRecognition(imageWithQuietZone, QualitySettings.NormalQuality);
+        double timeWithQuietZoneFast = MeasureRecognition(imageWithQuietZone, QualitySettings.HighPerformance);
+        double timeNoQuietZone = MeasureRecognition(imageNoQuietZone, QualitySettings.NormalQuality);
+        double timeNoQuietZoneFast = MeasureRecognition(imageNoQuietZone, QualitySettings.HighPerformance);
+
+        // --------------------------------------------------------------------
+        // Display the timing results.
+        // --------------------------------------------------------------------
+        Console.WriteLine();
+        Console.WriteLine("Recognition timing (ms):");
+        Console.WriteLine($"With quiet zone (NormalQuality): {timeWithQuietZone}");
+        Console.WriteLine($"With quiet zone (HighPerformance): {timeWithQuietZoneFast}");
+        Console.WriteLine($"Without quiet zone (NormalQuality): {timeNoQuietZone}");
+        Console.WriteLine($"Without quiet zone (HighPerformance): {timeNoQuietZoneFast}");
     }
 }

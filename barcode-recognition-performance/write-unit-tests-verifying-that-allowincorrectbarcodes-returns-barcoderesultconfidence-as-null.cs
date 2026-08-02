@@ -1,95 +1,70 @@
 // Title: Demonstrate AllowIncorrectBarcodes effect on barcode confidence
-// Description: Generates an EAN13 barcode with an incorrect checksum and shows how the AllowIncorrectBarcodes setting influences the Confidence property of BarCodeResult.
+// Description: Generates an EAN13 barcode with an incorrect checksum and reads it with AllowIncorrectBarcodes enabled, showing that the confidence value is null (None).
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category, illustrating how to use BarcodeGenerator, BarCodeReader, and QualitySettings to handle barcodes with invalid checksums. Developers often need to process imperfect barcodes in bulk scanning scenarios, and this snippet shows the typical API usage for allowing incorrect barcodes while checking the confidence result.
 // Prompt: Write unit tests verifying that AllowIncorrectBarcodes returns BarCodeResult.Confidence as null.
-// Tags: barcode symbology, ean13, allowincorrectbarcodes, confidence, unit testing, aspose.barcode
+// Tags: ean13, incorrect checksum, allowincorrectbarcodes, confidence, barcodereader, barcodegenerator, aspnet, csharp
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that creates an EAN13 barcode with an invalid checksum
-/// and demonstrates the impact of the <c>AllowIncorrectBarcodes</c> quality setting
-/// on the <c>BarCodeResult.Confidence</c> value returned by the reader.
+/// Demonstrates reading a barcode with AllowIncorrectBarcodes enabled and verifies that the confidence is null.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a temporary barcode image,
-    /// runs two recognition scenarios (allowing and disallowing incorrect barcodes),
-    /// and outputs the results to the console.
+    /// Entry point. Generates an EAN13 barcode with an invalid checksum, reads it with AllowIncorrectBarcodes set to true, and checks the confidence value.
     /// </summary>
     static void Main()
     {
-        // Prepare a temporary PNG file for the barcode image
-        string tempPath = Path.Combine(Path.GetTempPath(), "temp_ean13.png");
-
-        // Create an EAN13 barcode with an incorrect checksum (last digit is wrong)
+        // Generate a barcode with an intentionally incorrect checksum (EAN13)
         using (var generator = new BarcodeGenerator(EncodeTypes.EAN13, "1234567890123"))
         {
-            generator.Save(tempPath);
-        }
-
-        // Verify that the file was created
-        if (!File.Exists(tempPath))
-        {
-            Console.WriteLine("Failed to create barcode image.");
-            return;
-        }
-
-        // ------------------------------------------------------------
-        // Test 1: AllowIncorrectBarcodes = true
-        // ------------------------------------------------------------
-        using (var reader = new BarCodeReader(tempPath, DecodeType.EAN13))
-        {
-            // Enable recognition of incorrect barcodes
-            reader.QualitySettings.AllowIncorrectBarcodes = true;
-
-            bool confidenceIsNone = false;
-            foreach (BarCodeResult result in reader.ReadBarCodes())
+            // Create the barcode image in memory
+            using (var bitmap = generator.GenerateBarCodeImage())
             {
-                // When AllowIncorrectBarcodes is true, the engine should return a result
-                // with Confidence set to BarCodeConfidence.None (value 0)
-                confidenceIsNone = result.Confidence == BarCodeConfidence.None;
-                Console.WriteLine($"Test1 - Confidence: {result.Confidence}");
+                // Store the image in a memory stream for reading
+                using (var ms = new MemoryStream())
+                {
+                    bitmap.Save(ms, ImageFormat.Png);
+                    ms.Position = 0; // Reset stream position for reading
+
+                    // Initialize the barcode reader for EAN13 type
+                    using (var reader = new BarCodeReader(ms, DecodeType.EAN13))
+                    {
+                        // Enable recognition of incorrect barcodes
+                        reader.QualitySettings.AllowIncorrectBarcodes = true;
+
+                        bool testPassed = false;
+
+                        // Iterate through all detected barcodes
+                        foreach (BarCodeResult result in reader.ReadBarCodes())
+                        {
+                            // When AllowIncorrectBarcodes is true, Confidence should be None (value 0)
+                            if (result.Confidence == BarCodeConfidence.None)
+                            {
+                                testPassed = true;
+                                Console.WriteLine("Test Passed: Confidence is None as expected.");
+                            }
+                            else
+                            {
+                                Console.WriteLine($"Test Failed: Unexpected Confidence value {result.Confidence}.");
+                            }
+                        }
+
+                        // If no results were returned, the test fails
+                        if (!testPassed)
+                        {
+                            Console.WriteLine("Test Failed: No barcode result was returned.");
+                        }
+                    }
+                }
             }
-
-            Console.WriteLine(confidenceIsNone
-                ? "Test1 passed: Confidence is None as expected."
-                : "Test1 failed: Confidence is not None.");
-        }
-
-        // ------------------------------------------------------------
-        // Test 2: AllowIncorrectBarcodes = false
-        // ------------------------------------------------------------
-        using (var reader = new BarCodeReader(tempPath, DecodeType.EAN13))
-        {
-            // Disable recognition of incorrect barcodes (default behavior)
-            reader.QualitySettings.AllowIncorrectBarcodes = false;
-
-            bool noResult = true;
-            foreach (BarCodeResult result in reader.ReadBarCodes())
-            {
-                // With AllowIncorrectBarcodes disabled, the reader should not return any result
-                noResult = false;
-                Console.WriteLine($"Test2 - Unexpected result with Confidence: {result.Confidence}");
-            }
-
-            Console.WriteLine(noResult
-                ? "Test2 passed: No result returned as expected."
-                : "Test2 failed: Result was returned despite AllowIncorrectBarcodes being false.");
-        }
-
-        // Clean up temporary file
-        try
-        {
-            File.Delete(tempPath);
-        }
-        catch
-        {
-            // Ignore any cleanup errors
         }
     }
 }

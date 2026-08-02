@@ -1,45 +1,43 @@
-// Title: High‑Resolution TIFF Barcode Scanning with MaxQuality
-// Description: Demonstrates scanning a high‑resolution TIFF image for barcodes using Aspose.BarCode with the MaxQuality preset to improve accuracy.
+// Title: Scanning High‑Resolution TIFF for Barcodes with MaxQuality Setting
+// Description: Demonstrates reading barcodes from a high‑resolution TIFF file using Aspose.BarCode, switching to the MaxQuality preset to maximize recognition accuracy.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, showcasing how to configure QualitySettings for optimal scanning of high‑resolution images. It uses BarCodeReader, DecodeType, and QualitySettings classes, common in scenarios such as document processing, inventory management, and automated data capture where precise barcode detection is critical.
 // Prompt: Switch QualitySettings.Preset to MaxQuality to prioritize accuracy when scanning high‑resolution TIFF files.
-// Tags: barcode, tiff, maxquality, recognition, aspnet, csharp
+// Tags: barcode symbology, recognition, console output, barcodereader, qualitysettings, decodetype
 
 using System;
 using System.IO;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Example program that reads barcodes from a high‑resolution TIFF file
-/// using the Aspose.BarCode library with the MaxQuality setting for
-/// optimal recognition accuracy.
+/// Entry point for the barcode scanning example.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Scans the specified TIFF image,
-    /// applies the MaxQuality preset, and prints detected barcode texts.
+    /// Scans a high‑resolution TIFF image for barcodes using the MaxQuality preset.
     /// </summary>
     static void Main()
     {
-        // Define the path to the high‑resolution TIFF file
-        string imagePath = "highres.tif";
+        // Path to the high‑resolution TIFF file to be scanned
+        string imagePath = "sample.tiff";
 
-        // Ensure the file exists before attempting to read it
+        // Verify that the file exists before attempting to read it
         if (!File.Exists(imagePath))
         {
             Console.WriteLine($"File not found: {imagePath}");
             return;
         }
 
-        // Create a barcode reader that attempts to decode all supported symbologies
-        using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
+        // Create a BarCodeReader for the image, detecting all supported symbologies
+        using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
         {
-            // Apply the MaxQuality preset to prioritize recognition accuracy over speed
+            // Switch to the MaxQuality preset for maximum recognition accuracy
             reader.QualitySettings = QualitySettings.MaxQuality;
 
-            // Iterate through each detected barcode and output its decoded text
+            // Iterate through all detected barcodes and output their text
             foreach (BarCodeResult result in reader.ReadBarCodes())
             {
-                Console.WriteLine($"Detected barcode: {result.CodeText}");
+                Console.WriteLine($"Detected: {result.CodeText}");
             }
         }
     }

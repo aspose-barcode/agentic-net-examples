@@ -1,65 +1,67 @@
-// Title: High-Performance PNG Barcode Batch Reader
-// Description: Demonstrates setting QualitySettings.Preset to HighPerformance before reading a batch of PNG barcode images, improving processing speed.
+// Title: High‑Performance Barcode Recognition from PNG Images
+// Description: Demonstrates setting QualitySettings.Preset to HighPerformance before reading a batch of PNG barcode images, improving recognition speed.
+// Category-Description: This example belongs to the Aspose.BarCode image‑processing category, showcasing how to generate barcode images, store them, and efficiently recognize them using the BarCodeReader. It highlights key API classes such as BarcodeGenerator, BarCodeReader, QualitySettings, and DecodeType, which developers commonly use for batch barcode scanning and performance tuning.
 // Prompt: Set QualitySettings.Preset to HighPerformance before reading a batch of PNG barcode images.
-// Tags: barcode, png, batch, highperformance, qualitysettings, aspose.barcode, read
+// Tags: barcode symbology, generation, recognition, png, qualitysettings, highperformance, aspose.barcode
 
 using System;
 using System.IO;
 using Aspose.BarCode;
+using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Program that reads up to five PNG barcode images using Aspose.BarCode with high‑performance quality settings.
+/// Generates a small batch of PNG barcode images and reads them using a high‑performance quality preset.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Scans a folder for PNG files, configures the reader for high performance, and outputs detected barcodes.
+    /// Entry point of the example. Creates sample barcodes, saves them as PNG files, and reads them with
+    /// <see cref="QualitySettings.HighPerformance"/> to demonstrate faster recognition.
     /// </summary>
     static void Main()
     {
-        // Define the folder that contains PNG barcode images
-        string folderPath = "Barcodes";
+        // Define a folder to store sample barcode images
+        string folderPath = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
+        Directory.CreateDirectory(folderPath);
 
-        // Verify that the folder exists before proceeding
-        if (!Directory.Exists(folderPath))
+        // Generate a small batch of sample PNG barcode images (5 items)
+        for (int i = 1; i <= 5; i++)
         {
-            Console.WriteLine($"Folder not found: {folderPath}");
-            return;
-        }
+            string fileName = $"barcode{i}.png";
+            string filePath = Path.Combine(folderPath, fileName);
 
-        // Retrieve all PNG files in the folder (limit processing to a maximum of 5 files for safety)
-        string[] pngFiles = Directory.GetFiles(folderPath, "*.png");
-        if (pngFiles.Length == 0)
-        {
-            Console.WriteLine("No PNG files found in the folder.");
-            return;
-        }
-
-        // Determine how many files to process (up to 5)
-        int maxFiles = Math.Min(pngFiles.Length, 5);
-
-        // Process each selected PNG file
-        for (int i = 0; i < maxFiles; i++)
-        {
-            string filePath = pngFiles[i];
-
-            // Ensure the file still exists before attempting to read it
-            if (!File.Exists(filePath))
+            // Create a barcode generator for Code128 with sample text
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, $"Sample{i}"))
             {
-                Console.WriteLine($"File not found: {filePath}");
+                // Save the generated barcode as a PNG file
+                generator.Save(filePath, BarCodeImageFormat.Png);
+            }
+        }
+
+        // Retrieve all PNG files from the folder
+        string[] pngFiles = Directory.GetFiles(folderPath, "*.png");
+
+        // Process each PNG image in the folder
+        foreach (string pngFile in pngFiles)
+        {
+            if (!File.Exists(pngFile))
+            {
+                Console.WriteLine($"File not found: {pngFile}");
                 continue;
             }
 
-            // Create a BarCodeReader for the image and set the high‑performance quality preset
-            using (var reader = new BarCodeReader(filePath, DecodeType.AllSupportedTypes))
+            // Initialize a reader for the image, using all supported decode types
+            using (BarCodeReader reader = new BarCodeReader(pngFile, DecodeType.AllSupportedTypes))
             {
+                // Apply the high‑performance quality preset before reading
                 reader.QualitySettings = QualitySettings.HighPerformance;
 
-                // Read all barcodes present in the image and output their details
+                // Read and output detected barcodes
                 foreach (var result in reader.ReadBarCodes())
                 {
-                    Console.WriteLine($"File: {Path.GetFileName(filePath)} | Type: {result.CodeTypeName} | Text: {result.CodeText}");
+                    Console.WriteLine($"File: {Path.GetFileName(pngFile)} - Detected CodeText: {result.CodeText}");
                 }
             }
         }

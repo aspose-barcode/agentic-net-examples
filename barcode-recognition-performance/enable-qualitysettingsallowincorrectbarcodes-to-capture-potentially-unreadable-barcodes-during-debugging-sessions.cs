@@ -1,49 +1,69 @@
-// Title: Code128 Barcode Generation and Recognition with AllowIncorrectBarcodes
-// Description: Demonstrates generating a Code128 barcode, saving it as PNG, and reading it back while allowing recognition of potentially unreadable barcodes for debugging.
+// Title: Demonstrate barcode generation and reading with AllowIncorrectBarcodes
+// Description: This example generates a Code128 barcode, saves it as PNG, then reads it while allowing potentially incorrect barcodes for debugging.
+// Category-Description: Shows how to use Aspose.BarCode generation and recognition APIs, focusing on QualitySettings.AllowIncorrectBarcodes. Developers working with barcode validation, debugging unreadable barcodes, or handling low‑quality scans can reference this pattern. Key classes include BarcodeGenerator, BarCodeReader, and QualitySettings.
 // Prompt: Enable QualitySettings.AllowIncorrectBarcodes to capture potentially unreadable barcodes during debugging sessions.
-// Tags: barcode, code128, generation, recognition, allowincorrectbarcodes, aspnet, c#
+// Tags: barcode generation, barcode recognition, allowincorrectbarcodes, code128, png, aspose.barcode
 
 using System;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Example program that creates a Code128 barcode image and then reads it back,
-/// enabling the AllowIncorrectBarcodes setting to capture barcodes that may be damaged or unreadable during debugging.
+/// Example program that creates a Code128 barcode image,
+/// reads it back with relaxed quality settings, and cleans up the file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a barcode, saves it, and then reads it while allowing incorrect barcodes.
+    /// Entry point of the example. Generates a barcode, reads it with
+    /// <c>QualitySettings.AllowIncorrectBarcodes</c> enabled, and outputs the results.
     /// </summary>
     static void Main()
     {
+        // Define the barcode text to encode.
+        const string codeText = "1234567890";
+
+        // Define the output image file path.
+        const string imagePath = "sample_barcode.png";
+
         // ------------------------------------------------------------
-        // Generate a simple Code128 barcode and save it to a PNG file.
+        // Generate a Code128 barcode and save it as a PNG image.
         // ------------------------------------------------------------
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
         {
-            // Save the generated barcode image as "barcode.png".
-            generator.Save("barcode.png");
+            generator.Save(imagePath, BarCodeImageFormat.Png);
         }
 
         // ------------------------------------------------------------
-        // Read the generated barcode image and output its details.
+        // Read the generated barcode with relaxed quality settings.
         // ------------------------------------------------------------
-        using (BarCodeReader reader = new BarCodeReader("barcode.png", DecodeType.Code128))
+        using (var reader = new BarCodeReader(imagePath, DecodeType.Code128))
         {
-            // Enable recognition of potentially incorrect or damaged barcodes.
+            // Allow detection of barcodes that may be unreadable or malformed.
             reader.QualitySettings.AllowIncorrectBarcodes = true;
 
-            // Iterate through all detected barcodes in the image.
+            // Iterate through all detected barcodes (there should be only one).
             foreach (var result in reader.ReadBarCodes())
             {
-                // Output the type of the detected barcode.
-                Console.WriteLine($"Detected barcode type: {result.CodeTypeName}");
-                // Output the decoded text contained in the barcode.
-                Console.WriteLine($"Decoded text: {result.CodeText}");
+                Console.WriteLine($"Detected Type: {result.CodeType}");
+                Console.WriteLine($"Detected Text: {result.CodeText}");
+            }
+        }
+
+        // ------------------------------------------------------------
+        // Optional cleanup: delete the generated image file.
+        // ------------------------------------------------------------
+        if (File.Exists(imagePath))
+        {
+            try
+            {
+                File.Delete(imagePath);
+            }
+            catch
+            {
+                // Suppress any errors that occur during file deletion.
             }
         }
     }

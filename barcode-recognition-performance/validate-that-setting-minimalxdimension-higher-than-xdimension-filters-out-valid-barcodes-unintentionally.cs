@@ -1,7 +1,8 @@
 // Title: Minimal XDimension Filtering Demo
-// Description: Demonstrates how setting MinimalXDimension higher than the barcode's XDimension can prevent detection of otherwise valid barcodes.
+// Description: Demonstrates how setting MinimalXDimension higher than the barcode's XDimension can unintentionally filter out a valid Code128 barcode.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes and BarCodeReader with QualitySettings for decoding. Developers often need to adjust XDimension settings to handle low‑resolution scans, and this snippet illustrates the impact of MinimalXDimension on detection results.
 // Prompt: Validate that setting MinimalXDimension higher than XDimension filters out valid barcodes unintentionally.
-// Tags: barcode, code128, xdimension, minimalxdimension, generation, recognition, aspose.barcode
+// Tags: code128, generation, recognition, png, minimalxdimension, xdimension
 
 using System;
 using System.IO;
@@ -10,87 +11,87 @@ using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Example program that generates a Code128 barcode and shows how MinimalXDimension
-/// influences barcode recognition. It first sets MinimalXDimension higher than the
-/// actual XDimension (causing the barcode to be missed) and then lower (allowing detection).
+/// Example program that generates a Code128 barcode, reads it with default settings,
+/// then attempts to read it with a higher MinimalXDimension to demonstrate filtering behavior.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a barcode image, then attempts to read it
-    /// with different MinimalXDimension settings to illustrate their effect.
+    /// Entry point of the example. Generates a barcode, performs two reads, and cleans up the temporary file.
     /// </summary>
     static void Main()
     {
-        const string imagePath = "barcode.png";
+        // Define a temporary file path for the generated barcode image.
+        string imagePath = Path.Combine(Path.GetTempPath(), "sample_barcode.png");
 
-        // ------------------------------------------------------------
-        // Generate a simple Code128 barcode with a small XDimension (module size)
-        // ------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+        // -------------------------------------------------
+        // Generate a Code128 barcode with a specific XDimension.
+        // -------------------------------------------------
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            // Set module size to 1 point (XDimension)
-            generator.Parameters.Barcode.XDimension.Point = 1f;
-
-            // Disable automatic sizing so the XDimension value is respected
-            generator.Parameters.AutoSizeMode = AutoSizeMode.None;
-
-            // Save the generated barcode image to disk
-            generator.Save(imagePath);
+            // Set the module size (XDimension) to 2 points.
+            // AutoSizeMode defaults to None, so this value is applied directly.
+            generator.Parameters.Barcode.XDimension.Point = 2f;
+            // Save the barcode image as PNG.
+            generator.Save(imagePath, BarCodeImageFormat.Png);
         }
 
-        // ------------------------------------------------------------
-        // Verify that the barcode image was successfully created
-        // ------------------------------------------------------------
+        // Verify that the image file was created successfully.
         if (!File.Exists(imagePath))
         {
             Console.WriteLine("Failed to create barcode image.");
             return;
         }
 
-        // ------------------------------------------------------------
-        // Attempt to read the barcode with MinimalXDimension set higher than the actual XDimension
-        // Expected outcome: barcode is not detected because the minimal requirement is not met
-        // ------------------------------------------------------------
-        Console.WriteLine("Reading with MinimalXDimension = 2 (higher than XDimension 1):");
-        using (var reader = new BarCodeReader(imagePath, DecodeType.Code128))
+        // -------------------------------------------------
+        // First read: use default reader settings (should detect the barcode).
+        // -------------------------------------------------
+        using (BarCodeReader defaultReader = new BarCodeReader(imagePath, DecodeType.Code128))
         {
-            // Instruct the reader to respect MinimalXDimension during detection
-            reader.QualitySettings.XDimension = XDimensionMode.UseMinimalXDimension;
-
-            // Set MinimalXDimension to a value larger than the barcode's XDimension
-            reader.QualitySettings.MinimalXDimension = 2f;
-
             bool found = false;
-            foreach (BarCodeResult result in reader.ReadBarCodes())
+            foreach (BarCodeResult result in defaultReader.ReadBarCodes())
             {
-                Console.WriteLine($"Detected: {result.CodeText}");
+                Console.WriteLine($"[Default] Detected barcode: {result.CodeText}");
                 found = true;
             }
-
             if (!found)
-                Console.WriteLine("No barcode detected (as expected).");
+            {
+                Console.WriteLine("[Default] No barcode detected.");
+            }
         }
 
-        // ------------------------------------------------------------
-        // Now read the same image with a lower MinimalXDimension
-        // Expected outcome: barcode is detected because the requirement is satisfied
-        // ------------------------------------------------------------
-        Console.WriteLine("\nReading with MinimalXDimension = 0.5 (lower than XDimension 1):");
-        using (var reader = new BarCodeReader(imagePath, DecodeType.Code128))
+        // -------------------------------------------------
+        // Second read: configure MinimalXDimension higher than the generated XDimension.
+        // -------------------------------------------------
+        using (BarCodeReader minimalReader = new BarCodeReader(imagePath, DecodeType.Code128))
         {
-            reader.QualitySettings.XDimension = XDimensionMode.UseMinimalXDimension;
-            reader.QualitySettings.MinimalXDimension = 0.5f;
+            // Enable MinimalXDimension mode.
+            minimalReader.QualitySettings.XDimension = XDimensionMode.UseMinimalXDimension;
+            // Set a threshold of 5 points, which exceeds the generated 2‑point module size.
+            minimalReader.QualitySettings.MinimalXDimension = 5f;
 
             bool found = false;
-            foreach (BarCodeResult result in reader.ReadBarCodes())
+            foreach (BarCodeResult result in minimalReader.ReadBarCodes())
             {
-                Console.WriteLine($"Detected: {result.CodeText}");
+                Console.WriteLine($"[MinimalXDimension] Detected barcode: {result.CodeText}");
                 found = true;
             }
-
             if (!found)
-                Console.WriteLine("No barcode detected (unexpected).");
+            {
+                Console.WriteLine("[MinimalXDimension] No barcode detected (filtering out valid barcode).");
+            }
+        }
+
+        // -------------------------------------------------
+        // Clean up: delete the temporary barcode image file.
+        // -------------------------------------------------
+        try
+        {
+            File.Delete(imagePath);
+        }
+        catch
+        {
+            // Suppress any exceptions during cleanup.
         }
     }
 }

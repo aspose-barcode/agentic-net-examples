@@ -1,99 +1,101 @@
 // Title: Deconvolution Test on JPEG Barcodes
-// Description: Demonstrates testing different deconvolution modes on heavily compressed JPEG images to determine the optimal quality threshold for reliable barcode scanning.
+// Description: Generates Code128 barcodes saved as JPEG, then reads them using different deconvolution modes to evaluate scanning reliability on heavily compressed images.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, demonstrating how to create barcode images, apply JPEG compression, and use the Deconvolution quality settings during recognition. It showcases the BarcodeGenerator, BarCodeReader, and DeconvolutionMode classes—common tools for developers who need to optimize barcode scanning under adverse image conditions.
 // Prompt: Test deconvolution on heavily compressed JPEG images to determine optimal quality threshold for reliable scanning.
-// Tags: barcode, deconvolution, jpeg, quality, aspose.barcode, aspose.drawing, recognition
+// Tags: code128, deconvolution, jpeg, barcode generation, barcode recognition, quality settings, aspose.barcode
 
 using System;
 using System.IO;
-using System.Collections.Generic;
+using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Program that evaluates deconvolution settings on JPEG images containing barcodes to find the best quality configuration.
+/// Demonstrates barcode generation, JPEG compression, and deconvolution‑based recognition
+/// to find the optimal quality threshold for reliable scanning of heavily compressed images.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Scans each JPEG in the Images folder with various deconvolution modes and reports detection results.
+    /// Entry point of the example. Generates sample barcodes, saves them as JPEG,
+    /// and reads them back using various deconvolution modes.
     /// </summary>
     static void Main()
     {
-        // Folder containing JPEG images with barcodes.
-        string imagesFolder = "Images";
-
-        // Verify that the folder exists.
-        if (!Directory.Exists(imagesFolder))
+        // --------------------------------------------------------------------
+        // Prepare output folder for generated barcode images
+        // --------------------------------------------------------------------
+        string folderPath = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
+        if (!Directory.Exists(folderPath))
         {
-            Console.WriteLine($"Folder not found: {imagesFolder}");
-            return;
+            Directory.CreateDirectory(folderPath);
         }
 
-        // Retrieve all JPEG files in the folder.
-        string[] jpegFiles = Directory.GetFiles(imagesFolder, "*.jpg");
-        if (jpegFiles.Length == 0)
+        // --------------------------------------------------------------------
+        // Generate sample Code128 barcode images (saved as JPEG with default quality)
+        // --------------------------------------------------------------------
+        string[] barcodeTexts = { "CODE128-123", "CODE128-456", "CODE128-789" };
+        for (int i = 0; i < barcodeTexts.Length; i++)
         {
-            Console.WriteLine($"No JPEG files found in folder: {imagesFolder}");
-            return;
-        }
-
-        // Define the deconvolution modes that will be tested.
-        DeconvolutionMode[] deconvolutionModes = new[]
-        {
-            DeconvolutionMode.Fast,
-            DeconvolutionMode.Normal,
-            DeconvolutionMode.Slow
-        };
-
-        // Process each JPEG file individually.
-        foreach (string filePath in jpegFiles)
-        {
-            // Ensure the file still exists before processing.
-            if (!File.Exists(filePath))
+            string filePath = Path.Combine(folderPath, $"barcode_{i + 1}.jpg");
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, barcodeTexts[i]))
             {
-                Console.WriteLine($"File not found: {filePath}");
-                continue;
+                // Save the barcode as a JPEG image
+                generator.Save(filePath, BarCodeImageFormat.Jpeg);
             }
+        }
 
-            Console.WriteLine($"Processing file: {Path.GetFileName(filePath)}");
+        // --------------------------------------------------------------------
+        // Define deconvolution modes to be tested during recognition
+        // --------------------------------------------------------------------
+        DeconvolutionMode[] modes = { DeconvolutionMode.Fast, DeconvolutionMode.Normal, DeconvolutionMode.Slow };
 
-            // Test each deconvolution mode on the current image.
-            foreach (DeconvolutionMode mode in deconvolutionModes)
+        // --------------------------------------------------------------------
+        // Locate all generated JPEG images for processing
+        // --------------------------------------------------------------------
+        string[] imageFiles = Directory.GetFiles(folderPath, "*.jpg");
+        if (imageFiles.Length == 0)
+        {
+            Console.WriteLine("No JPEG images found for processing.");
+            return;
+        }
+
+        // --------------------------------------------------------------------
+        // Process each image with each deconvolution mode and output results
+        // --------------------------------------------------------------------
+        foreach (string imageFile in imageFiles)
+        {
+            Console.WriteLine($"Processing image: {Path.GetFileName(imageFile)}");
+            foreach (DeconvolutionMode mode in modes)
             {
-                // Create a barcode reader for the image, supporting all symbologies.
-                using (BarCodeReader reader = new BarCodeReader(filePath, DecodeType.AllSupportedTypes))
+                using (BarCodeReader reader = new BarCodeReader(imageFile, DecodeType.AllSupportedTypes))
                 {
-                    // Apply a high‑quality preset to improve detection on low‑quality images.
-                    reader.QualitySettings = QualitySettings.HighQuality;
-
-                    // Set the current deconvolution mode.
+                    // Apply the current deconvolution mode to the reader's quality settings
                     reader.QualitySettings.Deconvolution = mode;
 
-                    // Perform barcode recognition.
+                    // Attempt to read barcodes from the image
                     BarCodeResult[] results = reader.ReadBarCodes();
 
-                    // Output the results for the current mode.
+                    Console.WriteLine($"  Deconvolution: {mode}");
                     if (results.Length == 0)
                     {
-                        Console.WriteLine($"  Deconvolution: {mode} – No barcode detected.");
+                        Console.WriteLine("    No barcode detected.");
                     }
                     else
                     {
                         foreach (BarCodeResult result in results)
                         {
-                            // ReadingQuality is a double representing the confidence percentage.
+                            // ReadingQuality indicates confidence percentage of the detection
                             double quality = result.ReadingQuality;
-                            string codeText = result.CodeText ?? "<null>";
-                            Console.WriteLine($"  Deconvolution: {mode} – Detected: {codeText}, ReadingQuality: {quality:F2}%");
+                            string text = string.IsNullOrEmpty(result.CodeText) ? "<empty>" : result.CodeText;
+                            Console.WriteLine($"    CodeText: {text}");
+                            Console.WriteLine($"    ReadingQuality: {quality:F2}%");
                         }
                     }
                 }
             }
-
-            Console.WriteLine(); // Blank line between files.
+            Console.WriteLine();
         }
-
-        // Indicate that processing has finished.
-        Console.WriteLine("Processing completed.");
     }
 }

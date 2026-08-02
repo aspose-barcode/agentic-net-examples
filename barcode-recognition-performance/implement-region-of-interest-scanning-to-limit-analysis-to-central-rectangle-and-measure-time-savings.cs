@@ -1,7 +1,8 @@
-// Title: Region-of-Interest Barcode Scanning with Timing
-// Description: Demonstrates scanning a barcode image using Aspose.BarCode, first over the full image then within a central ROI, and reports time saved.
+// Title: Region‑of‑Interest Scanning with Timing Comparison
+// Description: Demonstrates scanning a barcode image using a full‑image scan versus a central region‑of‑interest (ROI) scan to measure performance improvements.
+// Category-Description: This example belongs to the Aspose.BarCode scanning category, showcasing the BarCodeReader class with and without ROI constraints. Developers often need to limit barcode detection to specific areas of an image to reduce processing time, especially in high‑resolution or multi‑barcode scenarios. Typical use cases include document processing, industrial automation, and mobile scanning where speed is critical.
 // Prompt: Implement region‑of‑interest scanning to limit analysis to a central rectangle and measure time savings.
-// Tags: barcode, region-of-interest, timing, aspose.barcode, c#
+// Tags: qr, scanning, console, barcodelibrary, barcodegenerator, barcodereader, bitmap, rectangle
 
 using System;
 using System.Diagnostics;
@@ -11,109 +12,84 @@ using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates a barcode, scans it using full‑image and ROI modes,
-/// and compares the processing times.
+/// Example program that generates a QR code (if needed) and compares full‑image barcode scanning
+/// with scanning limited to a central region‑of‑interest, reporting the time saved.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a sample barcode, performs two scans (full image and ROI),
-    /// and outputs detection counts and timing information.
+    /// Entry point of the application. Performs barcode generation (if required), executes both scanning
+    /// approaches, and outputs timing results to the console.
     /// </summary>
     static void Main()
     {
-        // ------------------------------------------------------------
-        // 1. Generate a sample barcode image and save it to disk
-        // ------------------------------------------------------------
+        // Path for the sample barcode image
         const string imagePath = "sample_barcode.png";
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
-        {
-            generator.Save(imagePath);
-        }
 
-        // Verify that the image was created successfully
+        // Generate a sample QR code if it does not exist
         if (!File.Exists(imagePath))
         {
-            Console.WriteLine($"Failed to create barcode image at '{imagePath}'.");
-            return;
+            using (var generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
+            {
+                generator.Save(imagePath);
+            }
         }
 
-        // ------------------------------------------------------------
-        // 2. Load the image once and reuse the bitmap for both scans
-        // ------------------------------------------------------------
+        // Load the image once and reuse it for both scans
         using (var bitmap = new Bitmap(imagePath))
         {
-            // --------------------------------------------------------
-            // 2a. Scan the entire image and measure elapsed time
-            // --------------------------------------------------------
-            var fullScanTime = MeasureScan(bitmap, null, out var fullResults);
-            Console.WriteLine($"Full scan detected {fullResults} barcode(s) in {fullScanTime} ms.");
+            // -------------------------------------------------
+            // Full image scan
+            // -------------------------------------------------
+            var fullStopwatch = new Stopwatch();
+            fullStopwatch.Start();
 
-            // --------------------------------------------------------
-            // 2b. Define a central region‑of‑interest (ROI)
-            //      – rectangle covering the middle half of the image
-            // --------------------------------------------------------
-            int roiX = bitmap.Width / 4;
-            int roiY = bitmap.Height / 4;
+            using (var fullReader = new BarCodeReader(bitmap, DecodeType.AllSupportedTypes))
+            {
+                foreach (var result in fullReader.ReadBarCodes())
+                {
+                    // Result processing placeholder (e.g., counting or logging)
+                }
+            }
+
+            fullStopwatch.Stop();
+            long fullTimeMs = fullStopwatch.ElapsedMilliseconds;
+
+            // -------------------------------------------------
+            // Region‑of‑interest (central rectangle) scan
+            // -------------------------------------------------
+            // Define a central rectangle covering 50 % of the image width and height
             int roiWidth = bitmap.Width / 2;
             int roiHeight = bitmap.Height / 2;
+            int roiX = (bitmap.Width - roiWidth) / 2;
+            int roiY = (bitmap.Height - roiHeight) / 2;
             var roiRect = new Rectangle(roiX, roiY, roiWidth, roiHeight);
 
-            // --------------------------------------------------------
-            // 2c. Scan only the ROI and measure elapsed time
-            // --------------------------------------------------------
-            var roiScanTime = MeasureScan(bitmap, roiRect, out var roiResults);
-            Console.WriteLine($"ROI scan detected {roiResults} barcode(s) in {roiScanTime} ms.");
+            var roiStopwatch = new Stopwatch();
+            roiStopwatch.Start();
 
-            // --------------------------------------------------------
-            // 3. Report simple time‑savings comparison
-            // --------------------------------------------------------
-            double saved = fullScanTime - roiScanTime;
-            Console.WriteLine(saved > 0
-                ? $"Time saved by ROI: {saved} ms."
-                : "ROI did not improve scan time.");
-        }
-    }
-
-    /// <summary>
-    /// Scans the provided bitmap for barcodes, optionally limited to a region.
-    /// Returns the elapsed time in milliseconds and outputs the number of barcodes detected.
-    /// </summary>
-    /// <param name="bitmap">Source image containing barcodes.</param>
-    /// <param name="region">Optional rectangle defining the region‑of‑interest.</param>
-    /// <param name="detectedCount">Number of barcodes detected during the scan.</param>
-    /// <returns>Elapsed time in milliseconds.</returns>
-    private static long MeasureScan(Bitmap bitmap, Rectangle? region, out int detectedCount)
-    {
-        detectedCount = 0;
-        var stopwatch = Stopwatch.StartNew();
-
-        if (region.HasValue)
-        {
-            // Scan only the specified rectangle (ROI)
-            using (var reader = new BarCodeReader(bitmap, region.Value, DecodeType.AllSupportedTypes))
+            using (var roiReader = new BarCodeReader(bitmap, new Rectangle[] { roiRect }, DecodeType.AllSupportedTypes))
             {
-                foreach (var result in reader.ReadBarCodes())
+                foreach (var result in roiReader.ReadBarCodes())
                 {
-                    Console.WriteLine($"[ROI] Detected: {result.CodeText}");
-                    detectedCount++;
+                    // Result processing placeholder (e.g., counting or logging)
                 }
             }
-        }
-        else
-        {
-            // Scan the whole image
-            using (var reader = new BarCodeReader(bitmap, DecodeType.AllSupportedTypes))
+
+            roiStopwatch.Stop();
+            long roiTimeMs = roiStopwatch.ElapsedMilliseconds;
+
+            // -------------------------------------------------
+            // Output timing results
+            // -------------------------------------------------
+            Console.WriteLine($"Full image scan time: {fullTimeMs} ms");
+            Console.WriteLine($"ROI (central rectangle) scan time: {roiTimeMs} ms");
+
+            if (fullTimeMs > 0)
             {
-                foreach (var result in reader.ReadBarCodes())
-                {
-                    Console.WriteLine($"[Full] Detected: {result.CodeText}");
-                    detectedCount++;
-                }
+                double savedPercent = 100.0 * (fullTimeMs - roiTimeMs) / fullTimeMs;
+                Console.WriteLine($"Time saved by ROI scanning: {savedPercent:F2}%");
             }
         }
-
-        stopwatch.Stop();
-        return stopwatch.ElapsedMilliseconds;
     }
 }

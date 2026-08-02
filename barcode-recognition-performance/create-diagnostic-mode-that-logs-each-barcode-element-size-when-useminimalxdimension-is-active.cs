@@ -1,79 +1,90 @@
-// Title: Diagnostic barcode size logging with minimal X-dimension mode
-// Description: Demonstrates generating a Code128 barcode, then reading it with UseMinimalXDimension enabled, logging each barcode element's size.
+// Title: Barcode Generation and Recognition with Minimal X-Dimension Diagnostics
+// Description: Demonstrates generating Code128 and QR barcodes, saving them as PNG, then reading them back while logging each barcode element size when UseMinimalXDimension is enabled.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the BarcodeGenerator for creating barcodes and BarCodeReader for decoding them, highlighting the QualitySettings.XDimension property to activate minimal X-dimension mode. Developers often need to fine‑tune barcode dimensions for printing or scanning constraints, and this snippet illustrates how to log element sizes for diagnostic purposes.
 // Prompt: Create a diagnostic mode that logs each barcode element size when UseMinimalXDimension is active.
-// Tags: barcode, code128, minimalxdimension, diagnostics, aspose.barcode, csharp
+// Tags: barcode generation, barcode recognition, minimalxdimension, code128, qr, png, aspose.barcode, diagnostics
 
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.BarCode;
 using Aspose.Drawing;
 
 /// <summary>
-/// Example program that creates a barcode, reads it using minimal X‑dimension detection,
-/// and logs the size of each detected barcode element.
+/// Generates sample barcodes, saves them as PNG files, and then reads them back while
+/// logging each barcode element's size when the minimal X‑dimension mode is active.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a barcode, saves it, then reads it back with diagnostic logging.
+    /// Entry point of the example. Executes barcode creation, saving, and diagnostic reading.
     /// </summary>
     static void Main()
     {
-        // Path for the generated barcode image
-        const string barcodePath = "sample_barcode.png";
+        // --------------------------------------------------------------------
+        // 1. Prepare output directory for generated barcode images
+        // --------------------------------------------------------------------
+        string outputDir = "Barcodes";
+        Directory.CreateDirectory(outputDir);
 
-        // -----------------------------------------------------------------
-        // Generate a simple Code128 barcode and save it to a file
-        // -----------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+        // --------------------------------------------------------------------
+        // 2. Define sample barcodes to generate (type, text, file name)
+        // --------------------------------------------------------------------
+        var samples = new (BaseEncodeType encode, string text, string file)[]
         {
-            // Optional visual settings: black bars on white background
-            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-            generator.Parameters.BackColor = Aspose.Drawing.Color.White;
+            (EncodeTypes.Code128, "1234567890", "code128.png"),
+            (EncodeTypes.QR, "https://example.com", "qr.png")
+        };
 
-            // Save the barcode image to the specified path
-            generator.Save(barcodePath);
-        }
-
-        // Verify that the image was created successfully
-        if (!File.Exists(barcodePath))
+        // --------------------------------------------------------------------
+        // 3. Generate each barcode image and save as PNG
+        // --------------------------------------------------------------------
+        foreach (var sample in samples)
         {
-            Console.WriteLine($"Failed to create barcode image at '{barcodePath}'.");
-            return;
-        }
-
-        // -----------------------------------------------------------------
-        // Read the barcode using the UseMinimalXDimension mode
-        // -----------------------------------------------------------------
-        using (var reader = new BarCodeReader(barcodePath, DecodeType.AllSupportedTypes))
-        {
-            // Activate the minimal X-dimension detection mode
-            reader.QualitySettings.XDimension = XDimensionMode.UseMinimalXDimension;
-
-            // Define the minimal X-dimension size (in pixels)
-            reader.QualitySettings.MinimalXDimension = 2f;
-
-            // Perform the recognition and obtain results
-            var results = reader.ReadBarCodes();
-
-            // Log whether the minimal X-dimension mode is active
-            bool isMinimalActive = reader.QualitySettings.XDimension == XDimensionMode.UseMinimalXDimension;
-            Console.WriteLine($"UseMinimalXDimension active: {isMinimalActive}");
-
-            // Iterate over each detected barcode and log its size and content
-            foreach (var result in results)
+            string path = Path.Combine(outputDir, sample.file);
+            using (var generator = new BarcodeGenerator(sample.encode, sample.text))
             {
-                var rect = result.Region.Rectangle;
-                double width = rect.Width;
-                double height = rect.Height;
+                // Set visual appearance
+                generator.Parameters.Barcode.XDimension.Point = 2f;
+                generator.Parameters.Barcode.FilledBars = false;
+                generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
+                generator.Parameters.BackColor = Aspose.Drawing.Color.White;
 
-                Console.WriteLine($"Detected barcode:");
-                Console.WriteLine($"  Type    : {result.CodeTypeName}");
-                Console.WriteLine($"  CodeText: {result.CodeText}");
-                Console.WriteLine($"  Size    : Width = {width}, Height = {height}");
+                // Save the barcode image
+                generator.Save(path, BarCodeImageFormat.Png);
+                Console.WriteLine($"Saved barcode: {path}");
+            }
+        }
+
+        // --------------------------------------------------------------------
+        // 4. Read generated barcodes and log element sizes when UseMinimalXDimension is active
+        // --------------------------------------------------------------------
+        string[] imageFiles = Directory.GetFiles(outputDir, "*.png");
+        foreach (string imagePath in imageFiles)
+        {
+            if (!File.Exists(imagePath))
+            {
+                Console.WriteLine($"File not found: {imagePath}");
+                continue;
+            }
+
+            using (var reader = new BarCodeReader(imagePath))
+            {
+                // Activate minimal X-dimension mode for diagnostic purposes
+                reader.QualitySettings.XDimension = XDimensionMode.UseMinimalXDimension;
+                reader.QualitySettings.MinimalXDimension = 2f; // example minimal size in pixels
+
+                // Iterate through all detected barcodes in the image
+                foreach (var result in reader.ReadBarCodes())
+                {
+                    var region = result.Region.Rectangle;
+                    Console.WriteLine(
+                        $"Image: {Path.GetFileName(imagePath)} | " +
+                        $"Type: {result.CodeTypeName} | " +
+                        $"Text: {result.CodeText} | " +
+                        $"Width: {region.Width} | Height: {region.Height}");
+                }
             }
         }
     }

@@ -1,80 +1,85 @@
-// Title: Barcode MinimalXDimension Throughput Profiling
-// Description: Demonstrates how varying the MinimalXDimension setting affects the processing time of a batch of Code128 barcodes.
+// Title: Impact of MinimalXDimension on Batch Barcode Decoding Throughput
+// Description: Demonstrates how varying the MinimalXDimension setting affects the time required to decode a batch of Code128 barcodes.
+// Category-Description: This example belongs to the Aspose.BarCode performance profiling category, illustrating the use of BarCodeReader, BarcodeGenerator, and quality settings to measure decoding speed. Developers often need to benchmark different rendering parameters to optimize throughput in high‑volume scanning scenarios.
 // Prompt: Profile the impact of increasing MinimalXDimension on overall batch processing throughput in tests.
-// Tags: barcode, code128, minimalxdimension, performance, profiling, aspose.barcode
+// Tags: code128, decoding, performance, minimalxdimension, qualitysettings, barcodegenerator, barcodereader, aspose.barcode
 
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Generates a small batch of Code128 barcode images, then measures the
-/// recognition time for different MinimalXDimension settings.
+/// Shows how changing the MinimalXDimension influences batch processing time when decoding Code128 barcodes.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Creates barcode images, runs recognition
-    /// with various MinimalXDimension values, and outputs processing times.
+    /// Generates a small batch of Code128 barcodes, then measures decoding time for several MinimalXDimension values.
     /// </summary>
     static void Main()
     {
-        // ------------------------------------------------------------
-        // 1. Prepare a small batch of barcode images (Code128) in memory.
-        // ------------------------------------------------------------
-        const int batchSize = 5;
-        var barcodeImages = new List<byte[]>();
+        const int batchSize = 5; // Number of barcodes to generate for the test batch
 
+        // ------------------------------------------------------------
+        // 1. Generate sample barcode images in memory (Code128)
+        // ------------------------------------------------------------
+        var barcodes = new List<Bitmap>();
         for (int i = 0; i < batchSize; i++)
         {
-            // Generate a barcode with a unique value.
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, $"Sample{i:D4}"))
+            string codeText = $"CODE{i:D4}";
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
             {
-                // Save the barcode to a memory stream as PNG.
-                using (var ms = new MemoryStream())
-                {
-                    generator.Save(ms, BarCodeImageFormat.Png);
-                    barcodeImages.Add(ms.ToArray());
-                }
+                // Generate a bitmap with default settings
+                Bitmap bitmap = generator.GenerateBarCodeImage();
+                barcodes.Add(bitmap);
             }
         }
 
         // ------------------------------------------------------------
-        // 2. Define MinimalXDimension values to test.
+        // 2. Define MinimalXDimension values to evaluate
         // ------------------------------------------------------------
-        float[] minimalValues = new float[] { 1f, 2f, 4f, 8f };
+        float[] minimalXDimensions = new float[] { 1f, 2f, 4f, 8f };
 
         // ------------------------------------------------------------
-        // 3. Measure recognition time for each MinimalXDimension setting.
+        // 3. Process the batch for each MinimalXDimension setting
         // ------------------------------------------------------------
-        foreach (float minX in minimalValues)
+        foreach (float minX in minimalXDimensions)
         {
-            var stopwatch = Stopwatch.StartNew();
+            var stopwatch = Stopwatch.StartNew(); // Start timing for current setting
 
-            // Process each barcode image in the batch.
-            foreach (byte[] imgData in barcodeImages)
+            // Decode each barcode image using the current MinimalXDimension
+            foreach (var image in barcodes)
             {
-                using (var ms = new MemoryStream(imgData))
+                using (var reader = new BarCodeReader(image, DecodeType.Code128))
                 {
-                    // Initialize the reader for all supported barcode types.
-                    using (var reader = new BarCodeReader(ms, DecodeType.AllSupportedTypes))
-                    {
-                        // Configure recognition to use the MinimalXDimension mode.
-                        reader.QualitySettings.XDimension = XDimensionMode.UseMinimalXDimension;
-                        reader.QualitySettings.MinimalXDimension = minX;
+                    // Apply quality settings: use MinimalXDimension mode with the specified value
+                    reader.QualitySettings.XDimension = XDimensionMode.UseMinimalXDimension;
+                    reader.QualitySettings.MinimalXDimension = minX;
 
-                        // Perform recognition (results are not used further in this demo).
-                        var results = reader.ReadBarCodes();
+                    // Trigger the decoding process; results are not needed for this benchmark
+                    foreach (var result in reader.ReadBarCodes())
+                    {
+                        // No action required; iteration ensures processing occurs
                     }
                 }
             }
 
-            stopwatch.Stop();
-            Console.WriteLine($"MinimalXDimension = {minX} → processing time: {stopwatch.ElapsedMilliseconds} ms for {batchSize} barcodes.");
+            stopwatch.Stop(); // Stop timing
+
+            // Output the elapsed time for the current MinimalXDimension
+            Console.WriteLine($"MinimalXDimension = {minX} px, Processing Time = {stopwatch.ElapsedMilliseconds} ms");
+        }
+
+        // ------------------------------------------------------------
+        // 4. Clean up generated bitmap resources
+        // ------------------------------------------------------------
+        foreach (var bmp in barcodes)
+        {
+            bmp.Dispose();
         }
     }
 }

@@ -1,62 +1,54 @@
-// Title: Barcode Recognition Timing from High‑Resolution PNG
-// Description: Loads a high‑resolution PNG image, runs barcode detection with default settings, and reports the elapsed time.
+// Title: High‑Resolution PNG Barcode Recognition Timing
+// Description: Demonstrates loading a high‑resolution PNG image and measuring the time required to recognize barcodes using Aspose.BarCode default settings.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, showcasing the use of BarCodeReader with DecodeType.AllSupportedTypes. It illustrates typical scenarios such as performance benchmarking and bulk image processing where developers need to assess recognition speed across various symbologies.
 // Prompt: Load a high‑resolution PNG image and measure barcode recognition time using default settings.
-// Tags: barcode, recognition, timing, png, aspose.barcode, aspose.drawing
+// Tags: barcode, png, recognition, performance, timing, aspose.barcode, decodeall
 
 using System;
 using System.Diagnostics;
 using System.IO;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates loading a high‑resolution PNG image, recognizing barcodes,
-/// and measuring the recognition time using Aspose.BarCode default settings.
+/// Demonstrates loading a high‑resolution PNG image and measuring barcode recognition time using default settings.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Performs image loading, barcode reading,
-    /// and outputs timing and detection results to the console.
+    /// Entry point. Accepts optional image path argument, validates file, reads barcodes, and reports timing.
     /// </summary>
-    static void Main()
+    /// <param name="args">Command‑line arguments; first argument may specify the image file path.</param>
+    static void Main(string[] args)
     {
-        // Path to the high‑resolution PNG image
-        string imagePath = "high_res.png";
+        // Determine the image file path (use argument if provided, otherwise default to "barcode.png")
+        string imagePath = args.Length > 0 ? args[0] : "barcode.png";
 
-        // Verify that the image file exists before attempting to load it
+        // Verify that the specified file exists before attempting to read
         if (!File.Exists(imagePath))
         {
-            Console.WriteLine($"File not found: {imagePath}");
+            Console.WriteLine($"Image file not found: {imagePath}");
             return;
         }
 
-        // Load the image into a bitmap using Aspose.Drawing
-        using (Bitmap bitmap = new Bitmap(imagePath))
+        // Initialize BarCodeReader to detect all supported symbologies in the image
+        using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
         {
-            // Initialize the barcode reader and assign the bitmap as the source image
-            using (BarCodeReader reader = new BarCodeReader())
+            // Start timing the recognition process
+            var stopwatch = Stopwatch.StartNew();
+
+            // Perform barcode detection
+            var results = reader.ReadBarCodes();
+
+            // Stop timing after detection completes
+            stopwatch.Stop();
+
+            // Output the elapsed time in milliseconds
+            Console.WriteLine($"Recognition time: {stopwatch.ElapsedMilliseconds} ms");
+
+            // Iterate through detected barcodes and display their type and decoded text
+            foreach (var result in results)
             {
-                reader.SetBarCodeImage(bitmap);
-
-                // Start timing the barcode recognition process
-                Stopwatch sw = Stopwatch.StartNew();
-
-                // Perform barcode detection with default settings
-                BarCodeResult[] results = reader.ReadBarCodes();
-
-                // Stop the timer once detection is complete
-                sw.Stop();
-
-                // Output the elapsed time in milliseconds
-                Console.WriteLine($"Recognition time: {sw.Elapsed.TotalMilliseconds} ms");
-
-                // Iterate through all detected barcodes and display their type and text
-                foreach (BarCodeResult result in results)
-                {
-                    Console.WriteLine($"BarCode Type: {result.CodeTypeName}");
-                    Console.WriteLine($"BarCode CodeText: {result.CodeText}");
-                }
+                Console.WriteLine($"Type: {result.CodeTypeName}, Text: {result.CodeText}");
             }
         }
     }

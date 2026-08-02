@@ -1,104 +1,103 @@
-// Title: Benchmarking AllowIncorrectBarcodes Impact on Scan Speed
-// Description: Generates a set of Code128 barcodes, reads them with and without AllowIncorrectBarcodes, and measures the time difference to illustrate performance gains in high‑throughput scenarios.
+// Title: Benchmark effect of AllowIncorrectBarcodes on barcode scanning performance
+// Description: Demonstrates how disabling AllowIncorrectBarcodes can reduce processing time when scanning many Code128 barcodes.
+// Category-Description: This example belongs to the Aspose.BarCode scanning performance category, illustrating the use of BarCodeReader, QualitySettings, and DecodeType classes to measure recognition speed. Developers often need to optimize high‑throughput barcode scanning by toggling AllowIncorrectBarcodes, which controls validation of barcode integrity. The snippet shows typical setup, generation, and timing of barcode reads for benchmarking purposes.
 // Prompt: Benchmark the time saved by disabling AllowIncorrectBarcodes in a high‑throughput scanning scenario.
-// Tags: barcode, code128, performance, benchmark, allowincorrectbarcodes, Aspose.BarCode
+// Tags: code128, scanning, performance, allowincorrectbarcodes, benchmark, aspose.barcode, generation, recognition
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates how disabling <c>AllowIncorrectBarcodes</c> can improve scanning performance
-/// by benchmarking read operations on a collection of generated Code128 barcodes.
+/// Generates a set of Code128 barcode images and benchmarks the impact of the
+/// <c>AllowIncorrectBarcodes</c> setting on recognition speed using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates barcode images, runs two benchmarks
+    /// Entry point of the example. Creates sample barcodes, runs two benchmarks
     /// (with and without <c>AllowIncorrectBarcodes</c>), and prints the timing results.
     /// </summary>
     static void Main()
     {
         // --------------------------------------------------------------------
-        // 1. Generate a small set of barcode images in memory.
+        // Prepare a folder for sample barcode images
         // --------------------------------------------------------------------
-        var barcodeStreams = new List<MemoryStream>();
-        for (int i = 0; i < 5; i++)
+        string folderPath = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
+        if (!Directory.Exists(folderPath))
         {
-            // Create a barcode generator for Code128 with unique text.
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, $"Test{i}12345"))
-            {
-                // Set a simple size parameter (X-dimension) for readability.
-                generator.Parameters.Barcode.XDimension.Point = 2f;
+            Directory.CreateDirectory(folderPath);
+        }
 
-                // Render the barcode to a bitmap.
-                using (var bitmap = generator.GenerateBarCodeImage())
-                {
-                    // Save the bitmap to a memory stream in PNG format.
-                    var ms = new MemoryStream();
-                    bitmap.Save(ms, ImageFormat.Png);
-                    ms.Position = 0; // Reset position for later reading.
-                    barcodeStreams.Add(ms);
-                }
+        // --------------------------------------------------------------------
+        // Generate a small set of barcode images (5 items)
+        // --------------------------------------------------------------------
+        const int sampleCount = 5;
+        for (int i = 0; i < sampleCount; i++)
+        {
+            string codeText = $"123456789{i}";
+            string filePath = Path.Combine(folderPath, $"code{i}.png");
+
+            // Create a Code128 barcode and save it as PNG
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+            {
+                generator.Save(filePath, BarCodeImageFormat.Png);
             }
         }
 
         // --------------------------------------------------------------------
-        // 2. Benchmark reading with AllowIncorrectBarcodes disabled (default).
+        // Benchmark reading with AllowIncorrectBarcodes = false
         // --------------------------------------------------------------------
-        long timeWithout = BenchmarkReading(barcodeStreams, allowIncorrect: false);
+        TimeSpan timeWithoutAllowIncorrect = BenchmarkReading(folderPath, allowIncorrect: false);
 
         // --------------------------------------------------------------------
-        // 3. Benchmark reading with AllowIncorrectBarcodes enabled.
+        // Benchmark reading with AllowIncorrectBarcodes = true
         // --------------------------------------------------------------------
-        long timeWith = BenchmarkReading(barcodeStreams, allowIncorrect: true);
+        TimeSpan timeWithAllowIncorrect = BenchmarkReading(folderPath, allowIncorrect: true);
 
         // --------------------------------------------------------------------
-        // 4. Output the timing comparison.
+        // Output the results
         // --------------------------------------------------------------------
-        Console.WriteLine($"Reading time without AllowIncorrectBarcodes: {timeWithout} ms");
-        Console.WriteLine($"Reading time with    AllowIncorrectBarcodes: {timeWith} ms");
-        Console.WriteLine($"Time saved (approx.): {timeWithout - timeWith} ms");
+        Console.WriteLine($"Reading time without AllowIncorrectBarcodes: {timeWithoutAllowIncorrect.TotalMilliseconds} ms");
+        Console.WriteLine($"Reading time with AllowIncorrectBarcodes: {timeWithAllowIncorrect.TotalMilliseconds} ms");
+        Console.WriteLine($"Time saved by disabling AllowIncorrectBarcodes: {(timeWithAllowIncorrect - timeWithoutAllowIncorrect).TotalMilliseconds} ms");
     }
 
     /// <summary>
-    /// Measures the time required to read a collection of barcode streams using the specified
-    /// <c>AllowIncorrectBarcodes</c> setting.
+    /// Reads all PNG files in the specified folder using the given <c>AllowIncorrectBarcodes</c> setting
+    /// and returns the elapsed time.
     /// </summary>
-    /// <param name="streams">The barcode image streams to be read.</param>
-    /// <param name="allowIncorrect">If true, the reader will tolerate incorrect barcodes.</param>
-    /// <returns>The elapsed time in milliseconds.</returns>
-    static long BenchmarkReading(List<MemoryStream> streams, bool allowIncorrect)
+    /// <param name="folderPath">Path to the folder containing barcode images.</param>
+    /// <param name="allowIncorrect">Whether to allow incorrect barcodes during recognition.</param>
+    /// <returns>Time taken to read all barcodes.</returns>
+    static TimeSpan BenchmarkReading(string folderPath, bool allowIncorrect)
     {
-        var stopwatch = Stopwatch.StartNew();
+        // Get all PNG files in the folder
+        string[] files = Directory.GetFiles(folderPath, "*.png");
+        Stopwatch sw = new Stopwatch();
+        sw.Start();
 
-        foreach (var stream in streams)
+        // Process each file with BarCodeReader
+        foreach (string file in files)
         {
-            // Ensure the stream is positioned at the beginning before each read.
-            stream.Position = 0;
-
-            // Initialize a barcode reader for Code128.
-            using (var reader = new BarCodeReader(stream, DecodeType.Code128))
+            using (BarCodeReader reader = new BarCodeReader(file, DecodeType.Code128))
             {
-                // Apply the quality setting based on the benchmark parameter.
+                // Apply the requested AllowIncorrectBarcodes setting
                 reader.QualitySettings.AllowIncorrectBarcodes = allowIncorrect;
 
-                // Perform the read operation and iterate over all detected barcodes.
-                foreach (var result in reader.ReadBarCodes())
+                // Perform recognition and access the result to ensure processing
+                foreach (BarCodeResult result in reader.ReadBarCodes())
                 {
-                    // Access the result to simulate processing (e.g., logging).
-                    Console.WriteLine($"Detected: {result.CodeText}");
+                    string _ = result.CodeText;
                 }
             }
         }
 
-        stopwatch.Stop();
-        return stopwatch.ElapsedMilliseconds;
+        sw.Stop();
+        return sw.Elapsed;
     }
 }

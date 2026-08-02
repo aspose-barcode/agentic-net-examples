@@ -1,41 +1,40 @@
 // Title: Generate Code128 Barcode with Custom XDimension
-// Description: Demonstrates setting the XDimension to 3 pixels for a Code128 barcode and saving it as a PNG image.
+// Description: Demonstrates how to generate a Code128 barcode image and set the XDimension to 3 pixels for proper 1D element width.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and QualitySettings to control barcode dimensions. Developers often need to customize module width (XDimension) to meet printing standards or scanner requirements. The snippet shows typical steps: creating a generator, disabling auto‑size, setting XDimension, and saving the image.
 // Prompt: Adjust QualitySettings.XDimension to 3 pixels to match typical 1D barcode element widths.
-// Tags: code128, xdimension, barcode, generation, png, aspose.barcode
+// Tags: barcode, code128, generation, png, xdimension, aspose.barcode, qualitysettings
 
 using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 
 /// <summary>
-/// Example program that creates a Code128 barcode with a custom XDimension (module width)
-/// and saves the result as a PNG file.
+/// Example program that creates a Code128 barcode image with a custom XDimension.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates the barcode and writes a confirmation message.
+    /// Entry point of the application. Generates and saves a barcode PNG file.
     /// </summary>
     static void Main()
     {
-        // Initialize a barcode generator for Code128 with the sample text "1234567890".
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
-        {
-            // Set XDimension to 3 pixels (module width) to match typical 1D barcode element widths.
-            generator.Parameters.Barcode.XDimension.Point = 3f;
+        // Define the output file path for the generated barcode image.
+        const string outputPath = "barcode.png";
 
-            // Disable automatic sizing so that the custom XDimension is respected.
+        // Initialize a BarcodeGenerator for Code128 symbology with sample data.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
+        {
+            // Disable automatic sizing so the manually set XDimension is respected.
             generator.Parameters.AutoSizeMode = AutoSizeMode.None;
 
-            // Optionally set a bar height (in points) for better visual appearance.
-            generator.Parameters.Barcode.BarHeight.Point = 50f;
+            // Set the XDimension (module width) to 3 pixels, matching typical 1D barcode element widths.
+            generator.Parameters.Barcode.XDimension.Pixels = 3f;
 
-            // Save the generated barcode image to a PNG file.
-            generator.Save("code128_xdimension_3.png");
+            // Save the barcode as a PNG image to the specified path.
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user that the barcode has been generated.
-        Console.WriteLine("Barcode generated with XDimension set to 3 pixels.");
+        // Inform the user where the barcode image has been saved.
+        Console.WriteLine($"Barcode image saved to {outputPath}");
     }
 }
