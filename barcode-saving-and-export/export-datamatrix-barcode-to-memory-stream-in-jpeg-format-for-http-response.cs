@@ -1,46 +1,42 @@
-// Title: Export DataMatrix Barcode to JPEG Memory Stream
-// Description: Generates a DataMatrix barcode, saves it as a JPEG into a memory stream, and outputs the image as a Base64 string for HTTP response demonstration.
+// Title: Export DataMatrix Barcode to JPEG MemoryStream
+// Description: Demonstrates exporting a DataMatrix barcode as a JPEG image into a memory stream, suitable for HTTP response.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to create barcodes using the BarcodeGenerator class, encode data into DataMatrix symbology, and output the result in JPEG format. Developers often need to generate barcode images on-the-fly for web APIs, embed them in HTML responses, or store them in databases. The example highlights key API classes such as BarcodeGenerator, EncodeTypes, and BarCodeImageFormat, providing a template for similar barcode export scenarios.
 // Prompt: Export a DataMatrix barcode to a memory stream in JPEG format for HTTP response.
-// Tags: datamatrix, barcode-generation, export, jpeg, memorystream, aspose.barcode, aspose.barcode.generation
+// Tags: datamatrix, export, jpeg, memorystream, barcode generation, aspose.barcode
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates how to generate a DataMatrix barcode and export it as a JPEG image
-/// stored in a <see cref="MemoryStream"/>. The resulting image is shown as a Base64
-/// string, which can be sent in an HTTP response.
+/// Provides an example of generating a DataMatrix barcode and exporting it as a JPEG image
+/// into a memory stream, which can be used directly in an HTTP response.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates a DataMatrix barcode, saves it to a memory
-    /// stream in JPEG format, and writes the Base64 representation to the console.
+    /// Entry point of the example. Generates a DataMatrix barcode, saves it as JPEG into a
+    /// memory stream, and writes the resulting byte size to the console.
     /// </summary>
     static void Main()
     {
-        // Initialize a DataMatrix barcode generator with sample text.
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.DataMatrix, "Sample DataMatrix"))
+        // Define the text to encode in the barcode.
+        const string codeText = "Hello World";
+
+        // Create a memory stream that will hold the JPEG image data.
+        using (var memoryStream = new MemoryStream())
         {
-            // Let the generator automatically determine the optimal size using interpolation.
-            generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
-
-            // Create a memory stream to hold the JPEG image.
-            using (MemoryStream memoryStream = new MemoryStream())
+            // Initialize the barcode generator with DataMatrix symbology and the sample text.
+            using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, codeText))
             {
-                // Save the generated barcode into the memory stream as a JPEG.
+                // Save the generated barcode directly into the memory stream in JPEG format.
                 generator.Save(memoryStream, BarCodeImageFormat.Jpeg);
-
-                // Reset the stream position to the beginning for reading.
-                memoryStream.Position = 0;
-
-                // Convert the JPEG bytes to a Base64 string for demonstration (e.g., HTTP response).
-                string base64Image = Convert.ToBase64String(memoryStream.ToArray());
-                Console.WriteLine("DataMatrix JPEG (Base64):");
-                Console.WriteLine(base64Image);
             }
+
+            // Output the size of the generated JPEG image for verification.
+            Console.WriteLine($"Generated DataMatrix JPEG size: {memoryStream.Length} bytes");
         }
     }
 }

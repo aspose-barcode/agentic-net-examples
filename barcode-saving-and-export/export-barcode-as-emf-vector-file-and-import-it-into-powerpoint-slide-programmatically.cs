@@ -1,80 +1,93 @@
-// Title: Export Barcode to EMF and Embed in PowerPoint
-// Description: Generates a Code128 barcode, saves it as an EMF vector image, and inserts the image into a PowerPoint slide.
+// Title: Export barcode to EMF and embed in PowerPoint
+// Description: Demonstrates generating a Code128 barcode, saving it as an EMF vector file, and programmatically inserting it into a PowerPoint slide.
+// Category-Description: This example belongs to the Aspose.BarCode and Aspose.Slides integration category, showcasing how to use BarcodeGenerator to create vector images and Presentation to embed them. Typical use cases include automated report generation, batch creation of slide decks with barcodes, and dynamic document assembly. Developers often need to combine barcode creation with Office document manipulation, using classes like BarcodeGenerator, BarCodeImageFormat, Presentation, and ImageCollection.
 // Prompt: Export a barcode as an EMF vector file and import it into a PowerPoint slide programmatically.
-// Tags: barcode, code128, export, emf, powerpoint, aspose.barcode, aspose.slides
+// Tags: barcode, code128, emf, vector, powerpoint, aspose.barcode, aspose.slides, generation, import
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 using Aspose.Slides;
 using Aspose.Slides.Export;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates how to generate a barcode, export it as an EMF vector file,
-/// and embed the resulting image into a PowerPoint presentation using Aspose APIs.
+/// Demonstrates exporting a barcode as an EMF file and embedding it into a PowerPoint presentation.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a barcode, saves it as EMF,
-    /// creates a PowerPoint slide, and inserts the EMF image.
+    /// Entry point of the example. Generates a Code128 barcode, saves it as EMF, and creates a PPTX with the barcode image.
     /// </summary>
     static void Main()
     {
-        // Define file paths for the intermediate EMF image and the final PPTX file
-        string emfPath = "barcode.emf";
-        string pptxPath = "barcode_presentation.pptx";
+        // Prepare output directory and file paths
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Output");
+        Directory.CreateDirectory(outputDir);
+        string emfPath = Path.Combine(outputDir, "barcode.emf");
+        string pptxPath = Path.Combine(outputDir, "BarcodePresentation.pptx");
 
         // -----------------------------------------------------------------
-        // 1. Generate a barcode and save it as an EMF vector image
+        // 1. Generate a barcode and export it as an EMF vector file
         // -----------------------------------------------------------------
         try
         {
-            // Initialize the barcode generator with Code128 symbology and sample data
-            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
             {
-                // Let the generator automatically determine the optimal size using interpolation
-                generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
+                // Optional visual settings
+                generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
+                generator.Parameters.BackColor = Aspose.Drawing.Color.White;
 
-                // Export the barcode to an EMF file
+                // Save the barcode in EMF format
                 generator.Save(emfPath, BarCodeImageFormat.Emf);
+                Console.WriteLine($"Barcode saved as EMF: {emfPath}");
             }
         }
         catch (Exception ex)
         {
-            // Provide a clear message if the evaluation version blocks EMF export
-            if (ex.Message.Contains("evaluation"))
+            // EMF export requires a licensed version; handle evaluation limitation gracefully
+            if (ex.Message != null && ex.Message.Contains("evaluation", StringComparison.OrdinalIgnoreCase))
             {
-                Console.WriteLine("A valid Aspose.BarCode license is required for EMF export of this barcode type.");
+                Console.WriteLine("A valid Aspose.BarCode license is required for EMF export.");
                 return;
             }
 
-            // Re‑throw unexpected exceptions
-            throw;
+            Console.WriteLine($"Error generating barcode: {ex.Message}");
+            return;
         }
 
         // -----------------------------------------------------------------
-        // 2. Create a PowerPoint presentation and insert the EMF image
+        // 2. Create a PowerPoint presentation and embed the EMF image
         // -----------------------------------------------------------------
-        using (Presentation pres = new Presentation())
+        try
         {
-            // The newly created presentation contains a single default slide
-            var slide = pres.Slides[0];
+            using (var presentation = new Presentation())
+            {
+                // Use the first (default) slide
+                var slide = presentation.Slides[0];
 
-            // Read the EMF file into a byte array and add it to the presentation's image collection
-            byte[] emfBytes = File.ReadAllBytes(emfPath);
-            IPPImage emfImage = pres.Images.AddImage(emfBytes);
+                // Load EMF image bytes and add to the presentation's image collection
+                byte[] emfBytes = File.ReadAllBytes(emfPath);
+                var image = presentation.Images.AddImage(emfBytes);
 
-            // Insert the EMF image onto the slide as a picture frame
-            // Position (0,0) and size (400x300) are arbitrary and can be adjusted as needed
-            slide.Shapes.AddPictureFrame(ShapeType.Rectangle, 0, 0, 400, 300, emfImage);
+                // Define picture frame position and size (in points)
+                float x = 50f;
+                float y = 50f;
+                float width = 400f;
+                float height = 150f;
 
-            // Save the populated presentation to a PPTX file
-            pres.Save(pptxPath, SaveFormat.Pptx);
+                // Insert the EMF image as a picture frame
+                slide.Shapes.AddPictureFrame(ShapeType.Rectangle, x, y, width, height, image);
+
+                // Save the presentation
+                presentation.Save(pptxPath, SaveFormat.Pptx);
+                Console.WriteLine($"Presentation saved: {pptxPath}");
+            }
         }
-
-        Console.WriteLine("Barcode exported as EMF and embedded into PowerPoint slide successfully.");
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error creating presentation: {ex.Message}");
+        }
     }
 }

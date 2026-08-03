@@ -1,55 +1,56 @@
-// Title: Generate Code128 Barcode GIF and Send via TCP
-// Description: Creates a Code128 barcode, saves it as a GIF directly to a network stream, and transmits it to a TCP server in real time.
+// Title: Write barcode GIF to network stream using BarcodeGenerator.Save
+// Description: Demonstrates generating a Code128 barcode and sending it as a GIF image over a TCP connection in real‑time.
+// Category-Description: This example belongs to the Aspose.BarCode image generation and network transmission category. It showcases the use of BarcodeGenerator, its Parameters, and the Save method with BarCodeImageFormat to produce barcode images directly to streams. Typical scenarios include real‑time barcode delivery to remote services, printers, or web clients where immediate transmission is required. Developers often need to generate barcodes on‑the‑fly and stream them without intermediate files.
 // Prompt: Use BarcodeGenerator.Save to write a GIF image to a network stream for real‑time transmission.
-// Tags: barcode, code128, gif, network, tcp, aspnet, aspose.barcode, generation
+// Tags: barcode, code128, gif, network, stream, save, aspnet, aspose.barcode, generation
 
 using System;
+using System.IO;
 using System.Net.Sockets;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generating a Code128 barcode as a GIF and sending it over a TCP connection.
+/// Demonstrates generating a Code128 barcode and transmitting it as a GIF image over a TCP connection.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates the barcode and streams it to a TCP server.
+    /// Entry point of the example. Connects to a TCP server and streams the generated barcode.
     /// </summary>
     static void Main()
     {
-        // Barcode data to encode
-        const string codeText = "1234567890";
+        // Server details for the network transmission
+        string server = "127.0.0.1";
+        int port = 5000;
 
-        // Destination server details (modify as required)
-        const string host = "localhost";
-        const int port = 5000;
-
-        try
+        // Create a barcode generator for Code128 with sample text
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
         {
-            // Establish a TCP connection to the target server
-            using (TcpClient client = new TcpClient())
-            {
-                client.Connect(host, port);
+            // Optional: set a higher resolution for better image quality
+            generator.Parameters.Resolution = 300;
 
-                // Obtain the network stream for sending data
-                using (NetworkStream networkStream = client.GetStream())
+            try
+            {
+                // Establish a TCP connection to the server
+                using (TcpClient client = new TcpClient())
                 {
-                    // Initialize the barcode generator for Code128 symbology
-                    using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+                    client.Connect(server, port);
+
+                    // Obtain the network stream for writing data
+                    using (NetworkStream networkStream = client.GetStream())
                     {
-                        // Directly write the generated barcode as a GIF to the network stream
+                        // Save the barcode directly to the network stream as a GIF image
                         generator.Save(networkStream, BarCodeImageFormat.Gif);
+                        networkStream.Flush(); // Ensure all data is sent
                     }
                 }
             }
-
-            Console.WriteLine("Barcode GIF sent successfully.");
-        }
-        catch (Exception ex)
-        {
-            // Output any errors that occur during the process
-            Console.WriteLine($"Error: {ex.Message}");
+            catch (Exception ex)
+            {
+                // Log any errors that occur during transmission
+                Console.WriteLine("Error transmitting barcode: " + ex.Message);
+            }
         }
     }
 }
