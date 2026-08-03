@@ -1,82 +1,152 @@
-// Title: Merge multiple barcode state XML files into a single summary document
-// Description: Demonstrates importing Aspose.BarCode.BarCodeReader state from several XML files, extracting detected barcodes, and writing a consolidated XML summary.
+// Title: Merge Multiple XML State Files into a Single Barcode Summary
+// Description: Demonstrates merging several XML state files that contain detected barcode information into one consolidated summary document.
+// Category-Description: This example belongs to the Aspose.BarCode file handling category, illustrating how to work with barcode state XML files using standard .NET XML APIs. It shows typical use cases such as aggregating results from multiple scans, generating a unified report, and preparing data for further processing. Developers often need to read, combine, and export barcode metadata, leveraging classes like BarCodeReader, BarCodeGenerator, and XDocument.
 // Prompt: Implement a feature that merges multiple XML state files into a single document summarizing all detected barcodes.
-// Tags: barcode symbology, import, xml, summary, aspose.barcode, csharp
+// Tags: barcode symbology, merge, xml, summary, aspose.barcode, file-io
 
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Xml.Linq;
-using Aspose.BarCode.BarCodeRecognition;
-using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Program that merges barcode detection results from multiple Aspose.BarCode state XML files into a single summary XML document.
+/// Provides a console application that merges multiple XML state files containing barcode information
+/// into a single summary XML document. The example creates sample state files, reads them,
+/// aggregates the barcode entries, and writes the combined result to disk.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Reads each XML state file, extracts barcode type and text, and writes a consolidated summary.
+    /// Simple model representing a detected barcode with its type and text.
+    /// </summary>
+    class BarcodeInfo
+    {
+        public string CodeTypeName { get; set; }
+        public string CodeText { get; set; }
+    }
+
+    /// <summary>
+    /// Entry point of the application. Generates sample XML state files, merges them,
+    /// and saves a consolidated summary document.
     /// </summary>
     static void Main()
     {
-        // Define the paths to the XML state files (replace with actual file locations as needed)
-        string[] xmlFiles = { "state1.xml", "state2.xml", "state3.xml" };
+        // Define the folder that will hold the sample XML state files.
+        string stateFolder = "states";
 
-        // List that will hold the combined barcode type and text pairs from all files
-        var mergedBarcodes = new List<(string Type, string CodeText)>();
-
-        // Iterate over each XML file to import its BarCodeReader state
-        foreach (string xmlPath in xmlFiles)
+        // Ensure the folder exists.
+        if (!Directory.Exists(stateFolder))
         {
-            // Verify that the file exists before attempting to import
-            if (!File.Exists(xmlPath))
+            Directory.CreateDirectory(stateFolder);
+        }
+
+        // --------------------------------------------------------------------
+        // Generate a few sample XML state files.
+        // In a real scenario these files would already exist on disk.
+        // --------------------------------------------------------------------
+        GenerateSampleStateFile(Path.Combine(stateFolder, "state1.xml"), new[]
+        {
+            new BarcodeInfo { CodeTypeName = "Code128", CodeText = "ABC123" },
+            new BarcodeInfo { CodeTypeName = "QR", CodeText = "https://example.com" }
+        });
+
+        GenerateSampleStateFile(Path.Combine(stateFolder, "state2.xml"), new[]
+        {
+            new BarcodeInfo { CodeTypeName = "Code39", CodeText = "CODE39VALUE" },
+            new BarcodeInfo { CodeTypeName = "Code128", CodeText = "XYZ789" }
+        });
+
+        // --------------------------------------------------------------------
+        // Collect all barcode entries from every XML file in the folder.
+        // --------------------------------------------------------------------
+        List<BarcodeInfo> allBarcodes = new List<BarcodeInfo>();
+        string[] xmlFiles = Directory.GetFiles(stateFolder, "*.xml");
+
+        foreach (string xmlFile in xmlFiles)
+        {
+            // Load the XML document safely using a FileStream.
+            XDocument doc;
+            using (FileStream fs = new FileStream(xmlFile, FileMode.Open, FileAccess.Read))
             {
-                Console.WriteLine($"Warning: File not found - {xmlPath}");
-                continue;
+                doc = XDocument.Load(fs);
             }
 
-            // Import the BarCodeReader state from the XML file
-            using (BarCodeReader reader = BarCodeReader.ImportFromXml(xmlPath))
+            // Expected XML structure:
+            // <Barcodes>
+            //   <Barcode>
+            //     <CodeTypeName>...</CodeTypeName>
+            //     <CodeText>...</CodeText>
+            //   </Barcode>
+            //   ...
+            // </Barcodes>
+            foreach (XElement barcodeElem in doc.Root.Elements("Barcode"))
             {
-                // If the import fails, report and skip to the next file
-                if (reader == null)
-                {
-                    Console.WriteLine($"Warning: Failed to import {xmlPath}");
-                    continue;
-                }
+                string typeName = barcodeElem.Element("CodeTypeName")?.Value ?? string.Empty;
+                string codeText = barcodeElem.Element("CodeText")?.Value ?? string.Empty;
 
-                // Read barcodes from the imported state; this populates FoundBarCodes if needed
-                foreach (var result in reader.ReadBarCodes())
+                // Only add entries that have both type and text.
+                if (!string.IsNullOrEmpty(typeName) && !string.IsNullOrEmpty(codeText))
                 {
-                    // Add only valid results (non‑null and with a non‑empty CodeText) to the merged list
-                    if (result != null && !string.IsNullOrEmpty(result.CodeText))
-                    {
-                        mergedBarcodes.Add((result.CodeTypeName, result.CodeText));
-                    }
+                    allBarcodes.Add(new BarcodeInfo { CodeTypeName = typeName, CodeText = codeText });
                 }
             }
         }
 
-        // Build a summary XML document containing all collected barcode information
-        var summaryDoc = new XDocument(
+        // --------------------------------------------------------------------
+        // Build the summary XML document that contains all collected barcodes.
+        // --------------------------------------------------------------------
+        XDocument summaryDoc = new XDocument(
+            new XElement("Summary",
+                new XElement("Barcodes",
+                    // Convert each BarcodeInfo into a <Barcode> element.
+                    new List<XElement>(CreateBarcodeElements(allBarcodes))
+                )
+            )
+        );
+
+        // Save the merged summary to a file.
+        string summaryPath = "merged_summary.xml";
+        using (FileStream outStream = new FileStream(summaryPath, FileMode.Create, FileAccess.Write))
+        {
+            summaryDoc.Save(outStream);
+        }
+
+        Console.WriteLine($"Merged summary saved to '{summaryPath}'. Total barcodes: {allBarcodes.Count}");
+    }
+
+    /// <summary>
+    /// Generates a sample XML state file containing the specified barcodes.
+    /// </summary>
+    /// <param name="filePath">Full path where the XML file will be created.</param>
+    /// <param name="barcodes">Array of barcode information to include.</param>
+    static void GenerateSampleStateFile(string filePath, BarcodeInfo[] barcodes)
+    {
+        XDocument doc = new XDocument(
             new XElement("Barcodes",
-                // Attribute indicating the total number of barcodes found across all files
-                new XAttribute("TotalCount", mergedBarcodes.Count),
-                // Timestamp of when the summary was generated (ISO 8601 format)
-                new XElement("GeneratedOn", DateTime.UtcNow.ToString("o")),
-                // Container for individual barcode entries
-                new XElement("Items",
-                    new List<XElement>(mergedBarcodes.ConvertAll(bc =>
-                        new XElement("BarCode",
-                            new XAttribute("Type", bc.Type),
-                            new XAttribute("CodeText", bc.CodeText)))))));
+                new List<XElement>(CreateBarcodeElements(barcodes))
+            )
+        );
 
-        // Define the output path for the merged summary XML
-        string outputPath = "merged_summary.xml";
+        using (FileStream fs = new FileStream(filePath, FileMode.Create, FileAccess.Write))
+        {
+            doc.Save(fs);
+        }
+    }
 
-        // Save the summary document to disk
-        summaryDoc.Save(outputPath);
-        Console.WriteLine($"Merged summary saved to {outputPath}");
+    /// <summary>
+    /// Converts a collection of <see cref="BarcodeInfo"/> objects into a sequence of <see cref="XElement"/>
+    /// representing individual <c>&lt;Barcode&gt;</c> elements.
+    /// </summary>
+    /// <param name="barcodes">Enumerable of barcode information.</param>
+    /// <returns>IEnumerable of <see cref="XElement"/> ready for inclusion in an XML document.</returns>
+    static IEnumerable<XElement> CreateBarcodeElements(IEnumerable<BarcodeInfo> barcodes)
+    {
+        foreach (var b in barcodes)
+        {
+            yield return new XElement("Barcode",
+                new XElement("CodeTypeName", b.CodeTypeName),
+                new XElement("CodeText", b.CodeText)
+            );
+        }
     }
 }

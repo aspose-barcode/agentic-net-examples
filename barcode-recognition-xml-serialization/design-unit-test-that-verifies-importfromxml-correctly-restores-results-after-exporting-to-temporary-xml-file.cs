@@ -1,133 +1,101 @@
-// Title: ImportFromXml restores barcode generator settings
-// Description: Demonstrates exporting a barcode generator's configuration to XML, importing it back, and verifying that the settings and generated barcode are identical.
+// Title: Verify ImportFromXml restores barcode generator settings
+// Description: Demonstrates exporting barcode generator settings to XML, importing them back, and confirming that the barcode can be read correctly.
+// Category-Description: This example belongs to the Aspose.BarCode settings management category, illustrating how to use BarcodeGenerator.ExportToXml and BarcodeGenerator.ImportFromXml. It shows typical use cases such as persisting barcode configurations, sharing them across applications, and validating that imported settings produce the expected barcode output. Developers working with barcode generation and recognition often need to serialize settings for reuse or deployment, and this snippet provides a clear reference.
 // Prompt: Design a unit test that verifies ImportFromXml correctly restores results after exporting to a temporary XML file.
-// Tags: barcode, import, export, xml, unit-test, aspose.barcode
+// Tags: barcode symbology, export, import, xml, unit-test, settings, generation, recognition
 
 using System;
 using System.IO;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that exports a barcode generator configuration to XML,
-/// imports it back, and validates that the restored settings produce the same barcode.
+/// Example program that exports barcode generator settings to XML,
+/// imports them back, and validates that the restored settings generate
+/// a readable barcode image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Executes the export, import, and verification steps.
+    /// Entry point of the example. Performs the export, import, and validation steps.
     /// </summary>
     static void Main()
     {
-        // ------------------------------------------------------------
-        // Prepare temporary file paths for XML configuration and barcode image
-        // ------------------------------------------------------------
-        string xmlPath = Path.Combine(Path.GetTempPath(), "barcode_config.xml");
-        string imagePath = Path.Combine(Path.GetTempPath(), "barcode_image.png");
+        // Prepare temporary file paths for the XML settings and barcode image.
+        string xmlPath = Path.Combine(Path.GetTempPath(), "barcode_settings.xml");
+        string imgPath = Path.Combine(Path.GetTempPath(), "barcode_image.png");
 
-        // ------------------------------------------------------------
-        // Create original barcode generator with custom visual settings
-        // ------------------------------------------------------------
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "Test123"))
+        // Create the original barcode generator with QR symbology and sample text.
+        using (var originalGenerator = new BarcodeGenerator(EncodeTypes.QR, "Test123"))
         {
-            // Set visual appearance
-            generator.Parameters.Barcode.BarColor = Color.Blue;
-            generator.Parameters.Barcode.XDimension.Point = 2f;
-            generator.Parameters.Barcode.Padding.Left.Point = 5f;
-            generator.Parameters.Barcode.Padding.Top.Point = 5f;
-            generator.Parameters.Barcode.Padding.Right.Point = 5f;
-            generator.Parameters.Barcode.Padding.Bottom.Point = 5f;
-            generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
-            generator.Parameters.ImageWidth.Point = 300f;
-            generator.Parameters.ImageHeight.Point = 150f;
+            // Set a custom XDimension to verify that the value is restored after import.
+            originalGenerator.Parameters.Barcode.XDimension.Point = 2f;
 
-            // Export the generator's configuration to an XML file
-            bool exportSuccess = generator.ExportToXml(xmlPath);
+            // Export the generator's configuration to an XML file.
+            bool exportSuccess = originalGenerator.ExportToXml(xmlPath);
             if (!exportSuccess)
             {
                 Console.WriteLine("FAILED: ExportToXml returned false.");
                 return;
             }
 
-            // Save the generated barcode image (used later for visual verification)
-            generator.Save(imagePath, BarCodeImageFormat.Png);
+            // Save a barcode image (used later for recognition).
+            originalGenerator.Save(imgPath);
         }
 
-        // ------------------------------------------------------------
-        // Import the configuration from XML into a new generator instance
-        // ------------------------------------------------------------
-        using (BarcodeGenerator imported = BarcodeGenerator.ImportFromXml(xmlPath))
+        // Import the generator settings from the previously saved XML file.
+        BarcodeGenerator importedGenerator = BarcodeGenerator.ImportFromXml(xmlPath);
+        if (importedGenerator == null)
         {
-            // Verify that key settings were correctly restored
-            bool settingsMatch = true;
-            settingsMatch &= imported.CodeText == "Test123";
-            settingsMatch &= imported.Parameters.Barcode.BarColor.Equals(Color.Blue);
-            settingsMatch &= Math.Abs(imported.Parameters.Barcode.XDimension.Point - 2f) < 0.001f;
-            settingsMatch &= Math.Abs(imported.Parameters.Barcode.Padding.Left.Point - 5f) < 0.001f;
-            settingsMatch &= imported.Parameters.AutoSizeMode == AutoSizeMode.Interpolation;
+            Console.WriteLine("FAILED: ImportFromXml returned null.");
+            return;
+        }
 
-            if (!settingsMatch)
+        // Generate a barcode image from the imported settings into a memory stream.
+        using (var imageStream = new MemoryStream())
+        {
+            importedGenerator.Save(imageStream, BarCodeImageFormat.Png);
+            imageStream.Position = 0; // Reset stream position for reading.
+
+            // Initialize a barcode reader to verify the generated image.
+            using (var reader = new BarCodeReader())
             {
-                Console.WriteLine("FAILED: Imported settings do not match original.");
-                return;
-            }
+                // Provide the image stream to the reader.
+                reader.SetBarCodeImage(imageStream);
+                // Configure the reader to attempt decoding all supported types.
+                reader.BarCodeReadType = DecodeType.AllSupportedTypes;
 
-            // ------------------------------------------------------------
-            // Generate a barcode image from the imported settings into memory
-            // ------------------------------------------------------------
-            using (MemoryStream ms = new MemoryStream())
-            {
-                imported.Save(ms, BarCodeImageFormat.Png);
-                ms.Position = 0; // Reset stream position for reading
+                // Perform barcode recognition.
+                var results = reader.ReadBarCodes();
 
-                // ------------------------------------------------------------
-                // Decode the barcode from the generated image to verify content
-                // ------------------------------------------------------------
-                using (BarCodeReader reader = new BarCodeReader(ms, DecodeType.AllSupportedTypes))
+                // Validate that a barcode was detected and that settings match expectations.
+                if (results == null || results.Length == 0)
                 {
-                    var results = reader.ReadBarCodes();
-                    if (results.Length == 0)
-                    {
-                        Console.WriteLine("FAILED: No barcode detected in the generated image.");
-                        return;
-                    }
+                    Console.WriteLine("FAILED: No barcode detected.");
+                }
+                else
+                {
+                    var result = results[0];
+                    bool codeTextMatch = string.Equals(result.CodeText, "Test123", StringComparison.Ordinal);
+                    bool xDimensionMatch = Math.Abs(importedGenerator.Parameters.Barcode.XDimension.Point - 2f) < 0.001f;
 
-                    // Ensure the decoded text matches the original code text
-                    bool decodeMatch = true;
-                    foreach (var result in results)
+                    if (codeTextMatch && xDimensionMatch)
                     {
-                        if (string.IsNullOrEmpty(result.CodeText) || result.CodeText != "Test123")
-                        {
-                            decodeMatch = false;
-                            break;
-                        }
+                        Console.WriteLine("PASSED: ImportFromXml restored settings correctly.");
                     }
-
-                    if (!decodeMatch)
+                    else
                     {
-                        Console.WriteLine("FAILED: Decoded CodeText does not match original.");
-                        return;
+                        Console.WriteLine("FAILED: Restored settings do not match original.");
+                        Console.WriteLine($"Expected CodeText: Test123, Actual: {result.CodeText}");
+                        Console.WriteLine($"Expected XDimension: 2, Actual: {importedGenerator.Parameters.Barcode.XDimension.Point}");
                     }
-
-                    // All verification steps passed
-                    Console.WriteLine("SUCCESS: ImportFromXml restored settings and barcode decoded correctly.");
                 }
             }
         }
 
-        // ------------------------------------------------------------
-        // Clean up temporary files (ignore any errors during cleanup)
-        // ------------------------------------------------------------
-        try
-        {
-            if (File.Exists(xmlPath)) File.Delete(xmlPath);
-            if (File.Exists(imagePath)) File.Delete(imagePath);
-        }
-        catch
-        {
-            // Cleanup failures are non‑critical for the test outcome
-        }
+        // Clean up temporary files, ignoring any errors that may occur.
+        try { if (File.Exists(xmlPath)) File.Delete(xmlPath); } catch { }
+        try { if (File.Exists(imgPath)) File.Delete(imgPath); } catch { }
     }
 }

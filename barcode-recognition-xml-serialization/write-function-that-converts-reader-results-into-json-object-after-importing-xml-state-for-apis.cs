@@ -1,10 +1,10 @@
-// Title: Convert BarCodeReader results to JSON after importing XML state
-// Description: Demonstrates generating a barcode, exporting the reader state to XML, importing it back, reading barcodes, and converting the results to a JSON document.
+// Title: Convert BarCodeReader results to JSON after XML state import
+// Description: Demonstrates exporting a BarCodeReader configuration to XML, importing it back, and converting the read results into a formatted JSON string.
+// Category-Description: This example belongs to the Aspose.BarCode reading and serialization category. It shows how to use BarCodeReader.ExportToXml, BarCodeReader.ImportFromXml, and related classes to persist reader settings, then deserialize barcode detection results into JSON using System.Text.Json. Developers often need to store reader configurations and share scan results across services, making this pattern useful for API integrations and data pipelines.
 // Prompt: Write a function that converts reader results into a JSON object after importing the XML state for APIs.
-// Tags: barcode symbology, generation, recognition, json, xml, aspose.barcode
+// Tags: barcode symbology, reading, json serialization, export xml, import xml, aspose.barcode
 
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 using Aspose.BarCode.Generation;
@@ -12,62 +12,56 @@ using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Sample program that shows how to generate a barcode, export/import the reader state via XML,
-/// read the barcode, and serialize the results to JSON.
+/// Example program that generates a barcode (if needed), exports a <see cref="BarCodeReader"/> configuration to XML,
+/// imports it back, reads barcodes from an image, and outputs the results as JSON.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
+    /// Entry point of the example. Performs the barcode generation, state export/import, reading, and JSON conversion.
     /// </summary>
     static void Main()
     {
-        // Define temporary file paths for the barcode image and the exported XML state
+        // Define file paths for the barcode image and the exported reader state.
         string imagePath = "barcode.png";
-        string xmlPath = "reader_state.xml";
+        string readerXmlPath = "reader_state.xml";
 
-        // ------------------------------------------------------------
-        // Generate a sample Code128 barcode and save it to a PNG file
-        // ------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
+        // Ensure a barcode image exists; generate one if it does not.
+        if (!File.Exists(imagePath))
         {
-            generator.Save(imagePath);
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
+            {
+                generator.Save(imagePath);
+            }
         }
 
-        // ------------------------------------------------------------
-        // Create a BarCodeReader, export its internal state to XML, then dispose it
-        // ------------------------------------------------------------
-        using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
+        // Create a reader for the image and export its configuration (excluding the image) to XML.
+        using (var initialReader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
         {
-            reader.ExportToXml(xmlPath);
+            // Export the reader's settings to an XML file.
+            initialReader.ExportToXml(readerXmlPath);
         }
 
-        // ------------------------------------------------------------
-        // Import the previously saved reader state from the XML file
-        // ------------------------------------------------------------
-        BarCodeReader importedReader = BarCodeReader.ImportFromXml(xmlPath);
+        // Import a new reader instance from the previously saved XML configuration.
+        BarCodeReader importedReader = BarCodeReader.ImportFromXml(readerXmlPath);
         if (importedReader == null)
         {
             Console.WriteLine("Failed to import BarCodeReader from XML.");
             return;
         }
 
-        // Assign the image source to the imported reader (required after import)
+        // Reassign the image source to the imported reader (required after import).
         importedReader.SetBarCodeImage(imagePath);
 
-        // ------------------------------------------------------------
-        // Read barcodes from the image using the imported reader
-        // ------------------------------------------------------------
+        // Perform barcode detection on the image.
         BarCodeResult[] results = importedReader.ReadBarCodes();
 
-        // ------------------------------------------------------------
-        // Convert each BarCodeResult into an anonymous object suitable for JSON serialization
-        // ------------------------------------------------------------
-        var jsonItems = new List<object>();
+        // Prepare a list of anonymous objects representing the results for JSON serialization.
+        var jsonObjects = new System.Collections.Generic.List<object>();
         foreach (var result in results)
         {
             var region = result.Region.Rectangle;
-            jsonItems.Add(new
+            jsonObjects.Add(new
             {
                 CodeText = result.CodeText,
                 CodeTypeName = result.CodeTypeName,
@@ -84,26 +78,11 @@ class Program
             });
         }
 
-        // ------------------------------------------------------------
-        // Serialize the list of result objects to a formatted JSON string
-        // ------------------------------------------------------------
-        string json = JsonSerializer.Serialize(jsonItems, new JsonSerializerOptions { WriteIndented = true });
+        // Serialize the result list to a formatted JSON string.
+        string json = JsonSerializer.Serialize(jsonObjects, new JsonSerializerOptions { WriteIndented = true });
         Console.WriteLine(json);
 
-        // ------------------------------------------------------------
-        // Clean up resources
-        // ------------------------------------------------------------
+        // Release resources held by the imported reader.
         importedReader.Dispose();
-
-        // Optionally delete temporary files (comment out if you want to keep them)
-        try
-        {
-            if (File.Exists(imagePath)) File.Delete(imagePath);
-            if (File.Exists(xmlPath)) File.Delete(xmlPath);
-        }
-        catch
-        {
-            // Ignore any cleanup errors
-        }
     }
 }
