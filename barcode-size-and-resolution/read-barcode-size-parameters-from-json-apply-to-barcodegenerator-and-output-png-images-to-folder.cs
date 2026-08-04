@@ -1,14 +1,14 @@
-// Title: Batch Barcode Generation from JSON Configuration
-// Description: Demonstrates reading barcode size parameters from a JSON file, applying them to Aspose.BarCode's BarcodeGenerator, and saving PNG images to a folder.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to programmatically create barcodes using the BarcodeGenerator class. It covers typical use cases such as configuring image dimensions, X‑dimension, and bar height based on external data sources like JSON. Developers often need to batch‑process barcode creation with varying parameters, and this snippet illustrates a reusable pattern for such scenarios.
+// Title: Batch Barcode Generation from JSON Parameters
+// Description: Reads barcode size and content settings from a JSON file, generates corresponding barcodes, and saves them as PNG images.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, demonstrating how to use BarcodeGenerator with dynamic parameters. It covers resolving symbology via EncodeTypes, applying image dimensions, and exporting PNG files—common tasks for developers creating bulk barcodes in automated workflows.
 // Prompt: Read barcode size parameters from JSON, apply to BarcodeGenerator, and output PNG images to a folder.
-// Tags: barcode, symbology, generation, json, png, aspose.barcode, size-parameters
+// Tags: barcode, generation, json, png, aspose.barcode, batch, size parameters
 
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using System.Text.Json;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
@@ -16,9 +16,9 @@ using Aspose.Drawing;
 namespace BarcodeBatchGenerator
 {
     /// <summary>
-    /// Represents a single barcode configuration read from JSON.
+    /// Represents the size and content parameters for a single barcode.
     /// </summary>
-    public class BarcodeConfig
+    public class BarcodeParams
     {
         public string Symbology { get; set; }
         public string CodeText { get; set; }
@@ -26,96 +26,126 @@ namespace BarcodeBatchGenerator
         public float? ImageHeight { get; set; }
         public float? XDimension { get; set; }
         public float? BarHeight { get; set; }
-        public string OutputFileName { get; set; }
     }
 
     /// <summary>
-    /// Entry point for the batch barcode generation example.
+    /// Demonstrates reading barcode configuration from a JSON file, generating barcodes with Aspose.BarCode,
+    /// and saving them as PNG images to a specified folder.
     /// </summary>
     class Program
     {
         /// <summary>
-        /// Reads barcode configurations from a JSON file, generates each barcode with the specified size parameters,
-        /// and saves the resulting PNG images to the output folder.
+        /// Entry point of the application. Handles JSON deserialization, barcode generation, and file output.
         /// </summary>
         static void Main()
         {
-            // Path to the JSON file containing barcode size parameters.
-            const string jsonPath = "barcodeConfig.json";
+            const string jsonFileName = "barcodeParams.json";
+            const string outputFolder = "Barcodes";
 
-            // Verify that the configuration file exists before proceeding.
-            if (!File.Exists(jsonPath))
-            {
-                Console.WriteLine($"Configuration file not found: {jsonPath}");
-                return;
-            }
-
-            // Read and deserialize the JSON configuration into a list of BarcodeConfig objects.
-            List<BarcodeConfig> configs;
-            using (FileStream jsonStream = new FileStream(jsonPath, FileMode.Open, FileAccess.Read))
-            {
-                configs = JsonSerializer.Deserialize<List<BarcodeConfig>>(jsonStream);
-            }
-
-            // Ensure that at least one configuration was loaded.
-            if (configs == null || configs.Count == 0)
-            {
-                Console.WriteLine("No barcode configurations found in the JSON file.");
-                return;
-            }
-
-            // Ensure the output directory exists; create it if necessary.
-            const string outputFolder = "GeneratedBarcodes";
+            // Ensure the output directory exists.
             if (!Directory.Exists(outputFolder))
-            {
                 Directory.CreateDirectory(outputFolder);
+
+            // If the JSON configuration file is missing, create a sample file and exit.
+            if (!File.Exists(jsonFileName))
+            {
+                var sample = new List<BarcodeParams>
+                {
+                    new BarcodeParams
+                    {
+                        Symbology = "Code128",
+                        CodeText = "Sample123",
+                        ImageWidth = 300f,
+                        ImageHeight = 150f,
+                        XDimension = 2f,
+                        BarHeight = 50f
+                    },
+                    new BarcodeParams
+                    {
+                        Symbology = "QR",
+                        CodeText = "https://example.com",
+                        ImageWidth = 250f,
+                        ImageHeight = 250f,
+                        XDimension = 3f
+                    }
+                };
+                var sampleJson = JsonSerializer.Serialize(sample, new JsonSerializerOptions { WriteIndented = true });
+                File.WriteAllText(jsonFileName, sampleJson);
+                Console.WriteLine($"Sample JSON created at '{jsonFileName}'. Edit it as needed and rerun the program.");
+                return;
             }
 
-            // Process each barcode configuration.
-            foreach (var cfg in configs)
+            // Read and deserialize the JSON file into a list of BarcodeParams objects.
+            string jsonContent = File.ReadAllText(jsonFileName);
+            List<BarcodeParams> items;
+            try
             {
-                // Resolve the symbology name to the corresponding EncodeTypes field via reflection.
-                var field = typeof(EncodeTypes).GetField(cfg.Symbology);
+                items = JsonSerializer.Deserialize<List<BarcodeParams>>(jsonContent);
+                if (items == null)
+                    throw new Exception("Deserialized list is null.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to parse JSON: {ex.Message}");
+                return;
+            }
+
+            int index = 0;
+            foreach (var item in items)
+            {
+                index++;
+
+                // Validate that a symbology name is provided.
+                if (string.IsNullOrWhiteSpace(item.Symbology))
+                {
+                    Console.WriteLine($"Item {index}: Symbology is missing. Skipping.");
+                    continue;
+                }
+
+                // Resolve the symbology string to a BaseEncodeType using reflection.
+                var field = typeof(EncodeTypes).GetField(item.Symbology);
                 if (field == null)
                 {
-                    Console.WriteLine($"Unknown symbology: {cfg.Symbology}. Skipping entry.");
+                    Console.WriteLine($"Item {index}: Unknown symbology '{item.Symbology}'. Skipping.");
                     continue;
                 }
 
                 var encodeType = (BaseEncodeType)field.GetValue(null);
 
-                // Create the barcode generator with the resolved symbology and provided code text.
-                using (var generator = new BarcodeGenerator(encodeType, cfg.CodeText))
+                // Create a BarcodeGenerator with the resolved type and provided code text.
+                using (BarcodeGenerator generator = new BarcodeGenerator(encodeType, item.CodeText ?? string.Empty))
                 {
-                    // Apply optional size parameters if they are specified in the configuration.
-                    if (cfg.ImageWidth.HasValue)
-                        generator.Parameters.ImageWidth.Point = cfg.ImageWidth.Value;
-                    if (cfg.ImageHeight.HasValue)
-                        generator.Parameters.ImageHeight.Point = cfg.ImageHeight.Value;
-                    if (cfg.XDimension.HasValue)
-                        generator.Parameters.Barcode.XDimension.Point = cfg.XDimension.Value;
-                    if (cfg.BarHeight.HasValue)
-                        generator.Parameters.Barcode.BarHeight.Point = cfg.BarHeight.Value;
+                    // Apply optional size parameters if they are specified.
+                    if (item.ImageWidth.HasValue)
+                        generator.Parameters.ImageWidth.Point = item.ImageWidth.Value;
+                    if (item.ImageHeight.HasValue)
+                        generator.Parameters.ImageHeight.Point = item.ImageHeight.Value;
+                    if (item.XDimension.HasValue)
+                        generator.Parameters.Barcode.XDimension.Point = item.XDimension.Value;
+                    if (item.BarHeight.HasValue)
+                        generator.Parameters.Barcode.BarHeight.Point = item.BarHeight.Value;
 
-                    // Enable interpolation mode when explicit image dimensions are set.
-                    if (cfg.ImageWidth.HasValue || cfg.ImageHeight.HasValue)
-                        generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
+                    // Set a default foreground color (optional).
+                    generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
 
-                    // Determine the output file name; generate a GUID if none is provided.
-                    string fileName = string.IsNullOrWhiteSpace(cfg.OutputFileName)
-                        ? $"{Guid.NewGuid()}.png"
-                        : cfg.OutputFileName;
+                    // Build a safe output file name.
+                    string safeSymbology = item.Symbology.Replace("/", "_");
+                    string outputPath = Path.Combine(outputFolder, $"{safeSymbology}_{index}.png");
 
-                    // Combine the output folder path with the file name.
-                    string outputPath = Path.Combine(outputFolder, fileName);
-
-                    // Save the generated barcode as a PNG image.
-                    generator.Save(outputPath, BarCodeImageFormat.Png);
-                    Console.WriteLine($"Saved barcode to: {outputPath}");
+                    // Save the generated barcode as a PNG file.
+                    try
+                    {
+                        generator.Save(outputPath);
+                        Console.WriteLine($"Item {index}: Barcode saved to '{outputPath}'.");
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Item {index}: Failed to save barcode - {ex.Message}");
+                    }
                 }
             }
 
-            Console.WriteLine("Barcode generation completed.");
+            Console.WriteLine("Processing completed.");
         }
     }
 }

@@ -1,51 +1,47 @@
 // Title: Calculate XDimension in Pixels for 2 mm Module Width at 300 dpi
-// Description: Demonstrates how to compute the X‑dimension (module width) in pixels for a 2 mm barcode module at 300 dpi and apply it to a barcode generator.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to control barcode sizing by setting resolution and X‑dimension. It uses the BarcodeGenerator, EncodeTypes, and generation parameters classes, which are commonly employed when developers need precise physical dimensions for printed barcodes. Typical use cases include packaging, labeling, and compliance with industry standards that require exact module widths.
+// Description: Demonstrates how to compute the XDimension (module width) in pixels for a given millimeter size and DPI, then apply it to a barcode generator.
+// Category-Description: This example belongs to the Aspose.BarCode image generation category, illustrating how to configure barcode dimensions using the BarcodeGenerator and its Parameters.Barcode.XDimension properties. Typical use cases include customizing barcode size for printing or display at specific resolutions. Developers often need to convert physical measurements (mm) to pixel units to ensure consistent rendering across devices.
 // Prompt: Calculate XDimension in Pixels for 2 mm module width at 300 dpi, then set it on generator.
-// Tags: barcode, xdimension, resolution, dpi, code128, image, aspose.barcode, generation
+// Tags: barcode, xdimension, module width, dpi, pixel conversion, aspose.barcode, code128, image generation
 
 using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Example program that calculates the X‑dimension in pixels for a 2 mm module width at 300 dpi
+/// Example program that calculates the XDimension in pixels for a 2 mm module width at 300 dpi
 /// and applies the value to a barcode generator.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Performs the calculation, configures the generator, and saves the barcode image.
+    /// Entry point of the example. Performs the conversion and saves a barcode image.
     /// </summary>
     static void Main()
     {
-        // Desired module (X‑dimension) width: 2 mm.
-        // Convert millimetres to inches: 2 mm = 0.0787401575 inches.
-        // At 300 dpi, pixels = inches × DPI ≈ 23.622 pixels.
-        // Use the exact float value for maximum precision.
-        const float xDimensionPixels = 23.622f;
-        const float resolutionDpi = 300f;
+        // Desired module width in millimeters.
+        const float moduleWidthMm = 2f;
 
-        // Create a barcode generator for Code128 (any symbology could be used here).
+        // Target resolution in dots per inch.
+        const float dpi = 300f;
+
+        // Convert millimeters to inches (1 inch = 25.4 mm).
+        float moduleWidthInches = moduleWidthMm / 25.4f;
+
+        // Calculate the module width in pixels: inches multiplied by DPI.
+        float xDimensionPixels = moduleWidthInches * dpi;
+
+        // Create a barcode generator for Code128 symbology.
         using (var generator = new BarcodeGenerator(EncodeTypes.Code128))
         {
-            // Set the generator's resolution to match the DPI used in the calculation.
-            generator.Parameters.Resolution = resolutionDpi;
-
-            // Apply the calculated X‑dimension in pixels.
-            generator.Parameters.Barcode.XDimension.Pixels = xDimensionPixels;
-
-            // Example codetext to encode.
+            // Set the data to encode.
             generator.CodeText = "1234567890";
+
+            // Apply the calculated XDimension (pixel width of a single module).
+            generator.Parameters.Barcode.XDimension.Pixels = xDimensionPixels;
 
             // Save the generated barcode as a PNG image.
             generator.Save("barcode.png");
         }
-
-        // Inform the user that the barcode has been generated with the specified settings.
-        Console.WriteLine(
-            "Barcode generated with XDimension = {0} pixels at {1} DPI.",
-            xDimensionPixels,
-            resolutionDpi);
     }
 }

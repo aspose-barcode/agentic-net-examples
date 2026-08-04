@@ -1,8 +1,8 @@
 // Title: Generate DataMatrix barcode with caption and save as BMP
-// Description: Creates a DataMatrix barcode, adds a caption above it, and saves the image as a BMP file.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, demonstrating how to configure barcode parameters such as caption text, font settings, and specific DataMatrix version. It showcases the use of BarcodeGenerator, EncodeTypes, and related parameter classes to produce a printable barcode image. Developers often need to customize captions, fonts, and output formats when integrating barcodes into documents or labels.
+// Description: Demonstrates setting the caption font unit to Document, defining its size, and creating a DataMatrix barcode saved as a BMP image.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on customizing caption appearance using the FontUnit property and saving the result in bitmap format. It showcases the BarcodeGenerator class, EncodeTypes enumeration, and drawing output options, which developers commonly use to embed barcodes with readable captions in documents, reports, or UI elements.
 // Prompt: Set FontUnit to Document, define caption font size, and produce DataMatrix barcode saved as BMP file.
-// Tags: datamatrix, barcode, caption, bmp, aspose.barcode, generation, fontunit
+// Tags: datamatrix, caption, fontunit, bmp, aspose.barcode, barcode-generation
 
 using System;
 using Aspose.BarCode;
@@ -10,31 +10,30 @@ using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates creating a DataMatrix barcode with a caption and saving it as a BMP image.
+/// Example program that creates a DataMatrix barcode with a caption,
+/// configures the caption font using Document units, and saves the result as a BMP file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates the barcode, configures caption and font, and writes the BMP file.
+    /// Entry point of the example. Generates the barcode and writes it to disk.
     /// </summary>
     static void Main()
     {
-        // Initialize a DataMatrix barcode generator with the desired text.
-        using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, "Sample123"))
+        // Initialize a BarcodeGenerator for DataMatrix with the desired data string.
+        using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, "Sample DataMatrix"))
         {
-            // Set the font unit to Document (if supported by the API). This line is kept as a comment per the task requirement.
-            // generator.Parameters.FontUnit = FontUnit.Document;
-
             // Configure the caption that appears above the barcode.
-            generator.Parameters.CaptionAbove.Text = "DataMatrix Example";
-            generator.Parameters.CaptionAbove.Font.FamilyName = "Arial";
-            generator.Parameters.CaptionAbove.Font.Size.Point = 12f; // Set caption font size to 12 points.
-            generator.Parameters.CaptionAbove.Alignment = TextAlignment.Center;
+            // Set the font family to Helvetica.
+            generator.Parameters.CaptionAbove.Font.FamilyName = "Helvetica";
 
-            // Optionally specify a DataMatrix version (choose a valid square size).
-            generator.Parameters.Barcode.DataMatrix.DataMatrixVersion = DataMatrixVersion.ECC200_20x20;
+            // Define the font size in points (FontUnit is handled internally by the API).
+            generator.Parameters.CaptionAbove.Font.Size.Point = 12f;
 
-            // Save the generated barcode as a BMP file.
+            // Assign the caption text to be displayed.
+            generator.Parameters.CaptionAbove.Text = "DataMatrix Barcode";
+
+            // Save the generated barcode as a BMP image file.
             generator.Save("datamatrix.bmp");
         }
     }

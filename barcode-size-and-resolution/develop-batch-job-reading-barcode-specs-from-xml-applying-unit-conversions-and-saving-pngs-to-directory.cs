@@ -1,166 +1,107 @@
-// Title: Batch barcode generation from XML specifications
-// Description: Demonstrates reading barcode definition XML files, converting dimensions from millimeters to points, and saving PNG images.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to import settings from XML, apply unit conversions, and produce barcode images. It uses BarcodeGenerator, its Parameters, and image saving APIs—common tasks for developers automating barcode creation in batch processes.
+// Title: Batch Barcode Generation from XML
+// Description: Demonstrates reading barcode specifications from an XML file, applying unit conversions, and saving PNG images.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use BarcodeGenerator, EncodeTypes, and related parameter classes to create barcodes in bulk. Typical use cases include automated creation of product labels, inventory tags, or any scenario where barcode data is defined in external files. Developers often need to parse specifications, apply measurements, and export images in common formats.
 // Prompt: Develop batch job reading barcode specs from XML, applying unit conversions, and saving PNGs to directory.
-// Tags: barcode generation, xml import, unit conversion, png output, aspose.barcode, batch processing
+// Tags: barcode symbology, batch processing, png output, aspose.barcode, xml parsing
 
 using System;
 using System.IO;
+using System.Xml.Linq;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Provides a console application that reads barcode specifications from XML files,
-/// converts measurement units, and generates PNG barcode images.
+/// Reads barcode specifications from an XML file, converts dimensions, and generates PNG images using Aspose.BarCode.
 /// </summary>
 class Program
 {
-    // Conversion factor from millimeters to points (1 mm = 2.83465 points)
-    private const float MmToPoint = 2.83465f;
-
     /// <summary>
-    /// Entry point. Processes up to 10 XML specification files, converts units, and saves PNGs.
+    /// Entry point of the batch barcode generation example.
     /// </summary>
     static void Main()
     {
-        // Input folder containing XML specifications
-        string inputFolder = Path.Combine(Directory.GetCurrentDirectory(), "BarcodeSpecs");
-        // Output folder for generated PNG images
-        string outputFolder = Path.Combine(Directory.GetCurrentDirectory(), "GeneratedBarcodes");
+        // Path to the XML file containing barcode specifications.
+        const string xmlPath = "barcodespecs.xml";
 
-        // Ensure input folder exists; if not, create and place a sample XML
-        if (!Directory.Exists(inputFolder))
+        // Verify that the specification file exists before proceeding.
+        if (!File.Exists(xmlPath))
         {
-            Directory.CreateDirectory(inputFolder);
-            // Sample XML (minimal) – in a real scenario replace with actual specs
-            string sampleXml = Path.Combine(inputFolder, "SampleSpec.xml");
-            File.WriteAllText(sampleXml,
-@"<BarcodeGenerator>
-    <CodeText>Sample123</CodeText>
-    <EncodeType>Code128</EncodeType>
-    <Parameters>
-        <ImageWidth>
-            <Millimeters>50</Millimeters>
-        </ImageWidth>
-        <ImageHeight>
-            <Millimeters>20</Millimeters>
-        </ImageHeight>
-        <Barcode>
-            <XDimension>
-                <Millimeters>0.5</Millimeters>
-            </XDimension>
-            <BarHeight>
-                <Millimeters>10</Millimeters>
-            </BarHeight>
-            <Padding>
-                <Left>
-                    <Millimeters>2</Millimeters>
-                </Left>
-                <Top>
-                    <Millimeters>2</Millimeters>
-                </Top>
-                <Right>
-                    <Millimeters>2</Millimeters>
-                </Right>
-                <Bottom>
-                    <Millimeters>2</Millimeters>
-                </Bottom>
-            </Padding>
-        </Barcode>
-    </Parameters>
-</BarcodeGenerator>");
+            Console.WriteLine($"Specification file not found: {xmlPath}");
+            return;
         }
 
-        // Ensure output folder exists
+        // Directory where generated PNG images will be saved.
+        const string outputFolder = "OutputBarcodes";
+
+        // Ensure the output directory exists.
         if (!Directory.Exists(outputFolder))
         {
             Directory.CreateDirectory(outputFolder);
         }
 
-        // Process each XML file in the input folder (max 10 for safety)
-        string[] xmlFiles = Directory.GetFiles(inputFolder, "*.xml");
-        int processedCount = 0;
-        foreach (string xmlPath in xmlFiles)
+        // Load the XML document containing barcode definitions.
+        XDocument doc;
+        using (FileStream fs = new FileStream(xmlPath, FileMode.Open, FileAccess.Read))
         {
-            if (processedCount >= 10) break; // safety cap
+            doc = XDocument.Load(fs);
+        }
 
-            try
+        // Conversion factor: 1 millimeter = 2.83465 points (Aspose uses points for dimensions).
+        const float mmToPoints = 2.83465f;
+
+        int index = 0;
+
+        // Iterate over each <Barcode> element in the XML.
+        foreach (XElement barcodeElem in doc.Root.Elements("Barcode"))
+        {
+            index++;
+
+            // Extract required and optional values from the XML.
+            string symbologyName = barcodeElem.Element("Symbology")?.Value?.Trim();
+            string codeText = barcodeElem.Element("CodeText")?.Value?.Trim() ?? string.Empty;
+            string xDimMmStr = barcodeElem.Element("XDimensionMm")?.Value?.Trim();
+
+            // Validate that a symbology name is provided.
+            if (string.IsNullOrEmpty(symbologyName))
             {
-                // Import barcode generator settings from XML
-                using (BarcodeGenerator generator = BarcodeGenerator.ImportFromXml(xmlPath))
+                Console.WriteLine($"Barcode #{index}: Symbology name missing, skipping.");
+                continue;
+            }
+
+            // Resolve the symbology name to an EncodeTypes field using reflection.
+            var fieldInfo = typeof(EncodeTypes).GetField(symbologyName);
+            if (fieldInfo == null)
+            {
+                Console.WriteLine($"Barcode #{index}: Unknown symbology '{symbologyName}', skipping.");
+                continue;
+            }
+
+            BaseEncodeType encodeType = (BaseEncodeType)fieldInfo.GetValue(null);
+
+            // Create a BarcodeGenerator instance with the resolved type and code text.
+            using (var generator = new BarcodeGenerator(encodeType, codeText))
+            {
+                // If an XDimension value (in mm) is provided, convert it to points and apply.
+                if (!string.IsNullOrEmpty(xDimMmStr) && float.TryParse(xDimMmStr, out float xDimMm))
                 {
-                    // Apply unit conversions from millimeters to points where applicable
-                    ConvertUnits(generator);
-
-                    // Determine output file name (same as XML but with .png)
-                    string fileNameWithoutExt = Path.GetFileNameWithoutExtension(xmlPath);
-                    string outputPath = Path.Combine(outputFolder, fileNameWithoutExt + ".png");
-
-                    // Save the barcode image as PNG
-                    generator.Save(outputPath, BarCodeImageFormat.Png);
-                    Console.WriteLine($"Generated barcode saved to: {outputPath}");
+                    float xDimPoints = xDimMm * mmToPoints;
+                    generator.Parameters.Barcode.XDimension.Point = xDimPoints;
                 }
+
+                // Optional: set the barcode foreground color to black.
+                generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
+
+                // Build the output file name and path.
+                string fileName = $"{symbologyName}_{index}.png";
+                string outPath = Path.Combine(outputFolder, fileName);
+
+                // Save the generated barcode as a PNG image.
+                generator.Save(outPath, BarCodeImageFormat.Png);
+                Console.WriteLine($"Barcode #{index} saved to: {outPath}");
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error processing '{xmlPath}': {ex.Message}");
-            }
-
-            processedCount++;
         }
 
-        // If no XML files were found, inform the user
-        if (xmlFiles.Length == 0)
-        {
-            Console.WriteLine("No XML specification files found in the input folder.");
-        }
-    }
-
-    // Converts relevant unit properties from millimeters to points
-    private static void ConvertUnits(BarcodeGenerator generator)
-    {
-        // Image width
-        if (generator.Parameters.ImageWidth.Millimeters > 0)
-        {
-            generator.Parameters.ImageWidth.Point = generator.Parameters.ImageWidth.Millimeters * MmToPoint;
-        }
-
-        // Image height
-        if (generator.Parameters.ImageHeight.Millimeters > 0)
-        {
-            generator.Parameters.ImageHeight.Point = generator.Parameters.ImageHeight.Millimeters * MmToPoint;
-        }
-
-        // X dimension (module size)
-        if (generator.Parameters.Barcode.XDimension.Millimeters > 0)
-        {
-            generator.Parameters.Barcode.XDimension.Point = generator.Parameters.Barcode.XDimension.Millimeters * MmToPoint;
-        }
-
-        // Bar height (for 1D barcodes)
-        if (generator.Parameters.Barcode.BarHeight.Millimeters > 0)
-        {
-            generator.Parameters.Barcode.BarHeight.Point = generator.Parameters.Barcode.BarHeight.Millimeters * MmToPoint;
-        }
-
-        // Padding
-        var padding = generator.Parameters.Barcode.Padding;
-        if (padding.Left.Millimeters > 0)
-        {
-            padding.Left.Point = padding.Left.Millimeters * MmToPoint;
-        }
-        if (padding.Top.Millimeters > 0)
-        {
-            padding.Top.Point = padding.Top.Millimeters * MmToPoint;
-        }
-        if (padding.Right.Millimeters > 0)
-        {
-            padding.Right.Point = padding.Right.Millimeters * MmToPoint;
-        }
-        if (padding.Bottom.Millimeters > 0)
-        {
-            padding.Bottom.Point = padding.Bottom.Millimeters * MmToPoint;
-        }
+        Console.WriteLine("Batch processing completed.");
     }
 }

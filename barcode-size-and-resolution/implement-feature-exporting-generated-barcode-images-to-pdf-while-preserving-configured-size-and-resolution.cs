@@ -1,8 +1,8 @@
 // Title: Export Barcode Image to PDF with Preserved Size and Resolution
-// Description: Generates a Code128 barcode, configures its dimensions and DPI, and embeds the image into a PDF while maintaining the exact size.
-// Category-Description: This example belongs to the Aspose.BarCode generation and Aspose.Pdf export category. It demonstrates how to use BarcodeGenerator (Aspose.BarCode.Generation) to create a barcode, adjust its AutoSizeMode, image dimensions, and resolution, then embed the resulting image into a PDF document (Aspose.Pdf) using Image objects. Developers often need to produce printable barcodes with precise sizing for labels, invoices, or reports, and this pattern shows the typical workflow for such scenarios.
+// Description: Demonstrates generating a Code128 barcode, configuring its dimensions and DPI, and exporting it as a PNG embedded in a PDF while keeping the specified size.
+// Category-Description: This example belongs to the Aspose.BarCode image generation and PDF integration category. It shows how to use BarcodeGenerator to set image size and resolution, save the barcode to a stream, and embed it into an Aspose.Pdf Document. Developers often need to create barcodes for reports, invoices, or shipping labels and export them to PDF with exact dimensions.
 // Prompt: Implement feature exporting generated barcode images to PDF while preserving configured size and resolution.
-// Tags: code128, barcode generation, pdf export, image size, resolution, aspose.barcode, aspose.pdf
+// Tags: barcode, code128, pdf, image export, size, resolution, aspose.barcode, aspose.pdf
 
 using System;
 using System.IO;
@@ -11,44 +11,53 @@ using Aspose.BarCode.Generation;
 using Aspose.Pdf;
 
 /// <summary>
-/// Demonstrates exporting a generated barcode image to a PDF file while preserving the configured size and resolution.
+/// Demonstrates generating a barcode, configuring its size and resolution,
+/// and exporting it to a PDF document while preserving those settings.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a barcode, configures its dimensions and DPI, and saves it inside a PDF.
+    /// Entry point of the example. Generates a Code128 barcode, embeds it in a PDF,
+    /// and saves the result to the output folder.
     /// </summary>
     static void Main()
     {
-        // Define the output PDF file name.
-        const string pdfPath = "barcode.pdf";
-
-        // Create a barcode generator for Code128 with sample text.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
+        // Prepare the output directory where the PDF will be saved.
+        string outputDir = "output";
+        if (!Directory.Exists(outputDir))
         {
-            // Preserve size and resolution.
-            generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
-            generator.Parameters.ImageWidth.Point = 300f;   // Width in points (1 point = 1/72 inch).
-            generator.Parameters.ImageHeight.Point = 150f; // Height in points.
-            generator.Parameters.Resolution = 300;         // DPI (dots per inch).
+            Directory.CreateDirectory(outputDir);
+        }
 
-            // Save the barcode image to a memory stream in PNG format.
-            using (var imageStream = new MemoryStream())
+        // Define the full path for the resulting PDF file.
+        string pdfPath = Path.Combine(outputDir, "barcode.pdf");
+
+        // Create a barcode generator for Code128 symbology with the desired text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+        {
+            // Set the barcode image dimensions in points (1 point = 1/72 inch).
+            generator.Parameters.ImageWidth.Point = 300f;
+            generator.Parameters.ImageHeight.Point = 150f;
+
+            // Set the image resolution in DPI to ensure high-quality rendering.
+            generator.Parameters.Resolution = 300f;
+
+            // Save the generated barcode to a memory stream in PNG format.
+            using (var ms = new MemoryStream())
             {
-                generator.Save(imageStream, BarCodeImageFormat.Png);
-                imageStream.Position = 0; // Reset stream position for reading.
+                generator.Save(ms, BarCodeImageFormat.Png);
+                ms.Position = 0; // Reset stream position for reading.
 
-                // Create a PDF document and add the barcode image.
-                using (var pdfDocument = new Document())
+                // Create a new PDF document and add a page to host the barcode image.
+                using (var pdfDoc = new Document())
                 {
-                    // Add a new page to the PDF.
-                    var page = pdfDocument.Pages.Add();
+                    var page = pdfDoc.Pages.Add();
 
-                    // Create an Aspose.Pdf.Image object that reads from the memory stream.
+                    // Create an Aspose.Pdf.Image object linked to the barcode stream.
                     var pdfImage = new Aspose.Pdf.Image
                     {
-                        ImageStream = imageStream,
-                        // Set image size to match the barcode dimensions.
+                        ImageStream = ms,
+                        // Preserve the configured width and height in the PDF.
                         FixWidth = generator.Parameters.ImageWidth.Point,
                         FixHeight = generator.Parameters.ImageHeight.Point
                     };
@@ -57,12 +66,12 @@ class Program
                     page.Paragraphs.Add(pdfImage);
 
                     // Save the PDF document to the specified path.
-                    pdfDocument.Save(pdfPath);
+                    pdfDoc.Save(pdfPath);
                 }
             }
         }
 
-        // Output the full path of the generated PDF for verification.
-        Console.WriteLine($"Barcode exported to PDF: {Path.GetFullPath(pdfPath)}");
+        // Inform the user where the PDF has been saved.
+        Console.WriteLine($"Barcode PDF saved to: {pdfPath}");
     }
 }

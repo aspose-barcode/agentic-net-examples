@@ -1,58 +1,57 @@
-// Title: Verify barcode image width when setting BarCodeWidth in pixels
-// Description: Demonstrates how to set the barcode image width in pixels using Aspose.BarCode and validates the generated image matches the expected width.
-// Category-Description: This example belongs to the Aspose.BarCode image generation category, illustrating the use of BarcodeGenerator, AutoSizeMode, and ImageWidth properties to control output dimensions. Developers often need to produce barcodes with exact pixel sizes for UI layout or printing requirements; this snippet shows how to configure and verify those settings.
+// Title: Verify barcode pixel width using BarCodeWidth property
+// Description: Demonstrates setting the barcode image width in pixels and validates that the generated image matches the expected width.
+// Category-Description: This example belongs to the Aspose.BarCode image generation category, illustrating how to control barcode dimensions via the AutoSizeMode and ImageWidth properties. It uses BarcodeGenerator, EncodeTypes, and related parameter classes to produce barcodes of specific sizes, a common requirement for UI layout, printing, and automated testing scenarios.
 // Prompt: Design unit test verifying BarCodeWidth set in Pixels yields correct pixel width after generation.
-// Tags: code128, barcode width, pixel, image generation, aspose.barcode, aspose.drawing, unit test
+// Tags: barcode, code128, imagewidth, pixels, autosize, unit-test, aspose.barcode, generation
 
 using System;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Entry point for the barcode width verification example.
+/// Example program that generates a Code128 barcode with a specific pixel width
+/// and validates that the resulting image matches the expected dimensions.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Generates a Code128 barcode with a specified pixel width and validates the resulting image dimensions.
+    /// Entry point of the example. Sets up the barcode generator, defines the desired width,
+    /// creates the barcode image, verifies its width, and saves the result to a temporary file.
     /// </summary>
     static void Main()
     {
-        // Expected barcode image width in pixels
-        int expectedWidth = 300;
+        // Desired barcode image width in pixels
+        const int expectedWidth = 300;
 
-        // Initialize a barcode generator for Code128 symbology
+        // Initialize a barcode generator for the Code128 symbology
         using (var generator = new BarcodeGenerator(EncodeTypes.Code128))
         {
-            // Set the data to encode in the barcode
+            // Assign the text to be encoded in the barcode
             generator.CodeText = "Test123";
 
-            // Enable interpolation mode so the ImageWidth setting is applied accurately
+            // Configure the generator to use interpolation for sizing
             generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
 
-            // Define the desired image width in pixels
+            // Set the target image width in pixels
             generator.Parameters.ImageWidth.Pixels = expectedWidth;
 
             // Generate the barcode image as a bitmap
-            using (var bitmap = generator.GenerateBarCodeImage())
+            using (Bitmap bitmap = generator.GenerateBarCodeImage())
             {
-                // Capture the actual width of the generated bitmap
-                int actualWidth = bitmap.Width;
-
-                // Output expected and actual widths for diagnostic purposes
-                Console.WriteLine($"Expected width: {expectedWidth} px");
-                Console.WriteLine($"Actual width:   {actualWidth} px");
-
-                // Simple verification: compare actual width to expected width
-                if (actualWidth == expectedWidth)
+                // Validate that the generated bitmap width matches the expected pixel width
+                if (bitmap.Width != expectedWidth)
                 {
-                    Console.WriteLine("Test passed: BarCodeWidth set in pixels yields correct image width.");
+                    throw new InvalidOperationException(
+                        $"Barcode width mismatch. Expected: {expectedWidth}px, Actual: {bitmap.Width}px");
                 }
-                else
-                {
-                    Console.WriteLine("Test failed: Image width does not match the expected value.");
-                }
+
+                // Save the bitmap to a temporary PNG file for optional visual verification
+                string outputPath = Path.Combine(Path.GetTempPath(), "barcode_test.png");
+                bitmap.Save(outputPath, ImageFormat.Png);
+                Console.WriteLine($"Barcode generated successfully with width {bitmap.Width}px. Saved to {outputPath}");
             }
         }
     }

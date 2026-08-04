@@ -1,62 +1,60 @@
-// Title: Batch Generation of Code128 Barcodes with Varying XDimension Saved as TIFF
-// Description: Demonstrates creating 100 Code128 barcodes, each with a different XDimension measured in millimeters, and saving them as TIFF images.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use the BarcodeGenerator class to produce multiple barcodes in a batch. Typical use cases include bulk creation of product labels, inventory tags, or QR codes where each item requires a unique size or dimension. Developers often need to adjust parameters like XDimension, image format, and auto‑size mode while iterating over large datasets.
+// Title: Batch generation of 100 Code128 barcodes with varying XDimension saved as TIFF
+// Description: Generates 100 Code128 barcodes, each with a unique XDimension value in millimeters, and saves them as TIFF images.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, demonstrating how to configure barcode dimensions (XDimension) and perform batch processing. It showcases the use of BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes to create high‑resolution TIFF outputs—common tasks for developers needing bulk barcode creation for labeling, inventory, or printing workflows.
 // Prompt: Implement batch processing to generate 100 barcodes with varying Millimeter XDimension values, storing each as TIFF.
-// Tags: code128, barcode, batch-processing, tiff, xdimension, generation, aspose.barcode
+// Tags: code128, generation, tiff, xdimension, aspose.barcode, aspose.drawing, batch-processing
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing;
 
 /// <summary>
-/// Generates a batch of Code128 barcodes with incrementally changing XDimension values
-/// and saves each barcode as a TIFF image.
+/// Demonstrates batch creation of 100 Code128 barcodes with incremental XDimension values,
+/// saving each barcode as a TIFF image using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates 100 barcode images with varying XDimension
-    /// measured in millimeters and stores them in a dedicated output folder.
+    /// Entry point of the example. Generates the barcode images and writes the output folder path to the console.
     /// </summary>
     static void Main()
     {
-        // Define the output folder for generated barcode images
-        string outputFolder = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
+        // Define the output directory for generated barcode images.
+        string outputDir = "Barcodes";
 
-        // Ensure the output directory exists
-        if (!Directory.Exists(outputFolder))
+        // Ensure the output directory exists.
+        if (!Directory.Exists(outputDir))
         {
-            Directory.CreateDirectory(outputFolder);
+            Directory.CreateDirectory(outputDir);
         }
 
-        // Number of barcodes to generate (batch size)
-        int sampleCount = 100; // change to desired batch size
-
-        // Loop through the batch, creating each barcode with a unique XDimension
-        for (int i = 1; i <= sampleCount; i++)
+        // Loop to generate 100 barcodes with incremental XDimension (0.1 mm steps).
+        for (int i = 1; i <= 100; i++)
         {
-            // Initialize a new BarcodeGenerator for Code128 symbology
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128))
+            // Create a unique code text for each barcode (e.g., CODE001, CODE002, ...).
+            string codeText = $"CODE{i:D3}";
+
+            // Initialize the barcode generator for Code128 symbology.
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
             {
-                // Set the text to encode (e.g., Sample001, Sample002, ...)
-                generator.CodeText = $"Sample{i:D3}";
+                // Set the XDimension in millimeters (0.1 mm, 0.2 mm, ..., 10.0 mm).
+                float xDimensionMm = i * 0.1f;
+                generator.Parameters.Barcode.XDimension.Millimeters = xDimensionMm;
 
-                // Vary XDimension in millimeters (0.5mm increments per barcode)
-                generator.Parameters.Barcode.XDimension.Millimeters = i * 0.5f;
+                // Optional: increase resolution for higher quality output (300 DPI).
+                generator.Parameters.Resolution = 300;
 
-                // Use interpolation mode to automatically adjust image size if needed
-                generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
+                // Build the full file path for the TIFF image.
+                string filePath = Path.Combine(outputDir, $"barcode_{i:D3}.tiff");
 
-                // Construct the full file path for the TIFF image
-                string filePath = Path.Combine(outputFolder, $"barcode_{i:D3}.tiff");
-
-                // Save the generated barcode as a TIFF file
+                // Save the generated barcode as a TIFF file.
                 generator.Save(filePath, BarCodeImageFormat.Tiff);
             }
         }
 
-        // Output completion message to the console
-        Console.WriteLine($"Generated {sampleCount} barcode images in '{outputFolder}'.");
+        // Inform the user where the barcode images have been saved.
+        Console.WriteLine($"Generated 100 barcode images in: {Path.GetFullPath(outputDir)}");
     }
 }

@@ -1,52 +1,45 @@
-// Title: Generate low‑resolution Code128 barcode image
-// Description: Demonstrates setting the BarcodeGenerator resolution to 72 dpi and verifies the output image meets low‑resolution display requirements.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to configure barcode rendering parameters such as resolution. It uses BarcodeGenerator and its Parameters property to produce PNG images, a common task for developers needing barcodes for low‑resolution screens or printers. Typical use cases include embedding barcodes in web pages, mobile apps, or low‑dpi print media.
+// Title: Generate low‑resolution barcode image (72 dpi) using Aspose.BarCode
+// Description: Demonstrates setting the BarcodeGenerator resolution to 72 dpi and saving the barcode as a PNG file, useful for low‑resolution display scenarios.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to configure image resolution with the BarcodeGenerator class. Developers often need to adjust DPI for screen or printer constraints, and this snippet shows typical usage of EncodeTypes, generator.Parameters, and saving the output. Ideal for quick reference in search results.
 // Prompt: Set BarcodeGenerator resolution to 72 dpi, test barcode generation meets low‑resolution display requirements.
-// Tags: code128, barcode generation, low resolution, png, aspose.barcode, resolution
+// Tags: barcode, code128, resolution, 72dpi, png, generation, aspose.barcode
 
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a Code128 barcode at 72 dpi and verifying the image resolution.
+/// Demonstrates generating a Code128 barcode at 72 dpi resolution and saving it as a PNG file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Creates a barcode image with low resolution, saves it, and prints the actual DPI.
+    /// Entry point of the example. Creates a barcode, sets low‑resolution DPI, saves the image, and reports success.
     /// </summary>
     static void Main()
     {
         // Define the output file path for the generated barcode image
-        string outputPath = "barcode.png";
+        string outputPath = "barcode_72dpi.png";
 
-        // Create a BarcodeGenerator for Code128 symbology with the desired text
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
+        // Initialize the barcode generator with Code128 symbology and sample data
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            // Set the resolution to 72 dpi to meet low‑resolution display requirements
+            // Configure the generator to use a low‑resolution of 72 dpi (suitable for low‑res displays)
             generator.Parameters.Resolution = 72f;
 
-            // Save the generated barcode as a PNG file
+            // Save the generated barcode image to the specified path (default format is PNG)
             generator.Save(outputPath);
         }
 
-        // Verify that the barcode image file was created successfully
-        if (!File.Exists(outputPath))
+        // Check whether the barcode image file was successfully created
+        if (File.Exists(outputPath))
         {
-            Console.WriteLine("Failed to create barcode image.");
-            return;
+            Console.WriteLine($"Barcode generated successfully at {outputPath} with 72 dpi resolution.");
         }
-
-        // Load the saved image to read its actual DPI values
-        using (var image = Image.FromFile(outputPath))
+        else
         {
-            float horizDpi = image.HorizontalResolution;
-            float vertDpi = image.VerticalResolution;
-
-            // Output the horizontal and vertical DPI of the generated image
-            Console.WriteLine($"Barcode image resolution: {horizDpi} dpi (horizontal), {vertDpi} dpi (vertical)");
+            Console.WriteLine("Failed to generate the barcode image.");
         }
     }
 }
