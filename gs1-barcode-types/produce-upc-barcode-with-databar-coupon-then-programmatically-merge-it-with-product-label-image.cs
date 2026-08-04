@@ -1,8 +1,8 @@
-// Title: Generate UPC‑A DataBar Coupon barcode and merge with product label
-// Description: Demonstrates creating a UPC‑A barcode with a GS1 DataBar coupon payload and combining it with an existing product label image.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and image manipulation category. It showcases the use of BarcodeGenerator with EncodeTypes.UpcaGs1DatabarCoupon, setting visual parameters, and merging the generated barcode bitmap onto a product label using Aspose.Drawing graphics. Developers often need to create combined label images for retail packaging, where a barcode is placed on top of product artwork.
+// Title: Generate UPC‑A DataBar Coupon Barcode and Merge with Product Label
+// Description: Demonstrates creating a UPC‑A barcode with a GS1 DataBar coupon symbology, then compositing it onto a product label image.
+// Category-Description: This example belongs to the barcode generation and image manipulation category, showcasing how to use Aspose.BarCode's BarcodeGenerator with EncodeTypes.UpcaGs1DatabarCoupon, configure visual parameters, and combine the generated barcode with other graphics using Aspose.Drawing. Typical use cases include creating product labels, coupons, and packaging artwork where a barcode must be placed on a pre‑designed label.
 // Prompt: Produce a UPC‑A barcode with a DataBar coupon, then programmatically merge it with a product label image.
-// Tags: upc-a, databar, coupon, barcode-generation, image-merge, png, aspose.barcode, aspose.drawing
+// Tags: barcode, upc-a, databar, coupon, image merging, aspose.barcode, aspose.drawing, png, generation
 
 using System;
 using System.IO;
@@ -12,81 +12,62 @@ using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates a UPC‑A DataBar coupon barcode,
-/// saves it as an image, and merges it onto a product label picture.
+/// Example program that generates a UPC‑A GS1 DataBar coupon barcode,
+/// draws it onto a simple product label, and saves the merged image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates the barcode, merges it with a label,
-    /// and writes the resulting images to disk.
+    /// Entry point. Generates the barcode, merges it with a label, and writes the result to disk.
     /// </summary>
     static void Main()
     {
-        // --------------------------------------------------------------------
-        // Define file paths (adjust as needed for your environment)
-        // --------------------------------------------------------------------
-        const string productLabelPath = "product_label.png";
-        const string barcodePath = "barcode.png";
+        // Output file path for the final merged label image
         const string mergedPath = "merged_label.png";
 
-        // Verify that the product label image exists before proceeding
-        if (!File.Exists(productLabelPath))
-        {
-            Console.WriteLine($"Error: Product label image not found at '{productLabelPath}'.");
-            return;
-        }
-
-        // --------------------------------------------------------------------
-        // Prepare the barcode data: UPC‑A with GS1 DataBar coupon payload
-        // --------------------------------------------------------------------
+        // Text to encode – a UPC‑A code with GS1 DataBar coupon data
         const string couponCodeText = "514141100906(8110)106141416543213500110000310123196000";
 
-        // Create a BarcodeGenerator for the UPC‑A DataBar coupon symbology
+        // Create a barcode generator for the UPC‑A GS1 DataBar coupon symbology
         using (var generator = new BarcodeGenerator(EncodeTypes.UpcaGs1DatabarCoupon, couponCodeText))
         {
             // Optional visual customizations
-            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-            generator.Parameters.BackColor = Aspose.Drawing.Color.White;
+            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;   // barcode bars color
+            generator.Parameters.BackColor = Aspose.Drawing.Color.White;         // background color
+            generator.Parameters.Barcode.XDimension.Point = 2f;                  // module (X) size
 
-            // Enable automatic sizing using interpolation
-            generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
-
-            // Set desired image dimensions (points)
-            generator.Parameters.ImageWidth.Point = 300f;
-            generator.Parameters.ImageHeight.Point = 150f;
-
-            // ----------------------------------------------------------------
-            // Generate the barcode bitmap
-            // ----------------------------------------------------------------
-            using (Bitmap barcodeBitmap = generator.GenerateBarCodeImage())
+            // Store the generated barcode image in a memory stream
+            using (var barcodeStream = new MemoryStream())
             {
-                // Save the standalone barcode image (optional)
-                barcodeBitmap.Save(barcodePath, ImageFormat.Png);
+                generator.Save(barcodeStream, BarCodeImageFormat.Png);
+                barcodeStream.Position = 0; // reset stream position for reading
 
-                // Load the existing product label image
-                using (Image productImage = Image.FromFile(productLabelPath))
+                // Load the barcode image from the memory stream
+                using (var barcodeImage = Image.FromStream(barcodeStream))
                 {
-                    // Prepare a graphics object for drawing onto the label
-                    using (Graphics graphics = Graphics.FromImage(productImage))
+                    // Create a blank product label canvas (400 px × 300 px, white background)
+                    using (var labelImage = new Bitmap(400, 300))
                     {
-                        // Define placement margin and calculate position (bottom‑left)
-                        int margin = 50;
-                        int posX = margin;
-                        int posY = productImage.Height - barcodeBitmap.Height - margin;
+                        // Fill the label background with white
+                        using (var gfx = Graphics.FromImage(labelImage))
+                        {
+                            gfx.Clear(Aspose.Drawing.Color.White);
+                        }
 
-                        // Draw the barcode onto the label at the calculated coordinates
-                        graphics.DrawImage(barcodeBitmap, posX, posY, barcodeBitmap.Width, barcodeBitmap.Height);
+                        // Draw the barcode onto the label in the bottom‑right corner with a 10 px margin
+                        using (var gfx = Graphics.FromImage(labelImage))
+                        {
+                            int x = labelImage.Width - barcodeImage.Width - 10;
+                            int y = labelImage.Height - barcodeImage.Height - 10;
+                            gfx.DrawImage(barcodeImage, x, y, barcodeImage.Width, barcodeImage.Height);
+                        }
+
+                        // Save the combined label image as PNG
+                        labelImage.Save(mergedPath, ImageFormat.Png);
+                        Console.WriteLine($"Merged label saved to: {mergedPath}");
                     }
-
-                    // Save the combined label image
-                    productImage.Save(mergedPath, ImageFormat.Png);
                 }
             }
         }
-
-        // Inform the user where the output files are located
-        Console.WriteLine($"Barcode image saved to: {barcodePath}");
-        Console.WriteLine($"Merged label image saved to: {mergedPath}");
     }
 }
