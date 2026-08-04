@@ -1,92 +1,100 @@
 // Title: Batch QR Code Generation from CSV with Custom Font Sizes
-// Description: Demonstrates reading a CSV file and generating QR code images, each using a distinct text and font size.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use BarcodeGenerator, EncodeTypes, and QRErrorLevel to create QR codes in bulk. Typical use cases include batch processing of product identifiers, marketing materials, or any scenario where each barcode requires custom human‑readable text styling. Developers often need to read data sources, apply per‑row formatting, and output images in common formats like PNG.
+// Description: Demonstrates how to read text and font size values from a CSV file and generate QR code images, applying a unique font size for each barcode's human‑readable text.
+// Category-Description: This example is part of the Aspose.BarCode barcode generation collection, showcasing the use of BarcodeGenerator, QR encoding, and CodeTextParameters to customize output. It illustrates typical batch processing scenarios where developers create multiple barcodes from external data sources (e.g., CSV files) and need per‑item visual customization such as font size. Ideal for automating label creation, inventory tagging, or marketing material generation.
 // Prompt: Batch generate QR codes with custom texts from a CSV file, applying unique font sizes per row.
-// Tags: qr,barcode,generation,csv,fontsize,aspose.barcode,aspose.drawing
+// Tags: qr, barcode, generation, csv, font size, aspose.barcode
 
 using System;
 using System.IO;
 using System.Globalization;
-using System.Linq;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates batch generation of QR codes from a CSV file, applying custom font sizes per row.
+/// Generates QR codes in batch by reading text and font size values from a CSV file.
+/// Each QR code is saved as a PNG image with the specified font size applied to the
+/// human‑readable text displayed below the barcode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Reads the CSV, creates QR codes with specified text and font size, and saves them as PNG files.
+    /// Entry point of the application. Handles CSV processing, QR code creation,
+    /// and image output. No interactive console input is required.
     /// </summary>
     static void Main()
     {
-        // Path to the CSV file. Each line should contain: Text,FontSize
+        // Define input CSV path and output folder for generated images
         string csvPath = "input.csv";
+        string outputFolder = "Output";
 
-        // If the CSV does not exist, create a small sample file (5 rows) to keep the example runnable.
-        if (!File.Exists(csvPath))
+        // Ensure the output directory exists
+        if (!Directory.Exists(outputFolder))
         {
-            using (var writer = new StreamWriter(csvPath))
-            {
-                writer.WriteLine("Hello World,12");
-                writer.WriteLine("Aspose.BarCode,14");
-                writer.WriteLine("QR Code Sample,16");
-                writer.WriteLine("Sample Text,10");
-                writer.WriteLine("Final Row,18");
-            }
+            Directory.CreateDirectory(outputFolder);
         }
 
-        // Read all non‑empty lines from the CSV.
-        string[] lines = File.ReadAllLines(csvPath);
-        int rowIndex = 0;
-
-        foreach (string rawLine in lines)
+        // If the CSV file is missing, create a sample file with example rows
+        if (!File.Exists(csvPath))
         {
-            // Skip blank lines.
-            if (string.IsNullOrWhiteSpace(rawLine))
+            string[] sampleLines =
+            {
+                "Hello World,12",
+                "Aspose.BarCode,14",
+                "QR Code Sample,10",
+                "Custom Text,16",
+                "Sample 5,11"
+            };
+            File.WriteAllLines(csvPath, sampleLines);
+        }
+
+        // Read all lines from the CSV file
+        string[] lines = File.ReadAllLines(csvPath);
+        int index = 1;
+
+        // Process each non‑empty line
+        foreach (string line in lines)
+        {
+            if (string.IsNullOrWhiteSpace(line))
                 continue;
 
-            rowIndex++;
-
-            // Split by comma – expected format: Text,FontSize
-            string[] parts = rawLine.Split(new[] { ',' }, 2);
+            // Split the line by comma: first part = text, second part = font size
+            string[] parts = line.Split(',');
             if (parts.Length < 2)
             {
-                Console.WriteLine($"Skipping line {rowIndex}: insufficient columns.");
+                Console.WriteLine($"Skipping invalid line {index}: '{line}'");
                 continue;
             }
 
-            string text = parts[0].Trim();
-            string fontSizeStr = parts[1].Trim();
+            string codeText = parts[0].Trim();
 
-            // Parse font size; fallback to a default size if parsing fails.
-            if (!float.TryParse(fontSizeStr, NumberStyles.Float, CultureInfo.InvariantCulture, out float fontSize))
+            // Parse the font size; fall back to 12 if parsing fails
+            if (!float.TryParse(parts[1].Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out float fontSize))
             {
-                Console.WriteLine($"Invalid font size on line {rowIndex}, using default 12pt.");
+                Console.WriteLine($"Invalid font size on line {index}, using default 12.");
                 fontSize = 12f;
             }
 
-            // Prepare output file name – ensure a valid file name per row.
-            string safeText = string.Concat(Array.FindAll(text.ToCharArray(), c => !Path.GetInvalidFileNameChars().Contains(c)));
-            string outputFile = $"qr_{rowIndex}_{safeText}.png";
-
-            // Generate QR code with the specified text and font size.
-            using (var generator = new BarcodeGenerator(EncodeTypes.QR, text))
+            // Create a QR code generator with the specified text
+            using (var generator = new BarcodeGenerator(EncodeTypes.QR, codeText))
             {
-                // Set human‑readable text font family and size.
-                generator.Parameters.Barcode.CodeTextParameters.Font.FamilyName = "Arial";
+                // Display the human‑readable text below the QR code
+                generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.Below;
+
+                // Apply the custom font size to the code text
                 generator.Parameters.Barcode.CodeTextParameters.Font.Size.Point = fontSize;
 
-                // Optional: set QR error correction level (default is LevelL).
-                generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
+                // Optional: set a high error correction level for better resilience
+                generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
 
-                // Save the barcode image.
-                generator.Save(outputFile);
+                // Build the output file name (e.g., qr_1.png)
+                string outputPath = Path.Combine(outputFolder, $"qr_{index}.png");
+
+                // Save the generated QR code image
+                generator.Save(outputPath);
+                Console.WriteLine($"Generated QR code {index}: '{codeText}' with font size {fontSize} -> {outputPath}");
             }
 
-            Console.WriteLine($"Generated QR code for row {rowIndex}: \"{text}\" with font size {fontSize}pt -> {outputFile}");
+            index++;
         }
 
         Console.WriteLine("Batch QR code generation completed.");

@@ -1,37 +1,44 @@
-// Title: Adjust QR Code Text Gap for High‑Density QR Barcodes
-// Description: Demonstrates how to set a 4‑point gap between a high‑density QR code and its human‑readable text.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on QR code customization. It showcases the use of BarcodeGenerator, EncodeTypes, QRErrorLevel, and CodeTextParameters to control visual layout. Developers often need to fine‑tune text positioning for readability and aesthetic requirements in printed or digital media.
+// Title: Adjust QR Code Text Gap for High‑Density QR Codes
+// Description: Demonstrates how to set the spacing between a QR code and its human‑readable text to 4 points, using Aspose.BarCode for a high‑density QR with error correction level H.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to configure QR code parameters such as error correction level, text location, and text‑barcode gap. It showcases the use of BarcodeGenerator, EncodeTypes, and CodeTextParameters classes—common tasks for developers creating printable or screen‑displayed barcodes with customized appearance.
 // Prompt: Adjust the gap between barcode and its text to 4 points for high‑density QR codes.
-// Tags: qr, gap adjustment, png, barcodegenerator, codetextparameters, qrcodes, aspnet
+// Tags: qr, barcode, text-gap, high-density, aspose.barcode, generation, png
 
 using System;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates adjusting the space between a QR code and its human‑readable text.
+/// Generates a high‑density QR code and sets a 4‑point gap between the barcode and its human‑readable text.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a high‑density QR code with a 4‑point text gap and saves it as PNG.
+    /// Entry point of the example. Creates a QR code, configures its parameters, and saves it as a PNG file.
     /// </summary>
     static void Main()
     {
-        // Initialize a QR code generator with sample text
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "High density QR example"))
+        // Define the output file path in the current working directory.
+        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "high_density_qr.png");
+
+        // Initialize the QR code generator with sample text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
         {
-            // Set QR error correction level to high (Level H) for higher density
+            // Set a high error correction level (Level H) to increase data density.
             generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
 
-            // Adjust the gap between the barcode and its human‑readable text to 4 points
+            // Position the human‑readable text below the QR code.
+            generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.Below;
+
+            // Adjust the gap (space) between the QR code and its text to 4 points.
             generator.Parameters.Barcode.CodeTextParameters.Space.Point = 4f;
 
-            // Save the generated barcode image as PNG
-            generator.Save("HighDensityQR.png");
+            // Save the generated QR code image as a PNG file.
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user that the QR code has been generated
-        Console.WriteLine("QR code generated and saved as HighDensityQR.png");
+        // Inform the user where the QR code image was saved.
+        Console.WriteLine($"QR code saved to: {outputPath}");
     }
 }
