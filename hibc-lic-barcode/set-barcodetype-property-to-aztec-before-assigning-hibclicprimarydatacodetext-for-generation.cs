@@ -1,51 +1,51 @@
-// Title: Generate HIBC Aztec barcode with primary data
-// Description: Demonstrates how to create a HIBC Aztec (HIBCAztecLIC) barcode by setting the barcode type before populating primary data fields, then generating and saving the image as PNG.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category, showcasing the use of ComplexBarcodeGenerator and HIBCLICPrimaryDataCodetext to produce HIBC-compliant barcodes. Developers often need to generate industry-specific barcodes (e.g., HIBC) with custom data for labeling and tracking, using EncodeTypes and image output classes. The snippet illustrates typical steps: configure barcode type, fill required data, generate image, and save to file.
+// Title: Generate HIBC Aztec LIC Barcode with ComplexBarcodeGenerator
+// Description: Demonstrates how to create a HIBC LIC barcode encoded as an Aztec symbol and save it as a PNG image.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category, showcasing the use of ComplexBarcodeGenerator, HIBCLICPrimaryDataCodetext, and PrimaryData classes. Typical use cases include generating HIBC (Health Industry Bar Code) Aztec symbols for product labeling in healthcare and logistics. Developers often need to configure barcode type, set primary data fields, and customize visual appearance before saving the image.
 // Prompt: Set the BarcodeType property to Aztec before assigning a HIBCLICPrimaryDataCodetext for generation.
-// Tags: aztec, hibc, barcode generation, png, complexbarcodegenerator, aspose.barcode
+// Tags: aztec, hibc, lic, barcode generation, png, complexbarcode, aspose.barcode
 
 using System;
+using System.IO;
 using Aspose.BarCode.ComplexBarcode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates a HIBC Aztec barcode using Aspose.BarCode.
+/// Demonstrates generation of a HIBC Aztec LIC barcode and saving it as a PNG file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Creates primary data, sets barcode type, generates the barcode image, and saves it as PNG.
+    /// Entry point of the example. Prepares primary data, configures the barcode, and saves the image.
     /// </summary>
     static void Main()
     {
-        // Create a HIBCLICPrimaryDataCodetext instance to hold barcode configuration and data
-        var primaryCodetext = new HIBCLICPrimaryDataCodetext();
-
-        // Set the barcode type to Aztec (HIBCAztecLIC) BEFORE assigning primary data
-        primaryCodetext.BarcodeType = EncodeTypes.HIBCAztecLIC;
-
-        // Populate the required primary data fields for the HIBC barcode
-        primaryCodetext.Data = new PrimaryData
+        // Prepare primary data for the HIBC LIC barcode (product number, labeler ID, unit of measure)
+        var primaryData = new PrimaryData
         {
-            ProductOrCatalogNumber = "12345",   // Example product/catalog number
-            LabelerIdentificationCode = "A999", // Example labeler ID
-            UnitOfMeasureID = 1                 // Example unit of measure identifier
+            ProductOrCatalogNumber = "12345",
+            LabelerIdentificationCode = "A999",
+            UnitOfMeasureID = 1
         };
 
-        // Initialize the ComplexBarcodeGenerator with the configured primary codetext
-        using (var generator = new ComplexBarcodeGenerator(primaryCodetext))
+        // Create HIBCLICPrimaryDataCodetext and set the barcode type to Aztec
+        var hibcCodetext = new HIBCLICPrimaryDataCodetext
         {
-            // Generate the barcode image as a Bitmap
-            using (Bitmap bitmap = generator.GenerateBarCodeImage())
-            {
-                // Save the generated image to a PNG file
-                bitmap.Save("hibc_aztec.png", ImageFormat.Png);
-            }
-        }
+            BarcodeType = EncodeTypes.HIBCAztecLIC,
+            Data = primaryData
+        };
 
-        // Inform the user that the barcode has been generated
-        Console.WriteLine("HIBC Aztec barcode generated: hibc_aztec.png");
+        // Generate the barcode using ComplexBarcodeGenerator
+        using (var generator = new ComplexBarcodeGenerator(hibcCodetext))
+        {
+            // Optional visual settings: black bars on white background
+            generator.Parameters.Barcode.BarColor = Color.Black;
+            generator.Parameters.BackColor = Color.White;
+
+            // Define output file name and save the barcode as PNG
+            string outputFile = "hibc_aztec.png";
+            generator.Save(outputFile, BarCodeImageFormat.Png);
+            Console.WriteLine($"Barcode saved to: {Path.GetFullPath(outputFile)}");
+        }
     }
 }

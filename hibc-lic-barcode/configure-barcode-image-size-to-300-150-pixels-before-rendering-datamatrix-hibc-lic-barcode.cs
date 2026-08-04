@@ -1,51 +1,43 @@
-// Title: Configure Image Size for HIBC DataMatrix LIC Barcode
-// Description: Demonstrates setting the barcode image dimensions to 300 × 150 pixels before generating a DataMatrix HIBC LIC barcode using Aspose.BarCode.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It showcases the use of ComplexBarcodeGenerator, HIBCLICSecondaryAndAdditionalDataCodetext, and SecondaryAndAdditionalData classes to create HIBC‑LIC DataMatrix barcodes. Developers often need to control image size, format, and secondary data when integrating barcodes into packaging, labeling, or inventory systems.
-// Prompt: Configure barcode image size to 300 × 150 pixels before rendering a DataMatrix HIBC LIC barcode.
-// Tags: datamatrix, hibc, lic, image-size, generation, png, aspose.barcode, complexbarcodegenerator
+// Title: Generate HIBC DataMatrix LIC barcode with custom image size
+// Description: Demonstrates how to set a specific image size (300 × 150 pixels) and generate a DataMatrix HIBC LIC barcode using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to configure image dimensions, colors, and save the result as a PNG. It showcases the BarcodeGenerator class with EncodeTypes.HIBCDataMatrixLIC, a common scenario for developers needing HIBC‑compliant DataMatrix barcodes in healthcare labeling.
+// Prompt: Configure barcode image size to 300 × 150 pixels before rendering a DataMatrix HIBC LIC barcode.
+// Tags: barcode, datamatrix, hibc, image-size, png, generation, aspose.barcodes, aspose.drawing
 
 using System;
-using Aspose.BarCode.ComplexBarcode;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates a HIBC DataMatrix LIC barcode with a custom image size.
+/// Demonstrates configuring image size and generating a HIBC DataMatrix LIC barcode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Prepares secondary data, configures barcode parameters, and saves the image.
+    /// Entry point that creates and saves the barcode image.
     /// </summary>
     static void Main()
     {
-        // Prepare secondary data for the HIBC LIC DataMatrix barcode (e.g., lot number).
-        var secondaryData = new SecondaryAndAdditionalData
-        {
-            LotNumber = "LOT123"
-        };
+        // Sample HIBC DataMatrix LIC codetext (adjust as needed for a valid HIBC string)
+        string codeText = "A12345";
 
-        // Create complex codetext that combines barcode type, link character, and secondary data.
-        var complexCodetext = new HIBCLICSecondaryAndAdditionalDataCodetext
+        // Initialize the barcode generator for HIBC DataMatrix LIC symbology
+        using (var generator = new BarcodeGenerator(EncodeTypes.HIBCDataMatrixLIC, codeText))
         {
-            BarcodeType = EncodeTypes.HIBCDataMatrixLIC,
-            LinkCharacter = '+',
-            Data = secondaryData
-        };
-
-        // Generate the barcode using ComplexBarcodeGenerator.
-        using (var generator = new ComplexBarcodeGenerator(complexCodetext))
-        {
-            // Set the desired image dimensions (300 × 150 pixels).
+            // Set the desired image size: 300 × 150 pixels
             generator.Parameters.ImageWidth.Point = 300f;
             generator.Parameters.ImageHeight.Point = 150f;
 
-            // Save the generated barcode as a PNG file.
-            generator.Save("HIBC_DataMatrix_LIC.png");
+            // Optional: define foreground (bar) and background colors
+            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
+            generator.Parameters.BackColor = Aspose.Drawing.Color.White;
+
+            // Save the generated barcode as a PNG file
+            generator.Save("HIBCDataMatrixLIC.png");
         }
 
-        // Inform the user that the barcode has been created.
-        Console.WriteLine("Barcode generated and saved as HIBC_DataMatrix_LIC.png");
+        Console.WriteLine("Barcode generated and saved as HIBCDataMatrixLIC.png");
     }
 }

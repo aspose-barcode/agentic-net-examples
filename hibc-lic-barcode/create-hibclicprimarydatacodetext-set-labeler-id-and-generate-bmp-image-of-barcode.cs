@@ -1,50 +1,53 @@
 // Title: Generate HIBC Code 128 LIC barcode with primary data and save as BMP
-// Description: Demonstrates creating a HIBCLICPrimaryDataCodetext, setting the labeler ID, and generating a BMP image of the barcode.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category, showcasing the use of ComplexBarcodeGenerator with HIBCCode128LIC symbology. It illustrates how to configure primary data fields, such as product number and labeler identification, and render the barcode to a bitmap image. Developers needing to produce HIBC-compliant barcodes for medical or pharmaceutical labeling can follow this pattern.
+// Description: Demonstrates creating a HIBCLICPrimaryDataCodetext, setting the labeler ID, and exporting the barcode to a BMP image file.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It showcases the use of ComplexBarcodeGenerator with HIBC Code 128 LIC symbology, illustrating how to populate primary data fields such as product number and labeler identification. Developers working with healthcare or logistics barcodes can reference this pattern for creating compliant HIBC barcodes and saving them in various image formats.
 // Prompt: Create a HIBCLICPrimaryDataCodetext, set labeler ID, and generate a BMP image of the barcode.
-// Tags: hibc, code128lic, barcode generation, bmp, complexbarcode, aspnet, aspose.barcode
+// Tags: hibc, code128lic, complexbarcode, barcode generation, bmp, aspnet.barcode, aspose.barcode
 
 using System;
-using Aspose.BarCode.ComplexBarcode;
+using System.IO;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
+using Aspose.BarCode.ComplexBarcode;
 using Aspose.Drawing.Imaging;
 
-/// <summary>
-/// Example program that creates a HIBCLIC primary data codetext,
-/// sets the labeler identification code, and saves the generated barcode as a BMP image.
-/// </summary>
-class Program
+namespace BarcodeSample
 {
     /// <summary>
-    /// Entry point of the application.
+    /// Entry point for the barcode generation sample.
     /// </summary>
-    static void Main()
+    class Program
     {
-        // Initialize HIBCLIC primary data codetext with required fields
-        var primaryCodetext = new HIBCLICPrimaryDataCodetext
+        /// <summary>
+        /// Creates a HIBCLICPrimaryDataCodetext, generates a barcode, and saves it as a BMP file.
+        /// </summary>
+        static void Main()
         {
-            BarcodeType = EncodeTypes.HIBCCode128LIC,
-            Data = new PrimaryData
+            // Initialize primary data codetext for HIBC Code 128 LIC barcode
+            var primaryCodetext = new HIBCLICPrimaryDataCodetext
             {
-                ProductOrCatalogNumber = "12345",
-                LabelerIdentificationCode = "A999", // labeler ID
-                UnitOfMeasureID = 1
-            }
-        };
+                // Select the HIBC Code 128 LIC symbology
+                BarcodeType = EncodeTypes.HIBCCode128LIC,
+                // Populate the required primary data fields
+                Data = new PrimaryData
+                {
+                    ProductOrCatalogNumber = "12345",
+                    LabelerIdentificationCode = "A999", // labeler ID
+                    UnitOfMeasureID = 1 // optional, example value
+                }
+            };
 
-        // Generate the barcode image using ComplexBarcodeGenerator
-        using (var generator = new ComplexBarcodeGenerator(primaryCodetext))
-        {
-            // Render the barcode to a bitmap
-            using (Bitmap bitmap = generator.GenerateBarCodeImage())
+            // Use ComplexBarcodeGenerator to create the barcode image
+            using (var generator = new ComplexBarcodeGenerator(primaryCodetext))
             {
-                // Save the bitmap as a BMP file
-                bitmap.Save("hibc_primary.bmp", ImageFormat.Bmp);
+                // Define output file path
+                string outputPath = "hibc_primary.bmp";
+
+                // Save the generated barcode as a BMP image
+                generator.Save(outputPath, BarCodeImageFormat.Bmp);
+
+                // Inform the user where the file was saved
+                Console.WriteLine($"Barcode image saved to: {Path.GetFullPath(outputPath)}");
             }
         }
-
-        // Inform the user that the image has been saved
-        Console.WriteLine("Barcode image saved as hibc_primary.bmp");
     }
 }

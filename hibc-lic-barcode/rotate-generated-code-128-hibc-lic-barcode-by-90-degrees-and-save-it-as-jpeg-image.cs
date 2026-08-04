@@ -1,53 +1,53 @@
 // Title: Rotate Code 128 HIBC LIC barcode and save as JPEG
-// Description: Generates a HIBC Code 128 LIC barcode with secondary data, rotates the image 90 degrees, and saves it as a JPEG file.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It showcases the use of ComplexBarcodeGenerator, HIBCLICSecondaryAndAdditionalDataCodetext, and SecondaryAndAdditionalData classes to create HIBC‑based barcodes, apply image transformations, and export to common image formats. Developers working with healthcare or logistics barcodes often need to embed additional data, rotate barcodes for label orientation, and produce JPEG outputs for web or print workflows.
+// Description: Demonstrates generating a HIBC LIC Code 128 barcode, rotating it 90 degrees, and saving the result as a JPEG image.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, focusing on complex barcode creation (HIBC LIC) and image manipulation. It showcases the use of ComplexBarcodeGenerator, EncodeTypes, and barcode parameter settings such as rotation, colors, and output format. Developers working with healthcare or logistics barcodes often need to customize orientation and export images for labeling systems.
 // Prompt: Rotate the generated Code 128 HIBC LIC barcode by 90 degrees and save it as a JPEG image.
-// Tags: barcode, code128, hibc, rotation, jpeg, aspose.barcode, complexbarcode, generation
+// Tags: barcode, code128, hibc, rotation, jpeg, aspose.barcode, complexbarcode, image generation
 
 using System;
-using Aspose.BarCode.ComplexBarcode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode.ComplexBarcode;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates how to generate a HIBC Code 128 LIC barcode with secondary data,
-/// rotate the resulting image by 90 degrees, and save it as a JPEG file.
+/// Generates a HIBC LIC Code 128 barcode, rotates it 90 degrees, and saves it as a JPEG image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Performs barcode generation, rotation, and saving.
+    /// Entry point of the example. Prepares the HIBC LIC codetext, configures barcode parameters,
+    /// applies a 90‑degree rotation, and writes the image to disk.
     /// </summary>
     static void Main()
     {
-        // Prepare secondary data (lot number and serial number) for the HIBC LIC barcode.
-        var secondaryData = new SecondaryAndAdditionalData
-        {
-            LotNumber = "LOT123",
-            SerialNumber = "SER123"
-        };
-
-        // Configure the complex codetext, specifying the barcode type, link character, and secondary data.
-        var complexCodetext = new HIBCLICSecondaryAndAdditionalDataCodetext
+        // Prepare HIBC LIC Code 128 complex codetext with required primary data
+        var hibcCodetext = new HIBCLICPrimaryDataCodetext
         {
             BarcodeType = EncodeTypes.HIBCCode128LIC,
-            LinkCharacter = '+',
-            Data = secondaryData
+            Data = new PrimaryData
+            {
+                ProductOrCatalogNumber = "12345",
+                LabelerIdentificationCode = "A999",
+                UnitOfMeasureID = 1
+            }
         };
 
-        // Create a generator for the complex barcode using the configured codetext.
-        using (var generator = new ComplexBarcodeGenerator(complexCodetext))
+        // Create the generator, set rotation and colors, then save as JPEG
+        using (var generator = new ComplexBarcodeGenerator(hibcCodetext))
         {
-            // Generate the barcode image as a bitmap.
-            using (Bitmap bitmap = generator.GenerateBarCodeImage())
-            {
-                // Rotate the bitmap 90 degrees clockwise without flipping.
-                bitmap.RotateFlip(RotateFlipType.Rotate90FlipNone);
+            // Rotate the barcode image by 90 degrees
+            generator.Parameters.RotationAngle = 90f;
 
-                // Save the rotated bitmap to a JPEG file.
-                bitmap.Save("hibc_code128_lic_rotated.jpg", ImageFormat.Jpeg);
-            }
+            // Set foreground (barcode) and background colors
+            generator.Parameters.Barcode.BarColor = Color.Black;
+            generator.Parameters.BackColor = Color.White;
+
+            // Define output file path and save the image
+            const string outputPath = "HIBC_Code128_LIC.jpg";
+            generator.Save(outputPath, BarCodeImageFormat.Jpeg);
+
+            // Inform the user where the file was saved
+            Console.WriteLine($"Barcode saved to {outputPath}");
         }
     }
 }

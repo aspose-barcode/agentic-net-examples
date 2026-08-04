@@ -1,111 +1,110 @@
-// Title: Batch decode HIBC LIC barcodes from TIFF images and export to CSV
-// Description: Demonstrates how to read multiple TIFF files, iterate through each frame, decode HIBC LIC barcodes, and write the results to a CSV file.
-// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, illustrating the use of BarCodeReader with specific DecodeType values (HIBCAztecLIC, HIBCCode128LIC, HIBCDataMatrixLIC, HIBCQRLIC). It shows typical workflows for batch processing image files, handling multi‑page TIFFs, and exporting decoded data, which developers often need when integrating barcode scanning into document processing pipelines.
+// Title: Batch decode HIBC LIC barcodes from TIFF files and export to CSV
+// Description: Demonstrates how to read HIBC LIC barcodes from a folder of TIFF images using Aspose.BarCode and write the results to a CSV file.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition and generation category. It showcases the use of BarCodeReader for batch decoding, DecodeType for specifying symbology, and ComplexBarcodeGenerator for creating sample barcodes. Typical scenarios include processing large sets of medical or pharmaceutical labels, extracting product information, and exporting data for downstream systems. Developers often need to automate bulk barcode extraction and generate test images, making this pattern a common reference.
 // Prompt: Batch decode a folder of TIFF images containing HIBC LIC barcodes and export results to a CSV file.
-// Tags: hibc, lic, barcode, decoding, tiff, csv, batch-processing, aspose.barcode, aspose.drawing
+// Tags: barcode, hibc, lic, tiff, csv, batch, decoding, generation, aspose.barcode, recognition, generation
 
 using System;
 using System.IO;
-using System.Linq;
+using System.Text;
+using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
+using Aspose.BarCode.ComplexBarcode;
 
 /// <summary>
-/// Demonstrates batch decoding of HIBC LIC barcodes from TIFF images and exporting results to a CSV file.
+/// Demonstrates batch decoding of HIBC LIC barcodes from TIFF images and exporting the results to a CSV file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Processes up to 10 TIFF files in the specified input folder,
-    /// decodes HIBC LIC barcodes from each frame, and writes the findings to a CSV file.
+    /// Entry point of the example. Scans a folder for TIFF images, decodes HIBC LIC barcodes,
+    /// and writes the filename, barcode type, and decoded text to a CSV file.
     /// </summary>
     static void Main()
     {
-        // Input folder containing TIFF images
-        string inputFolder = "InputTiffImages";
+        // Define input folder (Barcodes) and output CSV file paths relative to the current directory.
+        string inputFolder = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
+        string csvPath = Path.Combine(Directory.GetCurrentDirectory(), "results.csv");
 
-        // Output CSV file path
-        string outputCsv = "DecodedBarcodes.csv";
-
-        // Ensure input folder exists; if not, create it and exit because there are no files to process
+        // Ensure the input folder exists; create it if it does not.
         if (!Directory.Exists(inputFolder))
         {
-            Console.WriteLine($"Input folder \"{inputFolder}\" does not exist. Creating it.");
             Directory.CreateDirectory(inputFolder);
-            return;
         }
 
-        // Retrieve up to 10 TIFF files (both .tif and .tiff extensions) from the folder
-        var tiffFiles = Directory.GetFiles(inputFolder, "*.*", SearchOption.TopDirectoryOnly)
-                                 .Where(f => f.EndsWith(".tif", StringComparison.OrdinalIgnoreCase) ||
-                                             f.EndsWith(".tiff", StringComparison.OrdinalIgnoreCase))
-                                 .Take(10)
-                                 .ToArray();
-
-        // Open a StreamWriter for the CSV output; overwrite any existing file
-        using (var writer = new StreamWriter(outputCsv, false))
+        // If the folder is empty, generate a few sample HIBC LIC barcode TIFF images for demonstration.
+        string[] existingTiffFiles = Directory.GetFiles(inputFolder, "*.tif");
+        if (existingTiffFiles.Length == 0)
         {
-            // Write CSV header line
-            writer.WriteLine("FileName,FrameIndex,BarcodeType,CodeText");
+            GenerateSampleBarcodes(inputFolder);
+        }
 
-            // Process each TIFF file found
-            foreach (var filePath in tiffFiles)
+        // Open a StreamWriter for the CSV output (UTF‑8 encoding, overwrite existing file).
+        using (var csvWriter = new StreamWriter(csvPath, false, Encoding.UTF8))
+        {
+            // Write CSV header.
+            csvWriter.WriteLine("FileName,BarcodeType,CodeText");
+
+            // Iterate over each TIFF file in the input folder.
+            foreach (string filePath in Directory.GetFiles(inputFolder, "*.tif"))
             {
-                // Extract just the file name for CSV reporting
-                string fileName = Path.GetFileName(filePath);
-
-                // Load the TIFF image using Aspose.Drawing
-                using (var image = Image.FromFile(filePath))
+                // Verify the file still exists before processing.
+                if (!File.Exists(filePath))
                 {
-                    // Determine the number of frames (pages) in the multi‑page TIFF
-                    var frameDimension = FrameDimension.Time;
-                    int frameCount = image.GetFrameCount(frameDimension);
+                    Console.WriteLine($"File not found: {filePath}");
+                    continue;
+                }
 
-                    // Iterate through each frame in the TIFF
-                    for (int frameIndex = 0; frameIndex < frameCount; frameIndex++)
+                // Decode using the HIBC LIC Code128 symbology.
+                using (var reader = new BarCodeReader(filePath, DecodeType.HIBCCode128LIC))
+                {
+                    // Read all barcodes found in the image.
+                    foreach (var result in reader.ReadBarCodes())
                     {
-                        // Select the current frame as the active image
-                        image.SelectActiveFrame(frameDimension, frameIndex);
-
-                        // Save the active frame to a memory stream in PNG format for barcode reading
-                        using (var ms = new MemoryStream())
-                        {
-                            image.Save(ms, ImageFormat.Png);
-                            ms.Position = 0; // Reset stream position before reading
-
-                            // Initialize BarCodeReader to look for HIBC LIC barcode types
-                            using (var reader = new BarCodeReader(
-                                ms,
-                                DecodeType.HIBCAztecLIC,
-                                DecodeType.HIBCCode128LIC,
-                                DecodeType.HIBCDataMatrixLIC,
-                                DecodeType.HIBCQRLIC))
-                            {
-                                // Perform barcode detection on the current frame
-                                var results = reader.ReadBarCodes();
-
-                                // If no barcodes were found, write an empty entry for this frame
-                                if (results.Length == 0)
-                                {
-                                    writer.WriteLine($"{fileName},{frameIndex},,");
-                                }
-                                else
-                                {
-                                    // Write a CSV line for each detected barcode
-                                    foreach (var result in results)
-                                    {
-                                        writer.WriteLine($"{fileName},{frameIndex},{result.CodeTypeName},{result.CodeText}");
-                                    }
-                                }
-                            }
-                        }
+                        // Compose a CSV line with the file name, barcode type, and decoded text.
+                        string line = $"{Path.GetFileName(filePath)},{result.CodeTypeName},{result.CodeText}";
+                        csvWriter.WriteLine(line);
+                        Console.WriteLine(line);
                     }
                 }
             }
         }
 
-        // Inform the user that processing is complete
-        Console.WriteLine($"Decoding completed. Results saved to \"{outputCsv}\".");
+        Console.WriteLine($"Decoding completed. Results saved to: {csvPath}");
+    }
+
+    // Generates a few sample HIBC LIC barcode images (TIFF) for demonstration purposes.
+    private static void GenerateSampleBarcodes(string folderPath)
+    {
+        // Sample data for primary HIBC LIC barcode.
+        var primaryData = new PrimaryData
+        {
+            ProductOrCatalogNumber = "12345",
+            LabelerIdentificationCode = "A999",
+            UnitOfMeasureID = 1
+        };
+
+        // Wrap the primary data in a complex codetext object specifying the barcode type.
+        var complexCodetext = new HIBCLICPrimaryDataCodetext
+        {
+            BarcodeType = EncodeTypes.HIBCCode128LIC,
+            Data = primaryData
+        };
+
+        // Create three sample images with slightly different product numbers.
+        for (int i = 1; i <= 3; i++)
+        {
+            // Modify the product number to make each barcode unique.
+            primaryData.ProductOrCatalogNumber = $"1234{i}";
+            string fileName = Path.Combine(folderPath, $"Sample{i}.tif");
+
+            // Generate the barcode image and save it as a TIFF file.
+            using (var generator = new ComplexBarcodeGenerator(complexCodetext))
+            {
+                generator.Save(fileName, BarCodeImageFormat.Tiff);
+            }
+        }
+
+        Console.WriteLine($"Generated {3} sample HIBC LIC barcode images in '{folderPath}'.");
     }
 }

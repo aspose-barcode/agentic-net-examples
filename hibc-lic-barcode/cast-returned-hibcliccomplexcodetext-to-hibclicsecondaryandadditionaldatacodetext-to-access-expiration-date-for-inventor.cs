@@ -1,79 +1,73 @@
-// Title: HIBC Secondary Data Barcode Generation and Decoding
-// Description: Demonstrates generating a HIBC Code128 LIC barcode that carries secondary data (expiration date, lot number) and decoding it to retrieve the expiration date for inventory processing.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode operations collection. It showcases the use of ComplexBarcodeGenerator, ComplexCodetextReader, and HIBCLICSecondaryAndAdditionalDataCodetext to create and read HIBC‑LIC barcodes. Typical scenarios include healthcare product tracking, pharmaceutical inventory, and any application that needs to embed and later extract secondary information such as expiry dates. Developers often need to generate compliant HIBC barcodes, embed additional data, and reliably decode that data for downstream processing.
+// Title: Decode HIBC QRLIC barcode and access secondary data (expiry date)
+// Description: Demonstrates generating a HIBC QRLIC barcode with secondary and additional data, then decoding it to retrieve the expiration date and lot number.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode operations collection. It showcases how to use ComplexBarcodeGenerator to create a HIBCLICSecondaryAndAdditionalDataCodetext, save the barcode as PNG, and employ BarCodeReader with DecodeType.HIBCQRLIC to read and interpret the complex codetext. Developers working with healthcare inventory or regulatory labeling often need to embed and extract secondary data such as expiry dates, lot numbers, and other attributes using the HIBC QRLIC symbology.
 // Prompt: Cast the returned HIBCLICComplexCodetext to HIBCLICSecondaryAndAdditionalDataCodetext to access expiration date for inventory processing.
-// Tags: hibc, secondary-data, barcode-generation, barcode-decoding, complex-barcode, aspose.barcode
+// Tags: hibc, secondary-and-additional-data, barcode generation, barcode recognition, png, complexbarcode, aspose.barcode
 
 using System;
-using Aspose.BarCode.ComplexBarcode;
+using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
+using Aspose.BarCode.ComplexBarcode;
 
 /// <summary>
-/// Generates a HIBC Code128 LIC barcode containing secondary data, saves the image,
-/// reads it back, and extracts the expiration date for inventory processing.
+/// Example program that generates a HIBC QRLIC barcode containing secondary data,
+/// then decodes the barcode and extracts the expiration date and lot number.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Executes barcode generation, saving, decoding,
-    /// and extraction of the expiration date from the decoded complex codetext.
+    /// Entry point of the example. Generates, saves, reads, and processes a HIBC QRLIC barcode.
     /// </summary>
     static void Main()
     {
         // Prepare secondary data with an expiration date and lot number
         var secondaryData = new SecondaryAndAdditionalData
         {
-            ExpiryDate = DateTime.Today.AddDays(30),          // Set expiry 30 days from today
-            ExpiryDateFormat = HIBCLICDateFormat.MMDDYY,     // Use MMDDYY format as required by HIBC
-            LotNumber = "LOT123"                             // Example lot identifier
+            ExpiryDate = DateTime.Today,
+            ExpiryDateFormat = HIBCLICDateFormat.MMDDYY,
+            LotNumber = "LOT123"
         };
 
-        // Create the complex codetext that holds only secondary data
+        // Create a complex codetext object that holds the secondary data
         var complexCodetext = new HIBCLICSecondaryAndAdditionalDataCodetext
         {
-            BarcodeType = EncodeTypes.HIBCCode128LIC, // Specify HIBC Code128 LIC symbology
-            LinkCharacter = '+',                     // Standard link character for HIBC
-            Data = secondaryData                     // Attach the secondary data object
+            BarcodeType = EncodeTypes.HIBCQRLIC,
+            LinkCharacter = '+',
+            Data = secondaryData
         };
 
-        // Generate the barcode image using the complex codetext
-        using (var generator = new ComplexBarcodeGenerator(complexCodetext))
-        using (Bitmap bitmap = generator.GenerateBarCodeImage())
+        // Generate the barcode image and store it in a memory stream
+        using (var imageStream = new MemoryStream())
         {
-            // Optionally save the image to verify generation (not required for processing)
-            bitmap.Save("hibc_secondary.png", ImageFormat.Png);
-
-            // Decode the barcode from the generated image
-            using (var reader = new BarCodeReader(bitmap, DecodeType.HIBCCode128LIC))
+            using (var generator = new ComplexBarcodeGenerator(complexCodetext))
             {
-                var results = reader.ReadBarCodes();
+                // Save the generated barcode as PNG into the stream
+                generator.Save(imageStream, BarCodeImageFormat.Png);
+            }
 
-                // Ensure at least one barcode was detected
-                if (results.Length == 0)
+            // Reset stream position to the beginning for reading
+            imageStream.Position = 0;
+
+            // Decode the barcode image from the memory stream
+            using (var reader = new BarCodeReader(imageStream, DecodeType.HIBCQRLIC))
+            {
+                foreach (var result in reader.ReadBarCodes())
                 {
-                    Console.WriteLine("No barcode detected.");
-                    return;
-                }
+                    // Attempt to decode the raw codetext into a complex codetext object
+                    var decoded = ComplexCodetextReader.TryDecodeHIBCLIC(result.CodeText);
 
-                // Retrieve the raw codetext from the first detection result
-                string rawCodeText = results[0].CodeText;
-
-                // Parse the raw codetext into a strongly‑typed complex codetext object
-                var parsed = ComplexCodetextReader.TryDecodeHIBCLIC(rawCodeText);
-
-                // Cast to the specific secondary‑data codetext type to access expiration information
-                if (parsed is HIBCLICSecondaryAndAdditionalDataCodetext secondaryResult)
-                {
-                    // Access the expiration date for inventory processing
-                    DateTime expiry = secondaryResult.Data.ExpiryDate;
-                    Console.WriteLine($"Expiration Date: {expiry:yyyy-MM-dd}");
-                }
-                else
-                {
-                    Console.WriteLine("Decoded codetext is not of secondary data type.");
+                    // Cast to the specific secondary-and-additional-data type to access expiry information
+                    if (decoded is HIBCLICSecondaryAndAdditionalDataCodetext secondary)
+                    {
+                        Console.WriteLine("Expiry date: " + secondary.Data.ExpiryDate);
+                        Console.WriteLine("Lot number: " + secondary.Data.LotNumber);
+                    }
+                    else
+                    {
+                        Console.WriteLine("Decoded codetext is not of the expected secondary data type.");
+                    }
                 }
             }
         }

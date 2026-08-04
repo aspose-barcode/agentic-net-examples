@@ -1,91 +1,93 @@
 // Title: Barcode decoding with error handling and logging
-// Description: Demonstrates generating a Code128 barcode, decoding it, and handling decoding failures by checking the decoded text validity, then logging error details to a file.
-// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, illustrating how to use BarCodeGenerator, BarCodeReader, DecodeType, and related classes to read barcodes, verify decoded text validity, and log issues. Developers often need to detect unreadable or corrupted barcodes and record diagnostic information for troubleshooting.
+// Description: Demonstrates generating a Code128 barcode, reading it, checking for decoding validity, and logging results or errors to a file.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It shows how to use BarcodeGenerator to create a barcode image and BarCodeReader to decode it, while handling failures by inspecting the decoded result and recording details. Developers often need to validate decoded text, handle missing or unreadable barcodes, and log outcomes for diagnostics.
 // Prompt: Handle decoding failures by checking BarCodeReader.IsCodeTextValid and recording error details to a log file.
-// Tags: barcode, decoding, error handling, logging, code128, aspose.barcode, barcodereader, iscodetextvalid
+// Tags: barcode, code128, decoding, error-handling, logging, aspose.barcode, generation, recognition
 
 using System;
 using System.IO;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates a barcode, attempts to decode it,
-/// and logs any decoding failures with detailed information.
+/// Demonstrates barcode generation, decoding, and error logging using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a sample barcode, reads it,
-    /// checks for decoding validity, and records errors to a log file.
+    /// Generates a barcode image, attempts to decode it, and writes success or error information to a log file.
     /// </summary>
     static void Main()
     {
         // Paths for the generated barcode image and the log file
-        const string barcodePath = "sample.png";
-        const string logPath = "decode_log.txt";
+        string imagePath = "barcode.png";
+        string logPath = "decode_log.txt";
 
-        // Ensure any previous log is cleared
+        // Ensure previous log is cleared
         if (File.Exists(logPath))
         {
             File.Delete(logPath);
         }
 
-        // Generate a sample barcode image using Code128 symbology
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
+        // Step 1: Generate a sample barcode image
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123ABC"))
         {
-            generator.Save(barcodePath, BarCodeImageFormat.Png);
+            // Optional: set visual parameters for better readability
+            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
+            generator.Parameters.BackColor = Aspose.Drawing.Color.White;
+
+            // Save the barcode to a file
+            generator.Save(imagePath);
         }
 
-        // Prepare the log writer (overwrite existing log)
-        using (var logWriter = new StreamWriter(logPath, append: false))
+        // Step 2: Verify the image file exists before attempting to read
+        if (!File.Exists(imagePath))
         {
-            // Verify that the barcode image file exists before attempting to read
-            if (!File.Exists(barcodePath))
-            {
-                logWriter.WriteLine($"Error: Barcode image file '{barcodePath}' not found.");
-                return;
-            }
+            File.AppendAllText(logPath, $"Error: Barcode image not found at '{imagePath}'.{Environment.NewLine}");
+            return;
+        }
 
-            // Create a BarCodeReader for all supported types
-            using (var reader = new BarCodeReader(barcodePath, DecodeType.AllSupportedTypes))
+        // Step 3: Read the barcode and handle decoding failures
+        try
+        {
+            using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
             {
-                // Perform recognition and obtain an array of results
                 var results = reader.ReadBarCodes();
 
-                // If no barcodes were detected, log the failure
-                if (results == null || results.Length == 0)
+                // No barcodes detected
+                if (results.Length == 0)
                 {
-                    logWriter.WriteLine($"Decoding failed: No barcodes detected in '{barcodePath}'.");
+                    File.AppendAllText(logPath, "Error: No barcode detected in the image." + Environment.NewLine);
                 }
                 else
                 {
                     // Process each detected barcode
                     foreach (var result in results)
                     {
-                        // Check if the decoded text is valid (non‑null and non‑empty)
-                        // In practice, BarCodeResult.IsCodeTextValid can be used for this purpose
-                        if (string.IsNullOrEmpty(result.CodeText))
+                        // BarCodeResult does not expose IsCodeTextValid; treat non‑empty CodeText as valid
+                        bool isValid = !string.IsNullOrEmpty(result.CodeText);
+                        if (isValid)
                         {
-                            // Record details of the failure to the log file
-                            logWriter.WriteLine("Decoding failure:");
-                            logWriter.WriteLine($"  Type: {result.CodeTypeName}");
-                            logWriter.WriteLine($"  Confidence: {result.Confidence}");
-                            logWriter.WriteLine($"  ReadingQuality: {result.ReadingQuality}");
-                            logWriter.WriteLine($"  Region: {result.Region.Rectangle}");
+                            File.AppendAllText(logPath,
+                                $"Decoded successfully: Type={result.CodeTypeName}, Text={result.CodeText}{Environment.NewLine}");
                         }
                         else
                         {
-                            // Successful decode – write info to console (optional)
-                            Console.WriteLine($"Decoded [{result.CodeTypeName}]: {result.CodeText}");
+                            File.AppendAllText(logPath,
+                                $"Decoding failure: Barcode detected but CodeText is empty or null.{Environment.NewLine}");
                         }
                     }
                 }
             }
         }
+        catch (Exception ex)
+        {
+            // Log any unexpected exceptions during reading
+            File.AppendAllText(logPath,
+                $"Exception during barcode reading: {ex.GetType().Name} - {ex.Message}{Environment.NewLine}");
+        }
 
-        // Indicate completion to the user
-        Console.WriteLine("Processing completed. See decode_log.txt for details.");
+        // Output log location to console for quick verification
+        Console.WriteLine($"Decoding process completed. Log written to '{logPath}'.");
     }
 }
