@@ -1,26 +1,28 @@
-// Title: Generate Swiss QR Bill barcode with high‑resolution transparent PNG
-// Description: Demonstrates creating a Swiss QR Bill barcode using Aspose.BarCode, configuring 300 DPI resolution and a transparent background, then saving as PNG.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on complex barcode types such as Swiss QR Bill. It showcases the use of ComplexBarcodeGenerator, SwissQRCodetext, and generation parameters to control image resolution, colors, and output formats—common tasks for developers integrating payment QR codes into applications.
+// Title: Generate High‑Resolution Swiss QR Complex Barcode with Transparent Background
+// Description: Demonstrates creating a Swiss QR bill complex barcode, configuring the generator for 300 DPI resolution and a transparent background, and saving it as a PNG image.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It showcases the use of ComplexBarcodeGenerator together with SwissQRCodetext to produce payment‑oriented QR codes. Developers often need high‑resolution, transparent images for printing invoices or embedding in UI designs, and this pattern illustrates the typical API workflow.
 // Prompt: Configure ComplexBarcodeGenerator for high‑resolution output at 300 DPI with transparent background.
-// Tags: swissqr, barcode, high resolution, transparent background, png, aspose.barcode, complexbarcodegenerator
+// Tags: swissqr, complexbarcode, generation, png, aspose.barcode.complexbarcode, aspose.barcode.generation, aspose.drawing
 
 using System;
-using Aspose.BarCode;
+using System.IO;
 using Aspose.BarCode.ComplexBarcode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a Swiss QR Bill barcode with high resolution and transparent background.
+/// Example program that generates a Swiss QR bill complex barcode with high resolution
+/// and a transparent background, then saves it as a PNG file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Builds Swiss QR codetext, configures generator, and saves PNG image.
+    /// Entry point of the example. Builds the Swiss QR codetext, configures the generator,
+    /// and writes the resulting image to disk.
     /// </summary>
     static void Main()
     {
-        // Prepare SwissQR codetext with mandatory fields
+        // Prepare a Swiss QR codetext (complex barcode data) with creditor and payment details
         var swissQr = new SwissQRCodetext();
         swissQr.Bill.Creditor.Name = "John Doe";
         swissQr.Bill.Creditor.CountryCode = "CH";
@@ -28,20 +30,29 @@ class Program
         swissQr.Bill.Amount = 199.95m;
         swissQr.Bill.Version = SwissQRBill.QrBillStandardVersion.V2_0;
 
-        // Create ComplexBarcodeGenerator with the codetext
+        // Create a ComplexBarcodeGenerator using the prepared codetext
         using (var generator = new ComplexBarcodeGenerator(swissQr))
         {
-            // Set high resolution (300 DPI)
+            // Configure the generator for high‑resolution output (300 DPI)
             generator.Parameters.Resolution = 300f;
 
-            // Set transparent background
-            generator.Parameters.BackColor = Color.Transparent;
+            // Set the background to be fully transparent
+            generator.Parameters.BackColor = Aspose.Drawing.Color.Transparent;
 
-            // Save the barcode image as PNG
-            generator.Save("SwissQR.png");
+            // Define the output file path
+            string outputPath = "complex_highres.png";
+
+            // Ensure the target directory exists before saving
+            string directory = Path.GetDirectoryName(Path.GetFullPath(outputPath));
+            if (!Directory.Exists(directory))
+            {
+                Directory.CreateDirectory(directory);
+            }
+
+            // Save the generated barcode as a PNG image
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user that generation succeeded
         Console.WriteLine("Barcode generated successfully.");
     }
 }

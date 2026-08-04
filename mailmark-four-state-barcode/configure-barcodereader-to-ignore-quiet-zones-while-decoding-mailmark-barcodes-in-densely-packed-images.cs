@@ -1,71 +1,57 @@
-// Title: Ignore Quiet Zones When Decoding Mailmark Barcodes with BarCodeReader
-// Description: Demonstrates configuring BarCodeReader to ignore quiet zones while decoding Mailmark barcodes in densely packed images.
-// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, focusing on Mailmark symbology and quality settings. It showcases the use of BarCodeReader, QualitySettings, and ComplexBarcodeGenerator to generate and read Mailmark barcodes, a common requirement for postal automation and bulk mail processing.
+// Title: Decode Mailmark Barcodes While Ignoring Quiet Zones in Dense Images
+// Description: Demonstrates how to configure Aspose.BarCode's BarCodeReader to decode Mailmark (4‑state) barcodes in a densely packed image, using settings that improve detection when quiet zones are ignored.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, focusing on Mailmark symbology and quality settings. It showcases the use of BarCodeReader, DecodeType.Mailmark, and QualitySettings (DeconvolutionMode, AllowIncorrectBarcodes) to handle challenging image conditions. Developers often need to read Mailmark codes from high‑density documents where quiet zones are minimal or absent, and this snippet provides a practical pattern for such scenarios.
 // Prompt: Configure BarCodeReader to ignore quiet zones while decoding Mailmark barcodes in densely packed images.
-// Tags: mailmark, barcode, reader, quiet zone, decode, aspose.barcode, qualitysettings, complexbarcode
+// Tags: mailmark, barcode, decoding, quiet zones, deconvolution, allowincorrectbarcodes, c#, aspose.barcode
 
 using System;
 using System.IO;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.BarCode.ComplexBarcode;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates a Mailmark barcode, then reads it while configuring the reader
-/// to ignore quiet zones (via quality settings) for better detection in densely packed images.
+/// Provides an example of decoding Mailmark barcodes while ignoring quiet zones.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a Mailmark barcode, configures the reader,
-    /// and outputs detection results to the console.
+    /// Entry point that generates a Mailmark barcode, then reads it using BarCodeReader
+    /// with quality settings to improve detection in dense images.
     /// </summary>
     static void Main()
     {
-        // ------------------------------------------------------------
-        // 1. Prepare Mailmark codetext data (format 4 = unspecified/default)
-        // ------------------------------------------------------------
+        // Create a sample Mailmark barcode (4‑state) using ComplexBarcodeGenerator
         var mailmark = new MailmarkCodetext
         {
-            Format = 4,
+            Format = 4,                 // 4‑state Mailmark
             VersionID = 1,
             Class = "0",
             SupplychainID = 384224,
             ItemID = 16563762,
-            DestinationPostCodePlusDPS = "EF61AH8T "
+            DestinationPostCodePlusDPS = "EF61AH8T " // trailing space is required
         };
 
-        // ------------------------------------------------------------
-        // 2. Generate the Mailmark barcode image into a memory stream
-        // ------------------------------------------------------------
+        // Generate the barcode image into a memory stream
         using (var generator = new ComplexBarcodeGenerator(mailmark))
-        using (var ms = new MemoryStream())
+        using (var imageStream = new MemoryStream())
         {
-            generator.Save(ms, BarCodeImageFormat.Png);
-            ms.Position = 0; // Reset stream position for subsequent reading
+            generator.Save(imageStream, BarCodeImageFormat.Png);
+            imageStream.Position = 0; // Reset stream position for reading
 
-            // ------------------------------------------------------------
-            // 3. Initialize BarCodeReader for Mailmark symbology
-            // ------------------------------------------------------------
-            using (var reader = new BarCodeReader(ms, DecodeType.Mailmark))
+            // Configure BarCodeReader for Mailmark decoding
+            // Note: Aspose.BarCode does not expose a property to ignore quiet zones.
+            // We improve detection in dense images by enabling fast deconvolution
+            // and allowing incorrect barcodes.
+            using (var reader = new BarCodeReader(imageStream, DecodeType.Mailmark))
             {
-                // Quiet zone handling is internal; there is no public API to ignore them.
-                // Adjust quality settings to improve detection in densely packed images.
-                reader.QualitySettings = QualitySettings.HighQuality;
                 reader.QualitySettings.Deconvolution = DeconvolutionMode.Fast;
                 reader.QualitySettings.AllowIncorrectBarcodes = true;
 
-                // ------------------------------------------------------------
-                // 4. Read all barcodes found in the image and display details
-                // ------------------------------------------------------------
+                // Read and output all detected Mailmark codes
                 foreach (var result in reader.ReadBarCodes())
                 {
-                    Console.WriteLine($"Detected Type: {result.CodeTypeName}");
-                    Console.WriteLine($"Code Text: {result.CodeText}");
-                    Console.WriteLine($"Reading Quality: {result.ReadingQuality}");
-                    var bounds = result.Region.Rectangle;
-                    Console.WriteLine($"Region: X={bounds.X}, Y={bounds.Y}, Width={bounds.Width}, Height={bounds.Height}");
+                    Console.WriteLine($"Detected Mailmark CodeText: {result.CodeText}");
                 }
             }
         }

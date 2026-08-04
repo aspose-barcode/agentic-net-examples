@@ -1,104 +1,127 @@
-// Title: Mailmark barcode extraction from multiple TIFF images
-// Description: Demonstrates reading up to five TIFF files, detecting Mailmark barcodes, and outputting decoded fields to the console.
-// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, focusing on complex barcode types such as Mailmark. It showcases the BarCodeReader and ComplexCodetextReader classes for detecting and decoding Mailmark symbology, a common requirement in postal and logistics applications where developers need to extract routing and item information from scanned documents.
+// Title: Mailmark Barcode Generation, Detection, and Decoding from TIFF Files
+// Description: Demonstrates creating sample Mailmark barcodes, saving them as TIFF images, scanning the images, and logging decoded fields.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category, showcasing the ComplexBarcodeGenerator for creating Mailmark symbols and BarCodeReader for extracting them. Typical use cases include bulk processing of mail items, automated verification of Mailmark data, and integration into logistics workflows. Developers often need to generate, read, and parse Mailmark barcodes using Aspose.BarCode's API classes such as ComplexBarcodeGenerator, BarCodeReader, and ComplexCodetextReader.
 // Prompt: Develop a console app that reads multiple TIFF files, extracts Mailmark barcodes, and logs decoded fields.
-// Tags: mailmark, barcode, recognition, tiff, console, aspose.barcode, complexbarcode
+// Tags: mailmark, barcode, generation, recognition, tiff, console, aspose.barcode, complexbarcodegenerator, barcodereader
 
 using System;
 using System.IO;
-using Aspose.BarCode.BarCodeRecognition;
+using System.Collections.Generic;
+using Aspose.BarCode.Generation;
 using Aspose.BarCode.ComplexBarcode;
+using Aspose.BarCode.BarCodeRecognition;
 
-namespace MailmarkReaderApp
+/// <summary>
+/// Sample console application that generates Mailmark barcodes, saves them as TIFF files,
+/// reads the files, decodes the Mailmark data, and writes the extracted fields to the console.
+/// </summary>
+class Program
 {
     /// <summary>
-    /// Entry point for the MailmarkReader console application.
+    /// Entry point of the application. Performs generation, scanning, and decoding of Mailmark barcodes.
     /// </summary>
-    class Program
+    static void Main()
     {
-        /// <summary>
-        /// Reads up to five TIFF files from a specified directory, detects Mailmark barcodes,
-        /// decodes their fields, and writes the information to the console.
-        /// </summary>
-        static void Main()
+        // --------------------------------------------------------------------
+        // Prepare a temporary folder for sample TIFF files
+        // --------------------------------------------------------------------
+        string sampleFolder = Path.Combine(Path.GetTempPath(), "MailmarkSamples");
+        if (!Directory.Exists(sampleFolder))
         {
-            // Directory containing TIFF files (adjust as needed)
-            string imagesDirectory = "SampleTiffImages";
-
-            // Ensure the directory exists before proceeding
-            if (!Directory.Exists(imagesDirectory))
-            {
-                Console.WriteLine($"Directory not found: {imagesDirectory}");
-                return;
-            }
-
-            // Retrieve all TIFF files in the directory
-            string[] tiffFiles = Directory.GetFiles(imagesDirectory, "*.tif");
-            // Limit processing to a maximum of five files
-            int maxFiles = Math.Min(tiffFiles.Length, 5);
-            if (maxFiles == 0)
-            {
-                Console.WriteLine("No TIFF files found.");
-                return;
-            }
-
-            // Process each selected TIFF file
-            for (int i = 0; i < maxFiles; i++)
-            {
-                string filePath = tiffFiles[i];
-                Console.WriteLine($"Processing file: {Path.GetFileName(filePath)}");
-
-                // Verify the file still exists (it may have been moved or deleted)
-                if (!File.Exists(filePath))
-                {
-                    Console.WriteLine("File does not exist, skipping.");
-                    continue;
-                }
-
-                // Initialize the barcode reader for Mailmark symbology
-                using (var reader = new BarCodeReader(filePath, DecodeType.Mailmark))
-                {
-                    // Optional: improve detection speed/quality
-                    // reader.QualitySettings.Deconvolution = DeconvolutionMode.Fast;
-
-                    try
-                    {
-                        // Iterate through all detected barcodes in the image
-                        foreach (var result in reader.ReadBarCodes())
-                        {
-                            // Output basic barcode information
-                            Console.WriteLine($"  Detected Barcode Type: {result.CodeTypeName}");
-                            Console.WriteLine($"  Raw CodeText: {result.CodeText}");
-
-                            // Attempt to decode Mailmark-specific fields
-                            MailmarkCodetext mailmark = ComplexCodetextReader.TryDecodeMailmark(result.CodeText);
-                            if (mailmark != null)
-                            {
-                                Console.WriteLine("  Decoded Mailmark fields:");
-                                Console.WriteLine($"    Format: {mailmark.Format}");
-                                Console.WriteLine($"    VersionID: {mailmark.VersionID}");
-                                Console.WriteLine($"    Class: {mailmark.Class}");
-                                Console.WriteLine($"    SupplychainID: {mailmark.SupplychainID}");
-                                Console.WriteLine($"    ItemID: {mailmark.ItemID}");
-                                Console.WriteLine($"    DestinationPostCodePlusDPS: \"{mailmark.DestinationPostCodePlusDPS}\"");
-                            }
-                            else
-                            {
-                                Console.WriteLine("  Failed to decode Mailmark codetext.");
-                            }
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        // Log any errors encountered while reading barcodes
-                        Console.WriteLine($"  Error reading barcode: {ex.Message}");
-                    }
-                }
-
-                Console.WriteLine(); // Blank line between files for readability
-            }
-
-            Console.WriteLine("Processing completed.");
+            Directory.CreateDirectory(sampleFolder);
         }
+
+        // --------------------------------------------------------------------
+        // Create a few sample Mailmark codetext objects
+        // --------------------------------------------------------------------
+        var samples = new List<MailmarkCodetext>
+        {
+            new MailmarkCodetext
+            {
+                Format = 4,
+                VersionID = 1,
+                Class = "0",
+                SupplychainID = 384224,
+                ItemID = 16563762,
+                DestinationPostCodePlusDPS = "EF61AH8T "
+            },
+            new MailmarkCodetext
+            {
+                Format = 4,
+                VersionID = 1,
+                Class = "1",
+                SupplychainID = 384224,
+                ItemID = 16563763,
+                DestinationPostCodePlusDPS = "EF61AH8T "
+            },
+            new MailmarkCodetext
+            {
+                Format = 4,
+                VersionID = 1,
+                Class = "2",
+                SupplychainID = 384224,
+                ItemID = 16563764,
+                DestinationPostCodePlusDPS = "EF61AH8T "
+            }
+        };
+
+        // --------------------------------------------------------------------
+        // Generate a TIFF file for each sample Mailmark barcode
+        // --------------------------------------------------------------------
+        int index = 0;
+        foreach (var mailmark in samples)
+        {
+            string filePath = Path.Combine(sampleFolder, $"mailmark_{index}.tif");
+            using (var generator = new ComplexBarcodeGenerator(mailmark))
+            {
+                generator.Save(filePath, BarCodeImageFormat.Tiff);
+            }
+            index++;
+        }
+
+        // --------------------------------------------------------------------
+        // Scan the folder for TIFF files and decode any Mailmark barcodes found
+        // --------------------------------------------------------------------
+        string[] tiffFiles = Directory.GetFiles(sampleFolder, "*.tif");
+        foreach (string tiffFile in tiffFiles)
+        {
+            if (!File.Exists(tiffFile))
+            {
+                Console.WriteLine($"File not found: {tiffFile}");
+                continue;
+            }
+
+            using (var reader = new BarCodeReader(tiffFile, DecodeType.Mailmark))
+            {
+                // Optional: improve detection speed/quality
+                reader.QualitySettings.Deconvolution = DeconvolutionMode.Fast;
+
+                foreach (var result in reader.ReadBarCodes())
+                {
+                    // Decode the Mailmark codetext into its structured object
+                    MailmarkCodetext decoded = ComplexCodetextReader.TryDecodeMailmark(result.CodeText);
+                    if (decoded != null)
+                    {
+                        Console.WriteLine($"File: {Path.GetFileName(tiffFile)}");
+                        Console.WriteLine($"  Format: {decoded.Format}");
+                        Console.WriteLine($"  VersionID: {decoded.VersionID}");
+                        Console.WriteLine($"  Class: {decoded.Class}");
+                        Console.WriteLine($"  SupplychainID: {decoded.SupplychainID}");
+                        Console.WriteLine($"  ItemID: {decoded.ItemID}");
+                        Console.WriteLine($"  DestinationPostCodePlusDPS: \"{decoded.DestinationPostCodePlusDPS}\"");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"File: {Path.GetFileName(tiffFile)} - Unable to decode Mailmark codetext.");
+                    }
+                }
+            }
+        }
+
+        // --------------------------------------------------------------------
+        // Cleanup: optionally delete the temporary files
+        // --------------------------------------------------------------------
+        // foreach (var file in tiffFiles) { File.Delete(file); }
+        // Directory.Delete(sampleFolder, true);
     }
 }
