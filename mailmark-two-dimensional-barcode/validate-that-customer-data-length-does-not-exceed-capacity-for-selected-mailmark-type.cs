@@ -1,116 +1,83 @@
-// Title: Validate Mailmark2D Customer Content Length
-// Description: Demonstrates how to verify that customer data fits within the capacity limits of selected Mailmark 2D types before generating barcodes.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category, focusing on Mailmark2D validation and image creation. It showcases key API classes such as Mailmark2DCodetext, ComplexBarcodeGenerator, and BarCodeImageFormat, which developers commonly use to produce Mailmark barcodes for postal services while ensuring data compliance.
-// Prompt: Validate that customer data length does not exceed capacity for the selected Mailmark type.
-// Tags: mailmark, validation, png, complexbarcode, generation, aspnet.barcode
+// Title: Validate Mailmark field lengths and values
+// Description: Demonstrates how to validate Mailmark data fields against their defined capacity before generating a Mailmark barcode using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category, illustrating validation of Mailmark codetext fields. It uses the MailmarkCodetext and ComplexBarcodeGenerator classes to ensure data conforms to the Mailmark specification (field lengths, numeric ranges) before barcode creation. Developers creating Mailmark barcodes commonly need to verify input data to avoid generation errors and to meet postal service requirements.
+/// Prompt: Validate that customer data length does not exceed capacity for the selected Mailmark type.
+/// Tags: mailmark, validation, barcode, aspose.barcode, complexbarcode, generation, csharp
 
 using System;
-using System.Collections.Generic;
-using System.IO;
 using Aspose.BarCode.ComplexBarcode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 
 /// <summary>
-/// Example program that validates customer content length for Mailmark2D types
-/// and generates corresponding barcode images.
+/// Provides an example of validating Mailmark data fields and generating a Mailmark barcode.
 /// </summary>
 class Program
 {
-    // Mapping of Mailmark 2D type to maximum allowed customer content length.
-    private static readonly Dictionary<int, int> MaxContentLengthByType = new()
+    /// <summary>
+    /// Validates Mailmark fields against their defined capacity and value ranges.
+    /// Throws <see cref="ArgumentException"/> when a field does not meet the specification.
+    /// </summary>
+    /// <param name="mailmark">The <see cref="MailmarkCodetext"/> instance to validate.</param>
+    static void ValidateMailmark(MailmarkCodetext mailmark)
     {
-        { 7, 6 },   // Type 7: 6 characters
-        { 9, 45 },  // Type 9: 45 characters
-        { 29, 25 }  // Type 29: 25 characters
-    };
+        // Class must be a single character string.
+        if (mailmark.Class == null || mailmark.Class.Length != 1)
+            throw new ArgumentException("Class must be a single character.");
+
+        // DestinationPostCodePlusDPS must be exactly 9 characters (including trailing spaces).
+        if (mailmark.DestinationPostCodePlusDPS == null || mailmark.DestinationPostCodePlusDPS.Length != 9)
+            throw new ArgumentException("DestinationPostCodePlusDPS must be exactly 9 characters (including trailing spaces).");
+
+        // ItemID must be between 0 and 99,999,999 (max 8 digits).
+        if (mailmark.ItemID < 0 || mailmark.ItemID > 99999999)
+            throw new ArgumentException("ItemID exceeds the maximum allowed value of 99,999,999.");
+
+        // SupplychainID must be positive and not exceed 999 (covers both C and L types).
+        if (mailmark.SupplychainID < 0 || mailmark.SupplychainID > 999)
+            throw new ArgumentException("SupplychainID exceeds the maximum allowed value of 999.");
+
+        // VersionID is typically a single digit; enforce 0‑9 range.
+        if (mailmark.VersionID < 0 || mailmark.VersionID > 9)
+            throw new ArgumentException("VersionID must be a single digit (0‑9).");
+    }
 
     /// <summary>
-    /// Entry point. Iterates over sample records, validates content length,
-    /// builds Mailmark2DCodetext objects, and saves barcode images.
+    /// Entry point of the program. Constructs a Mailmark codetext, validates it, and generates a barcode image.
     /// </summary>
     static void Main()
     {
-        // Sample records: each tuple contains (Mailmark2D type, customer content)
-        var records = new List<(int Type, string Content)>
+        // Construct a Mailmark 4‑state codetext with sample data.
+        var mailmark = new MailmarkCodetext
         {
-            (7, "ABC123"),          // exactly 6 chars – valid
-            (9, "THIS IS A LONGER CONTENT EXAMPLE THAT FITS"), // 45 chars – valid
-            (29, "TOO LONG CUSTOMER CONTENT EXCEEDING LIMIT") // exceeds 25 chars – invalid
+            Format = 4,                     // 4‑state Mailmark
+            VersionID = 1,
+            Class = "0",
+            SupplychainID = 384224,
+            ItemID = 16563762,
+            DestinationPostCodePlusDPS = "EF61AH8T " // 9 characters, trailing space required
         };
 
-        int index = 1;
-        foreach (var (type, content) in records)
+        try
         {
-            try
+            // Perform validation before barcode generation.
+            ValidateMailmark(mailmark);
+
+            // Generate the Mailmark barcode using ComplexBarcodeGenerator.
+            using (var generator = new ComplexBarcodeGenerator(mailmark))
             {
-                // Validate that the content length is within the allowed limit for the type.
-                ValidateCustomerContent(content, type);
-
-                // Build Mailmark2DCodetext with required fields and sample values.
-                var mailmark2d = new Mailmark2DCodetext
-                {
-                    // Required fields: InformationTypeID, VersionID, Class, RTSFlag, SupplyChainID, ItemID, DestinationPostCodeAndDPS
-                    InformationTypeID = "0",
-                    VersionID = "1",
-                    Class = "1",
-                    RTSFlag = "0",
-                    SupplyChainID = 1234567,
-                    ItemID = 1000 + index,
-                    DestinationPostCodeAndDPS = "EF61AH8T ",
-                    // Set the selected DataMatrix type (if needed). Assuming enum values match the integer.
-                    // DataMatrixType = (DataMatrixType)type, // Uncomment if enum exists.
-                    CustomerContent = content,
-                    CustomerContentEncodeMode = DataMatrixEncodeMode.C40 // example encode mode
-                };
-
-                // Generate barcode image and write it to a PNG file.
-                using (var generator = new ComplexBarcodeGenerator(mailmark2d))
-                {
-                    using (var ms = new MemoryStream())
-                    {
-                        generator.Save(ms, BarCodeImageFormat.Png);
-                        ms.Position = 0;
-                        string fileName = $"Mailmark2D_{index}.png";
-                        File.WriteAllBytes(fileName, ms.ToArray());
-                        Console.WriteLine($"Record {index}: Barcode saved to {fileName}");
-                    }
-                }
+                generator.Save("mailmark.png");
+                Console.WriteLine("Mailmark barcode generated successfully: mailmark.png");
             }
-            catch (ArgumentException ex)
-            {
-                // Handle validation errors (e.g., content too long or unsupported type).
-                Console.WriteLine($"Record {index}: Validation error – {ex.Message}");
-            }
-            catch (Exception ex)
-            {
-                // Handle any unexpected errors during barcode generation.
-                Console.WriteLine($"Record {index}: Unexpected error – {ex.Message}");
-            }
-
-            index++;
         }
-    }
-
-    // Validates that the customer content length does not exceed the capacity for the given Mailmark type.
-    private static void ValidateCustomerContent(string content, int mailmarkType)
-    {
-        // Ensure the Mailmark type is supported.
-        if (!MaxContentLengthByType.TryGetValue(mailmarkType, out int maxLength))
+        catch (ArgumentException ex)
         {
-            throw new ArgumentException($"Unsupported Mailmark type '{mailmarkType}'.");
+            // Output validation errors.
+            Console.WriteLine($"Validation error: {ex.Message}");
         }
-
-        // Ensure content is not null.
-        if (content == null)
+        catch (Exception ex)
         {
-            throw new ArgumentException("Customer content cannot be null.");
-        }
-
-        // Ensure content length does not exceed the maximum allowed for the type.
-        if (content.Length > maxLength)
-        {
-            throw new ArgumentException($"Customer content length ({content.Length}) exceeds maximum allowed ({maxLength}) for Mailmark type {mailmarkType}.");
+            // Handle unexpected errors gracefully.
+            Console.WriteLine($"Unexpected error: {ex.Message}");
         }
     }
 }

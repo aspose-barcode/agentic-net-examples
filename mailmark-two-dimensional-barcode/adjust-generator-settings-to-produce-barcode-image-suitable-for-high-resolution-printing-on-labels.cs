@@ -1,8 +1,8 @@
-// Title: High‑Resolution Barcode Generation for Label Printing
-// Description: Demonstrates configuring Aspose.BarCode generator to create a high‑resolution PNG suitable for printing labels.
-// Category-Description: This example belongs to the Aspose.BarCode image generation category, illustrating how to set resolution, image size, module dimensions, colors, and text options using BarcodeGenerator and related parameter classes. Developers often need to produce crisp barcodes for packaging, shipping labels, or product tags, and this snippet shows the typical API usage for such scenarios.
+// Title: High‑Resolution Code128 Barcode Generation for Label Printing
+// Description: Demonstrates configuring Aspose.BarCode to generate a 300 DPI Code128 barcode image suitable for high‑resolution label printing.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to adjust resolution, module size, bar height, colors, and auto‑size settings using the BarcodeGenerator, EncodeTypes, and Parameters classes. Typical use cases include creating printable barcodes for product labels, shipping tags, and inventory stickers where precise dimensions and high image quality are required. Developers often need to fine‑tune these settings to meet printer specifications and label design guidelines.
 // Prompt: Adjust generator settings to produce a barcode image suitable for high‑resolution printing on labels.
-// Tags: code128, highresolution, png, barcode generation, aspnet, aspose.barcode, image parameters
+// Tags: code128, generation, png, barcodegenerator, encodetypes, parameters
 
 using System;
 using Aspose.BarCode;
@@ -10,52 +10,39 @@ using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Generates a high‑resolution Code128 barcode image suitable for label printing.
+/// Entry point for the high‑resolution barcode generation example.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Configures barcode generator settings and saves the image.
+    /// Generates a Code128 barcode image with settings optimized for high‑resolution label printing.
     /// </summary>
     static void Main()
     {
-        // Initialize a barcode generator for Code128 with the sample text "HIGHRES12345"
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "HIGHRES12345"))
+        // Create a Code128 barcode generator with sample text
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            // Set the image resolution to 300 DPI, which is appropriate for high‑quality label printing
+            // Set image resolution to 300 DPI for crisp printing
             generator.Parameters.Resolution = 300;
 
-            // Use interpolation mode to allow explicit pixel dimensions for the output image
-            generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
+            // Define a small module size (XDimension) for fine detail (0.5 points)
+            generator.Parameters.Barcode.XDimension.Point = 0.5f;
 
-            // Define the exact image size in pixels (width x height) for the label
-            generator.Parameters.ImageWidth.Pixels = 1200f;   // label width
-            generator.Parameters.ImageHeight.Pixels = 600f;   // label height
+            // Set bar height appropriate for label size (50 points)
+            generator.Parameters.Barcode.BarHeight.Point = 50f;
 
-            // Configure module (X‑dimension) size and bar height (height is ignored in interpolation mode but set for completeness)
-            generator.Parameters.Barcode.XDimension.Pixels = 2f;   // each module ~2 pixels wide
-            generator.Parameters.Barcode.BarHeight.Pixels = 50f;  // bar height for 1D barcodes
-
-            // Set high‑contrast colors: black bars on a white background
+            // Use black bars on a white background for maximum contrast
             generator.Parameters.Barcode.BarColor = Color.Black;
             generator.Parameters.BackColor = Color.White;
 
-            // Customize human‑readable text appearance
-            generator.Parameters.Barcode.CodeTextParameters.Font.FamilyName = "Arial";
-            generator.Parameters.Barcode.CodeTextParameters.Font.Size.Point = 12f;
-            generator.Parameters.Barcode.CodeTextParameters.Alignment = TextAlignment.Center;
-            generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.Below;
+            // Disable automatic resizing to preserve exact dimensions
+            generator.Parameters.AutoSizeMode = AutoSizeMode.None;
 
-            // Add uniform padding of 5 points on all sides of the barcode
-            generator.Parameters.Barcode.Padding.Left.Point = 5f;
-            generator.Parameters.Barcode.Padding.Top.Point = 5f;
-            generator.Parameters.Barcode.Padding.Right.Point = 5f;
-            generator.Parameters.Barcode.Padding.Bottom.Point = 5f;
-
-            // Save the generated barcode as a PNG file
-            string outputPath = "highres_label.png";
-            generator.Save(outputPath);
-            Console.WriteLine($"Barcode saved to {outputPath}");
+            // Save the barcode image as a PNG file
+            generator.Save("highres_label.png");
         }
+
+        // Inform the user that the image has been created
+        Console.WriteLine("Barcode image generated: highres_label.png");
     }
 }

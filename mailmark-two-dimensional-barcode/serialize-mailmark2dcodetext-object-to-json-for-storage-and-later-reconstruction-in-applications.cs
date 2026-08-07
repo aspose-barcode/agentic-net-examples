@@ -1,8 +1,8 @@
-// Title: Serialize Mailmark2D Code Text to JSON
-// Description: Demonstrates how to serialize a Mailmark2DCodetext object to JSON, store it in a file, and later reconstruct it for barcode generation.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode operations category, focusing on Mailmark 2D code handling. It showcases the use of Aspose.BarCode.ComplexBarcode classes such as Mailmark2DCodetext and related enums, combined with .NET System.Text.Json for serialization. Developers working with postal barcodes often need to persist code text configurations, and this pattern provides a reusable approach for storage and retrieval.
+// Title: Serialize Mailmark2D Code Text to JSON and Generate Barcode
+// Description: This example creates a Mailmark2DCodetext object, serializes it to JSON for persistence, deserializes it back, and generates a Mailmark 2D barcode image.
+// Category-Description: Demonstrates Aspose.BarCode complex barcode generation workflow, covering object serialization with System.Text.Json, deserialization, and barcode image creation using ComplexBarcodeGenerator. Developers working with Mailmark 2D symbology often need to store code text configurations and later reconstruct them for barcode rendering in applications.
 // Prompt: Serialize a Mailmark2DCodetext object to JSON for storage and later reconstruction in applications.
-// Tags: barcode, serialization, json, mailmark2d, aspose.barcode
+// Tags: mailmark2d, json, serialization, deserialization, barcode generation, complexbarcode, aspnet.barcode, system.text.json, png
 
 using System;
 using System.IO;
@@ -11,75 +11,65 @@ using Aspose.BarCode.ComplexBarcode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Example program that serializes and deserializes a <see cref="Mailmark2DCodetext"/> object using JSON.
+/// Demonstrates serialization of Mailmark2DCodetext to JSON and barcode generation.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates a Mailmark2DCodetext, writes it to JSON, reads it back, and prints the values.
+    /// Entry point that creates, serializes, deserializes Mailmark2DCodetext and generates a barcode image.
     /// </summary>
     static void Main()
     {
-        // ------------------------------------------------------------
-        // 1. Create and populate a Mailmark2DCodetext instance
-        // ------------------------------------------------------------
-        var mailmark2D = new Mailmark2DCodetext
+        // Create a sample Mailmark2DCodetext with required fields
+        var mailmark2d = new Mailmark2DCodetext
         {
-            UPUCountryID = "JGB ",
-            InformationTypeID = "0",
+            // Single‑character string values as required by the API
             VersionID = "1",
+            InformationTypeID = "0",
             Class = "1",
-            SupplyChainID = 123,
-            ItemID = 1234,
-            DestinationPostCodeAndDPS = "QWE1",
             RTSFlag = "0",
-            ReturnToSenderPostCode = "QWE2",
-            DataMatrixType = Mailmark2DType.Type_7,
-            CustomerContent = "CUSTOM",
-            CustomerContentEncodeMode = DataMatrixEncodeMode.C40
+
+            // Integer identifiers
+            ItemID = 16563762,
+            SupplyChainID = 384224,
+
+            // Destination postcode with DPS (trailing space is required)
+            DestinationPostCodeAndDPS = "EF61AH8T ",
+
+            // Optional fields (left as defaults or set as needed)
+            // CustomerContent = "Optional customer data",
+            // CustomerContentEncodeMode = DataMatrixEncodeMode.C40,
+            // DataMatrixType = Mailmark2DType.Auto,
+            // ReturnToSenderPostCode = "SW1A1AA",
+            // UPUCountryID = "GB"
         };
 
-        // ------------------------------------------------------------
-        // 2. Serialize the object to a formatted JSON string
-        // ------------------------------------------------------------
+        // Serialize the object to JSON with indentation for readability
         var jsonOptions = new JsonSerializerOptions { WriteIndented = true };
-        string json = JsonSerializer.Serialize(mailmark2D, jsonOptions);
+        string json = JsonSerializer.Serialize(mailmark2d, jsonOptions);
 
-        // ------------------------------------------------------------
-        // 3. Save the JSON string to a file
-        // ------------------------------------------------------------
-        const string filePath = "mailmark2d.json";
-        using (var writeStream = new FileStream(filePath, FileMode.Create, FileAccess.Write))
-        using (var writer = new StreamWriter(writeStream))
+        // Store JSON to a file
+        const string jsonPath = "mailmark2d.json";
+        File.WriteAllText(jsonPath, json);
+        Console.WriteLine($"Mailmark2DCodetext serialized to {jsonPath}");
+
+        // Read JSON back from the file
+        string jsonFromFile = File.ReadAllText(jsonPath);
+        var deserializedMailmark2d = JsonSerializer.Deserialize<Mailmark2DCodetext>(jsonFromFile);
+        if (deserializedMailmark2d == null)
         {
-            writer.Write(json);
+            Console.WriteLine("Deserialization failed.");
+            return;
         }
+        Console.WriteLine("Mailmark2DCodetext deserialized successfully.");
 
-        // ------------------------------------------------------------
-        // 4. Load the JSON from the file and deserialize back to an object
-        // ------------------------------------------------------------
-        Mailmark2DCodetext deserialized;
-        using (var readStream = new FileStream(filePath, FileMode.Open, FileAccess.Read))
-        using (var reader = new StreamReader(readStream))
+        // Generate a barcode image from the deserialized object
+        const string imagePath = "mailmark2d.png";
+        using (var generator = new ComplexBarcodeGenerator(deserializedMailmark2d))
         {
-            string jsonFromFile = reader.ReadToEnd();
-            deserialized = JsonSerializer.Deserialize<Mailmark2DCodetext>(jsonFromFile);
+            // Save the barcode image to a PNG file
+            generator.Save(imagePath);
         }
-
-        // ------------------------------------------------------------
-        // 5. Output selected fields to verify successful reconstruction
-        // ------------------------------------------------------------
-        Console.WriteLine($"UPUCountryID: {deserialized?.UPUCountryID}");
-        Console.WriteLine($"InformationTypeID: {deserialized?.InformationTypeID}");
-        Console.WriteLine($"VersionID: {deserialized?.VersionID}");
-        Console.WriteLine($"Class: {deserialized?.Class}");
-        Console.WriteLine($"SupplyChainID: {deserialized?.SupplyChainID}");
-        Console.WriteLine($"ItemID: {deserialized?.ItemID}");
-        Console.WriteLine($"DestinationPostCodeAndDPS: {deserialized?.DestinationPostCodeAndDPS}");
-        Console.WriteLine($"RTSFlag: {deserialized?.RTSFlag}");
-        Console.WriteLine($"ReturnToSenderPostCode: {deserialized?.ReturnToSenderPostCode}");
-        Console.WriteLine($"DataMatrixType: {deserialized?.DataMatrixType}");
-        Console.WriteLine($"CustomerContent: {deserialized?.CustomerContent}");
-        Console.WriteLine($"CustomerContentEncodeMode: {deserialized?.CustomerContentEncodeMode}");
+        Console.WriteLine($"Barcode image saved to {imagePath}");
     }
 }

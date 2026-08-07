@@ -1,60 +1,92 @@
-// Title: Encode Customer Information with UTF-8 and Compare QR Code Capacity
-// Description: Demonstrates generating QR codes using the default Unicode (UTF-16) encoding and an alternative UTF-8 encoding, then compares their byte counts to evaluate the impact on barcode data capacity.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, focusing on QR code creation and text encoding manipulation. It showcases the BarcodeGenerator class, EncodeTypes enumeration, and SetCodeText method—common tools for developers who need to optimize barcode size, support international characters, or assess encoding effects on data capacity.
+// Title: DataMatrix Barcode Encoding Comparison – Default vs UTF-8
+// Description: Demonstrates generating a DataMatrix barcode with the default automatic encoding and with an explicit UTF‑8 encoding, then compares image dimensions to assess capacity impact.
+// Category-Description: This example belongs to the Aspose.BarCode encoding and capacity assessment category. It showcases the use of BarcodeGenerator, EncodeTypes, and image handling classes (Bitmap, BarCodeImageFormat) to create barcodes, control text encoding, and evaluate how encoding choices affect barcode size. Developers often need to understand encoding effects when optimizing barcode data density for packaging, inventory, or document workflows.
 // Prompt: Encode customer information with an alternative encoding and assess its impact on barcode capacity.
-// Tags: qr, encoding, capacity, aspose.barcode, generation
+// Tags: datamatrix, barcode, encoding, capacity, aspose.barcode, image, png, c#
 
 using System;
+using System.IO;
 using System.Text;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Generates QR codes from a sample customer string using default Unicode encoding and UTF-8 encoding,
-/// then compares the byte counts to illustrate how encoding choice affects barcode capacity.
+/// Example program that creates DataMatrix barcodes using default and explicit UTF‑8 encoding
+/// and compares their image sizes to evaluate encoding impact on barcode capacity.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates two QR codes with different text encodings and prints capacity analysis.
+    /// Entry point. Generates two barcodes, saves them, and prints a size comparison.
     /// </summary>
     static void Main()
     {
         // Sample customer information to encode
-        string customerInfo = "John Doe 12345";
+        string customerInfo = "John Doe, 123 Main St, City, Country";
 
-        // File paths for the generated barcode images
-        string defaultPath = "qr_default.png";
-        string utf8Path = "qr_utf8.png";
+        // File paths for the generated PNG images
+        string defaultPath = "customer_default.png";
+        string altPath = "customer_alt.png";
 
-        // Generate QR code using the default encoding (Unicode/UTF-16 internal representation)
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR))
+        // ------------------------------------------------------------
+        // Generate barcode using the default (auto‑detected) encoding
+        // ------------------------------------------------------------
+        int defaultWidth, defaultHeight;
+        using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, customerInfo))
         {
-            generator.CodeText = customerInfo; // Assign text with default encoding
-            generator.Save(defaultPath);       // Save image to file
+            // Save the barcode image to a PNG file
+            generator.Save(defaultPath, BarCodeImageFormat.Png);
+
+            // Retrieve the image dimensions for capacity comparison
+            using (Bitmap bmp = generator.GenerateBarCodeImage())
+            {
+                defaultWidth = bmp.Width;
+                defaultHeight = bmp.Height;
+            }
         }
 
-        // Generate QR code using an alternative UTF-8 encoding via SetCodeText
-        using (var generatorUtf8 = new BarcodeGenerator(EncodeTypes.QR))
+        // ------------------------------------------------------------
+        // Generate barcode using an explicit UTF‑8 encoding via SetCodeText
+        // ------------------------------------------------------------
+        int altWidth, altHeight;
+        using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix))
         {
-            generatorUtf8.SetCodeText(customerInfo, Encoding.UTF8); // Explicit UTF-8 encoding
-            generatorUtf8.Save(utf8Path);                         // Save image to file
+            // Encode the same text with explicit UTF‑8 encoding
+            generator.SetCodeText(customerInfo, Encoding.UTF8);
+
+            // Save the barcode image to a PNG file
+            generator.Save(altPath, BarCodeImageFormat.Png);
+
+            // Retrieve the image dimensions for capacity comparison
+            using (Bitmap bmp = generator.GenerateBarCodeImage())
+            {
+                altWidth = bmp.Width;
+                altHeight = bmp.Height;
+            }
         }
 
-        // Assess the impact on barcode capacity by comparing byte counts of each encoding
-        int defaultByteCount = Encoding.Unicode.GetByteCount(customerInfo); // UTF-16 byte count
-        int utf8ByteCount = Encoding.UTF8.GetByteCount(customerInfo);      // UTF-8 byte count
+        // ------------------------------------------------------------
+        // Output comparison results to the console
+        // ------------------------------------------------------------
+        Console.WriteLine("Barcode capacity assessment (image size reflects data capacity):");
+        Console.WriteLine($"Default encoding (auto):   {defaultWidth}x{defaultHeight} pixels");
+        Console.WriteLine($"Alternative UTF-8 encoding: {altWidth}x{altHeight} pixels");
+        Console.WriteLine();
 
-        // Output the original data and byte count comparison
-        Console.WriteLine("Customer Information: " + customerInfo);
-        Console.WriteLine("Default (UTF-16) byte count: " + defaultByteCount);
-        Console.WriteLine("Alternative (UTF-8) byte count: " + utf8ByteCount);
-        Console.WriteLine("Impact on capacity: " + (utf8ByteCount < defaultByteCount
-            ? "UTF-8 uses fewer bytes, allowing more data in the same QR version."
-            : "UTF-8 uses equal or more bytes, potentially reducing capacity."));
+        if (defaultWidth == altWidth && defaultHeight == altHeight)
+        {
+            Console.WriteLine("Both encodings produced identical image sizes; capacity impact is negligible.");
+        }
+        else
+        {
+            Console.WriteLine("Different image sizes indicate a capacity impact due to encoding differences.");
+            Console.WriteLine("Larger dimensions mean more modules were needed, reducing effective capacity.");
+        }
 
         // Inform the user where the barcode images have been saved
-        Console.WriteLine("QR code with default encoding saved to: " + defaultPath);
-        Console.WriteLine("QR code with UTF-8 encoding saved to: " + utf8Path);
+        Console.WriteLine($"Default barcode saved to: {Path.GetFullPath(defaultPath)}");
+        Console.WriteLine($"Alternative barcode saved to: {Path.GetFullPath(altPath)}");
     }
 }

@@ -1,8 +1,8 @@
-// Title: Mailmark 2D Barcode Generation Time and Image Size Comparison
-// Description: Demonstrates how to generate Mailmark type 7 and type 29 barcodes, measuring the time taken and the resulting PNG file size.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on complex 2‑D symbologies. It showcases the use of Mailmark2DCodetext, ComplexBarcodeGenerator, and AutoSizeMode to create Mailmark barcodes, a common requirement for postal and logistics applications where performance and payload size matter. Developers often need to benchmark different Mailmark matrix types to choose the optimal configuration for their workflow.
+// Title: Compare Mailmark Type 7 and Type 29 barcode generation performance
+// Description: Demonstrates generating Mailmark 2‑D barcodes of type 7 and type 29, measuring the time taken and the resulting PNG image size.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on complex 2‑D symbologies such as Mailmark. It shows how to configure Mailmark2DCodetext, use ComplexBarcodeGenerator, and evaluate performance metrics—common tasks for developers creating high‑volume mailing solutions or optimizing barcode rendering.
 // Prompt: Compare generation time and image size between Mailmark type 7 and type 29 barcodes.
-// Tags: mailmark, barcode, generation, performance, image size, aspose.barcode, complexbarcode, 2d symbology
+// Tags: mailmark, barcode, generation, performance, png, aspose.barcode, complexbarcode
 
 using System;
 using System.Diagnostics;
@@ -12,110 +12,82 @@ using Aspose.BarCode.Generation;
 using Aspose.BarCode.ComplexBarcode;
 
 /// <summary>
-/// Provides an entry point that compares the generation time and PNG image size of
-/// Mailmark type 7 (24×24) and type 29 (16×48) barcodes using Aspose.BarCode.
+/// Generates Mailmark type 7 and type 29 barcodes, measures generation time,
+/// and reports the PNG image sizes. Useful for performance comparison of different
+/// Mailmark module configurations.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Prepares common Mailmark fields and invokes the comparison for both matrix types.
+    /// Entry point of the example. Prepares Mailmark data, creates two barcode variants,
+    /// measures their generation times and output sizes, and writes the results to the console.
     /// </summary>
     static void Main()
     {
-        // Common Mailmark2D fields shared by both barcode types
+        // Prepare common Mailmark2D data (shared between both barcode types)
+        const string destinationPostCode = "EF61AH8T "; // trailing space required by the specification
         const string versionId = "1";
         const string informationTypeId = "0";
-        const string classCode = "0";
-        const string rtsFlag = "0";
-        int supplyChainId = 384224;
-        int itemId = 16563762;
-        const string destinationPostCodePlusDps = "EF61AH8T ";
+        const string mailClass = "0";
+        const int supplyChainId = 384224;
+        const int itemId = 16563762;
 
-        // Compare Type 7 (24x24) and Type 29 (16x48) matrix configurations
-        CompareMailmark2D(
-            Mailmark2DType.Type_7,
-            "Type 7 (24x24)",
-            versionId,
-            informationTypeId,
-            classCode,
-            rtsFlag,
-            supplyChainId,
-            itemId,
-            destinationPostCodePlusDps);
-
-        CompareMailmark2D(
-            Mailmark2DType.Type_29,
-            "Type 29 (16x48)",
-            versionId,
-            informationTypeId,
-            classCode,
-            rtsFlag,
-            supplyChainId,
-            itemId,
-            destinationPostCodePlusDps);
-    }
-
-    /// <summary>
-    /// Generates a Mailmark barcode of the specified matrix type, measures the generation time,
-    /// and reports the resulting PNG image size.
-    /// </summary>
-    /// <param name="matrixType">The Mailmark matrix type (e.g., Type_7 or Type_29).</param>
-    /// <param name="label">A friendly label used in console output.</param>
-    /// <param name="versionId">Version identifier for the Mailmark.</param>
-    /// <param name="informationTypeId">Information type identifier.</param>
-    /// <param name="classCode">Class code of the Mailmark.</param>
-    /// <param name="rtsFlag">RTS flag value.</param>
-    /// <param name="supplyChainId">Supply chain identifier.</param>
-    /// <param name="itemId">Item identifier.</param>
-    /// <param name="destinationPostCodePlusDps">Destination postcode plus DPS.</param>
-    static void CompareMailmark2D(
-        Mailmark2DType matrixType,
-        string label,
-        string versionId,
-        string informationTypeId,
-        string classCode,
-        string rtsFlag,
-        int supplyChainId,
-        int itemId,
-        string destinationPostCodePlusDps)
-    {
-        // Build the Mailmark2DCodetext object with all required fields
-        var mailmark = new Mailmark2DCodetext
+        // Configure Mailmark type 7 (24x24 modules)
+        var mailmark7 = new Mailmark2DCodetext
         {
             VersionID = versionId,
             InformationTypeID = informationTypeId,
-            Class = classCode,
-            RTSFlag = rtsFlag,
+            Class = mailClass,
             SupplyChainID = supplyChainId,
             ItemID = itemId,
-            DestinationPostCodeAndDPS = destinationPostCodePlusDps,
-            DataMatrixType = matrixType
+            DestinationPostCodeAndDPS = destinationPostCode,
+            DataMatrixType = Mailmark2DType.Type_7
         };
 
-        // Start timing the barcode generation process
-        var stopwatch = new Stopwatch();
-        stopwatch.Start();
-
-        // Generate the barcode using ComplexBarcodeGenerator
-        using (var generator = new ComplexBarcodeGenerator(mailmark))
+        // Configure Mailmark type 29 (16x48 modules)
+        var mailmark29 = new Mailmark2DCodetext
         {
-            // Explicitly set auto‑size mode to interpolation (default, but clarified)
-            generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
+            VersionID = versionId,
+            InformationTypeID = informationTypeId,
+            Class = mailClass,
+            SupplyChainID = supplyChainId,
+            ItemID = itemId,
+            DestinationPostCodeAndDPS = destinationPostCode,
+            DataMatrixType = Mailmark2DType.Type_29
+        };
 
-            // Save the barcode to a memory stream in PNG format
-            using (var ms = new MemoryStream())
+        // Measure generation time and image size for Type 7
+        var stopwatch = new Stopwatch();
+        long size7;
+        stopwatch.Start();
+        using (var generator7 = new ComplexBarcodeGenerator(mailmark7))
+        {
+            using (var ms7 = new MemoryStream())
             {
-                generator.Save(ms, BarCodeImageFormat.Png);
-                stopwatch.Stop(); // Stop timing after the image is saved
-
-                long imageSize = ms.Length; // Size in bytes of the generated PNG
-
-                // Output the results to the console
-                Console.WriteLine($"{label}:");
-                Console.WriteLine($"  Generation time: {stopwatch.ElapsedMilliseconds} ms");
-                Console.WriteLine($"  Image size: {imageSize} bytes");
-                Console.WriteLine();
+                generator7.Save(ms7, BarCodeImageFormat.Png);
+                size7 = ms7.Length; // capture PNG byte length
             }
         }
+        stopwatch.Stop();
+        long time7 = stopwatch.ElapsedMilliseconds;
+
+        // Measure generation time and image size for Type 29
+        stopwatch.Reset();
+        long size29;
+        stopwatch.Start();
+        using (var generator29 = new ComplexBarcodeGenerator(mailmark29))
+        {
+            using (var ms29 = new MemoryStream())
+            {
+                generator29.Save(ms29, BarCodeImageFormat.Png);
+                size29 = ms29.Length; // capture PNG byte length
+            }
+        }
+        stopwatch.Stop();
+        long time29 = stopwatch.ElapsedMilliseconds;
+
+        // Output the performance results
+        Console.WriteLine($"Mailmark Type 7: Generation time = {time7} ms, Image size = {size7} bytes");
+        Console.WriteLine($"Mailmark Type 29: Generation time = {time29} ms, Image size = {size29} bytes");
     }
 }

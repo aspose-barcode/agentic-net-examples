@@ -1,79 +1,94 @@
-// Title: DataMatrix barcode generation with C40 encoding validation
-// Description: Demonstrates validating non‑customer fields against the C40 character set before generating a DataMatrix barcode.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on DataMatrix symbology and character set validation. It showcases the use of BarcodeGenerator, EncodeTypes, and DataMatrixEncodeMode classes to produce PNG images, a common requirement for developers needing compliant barcode output in logistics and inventory systems.
+// Title: C40 Character Set Validation for Non‑Customer Fields Before Barcode Generation
+// Description: Demonstrates how to validate that all non‑customer data fields contain only characters allowed by the C40 encoding set prior to generating a barcode.
+// Category-Description: This example belongs to the Aspose.BarCode data validation category, illustrating the use of Aspose.BarCode.Generation.BarcodeGenerator and related classes to ensure input data complies with specific character sets (C40) before barcode creation. Developers often need to pre‑validate fields such as product codes or descriptions to avoid encoding errors. The snippet shows typical validation logic, field filtering, and barcode generation with Code128.
 // Prompt: Validate that all non‑customer fields conform to the C40 character set before generation.
-// Tags: datamatrix, c40, validation, png, barcodegenerator, datamatrixencodemode, aspnet.barcode
+// Tags: barcode symbology, validation, c40, code128, png, aspose.barcode, generation
 
 using System;
-using Aspose.BarCode;
+using System.Collections.Generic;
+using System.IO;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
+using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Generates a DataMatrix barcode using C40 encoding after validating the input string.
+/// Demonstrates validation of non‑customer fields against the C40 character set and generates a Code128 barcode.
 /// </summary>
 class Program
 {
+    // Allowed characters for C40 encoding: digits, uppercase letters, space and common punctuation.
+    private static readonly HashSet<char> C40AllowedChars = new HashSet<char>
+    {
+        ' ', '!', '"', '#', '$', '%', '&', '\'', '(', ')', '*', '+', ',', '-', '.', '/',
+        ':', ';', '<', '=', '>', '?'
+    };
+
     /// <summary>
-    /// Entry point. Validates the code text against the C40 charset and creates a PNG barcode if valid.
+    /// Entry point that validates fields, ensures output directory, and creates a barcode image.
     /// </summary>
     static void Main()
     {
-        // Sample code text representing non‑customer fields
-        string codeText = "HELLO WORLD 123!";
-
-        // Validate that the code text conforms to the C40 character set
-        if (!IsC40String(codeText))
+        // Sample data fields. Fields named "CustomerName" are considered customer fields and are excluded from validation.
+        var fields = new Dictionary<string, string>
         {
-            Console.WriteLine("Warning: CodeText contains characters not allowed in the C40 charset. Generation skipped.");
-            return;
+            { "CustomerName", "Acme Corp" },          // Customer field – skip validation
+            { "ProductCode", "ABC123" },              // Non‑customer field – must be C40 compliant
+            { "Description", "NEW PRODUCT! RELEASE" } // Non‑customer field – must be C40 compliant
+        };
+
+        // Validate non‑customer fields.
+        foreach (var kvp in fields)
+        {
+            if (IsCustomerField(kvp.Key))
+                continue; // Skip customer fields.
+
+            if (!IsC40Compliant(kvp.Value))
+            {
+                Console.WriteLine($"Field \"{kvp.Key}\" contains characters not allowed in C40 encoding.");
+                // Abort further processing.
+                return;
+            }
         }
 
-        // Create a DataMatrix barcode generator with C40 encoding mode
-        using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, codeText))
+        // All validations passed – generate a barcode.
+        const string barcodeText = "VALIDDATA";
+        const string outputPath = "barcode.png";
+
+        // Ensure the output directory exists.
+        string outputDir = Path.GetDirectoryName(Path.GetFullPath(outputPath));
+        if (!Directory.Exists(outputDir))
         {
-            // Set the DataMatrix encode mode to C40
-            generator.Parameters.Barcode.DataMatrix.EncodeMode = DataMatrixEncodeMode.C40;
-
-            // Optionally control image size (using unit members)
-            generator.Parameters.ImageWidth.Point = 200f;
-            generator.Parameters.ImageHeight.Point = 200f;
-
-            // Save the generated barcode image
-            string outputPath = "datamatrix_c40.png";
-            generator.Save(outputPath);
-            Console.WriteLine($"Barcode saved to {outputPath}");
+            Directory.CreateDirectory(outputDir);
         }
+
+        // Create and configure the barcode generator.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, barcodeText))
+        {
+            // Example of setting a barcode property (XDimension) correctly.
+            generator.Parameters.Barcode.XDimension.Point = 2.5f;
+            generator.Save(outputPath, BarCodeImageFormat.Png);
+        }
+
+        Console.WriteLine($"Barcode generated successfully at \"{outputPath}\".");
     }
 
-    // Checks if every character in the string is allowed in the C40 charset
-    static bool IsC40String(string text)
+    // Determines whether a field name represents a customer field.
+    private static bool IsCustomerField(string fieldName)
+    {
+        // Simple rule: field name contains the word "Customer".
+        return fieldName.IndexOf("Customer", StringComparison.OrdinalIgnoreCase) >= 0;
+    }
+
+    // Checks if a string contains only characters allowed in C40 encoding.
+    private static bool IsC40Compliant(string text)
     {
         foreach (char ch in text)
         {
-            if (!IsC40Char(ch))
-                return false;
+            if (char.IsDigit(ch) || (ch >= 'A' && ch <= 'Z') || C40AllowedChars.Contains(ch))
+                continue;
+
+            // Lowercase letters are not part of C40; they must be converted or cause failure.
+            return false;
         }
         return true;
-    }
-
-    // Determines whether a single character is part of the C40 charset
-    static bool IsC40Char(char ch)
-    {
-        // Uppercase letters
-        if (ch >= 'A' && ch <= 'Z')
-            return true;
-
-        // Digits
-        if (ch >= '0' && ch <= '9')
-            return true;
-
-        // Space
-        if (ch == ' ')
-            return true;
-
-        // Basic punctuation allowed in C40
-        const string punctuation = "!\"#%&'()*+,-./:;<=>?";
-        return punctuation.IndexOf(ch) >= 0;
     }
 }

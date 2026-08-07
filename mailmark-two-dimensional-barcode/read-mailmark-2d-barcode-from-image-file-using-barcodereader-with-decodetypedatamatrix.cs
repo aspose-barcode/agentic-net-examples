@@ -1,6 +1,6 @@
 // Title: Read Mailmark 2D barcode from image using BarCodeReader
-// Description: Demonstrates how to load an image containing a Mailmark 2D (DataMatrix) barcode, detect it with Aspose.BarCode, and decode its structured fields.
-// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, focusing on reading complex 2D symbologies such as Mailmark. It showcases the BarCodeReader with DecodeType.DataMatrix and the ComplexCodetextReader for parsing Mailmark 2D codetext into a strongly‑typed object. Developers working with postal or logistics solutions often need to extract Mailmark information from scanned images, making this pattern a common use case.
+// Description: Demonstrates how to load an image file, detect a Mailmark 2D barcode (DataMatrix) with Aspose.BarCode, and extract its structured fields.
+// Category-Description: This example belongs to the Aspose.BarCode barcode reading category, showcasing the use of BarCodeReader with DecodeType.DataMatrix and ComplexCodetextReader to interpret complex symbologies such as Mailmark 2D. Developers commonly need to read postal barcodes from scanned images, extract metadata, and integrate it into mailing workflows. The key API classes include BarCodeReader, DecodeType, and ComplexCodetextReader, which together provide detection, decoding, and detailed parsing capabilities.
 // Prompt: Read a Mailmark 2D barcode from an image file using BarCodeReader with DecodeType.DataMatrix.
 // Tags: mailmark, datamatrix, barcode, reading, aspose.barcode, complexcodetext
 
@@ -10,12 +10,12 @@ using Aspose.BarCode.BarCodeRecognition;
 using Aspose.BarCode.ComplexBarcode;
 
 /// <summary>
-/// Demonstrates reading a Mailmark 2D barcode from an image file and decoding its fields.
+/// Example program that reads a Mailmark 2D barcode from an image file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Loads the image, detects Mailmark 2D barcode, and prints decoded information.
+    /// Entry point. Loads the image, scans for DataMatrix barcodes, and parses Mailmark 2D details.
     /// </summary>
     static void Main()
     {
@@ -29,45 +29,26 @@ class Program
             return;
         }
 
-        // Initialize the reader for DataMatrix symbology (Mailmark 2D is encoded in a DataMatrix)
+        // Create a BarCodeReader configured for DataMatrix (Mailmark 2D is based on DataMatrix)
         using (var reader = new BarCodeReader(imagePath, DecodeType.DataMatrix))
         {
-            // Perform the recognition
-            var results = reader.ReadBarCodes();
-
-            // Check if any barcodes were detected
-            if (results.Length == 0)
+            // Iterate through all detected barcodes in the image
+            foreach (var result in reader.ReadBarCodes())
             {
-                Console.WriteLine("No barcode detected in the image.");
-                return;
-            }
+                // Output the raw decoded text
+                Console.WriteLine($"Detected CodeText: {result.CodeText}");
 
-            // Iterate through all detected barcodes (typically only one Mailmark 2D)
-            foreach (var result in results)
-            {
-                // Output basic barcode information
-                Console.WriteLine($"Detected barcode type: {result.CodeTypeName}");
-                Console.WriteLine($"Raw CodeText: {result.CodeText}");
-
-                // Attempt to decode the Mailmark 2D codetext into a strongly‑typed object
+                // Attempt to decode the result as a Mailmark 2D codetext
                 var mailmark = ComplexCodetextReader.TryDecodeMailmark2D(result.CodeText);
                 if (mailmark != null)
                 {
-                    // Print each decoded field of the Mailmark 2D structure
-                    Console.WriteLine("Decoded Mailmark 2D codetext:");
+                    // Output the parsed Mailmark 2D fields
+                    Console.WriteLine("Mailmark 2D details:");
                     Console.WriteLine($"  VersionID: {mailmark.VersionID}");
                     Console.WriteLine($"  InformationTypeID: {mailmark.InformationTypeID}");
                     Console.WriteLine($"  Class: {mailmark.Class}");
                     Console.WriteLine($"  ItemID: {mailmark.ItemID}");
                     Console.WriteLine($"  DestinationPostCodeAndDPS: {mailmark.DestinationPostCodeAndDPS}");
-                    Console.WriteLine($"  SupplyChainID: {mailmark.SupplyChainID}");
-                    Console.WriteLine($"  RTSFlag: {mailmark.RTSFlag}");
-                    Console.WriteLine($"  ReturnToSenderPostCode: {mailmark.ReturnToSenderPostCode}");
-                }
-                else
-                {
-                    // Decoding failed – inform the user
-                    Console.WriteLine("Failed to decode Mailmark 2D codetext.");
                 }
             }
         }

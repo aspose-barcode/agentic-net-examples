@@ -1,56 +1,62 @@
-// Title: Generate Mailmark 4‑state barcode and save as PNG
-// Description: Demonstrates prompting (or using command‑line) for Mailmark fields, creating a Mailmark barcode, and saving it as a PNG image.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on complex barcode types such as Mailmark. It showcases the use of Aspose.BarCode.ComplexBarcode.MailmarkCodetext and ComplexBarcodeGenerator classes to encode postal data. Developers creating shipping labels, postal automation, or logistics solutions often need to generate Mailmark barcodes for UK postal services.
+// Title: Generate Mailmark Barcode and Save as PNG
+// Description: Creates a Mailmark barcode using provided or default values and saves it as a PNG file.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It demonstrates how to use the MailmarkCodetext class with ComplexBarcodeGenerator to produce a Mailmark symbology barcode, a common requirement for postal and logistics applications. Developers often need to customize fields such as format, version, class, and supply‑chain identifiers, then export the result to an image format like PNG.
 // Prompt: Create a console application that prompts users for Mailmark fields and saves the resulting barcode as PNG.
-// Tags: mailmark, barcode, generation, png, console, aspose.barcode, complexbarcode
+// Tags: mailmark, barcode, generation, png, aspose.barcode, complexbarcode, console
 
 using System;
 using System.IO;
-using Aspose.BarCode;
-using Aspose.BarCode.Generation;
 using Aspose.BarCode.ComplexBarcode;
+using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Console application that creates a Mailmark 4‑state barcode from user‑provided data
-/// and saves the result as a PNG file.
+/// Demonstrates generating a Mailmark barcode and saving it as a PNG image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Parses command‑line arguments (or uses defaults), builds a MailmarkCodetext,
-    /// generates the barcode, and writes it to "mailmark.png" in the current directory.
+    /// Entry point. Parses optional command‑line arguments, builds the Mailmark codetext,
+    /// generates the barcode and writes it to disk.
     /// </summary>
-    /// <param name="args">Optional arguments: format versionId class supplyChainId itemId destinationPostCodePlusDps</param>
+    /// <param name="args">
+    /// Command‑line arguments in the following order:
+    /// format versionId class supplyChainId itemId destinationPostCodePlusDps
+    /// </param>
     static void Main(string[] args)
     {
-        // Default sample values for Mailmark 4‑state barcode
-        int format = 4;                     // 4 = unspecified/default
+        // Default Mailmark values (valid sample)
+        int format = 4;               // 4‑state Mailmark
         int versionId = 1;
-        string classValue = "0";            // "0" – Null or Test
+        string classValue = "0";
         int supplyChainId = 384224;
         int itemId = 16563762;
         string destinationPostCodePlusDps = "EF61AH8T ";
 
-        // If command‑line arguments are provided, try to parse them.
+        // Parse command‑line arguments if provided
         // Expected order: format versionId class supplyChainId itemId destinationPostCodePlusDps
-        if (args.Length >= 6)
+        try
         {
-            int.TryParse(args[0], out format);
-            int.TryParse(args[1], out versionId);
-            classValue = args[2];
-            int.TryParse(args[3], out supplyChainId);
-            int.TryParse(args[4], out itemId);
-            destinationPostCodePlusDps = args[5];
+            if (args.Length >= 6)
+            {
+                format = int.Parse(args[0]);
+                versionId = int.Parse(args[1]);
+                classValue = args[2];
+                supplyChainId = int.Parse(args[3]);
+                itemId = int.Parse(args[4]);
+                destinationPostCodePlusDps = args[5];
+
+                // Ensure the required trailing space is present
+                if (!destinationPostCodePlusDps.EndsWith(" "))
+                    destinationPostCodePlusDps += " ";
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Argument parsing error: {ex.Message}");
+            Console.WriteLine("Using default Mailmark values.");
         }
 
-        // Validate that the destination postcode plus DPS is not empty.
-        if (string.IsNullOrWhiteSpace(destinationPostCodePlusDps))
-        {
-            Console.WriteLine("Invalid DestinationPostCodePlusDPS. Using default value.");
-            destinationPostCodePlusDps = "EF61AH8T ";
-        }
-
-        // Create and populate the MailmarkCodetext object.
+        // Construct MailmarkCodetext with the collected values
         var mailmark = new MailmarkCodetext
         {
             Format = format,
@@ -61,14 +67,19 @@ class Program
             DestinationPostCodePlusDPS = destinationPostCodePlusDps
         };
 
-        // Generate the barcode and save it as PNG.
-        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "mailmark.png");
-        using (var generator = new ComplexBarcodeGenerator(mailmark))
+        // Generate the barcode and save it as a PNG file
+        try
         {
-            // Save directly to file in PNG format.
-            generator.Save(outputPath, BarCodeImageFormat.Png);
+            using (var generator = new ComplexBarcodeGenerator(mailmark))
+            {
+                string outputPath = "mailmark.png";
+                generator.Save(outputPath, BarCodeImageFormat.Png);
+                Console.WriteLine($"Mailmark barcode saved to '{Path.GetFullPath(outputPath)}'.");
+            }
         }
-
-        Console.WriteLine($"Mailmark barcode saved to: {outputPath}");
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to generate Mailmark barcode: {ex.Message}");
+        }
     }
 }

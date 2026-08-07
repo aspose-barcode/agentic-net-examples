@@ -1,8 +1,8 @@
-// Title: Generate Code128 barcode and process it in-memory using MemoryStream
-// Description: Demonstrates creating a Code128 barcode, saving it to a MemoryStream in PNG format, and accessing the image bytes for further processing or transmission.
-// Category-Description: This example belongs to the Aspose.BarCode image generation category, illustrating how to use BarcodeGenerator, set visual parameters, and save the barcode to a stream. Developers often need to generate barcodes on the fly and transmit them without writing to disk, such as in web APIs or email attachments. The snippet shows typical usage of EncodeTypes, BarCodeImageFormat, and stream handling for in‑memory operations.
+// Title: Generate Code128 Barcode into MemoryStream
+// Description: Demonstrates generating a Code128 barcode image, storing it in a MemoryStream, and accessing the raw bytes for further processing.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use BarcodeGenerator, EncodeTypes, and BarCodeImageFormat to create barcode images in memory. Typical use cases include preparing barcode images for network transmission, embedding in documents, or further image manipulation without writing to disk. Developers often need in‑memory processing to improve performance and simplify deployment in cloud or CI environments.
 // Prompt: Use a MemoryStream to hold the barcode image for in‑memory processing and transmission.
-// Tags: code128, barcode generation, memorystream, png, in-memory processing, aspnet, aspose.barcode
+// Tags: barcode symbology, generation, memorystream, png, aspose.barcode, csharp
 
 using System;
 using System.IO;
@@ -10,43 +10,42 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
-/// <summary>
-/// Demonstrates generating a Code128 barcode, storing it in a MemoryStream,
-/// and performing in‑memory processing such as size reporting and Base64 conversion.
-/// </summary>
-class Program
+namespace BarcodeMemoryStreamDemo
 {
     /// <summary>
-    /// Entry point of the example. Creates a barcode, saves it to a MemoryStream,
-    /// and outputs image size and Base64 representation.
+    /// Demonstrates creating a barcode image in memory using Aspose.BarCode.
     /// </summary>
-    static void Main()
+    class Program
     {
-        // Initialize a barcode generator for Code128 with the sample text "Sample123"
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
+        /// <summary>
+        /// Entry point that generates a Code128 barcode, writes it to a MemoryStream,
+        /// and outputs the size of the resulting PNG image.
+        /// </summary>
+        static void Main()
         {
-            // Configure visual appearance: white background and black bars
-            generator.Parameters.BackColor = Color.White;
-            generator.Parameters.Barcode.BarColor = Color.Black;
-
-            // Create a MemoryStream to hold the generated PNG image in memory
-            using (var memoryStream = new MemoryStream())
+            // Create a MemoryStream to hold the generated barcode image in memory
+            using (var ms = new MemoryStream())
             {
-                // Save the barcode image into the stream in PNG format
-                generator.Save(memoryStream, BarCodeImageFormat.Png);
+                // Initialize a barcode generator for Code128 with the sample text "ABC123"
+                using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "ABC123"))
+                {
+                    // Configure visual appearance: blue foreground on white background
+                    generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Blue;
+                    generator.Parameters.BackColor = Aspose.Drawing.Color.White;
 
-                // Reset stream position to the beginning for reading
-                memoryStream.Position = 0;
+                    // Save the generated barcode as a PNG image into the MemoryStream
+                    generator.Save(ms, BarCodeImageFormat.Png);
+                }
 
-                // Extract the image bytes from the stream for further processing or transmission
-                byte[] imageBytes = memoryStream.ToArray();
+                // Reset the stream position to the beginning for subsequent reads
+                ms.Position = 0;
 
-                // Display the size of the generated image in bytes
+                // Retrieve the image bytes from the MemoryStream
+                byte[] imageBytes = ms.ToArray();
+
+                // Output the size of the generated barcode image (useful for verification)
                 Console.WriteLine($"Generated barcode image size: {imageBytes.Length} bytes");
-
-                // Example of converting the image bytes to a Base64 string and displaying it
-                string base64 = Convert.ToBase64String(imageBytes);
-                Console.WriteLine($"Base64: {base64}");
+                // The byte array can now be transmitted over a network, embedded in documents, etc.
             }
         }
     }

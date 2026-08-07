@@ -1,59 +1,57 @@
-// Title: Generate Mailmark 2D barcode from JSON data
-// Description: Demonstrates deserializing a Mailmark2DCodetext JSON payload and creating the corresponding 2‑D barcode image.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It showcases the use of Aspose.BarCode.ComplexBarcode.ComplexBarcodeGenerator together with Aspose.BarCode.ComplexBarcode.Mailmark2DCodetext to produce Mailmark 2D symbols. Developers working with postal services, logistics, or any scenario requiring Mailmark encoding can follow similar patterns for serialization, deserialization, and barcode rendering.
+// Title: Generate Mailmark 2D Barcode from JSON
+// Description: Demonstrates deserializing a Mailmark2DCodetext JSON payload and creating a Mailmark 2D barcode image using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It showcases the use of ComplexBarcodeGenerator and Mailmark2DCodetext to produce Mailmark 2D symbols, a common requirement for postal and logistics applications. Developers often need to convert structured data (e.g., JSON) into barcode images for printing or electronic transmission.
 // Prompt: Deserialize JSON back into a Mailmark2DCodetext instance and generate the corresponding barcode.
-// Tags: mailmark,2d barcode,serialization,deserialization,aspose.barcode,generation,json
+// Tags: mailmark, 2d barcode, json deserialization, aspose.barcode, complexbarcode, png, generation
 
 using System;
 using System.IO;
 using System.Text.Json;
-using System.Text.Json.Serialization;
-using Aspose.BarCode;
-using Aspose.BarCode.Generation;
 using Aspose.BarCode.ComplexBarcode;
-using Aspose.Drawing;
+using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Example program that deserializes a Mailmark2DCodetext JSON string
+/// Example program that deserializes a Mailmark2DCodetext object from JSON
 /// and generates a Mailmark 2D barcode image using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Performs JSON deserialization,
-    /// creates a ComplexBarcodeGenerator, and saves the barcode image.
+    /// Entry point of the example. Performs JSON deserialization and barcode generation.
     /// </summary>
     static void Main()
     {
-        // Sample JSON representing a Mailmark2DCodetext.
+        // --------------------------------------------------------------------
+        // 1. Define a JSON string that represents a Mailmark2DCodetext instance.
+        //    Adjust the values as needed for your specific scenario.
+        // --------------------------------------------------------------------
         string json = @"{
-            ""Class"": ""1"",
-            ""CustomerContent"": ""SampleCustomer"",
-            ""CustomerContentEncodeMode"": ""C40"",
-            ""DestinationPostCodeAndDPS"": ""EF61AH8T "",
+            ""VersionID"": ""1"",
             ""InformationTypeID"": ""0"",
-            ""ItemID"": 16563762,
-            ""ReturnToSenderPostCode"": ""SW1A1AA"",
+            ""Class"": ""1"",
             ""RTSFlag"": ""0"",
+            ""ItemID"": 16563762,
             ""SupplyChainID"": 384224,
+            ""DestinationPostCodeAndDPS"": ""EF61AH8T "",
             ""UPUCountryID"": ""GB"",
-            ""VersionID"": ""1""
+            ""CustomerContent"": ""SampleCustomerData"",
+            ""CustomerContentEncodeMode"": 0,
+            ""DataMatrixType"": 0
         }";
 
-        // Configure JSON options to handle enums as strings and ignore case.
-        var options = new JsonSerializerOptions
-        {
-            PropertyNameCaseInsensitive = true,
-            Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) }
-        };
-
-        // Deserialize JSON into the Aspose Mailmark2DCodetext object.
+        // --------------------------------------------------------------------
+        // 2. Deserialize the JSON into a Mailmark2DCodetext object.
+        //    Handle possible errors and null results gracefully.
+        // --------------------------------------------------------------------
         Mailmark2DCodetext mailmark;
         try
         {
-            mailmark = JsonSerializer.Deserialize<Mailmark2DCodetext>(json, options);
+            mailmark = JsonSerializer.Deserialize<Mailmark2DCodetext>(json);
             if (mailmark == null)
-                throw new InvalidOperationException("Deserialization returned null.");
+            {
+                Console.WriteLine("Deserialization returned null.");
+                return;
+            }
         }
         catch (Exception ex)
         {
@@ -61,20 +59,17 @@ class Program
             return;
         }
 
-        // Define the output file path for the generated barcode image.
-        string outputPath = "mailmark2d.png";
-
-        // Generate the Mailmark 2D barcode using ComplexBarcodeGenerator.
+        // --------------------------------------------------------------------
+        // 3. Generate the Mailmark 2D barcode using ComplexBarcodeGenerator.
+        //    The barcode is saved as a PNG image to the specified path.
+        // --------------------------------------------------------------------
+        const string outputPath = "mailmark2d.png";
         try
         {
             using (var generator = new ComplexBarcodeGenerator(mailmark))
             {
-                // Optional: set foreground and background colors.
-                generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-                generator.Parameters.BackColor = Aspose.Drawing.Color.White;
-
-                // Save the barcode image to the specified file.
-                generator.Save(outputPath);
+                // Save the barcode image as PNG.
+                generator.Save(outputPath, BarCodeImageFormat.Png);
             }
 
             Console.WriteLine($"Barcode generated and saved to '{Path.GetFullPath(outputPath)}'.");
