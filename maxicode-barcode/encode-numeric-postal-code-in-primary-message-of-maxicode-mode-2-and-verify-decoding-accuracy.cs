@@ -1,80 +1,74 @@
 // Title: Encode and Verify MaxiCode Mode 2 Postal Code
-// Description: Demonstrates encoding a numeric postal code into the primary message of a MaxiCode Mode 2 barcode and validates the result by decoding the generated image.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation and recognition category. It showcases the use of ComplexBarcodeGenerator, MaxiCodeCodetextMode2, and BarCodeReader to create and read MaxiCode symbols. Developers working with high‑density 2‑D barcodes such as MaxiCode can use these APIs to embed structured data (e.g., postal codes) and verify encoding accuracy, a common requirement in logistics and shipping applications.
+// Description: Demonstrates encoding a numeric postal code into the primary message of a MaxiCode Mode 2 barcode, generating the image, and decoding it to confirm the data matches the original.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation and recognition category. It showcases the use of ComplexBarcodeGenerator, MaxiCodeCodetextMode2, and BarCodeReader to create and read MaxiCode symbols. Developers working with shipping, logistics, or retail applications often need to encode structured data such as postal codes, country codes, and service categories into MaxiCode barcodes and verify their integrity.
 // Prompt: Encode a numeric postal code in the primary message of a MaxiCode Mode 2 and verify decoding accuracy.
-// Tags: maxicode, mode2, barcode, encoding, decoding, aspose.barcode, complexbarcode, png
+// Tags: maxicode, mode2, barcode, encoding, decoding, aspose.barcode, complexbarcode, c#
 
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.BarCode.ComplexBarcode;
+using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
 /// Example program that creates a MaxiCode Mode 2 barcode containing a numeric postal code,
-/// saves it as a PNG image, and then reads the image back to verify that the encoded data
-/// matches the original input.
+/// then reads the barcode back to verify the encoded data.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates the barcode, saves it, and validates decoding.
+    /// Entry point of the example. Generates a MaxiCode barcode, decodes it, and prints verification results.
     /// </summary>
     static void Main()
     {
-        // Define the output file path for the generated barcode image.
-        string outputPath = "maxicode_mode2.png";
+        // Define the numeric postal code (9 digits) and related MaxiCode fields.
+        const string postalCode = "123456789";
+        const int countryCode = 840; // USA numeric country code
+        const int serviceCategory = 999; // Example service category
 
-        // Build the MaxiCode Mode 2 codetext with required fields.
-        var maxiCodeCodetext = new MaxiCodeCodetextMode2
+        // Build the complex codetext for MaxiCode Mode 2 using the provided values.
+        var maxiCodeData = new MaxiCodeCodetextMode2
         {
-            PostalCode = "123456789",   // 9‑digit numeric postal code (primary message)
-            CountryCode = 840,          // Numeric ISO country code for USA
-            ServiceCategory = 999       // Example service category identifier
+            PostalCode = postalCode,
+            CountryCode = countryCode,
+            ServiceCategory = serviceCategory,
+            // Optional second message; can contain any additional information.
+            SecondMessage = new MaxiCodeStandardSecondMessage { Message = "Sample data" }
         };
 
-        // Optional: add a standard secondary message to the MaxiCode.
-        var secondMessage = new MaxiCodeStandardSecondMessage
+        // Generate the barcode image and store it in a memory stream.
+        using (var generator = new ComplexBarcodeGenerator(maxiCodeData))
         {
-            Message = "Sample secondary data"
-        };
-        maxiCodeCodetext.SecondMessage = secondMessage;
-
-        // Generate the MaxiCode image using the ComplexBarcodeGenerator.
-        using (var complexGenerator = new ComplexBarcodeGenerator(maxiCodeCodetext))
-        {
-            complexGenerator.Save(outputPath, BarCodeImageFormat.Png);
-        }
-
-        // Verify that the image file was created successfully.
-        if (!File.Exists(outputPath))
-        {
-            Console.WriteLine("Failed to create barcode image.");
-            return;
-        }
-
-        // Read and decode the generated barcode image.
-        using (var reader = new BarCodeReader(outputPath, DecodeType.MaxiCode))
-        {
-            foreach (var result in reader.ReadBarCodes())
+            using (var bitmap = generator.GenerateBarCodeImage())
             {
-                // Decode the raw codetext according to the detected MaxiCode mode.
-                var decodedCodetext = ComplexCodetextReader.TryDecodeMaxiCode(
-                    result.Extended.MaxiCode.MaxiCodeMode,
-                    result.CodeText);
+                using (var ms = new MemoryStream())
+                {
+                    // Save the generated bitmap as PNG into the memory stream.
+                    bitmap.Save(ms, ImageFormat.Png);
+                    ms.Position = 0; // Reset stream position for reading.
 
-                // Check if the decoded data is of type MaxiCode Mode 2.
-                if (decodedCodetext is MaxiCodeCodetextMode2 decodedMode2)
-                {
-                    Console.WriteLine($"Decoded PostalCode: {decodedMode2.PostalCode}");
-                    Console.WriteLine($"Original PostalCode: {maxiCodeCodetext.PostalCode}");
-                    bool match = decodedMode2.PostalCode == maxiCodeCodetext.PostalCode;
-                    Console.WriteLine($"Match: {match}");
-                }
-                else
-                {
-                    Console.WriteLine("Decoded codetext is not MaxiCode Mode 2.");
+                    // Decode the barcode from the memory stream using MaxiCode decoder.
+                    using (var reader = new BarCodeReader(ms, DecodeType.MaxiCode))
+                    {
+                        foreach (var result in reader.ReadBarCodes())
+                        {
+                            // Attempt to decode the complex codetext based on the mode reported by the reader.
+                            var decoded = ComplexCodetextReader.TryDecodeMaxiCode(result.Extended.MaxiCode.Mode, result.CodeText);
+                            if (decoded is MaxiCodeCodetextMode2 decodedMode2)
+                            {
+                                // Verify that the decoded postal code matches the original value.
+                                bool isMatch = decodedMode2.PostalCode == postalCode;
+                                Console.WriteLine($"Decoded PostalCode: {decodedMode2.PostalCode}");
+                                Console.WriteLine($"Match original: {isMatch}");
+                            }
+                            else
+                            {
+                                Console.WriteLine("Decoded codetext is not MaxiCode Mode 2.");
+                            }
+                        }
+                    }
                 }
             }
         }

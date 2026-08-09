@@ -1,57 +1,45 @@
-// Title: Apply custom foreground color to a MaxiCode Mode 2 barcode
-// Description: This example creates a MaxiCode Mode 2 barcode, sets a custom bar (foreground) color, and saves it as a PNG image. It demonstrates how to customize the visual appearance of complex barcodes using Aspose.BarCode.
-// Category-Description: The sample belongs to the Aspose.BarCode complex barcode generation category, where developers work with multi‑message symbologies such as MaxiCode. It showcases the use of ComplexBarcodeGenerator, MaxiCodeCodetextMode2, and related parameter classes to configure barcode data and appearance. Typical scenarios include shipping labels, parcel tracking, and logistics applications that require colored MaxiCode symbols.
+// Title: Custom foreground color for MaxiCode Mode 2 barcode
+// Description: Demonstrates generating a MaxiCode Mode 2 barcode and applying a custom foreground (bar) color using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It showcases the use of ComplexBarcodeGenerator with MaxiCodeCodetextMode2, configuring barcode appearance via the Parameters.Barcode.BarColor property, and saving the result as an image. Developers working with high‑density 2‑D barcodes such as MaxiCode often need to customize visual attributes for branding or readability, making this pattern a common starting point.
 // Prompt: Apply a custom foreground color to a MaxiCode Mode 2 barcode using the generator's ForeColor property.
-// Tags: maxicode, color, generation, png, aspose.barcode, complexbarcodegenerator, barcode
+// Tags: maxicode, barcode, color, foreground, generation, aspose.barcode, complexbarcode, png
 
-using System;
-using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.ComplexBarcode;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates applying a custom foreground color to a MaxiCode Mode 2 barcode and saving it as PNG.
+/// Generates a MaxiCode Mode 2 barcode with a custom foreground color and saves it as a PNG file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that builds the MaxiCode data, configures the barcode color, generates the image, and writes it to disk.
+    /// Entry point of the example. Creates the barcode data, configures the generator, and writes the image to disk.
     /// </summary>
     static void Main()
     {
-        // Prepare MaxiCode Mode 2 codetext with required fields
-        var maxiCodeCodetext = new MaxiCodeCodetextMode2
+        // Prepare MaxiCode Mode 2 codetext with sample values.
+        var maxiCodeData = new MaxiCodeCodetextMode2
         {
-            PostalCode = "524032140",   // 9‑digit US postal code
-            CountryCode = 56,           // USA numeric country code
-            ServiceCategory = 999       // Example service category
+            PostalCode = "524032140",
+            CountryCode = 56,
+            ServiceCategory = 999,
+            SecondMessage = new MaxiCodeStandardSecondMessage { Message = "Sample message" }
         };
 
-        // Create and assign the standard second message
-        var secondMessage = new MaxiCodeStandardSecondMessage
+        // Initialize the complex barcode generator using the prepared codetext.
+        using (var generator = new ComplexBarcodeGenerator(maxiCodeData))
         {
-            Message = "Sample MaxiCode"
-        };
-        maxiCodeCodetext.SecondMessage = secondMessage;
+            // Set a custom foreground (bar) color for the barcode.
+            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Red;
 
-        // Initialize the generator with the prepared codetext
-        using (var generator = new ComplexBarcodeGenerator(maxiCodeCodetext))
-        {
-            // Set a custom foreground (bar) color for the barcode
-            generator.Parameters.Barcode.BarColor = Color.Blue;
-
-            // Generate the barcode image in memory
-            generator.GenerateBarCodeImage();
-
-            // Define output file path and save the image as PNG
-            const string outputPath = "maxicode_mode2.png";
-            generator.Save(outputPath, BarCodeImageFormat.Png);
-
-            // Inform the user where the file was saved
-            Console.WriteLine($"Barcode saved to {Path.GetFullPath(outputPath)}");
+            // Generate the barcode image.
+            using (Aspose.Drawing.Bitmap image = generator.GenerateBarCodeImage())
+            {
+                // Save the generated image to a PNG file.
+                image.Save("MaxiCodeMode2_Red.png");
+            }
         }
     }
 }

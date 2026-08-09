@@ -1,54 +1,35 @@
-// Title: Generate MaxiCode barcode with 300 DPI resolution
-// Description: Demonstrates creating a MaxiCode barcode and setting its image DPI to 300 for high‑quality printing.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It showcases the use of ComplexBarcodeGenerator, MaxiCodeCodetextMode2, and related classes to produce MaxiCode symbols. Developers often need to adjust image resolution, embed secondary messages, and export to common formats like PNG for printing or scanning applications.
+// Title: Generate a MaxiCode barcode with 300 DPI resolution
+// Description: Demonstrates how to set the image resolution to 300 DPI when creating a MaxiCode barcode, improving print quality for high‑resolution output.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on image resolution settings. It showcases the use of BarcodeGenerator, EncodeTypes, and the Resolution property to control DPI. Developers often need to adjust DPI for printing or publishing barcodes at higher quality, and this snippet illustrates the typical steps for configuring and saving a high‑resolution barcode image.
 // Prompt: Set the barcode image DPI to 300 when generating a MaxiCode to improve print quality.
-// Tags: maxicode, barcode generation, dpi, image resolution, aspose.barcode, png
+// Tags: maxicode, dpi, resolution, barcode generation, aspose.barcode, image output, png
 
-using System;
-using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.ComplexBarcode;
+using Aspose.Drawing;
 
 /// <summary>
-/// Example program that creates a MaxiCode barcode with a 300 DPI image resolution.
+/// Example program that generates a MaxiCode barcode image with a resolution of 300 DPI.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a MaxiCode, sets its DPI, and saves it as a PNG file.
+    /// Entry point. Creates a MaxiCode barcode, sets its DPI to 300, and saves it as a PNG file.
     /// </summary>
     static void Main()
     {
-        // Define the output file name
-        string outputPath = "maxicode.png";
-
-        // Prepare MaxiCode codetext (Mode 2 example) with required fields
-        var maxiCodeCodetext = new MaxiCodeCodetextMode2
+        // Initialize a MaxiCode generator with sample codetext
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.MaxiCode, "Sample MaxiCode"))
         {
-            PostalCode = "524032140",   // 9‑digit US postal code
-            CountryCode = 056,          // USA country code
-            ServiceCategory = 999       // Example service category
-        };
-
-        // Add a simple second message to the MaxiCode
-        var secondMessage = new MaxiCodeStandardSecondMessage
-        {
-            Message = "Sample MaxiCode"
-        };
-        maxiCodeCodetext.SecondMessage = secondMessage;
-
-        // Generate the MaxiCode using the complex barcode generator
-        using (var generator = new ComplexBarcodeGenerator(maxiCodeCodetext))
-        {
-            // Set image resolution to 300 DPI for high‑quality print output
+            // Configure the image resolution (dots per inch) to 300
             generator.Parameters.Resolution = 300f;
 
-            // Save the generated barcode image as a PNG file
-            generator.Save(outputPath, BarCodeImageFormat.Png);
+            // Generate the barcode image as a bitmap
+            using (Aspose.Drawing.Bitmap image = generator.GenerateBarCodeImage())
+            {
+                // Persist the bitmap to a PNG file
+                image.Save("maxicode_300dpi.png");
+            }
         }
-
-        // Inform the user where the file was saved
-        Console.WriteLine($"MaxiCode saved to '{Path.GetFullPath(outputPath)}' with 300 DPI.");
     }
 }

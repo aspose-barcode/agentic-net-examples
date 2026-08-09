@@ -1,56 +1,40 @@
-// Title: Rotate MaxiCode Barcode and Save as GIF
-// Description: Generates a MaxiCode barcode, rotates it 90 degrees, and saves the rotated image as a GIF file.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It demonstrates how to use the ComplexBarcodeGenerator with MaxiCodeCodetextMode2 to create a MaxiCode symbol, then employs Aspose.Drawing to manipulate the resulting image (rotation) before saving. Developers working with high‑density 2‑D barcodes often need to adjust orientation for printing or display purposes, and this pattern shows the typical workflow using key API classes such as ComplexBarcodeGenerator, MaxiCodeCodetextMode2, Image, and RotateFlipType.
-/// Prompt: Rotate a generated MaxiCode barcode by 90 degrees and save the rotated image as GIF.
-/// Tags: maxicode, rotation, gif, aspose.barcode, complexbarcode, imageprocessing
+// Title: Rotate MaxiCode barcode and save as GIF
+// Description: Demonstrates generating a MaxiCode barcode, rotating it 90 degrees, and saving the result as a GIF image.
+// Category-Description: This example belongs to the Aspose.BarCode image manipulation category, illustrating how to use the BarcodeGenerator class to create a barcode, adjust its rotation via the Parameters.RotationAngle property, and export the image in a specific format such as GIF. Typical use cases include preparing barcodes for printing on rotated media, integrating rotated barcodes into UI assets, or meeting layout requirements. Developers working with barcode generation often need to control orientation and output format, and this snippet shows the essential steps.
+// Prompt: Rotate a generated MaxiCode barcode by 90 degrees and save the rotated image as GIF.
+// Tags: maxicode, rotation, gif, barcode generation, aspose.barcode, image export
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.ComplexBarcode;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a MaxiCode barcode, rotating it 90°,
-/// and saving the rotated image as a GIF file.
+/// Generates a MaxiCode barcode, rotates it by 90 degrees, and saves the image as a GIF file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates a MaxiCode barcode, rotates the image,
-    /// and writes the result to disk.
+    /// Entry point of the example. Creates the barcode, applies rotation, and writes the output file.
     /// </summary>
     static void Main()
     {
-        // Prepare MaxiCode codetext (Mode 2 example) with required fields.
-        var maxiCode = new MaxiCodeCodetextMode2
-        {
-            PostalCode = "524032140",
-            CountryCode = 56,
-            ServiceCategory = 999
-        };
+        // Define the output file path for the rotated GIF image.
+        string outputPath = "maxicode_rotated.gif";
 
-        // Add a second message to the MaxiCode payload.
-        var secondMessage = new MaxiCodeStandardSecondMessage
+        // Initialize a BarcodeGenerator for the MaxiCode symbology with the desired code text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.MaxiCode, "Test"))
         {
-            Message = "Sample Message"
-        };
-        maxiCode.SecondMessage = secondMessage;
+            // Set the rotation angle to 90 degrees to rotate the generated barcode image.
+            generator.Parameters.RotationAngle = 90f;
 
-        // Generate the MaxiCode image into a memory stream using ComplexBarcodeGenerator.
-        using (var generator = new ComplexBarcodeGenerator(maxiCode))
-        using (var memory = new MemoryStream())
-        {
-            generator.Save(memory, BarCodeImageFormat.Png);
-            memory.Position = 0; // Reset stream position for reading.
-
-            // Load the image with Aspose.Drawing, rotate 90 degrees, and save as GIF.
-            using (var image = Image.FromStream(memory))
+            // Save the rotated barcode to a memory stream in GIF format.
+            using (var memoryStream = new MemoryStream())
             {
-                image.RotateFlip(RotateFlipType.Rotate90FlipNone);
-                image.Save("maxicode_rotated.gif", ImageFormat.Gif);
+                generator.Save(memoryStream, BarCodeImageFormat.Gif);
+
+                // Write the GIF data from the memory stream to the specified output file.
+                File.WriteAllBytes(outputPath, memoryStream.ToArray());
             }
         }
     }

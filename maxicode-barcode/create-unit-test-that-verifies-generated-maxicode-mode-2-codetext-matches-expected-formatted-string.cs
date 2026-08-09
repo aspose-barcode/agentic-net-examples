@@ -1,83 +1,100 @@
-// Title: Verify MaxiCode Mode 2 Codetext Generation
-// Description: Demonstrates a unit‑test‑style verification that the MaxiCode Mode 2 codetext produced by Aspose.BarCode matches the expected formatted string.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category, focusing on MaxiCode symbology. It shows how to use MaxiCodeCodetextMode2, MaxiCodeStandardSecondMessage, and ComplexBarcodeGenerator to construct and validate codetext without rendering an image. Developers working with shipping or logistics barcode solutions often need to ensure the encoded data follows the required format before creating the barcode image.
+// Title: Verify MaxiCode Mode 2 Codetext Generation with Aspose.BarCode
+// Description: Demonstrates how to generate a MaxiCode Mode 2 barcode, decode it, and assert that the codetext matches the expected formatted string.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category, focusing on complex barcode types such as MaxiCode. It showcases the use of ComplexBarcodeGenerator, MaxiCodeCodetextMode2, and BarCodeReader to create, save, and validate barcodes, a common task for developers implementing shipping or logistics solutions that require precise MaxiCode data encoding.
 // Prompt: Create a unit test that verifies the generated MaxiCode Mode 2 codetext matches the expected formatted string.
-// Tags: maxicode, mode2, codetext, unit-test, aspose.barcode, complexbarcodegenerator
+// Tags: barcode, maxicode, mode2, unit-test, generation, recognition, aspose.barcode
 
 using System;
-using Aspose.BarCode;
+using System.IO;
 using Aspose.BarCode.ComplexBarcode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Example program that builds a MaxiCode Mode 2 codetext, generates a barcode generator instance,
-/// and validates that the constructed codetext matches the expected formatted string.
+/// Contains the entry point that generates a MaxiCode Mode 2 barcode,
+/// decodes it, and validates the codetext against the expected value.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Prepares expected values, constructs the codetext object,
-    /// instantiates the generator, and verifies the resulting codetext.
+    /// Generates a temporary MaxiCode image, reads it back, and checks that
+    /// the decoded codetext and mode are as expected.
     /// </summary>
     static void Main()
     {
-        // ------------------------------------------------------------
-        // Prepare expected values for the MaxiCode components
-        // ------------------------------------------------------------
-        string expectedPostalCode = "524032140";
-        int expectedCountryCode = 56; // will be formatted as three digits "056"
-        int expectedServiceCategory = 999;
-        string expectedMessage = "Test message";
-
-        // Build the expected formatted codetext string according to MaxiCode Mode 2 rules
-        string expectedCodetext = expectedPostalCode +
-                                 expectedCountryCode.ToString("D3") +
-                                 expectedServiceCategory.ToString("D3") +
-                                 expectedMessage;
-
-        // ------------------------------------------------------------
-        // Create and populate the MaxiCode Mode 2 codetext object
-        // ------------------------------------------------------------
-        var maxiCodeCodetext = new MaxiCodeCodetextMode2
+        // Prepare test data for MaxiCode Mode 2
+        var maxiCodeData = new MaxiCodeCodetextMode2
         {
-            PostalCode = expectedPostalCode,
-            CountryCode = expectedCountryCode,
-            ServiceCategory = expectedServiceCategory
+            PostalCode = "524032140",   // 9‑digit postal code
+            CountryCode = 56,           // 3‑digit country code (leading zeros are optional)
+            ServiceCategory = 999       // 3‑digit service category
         };
 
-        // Attach the standard second message to the codetext
-        var secondMessage = new MaxiCodeStandardSecondMessage
-        {
-            Message = expectedMessage
-        };
-        maxiCodeCodetext.SecondMessage = secondMessage;
+        // Optional: add a standard second message
+        var secondMessage = new MaxiCodeStandardSecondMessage { Message = "Test message" };
+        maxiCodeData.SecondMessage = secondMessage;
 
-        // ------------------------------------------------------------
-        // Initialize the ComplexBarcodeGenerator (required lifecycle)
-        // ------------------------------------------------------------
-        using (var generator = new ComplexBarcodeGenerator(maxiCodeCodetext))
+        // Expected codetext constructed by the complex barcode object itself
+        string expectedCodetext = maxiCodeData.GetConstructedCodetext();
+
+        // Generate the barcode image to a temporary file
+        string tempImagePath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString() + ".png");
+        using (var generator = new ComplexBarcodeGenerator(maxiCodeData))
         {
-            // Image generation is unnecessary for this test, but the generator must be instantiated.
+            // Enable strict validation of codetext
+            generator.Parameters.Barcode.ThrowExceptionWhenCodeTextIncorrect = true;
             generator.GenerateBarCodeImage();
+            generator.Save(tempImagePath);
         }
 
-        // ------------------------------------------------------------
-        // Retrieve the constructed codetext from the object for verification
-        // ------------------------------------------------------------
-        string actualCodetext = maxiCodeCodetext.GetConstructedCodetext();
-
-        // ------------------------------------------------------------
-        // Verify that the generated codetext matches the expected format
-        // ------------------------------------------------------------
-        if (actualCodetext == expectedCodetext)
+        // Read and decode the generated barcode
+        bool testPassed = false;
+        using (var reader = new BarCodeReader(tempImagePath, DecodeType.MaxiCode))
         {
-            Console.WriteLine("Test Passed: Generated codetext matches expected.");
+            var results = reader.ReadBarCodes();
+            foreach (var result in results)
+            {
+                // Verify that a codetext was decoded
+                if (string.IsNullOrEmpty(result.CodeText))
+                {
+                    Console.WriteLine("FAILED: Decoded CodeText is null or empty.");
+                    break;
+                }
+
+                // Verify that the decoded codetext matches the expected value
+                if (!result.CodeText.Equals(expectedCodetext, StringComparison.Ordinal))
+                {
+                    Console.WriteLine($"FAILED: Expected CodeText '{expectedCodetext}' but got '{result.CodeText}'.");
+                    break;
+                }
+
+                // Verify that the decoded mode is Mode2
+                if (result.Extended.MaxiCode.Mode != MaxiCodeMode.Mode2)
+                {
+                    Console.WriteLine($"FAILED: Expected MaxiCode mode 'Mode2' but got '{result.Extended.MaxiCode.Mode}'.");
+                    break;
+                }
+
+                // All checks passed
+                testPassed = true;
+                break; // only need first barcode
+            }
+        }
+
+        // Clean up temporary file
+        if (File.Exists(tempImagePath))
+        {
+            try { File.Delete(tempImagePath); } catch { /* ignore cleanup errors */ }
+        }
+
+        // Report result
+        if (testPassed)
+        {
+            Console.WriteLine("PASSED: MaxiCode Mode 2 codetext matches expected formatted string.");
         }
         else
         {
-            Console.WriteLine("Test Failed:");
-            Console.WriteLine($"Expected: \"{expectedCodetext}\"");
-            Console.WriteLine($"Actual:   \"{actualCodetext}\"");
+            Console.WriteLine("FAILED: One or more verification steps did not succeed.");
         }
     }
 }

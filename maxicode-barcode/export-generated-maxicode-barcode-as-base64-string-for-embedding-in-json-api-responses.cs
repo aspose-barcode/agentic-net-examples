@@ -1,8 +1,8 @@
-// Title: Export MaxiCode barcode as Base64 string
-// Description: Generates a MaxiCode barcode (Mode 2) and converts the PNG image to a Base64 string suitable for inclusion in JSON API responses.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category, illustrating how to use ComplexBarcodeGenerator with MaxiCodeCodetextMode2, configure postal and secondary message data, and output the result in a web‑friendly format. Developers working with shipping, logistics, or inventory systems often need to embed barcode images directly in JSON payloads, and this snippet shows the typical workflow using Aspose.BarCode classes.
+// Title: Export MaxiCode barcode as Base64 PNG string
+// Description: Generates a MaxiCode barcode (Mode 2) and converts the PNG image to a Base64 string for embedding in JSON responses.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on complex barcode types such as MaxiCode. It demonstrates using the ComplexBarcodeGenerator, MaxiCodeCodetextMode2, and related classes to create shipping‑label barcodes, then exporting the image in PNG format and encoding it as Base64 for API payloads. Developers working with logistics, inventory, or any system that needs to embed barcode images in JSON will find this pattern useful.
 // Prompt: Export a generated MaxiCode barcode as a base64 string for embedding in JSON API responses.
-// Tags: maxicode, barcode, base64, json, aspose.barcode, complexbarcode, generation
+// Tags: maxicode, barcode generation, base64, png, aspose.barcode, json, api response, complex barcode
 
 using System;
 using System.IO;
@@ -11,41 +11,43 @@ using Aspose.BarCode.Generation;
 using Aspose.BarCode.ComplexBarcode;
 
 /// <summary>
-/// Demonstrates generating a MaxiCode barcode and converting it to a Base64 string for JSON embedding.
+/// Demonstrates exporting a generated MaxiCode barcode as a Base64‑encoded PNG string.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates a MaxiCode (Mode 2) barcode, saves it to a memory stream,
-    /// converts the image to Base64, and writes the string to the console.
+    /// Entry point. Creates a MaxiCode barcode, saves it to a memory stream, converts to Base64, and writes the result to the console.
     /// </summary>
     static void Main()
     {
-        // Prepare MaxiCode codetext for Mode 2 (postal information + data)
-        var maxiCodeCodetext = new MaxiCodeCodetextMode2
+        // ------------------------------------------------------------
+        // 1. Prepare MaxiCode codetext (Mode 2) with a standard second message
+        // ------------------------------------------------------------
+        var maxiCodeData = new MaxiCodeCodetextMode2
         {
-            PostalCode = "524032140",   // 9‑digit US postal code
-            CountryCode = 56,           // Country code (e.g., USA = 56)
-            ServiceCategory = 999       // Example service category
+            PostalCode = "524032140",
+            CountryCode = 56,
+            ServiceCategory = 999
         };
 
-        // Add a simple second message
         var secondMessage = new MaxiCodeStandardSecondMessage
         {
-            Message = "Sample MaxiCode"
+            Message = "Sample message"
         };
-        maxiCodeCodetext.SecondMessage = secondMessage;
+        maxiCodeData.SecondMessage = secondMessage;
 
-        // Generate the barcode image into a memory stream
-        using (var generator = new ComplexBarcodeGenerator(maxiCodeCodetext))
+        // ------------------------------------------------------------
+        // 2. Generate the barcode and export it as a Base64‑encoded PNG string
+        // ------------------------------------------------------------
+        using (var generator = new ComplexBarcodeGenerator(maxiCodeData))
         {
-            using (var ms = new MemoryStream())
+            using (var memoryStream = new MemoryStream())
             {
-                // Save the barcode as PNG to the stream
-                generator.Save(ms, BarCodeImageFormat.Png);
+                // Save the barcode image to the memory stream in PNG format
+                generator.Save(memoryStream, BarCodeImageFormat.Png);
 
-                // Convert the image bytes to a Base64 string
-                string base64 = Convert.ToBase64String(ms.ToArray());
+                // Convert the PNG byte array to a Base64 string
+                string base64 = Convert.ToBase64String(memoryStream.ToArray());
 
                 // Output the Base64 string (can be embedded in JSON)
                 Console.WriteLine(base64);
