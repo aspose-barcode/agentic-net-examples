@@ -1,38 +1,69 @@
-// Title: Generate DataBar Stacked Barcode with 2D Composite Component and PDF Output
-// Description: Demonstrates setting DataBar stacked aspect ratio to 12, enabling the 2D composite component, and saving the result as a PDF file.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to configure DataBar stacked symbology using the BarcodeGenerator class. Typical use cases include creating retail product barcodes with composite components for additional data. Developers often need to adjust aspect ratios, enable 2D components, and export barcodes to various formats such as PDF.
+// Title: Generate DataBar Stacked barcode with 2D component and export to PDF
+// Description: Demonstrates how to configure a DataBar Stacked barcode, set its aspect ratio, enable the 2D composite component, and embed the resulting image into a PDF file using Aspose.BarCode and Aspose.Pdf.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on DataBar symbologies. It showcases the use of BarcodeGenerator, EncodeTypes, and BarCodeImageFormat to create a barcode, and Aspose.Pdf Document and Image classes to embed the barcode into a PDF. Typical scenarios include generating product labels, receipts, or any documents that require high‑density barcodes with optional 2D components.
 // Prompt: Set DataBar stacked parameters aspect ratio twelve, enable 2D component, generate PDF output.
-// Tags: databar stacked, aspect ratio, 2d component, pdf output, aspose.barcode, barcode generation
+// Tags: databar, stacked, aspectratio, 2dcomponent, pdf, aspose.barcode, aspose.pdf, barcode-generation
 
 using System;
-using Aspose.BarCode;
+using System.IO;
 using Aspose.BarCode.Generation;
+using Aspose.Pdf;
 
 /// <summary>
-/// Example program that creates a DataBar Stacked barcode, configures its aspect ratio,
-/// enables the 2D composite component, and saves the result as a PDF file.
+/// Example program that creates a DataBar Stacked barcode with a 2D composite component,
+/// embeds it into a PDF document, and saves the result to disk.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates the barcode and writes it to "databar_stacked.pdf".
+    /// Entry point of the application.
     /// </summary>
     static void Main()
     {
-        // Sample GTIN code text suitable for DataBar stacked symbology
-        const string codeText = "(01)12345678901231";
+        // Define the output PDF file name.
+        const string outputPdfPath = "DataBarStacked.pdf";
 
-        // Initialize a BarcodeGenerator for DataBar stacked symbology with the provided text
-        using (var generator = new BarcodeGenerator(EncodeTypes.DatabarStacked, codeText))
+        // Initialize a barcode generator for the DataBar Stacked symbology.
+        using (var generator = new BarcodeGenerator(EncodeTypes.DatabarStacked))
         {
-            // Set the aspect ratio of the DataBar stacked module to 12 (wide modules)
-            generator.Parameters.Barcode.DataBar.AspectRatio = 12f;
+            // Set the barcode text to a sample GTIN code (required format for DataBar Stacked).
+            generator.CodeText = "(01)12345678901231";
 
-            // Enable the 2D composite component for the DataBar barcode
-            generator.Parameters.Barcode.DataBar.Is2DCompositeComponent = true;
+            // Configure DataBar‑specific parameters.
+            generator.Parameters.Barcode.DataBar.AspectRatio = 12f;               // Aspect ratio = 12
+            generator.Parameters.Barcode.DataBar.Is2DCompositeComponent = true; // Enable 2D component
 
-            // Save the generated barcode as a PDF file in the current directory
-            generator.Save("databar_stacked.pdf");
+            // Render the barcode to a memory stream in PNG format.
+            using (var barcodeStream = new MemoryStream())
+            {
+                generator.Save(barcodeStream, BarCodeImageFormat.Png);
+                barcodeStream.Position = 0; // Reset stream position for subsequent reading.
+
+                // Create a new PDF document and add a page.
+                using (var pdfDoc = new Document())
+                {
+                    var page = pdfDoc.Pages.Add();
+
+                    // Create an Aspose.Pdf.Image object that reads the barcode from the stream.
+                    var pdfImage = new Aspose.Pdf.Image
+                    {
+                        ImageStream = barcodeStream,
+                        FixWidth = 200f,
+                        FixHeight = 100f,
+                        HorizontalAlignment = HorizontalAlignment.Center,
+                        VerticalAlignment = VerticalAlignment.Center
+                    };
+
+                    // Add the image to the page's paragraph collection.
+                    page.Paragraphs.Add(pdfImage);
+
+                    // Save the PDF document to the specified file.
+                    pdfDoc.Save(outputPdfPath);
+                }
+            }
         }
+
+        // Inform the user where the PDF was saved.
+        Console.WriteLine($"PDF with DataBar Stacked barcode saved to: {outputPdfPath}");
     }
 }

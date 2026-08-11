@@ -1,65 +1,64 @@
-// Title: Generate Barcode Image into MemoryStream for Web API
-// Description: Demonstrates creating a Code128 barcode, rendering it to a PNG image stored in a MemoryStream, and returning the stream as would be done in a web API.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use BarcodeGenerator, BarCodeImageFormat, and related parameter classes to produce barcode images on the fly. Typical use cases include generating barcodes for invoices, shipping labels, or tickets within ASP.NET Core endpoints. Developers often need to stream the image directly to HTTP responses without writing to disk.
+// Title: Generate a Code128 barcode and return it as a MemoryStream
+// Description: Demonstrates creating a Code128 barcode image in PNG format using Aspose.BarCode, storing it in a MemoryStream, and returning the stream for use in a web API response.
+// Category-Description: This example belongs to the Aspose.BarCode image generation category, illustrating how to use the BarcodeGenerator class to encode data, save the result to a stream, and manage stream positioning. Developers building web services or APIs often need to produce barcode images on‑the‑fly without writing temporary files, and this pattern shows the typical workflow with key classes such as BarcodeGenerator, EncodeTypes, BarCodeImageFormat, and MemoryStream.
 // Prompt: Create a MemoryStream, render the barcode into it, and return the stream from a web API.
-// Tags: code128, barcode generation, png, memorystream, aspose.barcode, aspnet
+// Tags: code128, barcode generation, png, memorystream, aspose.barcode
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 
-namespace BarcodeApiSimulation
+/// <summary>
+/// Simulated API class that provides barcode generation functionality.
+/// </summary>
+class Program
 {
     /// <summary>
-    /// Simulates the core logic of a web API that generates a barcode image and returns it as a <see cref="MemoryStream"/>.
+    /// Generates a Code128 barcode image, writes it to a <see cref="MemoryStream"/> in PNG format,
+    /// and returns the stream positioned at the beginning for reading.
     /// </summary>
-    class Program
+    /// <param name="codeText">The text to encode in the barcode.</param>
+    /// <returns>A <see cref="MemoryStream"/> containing the barcode image.</returns>
+    static MemoryStream GetBarcodeStream(string codeText)
     {
-        /// <summary>
-        /// Generates a barcode image for the specified text, writes it to a <see cref="MemoryStream"/> in PNG format,
-        /// and returns the stream positioned at the beginning for reading.
-        /// </summary>
-        /// <param name="codeText">The text to encode in the barcode.</param>
-        /// <returns>A <see cref="MemoryStream"/> containing the PNG barcode image.</returns>
-        static MemoryStream GenerateBarcodeStream(string codeText)
+        // Allocate a memory stream that will hold the generated PNG image.
+        var barcodeStream = new MemoryStream();
+
+        // Create a BarcodeGenerator for Code128 symbology with the supplied text.
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
         {
-            // Create a memory stream to hold the generated image.
-            var memoryStream = new MemoryStream();
-
-            // Initialize the barcode generator with Code128 symbology and the provided text.
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
-            {
-                // Optional: customize the barcode's appearance.
-                generator.Parameters.Barcode.BarColor = Color.Blue;   // Set barcode bars to blue.
-                generator.Parameters.BackColor = Color.White;        // Set background to white.
-
-                // Save the barcode image into the memory stream as a PNG.
-                generator.Save(memoryStream, BarCodeImageFormat.Png);
-            }
-
-            // Reset the stream position so callers can read from the beginning.
-            memoryStream.Position = 0;
-            return memoryStream;
+            // Persist the barcode image directly into the memory stream.
+            generator.Save(barcodeStream, BarCodeImageFormat.Png);
         }
 
-        /// <summary>
-        /// Entry point for the console demonstration. Generates a sample barcode and writes its size to the console.
-        /// In a real web API, the returned <see cref="MemoryStream"/> would be sent to the client.
-        /// </summary>
-        /// <param name="args">Command‑line arguments (not used).</param>
-        static void Main(string[] args)
-        {
-            const string sampleText = "123ABC";
+        // Rewind the stream so callers can read from the start.
+        barcodeStream.Position = 0;
+        return barcodeStream;
+    }
 
-            // Generate the barcode stream for the sample text.
-            using (MemoryStream barcodeStream = GenerateBarcodeStream(sampleText))
+    /// <summary>
+    /// Demonstrates the use of <see cref="GetBarcodeStream"/> and optionally writes the image to a file.
+    /// In a real web API the returned stream would be sent as the HTTP response body.
+    /// </summary>
+    static void Main()
+    {
+        // Generate a barcode for the sample text "123ABC".
+        using (MemoryStream stream = GetBarcodeStream("123ABC"))
+        {
+            // Output the size of the generated image for verification.
+            Console.WriteLine($"Generated barcode image size: {stream.Length} bytes");
+
+            // Optional: save the stream to a physical file to inspect the result.
+            const string outputPath = "barcode.png";
+            using (FileStream file = new FileStream(outputPath, FileMode.Create, FileAccess.Write))
             {
-                // Output the length of the generated stream for verification.
-                Console.WriteLine($"Generated barcode stream length: {barcodeStream.Length} bytes");
-                // In a real API, the stream would be returned directly to the HTTP response.
+                stream.CopyTo(file);
             }
+
+            Console.WriteLine($"Barcode image saved to {outputPath}");
         }
+
+        // Note: In production, the MemoryStream would be returned directly from a controller action.
     }
 }

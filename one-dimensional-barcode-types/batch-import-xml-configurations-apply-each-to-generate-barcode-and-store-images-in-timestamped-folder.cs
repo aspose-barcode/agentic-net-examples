@@ -1,67 +1,71 @@
-// Title: Batch generate barcodes from XML configurations
-// Description: Demonstrates importing multiple barcode settings from XML files, generating corresponding PNG images, and saving them to a timestamped folder.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use BarcodeGenerator.ImportFromXml and BarcodeGenerator.Save to process batch configurations. Developers often need to automate barcode creation from predefined XML templates for inventory, shipping, or labeling workflows. The snippet illustrates folder handling, timestamped output, and error reporting for large‑scale barcode generation.
+// Title: Batch generate barcodes from XML configuration files
+// Description: Demonstrates how to import barcode settings from multiple XML files, generate corresponding barcode images, and save them to a timestamped folder.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing the use of BarcodeGenerator.ImportFromXml to load configuration, and BarcodeGenerator.Save to export images. Typical scenarios include bulk barcode creation from predefined settings, automated report generation, and integration pipelines where barcode specifications are maintained as XML. Developers often need to batch‑process configurations, manage output locations, and handle errors gracefully.
 // Prompt: Batch import XML configurations, apply each to generate a barcode, and store images in a timestamped folder.
-// Tags: barcode symbology, batch import, png, barcodegenerator
+// Tags: barcode generation, batch processing, xml configuration, png, aspose.barcode, barcodegenerator
 
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Generates barcode images by importing settings from XML files located in a predefined folder.
+/// Provides a console application that reads barcode generation settings from XML files,
+/// creates corresponding barcode images, and saves them into a timestamped output directory.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Scans the input directory for XML configurations,
-    /// creates barcodes, and saves them as PNG files in a timestamped output folder.
+    /// Entry point of the application. Executes the batch barcode generation workflow.
     /// </summary>
     static void Main()
     {
-        // Define the folder that contains XML barcode configuration files.
-        string inputFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "BarcodesXml");
+        // Define the folder that contains XML configuration files for barcode generation.
+        string inputFolder = Path.Combine(Directory.GetCurrentDirectory(), "BarCodeConfigs");
         if (!Directory.Exists(inputFolder))
         {
-            // Ensure the input folder exists to avoid runtime errors.
-            Directory.CreateDirectory(inputFolder);
-        }
-
-        // Define a timestamped output folder for the generated barcode images.
-        string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-        string outputFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "BarcodesOutput", timestamp);
-        Directory.CreateDirectory(outputFolder);
-
-        // Retrieve all XML files from the input folder.
-        string[] xmlFiles = Directory.GetFiles(inputFolder, "*.xml");
-        if (xmlFiles.Length == 0)
-        {
-            Console.WriteLine("No XML configuration files found in: " + inputFolder);
+            Console.WriteLine($"Input folder not found: {inputFolder}");
             return;
         }
 
-        // Process each XML configuration file.
+        // Create a unique output folder using the current timestamp to avoid name collisions.
+        string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+        string outputFolder = Path.Combine(Directory.GetCurrentDirectory(), $"BarCodeImages_{timestamp}");
+        Directory.CreateDirectory(outputFolder);
+
+        // Retrieve all XML files from the input directory.
+        string[] xmlFiles = Directory.GetFiles(inputFolder, "*.xml");
+        if (xmlFiles.Length == 0)
+        {
+            Console.WriteLine("No XML configuration files found.");
+            return;
+        }
+
+        // Process each XML configuration file individually.
         foreach (string xmlPath in xmlFiles)
         {
             try
             {
-                // Import barcode settings from the XML file.
+                // Load generator settings from the XML file.
                 using (BarcodeGenerator generator = BarcodeGenerator.ImportFromXml(xmlPath))
                 {
-                    // Build the output image file name (same as XML file name, but with .png extension).
-                    string outputFileName = Path.GetFileNameWithoutExtension(xmlPath) + ".png";
-                    string outputPath = Path.Combine(outputFolder, outputFileName);
+                    // Build the output image path using the XML file name (without extension).
+                    string fileNameWithoutExt = Path.GetFileNameWithoutExtension(xmlPath);
+                    string imagePath = Path.Combine(outputFolder, $"{fileNameWithoutExt}.png");
 
-                    // Save the generated barcode image to the output folder.
-                    generator.Save(outputPath);
-                    Console.WriteLine($"Generated barcode saved to: {outputPath}");
+                    // Save the generated barcode as a PNG image.
+                    generator.Save(imagePath, BarCodeImageFormat.Png);
+                    Console.WriteLine($"Generated barcode saved to: {imagePath}");
                 }
             }
             catch (Exception ex)
             {
-                // Log any errors encountered while processing the current XML file.
+                // Log any errors that occur while processing a specific XML file.
                 Console.WriteLine($"Failed to process '{xmlPath}': {ex.Message}");
             }
         }
+
+        Console.WriteLine("Batch barcode generation completed.");
     }
 }

@@ -1,8 +1,8 @@
-// Title: Set Code 16K Quiet Zone Coefficients and Export as JPEG
-// Description: Demonstrates how to configure quiet‑zone coefficients for a Code 16K barcode and save it as a JPEG image.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and barcode parameter settings such as quiet‑zone coefficients. Developers often need to adjust quiet zones for scanner compatibility or layout requirements, and then export the barcode to common image formats like JPEG.
+// Title: Set Code 16K quiet‑zone coefficients and export as JPEG
+// Description: Demonstrates how to configure left and right quiet‑zone coefficients for a Code 16K barcode using Aspose.BarCode and save the result as a JPEG image.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and barcode parameter settings such as quiet‑zone coefficients. Typical use cases include customizing barcode appearance for printing or digital display, where precise quiet‑zone control is required. Developers often need to adjust these settings to meet scanner specifications or layout constraints.
 // Prompt: Set Code 16K left quiet zone coefficient 0.5 and right coefficient 0.7, export JPEG.
-// Tags: code16k, quietzone, jpeg, aspose.barcode, barcode generation
+// Tags: code16k, quiet zone, jpeg, barcode generation, aspose.barcode, aspose.drawing
 
 using System;
 using Aspose.BarCode.Generation;
@@ -10,44 +10,45 @@ using Aspose.BarCode;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Generates a Code 16K barcode, demonstrates handling of quiet‑zone coefficient constraints,
-/// and saves the result as a JPEG image.
+/// Entry point for the Code16K quiet‑zone demonstration.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Configures quiet‑zone coefficients (if valid) and exports the barcode.
+    /// Configures quiet‑zone coefficients for a Code16K barcode and saves it as a JPEG file.
     /// </summary>
     static void Main()
     {
-        // Desired quiet‑zone coefficients (the task requests fractional values)
-        float leftCoefRequested = 0.5f;
-        float rightCoefRequested = 0.7f;
+        // Desired quiet‑zone coefficients (the API expects integers, so non‑integer values are invalid)
+        double leftCoefRequested = 0.5;
+        double rightCoefRequested = 0.7;
 
-        // Code16K quiet‑zone coefficients are integer properties.
-        // If non‑integer values are supplied we cannot assign them.
-        // Inform the user and retain default coefficients.
+        // Validate that the coefficients are whole numbers because the properties are of type int
         if (leftCoefRequested % 1 != 0 || rightCoefRequested % 1 != 0)
         {
-            Console.WriteLine("Code16K quiet‑zone coefficients must be integers. Using default values.");
+            Console.WriteLine("Error: Code16K quiet‑zone coefficients must be integer values. " +
+                              $"Requested values: left={leftCoefRequested}, right={rightCoefRequested}");
+            return;
         }
 
-        // Sample Code16K barcode text (any valid string for Code16K)
-        string codeText = "12345678901234567890";
+        // Sample codetext for Code16K (any non‑empty string is acceptable for demonstration)
+        string codeText = "1234567890";
 
-        // Create the generator for Code16K symbology
+        // Create the barcode generator for Code16K
         using (var generator = new BarcodeGenerator(EncodeTypes.Code16K, codeText))
         {
-            // Set integer quiet‑zone coefficients only if they are whole numbers.
-            // In this example we keep defaults because the requested values are fractional.
-            // Example of setting integer values:
-            // generator.Parameters.Barcode.Code16K.QuietZoneLeftCoef = 1;
-            // generator.Parameters.Barcode.Code16K.QuietZoneRightCoef = 2;
+            // Apply integer quiet‑zone coefficients
+            generator.Parameters.Barcode.Code16K.QuietZoneLeftCoef = (int)leftCoefRequested;
+            generator.Parameters.Barcode.Code16K.QuietZoneRightCoef = (int)rightCoefRequested;
 
-            // Export the barcode as JPEG
-            generator.Save("code16k.jpg");
+            // Optional: set a simple appearance (black bars on white background)
+            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
+            generator.Parameters.BackColor = Aspose.Drawing.Color.White;
+
+            // Define output file path and save the barcode as a JPEG image
+            string outputPath = "code16k.jpg";
+            generator.Save(outputPath, BarCodeImageFormat.Jpeg);
+            Console.WriteLine($"Barcode saved to {outputPath}");
         }
-
-        Console.WriteLine("Barcode generated: code16k.jpg");
     }
 }

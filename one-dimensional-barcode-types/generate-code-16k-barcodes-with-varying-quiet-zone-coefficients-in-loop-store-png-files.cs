@@ -1,66 +1,54 @@
 // Title: Generate Code 16K barcodes with varying quiet zone coefficients
-// Description: Demonstrates creating Code 16K barcodes with different quiet zone settings and saving them as PNG images.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating how to configure Code16K symbology parameters such as aspect ratio and quiet zone coefficients. It shows typical usage of BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes for batch barcode creation, a common task for developers needing customized barcode outputs.
+// Description: This example creates Code 16K barcodes using different quiet‑zone left and right coefficient values and saves each barcode as a PNG image.
+// Category-Description: Demonstrates Aspose.BarCode barcode generation techniques, focusing on parameter customization such as quiet‑zone coefficients and aspect ratio. The example uses BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes, which are commonly employed by developers to produce and export barcodes in various formats for labeling, inventory, and tracking applications.
 // Prompt: Generate Code 16K barcodes with varying quiet zone coefficients in loop, store PNG files.
-// Tags: barcode symbology, code16k, quiet zone, png output, aspose.barcode, generation
+// Tags: code16k, quietzone, barcode, generation, png, aspose.barcode, encode-types, image-format
 
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode;
 
 /// <summary>
-/// Generates a series of Code 16K barcodes with varying quiet zone coefficients
-/// and saves each barcode as a PNG file in an output directory.
+/// Program that generates Code 16K barcodes with varying quiet‑zone coefficients and saves them as PNG files.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates the output folder, defines quiet zone
-    /// coefficient pairs, generates barcodes, and writes them to PNG files.
+    /// Entry point. Creates an output folder, iterates over quiet‑zone coefficient combinations,
+    /// configures a <see cref="BarcodeGenerator"/> for each, and writes the resulting PNG image to disk.
     /// </summary>
     static void Main()
     {
-        // Define the output directory relative to the current working directory
-        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Code16K_Output");
-        if (!Directory.Exists(outputDir))
-        {
-            Directory.CreateDirectory(outputDir);
-        }
+        // Define the output folder for generated PNG files
+        string outputFolder = Path.Combine(Directory.GetCurrentDirectory(), "Code16K_Barcodes");
+        Directory.CreateDirectory(outputFolder);
 
-        // Quiet zone coefficient pairs (left, right) to be applied to each barcode
-        var quietZonePairs = new (int left, int right)[]
-        {
-            (10, 1),
-            (12, 2),
-            (14, 3),
-            (16, 4),
-            (18, 5)
-        };
+        // Sample codetext for the Code16K barcode
+        string codeText = "123456789012";
 
-        // Sample codetext; Code16K supports alphanumeric strings
-        const string codeText = "SampleCode16K123";
-
-        // Iterate over each coefficient pair and generate a barcode
-        foreach (var (leftCoef, rightCoef) in quietZonePairs)
+        // Iterate over a range of quiet‑zone left and right coefficient values
+        for (int leftCoef = 10; leftCoef <= 12; leftCoef++)          // left coefficient >= 10
         {
-            // Initialize the generator for Code16K symbology with the provided text
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code16K, codeText))
+            for (int rightCoef = 1; rightCoef <= 3; rightCoef++)    // right coefficient >= 1
             {
-                // Set the aspect ratio (example value: 1.0)
-                generator.Parameters.Barcode.Code16K.AspectRatio = 1.0f;
+                // Create a new barcode generator for the current configuration
+                using (var generator = new BarcodeGenerator(EncodeTypes.Code16K, codeText))
+                {
+                    // Apply quiet‑zone coefficient settings
+                    generator.Parameters.Barcode.Code16K.QuietZoneLeftCoef = leftCoef;
+                    generator.Parameters.Barcode.Code16K.QuietZoneRightCoef = rightCoef;
 
-                // Apply the quiet zone coefficients for left and right sides
-                generator.Parameters.Barcode.Code16K.QuietZoneLeftCoef = leftCoef;
-                generator.Parameters.Barcode.Code16K.QuietZoneRightCoef = rightCoef;
+                    // Optional: set aspect ratio (example value)
+                    generator.Parameters.Barcode.Code16K.AspectRatio = 1.0f;
 
-                // Build a descriptive file name that includes the coefficient values
-                string fileName = $"Code16K_L{leftCoef}_R{rightCoef}.png";
-                string filePath = Path.Combine(outputDir, fileName);
+                    // Build a file name that reflects the current coefficients
+                    string fileName = $"Code16K_L{leftCoef}_R{rightCoef}.png";
+                    string filePath = Path.Combine(outputFolder, fileName);
 
-                // Save the generated barcode as a PNG image
-                generator.Save(filePath, BarCodeImageFormat.Png);
-                Console.WriteLine($"Saved: {filePath}");
+                    // Save the generated barcode directly as a PNG image
+                    generator.Save(filePath, BarCodeImageFormat.Png);
+                }
             }
         }
     }

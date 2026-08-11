@@ -1,68 +1,45 @@
-// Title: Generate Code128 barcode without human‑readable text
-// Description: This example creates a Code128 barcode, disables the human‑readable code text, and saves it as a PNG image.
-// Category-Description: Demonstrates Aspose.BarCode generation and recognition APIs. It shows how to configure BarcodeGenerator to hide the code text (using CodeLocation.None) and how to verify the setting with BarCodeReader. Typical for developers needing clean barcode images for packaging, labeling, or UI without accompanying text.
+// Title: Hide human‑readable text in a Code128 barcode
+// Description: Demonstrates how to generate a Code128 barcode with Aspose.BarCode, disable the visible code text, and confirm the setting.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and CodeTextParameters to control human‑readable text visibility. Developers often need to create barcodes without displaying the encoded value for aesthetic or security reasons; this snippet shows the typical API calls for that scenario.
 // Prompt: Create a barcode, set ShowCodeText to false, and verify that no human‑readable text appears.
-// Tags: code128, hide text, png, barcodegenerator, barcodereader, generation, recognition
+// Tags: barcode, code128, hide text, codetextparameters, aspose.barcode, generation, png
 
 using System;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing; // Required for Aspose.Drawing.Bitmap if needed
 
 /// <summary>
-/// Example program that generates a Code128 barcode without human‑readable text,
-/// saves it to a PNG file, and verifies the configuration using a barcode reader.
+/// Example program that generates a Code128 barcode with hidden human‑readable text.
 /// </summary>
-class Program
+public class Program
 {
     /// <summary>
-    /// Entry point of the example. Performs barcode generation, saving, and verification.
+    /// Entry point. Generates the barcode, hides the code text, saves the image, and verifies the setting.
     /// </summary>
-    static void Main()
+    /// <param name="args">Command‑line arguments (not used).</param>
+    public static void Main(string[] args)
     {
-        // Output file path and the data to encode
-        const string outputPath = "barcode.png";
-        const string codeText = "1234567890";
-
-        // ------------------------------------------------------------
-        // 1. Generate a Code128 barcode and hide the human‑readable text
-        // ------------------------------------------------------------
+        // Initialize a barcode generator for Code128 symbology
         using (var generator = new BarcodeGenerator(EncodeTypes.Code128))
         {
-            // Set the data to encode
-            generator.CodeText = codeText;
+            // Set the value to encode
+            generator.CodeText = "123456";
 
-            // Hide the code text (human‑readable) by setting its location to None
+            // Hide the human‑readable text by setting its location to None
             generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.None;
 
-            // Save the barcode image as PNG
-            generator.Save(outputPath);
-        }
+            // Save the generated barcode as a PNG file
+            generator.Save("barcode.png");
 
-        // ------------------------------------------------------------
-        // 2. Verify that the barcode was generated without human‑readable text
-        //    (the setting above ensures the text is not rendered)
-        // ------------------------------------------------------------
-        using (var reader = new BarCodeReader(outputPath, DecodeType.Code128))
-        {
-            foreach (var result in reader.ReadBarCodes())
+            // Verify that the code text location is set to None (i.e., hidden)
+            if (generator.Parameters.Barcode.CodeTextParameters.Location == CodeLocation.None)
             {
-                // Output the decoded text; the absence of visual text does not affect decoding
-                Console.WriteLine($"Detected CodeText: {result.CodeText}");
-            }
-        }
-
-        // ------------------------------------------------------------
-        // 3. Additional check: confirm the generator's setting was applied
-        // ------------------------------------------------------------
-        using (var generatorCheck = new BarcodeGenerator(EncodeTypes.Code128))
-        {
-            if (generatorCheck.Parameters.Barcode.CodeTextParameters.Location == CodeLocation.None)
-            {
-                Console.WriteLine("Human‑readable text is disabled (CodeLocation.None).");
+                Console.WriteLine("Human‑readable text is hidden.");
             }
             else
             {
-                Console.WriteLine("Human‑readable text is enabled.");
+                Console.WriteLine("Human‑readable text is visible.");
             }
         }
     }

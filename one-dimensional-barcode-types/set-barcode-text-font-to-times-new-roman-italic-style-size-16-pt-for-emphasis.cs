@@ -1,37 +1,40 @@
-// Title: Set barcode text font to Times New Roman, italic, 16 pt
-// Description: Demonstrates how to change the human‑readable text font of a barcode using Aspose.BarCode.
-// Category-Description: This example belongs to the Aspose.BarCode text formatting category, showing how to customize the CodeText font properties such as family, size, and style. It uses BarcodeGenerator, EncodeTypes, and FontStyle classes, which are commonly employed when developers need to emphasize barcode data in generated images or documents.
+// Title: Set barcode text font to Times New Roman italic 16pt
+// Description: Demonstrates how to customize the human‑readable text font of a Code128 barcode using Aspose.BarCode, saving the result as a PNG image.
+// Category-Description: This example belongs to the Aspose.BarCode font customization category, illustrating the use of BarcodeGenerator and CodeTextParameters to modify text appearance. Developers often need to match branding guidelines or emphasize barcode data, and these APIs provide fine‑grained control over font family, style, and size.
 // Prompt: Set barcode text font to Times New Roman, italic style, size 16 pt for emphasis.
-// Tags: barcode, code128, font, text formatting, png, aspose.barcode, generation
+// Tags: code128, set-font, png, barcodegenerator, codetextparameters
 
 using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
-/// <summary>
-/// Demonstrates setting the barcode's human‑readable text font to Times New Roman, italic, 16 pt.
-/// </summary>
-class Program
+namespace BarcodeFontExample
 {
     /// <summary>
-    /// Entry point. Generates a Code128 barcode with customized text font and saves it as PNG.
+    /// Shows how to set the barcode's human‑readable text font to Times New Roman, italic, 16 pt, and save the image.
     /// </summary>
-    static void Main()
+    class Program
     {
-        // Initialize a barcode generator for Code128 with the sample text "Emphasis Text"
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Emphasis Text"))
+        /// <summary>
+        /// Entry point of the example. Generates a Code128 barcode with custom font settings and writes the image to disk.
+        /// </summary>
+        static void Main()
         {
-            // Configure the human‑readable text font:
-            // - Family: Times New Roman
-            // - Size: 16 points
-            // - Style: Italic
-            generator.Parameters.Barcode.CodeTextParameters.Font.FamilyName = "Times New Roman";
-            generator.Parameters.Barcode.CodeTextParameters.Font.Size.Point = 16f;
-            generator.Parameters.Barcode.CodeTextParameters.Font.Style = FontStyle.Italic;
+            // Initialize a BarcodeGenerator for Code128 with the sample value "Sample123"
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
+            {
+                // Configure the font used for the human‑readable (code text) part of the barcode
+                generator.Parameters.Barcode.CodeTextParameters.Font.FamilyName = "Times New Roman";
+                generator.Parameters.Barcode.CodeTextParameters.Font.Style = Aspose.Drawing.FontStyle.Italic;
+                generator.Parameters.Barcode.CodeTextParameters.Font.Size.Point = 16f;
 
-            // Save the generated barcode image to a PNG file
-            generator.Save("barcode.png");
+                // Save the generated barcode as a PNG file
+                generator.Save("barcode.png");
+            }
+
+            // Inform the user that the barcode has been created
+            Console.WriteLine("Barcode generated with custom font.");
         }
     }
 }

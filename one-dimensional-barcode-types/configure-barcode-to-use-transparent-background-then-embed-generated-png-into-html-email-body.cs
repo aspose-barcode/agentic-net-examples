@@ -1,25 +1,23 @@
-// Title: Generate Transparent Barcode PNG and Embed in HTML Email
-// Description: Demonstrates creating a Code128 barcode with a transparent background, saving it as PNG, and embedding the image directly into an HTML email body using a data URI.
-// Category-Description: This example belongs to the Aspose.BarCode image generation category, illustrating how to customize barcode appearance (background, colors) and integrate the generated image into HTML content. It uses BarcodeGenerator, EncodeTypes, BarCodeImageFormat, and Aspose.Drawing classes. Developers often need to embed barcodes in emails or web pages without external image files, and this snippet shows the typical workflow.
+// Title: Generate transparent barcode PNG and embed in HTML email
+// Description: Demonstrates how to create a Code128 barcode with a transparent background, save it as a PNG, convert it to Base64, and embed it directly into an HTML email body.
+// Category-Description: This example belongs to the Aspose.BarCode image generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and BarCodeImageFormat to produce barcode images with custom visual properties. Typical scenarios include creating email-friendly barcode graphics, web embedding, or generating reports where a transparent background is required. Developers often need to customize colors, export formats, and embed images as data URIs for seamless integration.
 // Prompt: Configure barcode to use transparent background, then embed generated PNG into an HTML email body.
-// Tags: code128, transparent background, png, html email, barcode generation, aspose.barcode, aspose.drawing
+// Tags: code128, transparent background, png, html email, base64, aspose.barcode, barcode generation
 
 using System;
 using System.IO;
-using System.Text;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
 /// Example program that generates a Code128 barcode with a transparent background,
-/// converts it to a Base64 PNG, and embeds it in an HTML email body.
+/// encodes the image as Base64, and embeds it in an HTML email body.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates the barcode, encodes it, and writes the HTML.
+    /// Entry point of the application.
     /// </summary>
     static void Main()
     {
@@ -29,25 +27,26 @@ class Program
             // Configure the barcode to have a transparent background
             generator.Parameters.BackColor = Color.Transparent;
 
-            // Optionally set the bar (foreground) color to black
-            generator.Parameters.Barcode.BarColor = Color.Black;
-
-            // Save the generated barcode to a memory stream in PNG format
-            using (var ms = new MemoryStream())
+            // Create a memory stream to hold the generated PNG image
+            using (var memoryStream = new MemoryStream())
             {
-                generator.Save(ms, BarCodeImageFormat.Png);
+                // Save the barcode image to the memory stream in PNG format
+                generator.Save(memoryStream, BarCodeImageFormat.Png);
 
-                // Convert the PNG bytes to a Base64 string for embedding in HTML
-                string base64 = Convert.ToBase64String(ms.ToArray());
+                // Convert the PNG bytes to a Base64 string for embedding
+                string base64Image = Convert.ToBase64String(memoryStream.ToArray());
 
-                // Build a simple HTML email body that includes the barcode image via a data URI
-                string htmlBody = $"<html><body>" +
-                                  $"<h3>Generated Barcode</h3>" +
-                                  $"<img src=\"data:image/png;base64,{base64}\" alt=\"Barcode\"/>" +
-                                  $"</body></html>";
+                // Build the HTML email body with the barcode embedded as a data URI
+                string htmlEmailBody = $@"
+<html>
+  <body>
+    <p>Here is the generated barcode with a transparent background:</p>
+    <img src=""data:image/png;base64,{base64Image}"" alt=""Barcode"" />
+  </body>
+</html>";
 
-                // Output the HTML; in a real scenario this would be set as the email body
-                Console.WriteLine(htmlBody);
+                // Output the HTML content to the console (or further processing)
+                Console.WriteLine(htmlEmailBody);
             }
         }
     }

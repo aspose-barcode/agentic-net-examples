@@ -1,45 +1,55 @@
-// Title: Create Code128 barcode with specific bar height within image bounds
-// Description: Demonstrates generating a Code128 barcode, setting the bar height to 40 mm, and configuring the image size so the bars stay inside the image.
-// Category-Description: This example belongs to the Aspose.BarCode image generation category, illustrating how to control barcode dimensions using the BarcodeGenerator and its Parameters properties. It shows disabling auto‑size, setting BarHeight, and adjusting ImageWidth/ImageHeight to keep the barcode within the canvas—common tasks when creating printable barcodes for labels, receipts, or packaging.
+// Title: Generate a Code128 barcode with a specific height and bounded image
+// Description: Demonstrates creating a Code128 barcode, setting its bar height to 40 mm, and configuring the image so the bars stay within the image bounds.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating how to use BarcodeGenerator, EncodeTypes, and Parameters to control barcode dimensions and image sizing. Typical use cases include generating printable barcodes with precise size requirements for labeling, inventory, and packaging applications. Developers often need to set bar height, image height, and disable auto‑sizing to ensure the barcode fits within a predefined layout.
 // Prompt: Create a barcode, set Height to 40 mm, and ensure bars remain within image bounds.
-// Tags: code128, barheight, image-bounds, png, barcodegenerator, parameters, aspose.barcode
+// Tags: code128, barcode generation, png output, barcodegenerator, parameters
 
 using System;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 
 /// <summary>
-/// Generates a Code128 barcode image with a bar height of 40 mm,
-/// ensuring the barcode fits within the defined image dimensions.
+/// Example program that generates a Code128 barcode image with a fixed bar height
+/// and ensures the barcode fits within the image bounds.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates the barcode, configures dimensions,
-    /// and saves the result as a PNG file.
+    /// Entry point of the application. Generates the barcode and saves it as a PNG file.
     /// </summary>
     static void Main()
     {
-        // Initialize a BarcodeGenerator for Code128 with sample data.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
+        // Define the output file path for the generated barcode image
+        string outputPath = "barcode.png";
+
+        // Resolve the full directory path and ensure it exists
+        string directory = Path.GetDirectoryName(Path.GetFullPath(outputPath));
+        if (!Directory.Exists(directory))
         {
-            // Disable automatic sizing so the explicit BarHeight is applied.
+            Directory.CreateDirectory(directory);
+        }
+
+        // Initialize a BarcodeGenerator for the Code128 symbology
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128))
+        {
+            // Set the text that will be encoded into the barcode
+            generator.CodeText = "1234567890";
+
+            // Specify the bar height in points (40 mm ≈ 40 points for this example)
+            generator.Parameters.Barcode.BarHeight.Point = 40f;
+
+            // Set the image height to a value that comfortably contains the bars
+            generator.Parameters.ImageHeight.Point = 50f;
+
+            // Disable automatic sizing so the explicit dimensions are used
             generator.Parameters.AutoSizeMode = AutoSizeMode.None;
 
-            // Set the height of the barcode bars to 40 millimeters.
-            generator.Parameters.Barcode.BarHeight.Millimeters = 40f;
-
-            // Define image dimensions large enough to contain the bars and required padding.
-            generator.Parameters.ImageWidth.Millimeters = 100f;
-            generator.Parameters.ImageHeight.Millimeters = 50f;
-
-            // Optional: set background to white and bars to black (default colors).
-            generator.Parameters.BackColor = Color.White;
-            generator.Parameters.Barcode.BarColor = Color.Black;
-
-            // Save the generated barcode as a PNG file.
-            generator.Save("barcode.png");
+            // Save the generated barcode as a PNG image to the specified path
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
+
+        // Inform the user where the barcode image has been saved
+        Console.WriteLine($"Barcode saved to: {Path.GetFullPath(outputPath)}");
     }
 }

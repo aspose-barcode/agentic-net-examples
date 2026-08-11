@@ -1,8 +1,8 @@
-// Title: Codabar Barcode Generation with XML Export/Import and Checksum Mode Modification
-// Description: Demonstrates creating a Codabar barcode, exporting its settings to XML, changing the checksum mode to Mod16, re‑importing, and verifying decoding.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes, exporting/importing settings via XML, and BarCodeReader for decoding. Developers often need to adjust barcode parameters programmatically, persist configurations, and validate that changes (e.g., checksum modes) are applied correctly. Ideal for learning how to manipulate Codabar checksum settings using Aspose.BarCode APIs.
+// Title: Generate Codabar barcode, export to XML, modify checksum mode, re‑import and verify
+// Description: Demonstrates creating a Codabar barcode, exporting its configuration to XML, changing the CodabarChecksumMode to Mod16, re‑importing the settings, and confirming checksum validation through reading.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It shows how to use BarcodeGenerator to create barcodes, export and import settings via XML, adjust checksum modes, and employ BarCodeReader for validation. Developers working with one‑dimensional symbologies often need to persist generator configurations, modify checksum behavior, and verify encoded data programmatically.
 // Prompt: Generate a barcode, export its XML, modify CodabarChecksumMode to Mod16, re‑import, and verify checksum calculation.
-// Tags: codabar, checksum, xml, export, import, generation, recognition, aspose.barcode
+// Tags: codabar, checksum, xml, export, import, barcode generation, barcode recognition, aspose.barcode
 
 using System;
 using System.IO;
@@ -11,65 +11,84 @@ using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Example program that creates a Codabar barcode, exports its configuration to XML,
-/// modifies the checksum mode, re‑imports the settings, and verifies decoding.
+/// Example program that creates a Codabar barcode, manipulates its XML configuration,
+/// re‑imports the settings, and validates the checksum using Aspose.BarCode APIs.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Executes barcode generation, XML export/import,
-    /// checksum mode modification, and verification steps.
+    /// Entry point of the example. Executes the barcode generation, XML export/import,
+    /// and checksum verification workflow.
     /// </summary>
     static void Main()
     {
-        // Prepare output directory
-        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "output");
-        Directory.CreateDirectory(outputDir);
+        // Define temporary file paths for XML configuration and barcode images
+        string xmlPath = Path.Combine(Path.GetTempPath(), "codabar.xml");
+        string imgPath = Path.Combine(Path.GetTempPath(), "codabar.png");
 
-        // Define file paths for XML and images
-        string xmlPath = Path.Combine(outputDir, "codabar.xml");
-        string imgPath1 = Path.Combine(outputDir, "codabar_initial.png");
-        string imgPath2 = Path.Combine(outputDir, "codabar_modified.png");
-
-        // 1. Create a Codabar barcode, enable checksum, set initial mode, save image and export to XML
+        // 1. Create a Codabar barcode generator with sample code text
         using (var generator = new BarcodeGenerator(EncodeTypes.Codabar, "A123456A"))
         {
-            // Enable checksum calculation
+            // Enable checksum calculation (optional for Codabar but required for verification)
             generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
-            // Set an initial checksum mode (Mod10) to demonstrate change later
-            generator.Parameters.Barcode.Codabar.ChecksumMode = CodabarChecksumMode.Mod10;
 
-            // Save the initial barcode image
-            generator.Save(imgPath1);
-
-            // Export generator settings to XML for later reuse
+            // Export the generator's settings to an XML file for later modification
             generator.ExportToXml(xmlPath);
+
+            // Save the generated barcode image (used later for checksum verification)
+            generator.Save(imgPath, BarCodeImageFormat.Png);
         }
 
-        // 2. Import settings from XML, modify checksum mode to Mod16, and save a new image
-        using (var importedGen = BarcodeGenerator.ImportFromXml(xmlPath))
+        // 2. Modify the exported XML to set CodabarChecksumMode to Mod16
+        if (!File.Exists(xmlPath))
         {
-            // Change checksum mode to Mod16
-            importedGen.Parameters.Barcode.Codabar.ChecksumMode = CodabarChecksumMode.Mod16;
-            // Ensure checksum generation remains enabled
-            importedGen.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
-
-            // Save the modified barcode image
-            importedGen.Save(imgPath2);
-
-            Console.WriteLine($"Checksum mode after import and modification: {importedGen.Parameters.Barcode.Codabar.ChecksumMode}");
+            Console.WriteLine("XML file was not created.");
+            return;
         }
 
-        // 3. Read the modified barcode to verify it can be decoded
-        using (var reader = new BarCodeReader(imgPath2, DecodeType.Codabar))
+        string xmlContent = File.ReadAllText(xmlPath);
+
+        // Replace any existing checksum mode with Mod16 (default is Mod16, but we enforce it)
+        xmlContent = xmlContent.Replace("<CodabarChecksumMode>Mod10</CodabarChecksumMode>", "<CodabarChecksumMode>Mod16</CodabarChecksumMode>");
+
+        // If the element was not present, add it under the Codabar settings
+        if (!xmlContent.Contains("<CodabarChecksumMode>"))
         {
-            foreach (var result in reader.ReadBarCodes())
+            // Simple insertion before the closing </Codabar> tag
+            xmlContent = xmlContent.Replace("</Codabar>", "  <CodabarChecksumMode>Mod16</CodabarChecksumMode>\n</Codabar>");
+        }
+
+        // Write the updated XML back to the file system
+        File.WriteAllText(xmlPath, xmlContent);
+
+        // 3. Re‑import the barcode generator from the modified XML
+        using (var importedGenerator = BarcodeGenerator.ImportFromXml(xmlPath))
+        {
+            // Ensure checksum remains enabled after import
+            importedGenerator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
+
+            // Save the regenerated barcode image (optional, used for verification)
+            string regeneratedImgPath = Path.Combine(Path.GetTempPath(), "codabar_regenerated.png");
+            importedGenerator.Save(regeneratedImgPath, BarCodeImageFormat.Png);
+
+            // 4. Verify checksum calculation by reading the regenerated barcode
+            using (var reader = new BarCodeReader(regeneratedImgPath, DecodeType.Codabar))
             {
-                Console.WriteLine($"Decoded CodeText: {result.CodeText}");
-                // Codabar does not expose a checksum value via the reader; successful decoding confirms validity.
+                // Enable checksum validation during reading
+                reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
+
+                // Iterate through all detected barcodes (should be only one)
+                foreach (var result in reader.ReadBarCodes())
+                {
+                    Console.WriteLine($"CodeText: {result.CodeText}");
+                    // For Codabar, checksum is available in the OneD extended parameters
+                    Console.WriteLine($"Checksum: {result.Extended.OneD.CheckSum}");
+                }
             }
         }
 
-        Console.WriteLine("Barcode generation, XML export/import, and verification completed.");
+        // Clean up temporary files (optional)
+        try { File.Delete(xmlPath); } catch { }
+        try { File.Delete(imgPath); } catch { }
     }
 }

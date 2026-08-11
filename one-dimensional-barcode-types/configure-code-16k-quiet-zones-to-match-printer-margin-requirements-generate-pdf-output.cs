@@ -1,41 +1,76 @@
-// Title: Configure Code 16K barcode quiet zones and generate PDF
-// Description: Demonstrates setting custom quiet zone coefficients for a Code 16K barcode and saving it as a PDF, useful for matching printer margin requirements.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on symbology-specific parameter configuration. It showcases the BarcodeGenerator class, EncodeTypes enumeration, and barcode parameter objects to adjust quiet zones and module size. Developers often need to tailor barcode dimensions for printing workflows, ensuring proper margins and readability.
+// Title: Generate Code 16K Barcode with Custom Quiet Zones and Export to PDF
+// Description: Demonstrates how to configure quiet zone coefficients for a Code 16K barcode, render it as PNG, and embed the image into a PDF document using Aspose.BarCode and Aspose.Pdf.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to customize barcode parameters (quiet zones, colors, dimensions) and combine the output with Aspose.Pdf for document creation. Key API classes include BarcodeGenerator, EncodeTypes, BarCodeImageFormat, and Aspose.Pdf.Document. Typical use cases involve preparing barcodes that meet specific printer margin requirements and packaging them into PDF reports or labels.
 // Prompt: Configure Code 16K quiet zones to match printer margin requirements, generate PDF output.
-// Tags: code16k, quiet zones, pdf output, barcode generation, aspose.barcode, symbology
+// Tags: code16k, quiet zones, barcode generation, pdf output, aspose.barcode, aspose.pdf, c#
 
 using System;
-using Aspose.BarCode;
+using System.IO;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode.ComplexBarcode;
+using Aspose.Pdf;
 
 /// <summary>
-/// Generates a Code 16K barcode with custom quiet zones and saves it as a PDF.
+/// Example program that creates a Code 16K barcode with custom quiet zones,
+/// saves it as a PNG image, and embeds the image into a PDF document.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Configures quiet zones, module size, and creates the PDF file.
+    /// Entry point of the application.
     /// </summary>
     static void Main()
     {
-        // Sample Code16K barcode text (must meet Code16K requirements)
-        const string codeText = "12345678901234567890";
+        // Define the output PDF file path.
+        string pdfPath = "Code16K.pdf";
 
-        // Initialize the barcode generator for Code16K symbology
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code16K, codeText))
+        // Create a Code16K barcode generator with a sample numeric value.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code16K, "1234567890123456"))
         {
-            // Configure quiet zones (coefficients are multiples of XDimension)
-            // Adjust these values to match the printer's required margins.
-            generator.Parameters.Barcode.Code16K.QuietZoneLeftCoef = 20;   // e.g., 20 * XDimension
-            generator.Parameters.Barcode.Code16K.QuietZoneRightCoef = 5;   // e.g., 5 * XDimension
+            // Set foreground (barcode) and background colors.
+            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
+            generator.Parameters.BackColor = Aspose.Drawing.Color.White;
 
-            // Optional: define module size (XDimension) for better control of overall size
-            generator.Parameters.Barcode.XDimension.Point = 2f; // 2 points per module
+            // Configure quiet zones to satisfy printer margin requirements.
+            // Minimum allowed values are 10 (left) and 1 (right); increase as needed.
+            generator.Parameters.Barcode.Code16K.QuietZoneLeftCoef = 12;
+            generator.Parameters.Barcode.Code16K.QuietZoneRightCoef = 2;
 
-            // Save the barcode directly as a PDF file
-            generator.Save("code16k.pdf");
+            // Optional: adjust the module size (X dimension) for better visibility.
+            generator.Parameters.Barcode.XDimension.Point = 2f;
+
+            // Render the barcode to a memory stream in PNG format.
+            using (var barcodeStream = new MemoryStream())
+            {
+                generator.Save(barcodeStream, BarCodeImageFormat.Png);
+                barcodeStream.Position = 0; // Reset stream position for reading.
+
+                // Create a new PDF document and add a page.
+                using (var pdfDoc = new Document())
+                {
+                    var page = pdfDoc.Pages.Add();
+
+                    // Create an image object that references the barcode stream.
+                    var pdfImage = new Aspose.Pdf.Image
+                    {
+                        ImageStream = barcodeStream,
+                        // Set the displayed size (values are in points).
+                        FixWidth = 200.0,
+                        FixHeight = 100.0,
+                        // Center the image on the page.
+                        HorizontalAlignment = HorizontalAlignment.Center,
+                        VerticalAlignment = VerticalAlignment.Center
+                    };
+
+                    // Add the image to the page's paragraph collection.
+                    page.Paragraphs.Add(pdfImage);
+
+                    // Save the PDF document to the specified file.
+                    pdfDoc.Save(pdfPath);
+                }
+            }
         }
 
-        Console.WriteLine("Code16K barcode with custom quiet zones saved to code16k.pdf");
+        Console.WriteLine($"PDF with Code16K barcode generated: {pdfPath}");
     }
 }

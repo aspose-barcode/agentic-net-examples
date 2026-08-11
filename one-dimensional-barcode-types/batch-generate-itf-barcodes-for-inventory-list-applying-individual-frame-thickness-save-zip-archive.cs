@@ -1,8 +1,8 @@
-// Title: Batch ITF14 Barcode Generation with Custom Frame Thickness
-// Description: Demonstrates how to generate ITF14 barcodes for a list of inventory items, each with its own frame thickness, and package the images into a ZIP file.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on the BarcodeGenerator class and ITF14 symbology. It shows typical use cases such as creating product barcodes with customized borders, saving images in PNG format, and archiving results. Developers working on inventory management, packaging, or bulk barcode creation can use this pattern to automate barcode production.
+// Title: Batch generation of ITF14 barcodes with custom frame thickness and ZIP packaging
+// Description: Demonstrates how to generate multiple ITF14 barcodes, each with its own frame border thickness, and bundle the resulting PNG images into a ZIP archive.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and barcode parameter settings such as ITF border configuration. Typical scenarios include creating inventory labels, batch processing of barcodes, and exporting them for distribution. Developers often need to customize visual properties per barcode and archive the output for downstream systems.
 // Prompt: Batch generate ITF barcodes for inventory list, applying individual frame thickness, save ZIP archive.
-// Tags: itf14, barcode, generation, png, zip, aspose.barcode, inventory, frame-thickness
+// Tags: itf14, barcode, batch generation, frame thickness, zip archive, aspose.barcode, png, inventory
 
 using System;
 using System.Collections.Generic;
@@ -12,73 +12,101 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
-/// <summary>
-/// Provides an example that batch‑generates ITF14 barcodes with per‑item frame thickness
-/// and stores the resulting PNG images in a ZIP archive.
-/// </summary>
-class Program
+namespace BarcodeBatch
 {
     /// <summary>
-    /// Entry point of the example. Generates barcodes, saves them as PNG files,
-    /// and creates a ZIP archive containing all images.
+    /// Generates a set of ITF14 barcodes with individual frame thickness settings and packages them into a ZIP file.
     /// </summary>
-    static void Main()
+    class Program
     {
-        // Define a sample inventory list.
-        // Each tuple holds the barcode text and the desired frame thickness (points).
-        var inventory = new List<(string CodeText, float FrameThickness)>
+        /// <summary>
+        /// Entry point of the example. Creates barcode images, applies per‑item border thickness, and archives the results.
+        /// </summary>
+        static void Main()
         {
-            ("12345678901231", 5f),
-            ("98765432109876", 8f),
-            ("55555555555555", 12f),
-            ("11111111111111", 3f),
-            ("22222222222222", 10f)
-        };
-
-        // Prepare an output folder for the generated PNG files.
-        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
-        if (!Directory.Exists(outputDir))
-        {
-            Directory.CreateDirectory(outputDir);
-        }
-
-        // Iterate through the inventory and generate a barcode image for each item.
-        foreach (var item in inventory)
-        {
-            string fileName = $"{item.CodeText}.png";
-            string filePath = Path.Combine(outputDir, fileName);
-
-            // Use BarcodeGenerator with ITF14 symbology.
-            using (var generator = new BarcodeGenerator(EncodeTypes.ITF14))
+            // Define sample inventory items, each with a 14‑digit code and a specific frame thickness.
+            var items = new List<InventoryItem>
             {
-                // Set the text to encode.
-                generator.CodeText = item.CodeText;
+                new InventoryItem { Code = "12345678901231", FrameThickness = 5f },
+                new InventoryItem { Code = "98765432109876", FrameThickness = 8f },
+                new InventoryItem { Code = "11111111111111", FrameThickness = 10f },
+                new InventoryItem { Code = "22222222222222", FrameThickness = 12f },
+                new InventoryItem { Code = "33333333333333", FrameThickness = 15f }
+            };
 
-                // Apply the specific frame thickness and set the border type to Frame.
-                generator.Parameters.Barcode.ITF.BorderThickness.Point = item.FrameThickness;
-                generator.Parameters.Barcode.ITF.BorderType = ITF14BorderType.Frame;
-
-                // Save the generated barcode as a PNG image.
-                generator.Save(filePath);
-            }
-        }
-
-        // Create a ZIP archive that contains all generated PNG files.
-        string zipPath = Path.Combine(Directory.GetCurrentDirectory(), "ITFBarcodes.zip");
-        if (File.Exists(zipPath))
-        {
-            File.Delete(zipPath);
-        }
-
-        using (var zip = ZipFile.Open(zipPath, ZipArchiveMode.Create))
-        {
-            foreach (var file in Directory.GetFiles(outputDir, "*.png"))
+            // Ensure the output directory exists.
+            string outputDir = "Barcodes";
+            if (!Directory.Exists(outputDir))
             {
-                zip.CreateEntryFromFile(file, Path.GetFileName(file));
+                Directory.CreateDirectory(outputDir);
             }
+
+            var generatedFiles = new List<string>();
+
+            // Iterate over each inventory item and generate its barcode.
+            foreach (var item in items)
+            {
+                // ITF14 requires exactly 14 numeric characters; skip invalid entries.
+                if (string.IsNullOrEmpty(item.Code) || item.Code.Length != 14)
+                {
+                    Console.WriteLine($"Skipping invalid code '{item.Code}'. ITF14 requires 14 digits.");
+                    continue;
+                }
+
+                // Create a barcode generator for the ITF14 symbology.
+                using (var generator = new BarcodeGenerator(EncodeTypes.ITF14, item.Code))
+                {
+                    // Apply a frame border and set its thickness according to the current item.
+                    generator.Parameters.Barcode.ITF.BorderType = ITF14BorderType.Frame;
+                    generator.Parameters.Barcode.ITF.BorderThickness.Point = item.FrameThickness;
+
+                    // Suppress exceptions for minor code‑text issues (e.g., leading zeros).
+                    generator.Parameters.Barcode.ThrowExceptionWhenCodeTextIncorrect = false;
+
+                    // Save the barcode as a PNG file.
+                    string filePath = Path.Combine(outputDir, $"{item.Code}.png");
+                    generator.Save(filePath, BarCodeImageFormat.Png);
+                    generatedFiles.Add(filePath);
+                }
+            }
+
+            // Create a ZIP archive that contains all generated barcode images.
+            string zipPath = "Barcodes.zip";
+            if (File.Exists(zipPath))
+            {
+                File.Delete(zipPath);
+            }
+
+            using (var zipStream = new FileStream(zipPath, FileMode.Create))
+            using (var archive = new ZipArchive(zipStream, ZipArchiveMode.Create))
+            {
+                foreach (var file in generatedFiles)
+                {
+                    if (File.Exists(file))
+                    {
+                        // Add each PNG file to the archive using its file name.
+                        archive.CreateEntryFromFile(file, Path.GetFileName(file));
+                    }
+                }
+            }
+
+            Console.WriteLine($"Generated {generatedFiles.Count} barcodes and saved to '{zipPath}'.");
         }
 
-        // Optional: clean up the temporary image files.
-        // Directory.Delete(outputDir, true);
+        /// <summary>
+        /// Simple data holder for inventory items used in the barcode generation loop.
+        /// </summary>
+        class InventoryItem
+        {
+            /// <summary>
+            /// The 14‑digit code to encode as an ITF14 barcode.
+            /// </summary>
+            public string Code { get; set; }
+
+            /// <summary>
+            /// Desired frame border thickness (in points) for the barcode image.
+            /// </summary>
+            public float FrameThickness { get; set; }
+        }
     }
 }

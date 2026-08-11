@@ -1,44 +1,41 @@
-// Title: Render barcode to file stream using Save method
-// Description: Demonstrates generating a Code128 barcode and saving it directly to a file stream in PNG format.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to use BarcodeGenerator with EncodeTypes and BarCodeImageFormat to create barcodes. Typical use cases include creating barcode images for inventory, shipping labels, or product packaging, where developers need to write the output directly to a stream for further processing or storage.
+// Title: Render Barcode to File Stream Using Aspose.BarCode
+// Description: Demonstrates how to generate a Code128 barcode and save it directly to a file stream in PNG format.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and BarCodeImageFormat to create barcode images. Typical use cases include generating barcodes on the fly for reports, labels, or web applications, where developers need to write the image to a stream for further processing or storage.
 // Prompt: Render barcode directly to a file stream using Save method, then close the stream to release resources.
-// Tags: code128, barcode generation, save to stream, png, aspose.barcode
+// Tags: code128, barcode generation, file stream, png, aspose.barcode, save method
 
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
-/// <summary>
-/// Demonstrates rendering a barcode directly to a file stream and saving it as a PNG image.
-/// </summary>
-class Program
+namespace BarcodeStreamExample
 {
     /// <summary>
-    /// Entry point of the example. Generates a Code128 barcode, writes it to a file stream, and outputs the saved file path.
+    /// Provides an entry point that generates a Code128 barcode and writes it to a PNG file via a stream.
     /// </summary>
-    static void Main()
+    class Program
     {
-        // Define the output file path for the barcode image
-        string outputPath = "barcode.png";
-
-        // Create a FileStream for writing the barcode image to disk
-        using (FileStream stream = new FileStream(outputPath, FileMode.Create, FileAccess.Write))
+        /// <summary>
+        /// Generates a barcode image and saves it directly to a file stream.
+        /// </summary>
+        static void Main()
         {
-            // Initialize the barcode generator with Code128 symbology
-            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128))
+            // Define the output file path for the generated barcode image.
+            string outputPath = "barcode.png";
+
+            // Initialize a BarcodeGenerator with Code128 symbology and sample text.
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123ABC"))
             {
-                // Set the text that will be encoded into the barcode
-                generator.CodeText = "123456";
+                // Create a FileStream for writing the barcode image to the specified file.
+                using (var fileStream = new FileStream(outputPath, FileMode.Create, FileAccess.Write))
+                {
+                    // Save the barcode directly to the stream in PNG format.
+                    generator.Save(fileStream, BarCodeImageFormat.Png);
+                } // The FileStream is disposed and closed here.
+            } // The BarcodeGenerator is disposed here.
 
-                // Save the generated barcode directly to the stream in PNG format
-                generator.Save(stream, BarCodeImageFormat.Png);
-            } // BarcodeGenerator disposed here
-
-            // The FileStream will be closed automatically when exiting the using block
-        } // FileStream disposed here
-
-        // Inform the user where the barcode image has been saved
-        Console.WriteLine($"Barcode saved to {Path.GetFullPath(outputPath)}");
+            // Output the full path of the saved barcode image for verification.
+            Console.WriteLine($"Barcode image saved to: {Path.GetFullPath(outputPath)}");
+        }
     }
 }

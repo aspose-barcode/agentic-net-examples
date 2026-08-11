@@ -1,33 +1,41 @@
-// Title: Generate Code128 barcode with specific XDimension
-// Description: Demonstrates creating a Code128 barcode, setting its XDimension to 0.33 mm, and saving the result as a PNG image.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to configure barcode dimensions using the BarcodeGenerator class. Developers often need to adjust XDimension to meet industry size standards for scanning reliability. Typical use cases include customizing barcode size for packaging, labeling, and compliance with printing specifications.
+// Title: Generate Code128 barcode with precise XDimension
+// Description: Demonstrates creating a Code128 barcode image with an XDimension of 0.33 mm, suitable for industry‑specific size requirements.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to configure barcode parameters such as module size (XDimension) using the BarcodeGenerator class. Typical use cases include producing barcodes that must conform to strict dimensional standards for packaging, logistics, or retail scanning. Developers often need to adjust XDimension, set symbology, and export to common image formats like PNG.
 // Prompt: Generate a barcode with XDimension of 0.33 mm to meet specific industry size standards.
-// Tags: code128, barcode generation, png output, xdimension, aspnet.barcode, barcodegenerator
+// Tags: code128, barcode generation, png, xdimension, aspose.barcode
 
 using System;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates a Code128 barcode with a custom XDimension and saves it as a PNG file.
+/// Example program that creates a Code128 barcode image with a specific XDimension.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Creates a barcode, configures its XDimension, and writes the image to disk.
+    /// Entry point. Generates the barcode and saves it as a PNG file.
     /// </summary>
     static void Main()
     {
-        // Initialize the barcode generator with Code128 symbology and sample data.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
+        // Define the output file path for the generated barcode image.
+        string outputPath = "barcode.png";
+
+        // Initialize a BarcodeGenerator for the Code128 symbology.
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128))
         {
-            // Configure the XDimension (module width) to 0.33 millimeters as required by industry standards.
+            // Set the text that will be encoded into the barcode.
+            generator.CodeText = "1234567890";
+
+            // Configure the XDimension (module width) to 0.33 millimeters.
             generator.Parameters.Barcode.XDimension.Millimeters = 0.33f;
 
-            // Save the generated barcode image in PNG format.
-            generator.Save("barcode.png");
+            // Save the generated barcode as a PNG image to the specified path.
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user that the barcode has been successfully generated.
-        Console.WriteLine("Barcode generated: barcode.png");
+        // Inform the user where the barcode image has been saved.
+        Console.WriteLine($"Barcode saved to {outputPath}");
     }
 }

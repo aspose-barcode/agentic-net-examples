@@ -1,41 +1,49 @@
-// Title: Generate high-contrast Code128 barcode image
-// Description: Demonstrates setting barcode foreground to black and background to white for optimal scanning contrast.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to customize visual appearance using BarcodeGenerator, EncodeTypes, and BarCodeImageFormat. Typical use cases include creating printable barcodes with maximum readability in scanned documents. Developers often need to adjust colors, sizes, and formats to meet printing and scanning requirements.
+// Title: Generate a high‑contrast Code128 barcode image
+// Description: Demonstrates how to create a Code128 barcode with a white background and black foreground for optimal scanning contrast.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and BarCodeImageFormat to customize barcode appearance. Developers often need to adjust colors for readability in printed or scanned documents, and this snippet shows the typical steps for setting bar and background colors before saving the image.
 // Prompt: Set barcode background to white and foreground to black for maximum contrast in scanned documents.
-// Tags: code128, color, contrast, png, generation, aspose.barcode, barcodegenerator
+// Tags: barcode, code128, color, png, aspose.barcode, generation
 
 using System;
+using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Shows how to generate a Code128 barcode with a white background and black foreground,
-/// ensuring maximum contrast for scanned documents.
+/// Demonstrates generating a Code128 barcode with high contrast colors and saving it as a PNG file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates the barcode image and saves it to disk.
+    /// Entry point. Creates the barcode, configures colors, ensures output directory exists, and saves the image.
     /// </summary>
     static void Main()
     {
-        // Define the output file path for the generated barcode image.
+        // Define the output file path for the generated barcode image
         string outputPath = "barcode.png";
 
-        // Initialize a BarcodeGenerator for Code128 symbology with sample data.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+        // Ensure the target directory exists; create it if necessary
+        string directory = Path.GetDirectoryName(outputPath);
+        if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
         {
-            // Set the barcode bars (foreground) to black for high contrast.
+            Directory.CreateDirectory(directory);
+        }
+
+        // Initialize a BarcodeGenerator for Code128 with the sample text "123456"
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
+        {
+            // Set the barcode (bars) color to black for maximum foreground contrast
             generator.Parameters.Barcode.BarColor = Color.Black;
 
-            // Set the image background to white.
+            // Set the image background color to white for maximum background contrast
             generator.Parameters.BackColor = Color.White;
 
-            // Save the generated barcode as a PNG file.
+            // Save the configured barcode as a PNG image to the specified path
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user where the barcode image was saved.
-        Console.WriteLine($"Barcode saved to {outputPath}");
+        // Output the full path of the saved barcode image for verification
+        Console.WriteLine($"Barcode saved to: {Path.GetFullPath(outputPath)}");
     }
 }

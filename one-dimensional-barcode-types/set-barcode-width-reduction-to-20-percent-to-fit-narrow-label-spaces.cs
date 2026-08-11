@@ -1,36 +1,40 @@
-// Title: Barcode width reduction example using Aspose.BarCode
-// Description: Demonstrates how to reduce the bar width of a Code128 barcode by 20 percent to fit narrow label spaces.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to customize barcode appearance using the BarcodeGenerator class and its Parameters.Barcode properties. Typical use cases include adjusting bar dimensions for limited label real‑estate, ensuring readability while meeting size constraints. Developers often need to modify bar width, height, margins, or other visual parameters before saving the barcode to an image or document.
+// Title: Apply 20% Width Reduction to a Code128 Barcode
+// Description: Demonstrates how to generate a Code128 barcode and reduce its width by 20 percent using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, showcasing the use of BarcodeGenerator, EncodeTypes, and barcode parameter settings. Typical use cases include creating compact barcodes for narrow label spaces, adjusting visual dimensions without altering encoded data, and exporting to common image formats. Developers often need to fine‑tune barcode size for printing constraints, and this snippet illustrates the standard approach.
 // Prompt: Set barcode width reduction to 20 percent to fit narrow label spaces.
-// Tags: barcode, width reduction, code128, png, aspose.barcode, generation
+// Tags: code128, width reduction, barcode generation, png, aspose.barcode, c#
 
 using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Provides an entry point that generates a Code128 barcode with a 20 percent width reduction
-/// and saves it as a PNG image.
+/// Generates a Code128 barcode, applies a 20 percent width reduction, and saves it as a PNG image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Creates a <see cref="BarcodeGenerator"/> for Code128, applies a 20 percent bar width reduction,
-    /// saves the barcode to a file, and writes a completion message to the console.
+    /// Entry point of the example. Creates the barcode, configures width reduction, and writes the output file.
     /// </summary>
     static void Main()
     {
-        // Initialize the barcode generator with the desired symbology (Code128) and data.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+        // Initialize a barcode generator for the Code128 symbology.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128))
         {
-            // Apply a 20 percent reduction to the bar width (specified in points).
-            generator.Parameters.Barcode.BarWidthReduction.Point = 20f;
+            // Define the data to encode in the barcode.
+            generator.CodeText = "123456";
 
-            // Save the generated barcode as a PNG image file.
-            generator.Save("barcode.png");
+            // Apply a 20 percent width reduction (approximately 0.2 points).
+            generator.Parameters.Barcode.BarWidthReduction.Point = 0.2f;
+
+            // Specify the output file name and format (PNG by default).
+            string outputFile = "barcode.png";
+
+            // Render and save the barcode image to disk.
+            generator.Save(outputFile);
+
+            // Inform the user that the barcode has been saved.
+            Console.WriteLine($"Barcode saved to '{outputFile}' with 20% width reduction.");
         }
-
-        // Output a simple confirmation that the barcode was generated successfully.
-        Console.WriteLine("Barcode generated with 20% width reduction.");
     }
 }
