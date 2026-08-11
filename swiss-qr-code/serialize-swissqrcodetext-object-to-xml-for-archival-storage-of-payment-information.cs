@@ -1,52 +1,89 @@
-// Title: Serialize SwissQR Code Text to XML
-// Description: Demonstrates how to serialize a SwissQR code text object to XML for archival storage of payment information.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode operations category, focusing on Swiss QR Bill generation and data persistence. It showcases the use of Aspose.BarCode.ComplexBarcode.SwissQRCodetext and related classes to create payment QR codes, then serialize the object with System.Xml.Serialization for later retrieval. Developers working with payment QR codes, invoicing systems, or financial data archiving will find this pattern useful.
+// Title: Serialize SwissQR payment data to XML and regenerate barcode
+// Description: Demonstrates creating a Swiss QR payment barcode, exporting its configuration to XML for archival storage, and reloading it to regenerate the barcode.
+// Category-Description: This example belongs to the Aspose.BarCode generation and complex barcode handling category. It showcases the use of BarcodeGenerator, ComplexBarcodeGenerator, and SwissQRCodetext classes to create QR codes, serialize generator settings to XML, and deserialize them. Developers working with payment QR codes often need to archive barcode configurations and later reconstruct them without losing data.
 // Prompt: Serialize the SwissQRCodetext object to XML for archival storage of payment information.
-// Tags: barcode symbology, serialization, xml, swissqr, aspose.barcode, complexbarcode
+// Tags: qr code, serialization, xml, generation, complexbarcode, swissqr
 
 using System;
 using System.IO;
-using System.Xml.Serialization;
 using Aspose.BarCode;
+using Aspose.BarCode.Generation;
 using Aspose.BarCode.ComplexBarcode;
 
-namespace SwissQRSerialization
+/// <summary>
+/// Example program that creates a Swiss QR payment barcode, exports its configuration to XML,
+/// imports the configuration back, and regenerates the barcode from the restored data.
+/// </summary>
+class Program
 {
     /// <summary>
-    /// Provides an entry point that creates a SwissQR code text object,
-    /// populates required billing fields, and serializes it to an XML file.
+    /// Entry point of the example. Executes the barcode creation, XML export/import, and regeneration steps.
     /// </summary>
-    class Program
+    static void Main()
     {
-        /// <summary>
-        /// Main method – builds a SwissQR bill, serializes it to XML, and outputs the file path.
-        /// </summary>
-        static void Main()
+        // ------------------------------------------------------------
+        // Prepare SwissQR payment data
+        // ------------------------------------------------------------
+        var swissQr = new SwissQRCodetext();
+        swissQr.Bill.Creditor.Name = "John Doe";
+        swissQr.Bill.Creditor.CountryCode = "CH";
+        swissQr.Bill.Account = "CH9300762011623852957";
+        swissQr.Bill.Amount = 199.95m;
+        swissQr.Bill.Currency = "CHF";
+        swissQr.Bill.Version = SwissQRBill.QrBillStandardVersion.V2_0;
+
+        // Build the plain codetext string that will be encoded in the QR barcode
+        string plainCodeText = swissQr.GetConstructedCodetext();
+
+        // ------------------------------------------------------------
+        // Generate a QR barcode and export its configuration to XML
+        // ------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, plainCodeText))
         {
-            // Initialize a new SwissQRCodetext instance
-            var swissQr = new SwissQRCodetext();
+            // Save the barcode image (optional, for visual verification)
+            generator.Save("SwissQR.png");
 
-            // Populate mandatory bill fields
-            swissQr.Bill.Creditor.Name = "John Doe";
-            swissQr.Bill.Creditor.CountryCode = "CH";
-            swissQr.Bill.Account = "CH9300762011623852957";
-            swissQr.Bill.Amount = 199.95m;
-            swissQr.Bill.Version = SwissQRBill.QrBillStandardVersion.V2_0;
+            // Export generator settings (including the codetext) to an XML file
+            bool exported = generator.ExportToXml("SwissQR.xml");
+            Console.WriteLine($"Export to XML successful: {exported}");
+        }
 
-            // Prepare XML serializer for the SwissQRCodetext type
-            var serializer = new XmlSerializer(typeof(SwissQRCodetext));
+        // ------------------------------------------------------------
+        // Import the generator configuration from XML
+        // ------------------------------------------------------------
+        if (!File.Exists("SwissQR.xml"))
+        {
+            Console.WriteLine("XML file not found. Exiting.");
+            return;
+        }
 
-            // Define output XML file path
-            var xmlPath = "SwissQRCodetext.xml";
-
-            // Serialize the object to the specified file
-            using (var fileStream = new FileStream(xmlPath, FileMode.Create, FileAccess.Write))
+        using (var importedGenerator = BarcodeGenerator.ImportFromXml("SwissQR.xml"))
+        {
+            // Decode the SwissQR codetext back into a SwissQRCodetext object
+            SwissQRCodetext decoded = ComplexCodetextReader.TryDecodeSwissQR(importedGenerator.CodeText);
+            if (decoded == null)
             {
-                serializer.Serialize(fileStream, swissQr);
+                Console.WriteLine("Failed to decode SwissQR codetext from imported XML.");
+                return;
             }
 
-            // Inform the user where the XML file was saved
-            Console.WriteLine($"SwissQRCodetext has been serialized to: {Path.GetFullPath(xmlPath)}");
+            // ------------------------------------------------------------
+            // Regenerate the barcode from the decoded object
+            // ------------------------------------------------------------
+            using (var complexGenerator = new ComplexBarcodeGenerator(decoded))
+            {
+                complexGenerator.Save("SwissQR_fromXml.png");
+                Console.WriteLine("Regenerated barcode saved as SwissQR_fromXml.png");
+            }
+
+            // Output some of the restored payment information for verification
+            Console.WriteLine("Restored payment data:");
+            Console.WriteLine($"Creditor Name: {decoded.Bill.Creditor.Name}");
+            Console.WriteLine($"Country Code: {decoded.Bill.Creditor.CountryCode}");
+            Console.WriteLine($"Account: {decoded.Bill.Account}");
+            Console.WriteLine($"Amount: {decoded.Bill.Amount}");
+            Console.WriteLine($"Currency: {decoded.Bill.Currency}");
+            Console.WriteLine($"Version: {decoded.Bill.Version}");
         }
     }
 }

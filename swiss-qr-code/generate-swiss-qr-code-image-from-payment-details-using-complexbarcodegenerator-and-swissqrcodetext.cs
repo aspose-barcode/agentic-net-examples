@@ -1,61 +1,52 @@
-// Title: Generate Swiss QR Code for payment using Aspose.BarCode
-// Description: Demonstrates creating a Swiss QR Code image with payment details and saving it as PNG.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category, showcasing the use of ComplexBarcodeGenerator and SwissQRCodetext to produce Swiss QR Bill codes. Developers often need to generate QR payment slips for Swiss banking, requiring correct creditor, account, and amount fields. The snippet illustrates typical setup, optional fields, and image export, useful for integration in billing systems.
+// Title: Generate Swiss QR Code for Payment Using Aspose.BarCode ComplexBarcodeGenerator
+// Description: Demonstrates how to create a Swiss QR Code image containing payment information with Aspose.BarCode's ComplexBarcodeGenerator and SwissQRCodetext.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category, showcasing the use of ComplexBarcodeGenerator, SwissQRCodetext, and QR error correction settings. Typical use cases include generating payment QR codes for Swiss banking standards, where developers need to embed creditor details, amount, and currency into a scannable image. The example illustrates preparing bill data, configuring the generator, and saving the result as a PNG file.
 // Prompt: Generate a Swiss QR Code image from payment details using ComplexBarcodeGenerator and SwissQRCodetext.
-// Tags: swiss qr code, payment, complex barcode, generation, png, aspose.barcode
+// Tags: swiss qr, payment, barcode, complexbarcode, generation, png, aspose.barcode
 
 using System;
-using Aspose.BarCode;
+using System.IO;
 using Aspose.BarCode.ComplexBarcode;
 using Aspose.BarCode.Generation;
 
-namespace SwissQRExample
+/// <summary>
+/// Example program that generates a Swiss QR Code image for a payment using Aspose.BarCode.
+/// </summary>
+class Program
 {
     /// <summary>
-    /// Example program that creates a Swiss QR Code (QR‑Bill) image using Aspose.BarCode.
+    /// Entry point that builds payment data, generates the QR code, and saves it as a PNG file.
     /// </summary>
-    class Program
+    /// <param name="args">Command‑line arguments (not used).</param>
+    static void Main(string[] args)
     {
-        /// <summary>
-        /// Entry point. Builds the QR‑Bill data, generates the barcode, and saves it as a PNG file.
-        /// </summary>
-        static void Main()
+        // Prepare Swiss QR payment data using the SwissQRCodetext model
+        var swissQr = new SwissQRCodetext();
+        swissQr.Bill.Creditor.Name = "John Doe";
+        swissQr.Bill.Creditor.CountryCode = "CH";
+        swissQr.Bill.Account = "CH9300762011623852957";
+        swissQr.Bill.Amount = 199.95m;
+        swissQr.Bill.Currency = "CHF";
+        swissQr.Bill.Version = SwissQRBill.QrBillStandardVersion.V2_0;
+
+        // Create a ComplexBarcodeGenerator instance initialized with the payment data
+        using (var generator = new ComplexBarcodeGenerator(swissQr))
         {
-            // Initialize Swiss QR code data container
-            var swissQr = new SwissQRCodetext();
+            // Optional: set a high error correction level for better scan reliability
+            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
 
-            // ----- Mandatory creditor information -----
-            swissQr.Bill.Creditor.Name = "John Doe";
-            swissQr.Bill.Creditor.CountryCode = "CH";
+            // Define the output file path for the generated PNG image
+            string outputPath = "SwissQR.png";
 
-            // ----- Account (IBAN) -----
-            // Valid IBAN for a Swiss bank account
-            swissQr.Bill.Account = "CH9300762011623852957";
-
-            // ----- Payment amount -----
-            swissQr.Bill.Amount = 199.95m;
-
-            // ----- QR‑Bill version -----
-            // V2.0 is the current standard for Swiss QR Bills
-            swissQr.Bill.Version = SwissQRBill.QrBillStandardVersion.V2_0;
-
-            // ----- Optional fields (uncomment to use) -----
-            // swissQr.Bill.Creditor.Street = "Example Street 1";
-            // swissQr.Bill.Creditor.PostalCode = "8000";
-            // swissQr.Bill.Creditor.Town = "Zurich";
-
-            // Generate the barcode image using ComplexBarcodeGenerator
-            using (ComplexBarcodeGenerator generator = new ComplexBarcodeGenerator(swissQr))
+            // Save the barcode image to a memory stream, then write the bytes to the file system
+            using (var ms = new MemoryStream())
             {
-                // Do not throw on minor codetext issues; allow generation to continue
-                generator.Parameters.Barcode.ThrowExceptionWhenCodeTextIncorrect = false;
-
-                // Save the generated QR code as a PNG file
-                generator.Save("SwissQR.png");
+                generator.Save(ms, BarCodeImageFormat.Png);
+                File.WriteAllBytes(outputPath, ms.ToArray());
             }
 
-            // Inform the user that the image has been created
-            Console.WriteLine("Swiss QR Code image generated: SwissQR.png");
+            // Inform the user where the image has been saved
+            Console.WriteLine("Swiss QR Code generated at: " + Path.GetFullPath(outputPath));
         }
     }
 }

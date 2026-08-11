@@ -1,24 +1,27 @@
-// Title: Swiss QR Code Generation with High Error Correction
-// Description: Demonstrates generating a Swiss QR Bill and setting QR error correction level H to improve readability under distortion.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category, showcasing the use of ComplexBarcodeGenerator and SwissQRCodetext for creating Swiss QR Codes. Developers commonly need to generate QR codes for payment bills, adjust error correction levels, and export images in various formats. The example highlights key API classes and typical steps for QR code customization.
+// Title: Generate Swiss QR Bill with High Error Correction Level
+// Description: Demonstrates creating a Swiss QR Bill barcode and setting a high QR error correction level to improve readability under distortion.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on complex barcodes such as Swiss QR Bills. It showcases the use of ComplexBarcodeGenerator, SwissQRCodetext, and QR error correction settings. Developers often need to generate compliant QR bills with specific error correction levels for reliable scanning in challenging conditions.
 // Prompt: Set a specific QR error correction level for Swiss QR Code generation to ensure readability under distortion.
-// Tags: qr code, swiss qr, error correction, barcode generation, aspose.barcode, png
+// Tags: swiss qr, qr error correction, barcode generation, aspnet, aspose.barcode, png output
 
 using System;
-using Aspose.BarCode.ComplexBarcode;
+using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode.ComplexBarcode;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Generates a Swiss QR Bill with a high error correction level (Level H) and saves it as a PNG image.
+/// Demonstrates generating a Swiss QR Bill barcode with a high error correction level.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates the Swiss QR codetext, configures error correction, and saves the barcode image.
+    /// Entry point. Creates Swiss QR data, configures error correction, and saves the barcode as PNG.
     /// </summary>
     static void Main()
     {
-        // Create Swiss QR codetext and populate mandatory bill fields
+        // Prepare Swiss QR bill data (mandatory fields)
         var swissQr = new SwissQRCodetext();
         swissQr.Bill.Creditor.Name = "John Doe";
         swissQr.Bill.Creditor.CountryCode = "CH";
@@ -26,20 +29,21 @@ class Program
         swissQr.Bill.Amount = 199.95m;
         swissQr.Bill.Version = SwissQRBill.QrBillStandardVersion.V2_0;
 
-        // Initialize ComplexBarcodeGenerator with the codetext
+        // Create ComplexBarcodeGenerator for Swiss QR
         using (var generator = new ComplexBarcodeGenerator(swissQr))
         {
-            // Set high error correction level (Level H) for better readability under distortion
+            // Set high error correction level to improve readability under distortion
             generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
 
-            // Define output file path
-            string outputPath = "SwissQR.png";
-
-            // Save the generated Swiss QR Code image in PNG format
-            generator.Save(outputPath, BarCodeImageFormat.Png);
-
-            // Inform the user where the image was saved
-            Console.WriteLine($"Swiss QR Code saved to {outputPath}");
+            // Save barcode image to a memory stream in PNG format
+            using (var ms = new MemoryStream())
+            {
+                generator.Save(ms, BarCodeImageFormat.Png);
+                // Write the PNG bytes to a file
+                File.WriteAllBytes("SwissQR.png", ms.ToArray());
+            }
         }
+
+        Console.WriteLine("Swiss QR code generated with high error correction level: SwissQR.png");
     }
 }

@@ -1,81 +1,100 @@
-// Title: Barcode generation with audit logging using Aspose.BarCode
-// Description: Demonstrates creating a Code128 barcode image while logging generation parameters and outcomes to a file for audit purposes.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to configure barcode settings, save the image, and record detailed audit information. It highlights key API classes such as BarcodeGenerator, BaseEncodeType, and EncodeTypes, which developers commonly use for automated barcode creation, compliance tracking, and troubleshooting in enterprise applications.
+// Title: Barcode Generation with File-Based Audit Logging using Aspose.BarCode
+// Description: Demonstrates creating barcodes of different symbologies, saving them as PNG files, and recording generation parameters and outcomes to an audit log.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use BarcodeGenerator, EncodeTypes, and BarCodeImageFormat to produce barcodes. It illustrates typical use cases such as batch barcode creation and audit trail logging, which developers often need for compliance and troubleshooting. The code logs each operation to a plain‑text file, providing a simple audit mechanism without external dependencies.
 // Prompt: Implement logging of barcode generation parameters and outcomes using .NET built‑in logging framework for audit trails.
-// Tags: barcode, code128, generation, audit, logging, aspose.barcode, image, .net
+// Tags: barcode, symbology, generation, logging, audit, aspose.barcode, png, encode types
 
 using System;
 using System.IO;
+using System.Reflection;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Generates a Code128 barcode image and logs the generation process for audit trails.
+/// Generates barcodes of various symbologies, saves them as PNG images, and logs the process to an audit file.
 /// </summary>
 class Program
 {
+    // Path to the audit log file (created in the current working directory)
+    private static readonly string LogFilePath = Path.Combine(Directory.GetCurrentDirectory(), "audit.log");
+
     /// <summary>
-    /// Entry point of the application. Configures barcode parameters, generates the image, and records audit information.
+    /// Entry point of the application. Iterates over sample barcode definitions, generates each barcode,
+    /// and records success or failure details in the audit log.
     /// </summary>
-    static void Main()
+    /// <param name="args">Command‑line arguments (not used).</param>
+    static void Main(string[] args)
     {
-        // Define the path for the audit log file.
-        string logFile = "barcode_audit.log";
-
-        // Ensure the audit log file exists; create it with a header if it does not.
-        if (!File.Exists(logFile))
+        // Define sample barcodes: symbology name, code text, and output file name
+        var samples = new (string Symbology, string CodeText, string FileName)[]
         {
-            File.WriteAllText(logFile, $"Barcode generation audit log - {DateTime.UtcNow:u}{Environment.NewLine}");
+            ("Code128", "ABC123", "code128.png"),
+            ("QR", "https://example.com", "qr.png"),
+            ("DataMatrix", "DM12345", "datamatrix.png")
+        };
+
+        // Initialise the audit log with a header containing the UTC timestamp
+        File.WriteAllText(LogFilePath, $"Audit Log - {DateTime.UtcNow:u}{Environment.NewLine}");
+
+        // Process each sample barcode definition
+        for (int i = 0; i < samples.Length; i++)
+        {
+            var (symbology, codeText, fileName) = samples[i];
+            string outputPath = Path.Combine(Directory.GetCurrentDirectory(), fileName);
+            GenerateAndLog(symbology, codeText, outputPath);
         }
 
-        // Barcode configuration: type, data, and output file.
-        BaseEncodeType encodeType = EncodeTypes.Code128;
-        string codeText = "123ABC";
-        string outputPath = "code128.png";
+        // Inform the user that processing is complete
+        Console.WriteLine("Barcode generation completed. See audit.log for details.");
+    }
 
-        // Log the start of the barcode generation process with key parameters.
-        File.AppendAllText(logFile,
-            $"[{DateTime.UtcNow:u}] Starting barcode generation. Type: {encodeType.TypeName}, CodeText: \"{codeText}\"{Environment.NewLine}");
-
-        // Create and configure the barcode generator.
-        using (var generator = new BarcodeGenerator(encodeType, codeText))
+    // Generates a barcode, saves it to the specified path, and logs the result.
+    private static void GenerateAndLog(string symbologyName, string codeText, string outputPath)
+    {
+        // Resolve the symbology name to a BaseEncodeType using reflection.
+        FieldInfo field = typeof(EncodeTypes).GetField(symbologyName, BindingFlags.Public | BindingFlags.Static | BindingFlags.IgnoreCase);
+        if (field == null)
         {
-            // Set visual appearance and sizing options.
-            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;   // Bar color
-            generator.Parameters.BackColor = Aspose.Drawing.Color.White;        // Background color
-            generator.Parameters.Barcode.XDimension.Point = 2f;                // Module size (points)
-            generator.Parameters.Barcode.BarHeight.Point = 50f;                // Bar height for 1D barcodes (points)
-            generator.Parameters.AutoSizeMode = AutoSizeMode.None;             // Disable auto-sizing
-
-            // Log the configured generator parameters for traceability.
-            File.AppendAllText(logFile,
-                $"[{DateTime.UtcNow:u}] Configured parameters:{Environment.NewLine}" +
-                $"    BarColor: {generator.Parameters.Barcode.BarColor}{Environment.NewLine}" +
-                $"    BackColor: {generator.Parameters.BackColor}{Environment.NewLine}" +
-                $"    XDimension: {generator.Parameters.Barcode.XDimension.Point} pt{Environment.NewLine}" +
-                $"    BarHeight: {generator.Parameters.Barcode.BarHeight.Point} pt{Environment.NewLine}" +
-                $"    AutoSizeMode: {generator.Parameters.AutoSizeMode}{Environment.NewLine}");
-
-            try
-            {
-                // Save the generated barcode image to the specified file.
-                generator.Save(outputPath);
-                // Log successful save operation.
-                File.AppendAllText(logFile,
-                    $"[{DateTime.UtcNow:u}] Barcode saved successfully to \"{outputPath}\".{Environment.NewLine}");
-                Console.WriteLine($"Barcode generated and saved to {outputPath}");
-            }
-            catch (Exception ex)
-            {
-                // Log any errors that occur during generation or saving.
-                File.AppendAllText(logFile,
-                    $"[{DateTime.UtcNow:u}] Error during barcode generation: {ex.Message}{Environment.NewLine}");
-                Console.WriteLine($"Error: {ex.Message}");
-            }
+            AppendLog($"[{DateTime.UtcNow:u}] UNKNOWN SYMBOLOGY: '{symbologyName}'. Skipping.");
+            return;
         }
 
-        // Log the completion of the entire barcode generation workflow.
-        File.AppendAllText(logFile,
-            $"[{DateTime.UtcNow:u}] Barcode generation process completed.{Environment.NewLine}");
+        BaseEncodeType encodeType = (BaseEncodeType)field.GetValue(null);
+
+        try
+        {
+            // Create a barcode generator for the resolved symbology and provided code text.
+            using (var generator = new BarcodeGenerator(encodeType, codeText))
+            {
+                // Example of setting a parameter (optional): reduce module size.
+                generator.Parameters.Barcode.XDimension.Point = 2f;
+
+                // Save the generated barcode image as a PNG file.
+                generator.Save(outputPath, BarCodeImageFormat.Png);
+            }
+
+            // Log successful generation with details.
+            AppendLog($"[{DateTime.UtcNow:u}] SUCCESS: Symbology={encodeType.TypeName}, CodeText=\"{codeText}\", Output=\"{outputPath}\"");
+        }
+        catch (Exception ex)
+        {
+            // Log failure with error message.
+            AppendLog($"[{DateTime.UtcNow:u}] FAILURE: Symbology={encodeType.TypeName}, CodeText=\"{codeText}\", Error={ex.Message}");
+        }
+    }
+
+    // Appends a single line to the audit log file; falls back to console output on error.
+    private static void AppendLog(string message)
+    {
+        try
+        {
+            File.AppendAllText(LogFilePath, message + Environment.NewLine);
+        }
+        catch
+        {
+            // If logging fails, write to console as a fallback.
+            Console.WriteLine("Logging error: " + message);
+        }
     }
 }
