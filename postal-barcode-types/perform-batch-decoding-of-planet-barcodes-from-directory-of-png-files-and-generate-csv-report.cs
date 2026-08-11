@@ -1,129 +1,120 @@
-// Title: Batch decode Planet barcodes and generate CSV report
-// Description: Demonstrates how to read multiple Planet barcode images from a folder, decode them, and export the results to a CSV file.
-// Category-Description: This example belongs to the Aspose.BarCode batch processing category, illustrating the use of BarCodeReader for decoding and BarcodeGenerator for creating sample barcodes. Typical use cases include bulk barcode validation, inventory scanning, and automated reporting where developers need to process many images and collect decoded data in a structured format.
+// Title: Batch decode Planet barcodes and export results to CSV
+// Description: Demonstrates generating sample Planet barcode images, decoding them in bulk, and writing a CSV report with details such as confidence and angle.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes, BarCodeReader for batch decoding, and common result properties like CodeText, Confidence, and Region. Developers often need to process multiple images, extract barcode data, and produce machine‑readable reports for inventory, logistics, or analytics.
 // Prompt: Perform batch decoding of Planet barcodes from a directory of PNG files and generate a CSV report.
-// Tags: planet, barcode, decoding, csv, aspose.barcode, generation, recognition
+// Tags: planet, barcode, batch decoding, csv, aspose.barcode, generation, recognition
 
 using System;
 using System.IO;
-using System.Text;
+using System.Collections.Generic;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Provides a console application that batch‑processes Planet barcode images,
-/// decodes their contents, and writes a CSV report summarising the results.
+/// Demonstrates batch generation and decoding of Planet barcodes, producing a CSV report.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Scans a folder for PNG images containing
-    /// Planet barcodes, decodes each image, and creates a CSV file with the
-    /// filename and decoded text.
+    /// Entry point that creates sample Planet barcode images, decodes them, and writes a CSV report.
     /// </summary>
     static void Main()
     {
-        // Define the folder that holds input PNG files and the output CSV file name.
-        string inputFolder = "Barcodes";
-        string outputCsv = "PlanetBarcodesReport.csv";
+        // Create a unique temporary folder for sample barcode images
+        string imageFolder = Path.Combine(Path.GetTempPath(), "PlanetBatch_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(imageFolder);
 
-        // Ensure the input folder exists; create it if it does not.
-        if (!Directory.Exists(inputFolder))
+        // List to hold the generated image file paths
+        List<string> imageFiles = new List<string>();
+
+        // Generate sample Planet barcodes (5 samples)
+        for (int i = 1; i <= 5; i++)
         {
-            Directory.CreateDirectory(inputFolder);
-        }
+            string codeText = $"PLANET{i:D3}";
+            string filePath = Path.Combine(imageFolder, $"planet_{i}.png");
 
-        // If the folder is empty, generate a few sample Planet barcode images for demo purposes.
-        if (Directory.GetFiles(inputFolder, "*.png").Length == 0)
-        {
-            GenerateSampleBarcodes(inputFolder);
-        }
-
-        // Initialise a StringBuilder to construct the CSV content.
-        var csvBuilder = new StringBuilder();
-        csvBuilder.AppendLine("FileName,CodeText");
-
-        // Iterate over each PNG file in the input folder.
-        foreach (string filePath in Directory.GetFiles(inputFolder, "*.png"))
-        {
-            // Verify the file still exists (defensive check).
-            if (!File.Exists(filePath))
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Planet, codeText))
             {
-                Console.WriteLine($"File not found: {filePath}");
-                continue;
+                // Save as PNG
+                generator.Save(filePath, BarCodeImageFormat.Png);
             }
 
-            // Use BarCodeReader configured for the Planet symbology to decode the image.
-            using (var reader = new BarCodeReader(filePath, DecodeType.Planet))
-            {
-                var results = reader.ReadBarCodes();
+            imageFiles.Add(filePath);
+        }
 
-                // If no barcode was detected, write an empty entry for this file.
-                if (results.Length == 0)
+        // Prepare CSV report file (outside the image folder)
+        string csvPath = Path.Combine(Path.GetTempPath(), "PlanetReport_" + Guid.NewGuid().ToString("N") + ".csv");
+
+        using (StreamWriter writer = new StreamWriter(csvPath, false))
+        {
+            // Write CSV header
+            writer.WriteLine("FileName,CodeText,CodeType,Confidence,ReadingQuality,Angle");
+
+            // Process each image file
+            foreach (string file in imageFiles)
+            {
+                if (!File.Exists(file))
                 {
-                    csvBuilder.AppendLine($"{Path.GetFileName(filePath)},");
+                    Console.WriteLine($"File not found: {file}");
                     continue;
                 }
 
-                // Write each detected barcode to the CSV (Planet typically yields a single result).
-                foreach (var result in results)
+                try
                 {
-                    string codeText = result.CodeText ?? string.Empty;
-
-                    // Escape commas in the decoded text to preserve CSV structure.
-                    if (codeText.Contains(","))
+                    // Initialize reader for Planet symbology
+                    using (BarCodeReader reader = new BarCodeReader(file, DecodeType.Planet))
                     {
-                        codeText = $"\"{codeText}\"";
-                    }
+                        BarCodeResult[] results = reader.ReadBarCodes();
 
-                    csvBuilder.AppendLine($"{Path.GetFileName(filePath)},{codeText}");
+                        if (results.Length == 0)
+                        {
+                            // No barcode detected; write a line indicating empty result
+                            writer.WriteLine($"{Path.GetFileName(file)},,,0,0,0");
+                            continue;
+                        }
+
+                        // Write a CSV line for each detected barcode
+                        foreach (BarCodeResult result in results)
+                        {
+                            // Extract region rectangle and angle
+                            var bounds = result.Region.Rectangle;
+                            double angle = result.Region.Angle;
+
+                            // Build CSV line with escaped fields
+                            string line = $"{Path.GetFileName(file)},{EscapeCsv(result.CodeText)},{EscapeCsv(result.CodeTypeName)},{result.Confidence},{result.ReadingQuality},{angle}";
+                            writer.WriteLine(line);
+                        }
+                    }
+                }
+                catch (ArgumentException ex)
+                {
+                    // Image loading failed or unsupported format; skip file
+                    Console.WriteLine($"Skipping file {Path.GetFileName(file)}: {ex.Message}");
+                }
+                catch (Exception ex)
+                {
+                    // Unexpected error; report and continue
+                    Console.WriteLine($"Error processing file {Path.GetFileName(file)}: {ex.Message}");
                 }
             }
         }
 
-        // Attempt to write the accumulated CSV data to the output file.
-        try
-        {
-            File.WriteAllText(outputCsv, csvBuilder.ToString());
-            Console.WriteLine($"Report generated: {outputCsv}");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Failed to write CSV report: {ex.Message}");
-        }
+        Console.WriteLine($"CSV report generated at: {csvPath}");
+        // Cleanup: optionally delete the temporary image folder
+        // Directory.Delete(imageFolder, true);
     }
 
-    /// <summary>
-    /// Generates a set of sample Planet barcode images in the specified folder.
-    /// This helper is used only when the input directory is initially empty.
-    /// </summary>
-    /// <param name="folder">The directory where sample PNG files will be saved.</param>
-    private static void GenerateSampleBarcodes(string folder)
+    // Helper to escape CSV fields containing commas or quotes
+    private static string EscapeCsv(string field)
     {
-        // Sample texts to encode into Planet barcodes.
-        string[] sampleTexts = { "12345", "9876543210", "ABCDEF", "00112233", "9999999999" };
-
-        for (int i = 0; i < sampleTexts.Length; i++)
+        if (field == null)
+            return "";
+        if (field.Contains(",") || field.Contains("\"") || field.Contains("\n"))
         {
-            string text = sampleTexts[i];
-            string fileName = Path.Combine(folder, $"Planet_{i + 1}.png");
-
-            // Create a Planet barcode generator for the current sample text.
-            using (var generator = new BarcodeGenerator(EncodeTypes.Planet, text))
-            {
-                // Optional appearance adjustments.
-                generator.Parameters.Barcode.XDimension.Point = 2f;
-                generator.Parameters.Barcode.Padding.Left.Point = 5f;
-                generator.Parameters.Barcode.Padding.Top.Point = 5f;
-                generator.Parameters.Barcode.Padding.Right.Point = 5f;
-                generator.Parameters.Barcode.Padding.Bottom.Point = 5f;
-
-                // Save the generated barcode as a PNG image.
-                generator.Save(fileName, BarCodeImageFormat.Png);
-            }
+            string escaped = field.Replace("\"", "\"\"");
+            return $"\"{escaped}\"";
         }
-
-        Console.WriteLine($"Generated {sampleTexts.Length} sample Planet barcode images in '{folder}'.");
+        return field;
     }
 }

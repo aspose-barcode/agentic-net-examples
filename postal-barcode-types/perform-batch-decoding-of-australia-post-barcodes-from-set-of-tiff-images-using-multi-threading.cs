@@ -1,103 +1,101 @@
 // Title: Batch decode Australia Post barcodes from TIFF images using multithreading
-// Description: Demonstrates generating sample Australia Post barcodes, storing them as TIFF files, and decoding them concurrently with Aspose.BarCode.
-// Category-Description: This example belongs to the Aspose.BarCode batch processing category, showcasing how to work with the BarCodeGenerator and BarCodeReader classes for high‑throughput barcode operations. Typical use cases include bulk scanning of shipping labels, automated inventory checks, and large‑scale document processing where multi‑core decoding improves performance. Developers often need to generate test barcodes, configure processor settings, and read results in parallel.
+// Description: Demonstrates generating a set of Australia Post barcodes, saving them as TIFF files, and decoding them in parallel across all CPU cores.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator, BarCodeReader, and ProcessorSettings classes for high‑throughput batch processing, a common requirement when handling large volumes of shipping labels or postal data. Developers often need to generate barcodes, store them as images, and later decode them efficiently using multi‑threading.
 // Prompt: Perform batch decoding of Australia Post barcodes from a set of TIFF images using multi‑threading.
-// Tags: barcode, decoding, australia post, multithreading, tiff, aspose.barcode, batch processing
+// Tags: australia post, barcode, batch, decoding, multithreading, tiff, aspose.barcode
 
 using System;
 using System.IO;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Sample program that creates a set of Australia Post barcode images and decodes them in parallel.
+/// Demonstrates batch generation and multi‑threaded decoding of Australia Post barcodes stored as TIFF images.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates sample TIFF images containing Australia Post barcodes
-    /// and then decodes all images concurrently, writing results to the console.
+    /// Entry point. Generates sample barcodes, saves them as TIFF files, then decodes them in parallel, finally cleaning up temporary files.
     /// </summary>
     static void Main()
     {
-        // Define the folder that will hold the sample TIFF images.
-        string inputFolder = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
-        if (!Directory.Exists(inputFolder))
-        {
-            Directory.CreateDirectory(inputFolder);
-        }
+        // Create a unique temporary folder for the sample images
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BatchAustraliaPost_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
 
-        // Sample Australia Post barcode texts (valid formats).
-        string[] sampleCodes = new string[]
+        // Sample Australia Post barcode texts
+        var sampleTexts = new List<string>
         {
-            "1100000000",          // FCC=11, no customer info
-            "4580123456",          // FCC=45, no customer info
-            "5980123456AB",        // FCC=59, 2 CTable chars
-            "6280123456ABCDE",     // FCC=62, 5 CTable chars (max)
-            "9280123456AB"         // FCC=92, 2 CTable chars
+            "5912345678AB",
+            "5912345678CD",
+            "5912345678EF",
+            "5912345678GH",
+            "5912345678IJ"
         };
 
-        // Generate a TIFF file for each sample code if it does not already exist.
-        for (int i = 0; i < sampleCodes.Length; i++)
+        // Generate barcode images (TIFF) and keep the file list
+        var barcodeFiles = new List<string>();
+        foreach (var text in sampleTexts)
         {
-            string code = sampleCodes[i];
-            string filePath = Path.Combine(inputFolder, $"barcode_{i + 1}.tif");
-
-            if (File.Exists(filePath))
-                continue; // Skip existing files to avoid unnecessary regeneration.
-
-            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, code))
+            string filePath = Path.Combine(tempFolder, $"{text}.tif");
+            using (var generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, text))
             {
-                // Use CTable for customer information interpretation (alternatively NTable may be used).
+                // Use CTable interpreting type for customer information
                 generator.Parameters.Barcode.AustralianPost.EncodingTable = CustomerInformationInterpretingType.CTable;
-                // Save the generated barcode as a TIFF image.
+                // Save as TIFF
                 generator.Save(filePath, BarCodeImageFormat.Tiff);
             }
+            barcodeFiles.Add(filePath);
         }
 
-        // Configure the barcode reader to utilize all available CPU cores.
+        // Configure processor settings to use all available cores
         BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount = Environment.ProcessorCount;
 
-        // Retrieve all TIFF files from the input folder.
-        string[] tiffFiles = Directory.GetFiles(inputFolder, "*.tif");
-
-        if (tiffFiles.Length == 0)
-        {
-            Console.WriteLine("No TIFF images found for decoding.");
-            return;
-        }
-
-        // Decode each TIFF image in parallel to maximize throughput.
-        Parallel.ForEach(tiffFiles, filePath =>
+        // Decode the generated barcodes using parallel processing
+        var parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount };
+        Parallel.ForEach(barcodeFiles, parallelOptions, file =>
         {
             try
             {
-                BaseDecodeType decodeType = DecodeType.AustraliaPost;
-                using (BarCodeReader reader = new BarCodeReader(filePath, decodeType))
+                using (var reader = new BarCodeReader(file, DecodeType.AustraliaPost))
                 {
-                    BarCodeResult[] results = reader.ReadBarCodes();
+                    // Set decoding parameters matching the generation settings
+                    reader.BarcodeSettings.AustraliaPost.CustomerInformationInterpretingType = CustomerInformationInterpretingType.CTable;
+                    reader.BarcodeSettings.AustraliaPost.IgnoreEndingFillingPatternsForCTable = true;
 
-                    // Output each detected barcode.
+                    var results = reader.ReadBarCodes();
                     foreach (var result in results)
                     {
-                        Console.WriteLine($"File: {Path.GetFileName(filePath)} | Detected: {result.CodeType} | CodeText: {result.CodeText}");
-                    }
-
-                    // Inform if no barcode was found in the image.
-                    if (results.Length == 0)
-                    {
-                        Console.WriteLine($"File: {Path.GetFileName(filePath)} | No barcode detected.");
+                        // Output the decoded information
+                        Console.WriteLine($"File: {Path.GetFileName(file)} | Type: {result.CodeType} | Text: {result.CodeText}");
                     }
                 }
             }
+            catch (ArgumentException ex) when (ex.Message.Contains("Image loading failed"))
+            {
+                // Image could not be loaded – log a warning and continue
+                Console.WriteLine($"Warning: Unable to load image '{Path.GetFileName(file)}'. Skipping.");
+            }
             catch (Exception ex)
             {
-                // Log any errors that occur during processing of a specific file.
-                Console.WriteLine($"Error processing file '{Path.GetFileName(filePath)}': {ex.Message}");
+                // Unexpected error – log details for troubleshooting
+                Console.WriteLine($"Error processing '{Path.GetFileName(file)}': {ex.Message}");
             }
         });
+
+        // Cleanup: delete the temporary folder and its contents
+        try
+        {
+            Directory.Delete(tempFolder, true);
+        }
+        catch
+        {
+            // If deletion fails (e.g., files still in use), ignore – the OS will clean up temp files later.
+        }
     }
 }
