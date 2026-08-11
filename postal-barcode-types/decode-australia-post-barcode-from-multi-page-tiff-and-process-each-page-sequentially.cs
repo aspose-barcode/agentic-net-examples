@@ -1,14 +1,15 @@
-// Title: Decode Australia Post barcode from a multi‑page TIFF
-// Description: Demonstrates how to read Australia Post barcodes from each page of a multi‑page TIFF image and output barcode type, text, and location.
-// Category-Description: This example belongs to the Aspose.BarCode recognition category, showcasing the use of BarCodeReader with DecodeType.AustraliaPost on multi‑frame images. It illustrates loading TIFF frames via Aspose.Drawing, converting frames to a supported format, and iterating through pages to extract barcode data—common tasks for developers handling batch scanning or document processing workflows.
+// Title: Decode Australia Post Barcodes from Multi‑Page TIFF
+// Description: Demonstrates loading a multi‑page TIFF, iterating through each page, and decoding Australia Post barcodes using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category. It shows how to use Aspose.Drawing to handle multi‑frame TIFF images and Aspose.BarCode.BarCodeRecognition's BarCodeReader with DecodeType.AustraliaPost to extract barcode data. Typical use cases include processing scanned shipping documents, batch‑scanning postal forms, or automating data entry from multi‑page image files. Developers often need to read each frame, create a Bitmap, and invoke the reader to obtain barcode type and text.
 // Prompt: Decode an Australia Post barcode from a multi‑page TIFF and process each page sequentially.
-// Tags: australia post, barcode, decode, tiff, multiframe, aspose.barcode, aspose.drawing
+// Tags: australia post, barcode, decoding, tiff, multiframe, aspose.barcode, csharp
 
 using System;
 using System.IO;
+using Aspose.BarCode;
+using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
-using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
 /// Example program that decodes Australia Post barcodes from each page of a multi‑page TIFF file.
@@ -16,58 +17,56 @@ using Aspose.BarCode.BarCodeRecognition;
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Loads the TIFF, iterates through its pages, and reads barcodes.
+    /// Entry point. Loads the TIFF, iterates pages, and prints decoded barcode information.
     /// </summary>
     static void Main()
     {
-        // Path to the multi‑page TIFF file containing Australia Post barcodes
-        const string tiffPath = "input.tif";
+        // Path to the multi‑page TIFF containing Australia Post barcodes.
+        string tiffPath = "AustraliaPost.tif";
 
-        // Verify that the file exists before attempting to process it
+        // Verify that the file exists before attempting to load it.
         if (!File.Exists(tiffPath))
         {
             Console.WriteLine($"File not found: {tiffPath}");
             return;
         }
 
-        // Load the TIFF image using Aspose.Drawing
-        using (var tiffImage = new Bitmap(tiffPath))
+        // Load the TIFF image. Aspose.Drawing.Image supports multi‑frame TIFFs.
+        using (Image tiffImage = Image.FromFile(tiffPath))
         {
-            // Use the time dimension to iterate over pages (frames) of the TIFF
-            var frameDimension = FrameDimension.Time;
-            int pageCount = tiffImage.GetFrameCount(frameDimension);
+            // Determine how many pages (frames) the TIFF contains.
+            int pageCount = tiffImage.GetFrameCount(FrameDimension.Page);
+            Console.WriteLine($"TIFF contains {pageCount} page(s).");
 
-            // Process each page sequentially
+            // Process each page sequentially.
             for (int pageIndex = 0; pageIndex < pageCount; pageIndex++)
             {
-                // Select the current frame (page) in the TIFF
-                tiffImage.SelectActiveFrame(frameDimension, pageIndex);
+                // Activate the current frame.
+                tiffImage.SelectActiveFrame(FrameDimension.Page, pageIndex);
 
-                // Save the selected frame to a memory stream as PNG (BarCodeReader works with Bitmap)
-                using (var ms = new MemoryStream())
+                // Clone the active frame into a Bitmap for barcode reading.
+                using (Bitmap frameBitmap = (Bitmap)tiffImage.Clone())
                 {
-                    tiffImage.Save(ms, ImageFormat.Png);
-                    ms.Position = 0;
-
-                    // Load the frame as a Bitmap for barcode recognition
-                    using (var frameBitmap = new Bitmap(ms))
+                    // Create a BarCodeReader for Australia Post symbology.
+                    using (BarCodeReader reader = new BarCodeReader(frameBitmap, DecodeType.AustraliaPost))
                     {
-                        // Create a reader configured for Australia Post barcodes
-                        using (var reader = new BarCodeReader(frameBitmap, DecodeType.AustraliaPost))
-                        {
-                            // Read all barcodes on the current page
-                            foreach (var result in reader.ReadBarCodes())
-                            {
-                                Console.WriteLine($"Page {pageIndex + 1}: Type = {result.CodeType}, Text = {result.CodeText}");
+                        // Optional: set the interpreting type for customer information if needed.
+                        // reader.BarcodeSettings.AustraliaPost.CustomerInformationInterpretingType = CustomerInformationInterpretingType.CTable;
 
-                                // Output the bounding rectangle of the detected barcode
-                                var rect = result.Region.Rectangle;
-                                Console.WriteLine($"  Region - X:{rect.X}, Y:{rect.Y}, Width:{rect.Width}, Height:{rect.Height}");
-                            }
+                        // Perform the recognition.
+                        BarCodeResult[] results = reader.ReadBarCodes();
+
+                        Console.WriteLine($"Page {pageIndex + 1}: Detected {results.Length} barcode(s).");
+                        foreach (BarCodeResult result in results)
+                        {
+                            Console.WriteLine($"  Type    : {result.CodeType}");
+                            Console.WriteLine($"  CodeText: {result.CodeText}");
                         }
                     }
                 }
             }
         }
+
+        Console.WriteLine("Processing completed.");
     }
 }

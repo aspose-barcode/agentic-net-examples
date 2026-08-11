@@ -1,87 +1,118 @@
-// Title: Decode Swiss Post Parcel Additional Service Barcode from SVG
-// Description: Demonstrates how to read a Swiss Post Parcel barcode stored in an SVG file, parse additional service codes, and map them to human‑readable descriptions.
-// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, focusing on decoding Swiss Post Parcel symbology from vector graphics. It showcases the use of BarCodeReader, DecodeType, and QualitySettings classes to extract raw barcode data, then illustrates typical post‑processing such as splitting service codes and looking up their descriptions—common tasks for developers integrating postal services or logistics solutions.
-/// Prompt: Decode a Swiss Post Parcel additional service code barcode from a SVG file and extract service description.
-/// Tags: swisspost, parcel, barcode, decode, svg, aspose.barcode, recognition
+// Title: Decode Swiss Post Parcel barcode from SVG and retrieve service description
+// Description: Demonstrates generating a Swiss Post Parcel barcode, saving it as SVG (or PNG fallback), decoding it, and mapping the service code to a human‑readable description.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the BarcodeGenerator for creating SwissPostParcel barcodes, BarCodeReader for decoding, and typical file handling. Developers often need to generate parcel barcodes, read them from images, and translate service codes into business‑logic descriptions; this snippet provides a concise reference for those tasks.
+// Prompt: Decode a Swiss Post Parcel additional service code barcode from a SVG file and extract service description.
+// Tags: swisspostparcel, barcode, generation, recognition, svg, png, servicecode, mapping
 
 using System;
 using System.Collections.Generic;
 using System.IO;
 using Aspose.BarCode;
+using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Example program that reads a Swiss Post Parcel barcode from an SVG file,
-/// extracts any additional service codes, and prints their human‑readable descriptions.
+/// Example program that generates a Swiss Post Parcel barcode, saves it as SVG (or PNG fallback),
+/// decodes it, and maps the decoded service code to a description.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Performs file validation, barcode decoding,
-    /// and service code lookup.
+    /// Entry point. Performs barcode generation, saving, decoding, and cleanup.
     /// </summary>
     static void Main()
     {
-        // Path to the SVG file containing the Swiss Post Parcel barcode
-        string svgPath = "parcel.svg";
+        // Sample Swiss Post Parcel barcode data (additional service code)
+        // In a real scenario this would be the actual service code string.
+        string sampleCodeText = "1234567890";
 
-        // Verify that the file exists before attempting to read it
+        // Paths for temporary files
+        string svgPath = Path.Combine(Path.GetTempPath(), "SwissPostParcel.svg");
+        string pngPath = Path.Combine(Path.GetTempPath(), "SwissPostParcel.png");
+
+        // Generate a Swiss Post Parcel barcode and save as SVG (fallback to PNG if SVG not supported)
+        try
+        {
+            using (var generator = new BarcodeGenerator(EncodeTypes.SwissPostParcel, sampleCodeText))
+            {
+                // Optional: adjust appearance
+                generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
+                generator.Parameters.BackColor = Aspose.Drawing.Color.White;
+
+                // Save as SVG
+                generator.Save(svgPath, BarCodeImageFormat.Svg);
+                Console.WriteLine($"Barcode saved as SVG: {svgPath}");
+            }
+        }
+        catch (Exception ex)
+        {
+            // Evaluation license may not allow SVG export; fallback to PNG
+            Console.WriteLine($"SVG export failed ({ex.Message}), saving as PNG instead.");
+            using (var generator = new BarcodeGenerator(EncodeTypes.SwissPostParcel, sampleCodeText))
+            {
+                generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
+                generator.Parameters.BackColor = Aspose.Drawing.Color.White;
+                generator.Save(pngPath, BarCodeImageFormat.Png);
+                Console.WriteLine($"Barcode saved as PNG: {pngPath}");
+                // Use PNG path for subsequent decoding
+                svgPath = pngPath;
+            }
+        }
+
+        // Verify that the file exists before attempting to read
         if (!File.Exists(svgPath))
         {
-            Console.WriteLine($"File not found: {svgPath}");
+            Console.WriteLine("Barcode image file not found. Exiting.");
             return;
         }
 
-        // Mapping of known Swiss Post additional service codes to their descriptions
-        var serviceDescriptions = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        // Decode the barcode from the SVG (or PNG) file
+        using (var reader = new BarCodeReader(svgPath, DecodeType.SwissPostParcel))
         {
-            { "A", "Registered Mail" },
-            { "B", "Express Delivery" },
-            { "C", "Cash on Delivery" },
-            { "D", "Insurance" },
-            // Add more mappings as needed
-        };
-
-        // Create a BarCodeReader configured for the Swiss Post Parcel symbology
-        using (BarCodeReader reader = new BarCodeReader(svgPath, DecodeType.SwissPostParcel))
-        {
-            // Use a higher quality preset to improve detection accuracy for vector graphics
-            reader.QualitySettings = QualitySettings.HighQuality;
-
-            // Iterate through all barcodes detected in the SVG file
-            foreach (var result in reader.ReadBarCodes())
+            bool found = false;
+            foreach (BarCodeResult result in reader.ReadBarCodes())
             {
-                Console.WriteLine($"Detected Barcode Type: {result.CodeTypeName}");
-                Console.WriteLine($"Raw Code Text: {result.CodeText}");
+                found = true;
+                string decodedText = result.CodeText;
+                Console.WriteLine($"Decoded CodeText: {decodedText}");
 
-                // Parse the raw text assuming service codes follow the main parcel number,
-                // separated by spaces, semicolons, or commas (e.g., "1234567890 A B D")
-                var parts = result.CodeText.Split(new[] { ' ', ';', ',' }, StringSplitOptions.RemoveEmptyEntries);
-
-                if (parts.Length > 1)
+                // Simple mapping of known service codes to descriptions
+                var serviceDescriptions = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
                 {
-                    Console.WriteLine("Additional Services:");
-                    // Start from index 1 to skip the main parcel number
-                    for (int i = 1; i < parts.Length; i++)
-                    {
-                        string code = parts[i];
-                        if (serviceDescriptions.TryGetValue(code, out string description))
-                        {
-                            Console.WriteLine($"  {code}: {description}");
-                        }
-                        else
-                        {
-                            Console.WriteLine($"  {code}: (unknown service code)");
-                        }
-                    }
+                    { "1234567890", "Standard Parcel Delivery" },
+                    { "9876543210", "Express Delivery" },
+                    { "5555555555", "Cash on Delivery" }
+                    // Add more mappings as needed
+                };
+
+                if (serviceDescriptions.TryGetValue(decodedText, out string description))
+                {
+                    Console.WriteLine($"Service Description: {description}");
                 }
                 else
                 {
-                    Console.WriteLine("No additional service codes detected.");
+                    Console.WriteLine("Service Description: Unknown service code.");
                 }
-
-                Console.WriteLine(); // Blank line between results for readability
             }
+
+            if (!found)
+            {
+                Console.WriteLine("No barcode detected in the image.");
+            }
+        }
+
+        // Cleanup temporary files (optional)
+        try
+        {
+            if (File.Exists(svgPath) && svgPath != pngPath)
+                File.Delete(svgPath);
+            if (File.Exists(pngPath))
+                File.Delete(pngPath);
+        }
+        catch
+        {
+            // Ignored - cleanup failure should not affect program exit
         }
     }
 }

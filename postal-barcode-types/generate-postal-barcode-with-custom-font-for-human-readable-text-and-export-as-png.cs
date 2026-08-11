@@ -1,52 +1,47 @@
-// Title: Generate Postal Barcode with Custom Font
-// Description: Demonstrates creating a Postnet barcode with a custom human‑readable font and exporting it as a PNG image.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating how to configure barcode parameters such as symbology, auto‑size mode, font styling, colors, and image output. It uses the BarcodeGenerator class and related parameter objects, which are commonly employed by developers to produce printable barcodes for mailing, shipping, and inventory applications.
+// Title: Generate Postal Barcode with Custom Font and PNG Output
+// Description: Demonstrates creating a Postnet postal barcode, applying a custom Helvetica font to the human‑readable text, and saving the result as a PNG image.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating how to configure barcode parameters such as code text location, font, size, and alignment using the BarcodeGenerator and its Parameters properties. Typical use cases include generating postal barcodes for mailing applications where custom styling of the human‑readable text is required. Developers often need to customize font attributes and export the barcode to common image formats like PNG.
 // Prompt: Generate a postal barcode with a custom font for the human‑readable text and export as PNG.
-// Tags: postnet, barcode generation, custom font, png, aspose.barcode
+// Tags: postnet, custom-font, png, barcodegenerator, codetextparameters
 
 using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates a Postnet postal barcode with a custom font for the
-/// human‑readable text and saves it as a PNG file.
+/// Example program that creates a Postnet postal barcode with a custom font for the human‑readable text
+/// and saves it as a PNG image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Creates the barcode, applies visual customizations,
-    /// and writes the resulting image to disk.
+    /// Entry point of the example. Generates the barcode, configures text appearance, and writes the image file.
     /// </summary>
     static void Main()
     {
-        // Define output file name and the sample ZIP+4 code to encode.
+        // Define output file name and the ZIP code to encode.
         const string outputPath = "postal.png";
-        const string codeText = "12345-6789"; // Example ZIP+4 code
+        const string codeText = "12345"; // ZIP code for Postnet
 
-        // Initialize the barcode generator for the Postnet symbology.
+        // Initialize the barcode generator with Postnet symbology and the specified code text.
         using (var generator = new BarcodeGenerator(EncodeTypes.Postnet, codeText))
         {
-            // Enable auto‑size mode to let the library calculate optimal bar height.
-            generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
+            // Position the human‑readable text below the barcode.
+            generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.Below;
 
-            // Configure the appearance of the human‑readable text.
-            generator.Parameters.Barcode.CodeTextParameters.Font.FamilyName = "Arial"; // Custom font name.
-            generator.Parameters.Barcode.CodeTextParameters.Font.Size.Point = 12f;      // Font size.
+            // Set a custom, cross‑platform font (Helvetica) and size for the text.
+            generator.Parameters.Barcode.CodeTextParameters.Font.FamilyName = "Helvetica";
+            generator.Parameters.Barcode.CodeTextParameters.Font.Size.Point = 12f;
+
+            // Center‑align the human‑readable text.
             generator.Parameters.Barcode.CodeTextParameters.Alignment = TextAlignment.Center;
-            generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.Below; // Position text below bars.
-
-            // Optional: set barcode and background colors.
-            generator.Parameters.Barcode.BarColor = Color.Black;
-            generator.Parameters.BackColor = Color.White;
 
             // Save the generated barcode as a PNG image.
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user that the file has been created.
-        Console.WriteLine($"Postal barcode saved to '{outputPath}'.");
+        // Inform the user where the file was saved.
+        Console.WriteLine($"Barcode saved to {outputPath}");
     }
 }

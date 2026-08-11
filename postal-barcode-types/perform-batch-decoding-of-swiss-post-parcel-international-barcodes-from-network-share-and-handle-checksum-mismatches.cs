@@ -1,109 +1,112 @@
-// Title: Batch decode Swiss Post Parcel barcodes from network share
-// Description: Demonstrates how to read Swiss Post Parcel international barcodes in a batch from a shared folder, validating checksums and handling mismatches.
-// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, illustrating the use of BarCodeReader with DecodeType.SwissPostParcel, checksum validation, and file system iteration. Developers working with postal barcode processing, bulk image handling, or network shares can reference this pattern for extracting barcode data and detecting errors.
+// Title: Batch decode Swiss Post Parcel barcodes with checksum validation
+// Description: Demonstrates how to read multiple Swiss Post Parcel barcodes from a folder (simulating a network share), validate checksums, and report mismatches.
+// Category-Description: This example belongs to the barcode recognition and generation category of Aspose.BarCode for .NET. It showcases using BarCodeReader for batch decoding, configuring checksum validation, and using BarcodeGenerator to create sample barcodes. Developers working with bulk barcode processing, validation, and integration with file systems commonly use these APIs.
 // Prompt: Perform batch decoding of Swiss Post Parcel international barcodes from a network share and handle checksum mismatches.
-// Tags: swisspostparcel, barcode, batch, decoding, checksum, network share, aspose.barcode
+// Tags: swisspostparcel, batch decoding, checksum validation, barcodereader, barcodegenerator, console output
 
 using System;
 using System.IO;
 using Aspose.BarCode;
+using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Example program that batch processes image files from a network share,
-/// decodes Swiss Post Parcel barcodes, and validates their checksums.
+/// Example program that batch‑processes Swiss Post Parcel barcodes from a folder,
+/// validates their checksums, and outputs the results to the console.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Scans a folder for supported image files, reads Swiss Post Parcel barcodes,
-    /// and outputs barcode details including checksum information.
+    /// Entry point. Scans a folder for PNG images, reads Swiss Post Parcel barcodes,
+    /// validates checksums, and reports successful reads or mismatches.
     /// </summary>
-    /// <param name="args">Optional first argument specifying the input folder path.</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Determine the input folder: use first argument or default network share path.
-        string inputFolder = args.Length > 0 ? args[0] : @"\\localhost\share\barcodes";
+        // Define the folder that simulates a network share.
+        // For the purpose of this self‑contained example we use a local folder.
+        string folderPath = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
 
-        // Verify that the folder exists before proceeding.
-        if (!Directory.Exists(inputFolder))
+        // Ensure the folder exists.
+        if (!Directory.Exists(folderPath))
         {
-            Console.WriteLine($"Input folder does not exist: {inputFolder}");
-            return;
+            Directory.CreateDirectory(folderPath);
         }
 
-        // Define supported image extensions for barcode scanning.
-        string[] extensions = new[] { ".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp" };
-        string[] files = Directory.GetFiles(inputFolder);
-        int processed = 0;
-        const int maxFiles = 10; // Safety cap to limit batch size.
+        // Seed a few sample Swiss Post Parcel barcodes if the folder is empty.
+        SeedSampleBarcodes(folderPath);
 
-        // Iterate over each file in the folder.
-        foreach (string filePath in files)
+        // Retrieve all PNG image files in the folder.
+        string[] imageFiles = Directory.GetFiles(folderPath, "*.png");
+        foreach (string imageFile in imageFiles)
         {
-            // Stop processing once the maximum file count is reached.
-            if (processed >= maxFiles) break;
-
-            // Skip files with unsupported extensions.
-            string ext = Path.GetExtension(filePath);
-            if (Array.IndexOf(extensions, ext, 0, extensions.Length) < 0) continue;
-
-            // Ensure the file still exists (it might have been removed).
-            if (!File.Exists(filePath))
+            // Verify the file exists before processing.
+            if (!File.Exists(imageFile))
             {
-                Console.WriteLine($"File not found: {filePath}");
+                Console.WriteLine($"File not found: {imageFile}");
                 continue;
             }
 
-            try
+            // Create a reader configured for Swiss Post Parcel barcodes.
+            using (BarCodeReader reader = new BarCodeReader(imageFile, DecodeType.SwissPostParcel))
             {
-                // Initialize the barcode reader for Swiss Post Parcel symbology.
-                using (var reader = new BarCodeReader(filePath, DecodeType.SwissPostParcel))
+                // Enable checksum validation.
+                reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
+
+                // Disallow recognition of barcodes with incorrect checksums.
+                reader.QualitySettings.AllowIncorrectBarcodes = false;
+
+                // Read all barcodes from the image.
+                BarCodeResult[] results = reader.ReadBarCodes();
+
+                if (results.Length == 0)
                 {
-                    // Enable checksum validation to detect mismatches.
-                    reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
+                    Console.WriteLine($"No barcode detected in file: {Path.GetFileName(imageFile)}");
+                    continue;
+                }
 
-                    bool anyFound = false;
-
-                    // Read all barcodes found in the current image.
-                    foreach (BarCodeResult result in reader.ReadBarCodes())
+                // Process each detected barcode.
+                foreach (BarCodeResult result in results)
+                {
+                    // If CodeText is null or empty, the checksum likely failed.
+                    if (string.IsNullOrEmpty(result.CodeText))
                     {
-                        anyFound = true;
-                        Console.WriteLine($"File: {Path.GetFileName(filePath)}");
-                        Console.WriteLine($"  Type: {result.CodeTypeName}");
-                        Console.WriteLine($"  CodeText: {result.CodeText}");
-
-                        // Attempt to retrieve checksum information if available.
-                        try
-                        {
-                            string checksum = result.Extended.OneD.CheckSum;
-                            if (!string.IsNullOrEmpty(checksum))
-                            {
-                                Console.WriteLine($"  CheckSum: {checksum}");
-                            }
-                        }
-                        catch
-                        {
-                            // Extended.OneD may not be applicable for this symbology; ignore silently.
-                        }
+                        Console.WriteLine($"Checksum mismatch in file: {Path.GetFileName(imageFile)}");
                     }
-
-                    // Inform the user if no barcode was detected in the file.
-                    if (!anyFound)
+                    else
                     {
-                        Console.WriteLine($"No Swiss Post Parcel barcode detected in file: {Path.GetFileName(filePath)}");
+                        Console.WriteLine($"File: {Path.GetFileName(imageFile)} | Type: {result.CodeTypeName} | Text: {result.CodeText}");
                     }
                 }
             }
-            catch (Exception ex)
-            {
-                // Report any errors encountered while processing the file.
-                Console.WriteLine($"Error processing file '{Path.GetFileName(filePath)}': {ex.Message}");
-            }
-
-            processed++;
         }
+    }
 
-        Console.WriteLine("Batch decoding completed.");
+    // Generates a few sample Swiss Post Parcel barcodes if none exist.
+    private static void SeedSampleBarcodes(string folderPath)
+    {
+        // Check if there are already PNG files.
+        if (Directory.GetFiles(folderPath, "*.png").Length > 0)
+            return;
+
+        // Sample data for Swiss Post Parcel barcodes.
+        string[] sampleTexts = new[]
+        {
+            "1234567890123456", // Example valid code (replace with real format as needed)
+            "9876543210987654",
+            "5555555555555555"
+        };
+
+        // Create a barcode image for each sample text.
+        for (int i = 0; i < sampleTexts.Length; i++)
+        {
+            string filePath = Path.Combine(folderPath, $"Sample{i + 1}.png");
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.SwissPostParcel, sampleTexts[i]))
+            {
+                // Optional: adjust barcode appearance.
+                generator.Parameters.Barcode.XDimension.Point = 2f;
+                generator.Save(filePath, BarCodeImageFormat.Png);
+            }
+        }
     }
 }

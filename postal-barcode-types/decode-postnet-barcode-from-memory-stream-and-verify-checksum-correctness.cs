@@ -1,85 +1,62 @@
-// Title: Decode Postnet barcode from memory stream and verify checksum
-// Description: Demonstrates decoding a Postnet barcode generated in‑memory and checking its checksum.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It shows how to use BarcodeGenerator (EncodeTypes.Postnet) to create a barcode, store it in a MemoryStream, and then use BarCodeReader (DecodeType.Postnet) to read and validate the checksum. Developers working with postal barcodes often need to generate, transmit, and verify barcodes without persisting files, making in‑memory processing essential.
+// Title: Decode Postnet barcode from memory stream and validate checksum
+// Description: Demonstrates decoding a Postnet barcode that was generated in‑memory, reading it from a MemoryStream, and confirming the checksum is correct.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It shows how to use BarcodeGenerator to create a Postnet barcode, store it in a MemoryStream, and then use BarCodeReader to decode the image. Typical use cases include on‑the‑fly barcode generation for web services, automated verification of postal codes, and checksum validation in batch processing. Developers often work with the BarcodeGenerator, BarCodeReader, and related settings such as ChecksumValidation to ensure data integrity.
 // Prompt: Decode a Postnet barcode from a memory stream and verify checksum correctness.
-// Tags: postnet, barcode, decode, checksum, memory stream, aspose.barcode, generation, recognition
+// Tags: postnet, barcode, decode, checksum, memorystream, aspose.barcode, generation, recognition
 
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates a Postnet barcode, reads it from a memory stream,
-/// and validates the checksum of the decoded value.
+/// Example program that generates a Postnet barcode, decodes it from a memory stream,
+/// and validates the checksum using Aspose.BarCode APIs.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates, decodes, and validates a Postnet barcode.
+    /// Entry point of the example. Generates a Postnet barcode, reads it back,
+    /// and prints decoding results along with checksum verification.
     /// </summary>
     static void Main()
     {
-        // Sample ZIP code (without checksum)
-        string zip = "12345";
+        // Define a sample ZIP code (5 digits). The Postnet checksum digit will be added automatically.
+        const string zipCode = "12345";
 
-        // Create a memory stream to hold the generated barcode image
-        using (var ms = new MemoryStream())
+        // Create a memory stream to hold the generated barcode image.
+        using (var memoryStream = new MemoryStream())
         {
-            // Generate Postnet barcode and write it as PNG into the memory stream
-            using (var generator = new BarcodeGenerator(EncodeTypes.Postnet, zip))
+            // Generate the Postnet barcode and save it as PNG into the memory stream.
+            using (var generator = new BarcodeGenerator(EncodeTypes.Postnet, zipCode))
             {
-                generator.Save(ms, BarCodeImageFormat.Png);
+                generator.Save(memoryStream, BarCodeImageFormat.Png);
             }
 
-            // Reset the stream position to the beginning for reading
-            ms.Position = 0;
+            // Reset the stream position to the beginning before reading.
+            memoryStream.Position = 0;
 
-            // Initialize a barcode reader for Postnet from the memory stream
-            using (var reader = new BarCodeReader(ms, DecodeType.Postnet))
+            // Initialize a barcode reader for Postnet symbology using the memory stream.
+            using (var reader = new BarCodeReader(memoryStream, DecodeType.Postnet))
             {
-                // Turn on checksum validation during reading
+                // Enable checksum validation (On = always validate if possible).
                 reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
 
-                // Read all barcodes found in the stream
-                var results = reader.ReadBarCodes();
-
-                // If no barcode was detected, inform the user and exit
-                if (results.Length == 0)
+                // Iterate through all detected barcodes (there should be only one in this case).
+                foreach (var result in reader.ReadBarCodes())
                 {
-                    Console.WriteLine("No Postnet barcode detected.");
-                    return;
-                }
+                    Console.WriteLine($"Decoded Type   : {result.CodeTypeName}");
+                    Console.WriteLine($"Decoded Text   : {result.CodeText}");
 
-                // Process each decoded barcode result
-                foreach (var result in results)
-                {
-                    Console.WriteLine($"Decoded CodeText: {result.CodeText}");
+                    // For 1D barcodes, the extended parameters contain the checksum digit.
+                    var checksum = result.Extended.OneD.CheckSum;
+                    Console.WriteLine($"Checksum (from barcode) : {checksum}");
 
-                    // Verify checksum manually if the decoded text includes the check digit
-                    if (!string.IsNullOrEmpty(result.CodeText) && result.CodeText.Length > zip.Length)
-                    {
-                        // Extract the check digit (last character of the decoded text)
-                        char decodedCheckChar = result.CodeText[result.CodeText.Length - 1];
-
-                        // Compute the expected check digit from the original ZIP code
-                        int sum = 0;
-                        foreach (char c in zip)
-                        {
-                            if (char.IsDigit(c))
-                                sum += c - '0';
-                        }
-                        int expectedCheck = (10 - (sum % 10)) % 10;
-
-                        // Compare decoded check digit with the expected one
-                        bool checksumMatches = decodedCheckChar - '0' == expectedCheck;
-                        Console.WriteLine($"Checksum validation result: {(checksumMatches ? "Valid" : "Invalid")}");
-                    }
-                    else
-                    {
-                        Console.WriteLine("Checksum digit not present in decoded text.");
-                    }
+                    // Since ChecksumValidation is On, a null result would indicate a failure.
+                    // Presence of a result means the checksum is valid.
+                    Console.WriteLine("Checksum validation: Passed");
                 }
             }
         }

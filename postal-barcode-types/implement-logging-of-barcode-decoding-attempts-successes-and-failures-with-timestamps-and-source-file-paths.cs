@@ -1,97 +1,136 @@
-// Title: Barcode Generation and Decoding with Logging
-// Description: Generates a Code128 barcode image, then attempts to decode it while logging each attempt, success, and failure with timestamps and file paths.
-// Category-Description: This example belongs to the Aspose.BarCode operations collection that demonstrates barcode generation and recognition. It showcases the use of BarcodeGenerator for creating barcodes and BarCodeReader for decoding them. Typical scenarios include inventory labeling, document processing, and automated scanning systems where developers need to generate barcodes programmatically and verify them by reading image files.
+// Title: Barcode generation, decoding, and logging example
+// Description: Demonstrates creating sample barcodes (Code128, QR, DataMatrix), decoding them, and logging each attempt with timestamps and file paths.
+// Category-Description: This example belongs to the Aspose.BarCode operations category covering barcode generation and recognition. It showcases the use of BarcodeGenerator, BarCodeReader, EncodeTypes, and DecodeType classes to create and read various symbologies, while logging outcomes for audit or debugging purposes. Developers often need such patterns for batch processing, validation, and traceability of barcode workflows.
 // Prompt: Implement logging of barcode decoding attempts, successes, and failures with timestamps and source file paths.
-// Tags: barcode, code128, generation, decoding, logging, aspose.barcode, image, console
+// Tags: barcode, generation, recognition, logging, codetype, decode, encode, aspose.barcode, png
 
 using System;
 using System.IO;
-using System.Collections.Generic;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
 /// Demonstrates barcode generation, decoding, and logging using Aspose.BarCode.
 /// </summary>
 class Program
 {
+    // Path to the folder that will hold sample barcode images
+    private const string BarcodeFolder = "Barcodes";
+
+    // Path to the log file
+    private const string LogFile = "barcode_log.txt";
+
     /// <summary>
-    /// Entry point that creates a sample barcode, attempts decoding on a list of files, and logs outcomes.
+    /// Entry point. Generates sample barcodes, decodes them, and logs results.
     /// </summary>
     static void Main()
     {
-        // --------------------------------------------------------------------
-        // Prepare a directory and generate a sample barcode image (Code128)
-        // --------------------------------------------------------------------
-        string sampleDir = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
-        Directory.CreateDirectory(sampleDir);
-        string samplePath = Path.Combine(sampleDir, "sample.png");
-
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
+        // Ensure a clean log file at the start of each run
+        if (File.Exists(LogFile))
         {
-            // Save the generated barcode as a PNG file
-            generator.Save(samplePath, BarCodeImageFormat.Png);
+            File.Delete(LogFile);
         }
 
-        // ---------------------------------------------------------------
-        // Define the list of files to decode (includes a non‑existent file)
-        // ---------------------------------------------------------------
-        var filesToDecode = new List<string>
+        // Create the folder for sample images if it does not exist
+        if (!Directory.Exists(BarcodeFolder))
         {
-            samplePath,
-            Path.Combine(sampleDir, "missing.png")
-        };
+            Directory.CreateDirectory(BarcodeFolder);
+        }
 
-        // ---------------------------------------------------------------
-        // Iterate over each file, attempt decoding, and log the result
-        // ---------------------------------------------------------------
-        foreach (var filePath in filesToDecode)
+        // Generate a few sample barcodes (Code128, QR, DataMatrix)
+        GenerateSampleBarcodes();
+
+        // Process each PNG image in the folder
+        string[] files = Directory.GetFiles(BarcodeFolder, "*.png");
+        foreach (string filePath in files)
         {
-            Log($"Attempting to decode barcode in file: {filePath}");
+            // Log the start of a decoding attempt
+            LogAttempt(filePath);
 
-            // Verify that the file exists before trying to read it
+            // Verify the file still exists before attempting to read
             if (!File.Exists(filePath))
             {
-                Log("File does not exist. Decoding failed.");
+                LogMessage($"File not found: {filePath}");
                 continue;
             }
 
-            try
+            // Use AllSupportedTypes to detect any barcode present in the image
+            using (BarCodeReader reader = new BarCodeReader(filePath, DecodeType.AllSupportedTypes))
             {
-                // Initialize the barcode reader for all supported symbologies
-                using (var reader = new BarCodeReader(filePath, DecodeType.AllSupportedTypes))
+                try
                 {
-                    // Read all barcodes found in the image
-                    var results = reader.ReadBarCodes();
+                    BarCodeResult[] results = reader.ReadBarCodes();
 
+                    // No barcodes detected
                     if (results.Length == 0)
                     {
-                        Log("No barcode detected. Decoding failed.");
+                        LogMessage("Result: Failure – No barcode detected.");
                     }
                     else
                     {
-                        // Log details for each detected barcode
-                        foreach (var result in results)
+                        // Iterate through all detected barcodes
+                        foreach (BarCodeResult result in results)
                         {
-                            Log($"Success: Type={result.CodeTypeName}, Text={result.CodeText}, Confidence={result.Confidence}, ReadingQuality={result.ReadingQuality}");
+                            if (!string.IsNullOrEmpty(result.CodeText))
+                            {
+                                LogMessage($"Result: Success – Type: {result.CodeTypeName}, Text: {result.CodeText}");
+                            }
+                            else
+                            {
+                                LogMessage($"Result: Failure – Detected type {result.CodeTypeName} but no code text.");
+                            }
                         }
                     }
                 }
+                catch (Exception ex)
+                {
+                    // Log any exception that occurs during decoding
+                    LogMessage($"Result: Failure – Exception: {ex.Message}");
+                }
             }
-            catch (Exception ex)
-            {
-                // Log any unexpected exceptions during decoding
-                Log($"Exception during decoding: {ex.Message}");
-            }
+        }
+
+        // Indicate completion to the user
+        Console.WriteLine("Barcode processing completed. See log file for details.");
+    }
+
+    // Generates sample barcode images (Code128, QR, DataMatrix) in the BarcodeFolder
+    private static void GenerateSampleBarcodes()
+    {
+        // Code128 example
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "ABC123"))
+        {
+            string path = Path.Combine(BarcodeFolder, "code128.png");
+            generator.Save(path, BarCodeImageFormat.Png);
+        }
+
+        // QR code example
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
+        {
+            string path = Path.Combine(BarcodeFolder, "qr.png");
+            generator.Save(path, BarCodeImageFormat.Png);
+        }
+
+        // DataMatrix example
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.DataMatrix, "DataMatrix123"))
+        {
+            string path = Path.Combine(BarcodeFolder, "datamatrix.png");
+            generator.Save(path, BarCodeImageFormat.Png);
         }
     }
 
-    /// <summary>
-    /// Writes a timestamped log message to the console.
-    /// </summary>
-    /// <param name="message">The message to log.</param>
-    static void Log(string message)
+    // Logs the start of a decoding attempt with timestamp and file path
+    private static void LogAttempt(string filePath)
     {
-        Console.WriteLine($"{DateTime.Now:O} - {message}");
+        string entry = $"{DateTime.Now:O} | Attempt: {filePath}{Environment.NewLine}";
+        File.AppendAllText(LogFile, entry);
+    }
+
+    // Appends a generic message to the log with timestamp
+    private static void LogMessage(string message)
+    {
+        string entry = $"{DateTime.Now:O} | {message}{Environment.NewLine}";
+        File.AppendAllText(LogFile, entry);
     }
 }

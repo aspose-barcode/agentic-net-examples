@@ -1,8 +1,8 @@
-// Title: Generate Planet barcodes from CSV values
-// Description: This example reads numeric values from a CSV file and creates a Planet barcode PNG for each value.
-// Category-Description: Demonstrates batch barcode generation using Aspose.BarCode. It showcases the BarcodeGenerator class with EncodeTypes.Planet, file I/O for CSV input, and saving images in PNG format. Useful for developers needing to automate barcode creation from data sources such as spreadsheets or databases.
+// Title: Generate Planet Barcodes from CSV Values
+// Description: Demonstrates creating Planet symbology barcodes from a comma‑separated list of numeric strings and saving each as a PNG file.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use the BarcodeGenerator class with EncodeTypes.Planet to produce barcodes. Typical use cases include batch barcode creation from data sources such as CSV files, where each value is rendered as an image for printing or digital distribution. Developers often need to automate image output, manage file naming, and handle directory creation, which this snippet illustrates.
 // Prompt: Generate a batch of Planet barcodes from a CSV list of numeric values, saving each as PNG.
-// Tags: planet, barcode, generation, csv, png, aspose.barcode, batch-processing
+// Tags: planet, barcode, generation, csv, png, aspose.barcode, encode-types, image-output
 
 using System;
 using System.IO;
@@ -10,69 +10,52 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Example program that generates Planet barcodes from a CSV list of numeric values and saves each as a PNG file.
+/// Example program that reads numeric values from a CSV string,
+/// generates a Planet barcode for each value, and saves the barcodes as PNG files.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Reads values from a CSV file, validates them, and creates corresponding barcode images.
+    /// Entry point of the application. Performs the barcode generation workflow.
     /// </summary>
     static void Main()
     {
-        // Path to the input CSV file containing comma‑separated numeric values.
-        string csvPath = "values.csv";
+        // Sample CSV data containing numeric values
+        string csvData = "12345,67890,112233,445566,778899";
 
-        // If the CSV file does not exist, create a small sample file with example values.
-        if (!File.Exists(csvPath))
-        {
-            string sampleData = "123456,789012,345678,901234,567890";
-            File.WriteAllText(csvPath, sampleData);
-        }
+        // Split the CSV string into individual values, ignoring empty entries
+        string[] values = csvData.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
 
-        // Directory where generated PNG barcode images will be stored.
-        string outputDir = "Barcodes";
-        if (!Directory.Exists(outputDir))
-        {
-            Directory.CreateDirectory(outputDir);
-        }
+        // Prepare the output directory for the generated barcode images
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "PlanetBarcodes");
+        Directory.CreateDirectory(outputDir);
 
-        // Read the entire CSV content and split it into individual values.
-        string csvContent = File.ReadAllText(csvPath);
-        string[] values = csvContent.Split(new[] { ',', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
-
-        // Process each numeric value from the CSV.
+        // Iterate over each numeric value and generate a corresponding Planet barcode
         foreach (string rawValue in values)
         {
+            // Trim whitespace and skip empty entries
             string value = rawValue.Trim();
+            if (string.IsNullOrEmpty(value))
+                continue;
 
-            // Validate that the value consists only of digits; skip if invalid.
-            foreach (char c in value)
+            // Construct a safe file name for the barcode image
+            string fileName = $"planet_{value}.png";
+            string filePath = Path.Combine(outputDir, fileName);
+
+            // Create and configure the barcode generator for Planet symbology
+            using (var generator = new BarcodeGenerator(EncodeTypes.Planet))
             {
-                if (!char.IsDigit(c))
-                {
-                    Console.WriteLine($"Skipping invalid value: {value}");
-                    goto ContinueLoop;
-                }
+                generator.CodeText = value; // Set the data to encode
+
+                // Save the generated barcode as a PNG image
+                generator.Save(filePath, BarCodeImageFormat.Png);
             }
 
-            // Build the output file name, e.g., "Planet_123456.png".
-            string outputPath = Path.Combine(outputDir, $"Planet_{value}.png");
-
-            // Generate a Planet barcode for the validated value and save it as PNG.
-            using (var generator = new BarcodeGenerator(EncodeTypes.Planet, value))
-            {
-                // Optional: set a white background and black bars (default colors are fine).
-                generator.Parameters.BackColor = Aspose.Drawing.Color.White;
-                generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-
-                // Save the barcode image in PNG format.
-                generator.Save(outputPath, BarCodeImageFormat.Png);
-            }
-
-        ContinueLoop:
-            continue;
+            // Inform the user about the generated file
+            Console.WriteLine($"Generated Planet barcode for value {value} -> {filePath}");
         }
 
+        // Indicate that the batch process has finished
         Console.WriteLine("Barcode generation completed.");
     }
 }

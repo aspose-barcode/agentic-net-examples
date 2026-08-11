@@ -1,106 +1,102 @@
-// Title: Batch decode Australia Post barcodes from TIFF images using multi‑threading
-// Description: Demonstrates how to read Australia Post barcodes from multi‑frame TIFF files in parallel, improving throughput for large image sets.
-// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, showcasing multi‑threaded processing of image collections. It uses BarCodeReader, QualitySettings, and DecodeType classes to efficiently decode barcodes. Developers often need to batch‑process scanned documents or shipping labels, and this pattern illustrates best practices for parallel decoding and handling multi‑frame TIFFs.
+// Title: Batch decode Australia Post barcodes from TIFF images using multithreading
+// Description: Demonstrates generating sample Australia Post barcodes, storing them as TIFF files, and decoding them concurrently with Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode batch processing category, showcasing how to work with the BarCodeGenerator and BarCodeReader classes for high‑throughput barcode operations. Typical use cases include bulk scanning of shipping labels, automated inventory checks, and large‑scale document processing where multi‑core decoding improves performance. Developers often need to generate test barcodes, configure processor settings, and read results in parallel.
 // Prompt: Perform batch decoding of Australia Post barcodes from a set of TIFF images using multi‑threading.
-// Tags: australia post, barcode, decoding, multithreading, tiff, aspose.barcode, qualitysettings
+// Tags: barcode, decoding, australia post, multithreading, tiff, aspose.barcode, batch processing
 
 using System;
 using System.IO;
 using System.Threading.Tasks;
 using Aspose.BarCode;
+using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that decodes Australia Post barcodes from TIFF images using parallel processing.
+/// Sample program that creates a set of Australia Post barcode images and decodes them in parallel.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Scans a folder for TIFF files, extracts each frame, and decodes Australia Post barcodes in parallel.
+    /// Entry point of the application. Generates sample TIFF images containing Australia Post barcodes
+    /// and then decodes all images concurrently, writing results to the console.
     /// </summary>
     static void Main()
     {
-        // Folder containing TIFF images
-        string folderPath = "Barcodes";
-
-        // Verify the folder exists
-        if (!Directory.Exists(folderPath))
+        // Define the folder that will hold the sample TIFF images.
+        string inputFolder = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
+        if (!Directory.Exists(inputFolder))
         {
-            Console.WriteLine($"Folder not found: {folderPath}");
-            return;
+            Directory.CreateDirectory(inputFolder);
         }
 
-        // Retrieve up to 5 TIFF files for a safe sample size
-        string[] tiffFiles = Directory.GetFiles(folderPath, "*.tif");
-        int maxFiles = Math.Min(tiffFiles.Length, 5);
-        if (maxFiles == 0)
+        // Sample Australia Post barcode texts (valid formats).
+        string[] sampleCodes = new string[]
         {
-            Console.WriteLine("No TIFF files found.");
-            return;
+            "1100000000",          // FCC=11, no customer info
+            "4580123456",          // FCC=45, no customer info
+            "5980123456AB",        // FCC=59, 2 CTable chars
+            "6280123456ABCDE",     // FCC=62, 5 CTable chars (max)
+            "9280123456AB"         // FCC=92, 2 CTable chars
+        };
+
+        // Generate a TIFF file for each sample code if it does not already exist.
+        for (int i = 0; i < sampleCodes.Length; i++)
+        {
+            string code = sampleCodes[i];
+            string filePath = Path.Combine(inputFolder, $"barcode_{i + 1}.tif");
+
+            if (File.Exists(filePath))
+                continue; // Skip existing files to avoid unnecessary regeneration.
+
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, code))
+            {
+                // Use CTable for customer information interpretation (alternatively NTable may be used).
+                generator.Parameters.Barcode.AustralianPost.EncodingTable = CustomerInformationInterpretingType.CTable;
+                // Save the generated barcode as a TIFF image.
+                generator.Save(filePath, BarCodeImageFormat.Tiff);
+            }
         }
 
-        // Configure the barcode processor to use all available CPU cores
+        // Configure the barcode reader to utilize all available CPU cores.
         BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount = Environment.ProcessorCount;
 
-        // Process each file in parallel, limiting degree of parallelism to the number of cores
-        Parallel.ForEach(tiffFiles, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount }, (file, state, index) =>
-        {
-            // Enforce the sample size limit
-            if (index >= maxFiles) return;
+        // Retrieve all TIFF files from the input folder.
+        string[] tiffFiles = Directory.GetFiles(inputFolder, "*.tif");
 
+        if (tiffFiles.Length == 0)
+        {
+            Console.WriteLine("No TIFF images found for decoding.");
+            return;
+        }
+
+        // Decode each TIFF image in parallel to maximize throughput.
+        Parallel.ForEach(tiffFiles, filePath =>
+        {
             try
             {
-                // Load the TIFF image (supports multi‑frame TIFFs)
-                using (Image tiffImage = Image.FromFile(file))
+                BaseDecodeType decodeType = DecodeType.AustraliaPost;
+                using (BarCodeReader reader = new BarCodeReader(filePath, decodeType))
                 {
-                    // Identify the time dimension for frames (multi‑frame TIFF)
-                    FrameDimension frameDimension = FrameDimension.Time;
-                    int frameCount = tiffImage.GetFrameCount(frameDimension);
+                    BarCodeResult[] results = reader.ReadBarCodes();
 
-                    // Iterate through each frame in the TIFF
-                    for (int frameIndex = 0; frameIndex < frameCount; frameIndex++)
+                    // Output each detected barcode.
+                    foreach (var result in results)
                     {
-                        tiffImage.SelectActiveFrame(frameDimension, frameIndex);
+                        Console.WriteLine($"File: {Path.GetFileName(filePath)} | Detected: {result.CodeType} | CodeText: {result.CodeText}");
+                    }
 
-                        // Convert the current frame to a PNG stream (Aspose.Drawing works well with PNG)
-                        using (MemoryStream ms = new MemoryStream())
-                        {
-                            tiffImage.Save(ms, ImageFormat.Png);
-                            ms.Position = 0;
-
-                            // Create a bitmap from the PNG stream for barcode reading
-                            using (Bitmap bitmap = new Bitmap(ms))
-                            {
-                                // Initialize the barcode reader for Australia Post symbology
-                                using (BarCodeReader reader = new BarCodeReader(bitmap, DecodeType.AustraliaPost))
-                                {
-                                    // Apply a high‑performance quality preset to speed up decoding
-                                    reader.QualitySettings = QualitySettings.HighPerformance;
-
-                                    // Optional: configure interpreting type if required
-                                    // reader.BarcodeSettings.AustraliaPost.CustomerInformationInterpretingType = CustomerInformationInterpretingType.CTable;
-
-                                    // Perform the decoding
-                                    BarCodeResult[] results = reader.ReadBarCodes();
-
-                                    // Output each decoded result
-                                    foreach (BarCodeResult result in results)
-                                    {
-                                        var rect = result.Region.Rectangle;
-                                        Console.WriteLine($"File: {Path.GetFileName(file)}, Frame: {frameIndex}, Type: {result.CodeTypeName}, Text: {result.CodeText}, Region: {rect}");
-                                    }
-                                }
-                            }
-                        }
+                    // Inform if no barcode was found in the image.
+                    if (results.Length == 0)
+                    {
+                        Console.WriteLine($"File: {Path.GetFileName(filePath)} | No barcode detected.");
                     }
                 }
             }
             catch (Exception ex)
             {
-                // Log any errors encountered while processing the file
-                Console.WriteLine($"Error processing file '{Path.GetFileName(file)}': {ex.Message}");
+                // Log any errors that occur during processing of a specific file.
+                Console.WriteLine($"Error processing file '{Path.GetFileName(filePath)}': {ex.Message}");
             }
         });
     }
