@@ -1,8 +1,8 @@
-// Title: Adjust .NET ThreadPool settings for barcode reading
-// Description: Demonstrates how to set ThreadPool minimum and maximum threads before generating and reading a barcode image using Aspose.BarCode.
-// Category-Description: This example belongs to the Aspose.BarCode .NET barcode generation and recognition category. It showcases the use of BarcodeGenerator for creating a Code128 barcode and BarCodeReader for decoding it, while configuring ThreadPool limits to optimize multithreaded performance. Developers often need to adjust thread pool settings when processing many images concurrently in high‑throughput applications.
+// Title: Adjust .NET ThreadPool settings and read a generated Code128 barcode
+// Description: This example generates a Code128 barcode image, configures the .NET ThreadPool limits, then reads the barcode using Aspose.BarCode.
+// Category-Description: Demonstrates basic Aspose.BarCode operations including barcode generation (BarcodeGenerator) and recognition (BarCodeReader) with thread pool tuning. Useful for developers needing to control concurrency while processing barcodes in high‑throughput scenarios. Covers common use cases such as creating PNG images and decoding all supported symbologies.
 // Prompt: Adjust .NET ThreadPool minimum threads to 2 and maximum threads to 8 before creating BarCodeReader instances.
-// Tags: barcode symbology, generation, recognition, code128, threadpool, aspnet, aspose.barcode
+// Tags: code128, barcode-generation, barcode-recognition, png, threadpool, aspose.barcode
 
 using System;
 using System.IO;
@@ -12,63 +12,53 @@ using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates adjusting .NET ThreadPool settings and using Aspose.BarCode to generate and read a Code128 barcode.
+/// Demonstrates generating a barcode, configuring ThreadPool limits, and reading the barcode using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Configures ThreadPool limits, creates a barcode image, reads it, and cleans up.
+    /// Entry point of the example. Generates a Code128 barcode, sets ThreadPool thread counts, reads the barcode, and cleans up.
     /// </summary>
     static void Main()
     {
-        // --------------------------------------------------------------------
-        // Adjust ThreadPool settings before any barcode operations are performed
-        // --------------------------------------------------------------------
-        ThreadPool.GetMinThreads(out int minWorker, out int minIOC);
-        ThreadPool.SetMinThreads(2, minIOC); // Set minimum worker threads to 2
-        ThreadPool.GetMaxThreads(out int maxWorker, out int maxIOC);
-        ThreadPool.SetMaxThreads(8, maxIOC); // Set maximum worker threads to 8
+        // Define the temporary file path for the generated barcode image
+        string barcodePath = "sample_barcode.png";
 
-        // -------------------------------------------------
-        // Generate a sample barcode image using Code128 symbology
-        // -------------------------------------------------
-        string imagePath = "sample_barcode.png";
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
+        // Generate a simple Code128 barcode and save it as a PNG file
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "123456789"))
         {
-            generator.Save(imagePath, BarCodeImageFormat.Png);
+            generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        // -------------------------------------------------
-        // Verify that the barcode image was successfully created
-        // -------------------------------------------------
-        if (!File.Exists(imagePath))
-        {
-            Console.WriteLine("Failed to create barcode image.");
-            return;
-        }
+        // Adjust ThreadPool settings: set minimum to 2 worker threads and maximum to 8 worker threads
+        int workerThreads, completionPortThreads;
+        ThreadPool.GetMinThreads(out workerThreads, out completionPortThreads);
+        ThreadPool.SetMinThreads(2, completionPortThreads);
+        ThreadPool.GetMaxThreads(out workerThreads, out completionPortThreads);
+        ThreadPool.SetMaxThreads(8, completionPortThreads);
 
-        // -------------------------------------------------
-        // Read the barcode from the generated image using BarCodeReader
-        // -------------------------------------------------
-        using (var reader = new BarCodeReader(imagePath, DecodeType.Code128))
+        // Read the barcode using BarCodeReader with all supported decode types
+        using (BarCodeReader reader = new BarCodeReader(barcodePath, DecodeType.AllSupportedTypes))
         {
-            foreach (var result in reader.ReadBarCodes())
+            BarCodeResult[] results = reader.ReadBarCodes();
+            foreach (BarCodeResult result in results)
             {
                 Console.WriteLine($"Detected Type: {result.CodeTypeName}");
                 Console.WriteLine($"Detected Text: {result.CodeText}");
             }
         }
 
-        // -------------------------------------------------
-        // Clean up the sample image file (optional)
-        // -------------------------------------------------
-        try
+        // Clean up the temporary barcode image file
+        if (File.Exists(barcodePath))
         {
-            File.Delete(imagePath);
-        }
-        catch
-        {
-            // Ignore any cleanup errors
+            try
+            {
+                File.Delete(barcodePath);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to delete temporary file: {ex.Message}");
+            }
         }
     }
 }

@@ -1,112 +1,80 @@
-// Title: Wrapper for Aspose.BarCode ProcessorSettings
-// Description: Demonstrates a reusable ProcessorSettings wrapper that configures barcode generation parameters for consistent output across projects.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to encapsulate common barcode settings using the BarcodeGenerator class and related parameter objects. Developers often need a centralized configuration to apply consistent symbology, dimensions, colors, and padding when creating barcodes in .NET applications.
+// Title: Demonstrate configuring Aspose.BarCode ProcessorSettings via a wrapper
+// Description: Shows how to encapsulate ProcessorSettings configuration in a reusable wrapper and uses it to generate and read a Code128 barcode.
+// Category-Description: This example belongs to the Aspose.BarCode processing configuration category, illustrating the use of BarCodeReader.ProcessorSettings and related API classes such as BarcodeGenerator, BarCodeReader, and EncodeTypes. Developers often need to adjust parallel processing settings for performance optimization when handling large volumes of barcode images; this snippet provides a reusable pattern for setting such options across projects.
 // Prompt: Implement a wrapper class that encapsulates ProcessorSettings configuration for easy reuse across projects.
-// Tags: barcode symbology, generation, png, aspose.barcode, aspose.drawing
+// Tags: barcode symbology, configuration, parallelism, processor settings, aspose.barcode, generation, recognition
 
 using System;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
+using Aspose.BarCode.BarCodeRecognition;
 
-/// <summary>
-/// Encapsulates common barcode generation settings for reuse across projects.
-/// </summary>
-public class ProcessorSettings
+namespace AsposeBarcodeProcessorSettingsDemo
 {
-    // Symbology type (e.g., Code128, QR, etc.)
-    public BaseEncodeType EncodeType { get; set; }
-
-    // Text to encode into the barcode
-    public string CodeText { get; set; }
-
-    // Module size (x-dimension) in points; default 2f
-    public float XDimension { get; set; } = 2f;
-
-    // Height of 1D bars when AutoSize is disabled; default 40f
-    public float BarHeight { get; set; } = 40f;
-
-    // Determines whether the generator should auto‑size the image
-    public bool AutoSize { get; set; } = false;
-
-    // Foreground (bar) color; default black
-    public Color BarColor { get; set; } = Color.Black;
-
-    // Background color; default white
-    public Color BackColor { get; set; } = Color.White;
-
-    // Uniform padding around the barcode in points; default 5f
-    public float Padding { get; set; } = 5f;
-
     /// <summary>
-    /// Applies the stored settings to the specified <see cref="BarcodeGenerator"/> instance.
+    /// Provides a static wrapper to configure the ProcessorSettings used by <see cref="BarCodeReader"/>.
     /// </summary>
-    /// <param name="generator">The barcode generator to configure.</param>
-    public void Apply(BarcodeGenerator generator)
+    public static class ProcessorSettingsWrapper
     {
-        if (generator == null) throw new ArgumentNullException(nameof(generator));
-
-        // Set the text to encode (fallback to empty string if null)
-        generator.CodeText = CodeText ?? string.Empty;
-
-        // Configure X‑dimension (module size)
-        generator.Parameters.Barcode.XDimension.Point = XDimension;
-
-        // Handle auto‑size mode and bar height
-        if (AutoSize)
+        /// <summary>
+        /// Configures the maximum degree of parallelism for barcode processing if the underlying setting is available.
+        /// </summary>
+        /// <param name="maxDegreeOfParallelism">The desired maximum number of parallel threads.</param>
+        public static void Configure(int maxDegreeOfParallelism)
         {
-            generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
-        }
-        else
-        {
-            generator.Parameters.AutoSizeMode = AutoSizeMode.None;
-            generator.Parameters.Barcode.BarHeight.Point = BarHeight;
-        }
+            // Retrieve the static ProcessorSettings instance from BarCodeReader
+            var settings = BarCodeReader.ProcessorSettings;
+            if (settings == null)
+            {
+                Console.WriteLine("ProcessorSettings is null; cannot configure.");
+                return;
+            }
 
-        // Apply foreground and background colors
-        generator.Parameters.Barcode.BarColor = BarColor;
-        generator.Parameters.BackColor = BackColor;
-
-        // Apply uniform padding on all sides
-        generator.Parameters.Barcode.Padding.Left.Point = Padding;
-        generator.Parameters.Barcode.Padding.Top.Point = Padding;
-        generator.Parameters.Barcode.Padding.Right.Point = Padding;
-        generator.Parameters.Barcode.Padding.Bottom.Point = Padding;
+            // Attempt to set a property named MaxDegreeOfParallelism via reflection
+            var prop = settings.GetType().GetProperty("MaxDegreeOfParallelism");
+            if (prop != null && prop.CanWrite)
+            {
+                prop.SetValue(settings, maxDegreeOfParallelism);
+                Console.WriteLine($"ProcessorSettings: MaxDegreeOfParallelism set to {maxDegreeOfParallelism}.");
+            }
+            else
+            {
+                Console.WriteLine("ProcessorSettings does not expose a writable MaxDegreeOfParallelism property.");
+            }
+        }
     }
-}
 
-class Program
-{
-    /// <summary>
-    /// Entry point demonstrating the use of <see cref="ProcessorSettings"/> with Aspose.BarCode.
-    /// </summary>
-    static void Main()
+    class Program
     {
-        // Create a reusable settings instance with desired configuration
-        var settings = new ProcessorSettings
+        /// <summary>
+        /// Entry point demonstrating barcode generation, reading, and processor settings configuration.
+        /// </summary>
+        /// <param name="args">Command-line arguments (not used).</param>
+        static void Main(string[] args)
         {
-            EncodeType = EncodeTypes.Code128,
-            CodeText = "Sample123",
-            XDimension = 2f,
-            BarHeight = 50f,
-            AutoSize = false,
-            BarColor = Color.Blue,
-            BackColor = Color.White,
-            Padding = 4f
-        };
+            // Configure processor settings to use 2 parallel threads
+            ProcessorSettingsWrapper.Configure(2);
 
-        // Instantiate the generator using the specified symbology
-        using (var generator = new BarcodeGenerator(settings.EncodeType))
-        {
-            // Apply the common configuration to the generator
-            settings.Apply(generator);
+            // Define the output path for the generated barcode image
+            const string imagePath = "sample.png";
 
-            // Define output file path and save the barcode image as PNG
-            const string outputPath = "barcode.png";
-            generator.Save(outputPath);
+            // Generate a simple Code128 barcode and save it to the specified file
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
+            {
+                generator.Save(imagePath);
+                Console.WriteLine($"Barcode image saved to '{imagePath}'.");
+            }
 
-            // Inform the user where the file was saved
-            Console.WriteLine($"Barcode saved to {outputPath}");
+            // Read the barcode back from the saved image using BarCodeReader
+            using (var reader = new BarCodeReader(imagePath, DecodeType.Code128))
+            {
+                foreach (var result in reader.ReadBarCodes())
+                {
+                    Console.WriteLine($"Read CodeText: {result.CodeText}");
+                }
+            }
+
+            // Indicate that the demo has finished executing
+            Console.WriteLine("Demo completed.");
         }
     }
 }

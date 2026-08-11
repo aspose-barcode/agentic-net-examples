@@ -1,99 +1,110 @@
-// Title: Benchmark decoding speed with and without multi‑core processing
-// Description: Demonstrates measuring the time required to decode a set of Code128 barcodes using Aspose.BarCode, comparing ProcessorSettings.UseAllCores true vs false.
-// Category-Description: This example belongs to the Aspose.BarCode decoding performance category. It shows how to generate barcodes, configure the BarCodeReader processor settings, and benchmark decoding using BarCodeReader and DecodeType. Developers often need to evaluate multi‑core decoding impact for bulk barcode processing scenarios.
+// Title: Barcode decoding speed benchmark using ProcessorSettings.UseAllCores
+// Description: Demonstrates how to measure the decoding performance of Code128 barcodes when Aspose.BarCode's ProcessorSettings.UseAllCores is enabled versus disabled.
+// Category-Description: This example belongs to the Aspose.BarCode performance tuning category, illustrating the use of BarCodeReader.ProcessorSettings to control multi‑core processing. Developers often need to benchmark decoding speed for different core utilization scenarios, especially when optimizing server‑side barcode processing pipelines. The sample shows image generation, configuration of UseAllCores and UseOnlyThisCoresCount, and timing of the decoding loop.
 // Prompt: Write a benchmark comparing decoding speed when ProcessorSettings.UseAllCores is true versus false.
-// Tags: barcode symbology, decoding, performance, benchmark, code128, aspnet, aspose.barcode, processorsettings, useallcores
+// Tags: barcode, decoding, benchmark, processorsettings, useallcores, code128, aspose.barcode
 
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.BarCode.Common;
+using Aspose.Drawing;
 
 /// <summary>
-/// Provides a simple benchmark that compares barcode decoding speed when
-/// <see cref="BarCodeReader.ProcessorSettings.UseAllCores"/> is enabled versus disabled.
+/// Provides a simple benchmark that compares barcode decoding speed with
+/// Aspose.BarCode's ProcessorSettings.UseAllCores enabled and disabled.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the benchmark application.
-    /// Generates sample Code128 barcodes, runs two decoding measurements,
-    /// and writes the elapsed times to the console.
+    /// Entry point that creates sample Code128 barcodes, runs the benchmark,
+    /// and outputs the elapsed time for each configuration.
     /// </summary>
     static void Main()
     {
-        // --------------------------------------------------------------------
-        // 1. Generate a collection of in‑memory barcode images (PNG format)
-        // --------------------------------------------------------------------
-        List<MemoryStream> barcodeStreams = new List<MemoryStream>();
-        for (int i = 0; i < 5; i++)
+        // Prepare a temporary folder for sample barcode images
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeBenchmark");
+        if (Directory.Exists(tempFolder))
+            Directory.Delete(tempFolder, true);
+        Directory.CreateDirectory(tempFolder);
+
+        // Generate sample barcode images
+        int sampleCount = 5;
+        List<string> imagePaths = new List<string>();
+        for (int i = 0; i < sampleCount; i++)
         {
-            // Create a Code128 barcode with distinct text for each iteration
-            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, $"Sample{i}"))
-            {
-                MemoryStream ms = new MemoryStream();
-                generator.Save(ms, BarCodeImageFormat.Png);
-                ms.Position = 0; // Reset stream for later reading
-                barcodeStreams.Add(ms);
-            }
+            string text = $"Sample{i + 1}";
+            string filePath = Path.Combine(tempFolder, $"barcode_{i}.png");
+            GenerateBarcodeImage(text, filePath);
+            imagePaths.Add(filePath);
         }
 
-        // ---------------------------------------------------------------
-        // 2. Measure decoding time with multi‑core processing enabled
-        // ---------------------------------------------------------------
-        BarCodeReader.ProcessorSettings.UseAllCores = true;
-        double timeAllCores = MeasureDecodingTime(barcodeStreams);
+        // Benchmark with UseAllCores = true
+        long timeAllCores = BenchmarkDecoding(imagePaths, useAllCores: true);
+        Console.WriteLine($"Decoding with UseAllCores = true took {timeAllCores} ms");
 
-        // ---------------------------------------------------------------
-        // 3. Measure decoding time with single‑core processing
-        // ---------------------------------------------------------------
+        // Benchmark with UseAllCores = false (use half of the cores)
         BarCodeReader.ProcessorSettings.UseAllCores = false;
-        double timeSingleCore = MeasureDecodingTime(barcodeStreams);
+        BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount = Math.Max(1, Environment.ProcessorCount / 2);
+        long timePartialCores = BenchmarkDecoding(imagePaths, useAllCores: false);
+        Console.WriteLine($"Decoding with UseAllCores = false took {timePartialCores} ms");
 
-        // ---------------------------------------------------------------
-        // 4. Output benchmark results
-        // ---------------------------------------------------------------
-        Console.WriteLine($"Decoding time with UseAllCores = true : {timeAllCores} ms");
-        Console.WriteLine($"Decoding time with UseAllCores = false: {timeSingleCore} ms");
+        // Clean up temporary files
+        Directory.Delete(tempFolder, true);
+    }
 
-        // ---------------------------------------------------------------
-        // 5. Release all memory streams
-        // ---------------------------------------------------------------
-        foreach (MemoryStream ms in barcodeStreams)
+    // Generates a Code128 barcode image and saves it to the specified path
+    static void GenerateBarcodeImage(string codeText, string filePath)
+    {
+        // Resolve EncodeTypes.Code128 via reflection (EncodeTypes.TryParse does not exist)
+        var field = typeof(EncodeTypes).GetField("Code128");
+        if (field == null)
+            throw new ArgumentException("Encode type 'Code128' not found.");
+
+        BaseEncodeType encodeType = (BaseEncodeType)field.GetValue(null);
+
+        using (var generator = new BarcodeGenerator(encodeType, codeText))
         {
-            ms.Dispose();
+            // Save as PNG
+            generator.Save(filePath, BarCodeImageFormat.Png);
         }
     }
 
-    /// <summary>
-    /// Measures the total time required to decode a list of barcode image streams.
-    /// </summary>
-    /// <param name="streams">The collection of barcode image streams to decode.</param>
-    /// <returns>Total elapsed time in milliseconds.</returns>
-    private static double MeasureDecodingTime(List<MemoryStream> streams)
+    // Measures the time required to decode all images with the specified ProcessorSettings
+    static long BenchmarkDecoding(List<string> imagePaths, bool useAllCores)
     {
+        // Configure ProcessorSettings
+        BarCodeReader.ProcessorSettings.UseAllCores = useAllCores;
+        if (!useAllCores)
+        {
+            // Example: limit to half of the available cores
+            BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount = Math.Max(1, Environment.ProcessorCount / 2);
+        }
+
         Stopwatch sw = Stopwatch.StartNew();
 
-        foreach (MemoryStream ms in streams)
+        foreach (string path in imagePaths)
         {
-            // Ensure the stream is positioned at the beginning before each read
-            ms.Position = 0;
+            if (!File.Exists(path))
+                continue; // Skip missing files gracefully
 
-            // Initialize a reader that supports all barcode types
-            using (BarCodeReader reader = new BarCodeReader(ms, DecodeType.AllSupportedTypes))
+            using (var reader = new BarCodeReader(path, DecodeType.Code128))
             {
-                // Iterate through all detected barcodes (results are ignored)
-                foreach (var result in reader.ReadBarCodes())
+                // Perform the decoding; results are not used further
+                var results = reader.ReadBarCodes();
+
+                // Iterate results to ensure full processing and avoid compiler optimizations
+                foreach (var result in results)
                 {
-                    // No additional processing required; iteration forces decoding
+                    var _ = result.CodeText; // No-op access
                 }
             }
         }
 
         sw.Stop();
-        return sw.Elapsed.TotalMilliseconds;
+        return sw.ElapsedMilliseconds;
     }
 }

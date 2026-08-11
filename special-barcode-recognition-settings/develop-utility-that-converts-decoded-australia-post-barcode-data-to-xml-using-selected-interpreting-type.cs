@@ -1,10 +1,11 @@
-// Title: Convert Australia Post barcode data to XML using interpreting type
-// Description: Demonstrates generating an Australia Post barcode, recognizing it, and converting the decoded data into an XML representation.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category, focusing on Australia Post symbology. It showcases the use of BarcodeGenerator, BarCodeReader, and related settings such as CustomerInformationInterpretingType. Developers often need to generate barcodes, read them back, and transform the decoded information into structured formats like XML for integration with other systems.
+// Title: Convert Australia Post Barcode Data to XML
+// Description: Demonstrates decoding an Australia Post barcode and exporting its fields to an XML file.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It shows how to generate an Australia Post barcode, decode it using the BarCodeReader, interpret customer information, and serialize the extracted data (FCC, DPID, and optional customer info) into XML. Developers working with postal barcode automation often need to extract and store barcode data in structured formats, and this sample illustrates the key API classes (BarcodeGenerator, BarCodeReader, CustomerInformationInterpretingType) and typical usage patterns.
 // Prompt: Develop a utility that converts decoded Australia Post barcode data to XML using the selected interpreting type.
-// Tags: australia post, barcode generation, barcode recognition, xml output, customerinformationinterpretingtype, aspose.barcode
+// Tags: australia post,barcode generation,barcode recognition,xml output,customer information interpreting,aspose.barcode
 
 using System;
+using System.IO;
 using System.Xml.Linq;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
@@ -12,55 +13,86 @@ using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates converting decoded Australia Post barcode data to XML using a selected interpreting type.
+/// Provides a console utility that generates an Australia Post barcode, decodes it,
+/// and writes the extracted information to an XML file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the utility. Generates a barcode, reads it, and outputs XML.
+    /// Entry point of the utility. Accepts an optional command‑line argument to specify
+    /// the <see cref="CustomerInformationInterpretingType"/> used for both generation and recognition.
     /// </summary>
-    /// <param name="args">Command‑line arguments (not used).</param>
+    /// <param name="args">Command‑line arguments; the first argument may be a valid interpreting type.</param>
     static void Main(string[] args)
     {
-        // Sample Australia Post barcode data (postal code + customer information)
-        string codeText = "5912345678ABCde";
-
-        // Choose the interpreting type for the customer information field
+        // Determine interpreting type from command‑line argument; default to CTable.
         CustomerInformationInterpretingType interpretingType = CustomerInformationInterpretingType.CTable;
-
-        // Create a barcode generator for Australia Post symbology
-        using (var generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, codeText))
+        if (args.Length > 0)
         {
-            // Apply the selected interpreting type to the generator settings
-            generator.Parameters.Barcode.AustralianPost.AustralianPostEncodingTable = interpretingType;
+            if (Enum.TryParse(args[0], true, out CustomerInformationInterpretingType parsed))
+                interpretingType = parsed;
+            else
+                Console.WriteLine($"Unrecognized interpreting type '{args[0]}', using default CTable.");
+        }
 
-            // Generate the barcode image as a bitmap
-            using (Bitmap bitmap = generator.GenerateBarCodeImage())
+        // Sample Australia Post barcode data: FCC (2) + DPID (8) + optional customer info.
+        string sampleCodeText = "5912345678ABCde";
+
+        // Generate the barcode image using the selected interpreting type.
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, sampleCodeText))
+        {
+            // Apply the interpreting type for barcode generation.
+            generator.Parameters.Barcode.AustralianPost.EncodingTable = interpretingType;
+
+            using (Aspose.Drawing.Bitmap bitmap = generator.GenerateBarCodeImage())
             {
-                // Initialize a barcode reader for Australia Post decoding
-                using (var reader = new BarCodeReader(bitmap, DecodeType.AustraliaPost))
+                // Recognize the barcode from the generated image.
+                using (BarCodeReader reader = new BarCodeReader(bitmap, DecodeType.AustraliaPost))
                 {
-                    // Apply the same interpreting type to the reader settings
+                    // Apply the same interpreting type for recognition.
                     reader.BarcodeSettings.AustraliaPost.CustomerInformationInterpretingType = interpretingType;
 
-                    // When using CTable, optionally ignore ending filling patterns
+                    // Optional: ignore ending filling patterns when using CTable.
                     if (interpretingType == CustomerInformationInterpretingType.CTable)
-                    {
                         reader.BarcodeSettings.AustraliaPost.IgnoreEndingFillingPatternsForCTable = true;
-                    }
 
-                    // Iterate over detected barcodes (only one expected in this example)
-                    foreach (var result in reader.ReadBarCodes())
+                    // Read all detected barcodes (expecting a single result).
+                    BarCodeResult[] results = reader.ReadBarCodes();
+                    if (results.Length == 0)
                     {
-                        // Build a simple XML representation of the decoded barcode data
-                        XElement xml = new XElement(
-                            "AustraliaPostBarcode",
-                            new XAttribute("InterpretingType", interpretingType),
-                            new XElement("CodeText", result.CodeText ?? string.Empty));
-
-                        // Write the XML to the console
-                        Console.WriteLine(xml);
+                        Console.WriteLine("No Australia Post barcode detected.");
+                        return;
                     }
+
+                    // Use the first result as the target barcode.
+                    BarCodeResult result = results[0];
+                    string codeText = result.CodeText ?? string.Empty;
+
+                    // Validate that the decoded text contains at least FCC and DPID.
+                    if (codeText.Length < 10)
+                    {
+                        Console.WriteLine("Decoded code text is too short to contain required FCC and DPID.");
+                        return;
+                    }
+
+                    // Extract FCC (first 2 characters), DPID (next 8 characters), and any remaining customer information.
+                    string fcc = codeText.Substring(0, 2);
+                    string dpid = codeText.Substring(2, 8);
+                    string customerInfo = codeText.Length > 10 ? codeText.Substring(10) : string.Empty;
+
+                    // Build an XML document representing the decoded data.
+                    XDocument xmlDoc = new XDocument(
+                        new XElement("AustraliaPostBarcode",
+                            new XElement("FCC", fcc),
+                            new XElement("DPID", dpid),
+                            new XElement("CustomerInformation", customerInfo)
+                        )
+                    );
+
+                    // Save the XML document to the current working directory.
+                    string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "AustraliaPostOutput.xml");
+                    xmlDoc.Save(outputPath);
+                    Console.WriteLine($"Decoded data saved to XML file: {outputPath}");
                 }
             }
         }

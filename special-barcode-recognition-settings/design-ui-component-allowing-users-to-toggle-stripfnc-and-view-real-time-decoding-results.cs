@@ -1,8 +1,8 @@
-// Title: Toggle StripFNC on GS1-128 barcode decoding
-// Description: Demonstrates generating a GS1‑128 barcode, then decoding it with and without stripping FNC characters to show the effect on the extracted text.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the BarcodeGenerator and BarCodeReader classes, focusing on the StripFNC setting used when decoding GS1‑128 (Code128) barcodes. Developers often need to control whether Function characters are retained or removed during decoding to meet GS1 data formatting requirements.
+// Title: Toggle StripFNC while decoding a GS1‑128 barcode
+// Description: Generates a GS1‑128 barcode containing FNC1 characters, then decodes it twice—once preserving and once stripping the FNC characters—to illustrate the effect of the StripFNC setting.
+// Category-Description: This example belongs to the Aspose.BarCode decoding settings category. It demonstrates how to use BarcodeGenerator, BarCodeReader, and BarcodeSettings to control the StripFNC option, a common requirement when processing GS1 symbologies such as Code128. Developers often need to toggle this setting to obtain raw data or human‑readable output, making it essential for inventory, shipping, and retail applications.
 // Prompt: Design a UI component allowing users to toggle StripFNC and view real‑time decoding results.
-// Tags: gs1-128, stripfnc, barcode generation, barcode recognition, code128, png, aspose.barcode
+// Tags: gs1-128, stripfnc, barcode decoding, aspose.barcode, code128, barcode generation, c#
 
 using System;
 using System.IO;
@@ -11,63 +11,76 @@ using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Generates a GS1‑128 barcode, then reads it twice: once preserving FNC characters
-/// and once stripping them, illustrating the impact of the <c>StripFNC</c> setting.
+/// Demonstrates generating a GS1‑128 barcode with FNC1 characters and decoding it
+/// with the <c>StripFNC</c> option toggled on and off.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates a barcode image in memory, then decodes it
-    /// with different <c>StripFNC</c> configurations.
+    /// Entry point of the example. Generates a barcode, then decodes it twice
+    /// to show the impact of the <c>StripFNC</c> setting.
     /// </summary>
     static void Main()
     {
-        // Sample GS1‑128 barcode text containing FNC characters
-        const string barcodeText = "(02)04006664241007(37)1(400)7019590754";
+        // Sample GS1‑128 data containing FNC1 characters (application identifiers)
+        const string barcodeData = "(02)04006664241007(37)1(400)7019590754";
 
-        // Generate the barcode image into a memory stream (PNG format)
+        // Create an in‑memory stream to hold the generated barcode image
         using (var imageStream = new MemoryStream())
         {
-            using (var generator = new BarcodeGenerator(EncodeTypes.GS1Code128, barcodeText))
+            // Generate the barcode image and write it to the stream
+            using (var generator = new BarcodeGenerator(EncodeTypes.GS1Code128, barcodeData))
             {
-                // Save the generated barcode as PNG to the stream
+                // Save the barcode as PNG into the memory stream
                 generator.Save(imageStream, BarCodeImageFormat.Png);
+                // Reset the stream position so it can be read from the beginning
+                imageStream.Position = 0;
             }
 
-            // Reset stream position so it can be read from the beginning
+            // Decode the barcode without stripping FNC characters
+            DecodeAndPrint(imageStream, stripFnc: false);
+
+            // Reset the stream position for the second decoding pass
             imageStream.Position = 0;
 
-            // Local function that reads the barcode with a specified StripFNC value
-            void ReadAndDisplay(bool stripFnc)
+            // Decode the barcode with FNC characters stripped
+            DecodeAndPrint(imageStream, stripFnc: true);
+        }
+    }
+
+    /// <summary>
+    /// Decodes the barcode from the provided stream and prints the result to the console.
+    /// </summary>
+    /// <param name="stream">Stream containing the barcode image.</param>
+    /// <param name="stripFnc">If <c>true</c>, FNC characters are stripped from the decoded text.</param>
+    private static void DecodeAndPrint(Stream stream, bool stripFnc)
+    {
+        // Initialize a reader for Code128 barcodes using the supplied image stream
+        using (var reader = new BarCodeReader(stream, DecodeType.Code128))
+        {
+            // Apply the StripFNC setting based on the caller's request
+            reader.BarcodeSettings.StripFNC = stripFnc;
+
+            // Perform the decoding operation
+            BarCodeResult[] results = reader.ReadBarCodes();
+
+            Console.WriteLine($"--- Decoding with StripFNC = {stripFnc} ---");
+            if (results.Length == 0)
             {
-                // Ensure the stream is positioned at the start before creating a bitmap
-                imageStream.Position = 0;
-
-                // Load the image from the stream into a bitmap object
-                using (var bitmap = new Bitmap(imageStream))
-                {
-                    // Initialize a reader for Code128 (covers GS1‑128)
-                    using (var reader = new BarCodeReader(bitmap, DecodeType.Code128))
-                    {
-                        // Apply the StripFNC setting (true = remove FNC characters)
-                        reader.BarcodeSettings.StripFNC = stripFnc;
-
-                        // Perform barcode recognition and output results
-                        foreach (var result in reader.ReadBarCodes())
-                        {
-                            Console.WriteLine($"StripFNC = {stripFnc}");
-                            Console.WriteLine($"  Type : {result.CodeTypeName}");
-                            Console.WriteLine($"  Text : {result.CodeText}");
-                        }
-                    }
-                }
+                Console.WriteLine("No barcode detected.");
+                return;
             }
 
-            // Decode and display results without stripping FNC characters
-            ReadAndDisplay(false);
-
-            // Decode and display results with FNC characters stripped
-            ReadAndDisplay(true);
+            // Iterate through all detected barcodes and output their details
+            foreach (BarCodeResult result in results)
+            {
+                Console.WriteLine($"Type   : {result.CodeTypeName}");
+                Console.WriteLine($"Text   : {result.CodeText}");
+                Console.WriteLine($"Angle  : {result.Region.Angle}");
+                Console.WriteLine($"Region : X={result.Region.Rectangle.X}, Y={result.Region.Rectangle.Y}, " +
+                                  $"Width={result.Region.Rectangle.Width}, Height={result.Region.Rectangle.Height}");
+                Console.WriteLine();
+            }
         }
     }
 }
