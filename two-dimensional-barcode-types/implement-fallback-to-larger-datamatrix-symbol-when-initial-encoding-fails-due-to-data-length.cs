@@ -1,31 +1,29 @@
-// Title: DataMatrix Symbol Fallback Example
-// Description: Demonstrates how to automatically select a larger DataMatrix symbol when the initial version cannot accommodate the data length.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, focusing on DataMatrix barcode creation with version control. It shows how to iterate through DataMatrixVersion enums using BarcodeGenerator and handle encoding capacity limits, a common need for developers generating high‑density DataMatrix codes for inventory or tracking applications.
+// Title: DataMatrix Symbol Size Fallback Example
+// Description: Demonstrates how to automatically select a larger DataMatrix symbol when the initial version cannot accommodate the input data.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on DataMatrix symbology version control. It shows how to use BarcodeGenerator, EncodeTypes, and DataMatrixVersion to handle variable data lengths, a common requirement for developers needing dynamic barcode sizing for packaging, inventory, or printing workflows.
 // Prompt: Implement fallback to larger DataMatrix symbol when initial encoding fails due to data length.
-// Tags: datamatrix, barcode, fallback, generation, image, aspose.barcode, encode, version
+// Tags: datamatrix, fallback, barcode, generation, image, aspose.barcode, encode, version
 
 using System;
-using System.Collections.Generic;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Provides an example of generating a DataMatrix barcode with automatic fallback to larger symbol versions
-/// when the data exceeds the capacity of the initially selected version.
+/// Demonstrates fallback to larger DataMatrix symbols when the data exceeds the capacity of smaller versions.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Attempts to encode a long string into a DataMatrix barcode,
-    /// iterating through predefined symbol versions until a suitable one is found.
+    /// Entry point of the example. Generates a DataMatrix barcode, trying progressively larger symbol versions until successful.
     /// </summary>
     static void Main()
     {
-        // Sample data that exceeds the capacity of the smallest DataMatrix symbols
-        string codeText = new string('A', 200);
+        // Sample data that may exceed the capacity of small DataMatrix symbols
+        string codeText = "This is a sample text that may be too long for small DataMatrix symbols. " +
+                          "It will be used to demonstrate fallback to a larger symbol when needed.";
 
-        // List of DataMatrix versions ordered from smallest to largest
-        var versions = new List<DataMatrixVersion>
+        // Ordered list of DataMatrix versions to try (from smallest to largest)
+        DataMatrixVersion[] versions = new DataMatrixVersion[]
         {
             DataMatrixVersion.ECC200_10x10,
             DataMatrixVersion.ECC200_12x12,
@@ -58,32 +56,36 @@ class Program
         // Iterate through each version, attempting to generate the barcode
         foreach (var version in versions)
         {
-            // Create a new generator for each attempt
-            using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, codeText))
+            try
             {
-                // Force the specific DataMatrix version
-                generator.Parameters.Barcode.DataMatrix.DataMatrixVersion = version;
-
-                try
+                // Create a generator for DataMatrix with the provided text
+                using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, codeText))
                 {
-                    // Attempt to save the barcode image
+                    // Configure the specific DataMatrix version and error correction type
+                    generator.Parameters.Barcode.DataMatrix.Version = version;
+                    generator.Parameters.Barcode.DataMatrix.EccType = DataMatrixEccType.Ecc200;
+
+                    // Save the generated barcode image; filename includes the version for clarity
                     string fileName = $"DataMatrix_{version}.png";
                     generator.Save(fileName);
-                    Console.WriteLine($"Successfully generated barcode with version {version} -> {fileName}");
+
+                    Console.WriteLine($"Successfully generated DataMatrix with version {version} -> {fileName}");
                     generated = true;
-                    break; // Exit loop on success
+                    break; // Exit loop after successful generation
                 }
-                catch (Exception ex)
-                {
-                    // Expected when the data does not fit into the current symbol size
-                    Console.WriteLine($"Failed with version {version}: {ex.Message}");
-                }
+            }
+            catch (Exception ex)
+            {
+                // Generation failed, likely because the data does not fit in the current symbol size
+                Console.WriteLine($"Version {version} failed: {ex.Message}");
+                // Continue to the next larger version
             }
         }
 
+        // Inform the user if none of the attempted versions could accommodate the data
         if (!generated)
         {
-            Console.WriteLine("Unable to generate DataMatrix barcode with any of the provided versions.");
+            Console.WriteLine("Unable to generate DataMatrix barcode with any of the attempted versions.");
         }
     }
 }

@@ -1,77 +1,74 @@
 // Title: Generate QR Code and Log Encoding Exceptions
-// Description: Demonstrates creating a QR Code barcode, handling potential encoding errors, and logging outcomes for audit purposes.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, showcasing the use of BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes. Typical use cases include generating QR codes for URLs or data payloads while capturing exceptions for compliance and audit trails. Developers often need to log successes and failures when integrating barcode creation into automated workflows.
+// Description: Demonstrates creating a QR Code barcode with Aspose.BarCode, saving it as a PNG file, and handling any encoding errors by logging them for audit purposes.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category. It showcases the use of BarcodeGenerator, EncodeTypes, and BarCodeException to produce QR Code images, configure error‑correction levels, and implement robust exception handling. Developers working on automated barcode creation, reporting, or audit trails commonly use these APIs to ensure reliable output and traceability.
 // Prompt: Generate QR Code barcode and catch and log encoding exceptions for audit trail.
-// Tags: qr code, barcode generation, exception handling, logging, aspose.barcode, encode types, image format
+// Tags: qr, barcode, generation, exception, logging, png, aspose.barcode
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates a QR Code barcode, handles encoding exceptions,
-/// and logs the results for audit tracking.
+/// Example program that generates a QR Code barcode and logs any encoding exceptions.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a QR Code, saves it as PNG,
-    /// and records success or failure in an audit log.
+    /// Entry point. Generates QR Code, saves to file, and logs exceptions.
     /// </summary>
-    static void Main()
+    /// <param name="args">Command‑line arguments (not used).</param>
+    static void Main(string[] args)
     {
-        // Define output file names
-        const string outputFile = "qr.png";
-        const string logFile = "audit.log";
-
-        // Text to encode in the QR Code
-        string codeText = "https://example.com";
+        // Define the text to encode and the output image path
+        string codeText = "Sample QR Code";
+        string outputPath = "qr.png";
 
         try
         {
-            // Initialize the barcode generator for QR Code with the specified text
-            using (var generator = new BarcodeGenerator(EncodeTypes.QR, codeText))
+            // Initialize the QR Code generator with the appropriate symbology
+            using (var generator = new BarcodeGenerator(EncodeTypes.QR))
             {
-                // Optional: set QR error correction level to Medium
+                // Assign the data to be encoded
+                generator.CodeText = codeText;
+
+                // Optional: configure the QR Code error‑correction level (Level M)
                 generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
 
-                // Save the generated QR code image as PNG
-                generator.Save(outputFile, BarCodeImageFormat.Png);
+                // Render and save the barcode image as PNG
+                generator.Save(outputPath, BarCodeImageFormat.Png);
+                Console.WriteLine($"QR code generated and saved to '{outputPath}'.");
             }
-
-            // Log successful generation with UTC timestamp
-            LogMessage(logFile, $"[{DateTime.UtcNow:u}] QR code generated successfully: {outputFile}");
         }
+        // Capture specific barcode generation errors
         catch (BarCodeException ex)
         {
-            // Log encoding-related exceptions specific to Aspose.BarCode
-            LogMessage(logFile, $"[{DateTime.UtcNow:u}] BarCodeException: {ex.Message}");
+            LogException(ex);
         }
+        // Capture any other unexpected errors
         catch (Exception ex)
         {
-            // Log any other unexpected exceptions
-            LogMessage(logFile, $"[{DateTime.UtcNow:u}] Unexpected exception: {ex.Message}");
+            LogException(ex);
         }
     }
 
     /// <summary>
-    /// Appends a log entry to the specified file. If logging fails, writes the message to the console.
+    /// Writes exception details to the console and appends them to an audit log file.
     /// </summary>
-    /// <param name="logPath">Path to the audit log file.</param>
-    /// <param name="message">Message to log.</param>
-    private static void LogMessage(string logPath, string message)
+    /// <param name="ex">The exception to log.</param>
+    static void LogException(Exception ex)
     {
+        string logPath = "audit.log";
+        string message = $"{DateTime.UtcNow:u} - Exception: {ex.GetType().Name} - {ex.Message}{Environment.NewLine}";
+        Console.WriteLine(message);
         try
         {
-            // Append the message with a newline to the log file
-            File.AppendAllText(logPath, message + Environment.NewLine);
+            // Append the formatted message to the audit log
+            File.AppendAllText(logPath, message);
         }
         catch
         {
-            // Fallback: output to console if file logging fails
-            Console.WriteLine("Logging failed: " + message);
+            // Suppress any failures while writing to the log to avoid secondary errors
         }
     }
 }

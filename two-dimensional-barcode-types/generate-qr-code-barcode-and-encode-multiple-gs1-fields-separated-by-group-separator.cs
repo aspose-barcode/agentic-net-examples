@@ -1,49 +1,43 @@
-// Title: Generate QR Code with GS1 fields using Aspose.BarCode
-// Description: Demonstrates creating a QR Code that encodes multiple GS1 Application Identifier fields separated by the group separator character.
-// Category-Description: This example belongs to the Aspose.BarCode QR Code generation category, illustrating how to use the BarcodeGenerator, EncodeTypes, and QR-specific parameters to produce GS1‑compliant QR codes. Typical use cases include encoding product identifiers, batch numbers, and expiration dates for supply‑chain applications. Developers often need to set the QR encode mode to Extended and include the ASCII 29 group separator to separate AI fields.
+// Title: Generate GS1 QR Code with multiple fields
+// Description: This example creates a QR Code barcode that encodes several GS1 application identifiers (GTIN, batch/lot, serial number) separated by the GS (group separator) character.
+// Category-Description: Demonstrates barcode generation using Aspose.BarCode, focusing on GS1 QR symbology. It shows how to build GS1 data strings, configure QR error correction, and save the result as an image. Developers working with product identification, inventory, or logistics often need to generate GS1-compliant QR codes using the BarcodeGenerator, QR parameters, and image format classes.
 // Prompt: Generate QR Code barcode and encode multiple GS1 fields separated by group separator.
 // Tags: qr, gs1, barcode, generation, png, aspose.barcode
 
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates a QR Code containing multiple GS1 fields.
+/// Example program that generates a GS1 QR Code containing multiple application identifiers.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Creates a QR Code with GS1 Application Identifiers
-    /// separated by the group separator (ASCII 29) and saves it as a PNG file.
+    /// Entry point. Builds GS1 data, creates a QR code, sets error correction, and saves the image.
     /// </summary>
     static void Main()
     {
-        // Define the output file path in the current working directory.
-        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "qr_gs1.png");
+        // Sample GS1 QR code data:
+        // (01) – GTIN, (10) – Batch/Lot, (21) – Serial Number.
+        // Variable‑length fields are separated by the GS (group separator) character \u001D.
+        string gs1Data = "(01)12345678901231(10)ABC123\u001D(21)XYZ";
 
-        // GS1 QR code data: multiple AI fields separated by the GS (group separator) character (ASCII 29).
-        // Example: (01)GTIN, (10)Batch/Lot, (17)Expiration Date.
-        string gs1Data = "(01)12345678901231\u001D(10)ABC123\u001D(17)210101";
-
-        // Initialize the QR code generator with the QR encode type.
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR))
+        // Create a QR code generator for the GS1 QR symbology.
+        using (var generator = new BarcodeGenerator(EncodeTypes.GS1QR, gs1Data))
         {
-            // Assign the GS1 data to the barcode.
-            generator.CodeText = gs1Data;
+            // Optional: set a higher error correction level.
+            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelQ;
 
-            // Enable Extended mode to activate GS1 (FNC1) handling for QR codes.
-            generator.Parameters.Barcode.QR.EncodeMode = QREncodeMode.Extended;
+            // Determine the output file path.
+            string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "gs1qr.png");
 
-            // Optionally set the error correction level (Level M provides a good balance).
-            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
+            // Save the barcode image as PNG.
+            generator.Save(outputPath, BarCodeImageFormat.Png);
 
-            // Save the generated QR Code image to the specified path.
-            generator.Save(outputPath);
+            Console.WriteLine($"GS1 QR code saved to: {outputPath}");
         }
-
-        // Inform the user where the QR Code image has been saved.
-        Console.WriteLine($"QR Code with GS1 fields saved to: {outputPath}");
     }
 }

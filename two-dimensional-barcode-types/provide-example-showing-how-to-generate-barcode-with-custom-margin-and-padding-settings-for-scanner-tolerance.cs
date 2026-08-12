@@ -1,58 +1,53 @@
-// Title: Generate barcode with custom margin and padding for scanner tolerance
-// Description: Demonstrates how to set custom padding (margin) and image size when generating a barcode, ensuring scanner tolerance.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to configure barcode appearance using the BarcodeGenerator class. It covers setting padding, auto‑size mode, image dimensions, and colors—common tasks when preparing barcodes for printing or display where scanner tolerance is required. Developers can use these settings to fine‑tune barcode layout for various output formats.
+// Title: Generate Barcode with Custom Margin and Padding
+// Description: Demonstrates how to create a Code128 barcode image with custom padding (margin) settings to improve scanner tolerance.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes to customize barcode appearance. Typical use cases include adjusting margins and module size for better readability and scanner compatibility. Developers often need to fine‑tune padding and X‑dimension when integrating barcodes into printed materials or labels.
 // Prompt: Provide example showing how to generate barcode with custom margin and padding settings for scanner tolerance.
-// Tags: barcode, generation, margin, padding, scanner tolerance, code128, png, aspose.barcode
+// Tags: barcode, code128, margin, padding, scanner tolerance, generation, aspnet, aspose.barcode, image, png
 
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates a Code128 barcode image with custom margin and padding settings.
+/// Demonstrates generating a Code128 barcode with custom margin and padding settings.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates a barcode, applies custom padding, sets image size, and saves it as PNG.
+    /// Generates the barcode image, saves it to a temporary folder, and writes the output path to the console.
     /// </summary>
     static void Main()
     {
-        // Define the output file path for the generated barcode image
-        string outputPath = "custom_margin_padding.png";
+        // Define the output file path in the system's temporary directory
+        string outputPath = Path.Combine(Path.GetTempPath(), "custom_margin_barcode.png");
 
-        // Initialize the barcode generator with Code128 symbology and sample data
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+        // Ensure the target directory exists before saving the image
+        string outputDir = Path.GetDirectoryName(outputPath);
+        if (!Directory.Exists(outputDir))
         {
-            // Configure custom padding (margin) around the barcode in points
-            generator.Parameters.Barcode.Padding.Left.Point = 10f;
-            generator.Parameters.Barcode.Padding.Top.Point = 15f;
-            generator.Parameters.Barcode.Padding.Right.Point = 10f;
-            generator.Parameters.Barcode.Padding.Bottom.Point = 15f;
+            Directory.CreateDirectory(outputDir);
+        }
 
-            // Use interpolation auto‑size mode and specify the desired image dimensions
-            generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
-            generator.Parameters.ImageWidth.Point = 300f;
-            generator.Parameters.ImageHeight.Point = 150f;
+        // Initialize a barcode generator for the Code128 symbology with sample data
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+        {
+            // Configure custom padding (margin) values to improve scanner tolerance.
+            // Values are specified in points; adjust as needed for your scanner.
+            generator.Parameters.Barcode.Padding.Left.Point = 15f;   // left margin
+            generator.Parameters.Barcode.Padding.Top.Point = 10f;    // top margin
+            generator.Parameters.Barcode.Padding.Right.Point = 15f;  // right margin
+            generator.Parameters.Barcode.Padding.Bottom.Point = 10f; // bottom margin
 
-            // Optional: set foreground (barcode) and background colors
-            generator.Parameters.Barcode.BarColor = Color.Black;
-            generator.Parameters.BackColor = Color.White;
+            // Optionally adjust the module size (XDimension) for better readability.
+            generator.Parameters.Barcode.XDimension.Point = 2f;
 
-            // Save the generated barcode image to the specified path in PNG format
+            // Save the generated barcode as a PNG image to the specified path.
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Verify that the barcode image file was successfully created
-        if (File.Exists(outputPath))
-        {
-            Console.WriteLine($"Barcode image saved to: {outputPath}");
-        }
-        else
-        {
-            Console.WriteLine("Failed to generate the barcode image.");
-        }
+        // Inform the user where the barcode image has been saved.
+        Console.WriteLine($"Barcode saved to: {outputPath}");
     }
 }

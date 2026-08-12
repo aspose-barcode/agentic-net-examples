@@ -1,75 +1,77 @@
-// Title: QR Code Generation with Binary Mode Error Handling
-// Description: Demonstrates generating a QR code in Binary mode, handling unsupported non‑ASCII characters, and falling back to Auto mode with UTF‑8 encoding.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to work with the BarcodeGenerator class to create QR codes. It illustrates typical use cases such as setting encoding modes, handling exceptions for unsupported characters, and using ECI encoding for Unicode support. Developers often need to manage encoding constraints when generating barcodes for internationalized data.
+// Title: QR Code Generation in Binary Mode with Error Handling for Non‑ASCII Text
+// Description: Demonstrates generating a QR barcode using Aspose.BarCode in Binary encoding mode and handling the exception thrown when the input contains non‑ASCII characters.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on QR code creation with specific encoding settings. It showcases the use of BarcodeGenerator, EncodeTypes, and QREncodeMode classes to produce QR symbols, and illustrates typical error‑handling patterns for unsupported characters in Binary mode. Developers working with barcode generation, especially those needing precise control over encoding modes, can refer to this snippet for guidance.
 // Prompt: Implement error handling for unsupported encoding mode when Binary mode receives non‑ASCII text.
-// Tags: qr, binary, error handling, fallback, eciencoding, aspose.barcode, png
+// Tags: qr code, binary encoding, error handling, aspose.barcode, barcode generation, c#
 
 using System;
+using System.Text;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Example program that generates a QR code, handles unsupported characters in Binary mode,
-/// and falls back to Auto mode with UTF‑8 ECI encoding when necessary.
+/// Demonstrates QR barcode generation in Binary mode with error handling for unsupported characters.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a QR barcode, catches encoding errors,
-    /// and retries with a compatible encoding mode.
+    /// Entry point. Generates a QR barcode in Binary mode using a sample non‑ASCII string and saves it to a file.
     /// </summary>
     static void Main()
     {
-        // Sample non‑ASCII text that is not allowed in Binary mode (Japanese characters)
-        string nonAsciiText = "テスト";
-
-        // Destination file for the generated barcode image
+        // Sample non‑ASCII text that will cause an exception in Binary mode
+        string nonAsciiText = "こんにちは"; // Japanese Hiragana
         string outputPath = "qr_binary.png";
 
-        // Attempt to generate the QR barcode using Binary encoding mode
-        try
+        // Generate the QR barcode and handle any encoding issues
+        GenerateQrBinaryBarcode(nonAsciiText, outputPath);
+    }
+
+    /// <summary>
+    /// Generates a QR barcode in Binary mode. If the provided text contains characters
+    /// not supported by Binary mode, the method catches the exception and reports it.
+    /// </summary>
+    /// <param name="text">The code text to encode.</param>
+    /// <param name="filePath">File path where the barcode image will be saved.</param>
+    static void GenerateQrBinaryBarcode(string text, string filePath)
+    {
+        // Create a BarcodeGenerator for QR codes
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR))
         {
-            using (var generator = new BarcodeGenerator(EncodeTypes.QR))
-            {
-                // Set Binary encoding mode – will throw if text contains non‑ASCII characters
-                generator.Parameters.Barcode.QR.EncodeMode = QREncodeMode.Binary;
+            // Enable throwing an exception when the code text is incorrect.
+            // This ensures that InvalidCodeException is raised for unsupported characters.
+            generator.Parameters.Barcode.ThrowExceptionWhenCodeTextIncorrect = true;
 
-                // Assign the non‑ASCII code text
-                generator.CodeText = nonAsciiText;
+            // Set Binary encoding mode.
+            generator.Parameters.Barcode.QR.EncodeMode = QREncodeMode.Binary;
 
-                // Save the barcode image as PNG
-                generator.Save(outputPath, BarCodeImageFormat.Png);
-                Console.WriteLine($"Barcode saved successfully to '{outputPath}'.");
-            }
-        }
-        catch (Exception ex)
-        {
-            // Handle the expected exception for unsupported characters in Binary mode
-            Console.WriteLine($"Error generating barcode in Binary mode: {ex.Message}");
-            Console.WriteLine("Falling back to Auto mode with the same text.");
+            // Assign the code text (non‑ASCII in this case).
+            generator.CodeText = text;
 
-            // Retry using Auto mode, which supports Unicode via ECI encoding
             try
             {
-                using (var generator = new BarcodeGenerator(EncodeTypes.QR))
-                {
-                    // Set Auto encoding mode and specify UTF‑8 ECI encoding
-                    generator.Parameters.Barcode.QR.EncodeMode = QREncodeMode.Auto;
-                    generator.Parameters.Barcode.QR.ECIEncoding = ECIEncodings.UTF8;
-
-                    // Reassign the same non‑ASCII text
-                    generator.CodeText = nonAsciiText;
-
-                    // Save the barcode image as PNG
-                    generator.Save(outputPath, BarCodeImageFormat.Png);
-                    Console.WriteLine($"Barcode saved in Auto mode to '{outputPath}'.");
-                }
+                // Attempt to generate and save the barcode.
+                generator.Save(filePath);
+                Console.WriteLine($"Barcode saved successfully to '{filePath}'.");
             }
-            catch (Exception fallbackEx)
+            catch (InvalidCodeException ex)
             {
-                // Report failure of the fallback attempt
-                Console.WriteLine($"Fallback also failed: {fallbackEx.Message}");
+                // Specific handling for unsupported characters in Binary mode.
+                Console.WriteLine("Error: The provided text contains characters not supported by Binary mode.");
+                Console.WriteLine($"Exception message: {ex.Message}");
+            }
+            catch (BarCodeException ex)
+            {
+                // General Aspose.BarCode exceptions.
+                Console.WriteLine("A barcode generation error occurred.");
+                Console.WriteLine($"Exception message: {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                // Fallback for any other unexpected errors.
+                Console.WriteLine("An unexpected error occurred.");
+                Console.WriteLine($"Exception message: {ex.Message}");
             }
         }
     }

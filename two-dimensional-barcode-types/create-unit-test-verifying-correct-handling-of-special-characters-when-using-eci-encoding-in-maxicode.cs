@@ -1,8 +1,8 @@
-// Title: Unit test for ECI encoding handling in MaxiCode
-// Description: Demonstrates generating a MaxiCode barcode with UTF-8 ECI encoding containing special characters and verifies correct decoding.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category, focusing on MaxiCode symbology with ECI (Extended Channel Interpretation) support. It showcases using BarcodeGenerator, setting MaxiCode parameters, saving as PNG, and reading back with BarCodeReader. Developers often need to ensure special characters are correctly encoded and decoded in high‑density barcodes.
+// Title: MaxiCode barcode generation and verification with ECI UTF-8 encoding
+// Description: Demonstrates generating a MaxiCode barcode containing special Unicode characters using ECI UTF-8 encoding, then reads it back to verify the decoded text matches the original.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the BarcodeGenerator and BarCodeReader classes for creating and decoding MaxiCode symbols, a common requirement in logistics and shipping applications. Developers often need to ensure proper handling of special characters via ECI encodings such as UTF-8 when working with international data.
 // Prompt: Create unit test verifying correct handling of special characters when using ECI encoding in MaxiCode.
-// Tags: maxicode, eci encoding, png, barcodegenerator, barcodereader, barcoderesult
+// Tags: barcode symbology, eci encoding, maxicode, generation, recognition, unit-test, utf-8, special-characters, aspose.barcode
 
 using System;
 using System.IO;
@@ -11,73 +11,71 @@ using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates generating and validating a MaxiCode barcode with UTF-8 ECI encoding containing special characters.
+/// Generates a MaxiCode barcode with special Unicode characters using ECI UTF-8 encoding,
+/// then reads the barcode back to verify that the decoded text matches the original input.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates the barcode, reads it back, and reports pass/fail.
+    /// Entry point of the example. Performs barcode creation, verification, and cleanup.
     /// </summary>
     static void Main()
     {
-        // Original text containing special characters (accented and non‑Latin characters)
-        string originalText = "Café 漢字";
+        // Sample text containing special Unicode characters (Japanese kanji for "dog" and "right")
+        string originalText = "犬Right狗";
 
-        // Temporary file path for the generated barcode image
-        string imagePath = Path.Combine(Path.GetTempPath(), "maxicode_test.png");
+        // Create a temporary file path for the generated barcode image
+        string tempFile = Path.Combine(Path.GetTempPath(), $"MaxiCode_{Guid.NewGuid():N}.png");
 
-        // Generate MaxiCode barcode with ECI UTF-8 encoding
+        // Generate a MaxiCode barcode with ECI UTF-8 encoding
         using (var generator = new BarcodeGenerator(EncodeTypes.MaxiCode, originalText))
         {
-            // Configure ECI encoding to UTF-8 and enable ECI mode for MaxiCode
+            // Set the ECI encoding to UTF-8 to support special characters
             generator.Parameters.Barcode.MaxiCode.ECIEncoding = ECIEncodings.UTF8;
-            generator.Parameters.Barcode.MaxiCode.MaxiCodeEncodeMode = MaxiCodeEncodeMode.ECI;
-
-            // Save the generated barcode as a PNG image
-            generator.Save(imagePath, BarCodeImageFormat.Png);
+            // Save the barcode image to the temporary file
+            generator.Save(tempFile);
         }
 
-        // Flag indicating whether the decoded text matches the original
-        bool testPassed = false;
-
-        // Read the barcode back from the image and verify the decoded text
-        using (var reader = new BarCodeReader(imagePath, DecodeType.MaxiCode))
+        // Verify that the barcode image file was successfully created
+        if (!File.Exists(tempFile))
         {
-            foreach (BarCodeResult result in reader.ReadBarCodes())
+            Console.WriteLine("Failed to create barcode image.");
+            return;
+        }
+
+        // Read the barcode from the image and compare the decoded text with the original
+        bool success = false;
+        using (var reader = new BarCodeReader(tempFile, DecodeType.MaxiCode))
+        {
+            var results = reader.ReadBarCodes();
+            foreach (var result in results)
             {
-                string decodedText = result.CodeText;
-                if (decodedText == originalText)
+                if (result.CodeText == originalText)
                 {
-                    testPassed = true;
+                    success = true;
+                    Console.WriteLine("Success: Decoded text matches original.");
                 }
                 else
                 {
-                    Console.WriteLine($"FAIL: Decoded text does not match. Expected '{originalText}', got '{decodedText}'.");
+                    Console.WriteLine($"Failure: Decoded text '{result.CodeText}' does not match original '{originalText}'.");
                 }
             }
         }
 
-        // Output the overall test result
-        if (!testPassed)
-        {
-            Console.WriteLine("FAIL: No barcode was read or text mismatch.");
-        }
-        else
-        {
-            Console.WriteLine("PASS: Decoded text matches original.");
-        }
-
-        // Clean up the temporary image file
+        // Clean up the temporary barcode image file
         try
         {
-            if (File.Exists(imagePath))
-            {
-                File.Delete(imagePath);
-            }
+            File.Delete(tempFile);
         }
         catch
         {
-            // Ignore any cleanup errors
+            // Ignored – cleanup failure should not affect test outcome
+        }
+
+        // Report overall test result if no matching barcode was found
+        if (!success)
+        {
+            Console.WriteLine("Test completed with mismatched results.");
         }
     }
 }

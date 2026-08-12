@@ -1,63 +1,61 @@
-// Title: Generate MaxiCode barcode and return as byte array
-// Description: Demonstrates creating a MaxiCode barcode, saving it to a MemoryStream, and returning the PNG byte array to the caller.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It showcases the use of ComplexBarcodeGenerator with MaxiCodeCodetextMode2 to produce MaxiCode symbols, a common requirement for shipping and logistics applications. Developers often need to generate such barcodes programmatically and obtain the image data as a byte array for further processing or storage.
+// Title: Generate MaxiCode barcode and return image bytes
+// Description: Demonstrates creating a MaxiCode barcode with Aspose.BarCode, saving it to a MemoryStream, and returning the PNG byte array to the caller.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating how to use the BarcodeGenerator class with EncodeTypes.MaxiCode to produce barcode images. Typical use cases include generating shipping labels, inventory tags, or any application requiring MaxiCode symbology. Developers often need to obtain the barcode as a byte array for further processing, such as embedding in PDFs or transmitting over APIs.
 // Prompt: Save generated MaxiCode barcode to a MemoryStream and return the byte array to the caller.
-// Tags: maxicode, barcode generation, memory stream, png, aspose.barcode, complexbarcode
+// Tags: maxicode, barcode generation, memory stream, byte array, aspnet, aspose.barcode, png
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.ComplexBarcode;
 
 /// <summary>
-/// Provides an example of generating a MaxiCode barcode and returning the image as a byte array.
+/// Provides methods to generate a MaxiCode barcode and retrieve its image bytes.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a MaxiCode barcode and writes the byte array length to the console.
+    /// Generates a MaxiCode barcode, saves it to a <see cref="MemoryStream"/>, and returns the image bytes in PNG format.
     /// </summary>
-    static void Main()
+    /// <param name="codeText">The text to encode in the MaxiCode barcode.</param>
+    /// <returns>Byte array containing the PNG image of the generated barcode.</returns>
+    static byte[] GenerateMaxiCodeBarcode(string codeText)
     {
-        // Generate the MaxiCode barcode and obtain the PNG image bytes
-        byte[] imageBytes = GenerateMaxiCode();
-
-        // Output the size of the generated image byte array
-        Console.WriteLine($"Generated MaxiCode image byte array length: {imageBytes.Length}");
-    }
-
-    /// <summary>
-    /// Creates a MaxiCode barcode using Mode 2 encoding, saves it to a MemoryStream in PNG format,
-    /// and returns the resulting byte array.
-    /// </summary>
-    /// <returns>Byte array containing the PNG image of the generated MaxiCode barcode.</returns>
-    static byte[] GenerateMaxiCode()
-    {
-        // Prepare MaxiCode codetext (Mode 2 with a standard second message)
-        var maxiCodeCodetext = new MaxiCodeCodetextMode2
+        // Initialize the barcode generator for MaxiCode with the supplied text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.MaxiCode, codeText))
         {
-            PostalCode = "524032140",
-            CountryCode = 56,
-            ServiceCategory = 999
-        };
+            // Optional: configure additional parameters such as image resolution.
+            // generator.Parameters.Resolution = 300;
 
-        // Set the optional second message for the barcode
-        var secondMessage = new MaxiCodeStandardSecondMessage
-        {
-            Message = "Test message"
-        };
-        maxiCodeCodetext.SecondMessage = secondMessage;
-
-        // Generate the barcode and save it to a memory stream in PNG format
-        using (var generator = new ComplexBarcodeGenerator(maxiCodeCodetext))
-        {
+            // Create a memory stream to hold the generated image.
             using (var memoryStream = new MemoryStream())
             {
+                // Save the barcode image to the stream in PNG format.
                 generator.Save(memoryStream, BarCodeImageFormat.Png);
-                // Return the image data as a byte array
+
+                // Return the raw bytes of the PNG image.
                 return memoryStream.ToArray();
             }
         }
+    }
+
+    /// <summary>
+    /// Entry point that demonstrates generating a MaxiCode barcode and writing the image to a temporary file.
+    /// </summary>
+    static void Main()
+    {
+        // Sample text to encode in the MaxiCode barcode.
+        string sampleText = "Test MaxiCode";
+
+        // Generate the barcode and obtain the PNG byte array.
+        byte[] barcodeBytes = GenerateMaxiCodeBarcode(sampleText);
+
+        // Display the size of the generated byte array.
+        Console.WriteLine($"Generated MaxiCode barcode byte array length: {barcodeBytes.Length}");
+
+        // Write the image to a temporary file for verification (optional).
+        string outputPath = Path.Combine(Path.GetTempPath(), "maxicode.png");
+        File.WriteAllBytes(outputPath, barcodeBytes);
+        Console.WriteLine($"Barcode image saved to: {outputPath}");
     }
 }

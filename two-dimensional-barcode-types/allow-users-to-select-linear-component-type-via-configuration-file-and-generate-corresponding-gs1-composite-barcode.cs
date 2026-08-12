@@ -1,8 +1,8 @@
-// Title: Generate GS1 Composite barcode with configurable linear component
-// Description: Demonstrates reading a linear component type from a configuration file and creating a GS1 Composite barcode using Aspose.BarCode.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on GS1 Composite symbology. It showcases the use of BarcodeGenerator, EncodeTypes, and GS1CompositeBar parameters to customize linear and 2D components. Developers often need to dynamically select symbologies based on configuration or user input, and this snippet illustrates that pattern.
+// Title: Generate GS1 Composite Barcode with Configurable Linear Component Type
+// Description: Demonstrates reading a linear component symbology from a configuration file and generating a GS1 Composite barcode using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to configure composite barcodes. It shows usage of BarcodeGenerator, EncodeTypes, GS1CompositeBar parameters, and reflection to map configuration values to BaseEncodeType. Developers often need to create GS1 Composite symbols with different linear components for inventory and logistics applications.
 // Prompt: Allow users to select linear component type via configuration file and generate corresponding GS1 Composite barcode.
-// Tags: barcode symbology, gs1 composite, configuration, aspose.barcode, generation, png output
+// Tags: gs1 composite barcode, linear component, configuration, aspose.barcode, barcode generation, c#
 
 using System;
 using System.IO;
@@ -11,40 +11,40 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Example program that reads a linear component type from a configuration file
-/// and generates a GS1 Composite barcode using Aspose.BarCode.
+/// Generates a GS1 Composite barcode where the linear component type is read from a configuration file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Application entry point. Generates a GS1 Composite barcode based on the
-    /// linear component type specified in a configuration file.
+    /// Entry point of the application. Reads configuration, builds the barcode data, and saves the image.
     /// </summary>
-    /// <param name="args">Command‑line arguments; the first argument can specify the config file path.</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Determine configuration file path (first argument or default)
-        string configPath = args.Length > 0 ? args[0] : "config.txt";
+        // Path to the configuration file that contains the linear component type name.
+        const string configFile = "linearComponentConfig.txt";
 
-        // Default linear component type if configuration is missing or invalid
-        BaseEncodeType linearComponent = EncodeTypes.GS1Code128;
+        // Default linear component type if configuration is missing or invalid.
+        BaseEncodeType linearComponentType = EncodeTypes.GS1Code128;
 
-        // Attempt to read the configuration file and resolve the symbology name
-        if (File.Exists(configPath))
+        // Attempt to read the linear component type from the config file.
+        if (File.Exists(configFile))
         {
             try
             {
-                string symbologyName = File.ReadAllText(configPath).Trim();
+                string configValue = File.ReadAllText(configFile).Trim();
 
-                // Resolve symbology name to EncodeTypes field via reflection
-                FieldInfo field = typeof(EncodeTypes).GetField(symbologyName);
-                if (field != null && typeof(BaseEncodeType).IsAssignableFrom(field.FieldType))
+                if (!string.IsNullOrEmpty(configValue))
                 {
-                    linearComponent = (BaseEncodeType)field.GetValue(null);
-                }
-                else
-                {
-                    Console.WriteLine($"Warning: Unknown symbology '{symbologyName}'. Using default GS1Code128.");
+                    // Resolve the symbology name to a BaseEncodeType using reflection.
+                    FieldInfo field = typeof(EncodeTypes).GetField(configValue, BindingFlags.Public | BindingFlags.Static);
+                    if (field != null && typeof(BaseEncodeType).IsAssignableFrom(field.FieldType))
+                    {
+                        linearComponentType = (BaseEncodeType)field.GetValue(null);
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Warning: Unknown symbology '{configValue}'. Using default GS1Code128.");
+                    }
                 }
             }
             catch (Exception ex)
@@ -54,30 +54,39 @@ class Program
         }
         else
         {
-            Console.WriteLine($"Configuration file '{configPath}' not found. Using default GS1Code128.");
+            Console.WriteLine($"Configuration file '{configFile}' not found. Using default GS1Code128.");
         }
 
-        // Sample GS1 Composite barcode text (1D and 2D parts separated by '|')
-        string codeText = "(01)03212345678906|(21)A1B2C3D4E5F6G7H8";
+        // Sample GS1 Composite barcode data.
+        // Linear component (14‑digit GTIN) – AI (01) requires exactly 14 digits.
+        string linearComponent = "(01)00123456789012"; // 14‑digit GTIN (padded with leading zeros if needed)
 
-        // Generate the barcode using the GS1 Composite symbology
+        // 2D component – any additional AI, e.g., (21) for serial number.
+        string twoDComponent = "(21)A12345678";
+
+        // Combine linear and 2D parts with the required '|' separator.
+        string codeText = $"{linearComponent}|{twoDComponent}";
+
+        // Output file for the generated barcode image.
+        const string outputFile = "gs1composite.png";
+
+        // Create and configure the barcode generator.
         using (var generator = new BarcodeGenerator(EncodeTypes.GS1CompositeBar, codeText))
         {
-            // Apply the linear component type read from configuration
-            generator.Parameters.Barcode.GS1CompositeBar.LinearComponentType = linearComponent;
+            // Set the linear component type based on configuration.
+            generator.Parameters.Barcode.GS1CompositeBar.LinearComponentType = linearComponentType;
 
-            // Choose a 2D component type (CC_A is a common choice)
+            // Choose a 2D component type (CC_A is a common choice).
             generator.Parameters.Barcode.GS1CompositeBar.TwoDComponentType = TwoDComponentType.CC_A;
 
-            // Example visual settings
-            generator.Parameters.Barcode.Pdf417.AspectRatio = 3f;
-            generator.Parameters.Barcode.XDimension.Pixels = 3f;
-            generator.Parameters.Barcode.BarHeight.Pixels = 100f;
+            // Optional visual settings.
+            generator.Parameters.Barcode.XDimension.Point = 2f;      // Module size.
+            generator.Parameters.Barcode.BarHeight.Point = 100f;    // Height of the linear part.
 
-            // Save the barcode image to a PNG file
-            string outputPath = "gs1composite.png";
-            generator.Save(outputPath);
-            Console.WriteLine($"GS1 Composite barcode saved to '{outputPath}'.");
+            // Save the barcode image.
+            generator.Save(outputFile);
         }
+
+        Console.WriteLine($"GS1 Composite barcode generated and saved to '{outputFile}'.");
     }
 }

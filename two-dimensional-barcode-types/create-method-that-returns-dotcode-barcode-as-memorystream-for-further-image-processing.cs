@@ -1,63 +1,71 @@
-// Title: Generate DotCode barcode as MemoryStream
-// Description: Demonstrates creating a DotCode barcode image and returning it as a MemoryStream for downstream image processing.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use the BarcodeGenerator class with EncodeTypes.DotCode. Typical use cases include generating barcodes for printing, embedding in documents, or further image manipulation. Developers often need to obtain barcode images as streams to integrate with other APIs or services.
+// Title: Generate DotCode barcode and return as MemoryStream
+// Description: Demonstrates creating a DotCode barcode from a text string, saving it to a MemoryStream in PNG format, and persisting the image to a file.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use the BarcodeGenerator class with EncodeTypes.DotCode. Developers often need to generate barcodes for inventory, tracking, or authentication purposes and then process the image further (e.g., embed in PDFs, send over network). The code illustrates configuring barcode parameters, exporting to a MemoryStream, and handling the stream for downstream operations, a common pattern in automated CI pipelines.
 // Prompt: Create method that returns DotCode barcode as MemoryStream for further image processing.
-// Tags: dotcode, barcode, generation, memorystream, png, aspose.barcode, aspose.barcode.generation
+// Tags: dotcode, barcode, generation, memorystream, png, aspose.barcode
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing.Imaging;
 
-namespace DotCodeBarcodeExample
+/// <summary>
+/// Provides an entry point that generates a DotCode barcode, stores it in a <see cref="MemoryStream"/>,
+/// and saves the resulting image to disk for demonstration purposes.
+/// </summary>
+class Program
 {
     /// <summary>
-    /// Provides an example of generating a DotCode barcode and returning it as a <see cref="MemoryStream"/>.
+    /// Main execution method. Generates a DotCode barcode, writes the image to a file,
+    /// and outputs the file location to the console.
     /// </summary>
-    class Program
+    static void Main()
     {
-        /// <summary>
-        /// Entry point of the example. Generates a DotCode barcode and writes the resulting image size to the console.
-        /// </summary>
-        static void Main()
-        {
-            // Sample text to encode in the DotCode barcode.
-            const string sampleText = "Sample DotCode Text";
+        // Sample text to encode in the DotCode barcode
+        string sampleText = "Hello DotCode";
 
-            // Generate the barcode and obtain it as a memory stream.
-            using (MemoryStream barcodeStream = GenerateDotCodeBarcode(sampleText))
-            {
-                // The stream now contains the PNG image of the DotCode barcode.
-                // For demonstration, output the size of the generated image.
-                Console.WriteLine($"Generated barcode image size: {barcodeStream.Length} bytes");
-            }
+        // Generate the barcode image as a MemoryStream
+        MemoryStream barcodeStream = GenerateDotCodeBarcode(sampleText);
+
+        // Define the output file path (current directory)
+        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "dotcode.png");
+
+        // Write the MemoryStream contents to a physical PNG file
+        using (FileStream file = new FileStream(outputPath, FileMode.Create, FileAccess.Write))
+        {
+            barcodeStream.CopyTo(file);
         }
 
-        /// <summary>
-        /// Generates a DotCode barcode image and returns it as a <see cref="MemoryStream"/>.
-        /// </summary>
-        /// <param name="codeText">The text to encode in the DotCode barcode.</param>
-        /// <returns>A <see cref="MemoryStream"/> containing the PNG image of the barcode.</returns>
-        static MemoryStream GenerateDotCodeBarcode(string codeText)
+        // Inform the user where the barcode image was saved
+        Console.WriteLine($"DotCode barcode saved to: {outputPath}");
+    }
+
+    /// <summary>
+    /// Generates a DotCode barcode image and returns it as a <see cref="MemoryStream"/>.
+    /// </summary>
+    /// <param name="codeText">The text to encode in the barcode.</param>
+    /// <returns>A <see cref="MemoryStream"/> containing the PNG image of the barcode.</returns>
+    static MemoryStream GenerateDotCodeBarcode(string codeText)
+    {
+        // Initialize a memory stream to receive the barcode image
+        MemoryStream ms = new MemoryStream();
+
+        // Create and configure the barcode generator for DotCode symbology
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.DotCode, codeText))
         {
-            // Create a memory stream that will hold the barcode image.
-            var memoryStream = new MemoryStream();
+            // Set the number of columns; rows are calculated automatically
+            generator.Parameters.Barcode.DotCode.Columns = 20;
 
-            // Use a BarcodeGenerator to create the DotCode barcode.
-            // The constructor takes the symbology type and the code text.
-            using (var generator = new BarcodeGenerator(EncodeTypes.DotCode, codeText))
-            {
-                // Optional: configure DotCode specific parameters if needed.
-                // For example, set the ECI encoding to UTF-8.
-                generator.Parameters.Barcode.DotCode.ECIEncoding = ECIEncodings.UTF8;
+            // Enable UTF-8 ECI encoding to support Unicode characters
+            generator.Parameters.Barcode.DotCode.ECIEncoding = ECIEncodings.UTF8;
 
-                // Save the generated barcode directly to the memory stream in PNG format.
-                generator.Save(memoryStream, BarCodeImageFormat.Png);
-            }
-
-            // Reset the stream position to the beginning so it can be read by the caller.
-            memoryStream.Position = 0;
-            return memoryStream;
+            // Save the generated barcode to the memory stream in PNG format
+            generator.Save(ms, BarCodeImageFormat.Png);
         }
+
+        // Reset the stream position to the beginning for downstream reading
+        ms.Position = 0;
+        return ms;
     }
 }

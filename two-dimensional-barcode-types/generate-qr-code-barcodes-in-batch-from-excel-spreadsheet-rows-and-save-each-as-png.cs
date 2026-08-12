@@ -1,8 +1,8 @@
-// Title: Batch QR Code generation from Excel rows
-// Description: Demonstrates reading QR code data from an Excel spreadsheet and generating individual PNG barcode images.
-// Category-Description: This example belongs to the Aspose.BarCode batch processing category, illustrating how to combine Aspose.Cells for data extraction with Aspose.BarCode's BarcodeGenerator to create QR Code barcodes. Typical use cases include bulk barcode creation for inventory, marketing, or document tagging. Developers often need to read tabular data, loop through rows, and save each barcode as an image file.
+// Title: Batch QR Code Generation from Excel to PNG
+// Description: Demonstrates how to read rows from an Excel worksheet and generate a QR Code barcode for each entry, saving the images as PNG files.
+// Category-Description: This example belongs to the Aspose.BarCode batch processing category, illustrating the use of BarcodeGenerator with EncodeTypes.QR and Aspose.Cells to read data from spreadsheets. Typical use cases include creating QR codes for product lists, URLs, or inventory items in bulk. Developers often need to combine Aspose.Cells for data extraction with Aspose.BarCode for barcode creation, handling error correction levels and output formats.
 // Prompt: Generate QR Code barcodes in batch from Excel spreadsheet rows and save each as PNG.
-// Tags: qr code, batch processing, excel, png, aspose.barcode, aspose.cells, barcode generation
+// Tags: qr code, batch, png, aspose.barcode, aspose.cells, barcode generation
 
 using System;
 using System.IO;
@@ -11,86 +11,93 @@ using Aspose.BarCode.Generation;
 using Aspose.Cells;
 
 /// <summary>
-/// Generates QR Code barcodes in batch from rows of an Excel file and saves each as a PNG image.
+/// Example program that reads text values from an Excel file and generates a QR Code
+/// image for each row, saving the results as PNG files in a temporary directory.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Reads data from an Excel file, creates QR codes, and writes them to disk.
+    /// Entry point. Creates a sample Excel workbook, iterates through its rows,
+    /// generates QR Code barcodes, and writes each image to disk.
     /// </summary>
     static void Main()
     {
-        // Define paths for the input Excel file and the output folder that will hold the PNG images
-        string excelPath = "input.xlsx";
-        string outputFolder = "Barcodes";
+        // Create a unique temporary root folder for all generated files
+        string tempRoot = Path.Combine(Path.GetTempPath(), "AsposeBarcodeBatch_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempRoot);
 
-        // Ensure the output directory exists; create it if it does not
-        if (!Directory.Exists(outputFolder))
-        {
-            Directory.CreateDirectory(outputFolder);
-        }
+        // Define paths for the sample Excel file and the output barcode folder
+        string excelPath = Path.Combine(tempRoot, "data.xlsx");
+        string outputDir = Path.Combine(tempRoot, "Barcodes");
+        Directory.CreateDirectory(outputDir);
 
-        // If the Excel file is missing, create a sample workbook with a header and up to five data rows
-        if (!File.Exists(excelPath))
+        // Generate a sample Excel workbook containing QR code texts
+        CreateSampleExcel(excelPath);
+
+        // Load the workbook and select the first worksheet
+        var workbook = new Workbook(excelPath);
+        var sheet = workbook.Worksheets[0];
+
+        // Determine the last used row (column A holds the code text)
+        int maxRow = sheet.Cells.MaxDataRow;
+        for (int row = 0; row <= maxRow; row++)
         {
-            using (var workbook = new Workbook())
+            var cell = sheet.Cells[row, 0];
+            if (cell == null || cell.Value == null)
+                continue; // Skip empty rows
+
+            string codeText = cell.StringValue?.Trim();
+            if (string.IsNullOrEmpty(codeText))
+                continue; // Skip rows with no text
+
+            // Build the output file name and full path
+            string fileName = $"qr_{row + 1}.png";
+            string outputPath = Path.Combine(outputDir, fileName);
+
+            try
             {
-                var sheet = workbook.Worksheets[0];
-                var cells = sheet.Cells;
-
-                // Optional header row
-                cells[0, 0].PutValue("CodeText");
-
-                // Sample QR code texts – limited to five rows for safe batch processing in CI environments
-                cells[1, 0].PutValue("HelloWorld1");
-                cells[2, 0].PutValue("HelloWorld2");
-                cells[3, 0].PutValue("HelloWorld3");
-                cells[4, 0].PutValue("HelloWorld4");
-                cells[5, 0].PutValue("HelloWorld5");
-
-                workbook.Save(excelPath);
-                Console.WriteLine($"Sample Excel file created at '{excelPath}'.");
-            }
-        }
-
-        // Load the Excel workbook containing the QR code data
-        using (var workbook = new Workbook(excelPath))
-        {
-            var sheet = workbook.Worksheets[0];
-            var cells = sheet.Cells;
-
-            // Determine the number of data rows to process (max 5 rows for CI safety)
-            int maxDataRow = Math.Min(cells.MaxDataRow, 5); // rows are zero‑based; this gives up to 5 data rows
-
-            // Iterate over each data row, starting after the header (row index 1)
-            for (int row = 1; row <= maxDataRow; row++)
-            {
-                // Retrieve and trim the code text from the first column
-                string codeText = cells[row, 0].StringValue?.Trim();
-
-                // Skip empty cells
-                if (string.IsNullOrEmpty(codeText))
+                // Initialize the QR Code generator
+                using (var generator = new BarcodeGenerator(EncodeTypes.QR))
                 {
-                    Console.WriteLine($"Row {row + 1}: empty code text – skipped.");
-                    continue;
-                }
-
-                // Create a QR code generator for the current text
-                using (var generator = new BarcodeGenerator(EncodeTypes.QR, codeText))
-                {
-                    // Optional: set a high error correction level for better resilience
-                    generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
-
-                    // Build the output file name (e.g., qr_1.png, qr_2.png, ...)
-                    string outputPath = Path.Combine(outputFolder, $"qr_{row}.png");
-
-                    // Save the generated QR code as a PNG image
+                    generator.CodeText = codeText;
+                    // Optional: set error correction level to Medium
+                    generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
+                    // Save the barcode directly as PNG (file extension determines format)
                     generator.Save(outputPath);
-                    Console.WriteLine($"Row {row + 1}: QR code saved to '{outputPath}'.");
                 }
+
+                Console.WriteLine($"Generated QR for '{codeText}' -> {outputPath}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to generate QR for row {row + 1}: {ex.Message}");
             }
         }
 
-        Console.WriteLine("Batch QR code generation completed.");
+        Console.WriteLine($"All barcodes saved to: {outputDir}");
+    }
+
+    // Helper method to create a simple Excel file with sample QR code texts
+    static void CreateSampleExcel(string path)
+    {
+        var wb = new Workbook();
+        var ws = wb.Worksheets[0];
+
+        string[] samples = {
+            "HelloWorld",
+            "1234567890",
+            "https://example.com",
+            "Aspose.BarCode",
+            "QR_Code_5"
+        };
+
+        // Populate column A with sample values
+        for (int i = 0; i < samples.Length; i++)
+        {
+            ws.Cells[i, 0].PutValue(samples[i]);
+        }
+
+        // Save the workbook in XLSX format
+        wb.Save(path, SaveFormat.Xlsx);
     }
 }

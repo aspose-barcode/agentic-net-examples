@@ -1,60 +1,69 @@
-// Title: Parallel generation of DataMatrix barcodes benchmark
-// Description: Demonstrates measuring the time required to generate a large number of DataMatrix barcodes concurrently.
-// Category-Description: This example belongs to the Aspose.BarCode performance benchmarking category, showcasing how to use BarcodeGenerator, EncodeTypes, and image handling classes (Bitmap, ImageFormat) to create barcodes in parallel. Developers often need to assess throughput when generating thousands of barcodes for batch processing, printing, or inventory systems. The snippet illustrates typical use of Parallel.For, Stopwatch, and memory streams for high‑volume barcode creation.
+// Title: Parallel generation of DataMatrix barcodes with performance timing
+// Description: Demonstrates how to generate multiple DataMatrix barcodes concurrently using Aspose.BarCode and measures the elapsed time.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category. It showcases the use of BarcodeGenerator, EncodeTypes, and related parameter classes to create DataMatrix symbols, a common requirement for inventory, logistics, and tracking applications. Developers often need to generate large volumes of barcodes quickly, and this pattern illustrates parallel processing with Parallel.For for high‑throughput scenarios.
 // Prompt: Write performance benchmark measuring time to generate 10,000 DataMatrix barcodes in parallel.
-// Tags: datamatrix, performance, benchmark, parallel, generation, aspose.barcode, bitmap, png
+// Tags: datamatrix, barcode generation, performance benchmark, parallel processing, aspose.barcode, png, memorystream
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Provides a simple performance benchmark that generates a configurable number of DataMatrix barcodes in parallel
-/// and reports the elapsed time. Useful for evaluating throughput of the Aspose.BarCode generation API.
+/// Example program that generates a set of DataMatrix barcodes in parallel
+/// and reports the time taken. Useful for benchmarking barcode generation performance.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the benchmark application.
-    /// Accepts an optional command‑line argument specifying how many barcodes to generate (default is 10).
+    /// Entry point. Generates the barcodes, stores them optionally, and prints timing information.
     /// </summary>
-    /// <param name="args">Command‑line arguments; first argument may be an integer count.</param>
+    /// <param name="args">Command‑line arguments (not used).</param>
     static void Main(string[] args)
     {
-        // Determine how many barcodes to generate; default to 10 for quick execution.
-        int barcodeCount = 10;
-        if (args.Length > 0 && int.TryParse(args[0], out int parsed) && parsed > 0)
-        {
-            barcodeCount = parsed;
-        }
+        // Number of barcodes to generate. Adjust as needed for real benchmarks (e.g., 10,000).
+        const int barcodeCount = 10;
+
+        // Optional collection to hold the generated barcode byte arrays.
+        var generatedData = new List<byte[]>(barcodeCount);
 
         // Start measuring elapsed time.
-        var stopwatch = Stopwatch.StartNew();
+        var stopwatch = new Stopwatch();
+        stopwatch.Start();
 
-        // Generate barcodes concurrently using Parallel.For for maximum CPU utilization.
+        // Generate barcodes concurrently using Parallel.For.
         Parallel.For(0, barcodeCount, i =>
         {
-            // Create a DataMatrix generator with a unique code text for each iteration.
-            using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, $"Sample{i:D5}"))
+            // Each iteration creates its own BarcodeGenerator instance.
+            using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, $"Code{i:D4}"))
             {
-                // Produce the barcode image as a Bitmap.
-                using (Bitmap bitmap = generator.GenerateBarCodeImage())
+                // Configure DataMatrix to use ECI encoding for UTF‑8 (optional).
+                generator.Parameters.Barcode.DataMatrix.EncodeMode = DataMatrixEncodeMode.ECI;
+                generator.Parameters.Barcode.DataMatrix.ECIEncoding = ECIEncodings.UTF8;
+
+                // Write the barcode image to a memory stream in PNG format.
+                using (var ms = new MemoryStream())
                 {
-                    // Encode the bitmap to PNG format via a memory stream (forces image encoding).
-                    using (var ms = new MemoryStream())
+                    generator.Save(ms, BarCodeImageFormat.Png);
+
+                    // Capture the generated image bytes (optional, for demonstration).
+                    byte[] data = ms.ToArray();
+                    lock (generatedData)
                     {
-                        bitmap.Save(ms, ImageFormat.Png);
+                        generatedData.Add(data);
                     }
                 }
             }
         });
 
-        // Stop timing and output the result.
+        // Stop timing after all barcodes have been generated.
         stopwatch.Stop();
-        Console.WriteLine($"Generated {barcodeCount} DataMatrix barcodes in {stopwatch.ElapsedMilliseconds} ms.");
+
+        // Output benchmark results.
+        Console.WriteLine($"Generated {barcodeCount} DataMatrix barcodes in parallel.");
+        Console.WriteLine($"Elapsed time: {stopwatch.ElapsedMilliseconds} ms");
     }
 }

@@ -1,80 +1,75 @@
-// Title: Generate GS1 Composite barcode and return PNG as Base64
-// Description: Demonstrates creating a GS1 Composite barcode from a JSON payload and outputting the PNG image as a Base64 string.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on composite symbologies. It showcases the use of BarcodeGenerator, EncodeTypes, and related parameter classes to configure linear and 2D components. Developers building microservices that need to produce barcode images programmatically will find this pattern useful.
+// Title: Generate GS1 Composite barcode and return as Base64 PNG
+// Description: Demonstrates creating a GS1 Composite barcode from a JSON payload and encoding the resulting PNG image as a Base64 string for API responses.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, focusing on GS1 Composite symbology. It showcases the use of BarcodeGenerator, EncodeTypes, and TwoDComponentType classes to build composite barcodes, a common requirement for supply‑chain and retail applications that need both linear and 2‑D data in a single symbol.
 // Prompt: Develop a microservice that receives JSON payload and returns generated GS1 Composite barcode as PNG.
-// Tags: gs1 composite, barcode generation, png, aspose.barcode, aspose.drawing, json
+// Tags: gs1, composite, barcode, generation, json, base64, png, aspose.barcode, aspose.drawing
 
 using System;
 using System.IO;
-using System.Text;
 using System.Text.Json;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates a GS1 Composite barcode from a JSON payload
-/// and outputs the resulting PNG image as a Base64 string.
+/// Example program that creates a GS1 Composite barcode from a JSON payload
+/// and returns the barcode image as a Base64‑encoded PNG string.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Deserializes a sample JSON payload,
-    /// creates the barcode, saves it to disk, and prints the Base64 representation.
+    /// Entry point of the example. Simulates receiving a JSON payload,
+    /// generates the barcode, saves it as PNG, and outputs the Base64 string.
     /// </summary>
     static void Main()
     {
-        // Sample JSON payload containing linear and 2D parts of the GS1 Composite barcode
-        string json = "{\"linear\":\"(01)03212345678906\",\"twod\":\"(21)A1B2C3D4E5F6G7H8\"}";
+        // Simulated incoming JSON payload (would normally come from an HTTP request)
+        string jsonPayload = @"{""linear"":""(01)00123456789012"",""twod"":""(21)A12345678""}";
 
-        // Deserialize the JSON payload into a strongly‑typed object
-        Payload? payload = JsonSerializer.Deserialize<Payload>(json);
-        if (payload == null || string.IsNullOrEmpty(payload.Linear) || string.IsNullOrEmpty(payload.TwoD))
+        // Deserialize the JSON into a strongly‑typed object
+        var payload = JsonSerializer.Deserialize<Payload>(jsonPayload);
+        if (payload == null || string.IsNullOrWhiteSpace(payload.Linear) || string.IsNullOrWhiteSpace(payload.TwoD))
         {
-            Console.WriteLine("Invalid payload");
+            Console.WriteLine("Invalid payload.");
             return;
         }
 
-        // Combine linear and 2D parts using the '|' separator required for GS1 Composite barcodes
-        string codetext = $"{payload.Linear}|{payload.TwoD}";
+        // Combine linear and 2D components using the GS1 Composite separator '|'
+        string codeText = $"{payload.Linear}|{payload.TwoD}";
 
-        // Initialize the barcode generator for GS1 Composite symbology
-        using (var generator = new BarcodeGenerator(EncodeTypes.GS1CompositeBar, codetext))
+        // Determine output file path (saved in the current working directory)
+        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "gs1composite.png");
+
+        // Generate the GS1 Composite barcode
+        using (var generator = new BarcodeGenerator(EncodeTypes.GS1CompositeBar, codeText))
         {
-            // Set linear component type (GS1 Code128)
+            // Set linear component type to GS1 Code128
             generator.Parameters.Barcode.GS1CompositeBar.LinearComponentType = EncodeTypes.GS1Code128;
 
-            // Set 2D component type (CC-A, a MicroPDF417 variant)
+            // Set 2D component type (e.g., CC_A)
             generator.Parameters.Barcode.GS1CompositeBar.TwoDComponentType = TwoDComponentType.CC_A;
 
-            // Configure aspect ratio for the 2D component (PDF417 settings)
+            // Optional: adjust PDF417 aspect ratio (used for CC_A)
             generator.Parameters.Barcode.Pdf417.AspectRatio = 3f;
 
-            // Set X‑Dimension for both linear and 2D components
-            generator.Parameters.Barcode.XDimension.Pixels = 3f;
+            // X‑Dimension for both components (module size)
+            generator.Parameters.Barcode.XDimension.Point = 2f;
 
-            // Set height of the linear component
+            // Height of the linear component
             generator.Parameters.Barcode.BarHeight.Pixels = 100f;
 
-            // Save the barcode image as a PNG file
-            string outputPath = "gs1composite.png";
-            generator.Save(outputPath);
-
-            // Generate the barcode image in memory and output its Base64 representation
-            using (Bitmap bitmap = generator.GenerateBarCodeImage())
-            {
-                using (var ms = new MemoryStream())
-                {
-                    bitmap.Save(ms, Aspose.Drawing.Imaging.ImageFormat.Png);
-                    string base64 = Convert.ToBase64String(ms.ToArray());
-                    Console.WriteLine(base64);
-                }
-            }
+            // Save the generated barcode as a PNG file
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
+
+        // Read the generated PNG file and convert it to a Base64 string (simulating an API response)
+        byte[] pngBytes = File.ReadAllBytes(outputPath);
+        string base64Png = Convert.ToBase64String(pngBytes);
+        Console.WriteLine("Generated GS1 Composite barcode (Base64 PNG):");
+        Console.WriteLine(base64Png);
     }
 
-    // Simple class representing the expected JSON structure
+    // Helper class matching the JSON structure
     private class Payload
     {
         public string Linear { get; set; }

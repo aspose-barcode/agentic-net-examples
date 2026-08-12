@@ -1,43 +1,51 @@
-// Title: Generate QR Code with embedded plain text note
-// Description: Demonstrates creating a QR Code barcode containing a short text message and saving it as a PNG image.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to use the BarcodeGenerator class with EncodeTypes.QR to produce QR Code barcodes. Typical use cases include encoding URLs, contact info, or quick notes for distribution. Developers often need to set error correction levels, adjust module size, and export the barcode to common image formats.
+// Title: Generate QR Code with Embedded Plain Text Note
+// Description: Demonstrates creating a QR Code barcode that encodes a plain‑text message and adds a human‑readable caption, then saves it as a PNG file.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use the BarcodeGenerator class with EncodeTypes.QR, configure QR error correction, and customize 2‑D display text. Typical use cases include encoding URLs, contact info, or quick notes for mobile scanning. Developers often need to adjust error levels, add readable annotations, and export the barcode to common image formats.
 // Prompt: Generate QR Code barcode and embed plain text message for quick note distribution.
 // Tags: qr code, barcode generation, plain text, png, aspose.barcode, encode types, error correction
 
 using System;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Example program that creates a QR Code containing a plain‑text note and saves it as a PNG file.
+/// Example program that creates a QR Code containing a short note and saves it as a PNG image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates the QR Code and writes the output file path to the console.
+    /// Entry point of the application. Generates the QR Code and writes the output path to the console.
     /// </summary>
     static void Main()
     {
-        // Define the output file path for the generated QR code image.
-        string outputPath = "qr_note.png";
+        // Create a dedicated output folder in the system's temporary directory
+        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
+        Directory.CreateDirectory(outputDir);
 
-        // Initialize a QR code generator with the QR symbology.
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR))
+        // Full file path for the generated QR Code image
+        string outputPath = Path.Combine(outputDir, "quicknote_qr.png");
+
+        // Plain text message to encode in the QR code
+        string message = "Meet at 10am on 2023-12-01";
+
+        // Initialize the barcode generator for QR Code symbology
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR))
         {
-            // Set the text to be encoded in the QR code.
-            generator.CodeText = "Quick note: Meeting at 3 PM";
+            // Assign the text that will be encoded into the QR symbol
+            generator.CodeText = message;
 
-            // Configure a high error correction level (Level H) for better resilience.
+            // Optional: display a human‑readable caption below the QR symbol
+            generator.Parameters.Barcode.CodeTextParameters.TwoDDisplayText = "Quick Note";
+
+            // Set a high error correction level (Level H) for improved resilience to damage
             generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
 
-            // Optionally adjust the size of each QR module (pixel size) to 3 points.
-            generator.Parameters.Barcode.XDimension.Point = 3f;
-
-            // Save the generated QR code as a PNG image to the specified path.
-            generator.Save(outputPath, BarCodeImageFormat.Png);
+            // Save the generated barcode image as a PNG file
+            generator.Save(outputPath);
         }
 
-        // Inform the user where the QR code image has been saved.
-        Console.WriteLine($"QR code saved to {outputPath}");
+        // Inform the user where the QR code image has been saved
+        Console.WriteLine($"QR code saved to: {outputPath}");
     }
 }

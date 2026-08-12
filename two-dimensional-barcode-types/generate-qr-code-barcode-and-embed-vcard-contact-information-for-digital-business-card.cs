@@ -1,43 +1,80 @@
 // Title: Generate QR Code with embedded vCard for digital business card
-// Description: Demonstrates creating a QR Code barcode that contains vCard contact information, useful for digital business cards.
-// Category-Description: This example belongs to the Aspose.BarCode QR Code generation category. It shows how to use BarcodeGenerator with EncodeTypes.QR, configure error correction, and embed structured text such as vCard. Developers often need to generate QR codes for contact sharing, marketing, or authentication scenarios, and this snippet illustrates the typical API usage for those cases.
+// Description: Creates a QR code containing vCard contact information and saves it as a PNG file.
+// Category-Description: This example demonstrates how to use Aspose.BarCode's Generation API to produce QR Code barcodes. It shows how to embed structured vCard data (Version 3.0) into the QR code, configure UTF‑8 encoding and high error correction, and export the result as a PNG image. Developers working with digital business cards, contact sharing, or any scenario requiring QR‑encoded contact details will find this pattern useful.
 // Prompt: Generate QR Code barcode and embed vCard contact information for digital business card.
-// Tags: qr code, vcard, barcode generation, aspose.barcode, png output
+// Tags: qr code, vcard, barcode generation, aspose.barcode, png, contact information
 
 using System;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Example program that creates a QR Code containing vCard data and saves it as a PNG image.
+/// Demonstrates generating a QR Code that encodes a vCard and saving it as a PNG image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates the QR Code and writes the output file.
+    /// Entry point of the example. Generates the QR code and reports the output location.
     /// </summary>
     static void Main()
     {
-        // vCard data to be encoded in the QR code
-        string vCard = "BEGIN:VCARD\nVERSION:3.0\nN:Doe;John;;;\nFN:John Doe\nORG:Example Company\nTITLE:Software Engineer\nTEL;TYPE=WORK,VOICE:+1-111-555-0100\nEMAIL:john.doe@example.com\nEND:VCARD";
+        // Define the output file path in the system's temporary folder.
+        string outputPath = Path.Combine(Path.GetTempPath(), "vcard_qr.png");
 
-        // Initialize a QR code generator with the QR symbology
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR))
+        try
         {
-            // Assign the vCard string as the code text to be encoded
-            generator.CodeText = vCard;
+            // Generate the QR code with embedded vCard data.
+            GenerateVCardQr(outputPath);
 
-            // Set a high error correction level (Level H) for better readability under adverse conditions
-            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
+            // Inform the user where the image was saved.
+            Console.WriteLine($"QR code saved to: {outputPath}");
+        }
+        catch (Exception ex)
+        {
+            // Output any errors that occurred during generation.
+            Console.WriteLine($"Error: {ex.Message}");
+        }
+    }
 
-            // Optional: set the QR encoding mode to Auto (default)
-            // generator.Parameters.Barcode.QR.EncodeMode = QREncodeMode.Auto;
-
-            // Save the generated QR code as a PNG image file
-            generator.Save("vcard_qr.png");
+    /// <summary>
+    /// Generates a QR Code containing a simple vCard and writes it to the specified file.
+    /// </summary>
+    /// <param name="outputPath">Full file path where the PNG image will be saved.</param>
+    static void GenerateVCardQr(string outputPath)
+    {
+        // Ensure the target directory exists.
+        string? dir = Path.GetDirectoryName(outputPath);
+        if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+        {
+            Directory.CreateDirectory(dir);
         }
 
-        // Inform the user that the image has been saved
-        Console.WriteLine("QR code with vCard saved to vcard_qr.png");
+        // Build a minimal vCard (Version 3.0) with basic contact fields.
+        string vCard = "BEGIN:VCARD\r\n" +
+                       "VERSION:3.0\r\n" +
+                       "N:Doe;John;;;\r\n" +
+                       "FN:John Doe\r\n" +
+                       "ORG:Example Company\r\n" +
+                       "TITLE:Software Engineer\r\n" +
+                       "TEL;TYPE=WORK,VOICE:+1-111-555-0100\r\n" +
+                       "EMAIL:john.doe@example.com\r\n" +
+                       "END:VCARD";
+
+        // Initialize the QR code generator with the QR symbology.
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR))
+        {
+            // Assign the vCard string as the code text to be encoded.
+            generator.CodeText = vCard;
+
+            // Use UTF‑8 encoding to support the full character set.
+            generator.Parameters.Barcode.QR.ECIEncoding = ECIEncodings.UTF8;
+
+            // Set a high error correction level (Level H) for better scan reliability.
+            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
+
+            // Save the generated QR code as a PNG image to the specified path.
+            generator.Save(outputPath, BarCodeImageFormat.Png);
+        }
     }
 }

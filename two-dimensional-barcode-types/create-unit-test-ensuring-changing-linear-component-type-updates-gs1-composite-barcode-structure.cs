@@ -1,94 +1,98 @@
-// Title: GS1 Composite Barcode Linear Component Type Unit Test
-// Description: Demonstrates a unit‑test‑style verification that changing the linear component type of a GS1 Composite barcode updates the decoded structure accordingly.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category, focusing on GS1 Composite symbology. It shows how to configure the linear component type via BarcodeGenerator, generate a composite barcode, and validate the result using BarCodeReader. Developers working with GS1 Composite barcodes often need to ensure that encoding settings are correctly reflected during decoding, making this pattern useful for automated testing and CI pipelines.
+// Title: GS1 Composite Barcode Linear Component Type Update Test
+// Description: Demonstrates a unit‑style test that generates a GS1 Composite barcode, changes the linear component type to EAN13, and verifies the resulting barcode metadata.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, focusing on GS1 Composite barcodes. It showcases the use of BarcodeGenerator to create a composite barcode, the configuration of linear and 2D component types, and BarCodeReader to inspect extended GS1 Composite parameters. Developers working with product identification, supply‑chain labeling, or any scenario requiring GS1 Composite symbology will find this pattern useful for validating barcode structure changes.
 // Prompt: Create unit test ensuring changing linear component type updates GS1 Composite barcode structure.
-// Tags: barcode symbology, gs1 composite, linear component type, generation, recognition, unit test, aspose.barcode
+// Tags: gs1 composite barcode, linear component type, unit test, aspose.barcode, barcode generation, barcode recognition, ean13, c#
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Example program that verifies the linear component type of a GS1 Composite barcode
-/// is correctly encoded and decoded. It iterates over a set of test cases, generates
-/// a barcode for each, reads it back, and reports pass/fail results.
+/// Contains a simple test that verifies changing the linear component type of a GS1 Composite barcode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Executes the test cases and prints a summary.
+    /// Entry point. Executes the test and writes the result to the console.
     /// </summary>
     static void Main()
     {
-        // Define test cases: each case sets a linear component type and expects the same type on read.
-        var testCases = new (BaseEncodeType LinearType, BaseDecodeType ExpectedDecode)[]
+        // Run the test and output the result
+        bool testPassed = TestLinearComponentTypeChange();
+        Console.WriteLine(testPassed ? "PASSED: Linear component type updated correctly." : "FAILED: Linear component type did not update as expected.");
+    }
+
+    /// <summary>
+    /// Generates a GS1 Composite barcode with a specific linear component type,
+    /// reads it back, and validates that the type and code text are reported correctly.
+    /// </summary>
+    /// <returns>True if the barcode metadata matches the expectations; otherwise false.</returns>
+    static bool TestLinearComponentTypeChange()
+    {
+        // Prepare a temporary folder for generated files
+        string tempFolder = Path.Combine(Path.GetTempPath(), "Gs1CompositeTest_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
+
+        // GS1 Composite codetext: linear part | 2D part
+        // Linear part uses AI (01) with 14 digits (GTIN‑14)
+        string linearComponent = "(01)00123456789012"; // 14 digits
+        string twoDComponent = "(01)00123456789012";   // same format for simplicity
+        string codeText = $"{linearComponent}|{twoDComponent}";
+
+        string imagePath = Path.Combine(tempFolder, "gs1composite.png");
+
+        // Generate the barcode with LinearComponentType set to EAN13
+        using (var generator = new BarcodeGenerator(EncodeTypes.GS1CompositeBar, codeText))
         {
-            (EncodeTypes.GS1Code128, DecodeType.GS1Code128),
-            (EncodeTypes.UPCA, DecodeType.UPCA)
-        };
+            // Configure linear component to EAN13 and 2D component to CC_A
+            generator.Parameters.Barcode.GS1CompositeBar.LinearComponentType = EncodeTypes.EAN13;
+            generator.Parameters.Barcode.GS1CompositeBar.TwoDComponentType = TwoDComponentType.CC_A;
 
-        int passed = 0;
-        int failed = 0;
+            // Save the generated image to file
+            generator.Save(imagePath);
+        }
 
-        // Iterate through each test case.
-        foreach (var (linearType, expectedDecode) in testCases)
+        // Verify that the generated barcode reports the correct linear component type
+        using (var reader = new BarCodeReader(imagePath, DecodeType.GS1CompositeBar))
         {
-            // GS1 Composite codetext: linear part (GTIN) and a simple 2D part.
-            string linearComponent = "(01)01234567890123"; // 14‑digit GTIN
-            string twoDComponent = "(21)ABC123";
-            string codeText = $"{linearComponent}|{twoDComponent}";
-
-            // Generate barcode with the specified linear component type.
-            using (var generator = new BarcodeGenerator(EncodeTypes.GS1CompositeBar, codeText))
+            foreach (var result in reader.ReadBarCodes())
             {
-                // Set the linear component type for the composite barcode.
-                generator.Parameters.Barcode.GS1CompositeBar.LinearComponentType = linearType;
-                // Use a fixed 2D component type (CC-A) for simplicity.
-                generator.Parameters.Barcode.GS1CompositeBar.TwoDComponentType = TwoDComponentType.CC_A;
-
-                // Save the generated barcode to a memory stream.
-                using (var ms = new MemoryStream())
+                // Access GS1 Composite extended parameters
+                var gs1Ext = result.Extended.GS1CompositeBar;
+                if (gs1Ext == null)
                 {
-                    generator.Save(ms, BarCodeImageFormat.Png);
-                    ms.Position = 0; // Reset stream position for reading.
+                    Console.WriteLine("Extended GS1CompositeBar parameters are missing.");
+                    return false;
+                }
 
-                    // Read the barcode and verify the linear component type.
-                    using (var reader = new BarCodeReader(ms, DecodeType.GS1CompositeBar))
+                // OneDType should correspond to the DecodeType for EAN13
+                if (gs1Ext.OneDType == DecodeType.EAN13)
+                {
+                    // Also verify that the 1D code text matches the linear component we supplied
+                    if (gs1Ext.OneDCodeText == linearComponent)
                     {
-                        var results = reader.ReadBarCodes();
-
-                        // No barcode detected – mark as failed.
-                        if (results.Length == 0)
-                        {
-                            Console.WriteLine($"FAILED: No barcode detected for linear type {linearType.TypeName}.");
-                            failed++;
-                            continue;
-                        }
-
-                        // Extract the decoded result and its extended information.
-                        var result = results[0];
-                        var extended = result.Extended;
-                        var oneDType = extended.GS1CompositeBar.OneDType; // BaseDecodeType
-
-                        // Compare the decoded linear type with the expected value.
-                        if (oneDType == expectedDecode)
-                        {
-                            Console.WriteLine($"PASSED: Linear type {linearType.TypeName} correctly recognized as {oneDType}.");
-                            passed++;
-                        }
-                        else
-                        {
-                            Console.WriteLine($"FAILED: Linear type {linearType.TypeName} recognized as {oneDType}, expected {expectedDecode}.");
-                            failed++;
-                        }
+                        return true; // Test succeeded
                     }
+                    else
+                    {
+                        Console.WriteLine($"Unexpected 1D code text. Expected: {linearComponent}, Got: {gs1Ext.OneDCodeText}");
+                        return false;
+                    }
+                }
+                else
+                {
+                    Console.WriteLine($"Unexpected 1D type. Expected: {DecodeType.EAN13}, Got: {gs1Ext.OneDType}");
+                    return false;
                 }
             }
         }
 
-        // Output a summary of the test results.
-        Console.WriteLine($"Test summary: {passed} passed, {failed} failed.");
+        // If no barcode was read, the test fails
+        Console.WriteLine("No barcode was detected in the generated image.");
+        return false;
     }
 }

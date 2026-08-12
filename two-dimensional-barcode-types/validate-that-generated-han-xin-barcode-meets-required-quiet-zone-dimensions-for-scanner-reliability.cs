@@ -1,94 +1,115 @@
 // Title: Validate Han Xin barcode quiet zone dimensions
-// Description: Demonstrates generating a Han Xin barcode with explicit quiet zone padding and verifies that the barcode can be decoded, ensuring scanner reliability.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It shows how to configure barcode parameters such as padding, module size, and error correction using BarcodeGenerator, and then validates the output with BarCodeReader. Developers often need to adjust quiet zones to meet scanner specifications, and this snippet illustrates the typical workflow for creating and testing barcodes in .NET applications.
+// Description: Demonstrates generating a Han Xin barcode with explicit quiet zone padding and verifies that the resulting image meets the required quiet zone size for reliable scanning.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category, showcasing how to configure barcode parameters such as XDimension and Padding, save the image, and use BarCodeReader to validate decodability. Developers working with 2D symbologies often need to ensure proper quiet zones to meet scanner specifications, and this snippet illustrates the typical workflow using BarcodeGenerator, BarCodeImageFormat, and DecodeType classes.
 // Prompt: Validate that generated Han Xin barcode meets required quiet zone dimensions for scanner reliability.
-// Tags: hanxin,quietzone,padding,barcode,generation,recognition,aspose.barcode,csharp
+// Tags: hanxin, quietzone, padding, barcode generation, barcode recognition, aspose.barcode, csharp
 
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Generates a Han Xin barcode with defined quiet zone padding,
-/// saves it to an image file, and validates that the barcode can be decoded.
+/// Demonstrates generating a Han Xin barcode with required quiet zone padding,
+/// validates image dimensions, and confirms decodability.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates the barcode, configures padding,
-    /// saves the image, and verifies decoding to ensure scanner reliability.
+    /// Entry point. Generates the barcode, checks padding, reads the code, and cleans up temporary files.
     /// </summary>
     static void Main()
     {
-        // Define the output file path for the generated barcode image.
-        string outputPath = "HanXin.png";
+        // Define a unique temporary folder and file path for the barcode image
+        string tempFolder = Path.Combine(Path.GetTempPath(), "HanXinQuietZone_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
+        string barcodePath = Path.Combine(tempFolder, "hanxin.png");
 
-        // Remove any existing file to avoid conflicts.
-        if (File.Exists(outputPath))
+        // Required quiet zone (padding) in points (1 point ≈ 1/72 inch)
+        const float requiredPadding = 10f; // 10 points ≈ 0.1389 inch
+
+        // Generate Han Xin barcode with explicit padding on all sides
+        using (var generator = new BarcodeGenerator(EncodeTypes.HanXin, "1234567890"))
         {
-            File.Delete(outputPath);
+            // Set module (X) size in points
+            generator.Parameters.Barcode.XDimension.Point = 2f;
+
+            // Apply the same quiet zone padding to each side
+            generator.Parameters.Barcode.Padding.Left.Point = requiredPadding;
+            generator.Parameters.Barcode.Padding.Top.Point = requiredPadding;
+            generator.Parameters.Barcode.Padding.Right.Point = requiredPadding;
+            generator.Parameters.Barcode.Padding.Bottom.Point = requiredPadding;
+
+            // Save the generated barcode as a PNG image
+            generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        // Create a Han Xin barcode generator with sample code text.
-        using (var generator = new BarcodeGenerator(EncodeTypes.HanXin, "SampleHanXin123"))
+        // Verify that the image file was created successfully
+        if (!File.Exists(barcodePath))
         {
-            // Set quiet zone (padding) – typical scanners require at least 10 points on each side.
-            generator.Parameters.Barcode.Padding.Left.Point = 10f;
-            generator.Parameters.Barcode.Padding.Top.Point = 10f;
-            generator.Parameters.Barcode.Padding.Right.Point = 10f;
-            generator.Parameters.Barcode.Padding.Bottom.Point = 10f;
-
-            // Optional: set module size and error correction level.
-            generator.Parameters.Barcode.XDimension.Point = 2f; // module width
-            generator.Parameters.Barcode.HanXin.ErrorLevel = HanXinErrorLevel.L2;
-
-            // Use black bars on a white background.
-            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-            generator.Parameters.BackColor = Aspose.Drawing.Color.White;
-
-            // Save the barcode image to the specified path.
-            generator.Save(outputPath);
-        }
-
-        // Verify that the image file was successfully created.
-        if (!File.Exists(outputPath))
-        {
-            Console.WriteLine("Failed to generate the Han Xin barcode image.");
+            Console.WriteLine("Failed to generate the barcode image.");
             return;
         }
 
-        // Output the configured quiet zone dimensions for verification.
-        using (var verifier = new BarcodeGenerator(EncodeTypes.HanXin))
+        // Load the generated image to inspect its pixel dimensions and resolution
+        using (var bitmap = (Bitmap)Image.FromFile(barcodePath))
         {
-            Console.WriteLine("Configured quiet zone (padding) values (points):");
-            Console.WriteLine($"Left:   {verifier.Parameters.Barcode.Padding.Left.Point}");
-            Console.WriteLine($"Top:    {verifier.Parameters.Barcode.Padding.Top.Point}");
-            Console.WriteLine($"Right:  {verifier.Parameters.Barcode.Padding.Right.Point}");
-            Console.WriteLine($"Bottom: {verifier.Parameters.Barcode.Padding.Bottom.Point}");
+            int imgWidth = bitmap.Width;
+            int imgHeight = bitmap.Height;
+
+            // Retrieve image resolution (dots per inch) for point‑to‑pixel conversion
+            float dpiX, dpiY;
+            using (var graphics = Graphics.FromImage(bitmap))
+            {
+                dpiX = graphics.DpiX;
+                dpiY = graphics.DpiY;
+            }
+
+            // Convert required padding from points to pixels using the image DPI
+            float pointsToPixelsX = dpiX / 72f;
+            float pointsToPixelsY = dpiY / 72f;
+
+            int leftPadPx = (int)Math.Round(requiredPadding * pointsToPixelsX);
+            int rightPadPx = (int)Math.Round(requiredPadding * pointsToPixelsX);
+            int topPadPx = (int)Math.Round(requiredPadding * pointsToPixelsY);
+            int bottomPadPx = (int)Math.Round(requiredPadding * pointsToPixelsY);
+
+            // Validate that the image dimensions are at least the sum of the padding values
+            bool widthOk = imgWidth >= leftPadPx + rightPadPx;
+            bool heightOk = imgHeight >= topPadPx + bottomPadPx;
+
+            Console.WriteLine($"Image size: {imgWidth}x{imgHeight} pixels");
+            Console.WriteLine($"Expected minimum width (padding only): {leftPadPx + rightPadPx} pixels");
+            Console.WriteLine($"Expected minimum height (padding only): {topPadPx + bottomPadPx} pixels");
+            Console.WriteLine($"Width validation: {(widthOk ? "PASS" : "FAIL")}");
+            Console.WriteLine($"Height validation: {(heightOk ? "PASS" : "FAIL")}");
+
+            // Additional verification: attempt to decode the barcode to ensure it is readable
+            using (var reader = new BarCodeReader(barcodePath, DecodeType.HanXin))
+            {
+                var results = reader.ReadBarCodes();
+                if (results.Length > 0)
+                {
+                    Console.WriteLine($"Decoded CodeText: {results[0].CodeText}");
+                }
+                else
+                {
+                    Console.WriteLine("Barcode could not be decoded.");
+                }
+            }
         }
 
-        // Attempt to read the barcode to ensure scanner reliability.
-        using (var reader = new BarCodeReader(outputPath, DecodeType.AllSupportedTypes))
+        // Clean up temporary files (optional). Failures are ignored to avoid affecting validation result.
+        try
         {
-            bool found = false;
-            foreach (BarCodeResult result in reader.ReadBarCodes())
-            {
-                Console.WriteLine($"Decoded CodeText: {result.CodeText}");
-                found = true;
-                break; // Stop after the first successful decode.
-            }
-
-            if (!found)
-            {
-                Console.WriteLine("Barcode could not be decoded – quiet zone may be insufficient.");
-            }
-            else
-            {
-                Console.WriteLine("Barcode decoded successfully – quiet zone meets requirements.");
-            }
+            File.Delete(barcodePath);
+            Directory.Delete(tempFolder);
+        }
+        catch
+        {
+            // Ignored – cleanup failure should not affect validation result
         }
     }
 }

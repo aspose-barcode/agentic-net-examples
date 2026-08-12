@@ -1,8 +1,8 @@
-// Title: Han Xin barcode module size scaling verification
-// Description: Demonstrates how changing the XDimension (module size) of a Han Xin barcode proportionally affects its overall image dimensions.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on Han Xin symbology. It showcases the use of BarcodeGenerator, EncodeTypes, and barcode parameters such as XDimension to control module size. Developers often need to adjust module size for different printing resolutions or layout requirements, and this snippet illustrates the expected proportional scaling of width and height when the module size changes.
+// Title: Han Xin Barcode Module Size Scaling Test
+// Description: Demonstrates how changing the XDimension (module size) of a Han Xin barcode affects the generated image dimensions proportionally.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing the use of BarcodeGenerator, EncodeTypes, and barcode parameters to control visual output. Typical scenarios include adjusting barcode size for different printing requirements or UI layouts. Developers often need to verify that parameter changes like XDimension result in expected dimensional scaling.
 // Prompt: Write unit test confirming that changing module size alters overall Han Xin barcode dimensions proportionally.
-// Tags: hanxin, barcode, module-size, scaling, generation, aspose.barcode, unit-test
+// Tags: hanxin, barcode, module size, xdimension, scaling, aspose.barcode, generation, unit-test, image-dimensions
 
 using System;
 using Aspose.BarCode;
@@ -10,83 +10,68 @@ using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Generates two Han Xin barcodes with different module sizes and verifies that the image dimensions scale proportionally.
+/// Provides a simple console demonstration that verifies the proportional scaling of
+/// Han Xin barcode dimensions when the module size (XDimension) is changed.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates barcodes, measures dimensions, and checks scaling factors.
+    /// Generates a Han Xin barcode with the specified XDimension and returns its pixel dimensions.
+    /// </summary>
+    /// <param name="xDimension">The module size in points to apply to the barcode.</param>
+    /// <returns>A tuple containing the width and height of the generated barcode image.</returns>
+    static (int Width, int Height) GetBarcodeSize(float xDimension)
+    {
+        // Create a Han Xin barcode generator with a short codetext.
+        using (var generator = new BarcodeGenerator(EncodeTypes.HanXin, "ABC"))
+        {
+            // Set the module size (XDimension) in points.
+            generator.Parameters.Barcode.XDimension.Point = xDimension;
+
+            // Generate the barcode image.
+            using (Bitmap bitmap = generator.GenerateBarCodeImage())
+            {
+                // Return the pixel dimensions of the generated image.
+                return (bitmap.Width, bitmap.Height);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Entry point of the program. Compares barcode dimensions for two different XDimension values
+    /// and reports whether the scaling is proportional within an acceptable tolerance.
     /// </summary>
     static void Main()
     {
-        // Sample text to encode in the Han Xin barcode
-        const string codeText = "1234567890ABCDEFGabcdefg,Han Xin Code";
+        // Define two different XDimension values to test scaling.
+        float xDim1 = 2f;
+        float xDim2 = 4f;
 
-        // --------------------------------------------------------------------
-        // First barcode generation using a base XDimension (module size)
-        // --------------------------------------------------------------------
-        float xDim1 = 2f; // module size in points
-        int width1, height1;
-        using (var generator1 = new BarcodeGenerator(EncodeTypes.HanXin, codeText))
+        // Obtain barcode sizes for each XDimension.
+        var size1 = GetBarcodeSize(xDim1);
+        var size2 = GetBarcodeSize(xDim2);
+
+        // Expected width ratio based on the XDimension change.
+        double expectedRatio = (double)xDim2 / xDim1;
+
+        // Actual width ratio of the generated images.
+        double actualRatio = (double)size2.Width / size1.Width;
+
+        // Allow a small tolerance due to rounding differences.
+        double tolerance = 0.1;
+
+        // Evaluate whether the actual ratio matches the expected ratio within tolerance.
+        if (Math.Abs(actualRatio - expectedRatio) <= tolerance)
         {
-            // Apply the base XDimension to the barcode parameters
-            generator1.Parameters.Barcode.XDimension.Point = xDim1;
-
-            // Generate the barcode image and capture its dimensions
-            using (var image1 = generator1.GenerateBarCodeImage())
-            {
-                width1 = image1.Width;
-                height1 = image1.Height;
-            }
-        }
-
-        // --------------------------------------------------------------------
-        // Second barcode generation using a doubled XDimension
-        // --------------------------------------------------------------------
-        float xDim2 = 4f; // double the base module size
-        int width2, height2;
-        using (var generator2 = new BarcodeGenerator(EncodeTypes.HanXin, codeText))
-        {
-            // Apply the larger XDimension to the barcode parameters
-            generator2.Parameters.Barcode.XDimension.Point = xDim2;
-
-            // Generate the barcode image and capture its dimensions
-            using (var image2 = generator2.GenerateBarCodeImage())
-            {
-                width2 = image2.Width;
-                height2 = image2.Height;
-            }
-        }
-
-        // --------------------------------------------------------------------
-        // Compute expected scaling factor based on XDimension change
-        // --------------------------------------------------------------------
-        float expectedFactor = xDim2 / xDim1;
-
-        // Actual scaling factors derived from image dimensions
-        float widthFactor = (float)width2 / width1;
-        float heightFactor = (float)height2 / height1;
-
-        // Allow a small tolerance (5%) to accommodate rounding differences
-        const float tolerance = 0.05f;
-
-        bool widthMatches = Math.Abs(widthFactor - expectedFactor) <= tolerance;
-        bool heightMatches = Math.Abs(heightFactor - expectedFactor) <= tolerance;
-
-        // --------------------------------------------------------------------
-        // Output test result
-        // --------------------------------------------------------------------
-        if (widthMatches && heightMatches)
-        {
-            Console.WriteLine("PASSED: Module size change scaled dimensions proportionally.");
-            Console.WriteLine($"XDimension {xDim1} -> {xDim2}, Width {width1} -> {width2}, Height {height1} -> {height2}");
+            Console.WriteLine("PASSED: Barcode dimensions scale proportionally with XDimension.");
         }
         else
         {
-            Console.WriteLine("FAILED: Dimensions did not scale as expected.");
-            Console.WriteLine($"Expected factor: {expectedFactor}");
-            Console.WriteLine($"Width factor: {widthFactor} (match: {widthMatches})");
-            Console.WriteLine($"Height factor: {heightFactor} (match: {heightMatches})");
+            Console.WriteLine("FAILED: Expected ratio {0:F2}, but got {1:F2}.", expectedRatio, actualRatio);
         }
+
+        // Output the measured dimensions for reference.
+        Console.WriteLine("XDimension {0} -> Width {1}, Height {2}", xDim1, size1.Width, size1.Height);
+        Console.WriteLine("XDimension {0} -> Width {1}, Height {2}", xDim2, size2.Width, size2.Height);
     }
 }

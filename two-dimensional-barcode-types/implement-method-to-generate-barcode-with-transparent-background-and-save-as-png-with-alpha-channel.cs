@@ -1,39 +1,66 @@
-// Title: Generate Code128 barcode with transparent background and save as PNG
-// Description: Demonstrates creating a Code128 barcode with a transparent background and saving it as a PNG image that retains the alpha channel.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to configure barcode appearance using the BarcodeGenerator class. It shows setting the background color to transparent and exporting to PNG, a common requirement for overlaying barcodes on UI elements or documents without obscuring underlying graphics. Developers often need to customize colors, formats, and image properties when integrating barcodes into applications.
+// Title: Generate a Code128 barcode with transparent background and save as PNG
+// Description: Demonstrates how to create a barcode image with a transparent background using Aspose.BarCode and save it as a PNG file that retains the alpha channel.
+// Category-Description: This example belongs to the Aspose.BarCode image generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes. Typical scenarios include creating overlay‑friendly barcodes for UI designs, reports, or web pages where the background must blend with surrounding content. Developers often need to control background transparency and output formats when integrating barcodes into graphics pipelines.
 // Prompt: Implement method to generate barcode with transparent background and save as PNG with alpha channel.
-// Tags: code128, generate, png, transparent, background, aspose.barcode, aspose.drawing
+// Tags: barcode, code128, transparent background, png, alpha channel, aspose.barcode, image generation
 
 using System;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
-/// <summary>
-/// Example program that generates a Code128 barcode with a transparent background
-/// and saves it as a PNG file preserving the alpha channel.
-/// </summary>
-class Program
+namespace BarcodeTransparentExample
 {
     /// <summary>
-    /// Entry point of the application.
+    /// Provides an entry point that generates a barcode with a transparent background and saves it as a PNG file.
     /// </summary>
-    static void Main()
+    class Program
     {
-        // Define the output file path for the generated barcode image.
-        const string outputPath = "transparent_barcode.png";
-
-        // Initialize the barcode generator with Code128 symbology and sample data.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+        /// <summary>
+        /// Main method – defines input data, invokes the generation routine, and reports the output location.
+        /// </summary>
+        static void Main()
         {
-            // Configure the barcode to have a transparent background.
-            generator.Parameters.BackColor = Color.Transparent;
+            // Sample barcode text to encode
+            string codeText = "Sample123";
 
-            // Save the barcode as a PNG file; PNG format retains the alpha channel.
-            generator.Save(outputPath, BarCodeImageFormat.Png);
+            // Build a temporary file path for the resulting PNG image
+            string outputPath = Path.Combine(Path.GetTempPath(), "transparent_barcode.png");
+
+            // Generate the barcode with a transparent background
+            GenerateTransparentBarcode(codeText, outputPath);
+
+            // Inform the user where the file was saved
+            Console.WriteLine($"Barcode saved to: {outputPath}");
         }
 
-        // Inform the user that the barcode has been saved successfully.
-        Console.WriteLine($"Barcode saved to '{outputPath}' with transparent background.");
+        /// <summary>
+        /// Generates a barcode image with a transparent background and saves it as PNG.
+        /// </summary>
+        /// <param name="codeText">The text to encode in the barcode.</param>
+        /// <param name="outputPath">The full file path where the PNG will be saved.</param>
+        static void GenerateTransparentBarcode(string codeText, string outputPath)
+        {
+            // Ensure the output directory exists
+            string directory = Path.GetDirectoryName(outputPath);
+            if (!Directory.Exists(directory))
+            {
+                Directory.CreateDirectory(directory);
+            }
+
+            // Create a BarcodeGenerator for Code128 (symbology can be changed as needed)
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+            {
+                // Set the background color to transparent so the PNG retains an alpha channel
+                generator.Parameters.BackColor = Aspose.Drawing.Color.Transparent;
+
+                // Optionally, set the bar (foreground) color; default is black
+                // generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
+
+                // Save the barcode as PNG, which supports transparency
+                generator.Save(outputPath, BarCodeImageFormat.Png);
+            }
+        }
     }
 }

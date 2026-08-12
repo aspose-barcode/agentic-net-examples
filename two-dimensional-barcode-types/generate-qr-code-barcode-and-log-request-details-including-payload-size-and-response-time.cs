@@ -1,57 +1,56 @@
 // Title: Generate QR Code and Log Payload Size with Response Time
-// Description: Demonstrates creating a QR Code barcode using Aspose.BarCode, measuring generation time, and logging payload size.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, showcasing how to use BarcodeGenerator with QR symbology. It covers setting error correction, encoding mode, and measuring performance—common tasks for developers integrating barcodes into web services or applications.
+// Description: Demonstrates creating a QR Code barcode from a request payload, logging the payload size, and measuring the generation time.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use the BarcodeGenerator class with EncodeTypes.QR to produce QR Code images. Typical use cases include encoding URLs or data for mobile scanning, where developers often need to log request details such as payload size and benchmark generation performance. The snippet highlights common API members like Parameters.Barcode.QR and the Save method, useful for quick prototyping or integration into larger systems.
 // Prompt: Generate QR Code barcode and log request details including payload size and response time.
-// Tags: qr code, barcode generation, performance logging, aspose.barcode, encode types
+// Tags: qr code, barcode generation, payload size, response time, aspose.barcode, png output
 
 using System;
+using System.IO;
 using System.Diagnostics;
 using System.Text;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates QR Code generation and logging of payload size and generation time.
+/// Example program that generates a QR Code barcode, logs payload size, and measures response time.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a QR Code, measures generation time, and outputs payload size and response time.
+    /// Entry point. Generates QR code from a sample payload, logs details, and saves image.
     /// </summary>
-    static void Main()
+    /// <param name="args">Command‑line arguments (not used).</param>
+    static void Main(string[] args)
     {
-        // Define the QR code payload (e.g., a URL or API endpoint)
-        string codeText = "https://example.com/api/request";
+        // Simulated request payload (e.g., an API endpoint)
+        string payload = "https://example.com/api/data?param=123";
 
-        // Calculate the payload size in bytes using UTF-8 encoding
-        int payloadSize = Encoding.UTF8.GetByteCount(codeText);
+        // Log payload size in bytes using UTF‑8 encoding
+        int payloadSize = Encoding.UTF8.GetByteCount(payload);
+        Console.WriteLine($"Payload size: {payloadSize} bytes");
 
-        // Start a stopwatch to measure the barcode generation time
-        Stopwatch stopwatch = new Stopwatch();
-        stopwatch.Start();
+        // Create a unique temporary folder for the output image
+        string outputFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputFolder);
+        string outputFile = Path.Combine(outputFolder, "qr.png");
 
-        // Create a BarcodeGenerator for QR Code symbology
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR))
+        // Start timing the barcode generation and saving process
+        Stopwatch stopwatch = Stopwatch.StartNew();
+
+        // Initialize the barcode generator for QR code with the payload as data
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, payload))
         {
-            // Assign the text to be encoded
-            generator.CodeText = codeText;
+            // Optional: set QR error correction level to Medium (LevelM)
+            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
 
-            // Set a high error correction level (Level H) for better resilience
-            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
-
-            // Use automatic encoding mode to let the library choose the optimal mode
-            generator.Parameters.Barcode.QR.EncodeMode = QREncodeMode.Auto;
-
-            // Save the generated QR Code image to a file
-            generator.Save("qr.png");
+            // Save the generated QR code image to the specified file (PNG format by default)
+            generator.Save(outputFile);
         }
 
-        // Stop the stopwatch and calculate elapsed time in milliseconds
+        // Stop the timer and report elapsed time
         stopwatch.Stop();
-        long responseTimeMs = stopwatch.ElapsedMilliseconds;
 
-        // Output the payload size and generation (response) time to the console
-        Console.WriteLine($"Payload size: {payloadSize} bytes");
-        Console.WriteLine($"Response time: {responseTimeMs} ms");
+        Console.WriteLine($"QR code generated and saved to: {outputFile}");
+        Console.WriteLine($"Response time: {stopwatch.ElapsedMilliseconds} ms");
     }
 }

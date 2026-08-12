@@ -1,14 +1,14 @@
 // Title: Save GS1 Composite barcode as JPEG with quality 90
-// Description: Demonstrates generating a GS1 Composite barcode and saving it as a JPEG image with a quality setting suitable for web display.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, focusing on creating composite barcodes (GS1 Composite) and exporting them to raster image formats. It uses BarcodeGenerator, EncodeTypes, and Aspose.Drawing classes to configure linear and 2D components, adjust dimensions, and control image encoding parameters such as JPEG quality. Developers often need to produce high‑quality barcode images for e‑commerce, shipping labels, or web pages, and this snippet shows the typical steps to achieve that.
+// Description: Demonstrates generating a GS1 Composite barcode and saving it as a JPEG image with a quality setting of 90, suitable for web display.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to create GS1 Composite barcodes using the BarcodeGenerator class, configure linear and 2D components, and export the result with Aspose.Drawing imaging APIs. Typical use cases include e‑commerce product labeling, inventory management, and any scenario where high‑quality barcode images are required for web pages or digital documents.
 // Prompt: Save GS1 Composite barcode image as JPEG with quality level 90 for web display.
-// Tags: gs1, composite, barcode, generation, jpeg, quality, aspose.barcode, aspose.drawing
+// Tags: gs1 composite, barcode generation, jpeg, quality, aspose.barcode, aspose.drawing
 
 using System;
 using System.IO;
 using System.Linq;
-using Aspose.BarCode.Generation;
 using Aspose.BarCode;
+using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
@@ -18,51 +18,52 @@ using Aspose.Drawing.Imaging;
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates the barcode, configures its components, and writes the image to disk.
+    /// Entry point of the example. Creates the barcode, configures its components, and writes the JPEG file.
     /// </summary>
     static void Main()
     {
-        // Sample GS1 Composite barcode text: linear part | 2D part
-        string codeText = "(01)03212345678906|(21)A1B2C3D4E5F6G7H8";
+        // Define the linear and 2D components of the GS1 Composite barcode.
+        // The components are separated by the '|' character as required by the GS1 Composite format.
+        string linearComponent = "(01)00123456789012";
+        string twoDComponent = "(01)00123456789012";
+        string codeText = $"{linearComponent}|{twoDComponent}";
 
-        // Initialize the barcode generator for GS1 Composite Bar symbology
+        // Determine the output file path in the current working directory.
+        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "gs1_composite.jpg");
+
+        // Initialize the barcode generator for GS1 Composite symbology.
         using (var generator = new BarcodeGenerator(EncodeTypes.GS1CompositeBar, codeText))
         {
-            // Define the linear component (GS1 Code128) and the 2D component (CC-A)
+            // Configure the linear component to use GS1 Code128 and the 2D component to use CC-A.
             generator.Parameters.Barcode.GS1CompositeBar.LinearComponentType = EncodeTypes.GS1Code128;
             generator.Parameters.Barcode.GS1CompositeBar.TwoDComponentType = TwoDComponentType.CC_A;
 
-            // Optional: fine‑tune the barcode dimensions
-            generator.Parameters.Barcode.XDimension.Pixels = 3f;   // module width
-            generator.Parameters.Barcode.BarHeight.Pixels = 100f; // linear part height
+            // Optional: adjust visual size parameters for better readability.
+            generator.Parameters.Barcode.XDimension.Pixels = 3f;
+            generator.Parameters.Barcode.BarHeight.Pixels = 100f;
 
-            // Generate the barcode image as a Bitmap object
+            // Generate the barcode image as an Aspose.Drawing.Bitmap.
             using (Bitmap bitmap = generator.GenerateBarCodeImage())
             {
-                // Retrieve the JPEG encoder from the system codecs
-                ImageCodecInfo jpegEncoder = ImageCodecInfo.GetImageEncoders()
-                    .FirstOrDefault(enc => enc.FormatID == ImageFormat.Jpeg.Guid);
+                // Retrieve the JPEG encoder to control image quality.
+                ImageCodecInfo jpegCodec = ImageCodecInfo.GetImageEncoders()
+                    .First(codec => codec.FormatID == ImageFormat.Jpeg.Guid);
 
-                string outputPath = "gs1composite.jpg";
-
-                if (jpegEncoder != null)
+                // Set the encoder parameters: quality = 90 (range 0–100).
+                using (EncoderParameters encoderParams = new EncoderParameters(1))
                 {
-                    // Configure JPEG quality to 90 (suitable for web)
-                    using (EncoderParameters encoderParams = new EncoderParameters(1))
+                    encoderParams.Param[0] = new EncoderParameter(Encoder.Quality, 90L);
+
+                    // Save the bitmap to the specified file using the JPEG encoder and quality settings.
+                    using (FileStream fileStream = new FileStream(outputPath, FileMode.Create, FileAccess.Write))
                     {
-                        encoderParams.Param[0] = new EncoderParameter(Encoder.Quality, 90L);
-                        bitmap.Save(outputPath, jpegEncoder, encoderParams);
+                        bitmap.Save(fileStream, jpegCodec, encoderParams);
                     }
                 }
-                else
-                {
-                    // Fallback: save using default JPEG settings if encoder not found
-                    bitmap.Save(outputPath, ImageFormat.Jpeg);
-                }
-
-                // Inform the user where the file was saved
-                Console.WriteLine($"GS1 Composite barcode saved to '{Path.GetFullPath(outputPath)}'");
             }
         }
+
+        // Inform the user where the barcode image has been saved.
+        Console.WriteLine($"GS1 Composite barcode saved to: {outputPath}");
     }
 }

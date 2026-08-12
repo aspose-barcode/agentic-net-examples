@@ -1,53 +1,71 @@
-// Title: Generate DotCode barcode and return as Base64 string
-// Description: Demonstrates creating a DotCode barcode with Aspose.BarCode, encoding it to PNG, and converting the image to a Base64 string for client‑side rendering.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating how to use the BarcodeGenerator class with EncodeTypes.DotCode. Typical use cases include generating machine‑readable symbols for inventory, tracking, or mobile scanning, where developers need to deliver the barcode image to web clients without writing files to disk. The snippet shows configuring ECI encoding, rendering to a Bitmap, and converting the result to a Base64 string—common steps for API‑driven barcode services.
+// Title: Generate DotCode barcode as Base64 PNG string
+// Description: Demonstrates how to create a DotCode barcode using Aspose.BarCode, encode it as a PNG image, and return the image data as a Base64 string for client‑side rendering.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category. It showcases the use of BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes to produce DotCode symbology images. Typical use cases include generating barcodes on the fly for web APIs, embedding them in HTML, or sending them to mobile clients. Developers often need to convert barcode images to Base64 to avoid file handling and enable direct rendering in browsers.
 // Prompt: Expose an API that returns DotCode barcode as base64 string for client‑side rendering.
-// Tags: dotcode, barcode, generation, base64, aspose.barcode, image, png
+// Tags: dotcode, barcode, generation, base64, png, aspose.barcode
 
 using System;
 using System.IO;
-using System.Text;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
-/// <summary>
-/// Provides a console entry point that generates a DotCode barcode and outputs its Base64 representation.
-/// </summary>
-class Program
+namespace DotCodeBase64Example
 {
     /// <summary>
-    /// Generates a DotCode barcode, encodes it as PNG, converts the image to a Base64 string, and writes the string to the console.
+    /// Provides a console entry point that generates a DotCode barcode and outputs its PNG representation as a Base64 string.
     /// </summary>
-    static void Main()
+    class Program
     {
-        // Sample codetext for DotCode barcode
-        const string codeText = "Sample DotCode";
-
-        // Initialize a barcode generator for DotCode with the specified text
-        using (var generator = new BarcodeGenerator(EncodeTypes.DotCode, codeText))
+        /// <summary>
+        /// Generates a DotCode barcode image in PNG format and returns it as a Base64 string.
+        /// </summary>
+        /// <param name="codeText">The text to encode in the barcode.</param>
+        /// <param name="columns">Optional number of columns for the DotCode matrix; rows are auto‑calculated.</param>
+        /// <returns>Base64‑encoded PNG image data.</returns>
+        /// <exception cref="ArgumentException">Thrown when <paramref name="codeText"/> is null or empty.</exception>
+        static string GenerateDotCodeBase64(string codeText, int columns = 20)
         {
-            // Optional: set ECI (Extended Channel Interpretation) encoding to UTF‑8 for Unicode support
-            generator.Parameters.Barcode.DotCode.ECIEncoding = ECIEncodings.UTF8;
+            // Validate input.
+            if (string.IsNullOrEmpty(codeText))
+                throw new ArgumentException("Code text must not be null or empty.", nameof(codeText));
 
-            // Generate the barcode image as a Bitmap object
-            using (Bitmap bitmap = generator.GenerateBarCodeImage())
+            // Initialize the barcode generator for DotCode symbology.
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.DotCode, codeText))
             {
-                // Prepare a memory stream to hold the PNG data
-                using (var ms = new MemoryStream())
+                // Configure only the column count; row count is determined automatically.
+                generator.Parameters.Barcode.DotCode.Columns = columns;
+
+                // Write the barcode image to a memory stream in PNG format.
+                using (MemoryStream ms = new MemoryStream())
                 {
-                    // Save the bitmap into the memory stream in PNG format
-                    bitmap.Save(ms, ImageFormat.Png);
-
-                    // Retrieve the raw image bytes from the stream
-                    byte[] imageBytes = ms.ToArray();
-
-                    // Convert the image bytes to a Base64-encoded string
-                    string base64 = Convert.ToBase64String(imageBytes);
-
-                    // Output the Base64 string; it can be embedded directly in HTML <img> tags on the client side
-                    Console.WriteLine(base64);
+                    generator.Save(ms, BarCodeImageFormat.Png);
+                    // Convert the raw image bytes to a Base64 string for easy transport.
+                    return Convert.ToBase64String(ms.ToArray());
                 }
+            }
+        }
+
+        /// <summary>
+        /// Application entry point. Generates a sample DotCode barcode and writes the Base64 PNG string to the console.
+        /// </summary>
+        /// <param name="args">Command‑line arguments (not used).</param>
+        static void Main(string[] args)
+        {
+            // Sample text to encode; replace with dynamic input as needed.
+            string sampleText = "Hello DotCode!";
+
+            try
+            {
+                // Generate the Base64 representation of the barcode image.
+                string base64Image = GenerateDotCodeBase64(sampleText);
+                Console.WriteLine("Base64 PNG of DotCode barcode:");
+                Console.WriteLine(base64Image);
+            }
+            catch (Exception ex)
+            {
+                // Output any errors that occur during generation.
+                Console.WriteLine($"Error generating barcode: {ex.Message}");
             }
         }
     }

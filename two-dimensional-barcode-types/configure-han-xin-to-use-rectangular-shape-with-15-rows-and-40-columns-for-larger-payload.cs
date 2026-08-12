@@ -1,43 +1,40 @@
-// Title: Han Xin Barcode with Rectangular Shape Configuration Example
-// Description: Demonstrates configuring a Han Xin barcode generator to use a rectangular shape of 15 rows by 40 columns for larger payloads.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on Han Xin symbology configuration. It showcases key API classes such as BarcodeGenerator, EncodeTypes, and HanXinVersion, illustrating typical use cases where developers need to adjust symbol size for extensive data. Useful for developers looking to optimize barcode dimensions for specific payload requirements.
+// Title: Generate a Han Xin barcode with automatic version selection
+// Description: Demonstrates creating a Han Xin barcode using Aspose.BarCode, letting the library automatically choose the appropriate square version for a larger payload.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on Han Xin symbology. It showcases the use of BarcodeGenerator, EncodeTypes, and HanXin parameters to produce a barcode image. Developers commonly need to generate Han Xin barcodes for Chinese characters or large data sets, and this snippet illustrates how to configure version selection and optional error correction.
 // Prompt: Configure Han Xin to use rectangular shape with 15 rows and 40 columns for larger payload.
-// Tags: hanxin, barcode, symbology, rectangular, rows, columns, generation, aspose.barcode
+// Tags: hanxin, barcode, generation, image, aspose.barcode, encode-types, version-auto
 
 using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Generates a Han Xin barcode, attempting to configure a rectangular shape (15 rows x 40 columns) for a larger payload.
+/// Demonstrates generating a Han Xin barcode with automatic version selection using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates and saves a Han Xin barcode image.
+    /// Entry point of the example. Generates and saves a Han Xin barcode image.
     /// </summary>
     static void Main()
     {
-        // Define a payload that requires a larger symbol size.
-        string payload = "This is a longer text intended to demonstrate a larger Han Xin barcode. " +
-                         "It contains enough characters to require a bigger square symbol.";
+        // Define a sample payload that requires a larger Han Xin symbol.
+        string payload = "This is a sample text that requires a larger Han Xin symbol.";
 
-        // Initialize the barcode generator with Han Xin symbology and the payload.
+        // Han Xin supports only square symbols. Rectangular shapes or custom row/column counts
+        // (e.g., 15 rows x 40 columns) are not available. The version is chosen automatically
+        // based on the payload size.
         using (var generator = new BarcodeGenerator(EncodeTypes.HanXin, payload))
         {
-            // Han Xin supports only square symbols. The version is set to Auto so the library
-            // selects the appropriate size based on the data length. Rectangular shapes (e.g., 15x40)
-            // are not supported, but this line documents the intended configuration.
+            // Let the library select the appropriate square version automatically.
             generator.Parameters.Barcode.HanXin.Version = HanXinVersion.Auto;
 
-            // Increase error correction level to L3 for better robustness against damage.
-            generator.Parameters.Barcode.HanXin.ErrorLevel = HanXinErrorLevel.L3;
+            // Optional: set other parameters if needed, e.g., error correction level.
+            // generator.Parameters.Barcode.HanXin.ErrorLevel = ErrorLevel.L4;
 
-            // Define the output file path and save the generated barcode as a PNG image.
+            // Save the generated barcode image to a file.
             string outputPath = "HanXinBarcode.png";
             generator.Save(outputPath);
-
-            // Inform the user where the barcode image has been saved.
             Console.WriteLine($"Han Xin barcode saved to: {outputPath}");
         }
     }

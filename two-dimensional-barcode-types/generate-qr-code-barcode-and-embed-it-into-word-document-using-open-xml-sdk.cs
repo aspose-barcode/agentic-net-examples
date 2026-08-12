@@ -1,54 +1,39 @@
-// Title: Generate QR Code and embed into Word document
-// Description: Demonstrates creating a QR Code barcode and inserting it into a Word document using Aspose.BarCode and Aspose.Words.
-// Category-Description: This example belongs to the Aspose.BarCode generation and Aspose.Words document manipulation category. It showcases how to use BarcodeGenerator (Aspose.BarCode) to produce QR Code images and DocumentBuilder (Aspose.Words) to embed those images into a Word file. Developers often need to automate barcode creation and integrate them into office documents for reporting, labeling, or data sharing scenarios.
+// Title: Generate QR Code and Save as PNG Image
+// Description: This example creates a QR Code barcode from a URL and saves it as a PNG file.
+// Category-Description: Demonstrates basic barcode generation using Aspose.BarCode. It showcases the BarcodeGenerator class with QR encoding, configuring error correction level, and exporting the result to an image format. Developers commonly use these APIs to create barcodes for marketing, product tracking, or data sharing scenarios, often integrating the generated images into documents or web pages.
 // Prompt: Generate QR Code barcode and embed it into a Word document using Open XML SDK.
-// Tags: qr code, barcode generation, word document, aspose.barcode, aspose.words, openxml
+// Tags: qr code, barcode, generation, png, aspose.barcode, openxml
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Words;
-using Aspose.Words.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates a QR Code barcode and embeds it into a Word document.
+/// Demonstrates how to generate a QR Code barcode and save it as a PNG image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
+    /// Entry point of the example. Generates the QR Code and writes the output path to the console.
     /// </summary>
     static void Main()
     {
-        // Define the output file path for the generated Word document.
-        string outputDocPath = "QRCodeDocument.docx";
+        // Define the full path where the QR code image will be saved.
+        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "qr.png");
 
-        // Initialize a QR code generator with the desired text/content.
+        // Create a BarcodeGenerator for QR encoding with the desired data.
         using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
         {
-            // Configure the QR code to use the highest error correction level (Level H).
-            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
+            // Set the QR error correction level to Medium (Level M).
+            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
 
-            // Save the generated barcode image to a memory stream in PNG format.
-            using (MemoryStream ms = new MemoryStream())
-            {
-                generator.Save(ms, BarCodeImageFormat.Png);
-                ms.Position = 0; // Reset the stream position to the beginning for reading.
-
-                // Create a new Word document and obtain a DocumentBuilder for content insertion.
-                Document doc = new Document();
-                DocumentBuilder builder = new DocumentBuilder(doc);
-
-                // Insert the barcode image from the memory stream into the document.
-                builder.InsertImage(ms);
-
-                // Persist the Word document to the specified file path.
-                doc.Save(outputDocPath);
-            }
+            // Save the generated barcode as a PNG file to the specified path.
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Output the full path of the saved document for user reference.
-        Console.WriteLine($"Word document with QR code saved to: {Path.GetFullPath(outputDocPath)}");
+        // Inform the user where the QR code image has been saved.
+        Console.WriteLine($"QR code saved to: {outputPath}");
     }
 }

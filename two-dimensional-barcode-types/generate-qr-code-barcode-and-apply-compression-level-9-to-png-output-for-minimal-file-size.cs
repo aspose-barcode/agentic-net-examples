@@ -1,73 +1,74 @@
-// Title: Generate QR Code with maximum PNG compression
-// Description: Demonstrates creating a QR Code barcode and saving it as a PNG file with compression level 9 to achieve minimal file size.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to use BarcodeGenerator, set QR error correction, and customize image output using Aspose.Drawing.Imaging. Developers often need to generate barcodes for web links or product information and optimize the resulting image size for faster loading or storage constraints.
+// Title: Generate QR Code and Save as Highly Compressed PNG
+// Description: Creates a QR Code barcode, renders it to PNG, and applies maximum compression (level 9) to minimize file size.
+// Category-Description: This example belongs to the Aspose.BarCode generation and image processing category. It demonstrates how to use the BarcodeGenerator class to create a QR Code, then leverages Aspose.Drawing to manipulate the resulting image and apply encoder parameters for PNG compression. Typical use cases include generating compact QR Code images for web or mobile applications where bandwidth or storage is limited. Developers often need to control image quality and file size when exporting barcodes, making this pattern a common reference for barcode-to-image workflows.
 // Prompt: Generate QR Code barcode and apply compression level 9 to PNG output for minimal file size.
-// Tags: qr code, barcode generation, png compression, aspose.barcode, aspose.drawing, image encoding
+// Tags: qr code, barcode generation, png, compression, aspose.barcode, aspose.drawing
 
 using System;
 using System.IO;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode;
 using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates a QR Code barcode and saves it as a PNG image
-/// with the highest compression level (9) to minimize file size.
+/// Demonstrates generating a QR Code barcode and saving it as a PNG image with maximum compression.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates a QR Code, applies high error correction,
-    /// and writes the image to disk using PNG compression level 9.
+    /// Entry point that creates the QR Code, compresses the PNG, and writes it to disk.
     /// </summary>
     static void Main()
     {
-        // Initialize the QR code generator with the desired text.
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
+        // Define the output file path for the compressed PNG.
+        string outputPath = "qr_compressed.png";
+
+        // Initialize the QR Code generator with the desired text.
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR))
         {
-            // Set the highest error correction level (Level H) for robustness.
-            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
+            generator.CodeText = "Sample QR Code";
 
-            // Generate the barcode image as a Bitmap object.
-            using (Bitmap bitmap = generator.GenerateBarCodeImage())
+            // Render the barcode to a memory stream in PNG format.
+            using (MemoryStream tempStream = new MemoryStream())
             {
-                // Retrieve the PNG encoder needed to specify compression parameters.
-                ImageCodecInfo pngEncoder = GetEncoder(ImageFormat.Png);
-                if (pngEncoder == null)
-                {
-                    Console.WriteLine("PNG encoder not found.");
-                    return;
-                }
+                generator.Save(tempStream, BarCodeImageFormat.Png);
+                tempStream.Position = 0; // Reset stream position for reading.
 
-                // Configure encoder parameters: Compression = 9 (maximum compression).
-                using (EncoderParameters encoderParams = new EncoderParameters(1))
+                // Load the PNG image from the memory stream for further processing.
+                using (Bitmap bitmap = new Bitmap(tempStream))
                 {
-                    encoderParams.Param[0] = new EncoderParameter(Encoder.Compression, 9L);
-
-                    // Save the bitmap to a file using the PNG encoder and compression settings.
-                    using (FileStream fs = new FileStream("qr.png", FileMode.Create, FileAccess.Write))
+                    // Locate the PNG encoder from the system's available image encoders.
+                    ImageCodecInfo pngEncoder = null;
+                    foreach (ImageCodecInfo codec in ImageCodecInfo.GetImageEncoders())
                     {
-                        bitmap.Save(fs, pngEncoder, encoderParams);
+                        if (codec.FormatID == ImageFormat.Png.Guid)
+                        {
+                            pngEncoder = codec;
+                            break;
+                        }
+                    }
+
+                    // If the PNG encoder cannot be found, abort the operation.
+                    if (pngEncoder == null)
+                    {
+                        Console.WriteLine("PNG encoder not found.");
+                        return;
+                    }
+
+                    // Configure encoder parameters to set compression level to 9 (maximum).
+                    EncoderParameters encoderParams = new EncoderParameters(1);
+                    EncoderParameter compressionParam = new EncoderParameter(Encoder.Compression, 9L);
+                    encoderParams.Param[0] = compressionParam;
+
+                    // Save the bitmap to the final file using the PNG encoder and compression settings.
+                    using (FileStream outStream = new FileStream(outputPath, FileMode.Create, FileAccess.Write))
+                    {
+                        bitmap.Save(outStream, pngEncoder, encoderParams);
                     }
                 }
             }
         }
-    }
 
-    /// <summary>
-    /// Retrieves the <see cref="ImageCodecInfo"/> for the specified image format.
-    /// </summary>
-    /// <param name="format">The image format for which to find the encoder.</param>
-    /// <returns>The matching <see cref="ImageCodecInfo"/>, or <c>null</c> if not found.</returns>
-    private static ImageCodecInfo GetEncoder(ImageFormat format)
-    {
-        ImageCodecInfo[] codecs = ImageCodecInfo.GetImageEncoders();
-        foreach (ImageCodecInfo codec in codecs)
-        {
-            if (codec.FormatID == format.Guid)
-                return codec;
-        }
-        return null;
+        Console.WriteLine($"QR Code saved to '{outputPath}' with compression level 9.");
     }
 }

@@ -1,56 +1,55 @@
-// Title: Han Xin Barcode Generation with Capacity Exception Handling
-// Description: Demonstrates generating a Han Xin barcode and handling cases where the input data exceeds the symbol's maximum capacity.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, focusing on Han Xin (Chinese Postal) symbology. It showcases the use of BarcodeGenerator, EncodeTypes, and HanXin parameters to create a barcode image, while illustrating typical developer needs such as automatic version selection, error correction configuration, and robust exception handling for data overflow scenarios. Ideal for developers searching for barcode generation patterns, error handling techniques, and Han Xin specific API usage.
-/// Prompt: Implement exception handling for data exceeding maximum capacity of selected Han Xin symbol size.
-/// Tags: barcode, hansin, exception-handling, generation, png, aspose.barcode
+// Title: Han Xin Barcode Generation with Oversized Data Exception Handling
+// Description: Demonstrates generating a Han Xin barcode and handling the exception thrown when the input data exceeds the symbol's maximum capacity.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on Han Xin symbology. It showcases the use of BarcodeGenerator, EncodeTypes, and HanXinErrorLevel classes to create a barcode, and illustrates proper exception handling for data size constraints. Developers working with 2D barcodes can refer to this pattern for validating input length and managing BarCodeException errors.
+// Prompt: Implement exception handling for data exceeding maximum capacity of selected Han Xin symbol size.
+// Tags: hanxin,barcode,generation,exception-handling,aspnet,aspose.barcode,2d,capacity,validation
 
 using System;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Provides an example of generating a Han Xin barcode and handling data capacity overflow exceptions.
+/// Example program that generates a Han Xin barcode and demonstrates handling of data that exceeds the symbol's capacity.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a Han Xin barcode and writes the result to a PNG file.
+    /// Entry point of the application. Generates a Han Xin barcode with oversized data and captures any capacity-related exceptions.
     /// </summary>
     static void Main()
     {
-        // Path where the generated barcode image will be saved
-        const string outputPath = "HanXinBarcode.png";
+        // Prepare sample data that intentionally exceeds the maximum capacity of any Han Xin symbol size.
+        string oversizedData = new string('A', 2000);
 
-        // Create a long string that is likely to exceed the capacity of the automatically selected Han Xin version
-        string longCodeText = new string('A', 5000); // Adjust length to trigger capacity overflow
+        // Define the output file path in the system's temporary directory.
+        string outputPath = Path.Combine(Path.GetTempPath(), "HanXin_Oversized.png");
 
-        // Initialize the barcode generator for Han Xin symbology with the provided text
-        using (var generator = new BarcodeGenerator(EncodeTypes.HanXin, longCodeText))
+        // Initialize the barcode generator for Han Xin symbology with the oversized data.
+        using (var generator = new BarcodeGenerator(EncodeTypes.HanXin, oversizedData))
         {
-            // Set a high error correction level (optional, improves readability at the cost of capacity)
-            generator.Parameters.Barcode.HanXin.ErrorLevel = HanXinErrorLevel.L4;
-
-            // Allow the library to automatically select the appropriate Han Xin version based on data length
-            generator.Parameters.Barcode.HanXin.Version = HanXinVersion.Auto;
+            // Optionally set the error correction level (L1-L4). Here we use level L2.
+            generator.Parameters.Barcode.HanXin.ErrorLevel = HanXinErrorLevel.L2;
 
             try
             {
-                // Attempt to generate and save the barcode image as PNG
+                // Attempt to save the barcode image. This call will throw if the data does not fit the selected symbol size.
                 generator.Save(outputPath, BarCodeImageFormat.Png);
                 Console.WriteLine($"Barcode generated successfully: {outputPath}");
             }
             catch (BarCodeException ex)
             {
-                // Specific handling when the input data exceeds the maximum capacity of the selected symbol size
-                Console.WriteLine("Error: The provided data exceeds the maximum capacity of the selected Han Xin symbol size.");
-                Console.WriteLine($"Exception message: {ex.Message}");
+                // Specific handling for data exceeding the maximum capacity of the Han Xin symbol.
+                Console.WriteLine("Failed to generate Han Xin barcode: data exceeds maximum capacity.");
+                Console.WriteLine($"Error details: {ex.Message}");
             }
             catch (Exception ex)
             {
-                // General fallback for any other unexpected errors during barcode generation
+                // General fallback for any other unexpected errors during barcode generation.
                 Console.WriteLine("An unexpected error occurred while generating the barcode.");
-                Console.WriteLine($"Exception message: {ex.Message}");
+                Console.WriteLine($"Error details: {ex.Message}");
             }
         }
     }

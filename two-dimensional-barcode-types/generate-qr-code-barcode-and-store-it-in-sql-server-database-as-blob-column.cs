@@ -1,8 +1,8 @@
-// Title: Generate QR Code and store as BLOB in SQL Server
-// Description: Demonstrates creating a QR Code barcode using Aspose.BarCode, retrieving its PNG bytes, and persisting them to a SQL Server VARBINARY(MAX) column.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating how to use the BarcodeGenerator class with QR symbology, configure error correction, and obtain image data for storage. Developers often need to embed generated barcodes into databases for later retrieval in reporting or mobile scanning scenarios.
+// Title: Generate QR Code and Store as BLOB in SQL Server
+// Description: This example creates a QR Code barcode, saves it as a PNG file, and demonstrates how to store the barcode image bytes as a BLOB in a SQL Server database.
+// Category-Description: Aspose.BarCode QR Code generation and binary storage examples. Shows how to use BarcodeGenerator with EncodeTypes.QR, configure error correction, save the image to a stream, and insert the byte array into a VARBINARY column using ADO.NET. Useful for developers needing to embed barcodes in databases for later retrieval and printing.
 // Prompt: Generate QR Code barcode and store it in SQL Server database as BLOB column.
-// Tags: qr code, barcode generation, sql server, blob, aspose.barcode, png, varbinary
+// Tags: qr code, barcode generation, sql server, blob storage, aspose.barcode, image format, varbinary
 
 using System;
 using System.IO;
@@ -10,59 +10,60 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Example program that generates a QR Code barcode, extracts its PNG binary data,
-/// and demonstrates how to store that data in a SQL Server BLOB column.
+/// Demonstrates QR Code generation with Aspose.BarCode and how to persist the resulting image bytes as a BLOB.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates the QR Code, optionally saves it to a database,
-    /// and writes the image to a local file as a fallback.
+    /// Entry point of the example. Generates a QR Code, saves it locally, and shows how to store it in a SQL Server BLOB column.
     /// </summary>
     static void Main()
     {
-        // Text that will be encoded into the QR Code.
-        const string qrText = "Hello World";
+        // Define the content to encode in the QR code.
+        string codeText = "https://example.com";
 
-        // Generate QR Code image and capture its binary representation.
-        byte[] qrImageBytes;
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, qrText))
+        // Initialize the QR code generator with the desired symbology and content.
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, codeText))
         {
-            // Configure a high error correction level (Level H) for better resilience.
+            // Optional: set a high error correction level to improve readability after damage.
             generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
 
-            // Save the generated barcode directly to a memory stream in PNG format.
-            using (var ms = new MemoryStream())
+            // Generate the barcode image into a memory stream.
+            using (var memoryStream = new MemoryStream())
             {
-                generator.Save(ms, BarCodeImageFormat.Png);
-                qrImageBytes = ms.ToArray();
+                // Save the barcode as PNG into the stream.
+                generator.Save(memoryStream, BarCodeImageFormat.Png);
+                byte[] imageBytes = memoryStream.ToArray();
+
+                // Persist the image to a file for visual verification.
+                File.WriteAllBytes("qr_code.png", imageBytes);
+                Console.WriteLine("QR code image saved to 'qr_code.png'.");
+
+                // Simulate storing the raw bytes in a database BLOB column by writing to a binary file.
+                File.WriteAllBytes("qr_blob.bin", imageBytes);
+                Console.WriteLine("QR code bytes written to 'qr_blob.bin' (simulating DB BLOB storage).");
+
+                // -----------------------------------------------------------------
+                // Real SQL Server storage (requires System.Data.SqlClient and a valid DB)
+                // -----------------------------------------------------------------
+                /*
+                using (var connection = new System.Data.SqlClient.SqlConnection(
+                    "Data Source=YOUR_SERVER;Initial Catalog=YOUR_DATABASE;Integrated Security=True"))
+                {
+                    connection.Open();
+                    using (var command = new System.Data.SqlClient.SqlCommand(
+                        "INSERT INTO Barcodes (Id, ImageData) VALUES (@Id, @Image)", connection))
+                    {
+                        command.Parameters.Add("@Id", System.Data.SqlDbType.Int).Value = 1;
+                        command.Parameters.Add("@Image", System.Data.SqlDbType.VarBinary, -1).Value = imageBytes;
+                        command.ExecuteNonQuery();
+                    }
+                }
+                */
+                // Note: The above database code is commented out because the snippet runner
+                // does not have access to a SQL Server instance. Replace the connection string
+                // and table/column names as appropriate in a real environment.
             }
         }
-
-        // -----------------------------------------------------------------
-        // Real implementation: store qrImageBytes into a SQL Server BLOB column
-        // -----------------------------------------------------------------
-        /*
-        // Uncomment and add a reference to System.Data.SqlClient (or Microsoft.Data.SqlClient)
-        // Ensure a valid connection string and a table with a VARBINARY(MAX) column exist.
-
-        const string connectionString = "Server=YOUR_SERVER;Database=YOUR_DB;Trusted_Connection=True;";
-        const string insertSql = "INSERT INTO QrCodes (Id, ImageData) VALUES (@Id, @Image)";
-
-        using (var connection = new SqlConnection(connectionString))
-        using (var command = new SqlCommand(insertSql, connection))
-        {
-            command.Parameters.Add("@Id", System.Data.SqlDbType.Int).Value = 1; // example Id
-            command.Parameters.Add("@Image", System.Data.SqlDbType.VarBinary, -1).Value = qrImageBytes;
-
-            connection.Open();
-            command.ExecuteNonQuery();
-        }
-        */
-
-        // Fallback for environments without SQL Server: write the image to a local file.
-        const string outputPath = "qr.png";
-        File.WriteAllBytes(outputPath, qrImageBytes);
-        Console.WriteLine($"QR Code image saved to '{outputPath}'.");
     }
 }

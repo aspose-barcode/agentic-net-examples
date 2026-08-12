@@ -1,55 +1,64 @@
-// Title: DotCode Barcode Generation with Auto Encoding and Error Handling
-// Description: Demonstrates generating a DotCode barcode in Auto encoding mode while handling unsupported characters.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to create barcodes using the BarcodeGenerator class. It focuses on DotCode symbology, Auto encoding mode, and error handling for unsupported characters—common tasks for developers integrating barcode creation into .NET applications.
+// Title: Generate DotCode barcode with error handling for unsupported characters
+// Description: Demonstrates creating a DotCode barcode using Aspose.BarCode, setting auto‑encoding mode with an incompatible ECI encoding, and handling errors when the input contains characters that cannot be represented.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on DotCode symbology. It showcases the use of BarcodeGenerator, EncodeTypes, DotCodeEncodeMode, and ECIEncodings to control encoding behavior. Developers often need to generate DotCode for inventory or tracking applications and must handle unsupported characters gracefully, making this pattern useful for robust barcode creation.
 // Prompt: Implement error handling for unsupported characters when generating DotCode in Auto encoding mode.
-// Tags: dotcode, barcode, generation, error handling, aspose.barcode, encoding
+// Tags: dotcode, barcode, error-handling, auto-encoding, eci, png, aspose.barcode
 
 using System;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Example program that generates a DotCode barcode using Auto encoding mode
-/// and demonstrates handling of unsupported characters.
+/// Demonstrates generating a DotCode barcode and handling unsupported characters.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a DotCode barcode, saves it to a file, and handles any encoding errors.
+    /// Entry point. Generates a DotCode barcode from sample text and saves it as PNG.
     /// </summary>
     static void Main()
     {
-        // Input text containing characters that may not be supported by the selected encoding
+        // Sample text containing characters not supported by ISO-8859-1 (e.g., Japanese kanji)
         string codeText = "犬Right狗";
 
-        // Output file name for the generated barcode image
-        string outputFile = "dotcode.png";
+        // Output file in the temporary directory
+        string outputPath = Path.Combine(Path.GetTempPath(), "dotcode_sample.png");
 
-        // Initialize the BarcodeGenerator with DotCode symbology and the input text
-        using (var generator = new BarcodeGenerator(EncodeTypes.DotCode, codeText))
+        // Generate the barcode and handle any encoding issues
+        GenerateDotCode(codeText, outputPath);
+    }
+
+    /// <summary>
+    /// Generates a DotCode barcode using auto‑encoding mode with a specific ECI encoding.
+    /// Handles InvalidCodeException when the input contains characters that cannot be encoded.
+    /// </summary>
+    /// <param name="text">The text to encode into the barcode.</param>
+    /// <param name="outputFile">The full path where the PNG image will be saved.</param>
+    static void GenerateDotCode(string text, string outputFile)
+    {
+        // Initialize a BarcodeGenerator for DotCode with the provided text
+        using (var generator = new BarcodeGenerator(EncodeTypes.DotCode, text))
         {
-            // Configure DotCode parameters:
-            // - Set encoding mode to Auto so the library chooses the best encoding
-            // - Specify ISO-8859-1 as the ECI encoding for compatibility
+            // Configure auto encode mode and set an ECI encoding that cannot represent the characters
             generator.Parameters.Barcode.DotCode.EncodeMode = DotCodeEncodeMode.Auto;
             generator.Parameters.Barcode.DotCode.ECIEncoding = ECIEncodings.ISO_8859_1;
 
             try
             {
-                // Attempt to save the generated barcode image to the specified file
-                generator.Save(outputFile);
-                Console.WriteLine($"Barcode successfully saved to '{outputFile}'.");
+                // Attempt to save the barcode image as PNG
+                generator.Save(outputFile, BarCodeImageFormat.Png);
+                Console.WriteLine($"Barcode saved to: {outputFile}");
             }
             catch (InvalidCodeException ex)
             {
-                // Handle cases where the input contains characters unsupported by the chosen encoding
-                Console.WriteLine($"Error: Unsupported characters for the selected encoding. {ex.Message}");
+                // Handle unsupported characters gracefully
+                Console.WriteLine($"Unsupported character encountered: {ex.Message}");
             }
             catch (Exception ex)
             {
-                // Handle any other unexpected errors during barcode generation
-                Console.WriteLine($"Barcode generation failed: {ex.Message}");
+                // General error handling for any other issues
+                Console.WriteLine($"An error occurred: {ex.Message}");
             }
         }
     }

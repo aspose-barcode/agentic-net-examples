@@ -1,8 +1,8 @@
-// Title: Generate QR Code and embed into PowerPoint slide
-// Description: Demonstrates creating a QR Code barcode with Aspose.BarCode, saving it as EMF, and inserting it into a PowerPoint presentation using Aspose.Slides and Open XML.
-// Category-Description: This example belongs to the Aspose.BarCode and Aspose.Slides integration category, showing how to generate vector barcode images (QR Code) and embed them into Office Open XML documents such as PowerPoint. It highlights key API classes like BarcodeGenerator, BarCodeImageFormat, Presentation, and ImageCollection, which developers commonly use for automated report generation, marketing material creation, and document automation.
+// Title: Generate QR Code barcode and embed into PowerPoint slide
+// Description: Demonstrates creating a QR Code barcode, saving it as an EMF image, and inserting the image into a PowerPoint presentation.
+// Category-Description: This example belongs to the Aspose.BarCode and Aspose.Slides integration category. It showcases how to use the BarcodeGenerator class to produce a QR Code, the Presentation class to work with PowerPoint files via Open XML, and the IPPImage interface to embed images. Typical use cases include adding dynamic barcodes to slide decks for marketing, inventory, or event tickets. Developers often need to generate barcodes programmatically and place them into Office documents without manual steps.
 // Prompt: Generate QR Code barcode and embed barcode into PowerPoint slide using Open XML.
-// Tags: qr code, barcode generation, powerpoint, openxml, aspose.barcode, aspose.slides, emf, vector image
+// Tags: qr code, barcode generation, powerpoint, openxml, aspose.barcode, aspose.slides, emf, image embedding
 
 using System;
 using System.IO;
@@ -13,43 +13,41 @@ using Aspose.Slides.Export;
 using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates a QR Code barcode, saves it as an EMF image,
-/// and embeds the image into a PowerPoint slide using Aspose.Slides.
+/// Example program that creates a QR Code barcode, saves it as an EMF image,
+/// and embeds the image into a PowerPoint slide using Aspose.BarCode and Aspose.Slides.
 /// </summary>
 class Program
 {
     /// <summary>
     /// Entry point of the application.
     /// </summary>
-    static void Main()
+    /// <param name="args">Command‑line arguments (not used).</param>
+    static void Main(string[] args)
     {
-        // Paths for temporary barcode image and final PowerPoint file
-        const string barcodePath = "qr.emf";
-        const string presentationPath = "qr_presentation.pptx";
+        // Create a unique temporary folder for all generated files
+        string workFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(workFolder);
 
-        // -----------------------------------------------------------------
-        // 1. Generate QR Code barcode and save it as EMF (vector format)
-        // -----------------------------------------------------------------
+        // Path for the EMF barcode image
+        string emfPath = Path.Combine(workFolder, "qr.emf");
+
+        // Generate a QR Code and save it as EMF
         using (var generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
         {
-            // Set high error correction level for better readability
+            // Set a high error correction level (optional)
             generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
 
-            // Let the generator decide size based on the image dimensions
-            generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
-            generator.Parameters.ImageWidth.Point = 300f;
-            generator.Parameters.ImageHeight.Point = 300f;
-
-            // Save as EMF; handle evaluation‑version restriction gracefully
             try
             {
-                generator.Save(barcodePath, BarCodeImageFormat.Emf);
+                // Export the barcode to an EMF file
+                generator.Save(emfPath, BarCodeImageFormat.Emf);
             }
             catch (Exception ex)
             {
+                // EMF export requires a licensed version of Aspose.BarCode
                 if (ex.Message.Contains("evaluation"))
                 {
-                    Console.WriteLine("A valid Aspose.BarCode license is required for EMF export of this barcode type.");
+                    Console.WriteLine("A valid Aspose.BarCode license is required for EMF export.");
                     return;
                 }
                 throw;
@@ -57,34 +55,27 @@ class Program
         }
 
         // Verify that the EMF file was created
-        if (!File.Exists(barcodePath))
+        if (!File.Exists(emfPath))
         {
-            Console.WriteLine("Failed to create the barcode image.");
+            Console.WriteLine("Failed to create the EMF barcode image.");
             return;
         }
 
-        // ---------------------------------------------------------------
-        // 2. Create a PowerPoint presentation and embed the barcode image
-        // ---------------------------------------------------------------
+        // Create a new PowerPoint presentation and embed the barcode image
         using (var presentation = new Presentation())
         {
-            // Use the first (default) slide
+            // Load the EMF image into the presentation's image collection
+            byte[] emfBytes = File.ReadAllBytes(emfPath);
+            IPPImage pptImage = presentation.Images.AddImage(emfBytes);
+
+            // Add a picture frame to the first slide (position and size are in points)
             var slide = presentation.Slides[0];
+            slide.Shapes.AddPictureFrame(ShapeType.Rectangle, 50, 50, 400, 400, pptImage);
 
-            // Load the EMF image bytes
-            byte[] emfBytes = File.ReadAllBytes(barcodePath);
-
-            // Add the image to the presentation's image collection
-            var image = presentation.Images.AddImage(emfBytes);
-
-            // Insert the image as a picture frame onto the slide
-            // Parameters: shape type, X, Y, width, height, image
-            slide.Shapes.AddPictureFrame(ShapeType.Rectangle, 50f, 50f, 300f, 300f, image);
-
-            // Save the presentation to a PPTX file
-            presentation.Save(presentationPath, SaveFormat.Pptx);
+            // Save the presentation to the temporary folder
+            string pptxPath = Path.Combine(workFolder, "BarcodePresentation.pptx");
+            presentation.Save(pptxPath, SaveFormat.Pptx);
+            Console.WriteLine($"Presentation saved to: {pptxPath}");
         }
-
-        Console.WriteLine($"Presentation created successfully: {presentationPath}");
     }
 }

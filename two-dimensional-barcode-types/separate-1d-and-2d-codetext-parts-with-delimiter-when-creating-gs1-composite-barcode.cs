@@ -1,44 +1,52 @@
-// Title: Generate a GS1 Composite barcode with separate 1D and 2D parts
-// Description: Demonstrates how to create a GS1 Composite barcode by separating the linear and 2D component data with a ‘|’ delimiter.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator with EncodeTypes.GS1CompositeBar, setting linear and 2D component types, and adjusting dimensions. Developers working with GS1 Composite symbologies often need to combine 1D and 2D data streams, configure component types, and export the result as an image.
+// Title: Create a GS1 Composite barcode with separate 1D and 2D components
+// Description: Demonstrates how to build a GS1 Composite barcode by concatenating a linear GS1 Code128 component and a 2D PDF417 component using the ‘|’ delimiter.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator with EncodeTypes.GS1CompositeBar. It shows configuring linear and 2D component types, adjusting visual parameters, and saving the result as an image. Developers working with GS1 standards often need to combine 1D and 2D data for logistics and retail applications.
 // Prompt: Separate 1D and 2D CodeText parts with ‘|’ delimiter when creating a GS1 Composite barcode.
-// Tags: gs1 composite barcode, 1d 2d delimiter, aspose.barcode, barcode generation, png output
+// Tags: gs1 composite, barcode generation, png, aspose.barcode, encode types
 
 using System;
-using Aspose.BarCode.Generation;
 using Aspose.BarCode;
+using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates creating a GS1 Composite barcode where the 1D and 2D data parts are separated by a ‘|’ delimiter.
+/// Example program that generates a GS1 Composite barcode
+/// containing separate linear (1D) and 2D components.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates the barcode image and saves it to disk.
+    /// Entry point. Builds the composite CodeText, configures the generator,
+    /// and saves the barcode image to disk.
     /// </summary>
     static void Main()
     {
-        // Define the GS1 Composite barcode text: linear (1D) part and 2D part separated by '|'
-        string codeText = "(01)03212345678906|(21)A1B2C3D4E5F6G7H8";
+        // Linear (1D) component: GS1 Code128 with AI (01) GTIN-14 and AI (21) serial number
+        string linearComponent = "(01)00123456789012(21)ABC123";
 
-        // Initialize the generator for GS1 Composite Bar symbology with the combined code text
+        // 2D component: PDF417 with AI (01) GTIN-14 and AI (10) batch/lot number
+        string twoDComponent = "(01)00123456789012(10)BATCH01";
+
+        // Concatenate components with '|' as required for GS1 Composite barcodes
+        string codeText = $"{linearComponent}|{twoDComponent}";
+
+        // Initialize the barcode generator for GS1 Composite Bar
         using (var generator = new BarcodeGenerator(EncodeTypes.GS1CompositeBar, codeText))
         {
-            // Configure the linear component to use GS1 Code128
+            // Specify that the linear part uses GS1 Code128
             generator.Parameters.Barcode.GS1CompositeBar.LinearComponentType = EncodeTypes.GS1Code128;
 
-            // Configure the 2D component to use CC-A (Composite Component A)
+            // Choose the 2D component type (CC_A corresponds to MicroPDF417)
             generator.Parameters.Barcode.GS1CompositeBar.TwoDComponentType = TwoDComponentType.CC_A;
 
-            // Optional: adjust visual dimensions
-            generator.Parameters.Barcode.XDimension.Pixels = 3f;   // module (X) size in pixels
-            generator.Parameters.Barcode.BarHeight.Pixels = 100f; // height of the linear (1D) component
+            // Optional visual settings
+            generator.Parameters.Barcode.XDimension.Point = 2f;          // Module size (X-dimension)
+            generator.Parameters.Barcode.BarHeight.Point = 100f;        // Height of the linear (1D) part
+            generator.Parameters.Barcode.Pdf417.AspectRatio = 3f;       // Aspect ratio for the PDF417 (2D) part
 
             // Save the generated barcode as a PNG image
-            generator.Save("gs1composite.png");
+            string outputPath = "gs1_composite.png";
+            generator.Save(outputPath);
+            Console.WriteLine($"GS1 Composite barcode saved to {outputPath}");
         }
-
-        // Inform the user that the barcode has been generated
-        Console.WriteLine("GS1 Composite barcode generated: gs1composite.png");
     }
 }

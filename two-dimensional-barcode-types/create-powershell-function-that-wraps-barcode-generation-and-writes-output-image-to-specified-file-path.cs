@@ -1,58 +1,89 @@
-// Title: PowerShell wrapper for Aspose.BarCode barcode generation
-// Description: Demonstrates how to generate a PowerShell function that creates barcodes using Aspose.BarCode and saves the image to a specified path.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing the use of BarcodeGenerator and EncodeTypes classes to produce barcode images. Developers often need to automate barcode creation in scripts or CI pipelines; this snippet provides a reusable PowerShell function that loads the Aspose.BarCode assembly, selects a symbology, and writes the output file.
+// Title: Generate Barcode Image with Aspose.BarCode in C#
+// Description: Demonstrates how to generate a barcode image using Aspose.BarCode and save it to a file.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and related parameter classes to create various barcode symbologies. Typical scenarios include creating product labels, QR codes, and inventory tags where developers need to programmatically produce barcode images in common formats such as PNG or JPEG.
 // Prompt: Create a PowerShell function that wraps barcode generation and writes output image to specified file path.
-// Tags: barcode symbology generation powershell aspose.barcode image output
+// Tags: barcode symbology, generation, png, aspose.barcode, csharp
 
 using System;
 using System.IO;
+using System.Reflection;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Generates a PowerShell script that defines a function for creating barcodes with Aspose.BarCode.
+/// Provides a simple console application that generates a barcode image using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that writes the PowerShell function to a .ps1 file in the current directory.
+    /// Entry point of the application. Demonstrates barcode generation with sample parameters.
     /// </summary>
     static void Main()
     {
-        // PowerShell script defining the Invoke-GenerateBarcode function.
-        string psFunction = @"
-function Invoke-GenerateBarcode {
-    param(
-        [Parameter(Mandatory=$true)][string]$Symbology,
-        [Parameter(Mandatory=$true)][string]$CodeText,
-        [Parameter(Mandatory=$true)][string]$OutputPath
-    )
-    # Load Aspose.BarCode assembly (expects Aspose.BarCode.dll in the same directory as this script)
-    $assemblyPath = Join-Path -Path (Split-Path -Parent $MyInvocation.MyCommand.Path) 'Aspose.BarCode.dll'
-    if (-not (Test-Path $assemblyPath)) {
-        throw ""Aspose.BarCode.dll not found at $assemblyPath""
+        // Define sample input values.
+        string symbology = "Code128";
+        string codeText = "123ABC";
+
+        // Build an output path in the temporary folder.
+        string outputPath = Path.Combine(Path.GetTempPath(), "sample_barcode.png");
+
+        // Generate the barcode and save it to the specified file.
+        GenerateBarcode(symbology, codeText, outputPath);
+
+        // Inform the user where the file was saved.
+        Console.WriteLine($"Barcode saved to: {outputPath}");
     }
-    Add-Type -Path $assemblyPath
 
-    # Resolve symbology name to EncodeTypes enum value via reflection
-    $field = [Aspose.BarCode.Generation.EncodeTypes].GetField($Symbology)
-    if ($null -eq $field) {
-        throw ""Unknown symbology: $Symbology""
-    }
-    $encodeType = $field.GetValue($null)
+    /// <summary>
+    /// Generates a barcode image using Aspose.BarCode and saves it to the specified file.
+    /// </summary>
+    /// <param name="symbologyName">Name of the barcode symbology (e.g., "Code128", "QR").</param>
+    /// <param name="codeText">Text to encode in the barcode.</param>
+    /// <param name="outputFilePath">Full path where the image will be saved.</param>
+    static void GenerateBarcode(string symbologyName, string codeText, string outputFilePath)
+    {
+        // Validate input arguments.
+        if (string.IsNullOrWhiteSpace(symbologyName))
+            throw new ArgumentException("Symbology name must be provided.", nameof(symbologyName));
 
-    # Create the barcode generator and save the image
-    $generator = New-Object Aspose.BarCode.Generation.BarcodeGenerator($encodeType, $CodeText)
-    $generator.Save($OutputPath)
-}
-";
+        if (string.IsNullOrWhiteSpace(codeText))
+            throw new ArgumentException("Code text must be provided.", nameof(codeText));
 
-        // Determine the full path for the PowerShell script file.
-        string scriptPath = Path.Combine(Directory.GetCurrentDirectory(), "GenerateBarcode.ps1");
+        if (string.IsNullOrWhiteSpace(outputFilePath))
+            throw new ArgumentException("Output file path must be provided.", nameof(outputFilePath));
 
-        // Write the script content to the file system.
-        File.WriteAllText(scriptPath, psFunction);
+        // Resolve the symbology name to an EncodeTypes field via reflection.
+        FieldInfo field = typeof(EncodeTypes).GetField(symbologyName, BindingFlags.Public | BindingFlags.Static);
+        if (field == null)
+        {
+            Console.WriteLine($"Unknown symbology: {symbologyName}");
+            return;
+        }
 
-        // Inform the user where the script was saved.
-        Console.WriteLine($"PowerShell function written to: {scriptPath}");
+        // Cast the resolved field value to BaseEncodeType.
+        BaseEncodeType encodeType = (BaseEncodeType)field.GetValue(null);
+
+        // Ensure the target directory exists.
+        string directory = Path.GetDirectoryName(outputFilePath);
+        if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+        {
+            Directory.CreateDirectory(directory);
+        }
+
+        // Generate and save the barcode image.
+        try
+        {
+            using (var generator = new BarcodeGenerator(encodeType, codeText))
+            {
+                // Optional: configure additional parameters here, e.g.:
+                // generator.Parameters.Barcode.XDimension.Point = 2f;
+
+                generator.Save(outputFilePath);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error generating barcode: {ex.Message}");
+        }
     }
 }
