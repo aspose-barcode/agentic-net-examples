@@ -1,7 +1,8 @@
-// Title: Custom Colored Barcode Generation and Pixel Comparison
-// Description: Demonstrates generating Code128 barcodes with different custom colors and programmatically comparing their visual differences.
+// Title: Custom Color Comparison for Code128 Barcodes
+// Description: Demonstrates how to generate a Code128 barcode with default and custom colors, then programmatically compare the visual differences.
+// Category-Description: This example belongs to the Aspose.BarCode image customization and analysis category. It showcases the use of BarcodeGenerator, setting BarColor and BackColor, and performing pixel‑by‑pixel image comparison with Aspose.Drawing. Developers often need to customize barcode appearance for branding and verify visual changes automatically.
 // Prompt: Apply different custom colors to the same barcode type and compare visual differences programmatically.
-// Tags: barcode, code128, color, comparison, png, aspose.barcode, aspose.drawing
+// Tags: barcode, code128, color customization, image comparison, aspose.barcode, aspose.drawing, png
 
 using System;
 using System.IO;
@@ -11,89 +12,81 @@ using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Generates two Code128 barcodes with distinct color schemes,
-/// saves them as PNG files, and compares the images pixel by pixel
-/// to quantify visual differences.
+/// Demonstrates generating a Code128 barcode with default and custom colors,
+/// saving them as PNG files, and comparing the images pixel by pixel.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
+    /// Entry point of the example. Creates output folder, generates two barcodes,
+    /// and outputs the percentage of differing pixels.
     /// </summary>
     static void Main()
     {
-        // --------------------------------------------------------------------
-        // Prepare output directory
-        // --------------------------------------------------------------------
-        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
-        if (!Directory.Exists(outputDir))
+        // Define the folder where barcode images will be saved
+        string outputFolder = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
+        if (!Directory.Exists(outputFolder))
         {
-            Directory.CreateDirectory(outputDir);
+            Directory.CreateDirectory(outputFolder);
         }
 
-        // --------------------------------------------------------------------
-        // Define common barcode data and target file paths
-        // --------------------------------------------------------------------
-        string codeText = "Sample123";
-        string fileRed = Path.Combine(outputDir, "code_red.png");
-        string fileBlue = Path.Combine(outputDir, "code_blue.png");
+        // File paths for the default‑color and custom‑color barcode images
+        string defaultPath = Path.Combine(outputFolder, "barcode_default.png");
+        string customPath = Path.Combine(outputFolder, "barcode_custom.png");
 
-        // --------------------------------------------------------------------
-        // Generate barcode with red bars on a white background
-        // --------------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+        // ------------------------------------------------------------
+        // Generate barcode with default colors (black bars on white background)
+        // ------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
         {
-            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Red;      // Set bar color to red
-            generator.Parameters.BackColor = Aspose.Drawing.Color.White;          // Set background to white
-            generator.Save(fileRed, BarCodeImageFormat.Png);                       // Save as PNG
+            generator.Save(defaultPath, BarCodeImageFormat.Png);
         }
 
-        // --------------------------------------------------------------------
-        // Generate barcode with blue bars on a light gray background
-        // --------------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+        // ------------------------------------------------------------
+        // Generate barcode with custom colors (red bars on yellow background)
+        // ------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
         {
-            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Blue;    // Set bar color to blue
-            generator.Parameters.BackColor = Aspose.Drawing.Color.LightGray;      // Set background to light gray
-            generator.Save(fileBlue, BarCodeImageFormat.Png);                      // Save as PNG
+            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Red;   // Set bar (foreground) color
+            generator.Parameters.BackColor = Aspose.Drawing.Color.Yellow;      // Set background color
+            generator.Save(customPath, BarCodeImageFormat.Png);
         }
 
-        // --------------------------------------------------------------------
-        // Load the generated images for pixel-by-pixel comparison
-        // --------------------------------------------------------------------
-        using (var bmpRed = new Bitmap(fileRed))
-        using (var bmpBlue = new Bitmap(fileBlue))
+        // ------------------------------------------------------------
+        // Load both images and compare them pixel by pixel
+        // ------------------------------------------------------------
+        using (var imgDefault = (Bitmap)Aspose.Drawing.Image.FromFile(defaultPath))
+        using (var imgCustom = (Bitmap)Aspose.Drawing.Image.FromFile(customPath))
         {
-            // Verify that both images share the same dimensions
-            if (bmpRed.Width != bmpBlue.Width || bmpRed.Height != bmpBlue.Height)
+            // Verify that the images share the same dimensions before comparison
+            if (imgDefault.Width != imgCustom.Width || imgDefault.Height != imgCustom.Height)
             {
-                Console.WriteLine("Images have different dimensions; cannot compare.");
+                Console.WriteLine("Images have different dimensions; cannot compare pixel by pixel.");
                 return;
             }
 
-            int diffPixels = 0; // Counter for differing pixels
+            int width = imgDefault.Width;
+            int height = imgDefault.Height;
+            long diffPixelCount = 0;
 
-            // Iterate over each pixel coordinate
-            for (int y = 0; y < bmpRed.Height; y++)
+            // Iterate over each pixel and count differences
+            for (int y = 0; y < height; y++)
             {
-                for (int x = 0; x < bmpRed.Width; x++)
+                for (int x = 0; x < width; x++)
                 {
-                    // Compare pixel colors; increment counter if they differ
-                    if (bmpRed.GetPixel(x, y) != bmpBlue.GetPixel(x, y))
+                    int argbDefault = imgDefault.GetPixel(x, y).ToArgb();
+                    int argbCustom = imgCustom.GetPixel(x, y).ToArgb();
+                    if (argbDefault != argbCustom)
                     {
-                        diffPixels++;
+                        diffPixelCount++;
                     }
                 }
             }
 
-            // Output the total number of differing pixels
-            Console.WriteLine($"Total differing pixels between red and blue barcodes: {diffPixels}");
+            // Output comparison results
+            Console.WriteLine($"Total pixels: {width * height}");
+            Console.WriteLine($"Different pixels: {diffPixelCount}");
+            Console.WriteLine($"Difference percentage: {diffPixelCount * 100.0 / (width * height):F2}%");
         }
-
-        // --------------------------------------------------------------------
-        // Inform the user where the barcode images have been saved
-        // --------------------------------------------------------------------
-        Console.WriteLine($"Red barcode saved to: {fileRed}");
-        Console.WriteLine($"Blue barcode saved to: {fileBlue}");
     }
 }

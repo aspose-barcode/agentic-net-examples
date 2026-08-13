@@ -1,35 +1,37 @@
-// Title: Generate QR Code with Green Background
-// Description: Demonstrates creating a QR code with a green background and black bars, then saving it as a PNG file.
+// Title: Generate QR Code with Green Background and Black Bars
+// Description: Demonstrates creating a QR code with a green background and black foreground bars, then saving it as a PNG image.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to customize QR code appearance using BarcodeGenerator, EncodeTypes, and drawing parameters. Developers often need to adjust colors, sizes, and output formats for branding or UI integration, and this snippet shows the essential API calls for such tasks.
 // Prompt: Create a QR code with a green background and black bars, then save as PNG.
-// Tags: qr, barcode, generation, png, aspose.barcode, aspose.drawing
+// Tags: qr code, barcode generation, color customization, png output, aspose.barcode, aspose.drawing
 
 using System;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates a QR code with a green background and black bars using Aspose.BarCode.
+/// Demonstrates generating a QR code with custom colors and saving it as a PNG file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates the QR code and saves it as a PNG file.
+    /// Entry point of the example. Creates a QR code with a green background and black bars, then writes it to "qr_green.png".
     /// </summary>
     static void Main()
     {
-        // Initialize a QR code generator with the QR symbology.
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR))
+        // Initialize a QR code generator using the QR symbology
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR))
         {
-            // Define the data to encode in the QR code.
-            generator.CodeText = "Hello World";
+            // Set the data to be encoded in the QR code
+            generator.CodeText = "Hello, Aspose!";
 
-            // Configure visual appearance: black bars on a green background.
-            generator.Parameters.Barcode.BarColor = Color.Black;
+            // Apply a green background color to the image
             generator.Parameters.BackColor = Color.Green;
 
-            // Persist the generated QR code image as a PNG file.
-            generator.Save("qr_green_background.png");
+            // Set the barcode (foreground) color to black
+            generator.Parameters.Barcode.BarColor = Color.Black;
+
+            // Save the generated QR code as a PNG file in the current directory
+            generator.Save("qr_green.png");
         }
     }
 }
