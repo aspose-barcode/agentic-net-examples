@@ -1,98 +1,108 @@
-// Title: Verify BarCodeReader retains FNC symbols when StripFNC is true
-// Description: Demonstrates a unit‑test‑style verification that the BarCodeReader keeps the FNC1 character when StripFNC is disabled and removes it when enabled.
-// Category-Description: This example belongs to the Aspose.BarCode barcode reading category, focusing on GS1‑128 symbology and the StripFNC setting. It showcases the use of BarcodeGenerator, BarCodeReader, and related settings to control FNC character handling—common tasks for developers integrating barcode validation or data extraction.
+// Title: Verify StripFNC behavior for QR codes with FNC1 symbols
+// Description: Demonstrates generating a QR code containing FNC1 characters, then reading it with and without stripping FNC symbols to confirm the StripFNC setting works.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category, showcasing the use of BarcodeGenerator, QrExtCodetextBuilder, and BarCodeReader. It illustrates typical scenarios where developers need to preserve or remove function characters (FNC) in QR codes, such as GS1 data handling, and how to validate the StripFNC property during decoding.
 // Prompt: Write a unit test verifying BarCodeReader retains FNC symbols when StripFNC is true.
-// Tags: barcode symbology, gs1-128, stripfnc, unit test, aspose.barcode, generation, recognition
+// Tags: qr, fnc1, stripfnc, barcode generation, barcode recognition, aspose.barcode, unit test
 
 using System;
 using System.IO;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Contains the example that validates the StripFNC behavior of <see cref="BarCodeReader"/> for GS1‑128 barcodes.
+/// Demonstrates generating a QR code with FNC1 characters and verifying the StripFNC setting of BarCodeReader.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Generates a GS1‑128 barcode, reads it twice (with StripFNC disabled and enabled),
-    /// and verifies that the FNC1 character is retained or removed as expected.
+    /// Entry point that creates a QR barcode, reads it with different StripFNC settings, and validates the results.
     /// </summary>
     static void Main()
     {
-        // Sample GS1‑128 code text containing Application Identifier (AI) sections.
-        const string sampleCodeText = "(02)04006664241007(37)1(400)7019590754";
+        // Prepare a temporary folder and file path for the barcode image
+        string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeTest");
+        Directory.CreateDirectory(tempFolder);
+        string barcodePath = Path.Combine(tempFolder, "qr_fnc.png");
 
-        // Generate the barcode image into a memory stream to avoid file I/O.
-        using (var imageStream = new MemoryStream())
+        // Build QR code text containing FNC1 characters using the builder
+        QrExtCodetextBuilder builder = new QrExtCodetextBuilder();
+        builder.AddFNC1FirstPosition();                     // FNC1 at first position
+        builder.AddPlainCodetext("DATA");                   // regular data
+        builder.AddFNC1SecondPosition("12");                // FNC1 with value "12"
+        builder.AddPlainCodetext("MORE");                   // more data
+        string extendedText = builder.GetExtendedCodetext();
+
+        // Generate QR barcode with Extended mode (supports FNC1)
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR))
         {
-            // Create a generator for GS1‑128 and save the image as PNG.
-            using (var generator = new BarcodeGenerator(EncodeTypes.GS1Code128, sampleCodeText))
-            {
-                generator.Save(imageStream, BarCodeImageFormat.Png);
-            }
-
-            // Reset the stream position so it can be read from the beginning.
-            imageStream.Position = 0;
-
-            // Test with StripFNC disabled (the FNC1 character should be retained).
-            bool stripFncDisabledResult = TestStripFnc(imageStream, false, out string decodedWithoutStrip);
-            // Reset stream position for the next read.
-            imageStream.Position = 0;
-
-            // Test with StripFNC enabled (the FNC1 character should be removed).
-            bool stripFncEnabledResult = TestStripFnc(imageStream, true, out string decodedWithStrip);
-            // Reset stream position for any further use.
-            imageStream.Position = 0;
-
-            int passed = 0, failed = 0;
-
-            // The FNC1 character is represented by ASCII 29 (Group Separator).
-            const char fnc1Char = '\u001D';
-
-            // Verify that the result without stripping contains the FNC1 character.
-            if (decodedWithoutStrip != null && decodedWithoutStrip.IndexOf(fnc1Char) >= 0)
-                passed++;
-            else
-                failed++;
-
-            // Verify that the result with stripping does NOT contain the FNC1 character.
-            if (decodedWithStrip != null && decodedWithStrip.IndexOf(fnc1Char) < 0)
-                passed++;
-            else
-                failed++;
-
-            // Output the test summary and the decoded strings.
-            Console.WriteLine($"Test results: {passed} passed, {failed} failed.");
-            Console.WriteLine($"Decoded without StripFNC: \"{decodedWithoutStrip}\"");
-            Console.WriteLine($"Decoded with StripFNC:    \"{decodedWithStrip}\"");
+            generator.CodeText = extendedText;
+            generator.Parameters.Barcode.QR.EncodeMode = QREncodeMode.Extended;
+            generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
-    }
 
-    /// <summary>
-    /// Reads a barcode from the provided stream using the specified <c>StripFNC</c> setting.
-    /// </summary>
-    /// <param name="imageStream">Stream containing the barcode image.</param>
-    /// <param name="stripFnc">If true, the reader will remove FNC characters from the result.</param>
-    /// <param name="codeText">Outputs the decoded barcode text when reading succeeds.</param>
-    /// <returns>True if a barcode was successfully read; otherwise, false.</returns>
-    static bool TestStripFnc(Stream imageStream, bool stripFnc, out string codeText)
-    {
-        codeText = null;
-        // Initialize the reader for GS1‑128 symbology.
-        using (var reader = new BarCodeReader(imageStream, DecodeType.GS1Code128))
+        // Verify that the barcode file was created
+        if (!File.Exists(barcodePath))
         {
-            // Apply the StripFNC setting.
-            reader.BarcodeSettings.StripFNC = stripFnc;
-
-            // Iterate over detected barcodes (there should be only one in this example).
-            foreach (var result in reader.ReadBarCodes())
-            {
-                codeText = result.CodeText;
-                return true;
-            }
+            Console.WriteLine("FAILED: Barcode image was not created.");
+            return;
         }
-        return false;
+
+        // Read barcode without stripping FNC characters (StripFNC = false)
+        string codeTextWithoutStrip;
+        using (BarCodeReader reader = new BarCodeReader(barcodePath, DecodeType.QR))
+        {
+            reader.BarcodeSettings.StripFNC = false;
+            BarCodeResult[] results = reader.ReadBarCodes();
+            if (results.Length == 0)
+            {
+                Console.WriteLine("FAILED: No barcode detected (StripFNC = false).");
+                return;
+            }
+            codeTextWithoutStrip = results[0].CodeText;
+        }
+
+        // Read barcode with stripping FNC characters (StripFNC = true)
+        string codeTextWithStrip;
+        using (BarCodeReader reader = new BarCodeReader(barcodePath, DecodeType.QR))
+        {
+            reader.BarcodeSettings.StripFNC = true;
+            BarCodeResult[] results = reader.ReadBarCodes();
+            if (results.Length == 0)
+            {
+                Console.WriteLine("FAILED: No barcode detected (StripFNC = true).");
+                return;
+            }
+            codeTextWithStrip = results[0].CodeText;
+        }
+
+        // Simple verification: the texts should differ and the stripped version should be shorter
+        bool testPassed = !string.Equals(codeTextWithoutStrip, codeTextWithStrip) &&
+                          codeTextWithStrip.Length < codeTextWithoutStrip.Length;
+
+        if (testPassed)
+        {
+            Console.WriteLine("PASSED: StripFNC works as expected.");
+            Console.WriteLine($"Original CodeText: {codeTextWithoutStrip}");
+            Console.WriteLine($"Stripped CodeText: {codeTextWithStrip}");
+        }
+        else
+        {
+            Console.WriteLine("FAILED: StripFNC did not modify the CodeText as expected.");
+            Console.WriteLine($"Original CodeText: {codeTextWithoutStrip}");
+            Console.WriteLine($"Stripped CodeText: {codeTextWithStrip}");
+        }
+
+        // Clean up temporary files (optional)
+        try
+        {
+            File.Delete(barcodePath);
+            Directory.Delete(tempFolder, true);
+        }
+        catch
+        {
+            // Ignored - cleanup is best‑effort
+        }
     }
 }

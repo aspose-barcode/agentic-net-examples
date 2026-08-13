@@ -1,48 +1,53 @@
-// Title: Decode Australia Post barcode using CTable format
-// Description: Demonstrates setting CustomerInformationInterpretingType to CTable for decoding Australia Post barcodes and prints the decoded values.
-// Category-Description: This example belongs to the Aspose.BarCode barcode decoding category, focusing on Australia Post symbology. It showcases the use of BarcodeGenerator, BarCodeReader, and related settings to generate and decode barcodes, a common task for developers handling postal services integration.
+// Title: Australia Post barcode generation and CTable decoding example
+// Description: Demonstrates generating an Australia Post barcode with customer information encoded using the CTable format and then decoding it back, interpreting the customer data as CTable.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes and BarCodeReader for decoding them. Typical use cases include printing Australia Post barcodes with custom customer information and later extracting that information programmatically. Developers often work with EncodeTypes, DecodeType, and specific settings such as AustralianPost.EncodingTable and AustraliaPost.CustomerInformationInterpretingType.
 // Prompt: Set AustraliaPostSettings.CustomerInformationInterpretingType to CTable for CTable format decoding of Australia Post barcodes.
-// Tags: barcode symbology, australia post, decoding, ctable, aspose.barcode, generation, recognition
+// Tags: australia post, barcode, ctable, generation, recognition, aspose.barcode
 
 using System;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Program demonstrating generation and CTable decoding of an Australia Post barcode.
+/// Example program that generates an Australia Post barcode with CTable‑encoded customer information
+/// and then reads it back, interpreting the customer data as CTable.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a barcode, decodes it using CTable interpreting type, and writes results to console.
+    /// Entry point. Generates the barcode, saves to a memory stream, and reads it back using Aspose.BarCode.
     /// </summary>
     static void Main()
     {
-        // Sample Australia Post barcode text (postal code + customer info)
-        const string codeText = "5912345678AB";
+        // Sample Australia Post code text:
+        // FCC = 59 (allows customer info), DPID = 12345678, 5 CTable characters "ABCDE"
+        string codeText = "5912345678ABCDE";
 
-        // Initialize a barcode generator for Australia Post symbology
-        using (var generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, codeText))
+        // Generate the barcode with CTable encoding for customer information
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, codeText))
         {
-            // Configure the generator to use CTable encoding for the customer information segment
+            // Set the encoding table to CTable for the generated barcode
             generator.Parameters.Barcode.AustralianPost.EncodingTable = CustomerInformationInterpretingType.CTable;
 
-            // Generate the barcode image in memory
-            using (Bitmap image = generator.GenerateBarCodeImage())
+            // Save the generated barcode to a memory stream in PNG format
+            using (MemoryStream ms = new MemoryStream())
             {
-                // Create a barcode reader for the generated image, specifying Australia Post decoding
-                using (var reader = new BarCodeReader(image, DecodeType.AustraliaPost))
+                generator.Save(ms, BarCodeImageFormat.Png);
+                ms.Position = 0; // Reset stream position for reading
+
+                // Recognize the barcode from the memory stream
+                using (BarCodeReader reader = new BarCodeReader(ms, DecodeType.AustraliaPost))
                 {
-                    // Set the reader to interpret the customer information using CTable format
+                    // Configure the reader to interpret customer information as CTable
                     reader.BarcodeSettings.AustraliaPost.CustomerInformationInterpretingType = CustomerInformationInterpretingType.CTable;
 
-                    // Iterate through all decoded barcode results
-                    foreach (var result in reader.ReadBarCodes())
+                    // Read and output barcode information
+                    foreach (BarCodeResult result in reader.ReadBarCodes())
                     {
-                        Console.WriteLine("BarCode Type: " + result.CodeType);
-                        Console.WriteLine("BarCode CodeText: " + result.CodeText);
+                        Console.WriteLine($"Code Type: {result.CodeType}");
+                        Console.WriteLine($"Code Text: {result.CodeText}");
                     }
                 }
             }

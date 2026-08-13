@@ -1,55 +1,83 @@
-// Title: Validate ProcessorSettings.MaxAdditionalAllowedThreads against system limits
-// Description: Demonstrates how to ensure the MaxAdditionalAllowedThreads setting does not exceed the machine's logical processor count, adjusting it if necessary.
-// Category-Description: This example belongs to the Aspose.BarCode threading configuration category, illustrating the use of BarCodeReader.ProcessorSettings to control parallel processing. Developers often need to limit additional threads to avoid oversubscription of CPU resources, especially in high‑throughput scanning scenarios. The snippet shows retrieving system processor count, defining safe bounds, and applying validated values.
+// Title: Validate MaxAdditionalAllowedThreads Setting for Aspose.BarCode
+// Description: Demonstrates how to validate and safely set the MaxAdditionalAllowedThreads property of Aspose.BarCode's ProcessorSettings, ensuring it stays within system limits.
+// Category-Description: This example belongs to the Aspose.BarCode configuration management category, illustrating how to work with processor settings to control multithreading. It showcases the BarCodeReader class and its ProcessorSettings, a common requirement when optimizing barcode recognition performance on multi‑core systems. Developers often need to validate thread counts to avoid exceeding hardware capabilities while maximizing throughput.
 // Prompt: Write a validation routine ensuring ProcessorSettings.MaxAdditionalAllowedThreads does not exceed system limits.
-// Tags: barcode, threading, validation, processorsettings, aspose.barcode
+// Tags: barcode, validation, configuration, barcodereader, processorsettings
 
 using System;
+using Aspose.BarCode;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.BarCode.Common;
 
 /// <summary>
-/// Provides an example of validating and setting the maximum number of additional threads
-/// allowed for Aspose.BarCode's <see cref="BarCodeReader.ProcessorSettings"/> based on system limits.
+/// Provides a console example that validates and applies a thread count limit
+/// to <see cref="BarCodeReader.ProcessorSettings.MaxAdditionalAllowedThreads"/>.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Retrieves the logical processor count, validates a desired
-    /// thread count against a safe upper bound, and applies the validated value to the processor settings.
+    /// Entry point of the example. Demonstrates validation with both an exceeding
+    /// and a valid thread count, handling any validation errors gracefully.
     /// </summary>
     static void Main()
     {
-        // Retrieve the number of logical processors available on the current machine.
-        int processorCount = Environment.ProcessorCount;
+        // Calculate sample values: one that exceeds the safe limit, one that is within the limit.
+        int exceedingValue = Environment.ProcessorCount * 3; // Intentionally too high.
+        int validValue = Environment.ProcessorCount * 2;     // Within the safe range.
 
-        // Example desired value for additional threads (could be sourced from configuration or arguments).
-        // Here we intentionally set it to three times the processor count to demonstrate the validation.
-        int desiredAdditionalThreads = processorCount * 3;
+        // Attempt to set the exceeding value and capture validation failure.
+        Console.WriteLine("Attempting to set exceeding value:");
+        try
+        {
+            ValidateMaxAdditionalAllowedThreads(exceedingValue);
+        }
+        catch (ArgumentOutOfRangeException ex)
+        {
+            Console.WriteLine($"Validation failed: {ex.Message}");
+        }
 
-        // Define a safe upper bound for additional threads (e.g., twice the core count).
-        int maxAllowed = processorCount * 2;
+        Console.WriteLine();
 
-        // Ensure the requested thread count is not negative.
-        if (desiredAdditionalThreads < 0)
+        // Attempt to set a valid value and confirm successful application.
+        Console.WriteLine("Attempting to set valid value:");
+        try
+        {
+            ValidateMaxAdditionalAllowedThreads(validValue);
+        }
+        catch (ArgumentOutOfRangeException ex)
+        {
+            Console.WriteLine($"Validation failed: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Validates that the requested number of additional threads does not exceed a safe system limit.
+    /// The safe limit is defined as twice the number of logical processors.
+    /// </summary>
+    /// <param name="requestedThreads">The number of additional threads to set.</param>
+    static void ValidateMaxAdditionalAllowedThreads(int requestedThreads)
+    {
+        // Define a safe maximum based on the current environment.
+        int safeMaximum = Environment.ProcessorCount * 2;
+
+        // Guard against negative thread counts.
+        if (requestedThreads < 0)
         {
             throw new ArgumentOutOfRangeException(
-                nameof(desiredAdditionalThreads),
-                "MaxAdditionalAllowedThreads cannot be negative.");
+                nameof(requestedThreads),
+                "Thread count cannot be negative.");
         }
 
-        // If the requested value exceeds the safe limit, adjust it down to the maximum allowed.
-        if (desiredAdditionalThreads > maxAllowed)
+        // Guard against values that exceed the calculated safe maximum.
+        if (requestedThreads > safeMaximum)
         {
-            Console.WriteLine(
-                $"Requested MaxAdditionalAllowedThreads ({desiredAdditionalThreads}) exceeds system limit ({maxAllowed}). Adjusting to limit.");
-            desiredAdditionalThreads = maxAllowed;
+            throw new ArgumentOutOfRangeException(
+                nameof(requestedThreads),
+                $"Requested threads ({requestedThreads}) exceed the safe maximum ({safeMaximum}).");
         }
 
-        // Apply the validated (and possibly adjusted) thread count to the Aspose.BarCode processor settings.
-        BarCodeReader.ProcessorSettings.MaxAdditionalAllowedThreads = desiredAdditionalThreads;
-
-        // Output the final setting for verification.
-        Console.WriteLine(
-            $"ProcessorSettings.MaxAdditionalAllowedThreads is set to {BarCodeReader.ProcessorSettings.MaxAdditionalAllowedThreads}.");
+        // Apply the validated value to Aspose.BarCode processor settings.
+        BarCodeReader.ProcessorSettings.MaxAdditionalAllowedThreads = requestedThreads;
+        Console.WriteLine($"ProcessorSettings.MaxAdditionalAllowedThreads successfully set to {requestedThreads}.");
     }
 }

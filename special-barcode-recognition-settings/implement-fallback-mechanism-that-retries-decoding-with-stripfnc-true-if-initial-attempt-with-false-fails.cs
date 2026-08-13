@@ -1,67 +1,87 @@
-// Title: Barcode decoding with fallback StripFNC setting
-// Description: Demonstrates decoding a Code128 barcode and retrying with StripFNC enabled if the first attempt fails.
-// Category-Description: This example belongs to Aspose.BarCode recognition operations, showcasing the use of BarCodeReader, BarcodeSettings, and DecodeType to read barcodes from images. Developers often need to handle Function Code (FNC) characters that may be present in Code128 symbols; toggling the StripFNC property provides a fallback mechanism for reliable decoding. The snippet serves as a reference for implementing robust barcode reading in .NET applications.
+// Title: Barcode decoding with fallback StripFNC handling
+// Description: Demonstrates generating a GS1 Code128 barcode containing FNC characters and decoding it with a fallback that retries with StripFNC enabled if the first attempt fails.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator (for creating barcodes) and BarCodeReader (for decoding). Typical scenarios include handling GS1 barcodes where Function Code (FNC) characters may need to be stripped during recognition. Developers often need a reliable fallback strategy to ensure successful decoding when initial settings do not yield results.
 // Prompt: Implement a fallback mechanism that retries decoding with StripFNC true if initial attempt with false fails.
-// Tags: code128, decoding, stripfnc, fallback, barcodereader, aspose.barcode, .net
+// Tags: barcode, gs1code128, stripfnc, fallback, decoding, generation, aspose.barcode, csharp
 
 using System;
 using System.IO;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates barcode generation and recognition with a fallback StripFNC setting.
+/// Example program showing how to generate a GS1 Code128 barcode and decode it with a fallback mechanism for StripFNC.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a Code128 barcode, attempts to decode it, and retries with StripFNC enabled if needed.
+    /// Entry point. Generates a sample barcode, decodes it with fallback, and outputs the result.
     /// </summary>
     static void Main()
     {
-        // Generate a Code128 barcode image in memory.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "ABC123"))
+        // Path for the sample barcode image
+        string imagePath = "sample.png";
+
+        // Generate a barcode that contains FNC characters (GS1 Code128)
+        GenerateSampleBarcode(imagePath);
+
+        // Decode with fallback mechanism (first without stripping FNC, then with stripping)
+        string decodedText = DecodeWithFallback(imagePath);
+
+        // Output the final decoded text (or "null" if decoding failed)
+        Console.WriteLine($"Final decoded text: {(decodedText ?? "null")}");
+    }
+
+    // Generates a GS1 Code128 barcode and saves it to the specified file
+    static void GenerateSampleBarcode(string path)
+    {
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.GS1Code128, "(01)12345678901231(10)ABC"))
         {
-            using (var ms = new MemoryStream())
+            generator.Save(path);
+        }
+    }
+
+    // Attempts to decode the image; if the first attempt (StripFNC = false) fails,
+    // it retries with StripFNC = true.
+    static string DecodeWithFallback(string imagePath)
+    {
+        if (!File.Exists(imagePath))
+        {
+            Console.WriteLine($"File not found: {imagePath}");
+            return null;
+        }
+
+        // First attempt: do not strip FNC characters
+        string result = TryDecode(imagePath, stripFnc: false);
+        if (!string.IsNullOrEmpty(result))
+            return result;
+
+        // Second attempt: enable StripFNC to ignore FNC characters
+        return TryDecode(imagePath, stripFnc: true);
+    }
+
+    // Performs a single decode attempt with the specified StripFNC setting
+    static string TryDecode(string imagePath, bool stripFnc)
+    {
+        using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.Code128))
+        {
+            // Configure the reader to strip or retain FNC characters based on the parameter
+            reader.BarcodeSettings.StripFNC = stripFnc;
+
+            // Read all barcodes found in the image
+            BarCodeResult[] results = reader.ReadBarCodes();
+            foreach (BarCodeResult res in results)
             {
-                // Save the generated barcode to the memory stream as PNG.
-                generator.Save(ms, BarCodeImageFormat.Png);
-                ms.Position = 0; // Reset stream position for reading.
-
-                // Load the image from the stream into a Bitmap for recognition.
-                using (var bitmap = new Bitmap(ms))
+                if (!string.IsNullOrEmpty(res.CodeText))
                 {
-                    // Create a reader that supports all barcode types.
-                    using (var reader = new BarCodeReader(bitmap, DecodeType.AllSupportedTypes))
-                    {
-                        // First attempt: do not strip Function Code (FNC) characters.
-                        reader.BarcodeSettings.StripFNC = false;
-                        var results = reader.ReadBarCodes();
-
-                        // Check if decoding succeeded.
-                        if (results.Length > 0 && !string.IsNullOrEmpty(results[0].CodeText))
-                        {
-                            Console.WriteLine("Decoded with StripFNC = false: " + results[0].CodeText);
-                        }
-                        else
-                        {
-                            // Fallback: enable StripFNC and retry decoding.
-                            reader.BarcodeSettings.StripFNC = true;
-                            var retryResults = reader.ReadBarCodes();
-
-                            if (retryResults.Length > 0 && !string.IsNullOrEmpty(retryResults[0].CodeText))
-                            {
-                                Console.WriteLine("Decoded with StripFNC = true: " + retryResults[0].CodeText);
-                            }
-                            else
-                            {
-                                Console.WriteLine("Failed to decode the barcode.");
-                            }
-                        }
-                    }
+                    // Log the successful decode details
+                    Console.WriteLine($"StripFNC={stripFnc}, Type={res.CodeTypeName}, Text={res.CodeText}");
+                    return res.CodeText;
                 }
             }
         }
+
+        // No valid barcode text found in this attempt
+        return null;
     }
 }

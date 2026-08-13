@@ -1,49 +1,60 @@
-// Title: Disable multithreaded barcode reading example
-// Description: Demonstrates how to turn off multi‑core processing for barcode recognition using Aspose.BarCode, ensuring single‑threaded execution.
-// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, illustrating the use of ProcessorSettings to control threading. It shows how to configure UseAllCores and UseOnlyThisCoresCount for the BarCodeReader class, a common requirement when integrating barcode scanning into environments with limited resources or when deterministic performance is needed. Developers often need to adjust these settings to match their application’s concurrency model.
+// Title: Disable Multithreaded Barcode Reading with ProcessorSettings
+// Description: Demonstrates how to generate a Code128 barcode, save it as PNG, and configure Aspose.BarCode to use a single CPU core for barcode recognition.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes and BarCodeReader with ProcessorSettings to control multithreading during decoding. Developers often need to limit CPU usage in environments with constrained resources or when deterministic performance is required.
 // Prompt: Disable multithreaded barcode reading by setting ProcessorSettings.UseAllCores false and UseOnlyThisCoresCount to 1.
-// Tags: barcode, multithreading, processor settings, code128, generation, recognition, aspose.barcode
+// Tags: code128, generation, recognition, png, barcodegenerator, barcodereader, processorsettings, multithreading
 
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates disabling multithreaded barcode reading using Aspose.BarCode.
+/// Example program that creates a Code128 barcode, saves it as a PNG file,
+/// and reads it back using single‑core processing settings.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a sample Code128 barcode if missing, configures single‑threaded processing, and reads the barcode.
+    /// Entry point of the application.
     /// </summary>
     static void Main()
     {
-        // Define the path for the sample barcode image.
-        string imagePath = "sample_barcode.png";
+        // Path where the generated barcode image will be stored
+        string imagePath = "sample.png";
 
-        // Generate a sample barcode if it does not already exist on disk.
-        if (!File.Exists(imagePath))
+        // ------------------------------------------------------------
+        // Generate a simple Code128 barcode and save it as PNG
+        // ------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
         {
-            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
-            {
-                // Save the generated barcode as a PNG file.
-                generator.Save(imagePath, BarCodeImageFormat.Png);
-            }
+            // Save the barcode image to the specified file
+            generator.Save(imagePath, BarCodeImageFormat.Png);
         }
 
-        // Configure the processor to use a single core (disable multithreading).
+        // ------------------------------------------------------------
+        // Configure the barcode reader to use only one CPU core
+        // ------------------------------------------------------------
         BarCodeReader.ProcessorSettings.UseAllCores = false;
         BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount = 1;
 
-        // Initialize the reader with the image and specify the expected barcode type.
-        using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.Code128))
+        // Verify that the barcode image file exists before attempting to read it
+        if (!File.Exists(imagePath))
         {
-            // Iterate through all detected barcodes and output their details.
+            Console.WriteLine($"Barcode image not found at path: {Path.GetFullPath(imagePath)}");
+            return;
+        }
+
+        // ------------------------------------------------------------
+        // Read the barcode from the image using the configured settings
+        // ------------------------------------------------------------
+        using (var reader = new BarCodeReader(imagePath, DecodeType.Code128))
+        {
             foreach (var result in reader.ReadBarCodes())
             {
-                Console.WriteLine($"Barcode Type: {result.CodeTypeName}");
-                Console.WriteLine($"Code Text: {result.CodeText}");
+                Console.WriteLine($"Detected Barcode Type: {result.CodeTypeName}");
+                Console.WriteLine($"Decoded Text: {result.CodeText}");
             }
         }
     }

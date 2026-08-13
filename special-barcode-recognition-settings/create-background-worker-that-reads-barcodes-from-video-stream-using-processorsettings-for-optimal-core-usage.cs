@@ -1,88 +1,113 @@
-// Title: Background Worker Barcode Reader from Video Stream
-// Description: Demonstrates reading barcodes from simulated video frames using a BackgroundWorker and ProcessorSettings to control core usage.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, showcasing how to generate barcodes, process them in a background thread, and fine‑tune multi‑core utilization via ProcessorSettings. Developers often need to handle high‑throughput image streams (e.g., video) and require optimal CPU usage while recognizing multiple symbologies using BarCodeReader, BarcodeGenerator, and QualitySettings.
+// Title: Background worker barcode reading with processor settings
+// Description: Demonstrates generating sample barcode images, configuring Aspose.BarCode processor settings for multi‑core usage, and reading the barcodes asynchronously using a BackgroundWorker.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases key API classes such as BarcodeGenerator, BarCodeReader, and ProcessorSettings, illustrating typical scenarios where developers need to generate barcodes, optimize recognition performance across CPU cores, and process images in a background thread for responsive applications.
 // Prompt: Create a background worker that reads barcodes from a video stream using ProcessorSettings for optimal core usage.
-// Tags: code128, read, console, barcodegenerator, barcodereader, processorsettings, qualitysettings
+// Tags: code128, qr, generation, reading, png, barcodegenerator, barcodereader, backgroundworker
 
 using System;
-using System.Collections.Generic;
-using System.ComponentModel;
 using System.IO;
+using System.ComponentModel;
 using System.Threading;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates barcode images, simulates video frames,
-/// and reads them in a background worker using Aspose.BarCode APIs.
+/// Demonstrates generating sample barcodes, configuring multi‑core processor settings,
+/// and reading the barcodes asynchronously using a BackgroundWorker.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates sample frames, configures processor settings,
-    /// and processes frames asynchronously.
+    /// Entry point. Sets processor settings, creates sample barcodes, runs a background
+    /// worker to read them, and cleans up temporary files.
     /// </summary>
-    static void Main()
+    static void Main(string[] args)
     {
-        // Generate a few barcode images to simulate video frames
-        var frames = new List<byte[]>();
-        for (int i = 0; i < 3; i++)
+        // Enable use of all CPU cores for barcode processing
+        BarCodeReader.ProcessorSettings.UseAllCores = true;
+        // Allow additional threads proportional to processor count for better throughput
+        BarCodeReader.ProcessorSettings.MaxAdditionalAllowedThreads = Environment.ProcessorCount * 2;
+
+        // Create a temporary folder to store generated barcode images
+        string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeSample");
+        Directory.CreateDirectory(tempFolder);
+        GenerateSampleBarcodes(tempFolder);
+
+        // Set up a BackgroundWorker to process the images without blocking the main thread
+        using (var worker = new BackgroundWorker())
         {
-            // Create a barcode generator for Code128 with unique text
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, $"Sample{i + 1}"))
+            var completedEvent = new ManualResetEventSlim(false);
+
+            // Define the work to be performed in the background thread
+            worker.DoWork += (sender, e) => ProcessImages(tempFolder);
+            // Signal completion when the background work finishes
+            worker.RunWorkerCompleted += (sender, e) => completedEvent.Set();
+
+            // Start the background operation
+            worker.RunWorkerAsync();
+
+            // Wait for the background worker to finish, but limit wait time to avoid hanging
+            if (!completedEvent.Wait(TimeSpan.FromSeconds(30)))
             {
-                // Set a simple visual dimension
-                generator.Parameters.Barcode.XDimension.Point = 2f;
-                // Render the barcode to a bitmap
-                using (var bitmap = generator.GenerateBarCodeImage())
-                {
-                    // Save bitmap to memory stream as PNG
-                    using (var ms = new MemoryStream())
-                    {
-                        bitmap.Save(ms, ImageFormat.Png);
-                        frames.Add(ms.ToArray());
-                    }
-                }
+                Console.WriteLine("Processing timed out.");
             }
         }
 
-        // Synchronization primitive to wait for background work completion
-        var doneEvent = new ManualResetEventSlim(false);
-
-        // BackgroundWorker that processes the simulated video frames
-        var worker = new BackgroundWorker();
-        worker.DoWork += (sender, args) =>
+        // Attempt to delete the temporary folder and its contents; ignore any errors in CI environments
+        try
         {
-            // Configure processor settings for optimal core usage
-            BarCodeReader.ProcessorSettings.UseAllCores = false;
-            BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount = Math.Max(1, Environment.ProcessorCount / 2);
+            Directory.Delete(tempFolder, true);
+        }
+        catch
+        {
+            // Suppress cleanup exceptions
+        }
+    }
 
-            // Iterate over each simulated frame
-            foreach (var frameData in frames)
+    // Generates a few barcode images for demonstration purposes
+    private static void GenerateSampleBarcodes(string folder)
+    {
+        const int sampleCount = 5;
+        for (int i = 0; i < sampleCount; i++)
+        {
+            string text = $"Sample{i}";
+            string filePath = Path.Combine(folder, $"barcode{i}.png");
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, text))
             {
-                // Create a memory stream from the frame bytes
-                using (var stream = new MemoryStream(frameData))
-                // Initialize the barcode reader for all supported symbologies
-                using (var reader = new BarCodeReader(stream, DecodeType.AllSupportedTypes))
+                // Simple generation; default settings are sufficient
+                generator.Save(filePath);
+            }
+        }
+    }
+
+    // Reads barcodes from all PNG files in the specified folder
+    private static void ProcessImages(string folder)
+    {
+        string[] files = Directory.GetFiles(folder, "*.png");
+        // Iterate over each image file
+        for (int i = 0; i < files.Length; i++)
+        {
+            string file = files[i];
+            try
+            {
+                // Initialize the reader for Code128 and QR symbologies
+                using (var reader = new BarCodeReader(file, DecodeType.Code128, DecodeType.QR))
                 {
                     // Apply a high‑performance quality preset
                     reader.QualitySettings = QualitySettings.HighPerformance;
-
-                    // Read and output all detected barcodes
+                    // Read and output each detected barcode
                     foreach (var result in reader.ReadBarCodes())
                     {
-                        Console.WriteLine($"Detected: {result.CodeTypeName} - {result.CodeText}");
+                        Console.WriteLine($"File: {Path.GetFileName(file)} | Type: {result.CodeTypeName} | Text: {result.CodeText}");
                     }
                 }
             }
-        };
-        // Signal completion when background work finishes
-        worker.RunWorkerCompleted += (s, e) => doneEvent.Set();
-
-        // Start processing and wait until it finishes
-        worker.RunWorkerAsync();
-        doneEvent.Wait();
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error processing '{Path.GetFileName(file)}': {ex.Message}");
+            }
+        }
     }
 }

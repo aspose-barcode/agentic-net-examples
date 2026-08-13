@@ -1,104 +1,115 @@
-// Title: Parallel barcode recognition from multiple images
-// Description: Demonstrates how to read barcodes from a collection of image files concurrently using TPL while respecting the processor limit defined in Aspose.BarCode's ProcessorSettings.
-// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, showcasing the use of BarCodeReader to detect and extract barcode data from images. It illustrates typical scenarios such as batch processing of scanned documents or photos, where developers need to maximize throughput while honoring the library's MaxProcessorCount setting. The code leverages Parallel.ForEach and reflection to adapt to runtime configuration, a common pattern for high‑performance barcode processing pipelines.
+// Title: Parallel Barcode Image Processing with TPL and ProcessorSettings
+// Description: Demonstrates generating sample Code128 barcode images and reading them in parallel while limiting CPU usage via BarCodeReader.ProcessorSettings.
+// Category-Description: This example belongs to the Aspose.BarCode operations collection focusing on barcode generation, recognition, and performance tuning. It showcases key API classes such as BarcodeGenerator, BarCodeReader, and ProcessorSettings, illustrating typical scenarios where developers need to process large batches of barcode images efficiently using TPL while controlling resource consumption.
 // Prompt: Write a script that processes a list of image paths in parallel using TPL while respecting ProcessorSettings limits.
-// Tags: barcode, recognition, parallel, tpl, aspose.barcode, barcodereader
+// Tags: code128, barcode-generation, barcode-recognition, parallel-processing, tpls, processorsettings, aspose-barcode
 
 using System;
 using System.IO;
-using System.Reflection;
+using System.Collections.Generic;
 using System.Threading.Tasks;
+using Aspose.BarCode;
+using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Example program that processes a list of image files in parallel,
-/// reading any barcodes they contain using Aspose.BarCode's <see cref="BarCodeReader"/>.
-/// The degree of parallelism respects the library's <c>ProcessorSettings.MaxProcessorCount</c> if available.
+/// Sample program that generates barcode images, then reads them in parallel
+/// while respecting the ProcessorSettings limits to control CPU usage.
 /// </summary>
 class Program
 {
     /// <summary>
     /// Entry point of the application.
+    /// Generates sample barcode images, configures parallel processing limits,
+    /// reads barcodes from the images in parallel, and cleans up temporary files.
     /// </summary>
-    static void Main()
+    /// <param name="args">Command‑line arguments (not used).</param>
+    static void Main(string[] args)
     {
-        // Sample list of image paths (replace with actual paths as needed)
-        string[] imagePaths = new string[]
+        // --------------------------------------------------------------------
+        // Create a temporary folder for sample barcode images
+        // --------------------------------------------------------------------
+        string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeSample");
+        Directory.CreateDirectory(tempFolder);
+
+        // --------------------------------------------------------------------
+        // Generate a few sample barcode images (Code128)
+        // --------------------------------------------------------------------
+        var sampleTexts = new[] { "ABC123", "XYZ789", "HELLO", "WORLD", "TEST01" };
+        var imagePaths = new List<string>();
+
+        foreach (var text in sampleTexts)
         {
-            "sample1.png",
-            "sample2.png",
-            "sample3.png",
-            "sample4.png",
-            "sample5.png"
-        };
-
-        // Determine the maximum degree of parallelism.
-        // Default to the number of logical processors; override if ProcessorSettings provides a limit.
-        int maxDegree = Environment.ProcessorCount;
-
-        // Use reflection to safely access BarCodeReader.ProcessorSettings.MaxProcessorCount.
-        PropertyInfo procSettingsProp = typeof(BarCodeReader).GetProperty(
-            "ProcessorSettings",
-            BindingFlags.Static | BindingFlags.Public);
-
-        if (procSettingsProp != null)
-        {
-            object procSettings = procSettingsProp.GetValue(null);
-            if (procSettings != null)
+            string filePath = Path.Combine(tempFolder, $"{text}.png");
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, text))
             {
-                PropertyInfo maxProp = procSettings.GetType().GetProperty(
-                    "MaxProcessorCount",
-                    BindingFlags.Instance | BindingFlags.Public);
-
-                if (maxProp != null && maxProp.PropertyType == typeof(int))
-                {
-                    maxDegree = (int)maxProp.GetValue(procSettings);
-                }
+                generator.Save(filePath, BarCodeImageFormat.Png);
             }
+            imagePaths.Add(filePath);
         }
 
-        // Configure ParallelOptions with the resolved degree of parallelism.
-        var parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = maxDegree };
+        // --------------------------------------------------------------------
+        // Configure ProcessorSettings to limit parallelism
+        // Use only half of the available cores (at least 1)
+        // --------------------------------------------------------------------
+        BarCodeReader.ProcessorSettings.UseAllCores = false;
+        BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount = Math.Max(1, Environment.ProcessorCount / 2);
+        BarCodeReader.ProcessorSettings.MaxAdditionalAllowedThreads = Environment.ProcessorCount;
 
-        // Process each image path concurrently.
-        Parallel.ForEach(imagePaths, parallelOptions, path =>
+        // --------------------------------------------------------------------
+        // Prepare ParallelOptions respecting the configured core count
+        // --------------------------------------------------------------------
+        var parallelOptions = new ParallelOptions
         {
-            // Verify that the file exists before attempting to read.
-            if (!File.Exists(path))
+            MaxDegreeOfParallelism = BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount
+        };
+
+        Console.WriteLine($"Processing {imagePaths.Count} images using up to {parallelOptions.MaxDegreeOfParallelism} parallel tasks.");
+
+        // --------------------------------------------------------------------
+        // Process the list of image paths in parallel
+        // --------------------------------------------------------------------
+        Parallel.ForEach(imagePaths, parallelOptions, imagePath =>
+        {
+            if (!File.Exists(imagePath))
             {
-                Console.WriteLine($"File not found: {path}");
+                Console.WriteLine($"File not found: {imagePath}");
                 return;
             }
 
             try
             {
-                // Initialize BarCodeReader for the current image file.
-                using (var reader = new BarCodeReader(path))
+                using (var reader = new BarCodeReader(imagePath))
                 {
-                    // Read all barcodes present in the image.
                     var results = reader.ReadBarCodes();
-
-                    // Output results or indicate that no barcodes were found.
-                    if (results == null || results.Length == 0)
+                    if (results.Length == 0)
                     {
-                        Console.WriteLine($"No barcodes detected in: {path}");
+                        Console.WriteLine($"No barcode detected in {Path.GetFileName(imagePath)}");
                     }
                     else
                     {
                         foreach (var result in results)
                         {
-                            Console.WriteLine($"File: {path}");
-                            Console.WriteLine($"  Type: {result.CodeTypeName}");
-                            Console.WriteLine($"  CodeText: {result.CodeText}");
+                            Console.WriteLine($"File: {Path.GetFileName(imagePath)} | Type: {result.CodeTypeName} | Text: {result.CodeText}");
                         }
                     }
                 }
             }
             catch (Exception ex)
             {
-                // Log any exceptions that occur during processing of the current file.
-                Console.WriteLine($"Error processing {path}: {ex.Message}");
+                Console.WriteLine($"Error processing {Path.GetFileName(imagePath)}: {ex.Message}");
             }
         });
+
+        // --------------------------------------------------------------------
+        // Cleanup: delete temporary files and folder
+        // --------------------------------------------------------------------
+        foreach (var path in imagePaths)
+        {
+            try { File.Delete(path); } catch { /* ignore */ }
+        }
+        try { Directory.Delete(tempFolder, true); } catch { /* ignore */ }
+
+        Console.WriteLine("Processing completed.");
     }
 }

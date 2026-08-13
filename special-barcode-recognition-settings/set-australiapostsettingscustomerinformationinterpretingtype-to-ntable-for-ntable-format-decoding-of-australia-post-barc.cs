@@ -1,62 +1,64 @@
-// Title: Decode Australia Post barcode using NTable format
-// Description: Demonstrates setting CustomerInformationInterpretingType to NTable for both generation and decoding of Australia Post barcodes.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases how to configure the AustraliaPostSettings.CustomerInformationInterpretingType property for NTable format, a common requirement when working with Australia Post barcodes that include customer information. Developers often need to generate barcodes with specific encoding tables and then decode them accurately using matching settings.
-// Prompt: Set AustraliaPostSettings.CustomerInformationInterpretingType to NTable for NTable format decoding of Australia Post barcodes.
-// Tags: barcode symbology, australia post, ntable, generation, recognition, aspose.barcode
+// Title: Australia Post barcode generation and NTable decoding example
+// Description: Demonstrates how to generate an Australia Post barcode using the NTable encoding table and then decode it with NTable customer information interpretation.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category, showcasing the use of BarcodeGenerator and BarCodeReader classes. It illustrates typical use cases such as creating barcodes for postal services and decoding them with specific settings, which developers often need when integrating mailing solutions.
+/// Prompt: Set AustraliaPostSettings.CustomerInformationInterpretingType to NTable for NTable format decoding of Australia Post barcodes.
+/// Tags: barcode symbology, australia post, encoding, decoding, png, barcodegenerator, barcodereader, aspose.barcode
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates an Australia Post barcode using the NTable encoding
-/// and then decodes it with the same NTable interpreting type.
+/// Program demonstrating generation and recognition of an Australia Post barcode with NTable settings.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a barcode image, verifies its creation,
-    /// and reads the barcode back using NTable decoding settings.
+    /// Generates an Australia Post barcode with NTable encoding, saves it as PNG, and then reads it back using NTable decoding.
     /// </summary>
     static void Main()
     {
-        // Sample Australia Post barcode text (FCC 59, DPID 8 digits, no customer info)
-        string codeText = "5980123456";
+        // Define the output file path for the generated barcode image
+        string imagePath = "australia_post.png";
 
-        // Output image path
-        string imagePath = "AustraliaPost_NTable.png";
-
-        // Generate the barcode with NTable encoding table
-        using (var generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, codeText))
+        // Ensure a clean start by deleting any existing file with the same name
+        if (File.Exists(imagePath))
         {
-            // Set the encoding table to NTable for generation
-            generator.Parameters.Barcode.AustralianPost.EncodingTable = CustomerInformationInterpretingType.NTable;
-
-            // Save the barcode image to the specified path
-            generator.Save(imagePath);
+            File.Delete(imagePath);
         }
 
-        // Verify that the image file was created successfully
+        // -------------------- Barcode Generation --------------------
+        // Create a generator for an Australia Post barcode with the sample data
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, "5912345678"))
+        {
+            // Configure the generator to use the NTable encoding (digits only)
+            generator.Parameters.Barcode.AustralianPost.EncodingTable = CustomerInformationInterpretingType.NTable;
+
+            // Save the generated barcode as a PNG image
+            generator.Save(imagePath, BarCodeImageFormat.Png);
+        }
+
+        // Verify that the barcode image was successfully created
         if (!File.Exists(imagePath))
         {
-            Console.WriteLine($"Failed to create barcode image at '{imagePath}'.");
+            Console.WriteLine("Failed to generate the barcode image.");
             return;
         }
 
-        // Read and decode the barcode, setting the decoding interpreting type to NTable
-        using (var reader = new BarCodeReader(imagePath, DecodeType.AustraliaPost))
+        // -------------------- Barcode Recognition --------------------
+        // Initialize a reader for the saved image, specifying the Australia Post decode type
+        using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.AustraliaPost))
         {
-            // Apply NTable interpreting type for decoding
+            // Set the decoder to interpret customer information using the NTable format
             reader.BarcodeSettings.AustraliaPost.CustomerInformationInterpretingType = CustomerInformationInterpretingType.NTable;
 
-            // Iterate through detected barcodes and output their details
+            // Iterate through all detected barcodes and output their details
             foreach (BarCodeResult result in reader.ReadBarCodes())
             {
-                Console.WriteLine($"Detected Barcode Type: {result.CodeType}");
-                Console.WriteLine($"Decoded CodeText: {result.CodeText}");
+                Console.WriteLine($"BarCode Type: {result.CodeType}");
+                Console.WriteLine($"BarCode CodeText: {result.CodeText}");
             }
         }
     }

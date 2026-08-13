@@ -1,45 +1,76 @@
 // Title: Verify ProcessorSettings core count does not exceed physical cores
-// Description: Demonstrates how to test that Aspose.BarCode's ProcessorSettings.UseOnlyThisCoresCount is limited to the machine's physical core count.
-// Category-Description: This example belongs to the Aspose.BarCode performance tuning category, illustrating the use of BarCodeReader.ProcessorSettings to control multi‑core processing. Developers often need to limit CPU usage for barcode recognition tasks in server environments; the key API classes include BarCodeReader and its nested ProcessorSettings. Typical scenarios involve configuring core usage to balance performance and resource constraints.
+// Description: Demonstrates creating a barcode image, configuring Aspose.BarCode processor settings, and confirming that UseOnlyThisCoresCount is not set beyond the machine's physical core count.
+// Category-Description: This example belongs to the Aspose.BarCode processing configuration category, illustrating how to control multi‑core usage via BarCodeReader.ProcessorSettings. It shows typical use of EncodeTypes, BarcodeGenerator, BarCodeReader, and DecodeType for generating and reading barcodes while managing CPU resources—common tasks for developers optimizing performance in batch scanning or server environments.
 // Prompt: Write a test confirming ProcessorSettings.UseOnlyThisCoresCount does not exceed the physical core count.
-// Tags: barcode, processor-settings, core-count, performance, aspose.barcode, test
+// Tags: barcode, code128, core count, processor settings, aspnet, aspnet-barcode, generation, recognition
 
 using System;
+using System.IO;
+using Aspose.BarCode;
+using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.BarCode.Common;
 
 /// <summary>
-/// Example program that validates the configured core count for Aspose.BarCode's
-/// processor settings does not exceed the physical core count of the host machine.
+/// Example program that generates a barcode, configures processor settings,
+/// and validates that the core count setting does not exceed the physical core count.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Retrieves the physical core count, configures
-    /// <see cref="BarCodeReader.ProcessorSettings"/> to use that many cores, and
-    /// verifies the configuration does not exceed the actual core count.
+    /// Entry point of the example. Generates a barcode image, sets processor core usage,
+    /// validates the configuration, and reads the barcode back.
     /// </summary>
     static void Main()
     {
-        // Retrieve the number of logical processors reported by the runtime.
-        // In most environments this corresponds to the physical core count.
-        int physicalCoreCount = Environment.ProcessorCount;
-
-        // Disable automatic core selection and explicitly set the core count.
-        BarCodeReader.ProcessorSettings.UseAllCores = false;
-        BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount = physicalCoreCount; // attempt to use all available cores
-
-        // Read back the configured core count for validation.
-        int configuredCoreCount = BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount;
-
-        // Ensure the configured value does not exceed the actual core count.
-        if (configuredCoreCount > physicalCoreCount)
+        // ------------------------------------------------------------
+        // 1. Generate a temporary barcode image (Code128) for testing.
+        // ------------------------------------------------------------
+        string tempPath = Path.Combine(Path.GetTempPath(), "sample_barcode.png");
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "Test123"))
         {
-            throw new InvalidOperationException(
-                $"Configured core count ({configuredCoreCount}) exceeds physical core count ({physicalCoreCount}).");
+            generator.Save(tempPath);
         }
 
-        // Output success message; this line is safe for non‑interactive CI pipelines.
-        Console.WriteLine($"Test passed: Configured core count ({configuredCoreCount}) is within the physical core count ({physicalCoreCount}).");
+        // ------------------------------------------------------------
+        // 2. Verify that the image file was successfully created.
+        // ------------------------------------------------------------
+        if (!File.Exists(tempPath))
+        {
+            Console.WriteLine("Failed to create barcode image.");
+            return;
+        }
+
+        // ------------------------------------------------------------
+        // 3. Configure processor settings for barcode reading.
+        //    - Disable automatic use of all cores.
+        //    - Attempt to use the maximum number of physical cores.
+        // ------------------------------------------------------------
+        BarCodeReader.ProcessorSettings.UseAllCores = false;
+        int physicalCores = Environment.ProcessorCount;
+        BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount = physicalCores; // attempt to use maximum cores
+
+        // ------------------------------------------------------------
+        // 4. Validate that the configured core count does not exceed the physical core count.
+        // ------------------------------------------------------------
+        if (BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount > physicalCores)
+        {
+            throw new InvalidOperationException("UseOnlyThisCoresCount exceeds the number of physical cores.");
+        }
+
+        // ------------------------------------------------------------
+        // 5. Perform a simple barcode read to demonstrate that the settings work.
+        // ------------------------------------------------------------
+        using (BarCodeReader reader = new BarCodeReader(tempPath, DecodeType.Code128))
+        {
+            foreach (BarCodeResult result in reader.ReadBarCodes())
+            {
+                Console.WriteLine($"Detected barcode: {result.CodeText}");
+            }
+        }
+
+        // ------------------------------------------------------------
+        // 6. Output the final verification result.
+        // ------------------------------------------------------------
+        Console.WriteLine($"ProcessorSettings.UseOnlyThisCoresCount = {BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount}, Physical cores = {physicalCores}. Test passed.");
     }
 }

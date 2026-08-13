@@ -1,8 +1,8 @@
-// Title: Verify custom CustomerInformationDecoder receives raw barcode bytes
-// Description: Demonstrates how to attach a custom CustomerInformationDecoder to an Australia Post barcode reader and confirm it receives the raw data before interpretation.
-// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, focusing on custom decoding of Australia Post customer information. It showcases the use of BarcodeGenerator, BarCodeReader, and the AustraliaPostCustomerInformationDecoder API to customize data handling, a common need when integrating barcode data with legacy systems or performing raw data validation. Developers can adapt this pattern for other symbologies and custom decoders.
+// Title: Unit test for custom CustomerInformationDecoder in Australia Post barcode
+// Description: Demonstrates how to generate an Australia Post barcode, apply a custom CustomerInformationDecoder, and verify that the decoder receives the raw customer information field.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator, BarCodeReader, and the AustraliaPostCustomerInformationDecoder API classes. Developers often need to customize decoding of specific barcode fields, such as the customer information segment in Australia Post barcodes, to access raw data before standard interpretation. The pattern shown here is common for unit testing custom decoders in automated pipelines.
 // Prompt: Write a unit test verifying custom CustomerInformationDecoder receives raw barcode bytes before interpretation.
-// Tags: australia post, customer information, decoder, custom decoder, barcode generation, barcode recognition, aspnet.barcode
+// Tags: australia post, custom decoder, barcode generation, barcode recognition, unit test, aspose.barcode
 
 using System;
 using System.IO;
@@ -12,81 +12,83 @@ using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Custom decoder that captures the raw data passed from the barcode reader.
-/// Inherits from <see cref="AustraliaPostCustomerInformationDecoder"/> to integrate with the Australia Post decoding pipeline.
-/// </summary>
-class MyDecoder : AustraliaPostCustomerInformationDecoder
-{
-    /// <summary>
-    /// Gets the raw data received by the decoder.
-    /// </summary>
-    public string ReceivedData { get; private set; }
-
-    /// <summary>
-    /// Stores the incoming data and returns it unchanged for testing purposes.
-    /// </summary>
-    /// <param name="data">Raw data string supplied by the barcode reader.</param>
-    /// <returns>The same data string that was received.</returns>
-    public string Decode(string data)
-    {
-        ReceivedData = data;
-        // Return the raw data unchanged for this test
-        return data;
-    }
-}
-
-/// <summary>
-/// Entry point for the example that generates an Australia Post barcode,
-/// reads it with a custom decoder, and verifies the decoder receives the raw bytes.
+/// Contains the entry point that demonstrates a unit‑test‑style verification of a custom
+/// <c>AustraliaPostCustomerInformationDecoder</c>. The program generates a barcode, reads it back,
+/// and checks that the decoder receives the raw customer information field.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Generates a barcode, reads it using a custom <see cref="MyDecoder"/>,
-    /// and checks that the decoder was invoked with the expected raw data.
+    /// Generates an Australia Post barcode, applies a custom decoder, and validates that the decoder
+    /// was invoked with the raw data. Results are written to the console.
     /// </summary>
     static void Main()
     {
-        // Generate an Australia Post barcode with sample data and store it in a memory stream
-        using (var imageStream = new MemoryStream())
+        // Instantiate the custom decoder that will capture the raw customer information field.
+        var decoder = new TestCustomerInformationDecoder();
+
+        // Create a barcode generator for the Australia Post symbology with sample data.
+        using (var generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, "5912345678ABCde"))
         {
-            using (var generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, "5912345678ABCde"))
+            // Save the generated barcode image to a memory stream in PNG format.
+            using (var ms = new MemoryStream())
             {
-                // Use CTable interpreting type for customer information
-                generator.Parameters.Barcode.AustralianPost.AustralianPostEncodingTable = CustomerInformationInterpretingType.CTable;
-                // Save the generated barcode image to the stream in PNG format
-                generator.Save(imageStream, BarCodeImageFormat.Png);
-            }
+                generator.Save(ms, BarCodeImageFormat.Png);
+                ms.Position = 0; // Reset stream position for reading.
 
-            // Reset stream position to the beginning for reading
-            imageStream.Position = 0;
-
-            // Prepare the custom decoder instance
-            var customDecoder = new MyDecoder();
-
-            // Create a barcode reader configured for Australia Post symbology
-            using (var reader = new BarCodeReader(imageStream, DecodeType.AustraliaPost))
-            {
-                // Assign the custom decoder to the AustraliaPost settings
-                reader.BarcodeSettings.AustraliaPost.CustomerInformationDecoder = customDecoder;
-
-                // Perform recognition and output detected code texts
-                foreach (var result in reader.ReadBarCodes())
+                // Initialize a barcode reader for the generated image and configure it to use the custom decoder.
+                using (var reader = new BarCodeReader(ms, DecodeType.AustraliaPost))
                 {
-                    Console.WriteLine($"Detected CodeText: {result.CodeText}");
+                    reader.BarcodeSettings.AustraliaPost.CustomerInformationDecoder = decoder;
+
+                    // Perform barcode recognition.
+                    var results = reader.ReadBarCodes();
+
+                    // Determine whether at least one barcode was detected.
+                    bool barcodeFound = results != null && results.Length > 0;
+
+                    // Verify that the custom decoder received non‑empty raw data.
+                    bool decoderInvoked = !string.IsNullOrEmpty(decoder.ReceivedRawData);
+
+                    // Output test outcome.
+                    if (barcodeFound && decoderInvoked)
+                    {
+                        Console.WriteLine("PASS: Barcode recognized and custom decoder received raw data.");
+                        Console.WriteLine($"Decoder raw data: {decoder.ReceivedRawData}");
+                    }
+                    else
+                    {
+                        Console.WriteLine("FAIL: Test conditions not met.");
+                        Console.WriteLine($"Barcode found: {barcodeFound}");
+                        Console.WriteLine($"Decoder invoked: {decoderInvoked}");
+                    }
                 }
             }
-
-            // Verify that the decoder received the raw barcode bytes
-            if (!string.IsNullOrEmpty(customDecoder.ReceivedData))
-            {
-                Console.WriteLine("PASS: Custom decoder received raw barcode data.");
-                Console.WriteLine($"Raw data passed to decoder: {customDecoder.ReceivedData}");
-            }
-            else
-            {
-                Console.WriteLine("FAIL: Custom decoder did not receive raw barcode data.");
-            }
         }
+    }
+}
+
+/// <summary>
+/// Custom implementation of <c>AustraliaPostCustomerInformationDecoder</c> used for testing.
+/// It records the raw customer information field passed during decoding.
+/// </summary>
+class TestCustomerInformationDecoder : AustraliaPostCustomerInformationDecoder
+{
+    /// <summary>
+    /// Gets the raw customer information data received from the barcode reader.
+    /// </summary>
+    public string ReceivedRawData { get; private set; }
+
+    /// <summary>
+    /// Called by the barcode reader with the raw customer information field.
+    /// Stores the raw data and returns a placeholder decoded string.
+    /// </summary>
+    /// <param name="customerInformationField">The raw customer information field extracted from the barcode.</param>
+    /// <returns>A placeholder decoded string.</returns>
+    public string Decode(string customerInformationField)
+    {
+        ReceivedRawData = customerInformationField;
+        // For testing purposes, return a simple placeholder.
+        return "DecodedInfo";
     }
 }

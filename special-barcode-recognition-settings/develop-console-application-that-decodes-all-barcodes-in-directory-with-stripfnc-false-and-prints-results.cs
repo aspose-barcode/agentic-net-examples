@@ -1,81 +1,93 @@
-// Title: Decode all barcodes in a directory with StripFNC disabled
-// Description: This console app scans a specified folder, decodes every supported barcode in image files while preserving FNC characters, and prints detailed results.
-// Category-Description: Demonstrates Aspose.BarCode barcode recognition across multiple image formats. It uses BarCodeReader and DecodeType.AllSupportedTypes, showing how to configure BarcodeSettings (StripFNC) and iterate over BarCodeResult objects. Ideal for developers needing batch processing of barcodes in files, such as inventory audits or document digitization.
+// Title: Decode Multiple Barcodes in a Directory with StripFNC Disabled
+// Description: The example scans a folder for barcode images, decodes every barcode using Aspose.BarCode with StripFNC set to false, and prints the type and text to the console.
+// Category-Description: This sample belongs to the Aspose.BarCode recognition category, demonstrating how to use BarCodeReader to process multiple image files, configure BarcodeSettings (e.g., StripFNC), and retrieve results. Typical use cases include batch processing of scanned documents, inventory verification, or automated data extraction where developers need to read all supported symbologies from a set of images.
 // Prompt: Develop a console application that decodes all barcodes in a directory with StripFNC false and prints results.
-// Tags: barcode, decoding, batch, stripfnc, console, aspose.barcode, recognition
+// Tags: barcode, symbology, recognition, batch, console, stripfnc, aspose.barcode, decode
 
 using System;
 using System.IO;
+using Aspose.BarCode;
+using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Entry point for the barcode batch decoding console application.
+/// Demonstrates decoding all barcodes in a directory with StripFNC disabled using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Scans a directory for image files, decodes all supported barcodes with StripFNC disabled, and writes results to the console.
+    /// Entry point. Generates sample barcodes, scans the folder, and decodes each image.
     /// </summary>
-    /// <param name="args">Optional first argument specifying the directory path; if omitted, the current directory is used.</param>
+    /// <param name="args">Command‑line arguments (not used).</param>
     static void Main(string[] args)
     {
-        // Determine the directory to scan. Use the first argument if provided; otherwise, use the current directory.
-        string directoryPath = args.Length > 0 ? args[0] : Directory.GetCurrentDirectory();
-
-        // Verify that the directory exists before proceeding.
-        if (!Directory.Exists(directoryPath))
+        // Define the folder to store and read barcode images
+        string folderPath = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
+        if (!Directory.Exists(folderPath))
         {
-            Console.WriteLine($"Directory does not exist: {directoryPath}");
+            Directory.CreateDirectory(folderPath);
+        }
+
+        // Generate a few sample barcode images (Code128, QR, EAN13)
+        GenerateSampleBarcodes(folderPath);
+
+        // Scan the folder for image files (png, jpg, bmp)
+        string[] patterns = new[] { "*.png", "*.jpg", "*.bmp" };
+        var imageFiles = new System.Collections.Generic.List<string>();
+        foreach (string pattern in patterns)
+        {
+            string[] files = Directory.GetFiles(folderPath, pattern);
+            imageFiles.AddRange(files);
+        }
+
+        if (imageFiles.Count == 0)
+        {
+            Console.WriteLine("No barcode images found in the folder.");
             return;
         }
 
-        // Retrieve all files in the directory (non‑recursive). Adjust the filter if you want to limit to specific image extensions.
-        string[] files = Directory.GetFiles(directoryPath);
-        if (files.Length == 0)
+        // Decode each image with StripFNC set to false
+        foreach (string filePath in imageFiles)
         {
-            Console.WriteLine($"No files found in directory: {directoryPath}");
-            return;
-        }
-
-        // Process each file individually.
-        foreach (string filePath in files)
-        {
-            // Skip non‑existing files (should not happen) and filter out unsupported extensions.
-            if (!File.Exists(filePath))
-                continue;
-
-            string extension = Path.GetExtension(filePath).ToLowerInvariant();
-            if (extension != ".png" && extension != ".jpg" && extension != ".jpeg" && extension != ".bmp" && extension != ".tif" && extension != ".tiff")
-                continue;
-
-            // Use BarCodeReader to decode barcodes in the current image file.
+            Console.WriteLine($"Decoding file: {Path.GetFileName(filePath)}");
             using (BarCodeReader reader = new BarCodeReader(filePath, DecodeType.AllSupportedTypes))
             {
-                // Ensure FNC characters are not stripped (set to false as required).
+                // Ensure StripFNC is false (default, but set explicitly)
                 reader.BarcodeSettings.StripFNC = false;
 
-                // Perform the recognition and obtain all results.
-                BarCodeResult[] results = reader.ReadBarCodes();
-
-                // If no barcodes were detected, report and continue to the next file.
-                if (results.Length == 0)
-                {
-                    Console.WriteLine($"[File: {Path.GetFileName(filePath)}] No barcodes detected.");
-                    continue;
-                }
-
-                // Output summary information for the current file.
-                Console.WriteLine($"[File: {Path.GetFileName(filePath)}] Detected {results.Length} barcode(s):");
-
-                // Iterate through each detected barcode and display detailed information.
-                foreach (BarCodeResult result in results)
+                // Read all barcodes in the image
+                foreach (BarCodeResult result in reader.ReadBarCodes())
                 {
                     Console.WriteLine($"  Type: {result.CodeTypeName}");
                     Console.WriteLine($"  CodeText: {result.CodeText}");
-                    Console.WriteLine($"  Confidence: {result.Confidence}");
-                    Console.WriteLine($"  ReadingQuality: {result.ReadingQuality}");
                 }
             }
+        }
+    }
+
+    // Helper method to generate sample barcode images
+    private static void GenerateSampleBarcodes(string folder)
+    {
+        // Code128
+        string code128Path = Path.Combine(folder, "code128.png");
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
+        {
+            generator.Save(code128Path);
+        }
+
+        // QR Code
+        string qrPath = Path.Combine(folder, "qr.png");
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
+        {
+            generator.Save(qrPath);
+        }
+
+        // EAN13
+        string ean13Path = Path.Combine(folder, "ean13.png");
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.EAN13, "1234567890128"))
+        {
+            generator.Save(ean13Path);
         }
     }
 }

@@ -1,56 +1,49 @@
-// Title: Custom decoding of Australia Post barcodes using Other interpreting type
-// Description: Demonstrates how to generate and read an Australia Post barcode with CustomerInformationInterpretingType set to Other, allowing custom handling of the customer information segment.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator, BarCodeReader, and AustraliaPostSettings to control encoding and decoding of Australia Post barcodes. Developers often need to customize how the customer information part of the barcode is interpreted, especially when integrating with proprietary systems.
+// Title: Custom Decoding of Australia Post Barcodes Using CustomerInformationInterpretingType
+// Description: Demonstrates how to generate an Australia Post barcode and decode it with a custom CustomerInformationInterpretingType setting.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes and BarCodeReader for decoding them, focusing on the Australia Post symbology. Developers often need to customize decoding behavior, such as interpreting customer information differently, and this snippet illustrates the required API calls.
 // Prompt: Set AustraliaPostSettings.CustomerInformationInterpretingType to Other for custom decoding of Australia Post barcodes.
-// Tags: barcode symbology, australia post, encoding, decoding, png, aspose.barcode, aspose.barcode.generation, aspose.barcode.recognition
+// Tags: australia post, barcode symbology, custom decoding, png output, barcodegenerator, barcodereader
 
-using System;
-using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Generates an Australia Post barcode with custom customer information interpretation
-/// and then reads it back using the same custom settings.
+/// Generates an Australia Post barcode, saves it as PNG, and then reads it back using a custom
+/// CustomerInformationInterpretingType setting. This demonstrates how to control decoding behavior
+/// for Australia Post barcodes with Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a barcode, saves it as PNG,
-    /// verifies the file, and reads the barcode using the Other interpreting type.
+    /// Entry point of the example. Performs barcode generation, saves the image, and reads it back
+    /// with custom decoding settings.
     /// </summary>
     static void Main()
     {
-        // Sample barcode text (customer information part can be empty for Other interpreting type)
-        const string codeText = "59123456780123012301230123";
-        const string imagePath = "AustraliaPost.png";
+        // Path for the generated barcode image
+        const string imagePath = "australiapost.png";
 
-        // Generate Australia Post barcode with CustomerInformationInterpretingType set to Other
-        using (var generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, codeText))
+        // -------------------- Generate Australia Post barcode --------------------
+        // Create a generator for the Australia Post symbology with a sample postal code.
+        using (var generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, "1100000000"))
         {
-            // Configure the generator to treat the customer information segment as 'Other' (no built‑in interpretation)
-            generator.Parameters.Barcode.AustralianPost.AustralianPostEncodingTable = CustomerInformationInterpretingType.Other;
+            // Set the interpreting type for the customer information to 'Other'.
+            generator.Parameters.Barcode.AustralianPost.EncodingTable = CustomerInformationInterpretingType.Other;
 
-            // Save the generated barcode image in PNG format
+            // Save the generated barcode as a PNG image.
             generator.Save(imagePath, BarCodeImageFormat.Png);
         }
 
-        // Verify that the image file was created successfully
-        if (!File.Exists(imagePath))
-        {
-            Console.WriteLine($"Failed to create barcode image at '{imagePath}'.");
-            return;
-        }
-
-        // Initialize a reader for Australia Post barcodes
+        // -------------------- Recognize the barcode with custom settings --------------------
+        // Initialize a reader for the saved image, specifying the Australia Post decode type.
         using (var reader = new BarCodeReader(imagePath, DecodeType.AustraliaPost))
         {
-            // Apply the same 'Other' interpreting type for decoding the customer information segment
+            // Apply the same interpreting type for decoding the customer information.
             reader.BarcodeSettings.AustraliaPost.CustomerInformationInterpretingType = CustomerInformationInterpretingType.Other;
 
-            // Iterate through all recognized barcodes (should be one in this case)
+            // Iterate through all detected barcodes and output their type and text.
             foreach (var result in reader.ReadBarCodes())
             {
                 Console.WriteLine($"BarCode Type: {result.CodeType}");
