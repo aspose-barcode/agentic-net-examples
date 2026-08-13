@@ -1,46 +1,46 @@
-// Title: Generate Code128 Barcode with Anti-Aliasing and Export as PNG
-// Description: Demonstrates creating a Code128 barcode, enabling anti‑aliasing, setting image size and resolution, and saving it as a PNG for clear screen display.
+// Title: Generate a Code128 barcode with anti‑aliasing and save as PNG
+// Description: Demonstrates creating a Code128 barcode, enabling anti‑aliasing and high resolution for a crisp PNG image suitable for screen display.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to configure rendering options such as anti‑aliasing, resolution, and colors using the BarcodeGenerator class. Typical use cases include producing high‑quality barcodes for web pages, mobile apps, or UI components where visual clarity is essential. Developers often need to adjust these settings to meet design guidelines and ensure readability across devices.
 // Prompt: Create a barcode, apply anti‑aliasing settings, and export as PNG for crisp screen display.
-// Tags: code128, barcode generation, anti-aliasing, png, aspose.barcode, c#
+// Tags: code128, anti-aliasing, png, barcode generation, aspose.barcode
 
 using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
-using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Example program that generates a Code128 barcode, applies anti‑aliasing,
-/// configures image dimensions and resolution, and saves the result as a PNG file.
+/// Example program that creates a Code128 barcode, applies anti‑aliasing,
+/// sets a high resolution, and saves the result as a PNG image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Creates the barcode and writes it to disk.
+    /// Entry point of the example. Generates the barcode and writes it to disk.
     /// </summary>
     static void Main()
     {
-        // Initialize a barcode generator for Code128 with the sample text "1234567890".
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+        // Define the output file path for the generated PNG image.
+        string outputPath = "barcode.png";
+
+        // Initialize the BarcodeGenerator with Code128 symbology and sample data.
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            // Enable anti‑aliasing to produce smoother edges when the image is displayed on screen.
+            // Enable anti‑aliasing to smooth edges and improve visual quality.
             generator.Parameters.UseAntiAlias = true;
 
-            // Use interpolation mode so the image size can be set directly without distortion.
-            generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
-
-            // Define the desired image width and height in points for a crisp visual appearance.
-            generator.Parameters.ImageWidth.Point = 300f;
-            generator.Parameters.ImageHeight.Point = 150f;
-
-            // Optionally increase the resolution (dots per inch) to improve overall quality.
+            // Set a higher resolution (dots per inch) for a sharper image on screens.
             generator.Parameters.Resolution = 300f;
 
-            // Save the generated barcode as a PNG file.
-            generator.Save("barcode.png");
+            // Optional: Define foreground (barcode) and background colors.
+            generator.Parameters.Barcode.BarColor = Color.Black;
+            generator.Parameters.BackColor = Color.White;
+
+            // Save the configured barcode as a PNG file.
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user that the barcode has been successfully created.
-        Console.WriteLine("Barcode generated and saved as 'barcode.png'.");
+        // Inform the user where the barcode image has been saved.
+        Console.WriteLine($"Barcode saved to {outputPath}");
     }
 }

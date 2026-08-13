@@ -1,48 +1,49 @@
-// Title: Export Code128 barcode to EMF and convert to PDF
-// Description: Demonstrates generating a Code128 barcode, saving it as an EMF vector image, then embedding that image into a PDF using Aspose libraries.
+// Title: Export barcode to EMF and convert to PDF
+// Description: Demonstrates generating a Code128 barcode, saving it as an EMF vector image, and then embedding that image into a PDF using Aspose.Pdf.
+// Category-Description: This example belongs to the Aspose.BarCode image export and document conversion category. It showcases the use of BarcodeGenerator for creating barcodes, BarCodeImageFormat for vector output, and Aspose.Pdf Document for embedding images into PDF files—common tasks for developers needing high‑quality printable barcodes in reports or invoices.
 // Prompt: Export a barcode as an EMF file, then convert it to PDF using a third‑party library.
-// Tags: barcode, code128, export, emf, pdf, aspose.barcode, aspose.pdf
+// Tags: barcode, code128, emf, pdf, aspose.barcode, aspose.pdf, image-export, document-conversion
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 using Aspose.Pdf;
 
 /// <summary>
-/// Demonstrates exporting a barcode to EMF and converting it to PDF.
+/// Generates a Code128 barcode, saves it as an EMF file, and converts the EMF to a PDF document.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a Code128 barcode, saves as EMF, then embeds into a PDF.
+    /// Entry point of the example. Executes barcode generation, EMF export, and PDF conversion.
     /// </summary>
     static void Main()
     {
-        // Define file paths for the intermediate EMF and final PDF files
+        // Define output file paths
         string emfPath = "barcode.emf";
         string pdfPath = "barcode.pdf";
 
         // ------------------------------------------------------------
-        // Generate a Code128 barcode and save it as an EMF file
+        // Generate a barcode and export it as EMF
         // ------------------------------------------------------------
         try
         {
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
             {
-                // Optional: set image dimensions (in points) for better quality
-                generator.Parameters.ImageWidth.Point = 300f;
-                generator.Parameters.ImageHeight.Point = 150f;
+                // Set barcode and background colors using Aspose.Drawing types
+                generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
+                generator.Parameters.BackColor = Aspose.Drawing.Color.White;
 
-                // Save the generated barcode as an EMF vector image
+                // Save the barcode image in EMF format
                 generator.Save(emfPath, BarCodeImageFormat.Emf);
+                Console.WriteLine($"Barcode saved as EMF: {emfPath}");
             }
         }
         catch (Exception ex)
         {
-            // Handle licensing issues specific to EMF export for this barcode type
-            if (ex.Message.Contains("evaluation"))
+            // Handle licensing errors specific to EMF export
+            if (ex.Message.Contains("evaluation", StringComparison.OrdinalIgnoreCase))
             {
                 Console.WriteLine("A valid Aspose.BarCode license is required for EMF export of this barcode type.");
                 return;
@@ -50,43 +51,34 @@ class Program
             throw;
         }
 
-        // Verify that the EMF file was successfully created
+        // Verify that the EMF file was created before proceeding
         if (!File.Exists(emfPath))
         {
-            Console.WriteLine($"Failed to create EMF file at '{emfPath}'.");
+            Console.WriteLine($"EMF file not found: {emfPath}");
             return;
         }
 
         // ------------------------------------------------------------
         // Convert the EMF image to a PDF document using Aspose.Pdf
         // ------------------------------------------------------------
-        using (var pdfDocument = new Document())
+        using (var pdfDoc = new Document())
         {
-            // Add a new page to the PDF document
-            var page = pdfDocument.Pages.Add();
+            // Add a new page to the PDF
+            var page = pdfDoc.Pages.Add();
 
-            // Load the EMF image from the file system and add it to the PDF page
+            // Open the EMF file as a stream and embed it as an image
             using (var emfStream = new FileStream(emfPath, FileMode.Open, FileAccess.Read))
             {
-                var pdfImage = new Aspose.Pdf.Image
+                var image = new Aspose.Pdf.Image
                 {
                     ImageStream = emfStream
                 };
-                page.Paragraphs.Add(pdfImage);
+                page.Paragraphs.Add(image);
             }
 
-            // Save the PDF document to the specified path
-            pdfDocument.Save(pdfPath);
-        }
-
-        // Verify that the PDF file was successfully created and report the result
-        if (File.Exists(pdfPath))
-        {
-            Console.WriteLine($"Barcode successfully exported to EMF ('{emfPath}') and converted to PDF ('{pdfPath}').");
-        }
-        else
-        {
-            Console.WriteLine("PDF conversion failed.");
+            // Save the resulting PDF file
+            pdfDoc.Save(pdfPath);
+            Console.WriteLine($"PDF created from EMF: {pdfPath}");
         }
     }
 }
