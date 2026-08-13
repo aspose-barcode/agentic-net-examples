@@ -33,11 +33,11 @@ Requires .NET SDK 10.0 or later.
 
 | Metric | Value |
 |--------|-------|
-| Total Examples | 1124 |
+| Total Examples | 1267 |
 | Categories | 21 |
 | Overall Pass Rate | 100.0% |
-| Package Version | Aspose.BarCode 26.6.0 |
-| Last Updated | 2026-07-17 |
+| Package Version | Aspose.BarCode 26.7.0 |
+| Last Updated | 2026-08-13 |
 
 ## Repository Structure
 
@@ -71,9 +71,9 @@ README.md
 
 | Category | Examples | Pass Rate | Details |
 |----------|----------|-----------|---------|
-| [Barcode Appearance Customization](./barcode-appearance-customization/) | 30 | 100.0% | [agents.md](./barcode-appearance-customization/agents.md) |
-| [Barcode Checksum Control](./barcode-checksum-control/) | 30 | 100.0% | [agents.md](./barcode-checksum-control/agents.md) |
-| [Barcode Color Customization](./barcode-color-customization/) | 28 | 100.0% | [agents.md](./barcode-color-customization/agents.md) |
+| [Barcode Appearance Customization](./barcode-appearance-customization/) | 88 | 100.0% | [agents.md](./barcode-appearance-customization/agents.md) |
+| [Barcode Checksum Control](./barcode-checksum-control/) | 87 | 100.0% | [agents.md](./barcode-checksum-control/agents.md) |
+| [Barcode Color Customization](./barcode-color-customization/) | 56 | 100.0% | [agents.md](./barcode-color-customization/agents.md) |
 | [Barcode Configuration Serialization](./barcode-configuration-serialization/) | 30 | 100.0% | [agents.md](./barcode-configuration-serialization/agents.md) |
 | [Barcode Reading Properties](./barcode-reading-properties/) | 50 | 100.0% | [agents.md](./barcode-reading-properties/agents.md) |
 | [Barcode Recognition Basics](./barcode-recognition-basics/) | 75 | 100.0% | [agents.md](./barcode-recognition-basics/agents.md) |
@@ -92,6 +92,48 @@ README.md
 | [Special Barcode Recognition Settings](./special-barcode-recognition-settings/) | 48 | 100.0% | [agents.md](./special-barcode-recognition-settings/agents.md) |
 | [Swiss QR Code](./swiss-qr-code/) | 28 | 100.0% | [agents.md](./swiss-qr-code/agents.md) |
 | [Two Dimensional Barcode Types](./two-dimensional-barcode-types/) | 214 | 100.0% | [agents.md](./two-dimensional-barcode-types/agents.md) |
+
+## Frequently Asked Questions
+
+### How do I generate a QR code (or other 2D barcode) in Aspose.BarCode for .NET?
+
+Create a `BarcodeGenerator` with the symbology and text, then `Save()`: `new BarcodeGenerator(EncodeTypes.QR, "text").Save("qr.png")`. Examples for all 2D symbologies are in `two-dimensional-barcode-types`.
+
+### How do I read or recognize a barcode from an image?
+
+Use `BarCodeReader` with `DecodeType.AllSupportedTypes` (or a specific type), then iterate `ReadBarCodes()`. `BarCodeReader` requires a `Bitmap`, not `Image`. See `barcode-recognition-basics`.
+
+### How do I enable or disable the checksum for a barcode?
+
+Set `generator.Parameters.Barcode.IsChecksumEnabled` (an `EnableChecksum` enum, not `bool`) — the property lives on the `Barcode` sub-object, not directly on `Parameters`. Note: some symbologies (e.g. Code128) always require a checksum and throw `BarCodeException` if you try to disable it. See `barcode-checksum-control`.
+
+### How do I set the QR code error correction level?
+
+`generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH` (or `LevelL`/`LevelM`/`LevelQ`). There is no `MaskPattern` property — masking is automatic. See `two-dimensional-barcode-types`.
+
+### How do I embed a barcode into a PDF, Word, or PowerPoint document?
+
+Render the barcode to a `MemoryStream`, then embed it using the target Aspose product's own image API (`Aspose.Pdf.Image`, `Aspose.Words` `Shape`, `Aspose.Slides` `Picture`). Full working examples in `pdf-barcode-grid-rules`-adjacent categories and `special-barcode-recognition-settings`.
+
+### How do I export a barcode as SVG, EMF, TIFF, or another format?
+
+Pass the desired `BarCodeImageFormat` to `Save()`, e.g. `generator.Save("barcode.svg", BarCodeImageFormat.Svg)`. Note the evaluation (unlicensed) version restricts SVG/EMF output to Code39 only — apply a license to lift this. See `barcode-saving-and-export`.
+
+### How do I generate complex barcodes like Swiss QR Bill, Mailmark, or HIBC LIC?
+
+Use `ComplexBarcodeGenerator` with the matching codetext object — `SwissQRCodetext`, `HIBCLICPrimaryDataCodetext`/`SecondaryAndAdditionalData`, or Royal Mail Mailmark types. These are NOT constructed via the plain `BarcodeGenerator`. See `swiss-qr-code`, `mailmark-four-state-barcode`, `mailmark-two-dimensional-barcode`, and `hibc-lic-barcode`.
+
+### Why does my barcode throw a `BarCodeException` at runtime even though it compiles?
+
+Almost always an invalid codetext for the chosen symbology — e.g. Australia Post requires a valid Format Control Code and minimum length, Code128 cannot have its checksum disabled, and Swiss QR Bill requires a complete `Bill` object. Check the relevant category's `agents.md` for symbology-specific constraints before constructing the codetext.
+
+### Can these examples be used by AI coding agents like Claude, Copilot, or Cursor?
+
+Yes — the repository ships an `agents.md` at root and one per category, plus `.well-known/agent.json`, `llm.txt`, and a machine-readable `index.json`. Point your agent at the repo's raw URLs and it can browse examples programmatically.
+
+### Do I need an Aspose.BarCode license to run these examples?
+
+The library runs in evaluation mode without a license (with watermarks and some format/symbology restrictions, e.g. SVG/EMF export). For production use, apply a license via `new License().SetLicense(path)`. Purchase / trial options: https://purchase.aspose.com/buy.
 
 ## How to Use
 
@@ -173,7 +215,7 @@ If you are an AI coding agent generating Aspose.BarCode for .NET code, read the 
 ## Prerequisites
 
 - .NET SDK 10.0 or later
-- Aspose.BarCode for .NET 26.6.0 (via NuGet)
+- Aspose.BarCode for .NET 26.7.0 (via NuGet)
 
 A valid [Aspose license](https://purchase.aspose.com/buy) is required for production use. For evaluation, examples run without a license but output may include watermarks on generated barcode images.
 
@@ -217,8 +259,8 @@ All examples use [Aspose.BarCode for .NET](https://products.aspose.com/barcode/n
 
 ---
 
-*This repository is maintained by automated code generation. For AI-friendly guidance, see [agents.md](./agents.md). Last updated: 2026-07-17*
+*This repository is maintained by automated code generation. For AI-friendly guidance, see [agents.md](./agents.md). Last updated: 2026-08-13*
 
 <!-- AUTOGENERATED:START -->
-Updated: 2026-07-17 | Examples: 1124 | Categories: 21 | Package: Aspose.BarCode 26.6.0
+Updated: 2026-08-13 | Examples: 1267 | Categories: 21 | Package: Aspose.BarCode 26.7.0
 <!-- AUTOGENERATED:END -->

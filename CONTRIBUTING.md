@@ -24,6 +24,8 @@ The generator emits these files. **Do not hand-edit them** — the next regenera
 - `index.json` (root)
 - `README.md` (root)
 - `CONTRIBUTING.md` (root)
+- `CODE_OF_CONDUCT.md` (root)
+- `SECURITY.md` (root)
 
 If you find a problem in one of these, fix it upstream in the generator, then trigger a docs regeneration via `POST /github/docs/update`. The exception: you may add new sections to `CONTRIBUTING.md` — the generator only overwrites it when the content hash changes.
 
@@ -36,7 +38,7 @@ Before opening a PR, validate that the example builds and runs against the pinne
 mkdir /tmp/barcode-validate && cd /tmp/barcode-validate
 dotnet new console --framework net10.0
 cp /path/to/your-example.cs Program.cs
-dotnet add package Aspose.BarCode --version 26.6.0
+dotnet add package Aspose.BarCode --version 26.7.0
 dotnet build --nologo /p:WarningLevel=0
 dotnet run --no-build || true   # runtime failure on missing input is OK
 ```
