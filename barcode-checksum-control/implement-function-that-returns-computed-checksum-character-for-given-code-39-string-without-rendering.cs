@@ -1,91 +1,88 @@
-// Title: Code 39 checksum calculation example
-// Description: Demonstrates how to compute the checksum character for a Code 39 string without rendering it, useful for validation or barcode generation.
+// Title: Code39 Checksum Calculator
+// Description: Demonstrates how to compute the checksum character for a Code 39 barcode string without rendering the barcode.
+// Category-Description: This example belongs to the Aspose.BarCode code‑39 symbology utilities category. It shows how to use the character‑value mapping tables to calculate the modulo‑43 checksum, a common step when generating Code 39 barcodes programmatically. Developers often need this logic to validate data or to embed the checksum in custom barcode generation pipelines.
 // Prompt: Implement a function that returns the computed checksum character for a given Code 39 string without rendering.
-// Tags: barcode symbology, checksum, code39, console, csharp
+// Tags: barcode symbology, checksum, code39, utility, aspnet, csharp
 
 using System;
 using System.Collections.Generic;
 
-namespace Code39ChecksumDemo
+/// <summary>
+/// Provides a console example that computes Code 39 checksum characters.
+/// </summary>
+class Program
 {
-    /// <summary>
-    /// Demonstrates computing Code 39 checksum characters.
-    /// </summary>
-    class Program
+    // Mapping of Code39 characters to their numeric values (0‑42).
+    private static readonly Dictionary<char, int> CharValues = new Dictionary<char, int>
     {
-        // Character set for Code 39 (order defines the value of each character)
-        private static readonly string Code39Charset = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-. $/+%*";
+        {'0', 0}, {'1', 1}, {'2', 2}, {'3', 3}, {'4', 4},
+        {'5', 5}, {'6', 6}, {'7', 7}, {'8', 8}, {'9', 9},
+        {'A',10}, {'B',11}, {'C',12}, {'D',13}, {'E',14},
+        {'F',15}, {'G',16}, {'H',17}, {'I',18}, {'J',19},
+        {'K',20}, {'L',21}, {'M',22}, {'N',23}, {'O',24},
+        {'P',25}, {'Q',26}, {'R',27}, {'S',28}, {'T',29},
+        {'U',30}, {'V',31}, {'W',32}, {'X',33}, {'Y',34},
+        {'Z',35}, {'-',36}, {'.',37}, {' ',38}, {'$',39},
+        {'/',40}, {'+',41}, {'%',42}
+        // Note: '*' (start/stop) is not part of checksum calculation.
+    };
 
-        // Mapping from character to its numeric value for quick lookup
-        private static readonly Dictionary<char, int> CharValueMap = CreateCharValueMap();
+    // Reverse mapping from numeric value back to the corresponding Code39 character.
+    private static readonly char[] ValueToChar = new char[43]
+    {
+        '0','1','2','3','4','5','6','7','8','9',
+        'A','B','C','D','E','F','G','H','I','J',
+        'K','L','M','N','O','P','Q','R','S','T',
+        'U','V','W','X','Y','Z','-','.',' ','$',
+        '/','+','%'
+    };
 
-        /// <summary>
-        /// Entry point. Processes sample strings and displays their checksum characters or errors.
-        /// </summary>
-        static void Main()
+    /// <summary>
+    /// Computes the Code39 checksum character for the supplied data string.
+    /// The input must contain only characters valid in the Code39 charset
+    /// (excluding the start/stop '*'). Throws <see cref="ArgumentException"/> for invalid input.
+    /// </summary>
+    /// <param name="data">The data to encode (without start/stop characters).</param>
+    /// <returns>The checksum character.</returns>
+    public static char ComputeCode39Checksum(string data)
+    {
+        if (data == null)
+            throw new ArgumentNullException(nameof(data));
+
+        int sum = 0;
+        // Iterate over each character, convert to upper case, and accumulate its value.
+        foreach (char ch in data.ToUpperInvariant())
         {
-            // Sample inputs to demonstrate checksum calculation
-            string[] samples = { "HELLO", "CODE39", "123ABC", "ASP.NET" };
+            if (!CharValues.TryGetValue(ch, out int value))
+                throw new ArgumentException($"Invalid character '{ch}' for Code39.", nameof(data));
 
-            foreach (var text in samples)
-            {
-                try
-                {
-                    // Compute checksum for each sample string
-                    char checksum = ComputeCode39Checksum(text);
-                    Console.WriteLine($"Input: {text}  =>  Checksum character: {checksum}");
-                }
-                catch (ArgumentException ex)
-                {
-                    // Report any validation errors (e.g., invalid characters)
-                    Console.WriteLine($"Input: {text}  =>  Error: {ex.Message}");
-                }
-            }
+            sum += value;
         }
 
-        // Computes the Code 39 checksum character for the supplied data string.
-        // The algorithm sums the values of each character (according to the Code 39 charset)
-        // and returns the character whose value equals (sum mod 43).
-        private static char ComputeCode39Checksum(string data)
+        // Modulo‑43 yields the checksum value; map it back to the character.
+        int checksumValue = sum % 43;
+        return ValueToChar[checksumValue];
+    }
+
+    /// <summary>
+    /// Entry point that demonstrates checksum calculation for sample strings.
+    /// </summary>
+    static void Main()
+    {
+        // Sample data strings to process.
+        string[] samples = { "CODE39", "HELLO-123", "ASP.NET" };
+
+        foreach (string sample in samples)
         {
-            if (data == null)
-                throw new ArgumentException("Input cannot be null.");
-
-            int sum = 0;
-            foreach (char ch in data)
+            try
             {
-                // Code 39 is case‑insensitive; convert to upper case.
-                char upper = char.ToUpperInvariant(ch);
-
-                // The asterisk (*) is used only as start/stop delimiter and must not appear in data.
-                if (upper == '*')
-                    throw new ArgumentException("Asterisk (*) is not allowed in the data portion of a Code 39 barcode.");
-
-                // Look up the numeric value for the character; throw if not found.
-                if (!CharValueMap.TryGetValue(upper, out int value))
-                    throw new ArgumentException($"Invalid character '{ch}' for Code 39.");
-
-                sum += value;
+                char checksum = ComputeCode39Checksum(sample);
+                Console.WriteLine($"Data: {sample} => Checksum: {checksum}");
             }
-
-            int checksumValue = sum % 43;
-            // The charset string includes the asterisk at the end; its index is 43.
-            // Since checksumValue is in range 0‑42, we can safely index into the string.
-            return Code39Charset[checksumValue];
-        }
-
-        // Builds a dictionary mapping each allowed character to its numeric value.
-        private static Dictionary<char, int> CreateCharValueMap()
-        {
-            var map = new Dictionary<char, int>();
-            for (int i = 0; i < Code39Charset.Length; i++)
+            catch (Exception ex)
             {
-                char c = Code39Charset[i];
-                // The asterisk is only a delimiter; we still map it for completeness,
-                // but it will be rejected during checksum calculation.
-                map[c] = i;
+                Console.WriteLine($"Error processing \"{sample}\": {ex.Message}");
             }
-            return map;
         }
     }
 }

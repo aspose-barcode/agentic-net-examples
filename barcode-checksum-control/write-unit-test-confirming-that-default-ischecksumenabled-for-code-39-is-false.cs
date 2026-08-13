@@ -1,35 +1,40 @@
-// Title: Verify default checksum setting for Code 39 barcode
-// Description: Demonstrates how to confirm that the IsChecksumEnabled property for Code 39 barcodes defaults to disabled, useful for ensuring correct checksum handling in barcode generation.
+// Title: Verify default checksum setting for Code 39 barcode
+// Description: Demonstrates checking that the IsChecksumEnabled property defaults to disabled for Code 39 symbology.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to inspect default barcode parameters using the BarcodeGenerator class. Developers often need to confirm default settings such as checksum behavior before customizing barcode generation for inventory, shipping, or tracking applications.
 // Prompt: Write a unit test confirming that the default IsChecksumEnabled for Code 39 is false.
-// Tags: barcode symbology, checksum, unit test, code39, aspose.barcode
+// Tags: barcode, code39, checksum, default-setting, aspose.barcode, generation, unit-test
 
 using System;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Example program that checks the default checksum configuration for a Code 39 barcode.
+/// Demonstrates verifying the default checksum setting for Code 39 barcodes using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the program. Creates a barcode generator and verifies the default checksum setting.
+    /// Entry point that creates a Code 39 generator and checks the default IsChecksumEnabled value.
     /// </summary>
     static void Main()
     {
-        // Initialize a BarcodeGenerator for Code39FullASCII with sample text "ABC".
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code39FullASCII, "ABC"))
+        // Create a barcode generator for Code39 without modifying checksum settings
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code39, "ABC123"))
         {
-            // Retrieve the current default checksum setting from the generator's parameters.
+            // Retrieve the default checksum setting from the generator parameters
             EnableChecksum defaultChecksum = generator.Parameters.Barcode.IsChecksumEnabled;
 
-            // Compare the retrieved setting with the expected default (No) and output the result.
-            if (defaultChecksum == EnableChecksum.No)
+            // Determine whether the default is disabled (EnableChecksum.No)
+            bool isDisabled = defaultChecksum == EnableChecksum.No;
+
+            // Output the test result
+            if (isDisabled)
             {
-                Console.WriteLine("PASSED: Default IsChecksumEnabled for Code39 is No.");
+                Console.WriteLine("PASSED: Default IsChecksumEnabled for Code39 is disabled.");
             }
             else
             {
-                Console.WriteLine($"FAILED: Expected No, but got {defaultChecksum}.");
+                Console.WriteLine($"FAILED: Expected disabled, but got {defaultChecksum}.");
             }
         }
     }

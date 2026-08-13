@@ -1,84 +1,70 @@
-// Title: Code128 Barcode Generation and Checksum Verification
-// Description: Generates a Code 128 barcode, reads it back, and verifies that the decoded text ends with the correct checksum character.
+// Title: Verify Code 128 checksum character in generated barcode
+// Description: Generates a Code 128 barcode, reads it back, and checks that the human‑readable text ends with the correct checksum character.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, demonstrating how to create a barcode with Code 128, enable checksum display, and validate the checksum using the BarCodeReader. It showcases key API classes such as BarcodeGenerator, BarCodeImageFormat, BarCodeReader, and ChecksumValidation, which are commonly used by developers for barcode creation, image export, and integrity verification.
 // Prompt: Design a unit test that verifies the generated barcode string ends with the correct checksum character for Code 128.
-// Tags: barcode, code128, checksum, unit-test, aspose, csharp
+// Tags: code128, checksum, generation, recognition, png, aspose.barcode
 
 using System;
 using System.IO;
-using Aspose.BarCode;
+using System.Linq;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates how to generate a Code 128 barcode, read it back, and validate that the decoded
-/// string ends with the correct checksum character. This serves as a simple unit‑test example.
+/// Demonstrates generating a Code 128 barcode, reading it back, and verifying that the
+/// human‑readable text ends with the correct checksum character.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a barcode, decodes it, and checks the checksum.
+    /// Entry point of the example. Generates a barcode, decodes it, and validates the checksum.
     /// </summary>
     static void Main()
     {
-        // Sample data without checksum; Aspose will calculate it automatically.
-        const string data = "ABC123";
+        // Sample code text (without checksum)
+        string codeText = "12345";
 
-        // Prepare a memory stream to hold the generated barcode image.
-        using (var imageStream = new MemoryStream())
+        // Create a Code128 barcode generator and enable checksum display in the human‑readable text
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
         {
-            // Create a Code128 barcode generator with the sample data.
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, data))
+            generator.Parameters.Barcode.ChecksumAlwaysShow = true;
+
+            // Save the generated barcode to a memory stream in PNG format
+            using (var ms = new MemoryStream())
             {
-                // Enable checksum generation (default for Code128) and show it in the human‑readable text.
-                generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
-                generator.Parameters.Barcode.ChecksumAlwaysShow = true;
+                generator.Save(ms, BarCodeImageFormat.Png);
+                ms.Position = 0; // Reset stream position for reading
 
-                // Save the barcode image to the memory stream in PNG format.
-                generator.Save(imageStream, BarCodeImageFormat.Png);
-            }
-
-            // Reset stream position before reading the image.
-            imageStream.Position = 0;
-
-            int failures = 0;
-            int totalTests = 0;
-
-            // Read the barcode back from the image using a Code128 decoder.
-            using (var reader = new BarCodeReader(imageStream, DecodeType.Code128))
-            {
-                foreach (BarCodeResult result in reader.ReadBarCodes())
+                // Initialize a barcode reader to decode the image from the memory stream
+                using (var reader = new BarCodeReader(ms, DecodeType.Code128))
                 {
-                    totalTests++;
+                    // Ensure that checksum validation is performed during decoding
+                    reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
 
-                    // Full decoded text (including checksum if displayed) and the separate checksum value.
+                    // Read the first detected barcode (if any)
+                    var result = reader.ReadBarCodes().FirstOrDefault();
+                    if (result == null)
+                    {
+                        Console.WriteLine("FAILED: No barcode detected.");
+                        return;
+                    }
+
+                    // Retrieve the full decoded text and the checksum character
                     string fullCodeText = result.CodeText;
                     string checksum = result.Extended.OneD.CheckSum;
 
-                    // Verify that the full code text ends with the checksum character.
-                    if (!fullCodeText.EndsWith(checksum))
+                    // Verify that the decoded text ends with the expected checksum character
+                    if (!string.IsNullOrEmpty(fullCodeText) && !string.IsNullOrEmpty(checksum) &&
+                        fullCodeText.EndsWith(checksum, StringComparison.Ordinal))
                     {
-                        Console.WriteLine($"FAILED: Expected checksum '{checksum}' at the end of '{fullCodeText}'.");
-                        failures++;
+                        Console.WriteLine("PASSED: Checksum character is correct.");
                     }
                     else
                     {
-                        Console.WriteLine($"PASSED: CodeText '{fullCodeText}' ends with checksum '{checksum}'.");
+                        Console.WriteLine($"FAILED: Expected checksum '{checksum}' at the end of '{fullCodeText}'.");
                     }
                 }
-            }
-
-            // Output a summary of the test results.
-            if (failures == 0 && totalTests > 0)
-            {
-                Console.WriteLine("All tests passed.");
-            }
-            else if (totalTests == 0)
-            {
-                Console.WriteLine("No barcodes were read; test could not be performed.");
-            }
-            else
-            {
-                Console.WriteLine($"FAILED: {failures} out of {totalTests} tests failed.");
             }
         }
     }
