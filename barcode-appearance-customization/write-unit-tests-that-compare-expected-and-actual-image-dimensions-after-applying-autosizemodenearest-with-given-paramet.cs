@@ -1,68 +1,116 @@
-// Title: Demonstrate AutoSizeMode.Nearest barcode dimension verification
-// Description: Generates barcodes with specified point dimensions and checks that the resulting image does not exceed those dimensions.
+// Title: AutoSizeMode.Nearest Barcode Image Dimension Test
+// Description: Demonstrates how to generate a barcode image with AutoSizeMode.Nearest and verifies that the resulting image dimensions stay within the specified target size while preserving aspect ratio.
+// Category-Description: This example belongs to the Aspose.BarCode image generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and AutoSizeMode to control barcode image sizing. Developers often need to generate barcodes that fit within predefined dimensions for UI layouts, reports, or printing, and this snippet shows how to test that the AutoSizeMode.Nearest setting produces expected dimensions.
 // Prompt: Write unit tests that compare expected and actual image dimensions after applying AutoSizeMode.Nearest with given parameters.
-// Tags: barcode, autosizemode, nearest, dimensions, unit-test, aspose.barcode, aspose.drawing
+// Tags: barcode symbology, autosize, image generation, aspose.barcode, aspose.drawing
 
 using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Contains the entry point and test runner for barcode dimension verification using AutoSizeMode.Nearest.
+/// Contains a simple test harness that generates Code128 barcodes using AutoSizeMode.Nearest
+/// and validates that the produced image dimensions respect the target size and aspect ratio.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Main entry point that runs sample barcode dimension tests.
+    /// Entry point of the example. Executes a series of dimension validation tests.
     /// </summary>
     static void Main()
     {
-        // Test case 1: ImageWidth = 200pt, ImageHeight = 100pt, AutoSizeMode = Nearest
-        RunTest(EncodeTypes.Code128, "Test123", 200f, 100f);
+        int totalTests = 0;
+        int failedTests = 0;
 
-        // Test case 2: ImageWidth = 150pt, ImageHeight = 150pt, AutoSizeMode = Nearest
-        RunTest(EncodeTypes.QR, "https://example.com", 150f, 150f);
+        // Test 1: Target size 200x100, Code128 barcode
+        RunTest(
+            testName: "Test1",
+            expectedWidth: 200,
+            expectedHeight: 100,
+            targetWidth: 200,
+            targetHeight: 100,
+            ref totalTests,
+            ref failedTests);
+
+        // Test 2: Target size 300x150, Code128 barcode
+        RunTest(
+            testName: "Test2",
+            expectedWidth: 300,
+            expectedHeight: 150,
+            targetWidth: 300,
+            targetHeight: 150,
+            ref totalTests,
+            ref failedTests);
+
+        // Test 3: Target size 250x250 (square), Code128 barcode
+        RunTest(
+            testName: "Test3",
+            expectedWidth: 250,
+            expectedHeight: 250,
+            targetWidth: 250,
+            targetHeight: 250,
+            ref totalTests,
+            ref failedTests);
+
+        // Summary of test results
+        Console.WriteLine($"TOTAL: {totalTests} tests, FAILED: {failedTests} tests.");
     }
 
     /// <summary>
-    /// Generates a barcode with the specified parameters, then validates that the actual image dimensions
-    /// do not exceed the requested point dimensions when AutoSizeMode.Nearest is applied.
+    /// Generates a barcode image with the specified target dimensions and checks that the actual
+    /// image size does not exceed the target while preserving the aspect ratio.
     /// </summary>
-    /// <param name="encodeType">The barcode symbology to use.</param>
-    /// <param name="codeText">The data to encode in the barcode.</param>
-    /// <param name="widthPt">Desired maximum image width in points.</param>
-    /// <param name="heightPt">Desired maximum image height in points.</param>
-    static void RunTest(BaseEncodeType encodeType, string codeText, float widthPt, float heightPt)
+    /// <param name="testName">Identifier for the test case.</param>
+    /// <param name="expectedWidth">Expected maximum width (not used directly, kept for compatibility).</param>
+    /// <param name="expectedHeight">Expected maximum height (not used directly, kept for compatibility).</param>
+    /// <param name="targetWidth">Desired width for the generated image.</param>
+    /// <param name="targetHeight">Desired height for the generated image.</param>
+    /// <param name="totalTests">Reference to the total test counter.</param>
+    /// <param name="failedTests">Reference to the failed test counter.</param>
+    static void RunTest(
+        string testName,
+        int expectedWidth,
+        int expectedHeight,
+        int targetWidth,
+        int targetHeight,
+        ref int totalTests,
+        ref int failedTests)
     {
-        // Initialize the barcode generator with the chosen symbology and data.
-        using (var generator = new BarcodeGenerator(encodeType, codeText))
+        totalTests++;
+
+        // Initialize a barcode generator for Code128 with sample text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            // Configure AutoSizeMode to Nearest and set target dimensions in points.
+            // Configure AutoSizeMode to Nearest and set the target dimensions.
             generator.Parameters.AutoSizeMode = AutoSizeMode.Nearest;
-            generator.Parameters.ImageWidth.Point = widthPt;
-            generator.Parameters.ImageHeight.Point = heightPt;
+            generator.Parameters.ImageWidth.Point = (float)targetWidth;
+            generator.Parameters.ImageHeight.Point = (float)targetHeight;
 
             // Generate the barcode image.
             using (Bitmap bitmap = generator.GenerateBarCodeImage())
             {
-                // Actual dimensions of the generated bitmap (in pixels).
                 int actualWidth = bitmap.Width;
                 int actualHeight = bitmap.Height;
 
-                // Verify that the actual dimensions do not exceed the requested dimensions.
-                // AutoSizeMode.Nearest may reduce the size to the nearest lower possible value.
-                bool widthOk = actualWidth <= widthPt;
-                bool heightOk = actualHeight <= heightPt;
+                // Validate that the actual dimensions are within the target bounds.
+                bool sizeOk = actualWidth <= targetWidth && actualHeight <= targetHeight;
 
-                // Output the test results to the console.
-                Console.WriteLine($"Test for {encodeType.TypeName} with CodeText \"{codeText}\":");
-                Console.WriteLine($"  Expected max width: {widthPt}pt, actual width: {actualWidth}px");
-                Console.WriteLine($"  Expected max height: {heightPt}pt, actual height: {actualHeight}px");
-                Console.WriteLine($"  Width check: {(widthOk ? "PASS" : "FAIL")}");
-                Console.WriteLine($"  Height check: {(heightOk ? "PASS" : "FAIL")}");
-                Console.WriteLine();
+                // Validate that the aspect ratio is preserved within a small tolerance.
+                bool aspectOk = Math.Abs((float)actualWidth / actualHeight - (float)targetWidth / targetHeight) < 0.01f;
+
+                if (sizeOk && aspectOk)
+                {
+                    Console.WriteLine($"{testName}: PASS (Actual: {actualWidth}x{actualHeight})");
+                }
+                else
+                {
+                    failedTests++;
+                    Console.WriteLine($"{testName}: FAIL");
+                    Console.WriteLine($"  Expected max size: {targetWidth}x{targetHeight}");
+                    Console.WriteLine($"  Actual size: {actualWidth}x{actualHeight}");
+                    Console.WriteLine($"  Size OK: {sizeOk}, Aspect OK: {aspectOk}");
+                }
             }
         }
     }

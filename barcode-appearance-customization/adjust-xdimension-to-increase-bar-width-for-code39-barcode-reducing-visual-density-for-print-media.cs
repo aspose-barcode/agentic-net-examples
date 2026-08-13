@@ -1,41 +1,44 @@
-// Title: Code39 Barcode with Increased XDimension
-// Description: Demonstrates how to adjust the XDimension property to widen bars in a Code39 barcode, making it less dense for print media.
+// Title: Increase XDimension for Code39 barcode to reduce visual density
+// Description: Demonstrates how to adjust the XDimension property of a Code39 barcode using Aspose.BarCode to make bars wider, which is useful for print media where lower density is desired.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating barcode parameter customization. It showcases the BarcodeGenerator class, EncodeTypes enumeration, and barcode parameter settings such as XDimension, BarHeight, BarColor, and BackColor. Developers often need to tweak these settings to meet printing, scanning, and branding requirements.
 // Prompt: Adjust XDimension to increase bar width for a Code39 barcode, reducing visual density for print media.
-// Tags: code39, barcode, xdimension, print, aspose.barcode, generation
+// Tags: code39, xdimension, barcode, generation, png, aspose.barcode, aspose.drawing
 
 using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing;
 
 /// <summary>
-/// Generates a Code39 barcode with a larger XDimension to reduce visual density,
-/// suitable for printing on media where wider bars are preferred.
+/// Generates a Code39 barcode with an increased XDimension to produce wider bars,
+/// reducing visual density for better print media readability.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates a Code39 barcode, adjusts its XDimension,
-    /// and saves the result as a PNG image.
+    /// Entry point of the example. Creates a barcode, adjusts its dimensions,
+    /// and saves it as a PNG image.
     /// </summary>
     static void Main()
     {
-        // Initialize a Code39 barcode generator with sample text.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code39, "CODE39-EXAMPLE"))
+        // Initialize a Code39 barcode generator with the sample text "CODE39"
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code39, "CODE39"))
         {
-            // Disable auto-size mode so that manual XDimension settings take effect.
-            generator.Parameters.AutoSizeMode = AutoSizeMode.None;
-
-            // Increase the XDimension to make each bar wider (e.g., 2 points).
+            // Increase XDimension (bar width) to 2 points for lower density
             generator.Parameters.Barcode.XDimension.Point = 2f;
 
-            // Optionally set a reasonable bar height for printing (e.g., 40 points).
+            // Set a reasonable bar height (40 points) suitable for printing
             generator.Parameters.Barcode.BarHeight.Point = 40f;
 
-            // Save the generated barcode image to a PNG file.
+            // Define foreground (bars) and background colors
+            generator.Parameters.Barcode.BarColor = Color.Black;
+            generator.Parameters.BackColor = Color.White;
+
+            // Save the generated barcode as a PNG file
             generator.Save("code39.png");
         }
 
-        // Inform the user that the barcode has been generated.
+        // Output a simple confirmation message
         Console.WriteLine("Code39 barcode generated with increased XDimension.");
     }
 }
