@@ -1,41 +1,40 @@
-// Title: Generate GS1 DataMatrix barcode and save as JPEG with UTF‑8 encoding
-// Description: Demonstrates creating a GS1 DataMatrix barcode, setting UTF‑8 ECI encoding, and exporting it to a JPEG image.
-// Category-Description: This example is part of the Aspose.BarCode generation collection, showing how to configure a specific symbology (GS1 DataMatrix), apply character set encoding (UTF‑8 via ECI), and output the result as a high‑quality JPEG. It utilizes the BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes—common tools for developers who need to produce product identification codes and integrate them into imaging workflows.
+// Title: Generate GS1 DataMatrix Barcode and Save as JPEG
+// Description: Demonstrates creating a GS1 DataMatrix barcode with UTF‑8 encoding and exporting it to a JPEG file.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating how to configure DataMatrix encoding options such as GS1 mode and ECI UTF‑8, and how to save the generated barcode as an image file. Developers working with product identification, inventory, or logistics often need to produce GS1 DataMatrix symbols for GTINs and other application identifiers, using classes like BarcodeGenerator, EncodeTypes, and DataMatrixEncodeMode.
 // Prompt: Create a GS1 DataMatrix barcode, specify UTF‑8 encoding mode, and export to JPEG with quality 90.
-// Tags: gs1datamatrix, barcode, generation, jpeg, eci, utf-8, aspose.barcode, encodetypes, imageexport
+// Tags: gs1, datamatrix, barcode, generation, utf-8, jpeg, aspose.barcode, aspose.drawing
 
 using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates a GS1 DataMatrix barcode,
-/// applies UTF‑8 ECI encoding, and saves it as a JPEG image.
+/// Demonstrates creating a GS1 DataMatrix barcode with UTF‑8 encoding and saving it as a JPEG image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates the barcode and writes the image file.
+    /// Entry point that generates the barcode and writes it to disk.
     /// </summary>
     static void Main()
     {
-        // Output file name for the generated JPEG image
-        const string outputPath = "gs1datamatrix.jpg";
+        // Define the GS1 DataMatrix payload: Application Identifier (01) followed by a 14‑digit GTIN.
+        string codeText = "(01)00123456789012";
 
-        // GS1 DataMatrix payload (Application Identifier 01 with a 14‑digit GTIN)
-        const string codeText = "(01)12345678901231";
-
-        // Initialize the barcode generator for GS1 DataMatrix symbology
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.GS1DataMatrix))
+        // Initialize the barcode generator for GS1 DataMatrix with the specified text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.GS1DataMatrix, codeText))
         {
-            // Assign the code text to be encoded
-            generator.CodeText = codeText;
-
-            // Set the ECI (Extended Channel Interpretation) to UTF‑8 for proper character encoding
+            // Configure the DataMatrix to use ECI encoding mode with UTF‑8 for proper Unicode support.
+            generator.Parameters.Barcode.DataMatrix.EncodeMode = DataMatrixEncodeMode.ECI;
             generator.Parameters.Barcode.DataMatrix.ECIEncoding = ECIEncodings.UTF8;
 
-            // Save the barcode as a JPEG image (default quality; Aspose uses 90 if not specified)
-            generator.Save(outputPath, BarCodeImageFormat.Jpeg);
+            // Save the generated barcode as a JPEG image.
+            // Note: Aspose.BarCode uses the default JPEG quality; a specific quality setting is not exposed.
+            generator.Save("gs1_datamatrix.jpg");
         }
+
+        // Inform the user that the file has been created.
+        Console.WriteLine("GS1 DataMatrix barcode saved as gs1_datamatrix.jpg");
     }
 }

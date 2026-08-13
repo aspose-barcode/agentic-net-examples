@@ -1,8 +1,8 @@
-// Title: Create GS1 DataMatrix barcode with transparent background and PNG output
-// Description: Demonstrates generating a GS1 DataMatrix barcode, applying a fully transparent background, and saving it as a PNG that retains the alpha channel.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on GS1 DataMatrix symbology. It showcases the use of BarcodeGenerator, EncodeTypes, and drawing parameters to control visual appearance, a common requirement when integrating barcodes into UI designs that need transparent backgrounds.
+// Title: Generate GS1 DataMatrix barcode with transparent background and PNG output
+// Description: Demonstrates creating a GS1 DataMatrix barcode, applying a transparent background, and saving it as a PNG file that includes an alpha channel.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on GS1 DataMatrix symbology. It shows how to configure barcode appearance using the BarcodeGenerator class, set background colors with Aspose.Drawing, and export images in formats that support transparency such as PNG. Developers working with product identification, inventory, or logistics often need to generate GS1 DataMatrix codes and embed them in graphics with transparent backgrounds for seamless UI integration.
 // Prompt: Create a GS1 DataMatrix barcode, set background transparency, and export as PNG with an alpha channel.
-// Tags: gs1 datamatrix, background transparency, png, aspose.barcode, barcode generation
+// Tags: gs1datamatrix, barcode generation, transparent background, png, alpha channel, aspose.barcode, aspose.drawing
 
 using System;
 using Aspose.BarCode;
@@ -10,26 +10,29 @@ using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates creating a GS1 DataMatrix barcode with a transparent background and exporting it as a PNG image.
+/// Demonstrates generating a GS1 DataMatrix barcode with a transparent background and saving it as a PNG image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates the barcode, sets transparency, and saves the image.
+    /// Entry point. Generates the barcode, applies transparency, and writes the output file.
     /// </summary>
     static void Main()
     {
-        // Define the GS1 DataMatrix code text (Application Identifier (01) for GTIN)
-        string codeText = "(01)01234567890123";
+        // Define the GS1 DataMatrix code text (AI 01 with a 14‑digit GTIN)
+        string codeText = "(01)00123456789012";
 
-        // Initialize the barcode generator for GS1 DataMatrix with the specified text
+        // Initialize the barcode generator for GS1 DataMatrix using the specified text
         using (var generator = new BarcodeGenerator(EncodeTypes.GS1DataMatrix, codeText))
         {
-            // Configure the background color to be fully transparent (alpha = 0)
-            generator.Parameters.BackColor = Color.FromArgb(0, 255, 255, 255);
+            // Configure the background to be transparent so the saved PNG contains an alpha channel
+            generator.Parameters.BackColor = Aspose.Drawing.Color.Transparent;
 
-            // Save the barcode as a PNG file; the alpha channel preserves transparency
-            generator.Save("gs1_datamatrix.png");
+            // Save the generated barcode as a PNG file (PNG supports alpha transparency)
+            generator.Save("gs1datamatrix.png");
         }
+
+        // Inform the user that the barcode image has been created
+        Console.WriteLine("GS1 DataMatrix barcode generated: gs1datamatrix.png");
     }
 }
