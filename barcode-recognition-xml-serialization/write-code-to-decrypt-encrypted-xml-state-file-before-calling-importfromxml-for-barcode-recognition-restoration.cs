@@ -1,125 +1,153 @@
-// Title: Decrypt Encrypted XML State for Barcode Recognition
-// Description: Demonstrates decrypting an AES‑encrypted XML state file and importing it into Aspose.BarCode to restore barcode recognition settings.
+// Title: Decrypt encrypted XML state file for barcode reader restoration
+// Description: Demonstrates decrypting an AES‑encrypted XML state file and importing it to restore barcode recognition settings.
+// Category-Description: This example belongs to the Aspose.BarCode state management category, showing how to export, encrypt, decrypt, and import barcode reader settings using ExportToXml, ImportFromXml, and AES encryption. Developers often need to persist and protect reader configurations for later reuse, especially in secure or distributed environments.
 // Prompt: Write code to decrypt an encrypted XML state file before calling ImportFromXml for barcode recognition restoration.
-// Tags: barcode, decryption, xml, import, aspose.barcode, aes
+// Tags: barcode symbology, encryption, importfromxml, aesencryption, barcoderecognition
 
 using System;
 using System.IO;
 using System.Security.Cryptography;
-using System.Text;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Example program that decrypts an encrypted XML state file and restores barcode recognition settings using Aspose.BarCode.
+/// Demonstrates exporting a barcode reader state to XML, encrypting the XML,
+/// decrypting it back into memory, and restoring the reader settings using
+/// <c>BarCodeReader.ImportFromXml</c>. The example uses AES‑128 for encryption
+/// and shows how to reuse the same barcode image with the restored settings.
 /// </summary>
 class Program
 {
-    // Sample AES key (32 bytes) and IV (16 bytes) for encryption/decryption.
-    private static readonly byte[] AesKey = Encoding.UTF8.GetBytes("0123456789ABCDEF0123456789ABCDEF");
-    private static readonly byte[] AesIv = Encoding.UTF8.GetBytes("ABCDEF0123456789");
+    /// <summary>
+    /// Encrypts the specified input file using AES and writes the ciphertext to the output file.
+    /// This method is for demonstration purposes only; a fixed key/IV is used.
+    /// </summary>
+    /// <param name="inputPath">Path to the plaintext file.</param>
+    /// <param name="outputPath">Path where the encrypted file will be created.</param>
+    /// <param name="key">AES key (16 bytes for AES‑128).</param>
+    /// <param name="iv">AES initialization vector (16 bytes).</param>
+    private static void EncryptFile(string inputPath, string outputPath, byte[] key, byte[] iv)
+    {
+        using (var aes = Aes.Create())
+        {
+            aes.Key = key;
+            aes.IV = iv;
+
+            using (var inputFile = new FileStream(inputPath, FileMode.Open, FileAccess.Read))
+            using (var outputFile = new FileStream(outputPath, FileMode.Create, FileAccess.Write))
+            using (var cryptoStream = new CryptoStream(outputFile, aes.CreateEncryptor(), CryptoStreamMode.Write))
+            {
+                // Copy plaintext into the crypto stream to produce encrypted output.
+                inputFile.CopyTo(cryptoStream);
+            }
+        }
+    }
 
     /// <summary>
-    /// Entry point. Ensures an encrypted state file exists, decrypts it, imports settings, generates a matching barcode, and reads it.
+    /// Decrypts an AES‑encrypted file and returns its contents in a <see cref="MemoryStream"/>.
+    /// </summary>
+    /// <param name="encryptedPath">Path to the encrypted file.</param>
+    /// <param name="key">AES key used for decryption.</param>
+    /// <param name="iv">AES initialization vector used for decryption.</param>
+    /// <returns>A memory stream containing the decrypted XML data.</returns>
+    private static MemoryStream DecryptToMemoryStream(string encryptedPath, byte[] key, byte[] iv)
+    {
+        var memoryStream = new MemoryStream();
+
+        using (var aes = Aes.Create())
+        {
+            aes.Key = key;
+            aes.IV = iv;
+
+            using (var encryptedFile = new FileStream(encryptedPath, FileMode.Open, FileAccess.Read))
+            using (var cryptoStream = new CryptoStream(encryptedFile, aes.CreateDecryptor(), CryptoStreamMode.Read))
+            {
+                // Copy decrypted bytes into the memory stream.
+                cryptoStream.CopyTo(memoryStream);
+            }
+        }
+
+        // Reset the stream position so it can be read from the beginning.
+        memoryStream.Position = 0;
+        return memoryStream;
+    }
+
+    /// <summary>
+    /// Entry point of the example. Generates a barcode, exports its reader state,
+    /// encrypts the state XML, decrypts it, and restores the reader settings for
+    /// barcode recognition.
     /// </summary>
     static void Main()
     {
-        const string encryptedFilePath = "encrypted_state.bin";
+        // --------------------------------------------------------------------
+        // Define file paths used throughout the example.
+        // --------------------------------------------------------------------
+        const string barcodePath = "barcode.png";
+        const string xmlPath = "state.xml";
+        const string encryptedPath = "state.enc";
 
-        // Ensure an encrypted state file exists. If not, create one from a sample barcode.
-        if (!File.Exists(encryptedFilePath))
+        // --------------------------------------------------------------------
+        // Prepare a fixed AES‑128 key and IV (for demo only; use secure keys in production).
+        // --------------------------------------------------------------------
+        byte[] key = new byte[16];
+        byte[] iv = new byte[16];
+        for (int i = 0; i < 16; i++)
         {
-            CreateEncryptedStateFile(encryptedFilePath);
+            key[i] = (byte)i;
+            iv[i] = (byte)(16 - i);
         }
 
-        // Decrypt the XML state.
-        byte[] decryptedXml = DecryptFile(encryptedFilePath, AesKey, AesIv);
-
-        // Import the settings into a BarCodeReader instance.
-        using (var xmlStream = new MemoryStream(decryptedXml))
-        using (var reader = BarCodeReader.ImportFromXml(xmlStream))
-        {
-            if (reader == null)
-            {
-                Console.WriteLine("Failed to import settings from XML.");
-                return;
-            }
-
-            // Generate a barcode image that matches the imported settings.
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
-            using (var barcodeImage = generator.GenerateBarCodeImage())
-            {
-                // Assign the image to the reader.
-                reader.SetBarCodeImage(barcodeImage);
-
-                // Perform recognition and output results.
-                foreach (var result in reader.ReadBarCodes())
-                {
-                    Console.WriteLine($"BarCode Type: {result.CodeTypeName}");
-                    Console.WriteLine($"BarCode CodeText: {result.CodeText}");
-                }
-            }
-        }
-    }
-
-    // Creates an encrypted XML state file from a sample barcode's settings.
-    private static void CreateEncryptedStateFile(string filePath)
-    {
-        // Generate a sample barcode and export its settings to XML.
+        // --------------------------------------------------------------------
+        // 1. Generate a sample barcode image (Code128 with value "123456").
+        // --------------------------------------------------------------------
         using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
-        using (var xmlMemory = new MemoryStream())
         {
-            generator.ExportToXml(xmlMemory);
-            byte[] xmlBytes = xmlMemory.ToArray();
-
-            // Encrypt the XML bytes.
-            byte[] encryptedBytes = Encrypt(xmlBytes, AesKey, AesIv);
-
-            // Write encrypted data to file.
-            File.WriteAllBytes(filePath, encryptedBytes);
+            generator.Save(barcodePath);
         }
-    }
 
-    // Encrypts plain data using AES-CBC with PKCS7 padding.
-    private static byte[] Encrypt(byte[] plainData, byte[] key, byte[] iv)
-    {
-        using (Aes aes = Aes.Create())
+        // --------------------------------------------------------------------
+        // 2. Create a reader, assign the image, and perform an initial read.
+        // --------------------------------------------------------------------
+        using (var reader = new BarCodeReader(barcodePath, DecodeType.AllSupportedTypes))
         {
-            aes.Key = key;
-            aes.IV = iv;
-            aes.Mode = CipherMode.CBC;
-            aes.Padding = PaddingMode.PKCS7;
-
-            using (ICryptoTransform encryptor = aes.CreateEncryptor())
-            using (var ms = new MemoryStream())
-            using (var cryptoStream = new CryptoStream(ms, encryptor, CryptoStreamMode.Write))
+            foreach (var result in reader.ReadBarCodes())
             {
-                cryptoStream.Write(plainData, 0, plainData.Length);
-                cryptoStream.FlushFinalBlock();
-                return ms.ToArray();
+                Console.WriteLine($"[Initial] Type: {result.CodeTypeName}, Text: {result.CodeText}");
             }
+
+            // 3. Export the reader's configuration and state to an XML file.
+            reader.ExportToXml(xmlPath);
         }
-    }
 
-    // Decrypts the entire file content using AES-CBC with PKCS7 padding.
-    private static byte[] DecryptFile(string filePath, byte[] key, byte[] iv)
-    {
-        byte[] cipherData = File.ReadAllBytes(filePath);
-        using (Aes aes = Aes.Create())
+        // --------------------------------------------------------------------
+        // 4. Encrypt the exported XML state file using the fixed key/IV.
+        // --------------------------------------------------------------------
+        if (File.Exists(xmlPath))
         {
-            aes.Key = key;
-            aes.IV = iv;
-            aes.Mode = CipherMode.CBC;
-            aes.Padding = PaddingMode.PKCS7;
+            EncryptFile(xmlPath, encryptedPath, key, iv);
+        }
+        else
+        {
+            Console.WriteLine("Exported XML file not found.");
+            return;
+        }
 
-            using (ICryptoTransform decryptor = aes.CreateDecryptor())
-            using (var ms = new MemoryStream(cipherData))
-            using (var cryptoStream = new CryptoStream(ms, decryptor, CryptoStreamMode.Read))
-            using (var resultStream = new MemoryStream())
+        // --------------------------------------------------------------------
+        // 5. Decrypt the encrypted XML back into a memory stream.
+        // --------------------------------------------------------------------
+        using (var decryptedStream = DecryptToMemoryStream(encryptedPath, key, iv))
+        {
+            // 6. Import the reader settings from the decrypted XML stream.
+            using (var importedReader = BarCodeReader.ImportFromXml(decryptedStream))
             {
-                cryptoStream.CopyTo(resultStream);
-                return resultStream.ToArray();
+                // 7. Assign the same barcode image to the imported reader.
+                importedReader.SetBarCodeImage(barcodePath);
+
+                // 8. Perform barcode recognition using the restored settings.
+                foreach (var result in importedReader.ReadBarCodes())
+                {
+                    Console.WriteLine($"[Restored] Type: {result.CodeTypeName}, Text: {result.CodeText}");
+                }
             }
         }
     }

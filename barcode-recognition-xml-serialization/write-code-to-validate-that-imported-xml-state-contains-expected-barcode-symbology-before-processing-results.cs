@@ -1,7 +1,8 @@
 // Title: Validate barcode symbology from imported XML state
-// Description: Demonstrates how to import a barcode generator from an XML file, verify that its symbology matches the expected type, and then generate an image if validation succeeds.
+// Description: Demonstrates how to load a barcode generator state from XML and verify that it uses the expected symbology before further processing.
+// Category-Description: This example belongs to the Aspose.BarCode generation and validation category. It shows how to use BarcodeGenerator.ImportFromXml, access the BarcodeType property, and perform symbology checks. Typical use cases include validating saved barcode configurations, ensuring compatibility before rendering, and preventing processing of unexpected barcode types. Developers often need to read saved states, compare symbology, and conditionally generate images.
 // Prompt: Write code to validate that an imported XML state contains the expected barcode symbology before processing results.
-// Tags: barcode symbology, validation, xml import, aspose.barcode, csharp
+// Tags: barcode, symbology, validation, import, xml, generation, aspose.barcode
 
 using System;
 using System.IO;
@@ -9,45 +10,60 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Example program that validates the barcode symbology defined in an imported XML state before generating the barcode image.
+/// Example program that validates the barcode symbology stored in an imported XML state
+/// before generating the barcode image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the program. Performs validation of the barcode symbology and generates an image if the validation passes.
+    /// Entry point of the application.
+    /// Loads a barcode generator from an XML file, checks its symbology,
+    /// and generates an image only if the symbology matches the expected value.
     /// </summary>
     static void Main()
     {
-        // Expected symbology name (e.g., "Code128")
-        const string expectedSymbology = "Code128";
+        // Path to the XML file that contains the barcode generator state.
+        string xmlPath = "barcode_state.xml";
 
-        // Path to the XML file that contains the barcode state
-        const string xmlPath = "barcode_state.xml";
+        // Expected symbology name (e.g., "Code128", "QR", "DataMatrix").
+        string expectedSymbology = "Code128";
 
-        // Verify that the XML file exists before attempting import
+        // Verify that the XML file exists before attempting import.
         if (!File.Exists(xmlPath))
         {
             Console.WriteLine($"Error: XML file not found at '{xmlPath}'.");
             return;
         }
 
-        // Import the barcode generator from the XML state
-        using (BarcodeGenerator generator = BarcodeGenerator.ImportFromXml(xmlPath))
+        try
         {
-            // Retrieve the actual symbology type name from the imported generator
-            string actualSymbology = generator.BarcodeType.TypeName;
-
-            // Compare with the expected symbology (case‑insensitive)
-            if (!string.Equals(actualSymbology, expectedSymbology, StringComparison.OrdinalIgnoreCase))
+            // Import the barcode generator state from the XML file.
+            using (BarcodeGenerator generator = BarcodeGenerator.ImportFromXml(xmlPath))
             {
-                Console.WriteLine($"Warning: Expected symbology '{expectedSymbology}' but found '{actualSymbology}'. Processing aborted.");
-                return;
-            }
+                // Retrieve the actual symbology of the imported generator.
+                string actualSymbology = generator.BarcodeType.TypeName;
 
-            // Symbology matches – proceed with barcode processing (e.g., generate and save an image)
-            const string outputImage = "validated_barcode.png";
-            generator.Save(outputImage);
-            Console.WriteLine($"Barcode symbology validated as '{actualSymbology}'. Image saved to '{outputImage}'.");
+                // Compare the actual symbology with the expected value (case‑insensitive).
+                if (string.Equals(actualSymbology, expectedSymbology, StringComparison.OrdinalIgnoreCase))
+                {
+                    Console.WriteLine($"Symbology validation succeeded: '{actualSymbology}'.");
+
+                    // Proceed with further processing, e.g., generate and save the barcode image.
+                    string outputImage = "generated_barcode.png";
+                    generator.Save(outputImage);
+                    Console.WriteLine($"Barcode image saved to '{outputImage}'.");
+                }
+                else
+                {
+                    // Symbology does not match; skip further processing.
+                    Console.WriteLine($"Warning: Expected symbology '{expectedSymbology}' but found '{actualSymbology}'. Skipping processing.");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            // Handle any errors that occur during import or processing.
+            Console.WriteLine($"Exception occurred: {ex.Message}");
         }
     }
 }

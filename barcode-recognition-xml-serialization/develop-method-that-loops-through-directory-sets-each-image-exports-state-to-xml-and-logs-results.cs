@@ -1,99 +1,119 @@
-// Title: Export barcode generator state to XML for images in a directory
-// Description: Demonstrates looping through a folder of barcode images, creating a generator for each, exporting its configuration to XML, and logging the results.
+// Title: Barcode generation, state export, and decoding batch processing
+// Description: Demonstrates creating barcode images, exporting generator state to XML, then reading back each image to decode and log results.
+// Category-Description: This example belongs to the Aspose.BarCode batch processing category, showcasing how to use BarcodeGenerator for image creation, ExportToXml for persisting generator settings, and BarCodeReader for decoding. Typical use cases include automated barcode workflows, bulk processing, and state persistence for later reuse. Developers often need to generate, store, and later validate barcodes in large volumes.
 // Prompt: Develop a method that loops through a directory, sets each image, exports state to XML, and logs results.
-// Tags: barcode symbology, export, xml, file-io, aspose.barcode
+// Tags: barcode generation, barcode decoding, xml export, code128, aspose.barcode, batch processing
 
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Example program that processes barcode images, creates generators, and exports their state to XML files.
+/// Demonstrates batch creation of Code128 barcodes, exporting generator state to XML,
+/// and decoding each generated image while logging the process.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Sets up input/output directories and starts processing.
+    /// Entry point of the example. Generates barcodes, exports their state, decodes them,
+    /// and writes detailed logs to a file.
     /// </summary>
     static void Main()
     {
-        // Define the folder that contains barcode image files (adjust path as needed)
-        string inputDirectory = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
-
-        // Define the folder where the exported XML files will be saved
-        string outputDirectory = Path.Combine(Directory.GetCurrentDirectory(), "ExportedXml");
-
-        // Ensure the output directory exists; create it if it does not
-        if (!Directory.Exists(outputDirectory))
+        // Define the working directory for barcode images and logs.
+        string workDir = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
+        if (!Directory.Exists(workDir))
         {
-            Directory.CreateDirectory(outputDirectory);
+            Directory.CreateDirectory(workDir);
         }
 
-        // Process each barcode image and export its generator state to XML
-        ProcessBarcodes(inputDirectory, outputDirectory);
-    }
+        // Initialize a simple log file with a start timestamp.
+        string logPath = Path.Combine(workDir, "process.log");
+        File.WriteAllText(logPath, $"Process started at {DateTime.Now}{Environment.NewLine}");
 
-    /// <summary>
-    /// Loops through image files in <paramref name="inputDir"/>, creates a <see cref="BarcodeGenerator"/> for each,
-    /// exports its configuration to an XML file in <paramref name="outputDir"/>, and logs the outcome.
-    /// </summary>
-    /// <param name="inputDir">Directory containing barcode image files.</param>
-    /// <param name="outputDir">Directory where XML files will be saved.</param>
-    static void ProcessBarcodes(string inputDir, string outputDir)
-    {
-        // Verify that the input directory exists before proceeding
-        if (!Directory.Exists(inputDir))
+        // --------------------------------------------------------------------
+        // Generate sample barcode images and export their generator state to XML.
+        // --------------------------------------------------------------------
+        for (int i = 1; i <= 5; i++)
         {
-            Console.WriteLine($"Input directory does not exist: {inputDir}");
-            return;
-        }
+            string codeText = $"Sample{i}";
+            string imagePath = Path.Combine(workDir, $"barcode{i}.png");
+            string xmlPath = Path.Combine(workDir, $"barcode{i}.xml");
 
-        // Retrieve up to 5 PNG files from the input directory (as per example guidelines)
-        string[] imageFiles = Directory.GetFiles(inputDir, "*.png");
-        int maxItems = Math.Min(imageFiles.Length, 5);
-
-        // Iterate over the selected image files
-        for (int i = 0; i < maxItems; i++)
-        {
-            string imagePath = imageFiles[i];
-
-            // Skip the file if it cannot be found (defensive check)
-            if (!File.Exists(imagePath))
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
             {
-                Console.WriteLine($"File not found, skipping: {imagePath}");
+                // Configure generator properties.
+                generator.Parameters.Barcode.XDimension.Point = 2f;
+                generator.Parameters.Barcode.BarHeight.Point = 40f;
+                generator.Parameters.Barcode.FilledBars = false;
+                generator.Parameters.Barcode.ThrowExceptionWhenCodeTextIncorrect = false;
+                generator.Parameters.Barcode.CodeTextParameters.Font.FamilyName = "Helvetica";
+                generator.Parameters.Barcode.CodeTextParameters.Font.Size.Point = 10f;
+                generator.Parameters.Barcode.CodeTextParameters.Alignment = TextAlignment.Center;
+
+                // Save the barcode image to disk.
+                generator.Save(imagePath);
+
+                // Export the current generator configuration to an XML file.
+                generator.ExportToXml(xmlPath);
+            }
+
+            // Log the successful generation and export.
+            Log(logPath, $"Generated barcode {i}: {imagePath}, state exported to {xmlPath}");
+        }
+
+        // --------------------------------------------------------------------
+        // Decode each generated barcode image and log the results.
+        // --------------------------------------------------------------------
+        string[] imageFiles = Directory.GetFiles(workDir, "*.png");
+        foreach (string imgFile in imageFiles)
+        {
+            if (!File.Exists(imgFile))
+            {
+                Log(logPath, $"File not found: {imgFile}");
                 continue;
             }
 
             try
             {
-                // Use the file name (without extension) as the barcode's codetext for demonstration purposes
-                string codeText = Path.GetFileNameWithoutExtension(imagePath);
-
-                // Create a barcode generator with Code128 symbology and the derived codetext
-                using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+                using (var reader = new BarCodeReader(imgFile, DecodeType.Code128))
                 {
-                    // Optional: customize appearance (example sets the barcode color to blue)
-                    generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Blue;
+                    bool found = false;
+                    foreach (var result in reader.ReadBarCodes())
+                    {
+                        // Log each decoded barcode's type and text.
+                        Log(logPath, $"Decoded from {Path.GetFileName(imgFile)}: Type={result.CodeTypeName}, Text={result.CodeText}");
+                        found = true;
+                    }
 
-                    // Build the full path for the XML output file
-                    string xmlFileName = Path.Combine(outputDir, $"{codeText}.xml");
-
-                    // Export the generator's current state to the XML file
-                    generator.ExportToXml(xmlFileName);
-
-                    // Log successful processing
-                    Console.WriteLine($"Processed '{imagePath}' -> XML saved as '{xmlFileName}'.");
+                    if (!found)
+                    {
+                        // No barcode detected in the current image.
+                        Log(logPath, $"No barcode detected in {Path.GetFileName(imgFile)}");
+                    }
                 }
             }
             catch (Exception ex)
             {
-                // Log any errors that occur during processing of the current file
-                Console.WriteLine($"Error processing '{imagePath}': {ex.Message}");
+                // Log any errors that occur during decoding.
+                Log(logPath, $"Error processing {Path.GetFileName(imgFile)}: {ex.Message}");
             }
         }
 
-        // Indicate that all processing is complete
-        Console.WriteLine("Processing completed.");
+        // Final log entry indicating completion.
+        Log(logPath, $"Process completed at {DateTime.Now}");
+    }
+
+    /// <summary>
+    /// Writes a message to both the console and the specified log file with a timestamp.
+    /// </summary>
+    /// <param name="logFile">Path to the log file.</param>
+    /// <param name="message">Message to log.</param>
+    static void Log(string logFile, string message)
+    {
+        Console.WriteLine(message);
+        File.AppendAllText(logFile, $"{DateTime.Now}: {message}{Environment.NewLine}");
     }
 }
