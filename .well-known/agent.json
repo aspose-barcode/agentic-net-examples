@@ -1,7 +1,7 @@
 {
   "schema_version": "0.1",
   "name": "Aspose.BarCode for .NET Examples Agent",
-  "description": "Provides 1212 build-validated, standalone C# code examples for barcode generation and recognition using Aspose.BarCode for .NET. Covers 1D, 2D, postal, and special barcode types across 21 categories.",
+  "description": "Provides 1124 build-validated, standalone C# code examples for barcode generation and recognition using Aspose.BarCode for .NET. Covers 1D, 2D, postal, and special barcode types across 21 categories.",
   "capabilities": [
     "Generate C# examples for 1D barcodes (Code128, Code39, EAN, UPC, ITF, Codabar, and 50+ symbologies)",
     "Generate C# examples for 2D barcodes (QR Code, DataMatrix, PDF417, Aztec, MaxiCode, GS1 DataBar)",
@@ -25,17 +25,17 @@
     {
       "slug": "barcode-appearance-customization",
       "display_name": "Barcode Appearance Customization",
-      "example_count": 60
+      "example_count": 30
     },
     {
       "slug": "barcode-checksum-control",
       "display_name": "Barcode Checksum Control",
-      "example_count": 60
+      "example_count": 30
     },
     {
       "slug": "barcode-color-customization",
       "display_name": "Barcode Color Customization",
-      "example_count": 56
+      "example_count": 28
     },
     {
       "slug": "barcode-configuration-serialization",
@@ -128,7 +128,7 @@
       "example_count": 214
     }
   ],
-  "total_examples": 1212,
+  "total_examples": 1124,
   "package_version": "26.7.0",
   "documentation_url": "https://docs.aspose.com/barcode/net/",
   "api_reference": "https://reference.aspose.com/barcode/net/",
