@@ -1,8 +1,8 @@
-// Title: Generate Swiss QR Bill PDF with embedded QR code
-// Description: Demonstrates creating a Swiss QR‑Bill PDF by generating a QR code using Aspose.BarCode and embedding it into a PDF with Aspose.Pdf.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and Aspose.Pdf document creation category. It shows how to use the SwissQRBill class together with ComplexBarcodeGenerator to produce a Swiss QR‑Code, and then embed the resulting image into a PDF document using Aspose.Pdf. Developers working on invoicing, payment slips, or any financial documents that require Swiss QR‑Bills can follow this pattern to automate PDF generation.
+// Title: Generate Swiss QR‑Bill PDF with embedded QR code using Aspose.BarCode
+// Description: Demonstrates how to create a Swiss QR‑Bill, render its QR code as an image, and embed it into a PDF document.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It showcases the use of ComplexBarcodeGenerator with SwissQRCodetext to produce a QR‑Bill QR code, and the Aspose.Pdf library to embed the image into a PDF. Developers working with financial documents, QR‑based payments, or PDF reporting often need to generate QR‑Bill PDFs programmatically.
 // Prompt: Use SwissQRBill class to generate a PDF QR‑bill document embedding the generated Swiss QR Code image.
-// Tags: swissqr, qr-bill, pdf, barcode generation, aspose.barcode, aspose.pdf
+// Tags: barcode symbology, generation, pdf, swissqr, complexbarcode, aspose.pdf
 
 using System;
 using System.IO;
@@ -12,18 +12,19 @@ using Aspose.Pdf;
 using Aspose.Pdf.Text;
 
 /// <summary>
-/// Example program that creates a Swiss QR‑Bill PDF by generating a QR code image
-/// with Aspose.BarCode and embedding it into a PDF document using Aspose.Pdf.
+/// Example program that creates a Swiss QR‑Bill, generates its QR code image,
+/// and embeds the image into a PDF document using Aspose.BarCode and Aspose.Pdf.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Prepares QR‑Bill data, generates the QR code,
-    /// embeds it into a PDF, adds bill details as text, and saves the document.
+    /// Entry point of the application.
     /// </summary>
     static void Main()
     {
+        // ------------------------------------------------------------
         // Prepare Swiss QR‑Bill data
+        // ------------------------------------------------------------
         var swissQr = new SwissQRCodetext();
         swissQr.Bill.Creditor.Name = "John Doe";
         swissQr.Bill.Creditor.CountryCode = "CH";
@@ -31,45 +32,45 @@ class Program
         swissQr.Bill.Amount = 199.95m;
         swissQr.Bill.Version = SwissQRBill.QrBillStandardVersion.V2_0;
 
-        // Optional additional fields
-        swissQr.Bill.BillInformation = "Invoice 12345";
-
-        // Generate QR code image into a memory stream
-        using (var qrGenerator = new ComplexBarcodeGenerator(swissQr))
+        // ------------------------------------------------------------
+        // Generate QR code image and store it in a memory stream
+        // ------------------------------------------------------------
+        using (var qrStream = new MemoryStream())
         {
-            using (var qrStream = new MemoryStream())
+            // Use ComplexBarcodeGenerator to render the QR code as PNG
+            using (var generator = new ComplexBarcodeGenerator(swissQr))
             {
-                qrGenerator.Save(qrStream, BarCodeImageFormat.Png);
-                qrStream.Position = 0; // Reset stream position for reading
-
-                // Create PDF document and embed the QR code image
-                using (var pdfDoc = new Document())
-                {
-                    var page = pdfDoc.Pages.Add();
-
-                    // Add QR code image to the PDF page
-                    var pdfImage = new Image
-                    {
-                        ImageStream = new MemoryStream(qrStream.ToArray())
-                    };
-                    // Set image size and remove margins
-                    pdfImage.Margin = new MarginInfo(0, 0, 0, 0);
-                    pdfImage.FixHeight = 150;
-                    pdfImage.FixWidth = 150;
-                    page.Paragraphs.Add(pdfImage);
-
-                    // Add bill information as text below the QR code
-                    var tf = new TextFragment("Swiss QR Bill\nCreditor: John Doe\nAmount: CHF 199.95")
-                    {
-                        TextState = { FontSize = 12, Font = FontRepository.FindFont("Helvetica") }
-                    };
-                    tf.Position = new Position(0, 200);
-                    page.Paragraphs.Add(tf);
-
-                    // Save the final PDF document to disk
-                    pdfDoc.Save("SwissQRBill.pdf");
-                }
+                generator.Save(qrStream, BarCodeImageFormat.Png);
             }
+
+            // Reset the stream position so it can be read from the beginning
+            qrStream.Position = 0;
+
+            // ------------------------------------------------------------
+            // Create a PDF document and embed the QR code image
+            // ------------------------------------------------------------
+            var pdfDoc = new Document();
+            var page = pdfDoc.Pages.Add();
+
+            var pdfImage = new Aspose.Pdf.Image
+            {
+                ImageStream = qrStream,
+                FixWidth = 150,
+                FixHeight = 150,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
+                Margin = new MarginInfo { Top = 20 }
+            };
+
+            // Add the image to the page's paragraph collection
+            page.Paragraphs.Add(pdfImage);
+
+            // ------------------------------------------------------------
+            // Save the PDF to a file
+            // ------------------------------------------------------------
+            string outputPath = "SwissQRBill.pdf";
+            pdfDoc.Save(outputPath);
+            Console.WriteLine($"PDF with Swiss QR code saved to: {Path.GetFullPath(outputPath)}");
         }
     }
 }

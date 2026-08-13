@@ -1,51 +1,57 @@
-// Title: Customize SwissQR barcode colors with ComplexBarcodeGenerator
-// Description: Demonstrates how to set foreground and background colors for a SwissQR barcode before generating a PNG image.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category, showcasing the use of ComplexBarcodeGenerator and its Parameters to customize visual appearance such as bar and background colors. Developers often need to tailor barcode colors to match branding or UI themes while generating QR codes for payments or data exchange. The snippet illustrates typical steps: creating codetext, configuring colors, and saving the image.
+// Title: Generate a MaxiCode barcode with custom foreground and background colors
+// Description: Demonstrates how to set the bar (foreground) and background colors of a MaxiCode complex barcode using Aspose.BarCode before rendering it to an image file.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It showcases the ComplexBarcodeGenerator class and its Parameters property to customize visual aspects such as bar color and background color. Typical use cases include branding, visual integration, and accessibility where barcode colors need to match design guidelines. Developers often need to adjust these properties when generating PNG, JPEG, or other image formats for web or print.
 // Prompt: Customize barcode foreground and background colors via ComplexBarcodeGenerator properties before generating the image.
-// Tags: swissqr, complexbarcode, color, png, generation, aspose.barcode, aspose.drawing
+// Tags: maxicode, complex barcode, color customization, image generation, aspose.barcode, c#
 
 using System;
-using System.IO;
 using Aspose.BarCode.ComplexBarcode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that creates a SwissQR barcode, customizes its colors,
-/// and saves the result as a PNG image.
+/// Demonstrates creating a MaxiCode complex barcode with custom colors and saving it as a PNG image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
+    /// Entry point of the example. Prepares the MaxiCode codetext, sets colors, generates the image, and saves it.
     /// </summary>
     static void Main()
     {
-        // Prepare a SwissQR codetext with required mandatory fields
-        var swissQr = new SwissQRCodetext();
-        swissQr.Bill.Creditor.Name = "John Doe";
-        swissQr.Bill.Creditor.CountryCode = "CH";
-        swissQr.Bill.Account = "CH9300762011623852957";
-        swissQr.Bill.Amount = 199.95m;
-        swissQr.Bill.Version = SwissQRBill.QrBillStandardVersion.V2_0;
+        // Prepare a MaxiCode codetext (Mode 2) with a standard second message
+        var maxiCodeCodetext = new MaxiCodeCodetextMode2
+        {
+            PostalCode = "524032140",
+            CountryCode = 56,
+            ServiceCategory = 999
+        };
 
-        // Define the output file path for the generated barcode image
-        string outputPath = "SwissQR.png";
+        // Create and assign the second message
+        var secondMessage = new MaxiCodeStandardSecondMessage
+        {
+            Message = "Sample message"
+        };
+        maxiCodeCodetext.SecondMessage = secondMessage;
 
-        // Create a ComplexBarcodeGenerator instance using the prepared codetext
-        using (var generator = new ComplexBarcodeGenerator(swissQr))
+        // Initialize the ComplexBarcodeGenerator with the prepared codetext
+        using (var generator = new ComplexBarcodeGenerator(maxiCodeCodetext))
         {
             // Set the foreground (bars) color to blue
-            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Blue;
+            generator.Parameters.Barcode.BarColor = Color.Blue;
 
             // Set the background color to yellow
-            generator.Parameters.BackColor = Aspose.Drawing.Color.Yellow;
+            generator.Parameters.BackColor = Color.Yellow;
 
-            // Save the barcode image as a PNG file
-            generator.Save(outputPath, BarCodeImageFormat.Png);
+            // Generate the barcode image as a Bitmap
+            using (Bitmap bitmap = generator.GenerateBarCodeImage())
+            {
+                // Save the bitmap to a PNG file
+                bitmap.Save("maxicode.png", ImageFormat.Png);
+            }
         }
 
-        // Inform the user where the image has been saved
-        Console.WriteLine($"Barcode image saved to: {Path.GetFullPath(outputPath)}");
+        Console.WriteLine("Complex barcode generated with custom colors: maxicode.png");
     }
 }

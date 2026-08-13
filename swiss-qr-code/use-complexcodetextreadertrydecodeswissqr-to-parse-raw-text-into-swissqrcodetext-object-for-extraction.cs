@@ -1,45 +1,51 @@
-// Title: Decode Swiss QR Code Text Using ComplexCodetextReader
-// Description: Demonstrates how to parse raw Swiss QR code text (SPC format) into a SwissQRCodetext object and extract billing details.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode decoding category, focusing on Swiss QR (QR‑IBAN) processing. It showcases the ComplexCodetextReader and SwissQRCodetext classes, which developers use to interpret QR‑IBAN payment strings, retrieve creditor and payment information, and integrate QR‑based payment data into financial applications. Typical use cases include validating QR‑IBAN data, generating payment receipts, and automating invoice processing.
+// Title: Decode SwissQR Codetext Using ComplexCodetextReader
+// Description: Demonstrates creating a SwissQR bill codetext, obtaining its raw string, and decoding it back into a SwissQRCodetext object using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode ComplexBarcode category, showcasing how to work with SwissQR bill codetexts. It highlights key API classes such as SwissQRCodetext, ComplexCodetextReader, and related bill components. Developers often need to generate, serialize, and later parse SwissQR data for payment processing or QR code generation, making this pattern essential for financial and invoicing applications.
 // Prompt: Use ComplexCodetextReader.TryDecodeSwissQR to parse raw text into a SwissQRCodetext object for extraction.
-// Tags: swissqr, barcode, decoding, complexcodetextreader, aspose.barcode
+// Tags: swissqr, decoding, codetext, complexcodetextreader, swissqrcodetext
 
 using System;
 using Aspose.BarCode.ComplexBarcode;
 
 /// <summary>
-/// Example program that decodes a raw Swiss QR code string into a <see cref="SwissQRCodetext"/> object
-/// and prints selected billing information to the console.
+/// Example program that creates a SwissQR bill codetext, encodes it to a raw string,
+/// and then decodes it back into a <see cref="SwissQRCodetext"/> object using
+/// <see cref="ComplexCodetextReader.TryDecodeSwissQR"/>.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Parses a sample SPC‑formatted string, extracts the <see cref="SwissQRCodetext"/>
-    /// and displays key fields such as creditor name, country code, IBAN, amount and version.
+    /// Entry point of the example. Performs creation, encoding, and decoding of SwissQR codetext.
     /// </summary>
     static void Main()
     {
-        // Sample encoded Swiss QR codetext in SPC format (lines separated by LF)
-        string rawCodetext = "SPC\n0200\n1\nCH9300762011623852957\nJohn Doe\nCH\n1000\nCHF\nInvoice 123\n";
+        // Initialize a SwissQR codetext object and set mandatory bill fields
+        var swissQr = new SwissQRCodetext();
+        swissQr.Bill.Account = "CH9300762011623852957";
+        swissQr.Bill.Creditor.Name = "John Doe";
+        swissQr.Bill.Creditor.CountryCode = "CH";
+        swissQr.Bill.Amount = 199.95m;
+        swissQr.Bill.Version = SwissQRBill.QrBillStandardVersion.V2_0;
 
-        // Attempt to decode the raw text into a SwissQRCodetext object using the ComplexCodetextReader API
-        SwissQRCodetext swiss = ComplexCodetextReader.TryDecodeSwissQR(rawCodetext);
+        // Generate the raw codetext string that would be embedded in the QR code
+        string rawCodetext = swissQr.GetConstructedCodetext();
 
-        // If decoding fails, inform the user and exit
-        if (swiss == null)
+        // Attempt to decode the raw codetext back into a SwissQRCodetext instance
+        SwissQRCodetext decoded = ComplexCodetextReader.TryDecodeSwissQR(rawCodetext);
+
+        // Output the decoding result
+        if (decoded != null)
         {
-            Console.WriteLine("Failed to decode Swiss QR codetext.");
-            return;
+            Console.WriteLine("Decoded SwissQR Bill:");
+            Console.WriteLine($"Account: {decoded.Bill.Account}");
+            Console.WriteLine($"Creditor Name: {decoded.Bill.Creditor.Name}");
+            Console.WriteLine($"Creditor Country: {decoded.Bill.Creditor.CountryCode}");
+            Console.WriteLine($"Amount: {decoded.Bill.Amount}");
+            Console.WriteLine($"Version: {decoded.Bill.Version}");
         }
-
-        // Retrieve the Bill component which holds payment details
-        var bill = swiss.Bill;
-
-        // Output selected bill information to the console
-        Console.WriteLine($"Creditor Name: {bill.Creditor.Name}");
-        Console.WriteLine($"Creditor Country Code: {bill.Creditor.CountryCode}");
-        Console.WriteLine($"Account (IBAN): {bill.Account}");
-        Console.WriteLine($"Amount: {bill.Amount}");
-        Console.WriteLine($"Version: {bill.Version}");
+        else
+        {
+            Console.WriteLine("Failed to decode SwissQR codetext.");
+        }
     }
 }

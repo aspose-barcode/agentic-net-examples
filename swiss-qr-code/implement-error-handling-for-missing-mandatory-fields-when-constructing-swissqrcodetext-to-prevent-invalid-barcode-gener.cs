@@ -1,79 +1,86 @@
-// Title: Generate Swiss QR Code barcode with validation
-// Description: Demonstrates creating a Swiss QR Code barcode, validating mandatory fields, and saving it as PNG.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category, focusing on Swiss QR Bill (QR‑Bill) creation. It showcases the use of SwissQRCodetext, ComplexBarcodeGenerator, and related API classes to build a valid QR‑Bill, a common requirement for Swiss financial documents. Developers often need to ensure mandatory fields are set before generating the barcode to avoid errors.
+// Title: Generate Swiss QR Code barcode with mandatory field validation
+// Description: This example creates a Swiss QR Code (QR‑Bill) barcode, validates required bill fields, and saves the image as PNG.
+// Category-Description: Demonstrates Aspose.BarCode complex barcode generation for Swiss QR (QR‑Bill) using ComplexBarcodeGenerator. Shows how to populate SwissQRCodetext, perform custom validation of mandatory fields, and export the barcode image. Useful for developers implementing payment QR codes, invoicing, or financial document automation.
 // Prompt: Implement error handling for missing mandatory fields when constructing SwissQRCodetext to prevent invalid barcode generation.
-// Tags: swissqr, qr-bill, barcode generation, validation, aspnet, aspnet-core, aspnet-barcode, complexbarcode, png
+// Tags: swissqr, barcode generation, validation, png, aspose.barcode, complexbarcodegenerator, qr‑bill
 
 using System;
-using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.ComplexBarcode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a Swiss QR Code barcode with mandatory field validation.
+/// Example program that builds a Swiss QR Code (QR‑Bill) barcode, validates required data, and saves it as an image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Builds SwissQRCodetext, validates required fields, and saves the barcode as PNG.
+    /// Entry point. Constructs the SwissQRCodetext, validates mandatory fields, and generates a PNG barcode.
     /// </summary>
     static void Main()
     {
-        // Create a new SwissQRCodetext instance to hold QR‑Bill data
+        // Create SwissQR codetext and populate mandatory fields
         var swissQr = new SwissQRCodetext();
 
-        // Populate mandatory fields required for a valid QR‑Bill
+        // Set creditor address (mandatory Name and CountryCode)
+        swissQr.Bill.Creditor = new Address();
         swissQr.Bill.Creditor.Name = "John Doe";
         swissQr.Bill.Creditor.CountryCode = "CH";
+
+        // Set mandatory bill data: IBAN account, amount, and QR‑Bill version
         swissQr.Bill.Account = "CH9300762011623852957";
         swissQr.Bill.Amount = 199.95m;
         swissQr.Bill.Version = SwissQRBill.QrBillStandardVersion.V2_0;
 
-        // Optional: add additional information such as invoice reference
-        swissQr.Bill.BillInformation = "Invoice 12345";
+        // Optional: additional creditor address fields can be set here
+        // swissQr.Bill.Creditor.Street = "Main Street 1";
+        // swissQr.Bill.Creditor.PostalCode = "8000";
+        // swissQr.Bill.Creditor.Town = "Zurich";
 
-        // Validate that all required fields are present and correct
+        // Validate that all mandatory fields are present before barcode generation
         try
         {
-            ValidateSwissQr(swissQr);
+            ValidateSwissQR(swissQr);
         }
         catch (ArgumentException ex)
         {
-            // Output validation error and abort execution
             Console.WriteLine($"Validation error: {ex.Message}");
             return;
         }
 
-        // Generate the Swiss QR barcode using the validated codetext
-        using (var generator = new ComplexBarcodeGenerator(swissQr))
+        // Generate the barcode and save it as a PNG file
+        try
         {
-            // Configure generator to throw if the codetext is incorrect (defensive programming)
-            generator.Parameters.Barcode.ThrowExceptionWhenCodeTextIncorrect = true;
-
-            // Determine output file path in the current working directory
-            string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "SwissQR.png");
-
-            // Save the generated barcode as a PNG image
-            generator.Save(outputPath, BarCodeImageFormat.Png);
-            Console.WriteLine($"SwissQR barcode saved to: {outputPath}");
+            using (var generator = new ComplexBarcodeGenerator(swissQr))
+            {
+                generator.Save("SwissQR.png");
+                Console.WriteLine("SwissQR barcode image saved as SwissQR.png");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Barcode generation failed: {ex.Message}");
         }
     }
 
-    // Validates mandatory fields of SwissQRCodetext; throws ArgumentException if any are missing or invalid.
-    static void ValidateSwissQr(SwissQRCodetext codetext)
+    // Validates mandatory fields for SwissQR codetext
+    static void ValidateSwissQR(SwissQRCodetext codetext)
     {
         if (codetext == null)
-            throw new ArgumentException("SwissQRCodetext instance cannot be null.");
+            throw new ArgumentNullException(nameof(codetext));
 
         var bill = codetext.Bill;
         if (bill == null)
-            throw new ArgumentException("Bill data cannot be null.");
+            throw new ArgumentException("Bill data is missing.");
 
-        if (string.IsNullOrWhiteSpace(bill.Creditor?.Name))
+        // Creditor must be provided
+        if (bill.Creditor == null)
+            throw new ArgumentException("Creditor information is missing.");
+
+        if (string.IsNullOrWhiteSpace(bill.Creditor.Name))
             throw new ArgumentException("Creditor name is mandatory.");
 
-        if (string.IsNullOrWhiteSpace(bill.Creditor?.CountryCode))
+        if (string.IsNullOrWhiteSpace(bill.Creditor.CountryCode))
             throw new ArgumentException("Creditor country code is mandatory.");
 
         if (string.IsNullOrWhiteSpace(bill.Account))
@@ -82,8 +89,7 @@ class Program
         if (bill.Amount <= 0)
             throw new ArgumentException("Amount must be greater than zero.");
 
-        // Version is an enum; ensure it has a defined value
-        if (!Enum.IsDefined(typeof(SwissQRBill.QrBillStandardVersion), bill.Version))
-            throw new ArgumentException("Invalid SwissQR bill version.");
+        if (bill.Version == 0)
+            throw new ArgumentException("Bill version is mandatory.");
     }
 }

@@ -1,31 +1,31 @@
-// Title: Validate Swiss QR Code against Implementation Guidelines
-// Description: Demonstrates creating a Swiss QR Code, validating required fields per Swiss guidelines, generating the barcode image, and verifying the encoded data.
-// Category-Description: This example belongs to the Aspose.BarCode Swiss QR Code generation and validation category. It showcases the use of SwissQRCodetext, ComplexBarcodeGenerator, and ComplexCodetextReader classes to create, encode, and decode Swiss QR Bills. Developers commonly need to generate compliant QR codes for payments and verify that all mandatory fields are correctly embedded, making this pattern essential for financial and invoicing applications.
+// Title: Generate and Validate Swiss QR Code (QR Bill)
+// Description: Creates a Swiss QR Code (QR Bill) with required fields, saves it as PNG, then reads and validates the data against Swiss Implementation Guidelines.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It demonstrates using ComplexBarcodeGenerator to create a Swiss QR Code, BarCodeReader to decode it, and ComplexCodetextReader for Swiss QR specific parsing. Typical use cases include invoicing, payment processing, and compliance checks where developers need to generate QR Bills and ensure they meet regulatory standards.
 // Prompt: Validate that the generated Swiss QR Code complies with Swiss Implementation Guidelines by checking required data fields.
-// Tags: swiss qr, barcode, validation, generation, aspose.barcode, swissqr, payment
+// Tags: swissqr, qrbill, barcode, generation, recognition, validation, aspose.barcode
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.ComplexBarcode;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.BarCode.ComplexBarcode;
 
 /// <summary>
-/// Example program that creates, validates, generates, and decodes a Swiss QR Code
-/// according to the Swiss Implementation Guidelines.
+/// Demonstrates generating a Swiss QR Code (QR Bill), saving it, reading it back,
+/// and validating required fields according to Swiss Implementation Guidelines.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Performs field validation, barcode generation,
-    /// and round‑trip verification of the Swiss QR Code data.
+    /// Entry point of the example.
     /// </summary>
     static void Main()
     {
-        // ------------------------------------------------------------
-        // 1. Build the Swiss QR code data structure and populate required fields
-        // ------------------------------------------------------------
+        // Define the output file path for the generated Swiss QR code image.
+        string outputPath = "SwissQR.png";
+
+        // Create a Swiss QR codetext instance and populate the mandatory fields.
         var swissQr = new SwissQRCodetext();
         swissQr.Bill.Creditor.Name = "John Doe";
         swissQr.Bill.Creditor.CountryCode = "CH";
@@ -33,55 +33,77 @@ class Program
         swissQr.Bill.Amount = 199.95m;
         swissQr.Bill.Version = SwissQRBill.QrBillStandardVersion.V2_0;
 
-        // ------------------------------------------------------------
-        // 2. Validate required fields according to Swiss Implementation Guidelines
-        // ------------------------------------------------------------
-        if (string.IsNullOrWhiteSpace(swissQr.Bill.Creditor.Name))
-            throw new ArgumentException("Creditor name is required.");
-        if (string.IsNullOrWhiteSpace(swissQr.Bill.Creditor.CountryCode))
-            throw new ArgumentException("Creditor country code is required.");
-        if (string.IsNullOrWhiteSpace(swissQr.Bill.Account))
-            throw new ArgumentException("Account (IBAN) is required.");
-        if (swissQr.Bill.Amount <= 0)
-            throw new ArgumentException("Amount must be greater than zero.");
-        if (swissQr.Bill.Version != SwissQRBill.QrBillStandardVersion.V2_0)
-            throw new ArgumentException("Bill version must be V2_0.");
-
-        // ------------------------------------------------------------
-        // 3. Generate the Swiss QR barcode image and save it to disk
-        // ------------------------------------------------------------
+        // Generate the Swiss QR barcode image and save it as PNG.
         using (var generator = new ComplexBarcodeGenerator(swissQr))
         {
-            // Save the barcode image for visual verification (optional)
-            generator.Save("SwissQR.png");
+            generator.Save(outputPath, BarCodeImageFormat.Png);
+        }
 
-            // ------------------------------------------------------------
-            // 4. Retrieve the constructed codetext for decoding
-            // ------------------------------------------------------------
-            string constructedCodetext = swissQr.GetConstructedCodetext();
+        // Verify that the image file was successfully created.
+        if (!File.Exists(outputPath))
+        {
+            Console.WriteLine("Failed to generate Swiss QR code image.");
+            return;
+        }
 
-            // ------------------------------------------------------------
-            // 5. Decode the codetext back into a SwissQRCodetext object
-            // ------------------------------------------------------------
-            SwissQRCodetext decoded = ComplexCodetextReader.TryDecodeSwissQR(constructedCodetext);
-            if (decoded == null)
+        // Read the QR code from the saved image file.
+        using (var reader = new BarCodeReader(outputPath, DecodeType.QR))
+        {
+            var results = reader.ReadBarCodes();
+            if (results.Length == 0)
             {
-                Console.WriteLine("Failed to decode the generated Swiss QR codetext.");
+                Console.WriteLine("No QR code detected in the image.");
                 return;
             }
 
-            // ------------------------------------------------------------
-            // 6. Verify that decoded fields match the original input data
-            // ------------------------------------------------------------
-            bool isValid = decoded.Bill.Creditor.Name == swissQr.Bill.Creditor.Name &&
-                           decoded.Bill.Creditor.CountryCode == swissQr.Bill.Creditor.CountryCode &&
-                           decoded.Bill.Account == swissQr.Bill.Account &&
-                           decoded.Bill.Amount == swissQr.Bill.Amount &&
-                           decoded.Bill.Version == swissQr.Bill.Version;
+            // Extract the raw code text from the first detected QR code.
+            string codeText = results[0].CodeText;
 
+            // Decode the Swiss QR codetext into a strongly‑typed object.
+            var decoded = ComplexCodetextReader.TryDecodeSwissQR(codeText);
+            if (decoded == null)
+            {
+                Console.WriteLine("Failed to decode Swiss QR codetext.");
+                return;
+            }
+
+            // Validate required fields according to Swiss Implementation Guidelines.
+            bool isValid = true;
+
+            if (string.IsNullOrWhiteSpace(decoded.Bill.Creditor.Name))
+            {
+                Console.WriteLine("Creditor name is missing.");
+                isValid = false;
+            }
+
+            if (string.IsNullOrWhiteSpace(decoded.Bill.Creditor.CountryCode))
+            {
+                Console.WriteLine("Creditor country code is missing.");
+                isValid = false;
+            }
+
+            if (string.IsNullOrWhiteSpace(decoded.Bill.Account))
+            {
+                Console.WriteLine("Account (IBAN) is missing.");
+                isValid = false;
+            }
+
+            if (decoded.Bill.Amount <= 0)
+            {
+                Console.WriteLine("Amount is missing or invalid.");
+                isValid = false;
+            }
+
+            if (decoded.Bill.Version != SwissQRBill.QrBillStandardVersion.V2_0)
+            {
+                Console.WriteLine("Version is missing or not V2.0.");
+                isValid = false;
+            }
+
+            // Output the validation result.
             Console.WriteLine(isValid
-                ? "Swiss QR Code validation succeeded: all required fields are present and correct."
-                : "Swiss QR Code validation failed: decoded fields do not match the original data.");
+                ? "Swiss QR Code is valid per implementation guidelines."
+                : "Swiss QR Code validation failed.");
         }
     }
 }

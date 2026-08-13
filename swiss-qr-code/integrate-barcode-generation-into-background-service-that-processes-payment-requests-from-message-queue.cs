@@ -1,8 +1,8 @@
-// Title: Barcode generation in a background service for payment processing
-// Description: Demonstrates creating Code128 barcodes for payment references and saving them as PNG files, suitable for integration with a message‑queue‑driven background service.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to use BarcodeGenerator, EncodeTypes, and related parameter settings to produce barcodes programmatically. Typical use cases include encoding transaction identifiers, invoices, or other payment data for printing or digital distribution. Developers often need to generate barcodes in batch jobs or background services, handling errors and managing output files.
+// Title: Generate Code128 Barcodes for Payment Requests in a Background Service
+// Description: Demonstrates how to create Code128 barcode images for payment identifiers using Aspose.BarCode and save them as PNG files.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing the BarcodeGenerator class for creating barcodes in .NET applications. Typical use cases include encoding transaction IDs, order numbers, or any alphanumeric data for printing or digital distribution. Developers often need to customize appearance, set padding, and output to common image formats such as PNG or JPEG.
 // Prompt: Integrate barcode generation into a background service that processes payment requests from a message queue.
-// Tags: barcode generation, code128, png, background service, payment processing, aspose.barcode, encode types
+// Tags: code128, barcode generation, png, aspose.barcode, background service, payment processing, .net
 
 using System;
 using System.Collections.Generic;
@@ -14,94 +14,88 @@ using Aspose.Drawing;
 namespace BarcodeBackgroundServiceDemo
 {
     /// <summary>
-    /// Simple model representing a payment request.
+    /// Simple representation of a payment request.
     /// </summary>
-    class PaymentRequest
+    public class PaymentRequest
     {
-        public string Id { get; set; }          // Unique identifier.
-        public decimal Amount { get; set; }     // Payment amount.
-        public string Reference { get; set; }   // Reference string to encode in the barcode.
+        public string PaymentId { get; set; }
+        public decimal Amount { get; set; }
+        public string Payee { get; set; }
     }
 
     /// <summary>
-    /// Demonstrates processing a collection of payment requests and generating barcodes for each.
+    /// Demonstrates processing a collection of payment requests and generating a Code128 barcode for each.
     /// </summary>
-    class Program
+    public class Program
     {
         /// <summary>
-        /// Entry point that simulates a background service processing payment requests and creating barcode images.
+        /// Application entry point. Simulates a background service that processes payment requests from a queue
+        /// and generates corresponding barcode images.
         /// </summary>
-        static void Main()
+        public static void Main(string[] args)
         {
-            // Sample payment requests – in a real scenario these would come from a message queue.
-            var payments = new List<PaymentRequest>
+            // Prepare a small set of sample payment requests.
+            var paymentQueue = new List<PaymentRequest>
             {
-                new PaymentRequest { Id = "PAY001", Amount = 123.45m, Reference = "INV001-12345" },
-                new PaymentRequest { Id = "PAY002", Amount = 67.89m, Reference = "INV002-67890" },
-                new PaymentRequest { Id = "PAY003", Amount = 250.00m, Reference = "INV003-25000" },
-                new PaymentRequest { Id = "PAY004", Amount = 5.00m, Reference = "INV004-00005" },
-                new PaymentRequest { Id = "PAY005", Amount = 99.99m, Reference = "INV005-99999" }
+                new PaymentRequest { PaymentId = "PAY001", Amount = 123.45m, Payee = "Alice" },
+                new PaymentRequest { PaymentId = "PAY002", Amount = 67.89m, Payee = "Bob" },
+                new PaymentRequest { PaymentId = "PAY003", Amount = 250.00m, Payee = "Charlie" },
+                new PaymentRequest { PaymentId = "PAY004", Amount = 99.99m, Payee = "Diana" },
+                new PaymentRequest { PaymentId = "PAY005", Amount = 10.00m, Payee = "Eve" }
             };
 
-            // Determine the output directory for generated barcode images.
+            // Directory where barcode images will be saved.
             string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
             if (!Directory.Exists(outputDir))
             {
                 Directory.CreateDirectory(outputDir);
             }
 
-            // Process each payment request.
-            foreach (var payment in payments)
+            // Process each payment request (simulating a background service).
+            for (int i = 0; i < paymentQueue.Count; i++)
             {
+                var request = paymentQueue[i];
+                string barcodePath = Path.Combine(outputDir, $"{request.PaymentId}.png");
                 try
                 {
-                    // Resolve the symbology name to a BaseEncodeType using reflection (rule 26).
-                    string symbologyName = "Code128"; // Using Code128 for payment references.
-                    var field = typeof(EncodeTypes).GetField(symbologyName);
-                    if (field == null)
-                    {
-                        Console.WriteLine($"Unknown symbology: {symbologyName}");
-                        continue;
-                    }
-                    BaseEncodeType encodeType = (BaseEncodeType)field.GetValue(null);
-
-                    // Create the barcode generator with the selected symbology and payment reference.
-                    using (var generator = new BarcodeGenerator(encodeType, payment.Reference))
-                    {
-                        // Configure barcode appearance.
-                        generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
-                        generator.Parameters.ImageWidth.Point = 300f;   // Width in points.
-                        generator.Parameters.ImageHeight.Point = 100f;  // Height in points.
-                        generator.Parameters.Barcode.XDimension.Point = 2f; // Module size.
-                        generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-                        generator.Parameters.BackColor = Aspose.Drawing.Color.White;
-                        generator.Parameters.Barcode.Padding.Left.Point = 5f;
-                        generator.Parameters.Barcode.Padding.Top.Point = 5f;
-                        generator.Parameters.Barcode.Padding.Right.Point = 5f;
-                        generator.Parameters.Barcode.Padding.Bottom.Point = 5f;
-                        generator.Parameters.Barcode.FilledBars = false;
-                        generator.Parameters.Barcode.ThrowExceptionWhenCodeTextIncorrect = false;
-
-                        // Human‑readable text styling (optional).
-                        generator.Parameters.Barcode.CodeTextParameters.Font.FamilyName = "Arial";
-                        generator.Parameters.Barcode.CodeTextParameters.Font.Size.Point = 10f;
-                        generator.Parameters.Barcode.CodeTextParameters.Alignment = TextAlignment.Center;
-
-                        // Save the barcode image to the output directory.
-                        string fileName = $"{payment.Id}_{payment.Reference}.png";
-                        string filePath = Path.Combine(outputDir, fileName);
-                        generator.Save(filePath);
-                        Console.WriteLine($"Generated barcode for payment {payment.Id} at: {filePath}");
-                    }
+                    GenerateBarcodeForPayment(request, barcodePath);
+                    Console.WriteLine($"Generated barcode for PaymentId={request.PaymentId} at {barcodePath}");
                 }
                 catch (Exception ex)
                 {
-                    // Handle any unexpected errors gracefully.
-                    Console.WriteLine($"Failed to generate barcode for payment {payment.Id}: {ex.Message}");
+                    Console.WriteLine($"Error generating barcode for PaymentId={request.PaymentId}: {ex.Message}");
                 }
             }
 
-            // Program completes after processing the sample batch.
+            // Indicate completion.
+            Console.WriteLine("All payment barcodes have been processed.");
+        }
+
+        // Generates a Code128 barcode image for the given payment request and saves it to the specified path.
+        private static void GenerateBarcodeForPayment(PaymentRequest request, string outputPath)
+        {
+            // Use Code128 symbology; encode the PaymentId as the barcode text.
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, request.PaymentId))
+            {
+                // Optional visual customizations.
+                generator.Parameters.Barcode.BarColor = Color.Black;
+                generator.Parameters.BackColor = Color.White;
+
+                // Set module size (XDimension) to 2 points.
+                generator.Parameters.Barcode.XDimension.Point = 2f;
+
+                // Add modest padding around the barcode.
+                generator.Parameters.Barcode.Padding.Left.Point = 5f;
+                generator.Parameters.Barcode.Padding.Top.Point = 5f;
+                generator.Parameters.Barcode.Padding.Right.Point = 5f;
+                generator.Parameters.Barcode.Padding.Bottom.Point = 5f;
+
+                // Ensure human‑readable text appears below the barcode.
+                generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.Below;
+
+                // Save the barcode as a PNG file.
+                generator.Save(outputPath, BarCodeImageFormat.Png);
+            }
         }
     }
 }

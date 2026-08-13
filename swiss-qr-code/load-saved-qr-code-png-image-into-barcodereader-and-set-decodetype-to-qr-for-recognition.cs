@@ -1,49 +1,62 @@
-// Title: QR Code Recognition from PNG using BarCodeReader
-// Description: Demonstrates loading a saved QR Code PNG image and recognizing its content with Aspose.BarCode.
-// Category-Description: This example belongs to the Aspose.BarCode recognition category, illustrating how to use BarCodeReader with DecodeType to identify QR symbology. It shows typical steps such as file validation, reader initialization, and result processing—common tasks for developers integrating barcode scanning into .NET applications.
+// Title: Load and Decode a QR Code Image using BarCodeReader
+// Description: Demonstrates loading a saved QR code PNG file, generating one if missing, and decoding it with Aspose.BarCode's BarCodeReader.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, showcasing how to use the BarCodeReader and DecodeType classes to read QR codes from image files. Typical use cases include scanning saved barcode images, validating encoded data, and integrating barcode reading into automated workflows. Developers often need to generate sample barcodes, verify file existence, and extract decoded text using the Aspose.BarCode API.
 // Prompt: Load a saved QR Code PNG image into BarCodeReader and set DecodeType to QR for recognition.
-// Tags: qr, barcode, recognition, png, decode, aspose.barcode, csharp
+// Tags: qr, barcode, decode, read, aspose.barcode, png, generation, recognition
 
 using System;
 using System.IO;
+using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates loading a saved QR Code PNG image and recognizing it using Aspose.BarCode.
+/// Example program that loads a QR code image and decodes it using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Validates the image file, reads QR codes, and prints detected values.
+    /// Entry point. Generates a sample QR code if missing, then reads and prints decoded data.
     /// </summary>
     static void Main()
     {
-        // Path to the saved QR Code PNG image
-        string imagePath = "qr.png";
+        // Path to the QR code image file
+        const string imagePath = "qr.png";
 
-        // Verify that the image file exists before attempting to read it
+        // Ensure the QR code image exists; if not, generate a sample QR code
         if (!File.Exists(imagePath))
         {
-            Console.WriteLine($"File not found: {imagePath}");
+            // Generate a QR code with sample text and save it as PNG
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "Hello World"))
+            {
+                generator.Save(imagePath, BarCodeImageFormat.Png);
+                Console.WriteLine($"Generated sample QR code image at '{imagePath}'.");
+            }
+        }
+
+        // Verify the file exists before attempting to read
+        if (!File.Exists(imagePath))
+        {
+            Console.WriteLine($"Error: Image file '{imagePath}' not found.");
             return;
         }
 
-        // Initialize BarCodeReader with the image file and specify QR as the decode type
+        // Create a BarCodeReader for the image, specifying QR as the decode type
         using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.QR))
         {
-            // Perform the recognition operation
-            BarCodeResult[] results = reader.ReadBarCodes();
+            // Perform recognition
+            var results = reader.ReadBarCodes();
 
-            // Check if any QR codes were detected and output the results
+            // Output recognition results
             if (results.Length == 0)
             {
-                Console.WriteLine("No QR code detected.");
+                Console.WriteLine("No barcode detected.");
             }
             else
             {
-                foreach (BarCodeResult result in results)
+                foreach (var result in results)
                 {
-                    Console.WriteLine($"Detected QR Code: {result.CodeText}");
+                    Console.WriteLine($"Detected Type: {result.CodeTypeName}");
+                    Console.WriteLine($"Decoded Text: {result.CodeText}");
                 }
             }
         }

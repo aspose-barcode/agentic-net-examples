@@ -1,39 +1,47 @@
-// Title: Export Swiss QR Code to JPEG with Adjustable Quality
-// Description: Demonstrates generating a Swiss QR Code and exporting it as a JPEG image suitable for web usage.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It showcases the use of ComplexBarcodeGenerator and SwissQRCodetext to create Swiss QR payment codes, then saves the result as a JPEG. Developers working with payment QR codes, image export, or web‑optimized barcode rendering commonly use these APIs.
+// Title: Export Swiss QR Code as JPEG with adjustable quality
+// Description: Demonstrates generating a Swiss QR Bill barcode and saving it as a JPEG image where the compression quality can be set via a command‑line argument, useful for web‑optimized graphics.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on complex barcode types such as Swiss QR Bill. It showcases the ComplexBarcodeGenerator, SwissQRCodetext, and image handling via Aspose.Drawing to produce JPEG output with custom encoder parameters. Developers often need to create high‑quality, web‑friendly barcode images with controllable compression for e‑commerce, invoicing, or mobile apps.
 // Prompt: Export the generated Swiss QR Code as a JPEG image with adjustable quality settings for web usage.
-// Tags: swiss qr, barcode generation, jpeg export, quality settings, aspose.barcode, complexbarcodegenerator, swissqrcodetext
+// Tags: swiss qr, barcode generation, jpeg output, quality setting, aspose.barcode, aspose.drawing
 
 using System;
 using System.IO;
+using System.Linq;
 using Aspose.BarCode.ComplexBarcode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode;
+using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Generates a Swiss QR Code and saves it as a JPEG image.
+/// Generates a Swiss QR Bill barcode and saves it as a JPEG file with configurable compression quality.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Accepts an optional JPEG quality argument (0‑100) and creates the barcode image.
+    /// Entry point. Accepts an optional integer argument (0‑100) to set JPEG quality; defaults to 80.
     /// </summary>
-    /// <param name="args">Command‑line arguments; the first argument can specify JPEG quality.</param>
+    /// <param name="args">Command‑line arguments; first argument may specify JPEG quality.</param>
     static void Main(string[] args)
     {
-        // Default JPEG quality (placeholder – actual quality is controlled by resolution/anti‑alias settings).
-        int jpegQuality = 90;
+        // Set default JPEG quality (0‑100). Default is 80.
+        int jpegQuality = 80;
 
-        // Parse optional quality argument if provided.
-        if (args.Length > 0 && int.TryParse(args[0], out int q) && q >= 0 && q <= 100)
+        // If a command‑line argument is provided, try to parse it as an integer quality value.
+        if (args.Length > 0 && int.TryParse(args[0], out int parsedQuality))
         {
-            jpegQuality = q;
+            // Validate the parsed quality range.
+            if (parsedQuality < 0 || parsedQuality > 100)
+            {
+                Console.WriteLine("Quality must be between 0 and 100. Using default 80.");
+            }
+            else
+            {
+                jpegQuality = parsedQuality;
+            }
         }
 
-        // --------------------------------------------------------------------
-        // Prepare Swiss QR Code data (creditor, account, amount, version, etc.).
-        // --------------------------------------------------------------------
+        // Prepare Swiss QR bill data (mandatory fields).
         var swissQr = new SwissQRCodetext();
         swissQr.Bill.Creditor.Name = "John Doe";
         swissQr.Bill.Creditor.CountryCode = "CH";
@@ -41,23 +49,41 @@ class Program
         swissQr.Bill.Amount = 199.95m;
         swissQr.Bill.Version = SwissQRBill.QrBillStandardVersion.V2_0;
 
-        // --------------------------------------------------------------------
-        // Generate the Swiss QR barcode using ComplexBarcodeGenerator.
-        // --------------------------------------------------------------------
-        using (var generator = new ComplexBarcodeGenerator(swissQr))
+        // Generate the Swiss QR Code into a memory stream as JPEG.
+        using (var ms = new MemoryStream())
         {
-            // Set image resolution and anti‑aliasing for better web quality.
-            generator.Parameters.Resolution = 300f;
-            generator.Parameters.UseAntiAlias = true;
+            using (var generator = new ComplexBarcodeGenerator(swissQr))
+            {
+                generator.Save(ms, BarCodeImageFormat.Jpeg);
+            }
 
-            // Define output file path.
-            string outputPath = "SwissQR.jpeg";
+            // Reset stream position for reading.
+            ms.Position = 0;
 
-            // Save the barcode as a JPEG image.
-            generator.Save(outputPath, BarCodeImageFormat.Jpeg);
+            // Load the generated image using Aspose.Drawing.
+            using (var image = Image.FromStream(ms))
+            {
+                // Find JPEG encoder.
+                var jpegEncoder = ImageCodecInfo.GetImageEncoders()
+                    .FirstOrDefault(enc => enc.FormatID == ImageFormat.Jpeg.Guid);
 
-            // Inform the user about the saved file and the quality placeholder.
-            Console.WriteLine($"Swiss QR Code saved to '{outputPath}' (JPEG quality placeholder: {jpegQuality}).");
+                if (jpegEncoder == null)
+                {
+                    // Fallback: save with default settings if encoder not found.
+                    Console.WriteLine("JPEG encoder not found. Saving with default settings.");
+                    image.Save("SwissQR.jpeg", ImageFormat.Jpeg);
+                    return;
+                }
+
+                // Set quality parameter using encoder parameters.
+                using (var encoderParams = new EncoderParameters(1))
+                {
+                    encoderParams.Param[0] = new EncoderParameter(Encoder.Quality, (long)jpegQuality);
+                    image.Save("SwissQR.jpeg", jpegEncoder, encoderParams);
+                }
+            }
         }
+
+        Console.WriteLine($"Swiss QR Code saved as 'SwissQR.jpeg' with quality {jpegQuality}.");
     }
 }
