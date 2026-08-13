@@ -1,68 +1,51 @@
-// Title: Generate MaxiCode Barcode in ASP.NET MVC Action
-// Description: Demonstrates creating a MaxiCode barcode image using Aspose.BarCode based on query string parameters.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It showcases the use of ComplexBarcodeGenerator together with MaxiCode codetext classes (MaxiCodeCodetextMode2, MaxiCodeCodetextMode3, MaxiCodeStandardCodetext) to produce PNG images. Typical scenarios include shipping labels, parcel tracking, and logistics applications where MaxiCode is required. Developers often need to build MVC actions that return barcode images directly to the client, and this snippet illustrates the core API calls and parameter handling.
+// Title: Generate MaxiCode barcode image and output as Base64 PNG
+// Description: This console example demonstrates how to create a MaxiCode barcode (mode 2 or 3) using Aspose.BarCode and output the PNG image as a Base64 string. It shows how to set postal code, country code, service category, and a secondary message.
+// Category-Description: Aspose.BarCode examples for complex barcode generation illustrate the use of ComplexBarcodeGenerator and specific codetext classes (e.g., MaxiCodeCodetextMode2, MaxiCodeCodetextMode3). Developers commonly need to generate MaxiCode symbols for shipping and logistics, customize fields such as postal code and service category, and return the image in web scenarios (e.g., ASP.NET MVC actions). This snippet provides a reusable pattern for creating and encoding the barcode image.
 // Prompt: Create an ASP.NET MVC action that returns a generated MaxiCode barcode image based on query string parameters.
-// Tags: maxicode, barcode, generation, aspnet mvc, image, png, aspose.barcode, complexbarcode
+// Tags: maxicode, barcode, generation, png, base64, aspnet-mvc, aspnet, aspnet-mvc-action, aspose.barcode, complexbarcode
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.ComplexBarcode;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Console program that mimics an ASP.NET MVC action for generating a MaxiCode barcode image.
-/// In a real MVC controller the logic would be placed inside an action method returning a FileResult.
+/// Demonstrates generation of a MaxiCode barcode (mode 2 or 3) and outputs the PNG image as a Base64 string.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that parses parameters, builds the appropriate MaxiCode codetext,
-    /// generates the barcode image, and saves it as a PNG file.
+    /// Entry point that parses command‑line arguments, creates the appropriate MaxiCode codetext,
+    /// generates the barcode image, and writes the Base64‑encoded PNG to the console.
     /// </summary>
-    /// <param name="args">Command‑line arguments used as stand‑in for query string values.</param>
+    /// <param name="args">
+    /// Expected arguments:
+    ///   0 – mode (2 or 3)
+    ///   1 – postalCode
+    ///   2 – countryCode (int)
+    ///   3 – serviceCategory (int)
+    ///   4 – message (standard second message)
+    /// </param>
     static void Main(string[] args)
     {
-        // --------------------------------------------------------------------
-        // Default parameters (used when not enough command‑line arguments are supplied)
-        // --------------------------------------------------------------------
-        int mode = 2;                     // MaxiCode mode (2,3,4,5,6)
-        string postalCode = "524032140";  // 9‑digit for mode 2, 6‑char for mode 3
-        int countryCode = 56;             // 3‑digit numeric country code
-        int serviceCategory = 999;        // 3‑digit service category
-        string message = "Sample message"; // Standard second message
-
-        // --------------------------------------------------------------------
-        // Parse command‑line arguments if provided (simulating query string)
-        // Expected order: mode postalCode countryCode serviceCategory message
-        // --------------------------------------------------------------------
-        try
+        // Validate that all required arguments are supplied.
+        if (args.Length < 5)
         {
-            if (args.Length > 0) mode = int.Parse(args[0]);
-            if (args.Length > 1) postalCode = args[1];
-            if (args.Length > 2) countryCode = int.Parse(args[2]);
-            if (args.Length > 3) serviceCategory = int.Parse(args[3]);
-            if (args.Length > 4) message = args[4];
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Argument parsing error: {ex.Message}");
-            Console.WriteLine("Using default values.");
-        }
-
-        // --------------------------------------------------------------------
-        // Validate the requested MaxiCode mode
-        // --------------------------------------------------------------------
-        if (mode < 2 || mode > 6)
-        {
-            Console.WriteLine("Invalid MaxiCode mode. Supported values are 2,3,4,5,6.");
+            Console.WriteLine("Usage: <mode> <postalCode> <countryCode> <serviceCategory> <message>");
             return;
         }
 
-        // --------------------------------------------------------------------
-        // Build the appropriate codetext object based on the selected mode
-        // --------------------------------------------------------------------
-        IComplexCodetext codetext;
+        // Parse input parameters.
+        int mode = int.Parse(args[0]);
+        string postalCode = args[1];
+        int countryCode = int.Parse(args[2]);
+        int serviceCategory = int.Parse(args[3]);
+        string message = args[4];
+
+        // Create the appropriate MaxiCode codetext object based on the selected mode.
+        MaxiCodeCodetext maxiCodeCodetext;
         if (mode == 2)
         {
             var ct = new MaxiCodeCodetextMode2
@@ -72,7 +55,7 @@ class Program
                 ServiceCategory = serviceCategory,
                 SecondMessage = new MaxiCodeStandardSecondMessage { Message = message }
             };
-            codetext = ct;
+            maxiCodeCodetext = ct;
         }
         else if (mode == 3)
         {
@@ -83,41 +66,30 @@ class Program
                 ServiceCategory = serviceCategory,
                 SecondMessage = new MaxiCodeStandardSecondMessage { Message = message }
             };
-            codetext = ct;
+            maxiCodeCodetext = ct;
         }
-        else // modes 4,5,6 use standard codetext
+        else
         {
-            var ct = new MaxiCodeStandardCodetext
+            Console.WriteLine("Supported modes are 2 and 3.");
+            return;
+        }
+
+        // Generate the barcode using ComplexBarcodeGenerator.
+        using (var generator = new ComplexBarcodeGenerator(maxiCodeCodetext))
+        {
+            using (var memory = new MemoryStream())
             {
-                Mode = mode switch
-                {
-                    4 => MaxiCodeMode.Mode4,
-                    5 => MaxiCodeMode.Mode5,
-                    6 => MaxiCodeMode.Mode6,
-                    _ => throw new ArgumentOutOfRangeException()
-                },
-                Message = message
-            };
-            codetext = ct;
+                // Save the barcode as PNG into the memory stream.
+                generator.Save(memory, BarCodeImageFormat.Png);
+                byte[] pngBytes = memory.ToArray();
+
+                // Convert the PNG bytes to a Base64 string and write to console.
+                string base64 = Convert.ToBase64String(pngBytes);
+                Console.WriteLine(base64);
+            }
         }
 
-        // --------------------------------------------------------------------
-        // Define the output file path (in a real MVC action this would be streamed)
-        // --------------------------------------------------------------------
-        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "maxicode.png");
-
-        // --------------------------------------------------------------------
-        // Generate the barcode image and save it as PNG
-        // --------------------------------------------------------------------
-        using (var generator = new ComplexBarcodeGenerator(codetext))
-        {
-            // Generate the bitmap (optional, GenerateBarCodeImage returns the bitmap)
-            generator.GenerateBarCodeImage();
-
-            // Save the image to the specified path
-            generator.Save(outputPath, BarCodeImageFormat.Png);
-        }
-
-        Console.WriteLine($"MaxiCode barcode generated (mode {mode}) and saved to: {outputPath}");
+        // Exit with success code.
+        Environment.Exit(0);
     }
 }

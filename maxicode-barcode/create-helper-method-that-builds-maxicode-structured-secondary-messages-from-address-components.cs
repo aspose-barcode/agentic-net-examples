@@ -1,71 +1,88 @@
-// Title: Build MaxiCode Structured Secondary Message Helper
-// Description: Demonstrates creating a MaxiCode barcode with a structured secondary message built from address components.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category, focusing on MaxiCode symbology. It showcases the use of MaxiCodeCodetextMode2, MaxiCodeStructuredSecondMessage, and ComplexBarcodeGenerator classes to encode postal information and a custom secondary message. Developers often need to generate MaxiCode barcodes for shipping and logistics, requiring precise formatting of address data and service categories.
+// Title: Generate MaxiCode barcode with structured secondary message
+// Description: Demonstrates building a MaxiCode structured secondary message from address components and generating a Mode 2 MaxiCode barcode image.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It showcases the use of MaxiCodeCodetextMode2, MaxiCodeStructuredSecondMessage, and ComplexBarcodeGenerator to create postal‑oriented MaxiCode symbols. Developers working with shipping, logistics, or postal automation frequently need to encode address data and secondary messages in MaxiCode barcodes; this snippet illustrates the typical workflow and key API classes for that scenario.
 // Prompt: Create a helper method that builds MaxiCode structured secondary messages from address components.
-// Tags: maxicode, structured secondary message, barcode generation, aspnet, aspose.barcode, complexbarcode, helper method
+// Tags: maxicode, structured secondary message, barcode generation, aspose.barcode, complexbarcode, c#
 
 using System;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.ComplexBarcode;
 
 /// <summary>
-/// Demonstrates building a MaxiCode barcode with a structured secondary message.
+/// Example program that builds a MaxiCode structured secondary message and generates a Mode 2 MaxiCode barcode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Builds a structured secondary message for MaxiCode from address components.
+    /// Builds a structured second message for MaxiCode from address components.
     /// </summary>
-    /// <param name="line1">First address line (e.g., street).</param>
-    /// <param name="line2">Second address line (e.g., city).</param>
+    /// <param name="addressLines">Array of address lines (at least one required).</param>
+    /// <param name="city">City name.</param>
     /// <param name="state">State abbreviation.</param>
-    /// <param name="year">Two‑digit year value.</param>
+    /// <param name="year">Two‑digit year (0‑99).</param>
     /// <returns>A populated <see cref="MaxiCodeStructuredSecondMessage"/> instance.</returns>
-    static MaxiCodeStructuredSecondMessage BuildStructuredSecondMessage(string line1, string line2, string state, int year)
+    static MaxiCodeStructuredSecondMessage BuildStructuredSecondMessage(string[] addressLines, string city, string state, int year)
     {
-        // Create a new structured message container.
-        var message = new MaxiCodeStructuredSecondMessage();
+        // Validate input parameters
+        if (addressLines == null) throw new ArgumentNullException(nameof(addressLines));
+        if (addressLines.Length == 0) throw new ArgumentException("At least one address line is required.", nameof(addressLines));
+        if (string.IsNullOrWhiteSpace(city)) throw new ArgumentException("City is required.", nameof(city));
+        if (string.IsNullOrWhiteSpace(state)) throw new ArgumentException("State is required.", nameof(state));
+        if (year < 0 || year > 99) throw new ArgumentOutOfRangeException(nameof(year), "Year must be a two‑digit value (0‑99).");
 
-        // Add address components to the message in the required order.
-        message.Add(line1);
-        message.Add(line2);
-        message.Add(state);
+        var structuredMessage = new MaxiCodeStructuredSecondMessage();
 
-        // Set the year field.
-        message.Year = year;
+        // Add each address line to the structured message
+        foreach (var line in addressLines)
+        {
+            structuredMessage.Add(line);
+        }
 
-        return message;
+        // Append city and state
+        structuredMessage.Add(city);
+        structuredMessage.Add(state);
+
+        // Set the two‑digit year field
+        structuredMessage.Year = year;
+
+        return structuredMessage;
     }
 
     /// <summary>
-    /// Entry point. Generates a MaxiCode barcode using address components and saves it as an image.
+    /// Entry point of the program. Generates a MaxiCode barcode image and writes its size to the console.
     /// </summary>
     static void Main()
     {
-        // Sample address components.
-        string street = "634 ALPHA DRIVE";
+        // Sample address components used to build the secondary message
+        string[] addressLines = { "634 ALPHA DRIVE" };
         string city = "PITTSBURGH";
         string state = "PA";
         int year = 99;
 
-        // Configure MaxiCode codetext for Mode 2 (postal code, country, service category).
-        var maxiCodeCodetext = new MaxiCodeCodetextMode2
+        // Configure MaxiCode codetext for Mode 2 (USA postal code)
+        var maxiCodeData = new MaxiCodeCodetextMode2
         {
-            PostalCode = "524032140",   // 9‑digit US postal code.
-            CountryCode = 056,          // USA numeric country code.
-            ServiceCategory = 999       // Example service category.
+            PostalCode = "524032140",
+            CountryCode = 56,
+            ServiceCategory = 999,
+            SecondMessage = BuildStructuredSecondMessage(addressLines, city, state, year)
         };
 
-        // Assign the structured secondary message built from the address components.
-        maxiCodeCodetext.SecondMessage = BuildStructuredSecondMessage(street, city, state, year);
-
-        // Generate the MaxiCode barcode and save it as a PNG image.
-        using (var generator = new ComplexBarcodeGenerator(maxiCodeCodetext))
+        // Generate the barcode using ComplexBarcodeGenerator
+        using (var generator = new ComplexBarcodeGenerator(maxiCodeData))
         {
-            generator.Save("maxicode.png");
+            generator.GenerateBarCodeImage();
+
+            // Save the generated image to a memory stream in PNG format
+            using (var ms = new MemoryStream())
+            {
+                generator.Save(ms, BarCodeImageFormat.Png);
+                Console.WriteLine($"Generated MaxiCode barcode image size: {ms.Length} bytes");
+            }
         }
 
-        Console.WriteLine("MaxiCode barcode generated: maxicode.png");
+        // Program terminates without waiting for user input
     }
 }

@@ -1,96 +1,69 @@
-// Title: Custom Background Color for MaxiCode Barcode
-// Description: Demonstrates applying a custom background color to a MaxiCode barcode and confirming that it can still be decoded correctly.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, focusing on MaxiCode symbology. It showcases the use of ComplexBarcodeGenerator to create a MaxiCode with custom visual settings, and BarCodeReader with ComplexCodetextReader to decode the generated image. Developers working with shipping, logistics, or inventory systems often need to customize barcode appearance while ensuring reliable scanning.
+// Title: Apply custom background color to a MaxiCode barcode and verify decoding
+// Description: Demonstrates setting a custom background color for a MaxiCode barcode using Aspose.BarCode, saving it as an image, and confirming that the barcode can still be decoded correctly.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator to customize visual appearance (background and bar colors) and BarCodeReader to decode the generated image. Typical use cases include branding barcodes with corporate colors while ensuring they remain machine‑readable. Developers often need to adjust visual parameters without breaking decoding, and this snippet illustrates that workflow.
 // Prompt: Apply a custom background color to a MaxiCode barcode and verify that decoding remains successful.
 // Tags: maxicode, background color, barcode generation, barcode recognition, aspose.barcode, c#
 
 using System;
-using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.BarCode.ComplexBarcode;
 using Aspose.Drawing;
 
 /// <summary>
 /// Generates a MaxiCode barcode with a custom background color,
-/// saves it as an image, and verifies that the barcode can be decoded successfully.
+/// saves it to a PNG file, and then verifies that the barcode can be decoded successfully.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates a MaxiCode with a light‑yellow background,
-    /// writes it to a PNG file, and then reads the file back to confirm decoding.
+    /// Entry point of the example. Creates the barcode, applies visual customizations,
+    /// saves the image, and validates decoding.
     /// </summary>
     static void Main()
     {
-        // Define the output file name.
-        string outputPath = "maxicode.png";
+        // Define the output file path for the generated barcode image.
+        string imagePath = "maxicode.png";
 
-        // Prepare MaxiCode codetext (Mode 2 example) with postal code, country code, and service category.
-        var maxiCode = new MaxiCodeCodetextMode2
+        // --------------------------------------------------------------------
+        // Generate a MaxiCode barcode with custom colors.
+        // --------------------------------------------------------------------
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.MaxiCode, "Sample MaxiCode"))
         {
-            PostalCode = "524032140",   // 9‑digit US postal code
-            CountryCode = 56,           // USA
-            ServiceCategory = 999       // Example service category
-        };
+            // Set a custom background color (light orange‑yellow).
+            generator.Parameters.BackColor = Color.FromArgb(255, 255, 224, 128);
 
-        // Add a second message to the MaxiCode.
-        var secondMessage = new MaxiCodeStandardSecondMessage
-        {
-            Message = "Sample MaxiCode"
-        };
-        maxiCode.SecondMessage = secondMessage;
+            // Optionally set the foreground (bar) color for better contrast.
+            generator.Parameters.Barcode.BarColor = Color.Black;
 
-        // Generate the MaxiCode barcode with a custom background color.
-        using (var complexGenerator = new ComplexBarcodeGenerator(maxiCode))
-        {
-            // Set background to light yellow (RGB 255,255,224).
-            complexGenerator.Parameters.BackColor = Aspose.Drawing.Color.FromArgb(255, 255, 224);
-
-            // Create the barcode image.
-            using (var bitmap = complexGenerator.GenerateBarCodeImage())
-            {
-                // Save the image as PNG.
-                bitmap.Save(outputPath, Aspose.Drawing.Imaging.ImageFormat.Png);
-            }
+            // Save the customized barcode image to the specified file.
+            generator.Save(imagePath);
         }
 
-        // Verify that the image file was created.
-        if (!File.Exists(outputPath))
+        // --------------------------------------------------------------------
+        // Decode the saved barcode image to ensure the custom background does not affect readability.
+        // --------------------------------------------------------------------
+        BaseDecodeType decodeType = DecodeType.MaxiCode;
+        using (BarCodeReader reader = new BarCodeReader(imagePath, decodeType))
         {
-            Console.WriteLine("Failed to create barcode image.");
-            return;
-        }
+            // Use the highest quality preset to improve detection reliability.
+            reader.QualitySettings = QualitySettings.MaxQuality;
 
-        // Read and decode the generated MaxiCode barcode.
-        using (var reader = new BarCodeReader(outputPath, DecodeType.MaxiCode))
-        {
-            foreach (var result in reader.ReadBarCodes())
+            // Read all barcodes present in the image.
+            BarCodeResult[] results = reader.ReadBarCodes();
+
+            // Evaluate decoding results.
+            bool success = false;
+            foreach (BarCodeResult result in results)
             {
-                // Decode the raw codetext using the appropriate MaxiCode mode.
-                var decoded = ComplexCodetextReader.TryDecodeMaxiCode(
-                    result.Extended.MaxiCode.MaxiCodeMode,
-                    result.CodeText);
-
-                // Check if decoding produced the expected Mode 2 codetext.
-                if (decoded is MaxiCodeCodetextMode2 decodedMode2)
+                if (!string.IsNullOrEmpty(result.CodeText))
                 {
-                    Console.WriteLine("Decoding successful:");
-                    Console.WriteLine($"Postal Code: {decodedMode2.PostalCode}");
-                    Console.WriteLine($"Country Code: {decodedMode2.CountryCode}");
-                    Console.WriteLine($"Service Category: {decodedMode2.ServiceCategory}");
-
-                    // Output the second message if present.
-                    if (decodedMode2.SecondMessage is MaxiCodeStandardSecondMessage stdMsg)
-                    {
-                        Console.WriteLine($"Message: {stdMsg.Message}");
-                    }
-                }
-                else
-                {
-                    Console.WriteLine("Decoding failed or unexpected codetext type.");
+                    Console.WriteLine($"Decoded CodeText: {result.CodeText}");
+                    success = true;
                 }
             }
+
+            Console.WriteLine(success ? "Decoding succeeded." : "Decoding failed.");
         }
     }
 }

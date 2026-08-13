@@ -1,54 +1,69 @@
-// Title: Generate MaxiCode PNG files from a list of codetext strings
-// Description: Demonstrates how to create MaxiCode barcodes and save them as PNG images using Aspose.BarCode.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing the use of EncodeTypes.MaxiCode with the BarcodeGenerator class. Developers often need to produce MaxiCode symbols for shipping, logistics, and tracking applications; this snippet illustrates typical setup, resolution configuration, and image export to PNG format, serving as a reference for similar console utilities.
+// Title: Generate MaxiCode PNG files from codetext list
+// Description: Reads a text file where each line contains a codetext string and creates a MaxiCode barcode image (PNG) for each entry.
+// Category-Description: Demonstrates Aspose.BarCode generation of MaxiCode symbology using the BarcodeGenerator class. This example belongs to the barcode creation category, showing how to configure encoding, handle invalid codetext, and save images in PNG format. Developers working with shipping, logistics, or inventory systems often need to produce MaxiCode barcodes programmatically.
 // Prompt: Create a console utility that reads a list of codetext strings and outputs corresponding MaxiCode PNG files.
-// Tags: maxicode, barcode generation, png output, aspose.barcode, console utility, encode types
+// Tags: barcode, maxicode, generation, png, console, aspose.barcode, aspnet
 
 using System;
-using Aspose.BarCode.Generation;
+using System.IO;
 using Aspose.BarCode;
+using Aspose.BarCode.Generation;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Console application that generates MaxiCode barcodes from predefined codetext strings
-/// and saves each barcode as a PNG image file.
+/// Console utility that reads codetext strings from a file and generates MaxiCode PNG images.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Iterates over a collection of codetext strings,
-    /// creates a MaxiCode barcode for each, and writes the resulting PNG file to disk.
+    /// Entry point. Processes each codetext line, generates a MaxiCode barcode, and saves it as a PNG file.
     /// </summary>
     static void Main()
     {
-        // Define a sample list of MaxiCode codetext strings.
-        // In a real scenario these could be read from a file, database, or user input.
-        string[] codetexts = new[]
-        {
-            "524032140056999Test message", // Mode 2 example
-            "B1050 056999Another message", // Mode 3 example (space separates postal code)
-            "Sample MaxiCode Text 1",
-            "Sample MaxiCode Text 2",
-            "Sample MaxiCode Text 3"
-        };
+        // Path to the text file containing codetext strings (one per line)
+        const string inputFile = "codetexts.txt";
 
-        // Iterate through each codetext, generate a barcode, and save it as a PNG file.
-        for (int i = 0; i < codetexts.Length; i++)
+        // Verify that the input file exists before proceeding
+        if (!File.Exists(inputFile))
         {
-            string text = codetexts[i];
-            string fileName = $"maxicode_{i + 1}.png";
+            Console.WriteLine($"Input file '{inputFile}' not found.");
+            return;
+        }
 
-            // Create a BarcodeGenerator for MaxiCode using the current codetext.
-            using (var generator = new BarcodeGenerator(EncodeTypes.MaxiCode, text))
+        // Read all lines from the file; each line represents a separate codetext
+        string[] lines = File.ReadAllLines(inputFile);
+
+        // Iterate through each line, generating a barcode for non‑empty entries
+        for (int i = 0; i < lines.Length; i++)
+        {
+            string codeText = lines[i].Trim();
+
+            // Skip empty lines to avoid generating empty barcodes
+            if (string.IsNullOrEmpty(codeText))
+                continue;
+
+            // Create a MaxiCode generator with the current codetext
+            using (var generator = new BarcodeGenerator(EncodeTypes.MaxiCode, codeText))
             {
-                // Optional: set the image resolution (dots per inch) if higher quality is required.
-                generator.Parameters.Resolution = 300;
+                // Throw an exception if the codetext is not valid for MaxiCode
+                generator.Parameters.Barcode.ThrowExceptionWhenCodeTextIncorrect = true;
 
-                // Save the generated barcode image in PNG format.
-                generator.Save(fileName, BarCodeImageFormat.Png);
+                // Optional: customize colors (commented out by default)
+                // generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
+                // generator.Parameters.BackColor = Aspose.Drawing.Color.White;
+
+                // Save the generated image to a memory stream in PNG format
+                using (var memoryStream = new MemoryStream())
+                {
+                    generator.Save(memoryStream, BarCodeImageFormat.Png);
+                    memoryStream.Position = 0;
+
+                    // Write the PNG file to disk with a sequential name
+                    string outputPath = $"maxicode_{i + 1}.png";
+                    File.WriteAllBytes(outputPath, memoryStream.ToArray());
+                    Console.WriteLine($"Generated '{outputPath}' for codetext: {codeText}");
+                }
             }
-
-            // Output a confirmation message to the console.
-            Console.WriteLine($"Generated {fileName} for codetext: {text}");
         }
     }
 }

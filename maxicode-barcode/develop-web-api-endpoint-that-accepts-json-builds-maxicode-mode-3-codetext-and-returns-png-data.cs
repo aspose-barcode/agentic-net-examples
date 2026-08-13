@@ -1,8 +1,8 @@
-// Title: Generate MaxiCode Mode 3 barcode and output PNG as Base64
-// Description: Demonstrates building a MaxiCode Mode 3 codetext from JSON input and returning the barcode image in PNG format.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on complex barcode types such as MaxiCode. It showcases the use of ComplexBarcodeGenerator, MaxiCodeCodetextMode3, and related classes to encode postal and service data. Developers creating shipping, logistics, or tracking solutions often need to generate MaxiCode barcodes for UPS and other carriers, and this snippet illustrates the typical workflow of parsing input, constructing codetext, and producing a PNG image.
+// Title: Generate MaxiCode Mode 3 Barcode and Return PNG via Web API Simulation
+// Description: Demonstrates how to deserialize a JSON request, build a MaxiCode Mode 3 codetext, and produce a PNG barcode image.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It showcases the use of ComplexBarcodeGenerator, MaxiCodeCodetextMode3, and related classes to create MaxiCode symbols, a common requirement for shipping and logistics applications. Developers often need to accept JSON payloads, construct codetext, and return barcode images in web services.
 // Prompt: Develop a Web API endpoint that accepts JSON, builds a MaxiCode Mode 3 codetext, and returns PNG data.
-// Tags: maxicode, barcode, generation, png, json, aspnet, aspose.barcode, complexbarcode
+// Tags: maxicode, mode3, barcode generation, png, aspnet, aspose.barcode, json, web api
 
 using System;
 using System.IO;
@@ -12,90 +12,83 @@ using Aspose.BarCode.Generation;
 using Aspose.BarCode.ComplexBarcode;
 using Aspose.Drawing.Imaging;
 
-namespace MaxiCodeConsoleApp
+namespace MaxiCodeMode3Demo
 {
     /// <summary>
-    /// Simple DTO matching the expected JSON structure for MaxiCode input data.
+    /// Represents the JSON payload that a client would POST to the API.
     /// </summary>
-    public class MaxiCodeInput
+    public class MaxiCodeRequest
     {
-        public string PostalCode { get; set; }
-        public int CountryCode { get; set; }
-        public int ServiceCategory { get; set; }
-        public string Message { get; set; }
+        public string PostalCode { get; set; }          // 6‑character alphanumeric postal code
+        public int CountryCode { get; set; }            // 3‑digit numeric country code
+        public int ServiceCategory { get; set; }        // 3‑digit service category
+        public string Message { get; set; }             // Standard second message text
     }
 
     /// <summary>
-    /// Console application that demonstrates generating a MaxiCode Mode 3 barcode from JSON input and outputting the PNG image as a Base64 string.
+    /// Simulates a Web API endpoint that creates a MaxiCode Mode 3 barcode from JSON input and returns PNG data.
     /// </summary>
     class Program
     {
         /// <summary>
-        /// Entry point. Parses JSON input, creates MaxiCode codetext, generates a PNG barcode, and writes the image bytes as Base64 to the console.
+        /// Entry point that mimics handling a single HTTP request.
         /// </summary>
-        /// <param name="args">Command‑line arguments; the first argument may contain a JSON payload.</param>
-        static void Main(string[] args)
+        static void Main()
         {
-            // NOTE:
-            // The original request was for a Web API endpoint.
-            // The snippet runner environment does not support hosting an HTTP server,
-            // so this console application demonstrates the core logic:
-            //   - Parse JSON input (from command‑line argument or default)
-            //   - Build a MaxiCode Mode 3 codetext
-            //   - Generate a PNG image
-            //   - Output the PNG bytes as a Base64 string to the console
+            // -----------------------------------------------------------------
+            // NOTE: The snippet runner is a plain .NET console application.
+            // A real Web API host is not started; instead we simulate a single
+            // HTTP request/response flow in‑process.
+            // -----------------------------------------------------------------
 
-            // Use the first command‑line argument as JSON if provided; otherwise fall back to a default payload.
-            string json = args.Length > 0
-                ? args[0]
-                : "{\"PostalCode\":\"B1050\",\"CountryCode\":56,\"ServiceCategory\":999,\"Message\":\"Test message\"}";
-
-            MaxiCodeInput input;
-            try
+            // Example JSON payload that a client would POST to the API
+            string jsonPayload = @"
             {
-                // Deserialize the JSON payload into the DTO, ignoring case differences in property names.
-                input = JsonSerializer.Deserialize<MaxiCodeInput>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                ""PostalCode"": ""B1050"",
+                ""CountryCode"": 56,
+                ""ServiceCategory"": 999,
+                ""Message"": ""Test message""
+            }";
 
-                // Validate required fields.
-                if (input == null ||
-                    string.IsNullOrWhiteSpace(input.PostalCode) ||
-                    string.IsNullOrWhiteSpace(input.Message))
-                {
-                    throw new ArgumentException("Invalid JSON payload.");
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error parsing input JSON: {ex.Message}");
-                return;
-            }
+            // Deserialize the JSON into a request object
+            MaxiCodeRequest request = JsonSerializer.Deserialize<MaxiCodeRequest>(jsonPayload);
 
-            // Build the MaxiCode Mode 3 codetext using the input data.
-            var codetext = new MaxiCodeCodetextMode3
+            // Build the MaxiCode Mode 3 codetext using the deserialized values
+            var maxiCodeData = new MaxiCodeCodetextMode3
             {
-                PostalCode = input.PostalCode,
-                CountryCode = input.CountryCode,
-                ServiceCategory = input.ServiceCategory
+                PostalCode = request.PostalCode,
+                CountryCode = request.CountryCode,
+                ServiceCategory = request.ServiceCategory
             };
 
-            // Attach the secondary message (free‑form text) to the codetext.
+            // Attach a standard second message (optional but commonly used)
             var secondMessage = new MaxiCodeStandardSecondMessage
             {
-                Message = input.Message
+                Message = request.Message
             };
-            codetext.SecondMessage = secondMessage;
+            maxiCodeData.SecondMessage = secondMessage;
 
-            // Generate the barcode and write PNG data to a memory stream.
-            using (var generator = new ComplexBarcodeGenerator(codetext))
-            using (var ms = new MemoryStream())
+            // Generate the barcode image and obtain PNG bytes
+            byte[] pngBytes;
+            using (var generator = new ComplexBarcodeGenerator(maxiCodeData))
             {
-                generator.Save(ms, BarCodeImageFormat.Png);
-                byte[] pngBytes = ms.ToArray();
+                // Enable validation of the constructed codetext; throws if invalid
+                generator.Parameters.Barcode.ThrowExceptionWhenCodeTextIncorrect = true;
 
-                // Convert the PNG bytes to a Base64 string for easy console output or API response.
-                string base64 = Convert.ToBase64String(pngBytes);
-                Console.WriteLine(base64);
+                // Generate the image (optional – Save will invoke it if needed)
+                generator.GenerateBarCodeImage();
+
+                // Save the generated image to a memory stream in PNG format
+                using (var ms = new MemoryStream())
+                {
+                    generator.Save(ms, BarCodeImageFormat.Png);
+                    pngBytes = ms.ToArray();
+                }
             }
+
+            // Output the PNG data as a Base64 string (simulating HTTP response body)
+            string base64Png = Convert.ToBase64String(pngBytes);
+            Console.WriteLine(base64Png);
         }
     }
 }

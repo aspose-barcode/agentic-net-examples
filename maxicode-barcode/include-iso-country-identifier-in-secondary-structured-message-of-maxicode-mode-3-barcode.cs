@@ -1,65 +1,61 @@
-// Title: Generate MaxiCode Mode 3 barcode with ISO country identifier in secondary message
-// Description: Demonstrates how to create a MaxiCode Mode 3 barcode and embed an ISO country identifier in its structured secondary message.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category, focusing on MaxiCode symbology. It showcases the use of MaxiCodeCodetextMode3, MaxiCodeStructuredSecondMessage, and ComplexBarcodeGenerator classes to build and render a MaxiCode with custom postal, country, and service data—common tasks for shipping and logistics applications. Developers often need to encode address information and ISO country codes for automated parcel sorting systems.
+// Title: Generate a MaxiCode Mode 3 barcode with ISO country identifier in secondary message
+// Description: Demonstrates how to create a MaxiCode Mode 3 barcode using Aspose.BarCode, setting postal code, numeric ISO country code, service category, and adding a two‑letter ISO country identifier to the structured secondary message.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on MaxiCode symbology and complex barcode creation. It showcases the use of ComplexBarcodeGenerator, MaxiCodeCodetextMode3, and MaxiCodeStructuredSecondMessage to build barcodes with detailed address information, a common requirement for shipping and logistics applications. Developers often need to embed structured messages and ISO identifiers for automated scanning systems.
 // Prompt: Include an ISO country identifier in the secondary structured message of a MaxiCode Mode 3 barcode.
-// Tags: maxicode, mode3, secondarymessage, iso country code, barcode generation, aspnet, aspose.barcode, png output
+// Tags: maxicode, barcode, generation, secondary message, iso country, aspose.barcode, complexbarcode
 
-using System;
-using System.IO;
-using Aspose.BarCode.ComplexBarcode;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
+using Aspose.BarCode.ComplexBarcode;
+using Aspose.Drawing;
 
 /// <summary>
-/// Entry point for the example that generates a MaxiCode Mode 3 barcode with a structured secondary message containing an ISO country identifier.
+/// Example program that generates a MaxiCode Mode 3 barcode with a structured secondary message
+/// containing a two‑letter ISO country identifier.
 /// </summary>
-class Program
+public static class Program
 {
     /// <summary>
-    /// Generates the barcode, saves it as PNG, and writes the output path to the console.
+    /// Entry point of the example. Creates the barcode data, builds the secondary message,
+    /// generates the image, and saves it to disk.
     /// </summary>
-    static void Main()
+    public static void Main()
     {
-        // Define the output file name for the generated barcode image
-        const string outputFile = "maxicode_mode3.png";
+        // Output file path for the generated barcode image
+        string outputPath = "maxicode_mode3.png";
 
-        // Create MaxiCode codetext for Mode 3 with required fields
-        var maxiCode = new MaxiCodeCodetextMode3
+        // --------------------------------------------------------------------
+        // Create MaxiCode Mode 3 codetext with required fields
+        // --------------------------------------------------------------------
+        var maxiCodeData = new MaxiCodeCodetextMode3
         {
-            // 6‑character alphanumeric postal code (example)
-            PostalCode = "B1050",
-            // 3‑digit numeric ISO country code (example: 056 = Belgium)
-            CountryCode = 056,
-            // Service category (example)
-            ServiceCategory = 999
+            PostalCode = "B1050",   // 6‑character alphanumeric postal code
+            CountryCode = 56,       // Numeric ISO country code (e.g., 56 = Belgium)
+            ServiceCategory = 999   // Example service category
         };
 
-        // Build the structured secondary message
-        var secondaryMessage = new MaxiCodeStructuredSecondMessage();
+        // --------------------------------------------------------------------
+        // Build the structured secondary message (address lines, state, country)
+        // --------------------------------------------------------------------
+        var structuredMessage = new MaxiCodeStructuredSecondMessage();
+        structuredMessage.Add("634 ALPHA DRIVE"); // Street address
+        structuredMessage.Add("PITTSBURGH");      // City
+        structuredMessage.Add("PA");              // State / province
+        structuredMessage.Add("US");              // ISO country identifier (2‑letter code)
+        structuredMessage.Year = 99;              // Two‑digit year
 
-        // Include ISO country identifier as the first line (e.g., "US")
-        secondaryMessage.Add("US");
-        // Additional address lines
-        secondaryMessage.Add("634 ALPHA DRIVE");
-        secondaryMessage.Add("PITTSBURGH");
-        secondaryMessage.Add("PA");
-        // Set the year (last two digits)
-        secondaryMessage.Year = 99;
+        // Assign the secondary message to the MaxiCode data object
+        maxiCodeData.SecondMessage = structuredMessage;
 
-        // Assign the structured second message to the codetext
-        maxiCode.SecondMessage = secondaryMessage;
-
-        // Generate the MaxiCode barcode using ComplexBarcodeGenerator
-        using (var generator = new ComplexBarcodeGenerator(maxiCode))
+        // --------------------------------------------------------------------
+        // Generate the barcode image using ComplexBarcodeGenerator and save it
+        // --------------------------------------------------------------------
+        using (var generator = new ComplexBarcodeGenerator(maxiCodeData))
         {
-            // Generate the barcode image
-            generator.GenerateBarCodeImage();
-
-            // Save the image to a PNG file
-            generator.Save(outputFile, BarCodeImageFormat.Png);
+            using (Bitmap image = generator.GenerateBarCodeImage())
+            {
+                image.Save(outputPath);
+            }
         }
-
-        // Inform the user where the barcode image was saved
-        Console.WriteLine($"MaxiCode Mode 3 barcode saved to: {Path.GetFullPath(outputFile)}");
     }
 }

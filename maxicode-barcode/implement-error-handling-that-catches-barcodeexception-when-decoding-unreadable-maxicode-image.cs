@@ -1,57 +1,69 @@
+// Title: Decode MaxiCode with error handling using Aspose.BarCode
+// Description: Demonstrates how to decode a MaxiCode barcode from an image while handling potential decoding errors.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, showcasing the use of BarCodeReader, DecodeType, and QualitySettings to read MaxiCode symbols. Typical scenarios include processing shipping labels or inventory tags where MaxiCode is common, and developers often need robust error handling for damaged or unreadable images.
+// Prompt: Implement error handling that catches BarcodeException when decoding an unreadable MaxiCode image.
+// Tags: maxicode, barcode decoding, error handling, aspose.barcode, barcodereader, qualitysettings
+
 using System;
 using System.IO;
-using Aspose.BarCode.BarCodeRecognition;
-using Aspose.BarCode.ComplexBarcode;
+using Aspose.BarCode.BarCodeRecognition; // Provides BarCodeReader, DecodeType, QualitySettings
+using Aspose.BarCode.Generation;        // Provides DecodeType enum (static members)
 
-class Program
+/// <summary>
+/// Example program that attempts to read a MaxiCode barcode from an image file
+/// and demonstrates error handling for unreadable or damaged barcodes.
+/// </summary>
+class MaxiCodeDecoder
 {
+    /// <summary>
+    /// Entry point of the program. Reads the specified image, configures the reader,
+    /// and outputs any detected MaxiCode values while safely handling decoding exceptions.
+    /// </summary>
     static void Main()
     {
-        // Path to the MaxiCode image (replace with an actual file path if needed)
+        // Path to the image that may contain an unreadable MaxiCode
         string imagePath = "unreadable_maxicode.png";
 
-        // Validate that the image file exists
+        // Verify that the file exists before attempting to read it
         if (!File.Exists(imagePath))
         {
             Console.WriteLine($"File not found: {imagePath}");
             return;
         }
 
-        try
+        // DecodeType is a static class; store the specific type in a BaseDecodeType variable
+        BaseDecodeType decodeType = DecodeType.MaxiCode;
+
+        // Create the reader and assign the image source
+        using (var reader = new BarCodeReader(imagePath, decodeType))
         {
-            // Create a BarCodeReader for MaxiCode symbology
-            using (var reader = new BarCodeReader(imagePath, DecodeType.MaxiCode))
+            // Use the highest quality preset to improve chances of reading a damaged barcode
+            reader.QualitySettings = QualitySettings.MaxQuality;
+
+            try
             {
-                // Read all barcodes from the image
-                var results = reader.ReadBarCodes();
+                // Attempt to read all barcodes in the image
+                BarCodeResult[] results = reader.ReadBarCodes();
 
                 if (results.Length == 0)
                 {
-                    Console.WriteLine("No barcodes detected.");
+                    Console.WriteLine("No MaxiCode detected in the image.");
                 }
-
-                foreach (var result in results)
+                else
                 {
-                    // Attempt to decode the MaxiCode codetext using ComplexCodetextReader
-                    var decoded = ComplexCodetextReader.TryDecodeMaxiCode(
-                        result.Extended.MaxiCode.MaxiCodeMode,
-                        result.CodeText);
-
-                    if (decoded != null)
+                    foreach (var result in results)
                     {
-                        Console.WriteLine($"Decoded MaxiCode codetext: {decoded.GetConstructedCodetext()}");
-                    }
-                    else
-                    {
-                        Console.WriteLine("Failed to decode MaxiCode codetext.");
+                        Console.WriteLine($"Detected MaxiCode: {result.CodeText}");
+                        // Additional extended parameters can be accessed if needed, e.g.:
+                        // var mode = result.Extended.MaxiCode.Mode;
                     }
                 }
             }
-        }
-        catch (Exception ex)
-        {
-            // Handle any errors that occur during decoding (e.g., unreadable image)
-            Console.WriteLine($"Error decoding barcode: {ex.Message}");
+            // Catch any exception that occurs during decoding (e.g., unreadable image)
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error decoding MaxiCode: {ex.Message}");
+            }
         }
     }
 }

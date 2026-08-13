@@ -1,75 +1,56 @@
-// Title: Decode MaxiCode with checksum errors ignored
-// Description: Demonstrates configuring BarCodeReader to ignore checksum validation while decoding MaxiCode barcodes in noisy images.
-// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, focusing on error‑tolerant decoding. It shows how to use BarCodeReader, QualitySettings, and BarcodeSettings to handle damaged or high‑noise MaxiCode symbols, a common requirement for logistics and shipping applications where barcode integrity may be compromised.
+// Title: Decode MaxiCode with checksum validation disabled
+// Description: Demonstrates configuring BarcodeReader to ignore checksum errors when decoding MaxiCode barcodes, useful in noisy environments.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, focusing on reading complex symbologies such as MaxiCode. It showcases key API classes like BarCodeReader, BarcodeSettings, and QualitySettings, illustrating how to adjust checksum validation and quality parameters for high‑noise scenarios. Developers working with barcode scanning in challenging conditions can use this pattern to improve detection reliability.
 // Prompt: Configure BarcodeReader to ignore checksum errors while decoding MaxiCode barcodes in a high‑noise environment.
-// Tags: maxicode, checksum, ignore, barcodereader, qualitysettings, barcodesettings, decoding, aspose.barcode
+// Tags: maxicode, checksum, barcodereader, decoding, qualitysettings, aspnet, csharp
 
 using System;
 using System.IO;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.BarCode.ComplexBarcode;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates configuring the BarCodeReader to ignore checksum errors when decoding MaxiCode barcodes,
-/// useful in high‑noise environments.
+/// Example program that generates a MaxiCode barcode and reads it while ignoring checksum errors.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a MaxiCode image, then reads it while allowing incorrect checksums.
+    /// Entry point. Generates a MaxiCode (Mode 2) barcode, then reads it with checksum validation turned off.
     /// </summary>
     static void Main()
     {
-        // Create a simple MaxiCode codetext (Mode4 with a short message)
-        var maxiCodeCodetext = new MaxiCodeStandardCodetext
+        // Create a sample MaxiCode (Mode 2) codetext with postal, country, and service information.
+        var maxiCodeData = new MaxiCodeCodetextMode2
         {
-            Mode = MaxiCodeMode.Mode4,
-            Message = "Test"
+            PostalCode = "524032140",
+            CountryCode = 56,
+            ServiceCategory = 999,
+            SecondMessage = new MaxiCodeStandardSecondMessage { Message = "Test" }
         };
 
-        // Generate the MaxiCode image using ComplexBarcodeGenerator
-        using (var generator = new ComplexBarcodeGenerator(maxiCodeCodetext))
+        // Generate the barcode image into a memory stream (PNG format).
+        using (var generator = new ComplexBarcodeGenerator(maxiCodeData))
+        using (var ms = new MemoryStream())
         {
-            // Generate bitmap representation of the barcode
-            using (Bitmap bitmap = generator.GenerateBarCodeImage())
+            generator.Save(ms, BarCodeImageFormat.Png);
+            ms.Position = 0; // Reset stream position for reading.
+
+            // Initialize the reader for MaxiCode symbology.
+            using (var reader = new BarCodeReader(ms, DecodeType.MaxiCode))
             {
-                // Save bitmap to a memory stream in PNG format
-                using (var imageStream = new MemoryStream())
+                // Disable checksum validation to tolerate errors in noisy captures.
+                reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.Off;
+
+                // Adjust quality settings to allow incorrect barcodes and speed up processing.
+                reader.QualitySettings.AllowIncorrectBarcodes = true;
+                reader.QualitySettings.Deconvolution = DeconvolutionMode.Fast;
+
+                // Perform recognition and output results.
+                foreach (var result in reader.ReadBarCodes())
                 {
-                    bitmap.Save(imageStream, ImageFormat.Png);
-                    imageStream.Position = 0; // Reset stream position for reading
-
-                    // Initialize BarCodeReader for MaxiCode with high-quality settings
-                    using (var reader = new BarCodeReader(imageStream, DecodeType.MaxiCode))
-                    {
-                        // Allow recognition of barcodes with incorrect checksum or damaged data
-                        reader.QualitySettings.AllowIncorrectBarcodes = true;
-
-                        // Disable checksum validation (reinforces ignoring checksum errors)
-                        reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.Off;
-
-                        // Read barcodes from the image
-                        BarCodeResult[] results = reader.ReadBarCodes();
-
-                        if (results.Length == 0)
-                        {
-                            Console.WriteLine("No MaxiCode barcode detected.");
-                        }
-                        else
-                        {
-                            // Output details of each detected barcode
-                            foreach (var result in results)
-                            {
-                                Console.WriteLine($"Detected Type: {result.CodeTypeName}");
-                                Console.WriteLine($"Code Text: {result.CodeText}");
-                                Console.WriteLine($"Confidence: {result.Confidence}");
-                                Console.WriteLine($"Reading Quality: {result.ReadingQuality}");
-                            }
-                        }
-                    }
+                    Console.WriteLine($"Detected type: {result.CodeTypeName}");
+                    Console.WriteLine($"Code text: {result.CodeText}");
                 }
             }
         }
