@@ -1,68 +1,79 @@
 // Title: Validate AllowIncorrectBarcodes does not affect decoded CodeText
-// Description: Demonstrates generating a Code128 barcode, decoding it with default settings and with AllowIncorrectBarcodes enabled, and verifies that the decoded text remains unchanged.
+// Description: Demonstrates generating a Code128 barcode, decoding it with and without AllowIncorrectBarcodes, and confirming the decoded text remains unchanged.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the BarcodeGenerator for creating barcodes and BarCodeReader for decoding them. Developers often need to validate quality settings such as AllowIncorrectBarcodes to ensure robust scanning in real‑world applications. The snippet highlights typical use cases involving EncodeTypes, DecodeType, and QualitySettings.
 // Prompt: Validate that enabling AllowIncorrectBarcodes does not alter the decoded CodeText of valid barcodes.
-// Tags: code128, barcode generation, barcode recognition, allowincorrectbarcodes, validation
+// Tags: code128, barcode generation, barcode recognition, allowincorrectbarcodes, validation, aspose.barcode
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that validates the effect of <c>AllowIncorrectBarcodes</c> on decoding valid barcodes.
+/// Example program that verifies the <c>AllowIncorrectBarcodes</c> quality setting does not change the decoded <c>CodeText</c> for a valid barcode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a barcode, decodes it with default and altered settings, and compares the results.
+    /// Entry point. Generates a barcode, reads it twice with different <c>AllowIncorrectBarcodes</c> settings, and validates consistency.
     /// </summary>
     static void Main()
     {
-        // Define the text to encode in the barcode.
-        const string originalText = "Test12345";
+        // Original text to encode into the barcode.
+        const string originalCodeText = "Test12345";
 
-        // Create a memory stream to hold the generated barcode image.
-        using (var memoryStream = new MemoryStream())
+        // Create a Code128 barcode generator and produce an image in memory.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, originalCodeText))
+        using (var bitmap = generator.GenerateBarCodeImage())
+        using (var imageStream = new MemoryStream())
         {
-            // Generate a Code128 barcode and save it as PNG into the memory stream.
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, originalText))
+            // Save the generated bitmap as PNG into the memory stream.
+            bitmap.Save(imageStream, ImageFormat.Png);
+            imageStream.Position = 0; // Reset stream for reading.
+
+            // ---------- First read: default setting (AllowIncorrectBarcodes = false) ----------
+            string decodedWithoutAllowance;
+            using (var reader = new BarCodeReader(imageStream, DecodeType.AllSupportedTypes))
             {
-                generator.Save(memoryStream, BarCodeImageFormat.Png);
+                reader.QualitySettings.AllowIncorrectBarcodes = false;
+                decodedWithoutAllowance = ReadFirstCodeText(reader);
             }
 
-            // Reset the stream position so it can be read from the beginning.
-            memoryStream.Position = 0;
+            // Reset stream position before the second read.
+            imageStream.Position = 0;
 
-            // Decode the barcode using default settings (AllowIncorrectBarcodes = false).
-            string decodedDefault;
-            using (var reader = new BarCodeReader(memoryStream, DecodeType.Code128))
-            {
-                var results = reader.ReadBarCodes();
-                decodedDefault = results.Length > 0 ? results[0].CodeText : null;
-            }
-
-            // Reset the stream position again for the second decoding pass.
-            memoryStream.Position = 0;
-
-            // Decode the same barcode with AllowIncorrectBarcodes enabled.
-            string decodedAllow;
-            using (var reader = new BarCodeReader(memoryStream, DecodeType.Code128))
+            // ---------- Second read: AllowIncorrectBarcodes = true ----------
+            string decodedWithAllowance;
+            using (var reader = new BarCodeReader(imageStream, DecodeType.AllSupportedTypes))
             {
                 reader.QualitySettings.AllowIncorrectBarcodes = true;
-                var results = reader.ReadBarCodes();
-                decodedAllow = results.Length > 0 ? results[0].CodeText : null;
+                decodedWithAllowance = ReadFirstCodeText(reader);
             }
 
-            // Compare the two decoded values to ensure they are identical.
-            bool isEqual = string.Equals(decodedDefault, decodedAllow, StringComparison.Ordinal);
-            Console.WriteLine($"Original CodeText: {originalText}");
-            Console.WriteLine($"Decoded (default settings): {decodedDefault ?? "null"}");
-            Console.WriteLine($"Decoded (AllowIncorrectBarcodes = true): {decodedAllow ?? "null"}");
-            Console.WriteLine(isEqual
-                ? "Success: AllowIncorrectBarcodes does not alter the decoded CodeText."
-                : "Failure: Decoded CodeText differs when AllowIncorrectBarcodes is enabled.");
+            // Validate that both decodings match the original text.
+            bool isConsistent = decodedWithoutAllowance == decodedWithAllowance &&
+                                decodedWithoutAllowance == originalCodeText;
+
+            // Output results.
+            Console.WriteLine($"Original CodeText: {originalCodeText}");
+            Console.WriteLine($"Decoded without AllowIncorrectBarcodes: {decodedWithoutAllowance}");
+            Console.WriteLine($"Decoded with AllowIncorrectBarcodes: {decodedWithAllowance}");
+            Console.WriteLine(isConsistent
+                ? "Success: Decoded CodeText is unchanged by AllowIncorrectBarcodes."
+                : "Failure: Decoded CodeText differs.");
         }
+    }
+
+    // Reads the first barcode result from the reader and returns its CodeText.
+    private static string ReadFirstCodeText(BarCodeReader reader)
+    {
+        foreach (var result in reader.ReadBarCodes())
+        {
+            return result.CodeText;
+        }
+        return null;
     }
 }

@@ -1,103 +1,108 @@
-// Title: Batch TIFF Barcode Recognition with Quality Assessment
-// Description: Demonstrates processing multiple TIFF images, detecting barcodes of any symbology, and calculating average reading quality per image and overall.
+// Title: Process batch of TIFF barcodes and compute average confidence
+// Description: Demonstrates generating sample Code128 barcodes as TIFF images, reading them, and calculating the average recognition confidence across the batch.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes, BarCodeReader for decoding, and QualitySettings for performance tuning. Developers often need to process multiple images, adjust image properties, and evaluate recognition reliability, making this pattern useful for batch processing and quality assessment scenarios.
 // Prompt: Process a batch of TIFF images with varying contrast levels and record average recognition accuracy.
-// Tags: barcode, tiff, batch processing, quality, aspose.barcode, recognition
+// Tags: barcode, code128, tiff, batch-processing, confidence, generation, recognition, qualitysettings
 
 using System;
 using System.IO;
 using System.Collections.Generic;
-using System.Linq;
+using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that processes a batch of TIFF images, detects barcodes of any supported symbology,
-/// and records the average reading quality per image and overall.
+/// Example program that generates a set of Code128 barcodes saved as TIFF files,
+/// reads them back using Aspose.BarCode, and computes the average confidence of
+/// the recognition results.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Scans a folder for TIFF files, reads barcodes using Aspose.BarCode,
-    /// and reports average reading quality metrics.
+    /// Entry point of the application. Generates sample barcode images (if missing),
+    /// processes each TIFF file, extracts confidence values, and prints the average
+    /// recognition confidence.
     /// </summary>
     static void Main()
     {
-        // Define the folder that contains the TIFF images (adjust the path as needed)
-        string imagesFolder = "Images";
-
-        // Verify that the specified folder exists
-        if (!Directory.Exists(imagesFolder))
+        // Define the folder where barcode TIFF images will be stored.
+        string folderPath = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
+        if (!Directory.Exists(folderPath))
         {
-            Console.WriteLine($"Folder not found: {imagesFolder}");
-            return;
+            // Create the folder when it does not exist.
+            Directory.CreateDirectory(folderPath);
         }
 
-        // Retrieve up to 5 TIFF files from the folder for safe sample processing
-        string[] tiffFiles = Directory.GetFiles(imagesFolder, "*.tif")
-                                      .Take(5)
-                                      .ToArray();
-
-        // Ensure that at least one TIFF file was found
-        if (tiffFiles.Length == 0)
+        // --------------------------------------------------------------------
+        // Generate sample barcode images (only if they are not already present)
+        // --------------------------------------------------------------------
+        int sampleCount = 5;
+        for (int i = 0; i < sampleCount; i++)
         {
-            Console.WriteLine("No TIFF files found in the specified folder.");
-            return;
-        }
-
-        // List to store the average reading quality for each processed image
-        var perImageAverages = new List<double>();
-
-        // Process each TIFF file individually
-        foreach (string filePath in tiffFiles)
-        {
-            // Skip the file if it cannot be found (defensive check)
+            string fileName = $"barcode_{i}.tif";
+            string filePath = Path.Combine(folderPath, fileName);
             if (!File.Exists(filePath))
             {
-                Console.WriteLine($"File not found: {filePath}");
+                // Create a new barcode generator for Code128 with a unique value.
+                using (var generator = new BarcodeGenerator(EncodeTypes.Code128, $"CODE{i}"))
+                {
+                    // Set simple black on white colors for high contrast.
+                    generator.Parameters.Barcode.BarColor = Color.Black;
+                    generator.Parameters.BackColor = Color.White;
+
+                    // Save the generated barcode as a TIFF image.
+                    generator.Save(filePath, BarCodeImageFormat.Tiff);
+                }
+            }
+        }
+
+        // --------------------------------------------------------------
+        // Read each TIFF image, decode barcodes, and collect confidence data
+        // --------------------------------------------------------------
+        List<int> confidenceValues = new List<int>();
+        string[] tiffFiles = Directory.GetFiles(folderPath, "*.tif");
+        foreach (string tiffFile in tiffFiles)
+        {
+            if (!File.Exists(tiffFile))
+            {
+                Console.WriteLine($"File not found: {tiffFile}");
                 continue;
             }
 
-            // Initialize the barcode reader for the current file, allowing detection of any supported symbology
-            using (var reader = new BarCodeReader(filePath, DecodeType.AllSupportedTypes))
+            // Initialize a barcode reader for Code128 barcodes.
+            using (var reader = new BarCodeReader(tiffFile, DecodeType.Code128))
             {
-                // Apply high‑quality settings to improve detection on low‑contrast images
-                reader.QualitySettings = QualitySettings.HighQuality;
+                // Apply a high‑performance quality preset to speed up processing.
+                reader.QualitySettings = QualitySettings.HighPerformance;
 
-                // Perform barcode detection
-                BarCodeResult[] results = reader.ReadBarCodes();
-
-                // If no barcodes were detected, report and move to the next image
-                if (results.Length == 0)
+                // Iterate over all detected barcodes in the image.
+                foreach (var result in reader.ReadBarCodes())
                 {
-                    Console.WriteLine($"{Path.GetFileName(filePath)}: No barcodes detected.");
-                    continue;
+                    // BarCodeConfidence enum values can be cast to int (0, 80, 100).
+                    confidenceValues.Add((int)result.Confidence);
                 }
-
-                // Accumulate the reading quality values from all detected barcodes
-                double sumQuality = 0;
-                foreach (var result in results)
-                {
-                    // ReadingQuality is a double representing detection quality (0‑100)
-                    sumQuality += result.ReadingQuality;
-                }
-
-                // Compute the average reading quality for the current image
-                double avgQuality = sumQuality / results.Length;
-                perImageAverages.Add(avgQuality);
-
-                // Output per‑image statistics
-                Console.WriteLine($"{Path.GetFileName(filePath)}: Detected {results.Length} barcode(s), Average ReadingQuality = {avgQuality:F2}");
             }
         }
 
-        // After processing all images, calculate and display the overall average reading quality
-        if (perImageAverages.Count > 0)
+        // ------------------------------
+        // Compute and display the average
+        // ------------------------------
+        if (confidenceValues.Count > 0)
         {
-            double overallAverage = perImageAverages.Average();
-            Console.WriteLine($"Overall average ReadingQuality across processed images: {overallAverage:F2}");
+            double averageConfidence = 0.0;
+            foreach (int val in confidenceValues)
+            {
+                averageConfidence += val;
+            }
+            averageConfidence /= confidenceValues.Count;
+
+            Console.WriteLine($"Processed {confidenceValues.Count} barcode results.");
+            Console.WriteLine($"Average recognition confidence: {averageConfidence:F2}");
         }
         else
         {
-            Console.WriteLine("No barcode data collected to compute overall average.");
+            Console.WriteLine("No barcode results were found.");
         }
     }
 }

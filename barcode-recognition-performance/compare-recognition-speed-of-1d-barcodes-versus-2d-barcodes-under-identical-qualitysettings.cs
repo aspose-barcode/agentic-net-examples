@@ -1,7 +1,8 @@
 // Title: Compare recognition speed of 1D vs 2D barcodes
-// Description: Demonstrates generating a Code128 and QR barcode, then measures and compares their recognition times using identical QualitySettings.
+// Description: Demonstrates measuring the time required to recognize a 1D Code128 barcode and a 2D QR code using identical QualitySettings.
+// Category-Description: This example belongs to the Aspose.BarCode recognition category, showcasing how to use BarCodeReader with QualitySettings to evaluate performance. It highlights key API classes such as BarcodeGenerator, BarCodeReader, QualitySettings, and DecodeType, which developers commonly use for generating barcodes, configuring recognition parameters, and benchmarking speed in real‑world applications.
 // Prompt: Compare recognition speed of 1D barcodes versus 2D barcodes under identical QualitySettings.
-// Tags: barcode symbology, recognition speed, qualitysettings, code128, qr, aspnet.barcode, csharp
+// Tags: barcode, code128, qr, recognition, speed, qualitysettings, aspose.barcode, generation, decoding
 
 using System;
 using System.Diagnostics;
@@ -11,111 +12,64 @@ using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates barcode generation and recognition speed comparison between 1D (Code128) and 2D (QR) symbologies.
+/// Example program that generates a 1D Code128 barcode and a 2D QR code,
+/// then measures and compares their recognition times using identical
+/// <see cref="QualitySettings"/>.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates temporary barcode images, measures recognition times, outputs results, and cleans up files.
+    /// Entry point of the application. Generates barcodes if needed,
+    /// configures identical quality settings, and reports recognition
+    /// durations for both 1D and 2D symbologies.
     /// </summary>
     static void Main()
     {
-        // Define file paths for temporary barcode images
+        // Paths for generated barcode images
         string code128Path = "code128.png";
         string qrPath = "qr.png";
 
-        // -------------------------------------------------
-        // Generate a 1D Code128 barcode and save as PNG
-        // -------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+        // Generate a 1D barcode (Code128) if it does not already exist
+        if (!File.Exists(code128Path))
         {
-            generator.Save(code128Path, BarCodeImageFormat.Png);
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+            {
+                generator.Save(code128Path, BarCodeImageFormat.Png);
+            }
         }
 
-        // -------------------------------------------------
-        // Generate a 2D QR barcode and save as PNG
-        // -------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
+        // Generate a 2D barcode (QR) if it does not already exist
+        if (!File.Exists(qrPath))
         {
-            generator.Save(qrPath, BarCodeImageFormat.Png);
+            using (var generator = new BarcodeGenerator(EncodeTypes.QR, "1234567890"))
+            {
+                generator.Save(qrPath, BarCodeImageFormat.Png);
+            }
         }
 
-        // Prepare identical quality settings for both recognitions
-        var quality = QualitySettings.NormalQuality;
+        // Define identical quality settings for both recognitions
+        QualitySettings commonSettings = QualitySettings.NormalQuality;
 
-        // -------------------------------------------------
         // Measure recognition time for the 1D barcode
-        // -------------------------------------------------
-        long time1D;
-        using (var reader = new BarCodeReader(code128Path, DecodeType.Code128))
+        using (var reader1D = new BarCodeReader(code128Path, DecodeType.Code128))
         {
-            // Apply the same quality settings
-            reader.QualitySettings = quality;
+            reader1D.QualitySettings = commonSettings; // Apply common quality settings
+            Stopwatch sw1D = Stopwatch.StartNew();    // Start timing
+            var results1D = reader1D.ReadBarCodes();  // Perform recognition
+            sw1D.Stop();                               // Stop timing
 
-            // Start timing
-            var sw = Stopwatch.StartNew();
-
-            // Perform recognition
-            var results = reader.ReadBarCodes();
-
-            // Stop timing
-            sw.Stop();
-            time1D = sw.ElapsedMilliseconds;
-
-            // Output detection results
-            Console.WriteLine($"1D Code128 detected: {results.Length} barcode(s).");
-            foreach (var result in results)
-            {
-                Console.WriteLine($"  Text: {result.CodeText}");
-            }
+            Console.WriteLine($"1D (Code128) recognition time: {sw1D.ElapsedMilliseconds} ms, detected {results1D.Length} barcode(s).");
         }
 
-        // -------------------------------------------------
         // Measure recognition time for the 2D barcode
-        // -------------------------------------------------
-        long time2D;
-        using (var reader = new BarCodeReader(qrPath, DecodeType.QR))
+        using (var reader2D = new BarCodeReader(qrPath, DecodeType.QR))
         {
-            // Apply the same quality settings
-            reader.QualitySettings = quality;
+            reader2D.QualitySettings = commonSettings; // Apply common quality settings
+            Stopwatch sw2D = Stopwatch.StartNew();    // Start timing
+            var results2D = reader2D.ReadBarCodes();  // Perform recognition
+            sw2D.Stop();                               // Stop timing
 
-            // Start timing
-            var sw = Stopwatch.StartNew();
-
-            // Perform recognition
-            var results = reader.ReadBarCodes();
-
-            // Stop timing
-            sw.Stop();
-            time2D = sw.ElapsedMilliseconds;
-
-            // Output detection results
-            Console.WriteLine($"2D QR detected: {results.Length} barcode(s).");
-            foreach (var result in results)
-            {
-                Console.WriteLine($"  Text: {result.CodeText}");
-            }
-        }
-
-        // -------------------------------------------------
-        // Output comparison of recognition times
-        // -------------------------------------------------
-        Console.WriteLine();
-        Console.WriteLine("Recognition time comparison (identical QualitySettings):");
-        Console.WriteLine($"  1D (Code128): {time1D} ms");
-        Console.WriteLine($"  2D (QR)     : {time2D} ms");
-
-        // -------------------------------------------------
-        // Clean up temporary files
-        // -------------------------------------------------
-        try
-        {
-            if (File.Exists(code128Path)) File.Delete(code128Path);
-            if (File.Exists(qrPath)) File.Delete(qrPath);
-        }
-        catch
-        {
-            // Ignored - cleanup failure should not affect program exit
+            Console.WriteLine($"2D (QR) recognition time: {sw2D.ElapsedMilliseconds} ms, detected {results2D.Length} barcode(s).");
         }
     }
 }

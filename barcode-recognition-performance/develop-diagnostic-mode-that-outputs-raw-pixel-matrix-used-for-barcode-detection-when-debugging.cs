@@ -1,72 +1,78 @@
-// Title: Barcode generation with diagnostic pixel matrix output
-// Description: Demonstrates generating a Code128 barcode, printing its raw pixel matrix for debugging, and recognizing the barcode.
+// Title: Diagnostic mode output of raw pixel matrix for barcode detection
+// Description: Demonstrates generating a Code128 barcode, printing its grayscale pixel matrix, and recognizing the barcode.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, showcasing how to use BarcodeGenerator, BarCodeReader, and related parameter classes. Typical use cases include debugging barcode rendering, validating image quality, and extracting raw pixel data for custom analysis. Developers often need to inspect the pixel matrix when troubleshooting detection issues.
 // Prompt: Develop a diagnostic mode that outputs the raw pixel matrix used for barcode detection when debugging.
-// Tags: barcode symbology, generation, recognition, diagnostic, pixel matrix, console output
+// Tags: barcode symbology, generation, recognition, diagnostic, raw pixel matrix, grayscale, aspose.barcode, code128
 
 using System;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates a Code128 barcode, prints its raw pixel matrix for diagnostic purposes,
-/// and then reads the barcode using Aspose.BarCode.
+/// Example program that generates a Code128 barcode, prints its raw grayscale pixel matrix,
+/// and then performs barcode recognition on the generated image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a barcode, outputs its pixel matrix, and performs recognition.
+    /// Entry point of the example. Generates a barcode, outputs diagnostic pixel data,
+    /// and reads back the barcode information.
     /// </summary>
     static void Main()
     {
-        // Generate a simple Code128 barcode in memory
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "12345"))
+        // Generate a simple Code128 barcode image in memory
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
+            // Optional: configure generation parameters for size and scaling
+            generator.Parameters.Barcode.XDimension.Point = 2f;
+            generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
+            generator.Parameters.ImageWidth.Point = 300f;
+            generator.Parameters.ImageHeight.Point = 100f;
+
             // Create the barcode image as a Bitmap
             using (Bitmap barcodeImage = generator.GenerateBarCodeImage())
             {
-                // Output the raw pixel matrix (0 = white, 1 = black) for diagnostic debugging
-                PrintPixelMatrix(barcodeImage);
-
-                // Perform barcode recognition on the same image
-                using (var reader = new BarCodeReader(barcodeImage))
+                // Output raw pixel matrix (grayscale intensity) to console for diagnostic purposes
+                Console.WriteLine("Raw pixel matrix (grayscale intensity):");
+                for (int y = 0; y < barcodeImage.Height; y++)
                 {
-                    // Iterate through all detected barcodes
+                    for (int x = 0; x < barcodeImage.Width; x++)
+                    {
+                        // Retrieve pixel color and compute average intensity
+                        Color pixel = barcodeImage.GetPixel(x, y);
+                        int intensity = (pixel.R + pixel.G + pixel.B) / 3;
+
+                        // Print intensity value, padded for alignment
+                        Console.Write(intensity.ToString().PadLeft(3));
+                        if (x < barcodeImage.Width - 1) Console.Write(" ");
+                    }
+                    Console.WriteLine();
+                }
+
+                // Perform barcode recognition on the generated image
+                using (var reader = new BarCodeReader())
+                {
+                    // Assign the generated image to the reader
+                    reader.SetBarCodeImage(barcodeImage);
+
+                    // Use all supported barcode types for detection
+                    reader.BarCodeReadType = DecodeType.AllSupportedTypes;
+
+                    // Iterate through detected barcodes and display results
                     foreach (var result in reader.ReadBarCodes())
                     {
-                        Console.WriteLine("Detected Barcode Type: " + result.CodeTypeName);
-                        Console.WriteLine("Detected CodeText: " + result.CodeText);
-                        var rect = result.Region.Rectangle;
-                        Console.WriteLine($"Region - X:{rect.X}, Y:{rect.Y}, Width:{rect.Width}, Height:{rect.Height}");
-                        Console.WriteLine($"Angle: {result.Region.Angle}");
+                        Console.WriteLine();
+                        Console.WriteLine("Detected Barcode:");
+                        Console.WriteLine("  Type: " + result.CodeTypeName);
+                        Console.WriteLine("  CodeText: " + result.CodeText);
+
+                        // Output the detected region bounds
+                        var bounds = result.Region.Rectangle;
+                        Console.WriteLine($"  Region: X={bounds.X}, Y={bounds.Y}, Width={bounds.Width}, Height={bounds.Height}");
                     }
                 }
             }
-        }
-    }
-
-    // Prints the bitmap pixel matrix to the console.
-    // Uses a simple threshold to convert color to binary (black/white).
-    static void PrintPixelMatrix(Bitmap bitmap)
-    {
-        int width = bitmap.Width;
-        int height = bitmap.Height;
-        Console.WriteLine("Pixel Matrix (1 = black, 0 = white):");
-        for (int y = 0; y < height; y++)
-        {
-            for (int x = 0; x < width; x++)
-            {
-                // Retrieve the pixel color at (x, y)
-                Color pixel = bitmap.GetPixel(x, y);
-                // Compute luminance as average of RGB components
-                int luminance = (pixel.R + pixel.G + pixel.B) / 3;
-                // Threshold at mid-point (128) to obtain binary value
-                int binary = luminance < 128 ? 1 : 0;
-                Console.Write(binary);
-            }
-            Console.WriteLine();
         }
     }
 }

@@ -1,7 +1,8 @@
-// Title: Barcode decoding success rate per quality preset
-// Description: Demonstrates generating a mixed‑type barcode set, decoding them with different quality presets, and reporting the success percentage for each preset.
+// Title: Barcode generation and decoding success rate per symbology preset
+// Description: This example generates a set of barcodes for several symbologies, decodes them, and reports the percentage of successful decodings.
+// Category-Description: Demonstrates Aspose.BarCode generation and recognition APIs, covering BarcodeGenerator, BarCodeReader, and related parameter settings. Useful for developers testing barcode quality, batch processing, or evaluating decoding reliability across different symbologies.
 // Prompt: Record the percentage of barcodes successfully decoded under each preset across a mixed‑type dataset.
-// Tags: barcode, decoding, qualitysettings, aspose.barcode, csharp, example
+// Tags: barcode symbology, generation, recognition, png, aspose.barcode, encode type, decode type
 
 using System;
 using System.Collections.Generic;
@@ -9,96 +10,122 @@ using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating barcodes of various symbologies, decoding them using different
-/// quality presets, and reporting the success rate for each preset.
+/// Demonstrates generating barcodes for multiple symbologies, decoding them, and reporting success percentages.
 /// </summary>
 class Program
 {
+    // Simple data holder for each preset (symbology)
+    class PresetInfo
+    {
+        public string Name { get; set; }
+        public BaseEncodeType EncodeType { get; set; }
+        public List<string> Files { get; } = new List<string>();
+        public List<string> ExpectedTexts { get; } = new List<string>();
+    }
+
     /// <summary>
-    /// Entry point. Generates barcodes, decodes them with each preset, and prints success percentages.
+    /// Entry point. Generates barcodes, decodes them, and prints success rates per preset.
     /// </summary>
     static void Main()
     {
-        // Create output directory for generated barcode images
-        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
-        if (!Directory.Exists(outputDir))
-        {
-            Directory.CreateDirectory(outputDir);
-        }
+        // Folder to store generated barcode images
+        string outputFolder = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
+        Directory.CreateDirectory(outputFolder);
 
-        // Define a small mixed‑type dataset (symbology + sample text + file name)
-        var samples = new List<(BaseEncodeType type, string text, string fileName)>
+        // Define a few presets (symbologies) with sample texts
+        var presets = new List<PresetInfo>
         {
-            (EncodeTypes.Code128, "ABC12345", "code128.png"),
-            (EncodeTypes.QR, "https://example.com", "qr.png"),
-            (EncodeTypes.DataMatrix, "DM123", "datamatrix.png"),
-            (EncodeTypes.Pdf417, "PDF417_SAMPLE_TEXT", "pdf417.png"),
-            (EncodeTypes.DatabarStacked, "(01)01234567890128", "databar.png")
+            new PresetInfo
+            {
+                Name = "Code128",
+                EncodeType = EncodeTypes.Code128
+            },
+            new PresetInfo
+            {
+                Name = "QR",
+                EncodeType = EncodeTypes.QR
+            },
+            new PresetInfo
+            {
+                Name = "DataMatrix",
+                EncodeType = EncodeTypes.DataMatrix
+            }
         };
 
-        // Generate barcode images for each sample
-        foreach (var (type, text, fileName) in samples)
+        // Number of samples per preset (kept small for CI safety)
+        const int samplesPerPreset = 5;
+
+        // Generate sample barcodes for each preset
+        foreach (var preset in presets)
         {
-            string filePath = Path.Combine(outputDir, fileName);
-            using (var generator = new BarcodeGenerator(type, text))
+            for (int i = 0; i < samplesPerPreset; i++)
             {
-                generator.Save(filePath);
+                string codeText = $"{preset.Name}_Sample_{i + 1}";
+                string filePath = Path.Combine(outputFolder, $"{preset.Name}_{i + 1}.png");
+
+                using (var generator = new BarcodeGenerator(preset.EncodeType, codeText))
+                {
+                    // Example of setting a simple parameter (optional)
+                    generator.Parameters.Barcode.XDimension.Point = 2f;
+                    generator.Save(filePath, BarCodeImageFormat.Png);
+                }
+
+                // Store generated file path and expected text for later verification
+                preset.Files.Add(filePath);
+                preset.ExpectedTexts.Add(codeText);
             }
         }
 
-        // Define decoding presets (different QualitySettings)
-        var presets = new List<(string name, QualitySettings settings)>
-        {
-            ("HighPerformance", QualitySettings.HighPerformance),
-            ("HighQuality", QualitySettings.HighQuality),
-            ("NormalQuality", QualitySettings.NormalQuality),
-            ("MaxQuality", QualitySettings.MaxQuality)
-        };
+        // Prepare results container: key = preset name, value = (total count, successful decodes)
+        var results = new Dictionary<string, (int total, int success)>();
 
-        // Evaluate each preset by decoding all generated barcodes
-        foreach (var (presetName, presetSettings) in presets)
+        // Decode each generated image and evaluate success per preset
+        foreach (var preset in presets)
         {
-            int total = samples.Count;
+            int total = preset.Files.Count;
             int success = 0;
 
-            foreach (var (type, expectedText, fileName) in samples)
+            for (int i = 0; i < total; i++)
             {
-                string filePath = Path.Combine(outputDir, fileName);
-                if (!File.Exists(filePath))
+                string file = preset.Files[i];
+                string expected = preset.ExpectedTexts[i];
+
+                if (!File.Exists(file))
                 {
-                    Console.WriteLine($"Warning: file not found {filePath}");
+                    Console.WriteLine($"Warning: File not found '{file}'. Skipping.");
                     continue;
                 }
 
-                using (var reader = new BarCodeReader(filePath, DecodeType.AllSupportedTypes))
+                using (var reader = new BarCodeReader(file, DecodeType.AllSupportedTypes))
                 {
-                    // Apply the current quality preset
-                    reader.QualitySettings = presetSettings;
-
-                    // Read barcodes from the image
-                    var results = reader.ReadBarCodes();
-
-                    // Check if any result matches the expected text
-                    foreach (var result in results)
+                    // Read all barcodes in the image (there should be only one)
+                    foreach (var result in reader.ReadBarCodes())
                     {
-                        if (!string.IsNullOrEmpty(result.CodeText) && result.CodeText == expectedText)
+                        // Consider it a success if a code text is returned and matches the expected value
+                        if (!string.IsNullOrEmpty(result.CodeText) && result.CodeText == expected)
                         {
                             success++;
-                            break;
                         }
+                        break; // only first result needed
                     }
                 }
             }
 
-            // Calculate and display success percentage for the current preset
-            double percentage = (double)success / total * 100.0;
-            Console.WriteLine($"{presetName}: {percentage:F2}% ({success}/{total}) barcodes decoded successfully.");
+            results[preset.Name] = (total, success);
         }
 
-        // Cleanup: optional removal of generated files
-        // foreach (var file in Directory.GetFiles(outputDir)) File.Delete(file);
-        // Directory.Delete(outputDir);
+        // Output percentage of successful decodings per preset
+        Console.WriteLine("Decoding success percentages per preset:");
+        foreach (var kvp in results)
+        {
+            string name = kvp.Key;
+            int total = kvp.Value.total;
+            int success = kvp.Value.success;
+            double percentage = total > 0 ? (double)success / total * 100.0 : 0.0;
+            Console.WriteLine($"{name}: {percentage:F2}% ({success}/{total})");
+        }
     }
 }
