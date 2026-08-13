@@ -1,72 +1,77 @@
-// Title: Batch generation of MaxiCode barcodes
-// Description: Demonstrates how to generate MaxiCode barcodes for multiple product identifiers and save them as PNG files.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, focusing on complex barcode creation using the ComplexBarcodeGenerator and MaxiCodeStandardCodetext classes. It illustrates typical batch processing scenarios where developers need to produce MaxiCode (Mode 4) images for inventory or shipping labels, saving each barcode as a PNG file for downstream systems.
+// Title: Batch Generation of MaxiCode Barcodes for Product IDs
+// Description: Demonstrates how to generate MaxiCode (Mode 4) barcodes in a batch, saving each as a PNG file to a temporary folder.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on complex barcode symbologies such as MaxiCode. It showcases the use of ComplexBarcodeGenerator together with MaxiCodeStandardCodetext to encode data, and illustrates typical tasks like iterating over a collection of identifiers, handling errors, and saving images in PNG format. Developers working with shipping, logistics, or inventory systems often need to produce MaxiCode symbols programmatically.
 // Prompt: Develop a batch process that generates MaxiCode barcodes for a list of product identifiers.
-// Tags: maxicode, batch, png, complexbarcode, generation, aspnet, csharp
+// Tags: maxicode, batch, barcode generation, png, aspose.barcode, complexbarcode, c#
 
 using System;
-using System.Collections.Generic;
 using System.IO;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.ComplexBarcode;
-using Aspose.BarCode.BarCodeRecognition;
+using Aspose.BarCode;
 
 /// <summary>
-/// Provides a console application that creates MaxiCode barcodes for a collection of product IDs
-/// and stores each barcode as a PNG image in a dedicated output folder.
+/// Provides a console application that creates MaxiCode barcodes for a predefined list of product identifiers.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Iterates over a predefined list of product identifiers,
-    /// generates a MaxiCode (Mode 4) barcode for each, and saves the resulting image to disk.
+    /// Entry point of the application. Generates a MaxiCode barcode for each product ID and saves it as a PNG file.
     /// </summary>
     static void Main()
     {
-        // Define a sample list of product identifiers to be encoded.
-        List<string> productIds = new List<string>
+        // Define a sample collection of product identifiers to be encoded.
+        var productIds = new[]
         {
-            "PROD001",
-            "PROD002",
-            "PROD003",
-            "PROD004",
-            "PROD005"
+            "PROD-001",
+            "PROD-002",
+            "PROD-003",
+            "PROD-004",
+            "PROD-005"
         };
 
-        // Specify the output directory where barcode images will be saved.
-        string outputDir = "MaxiCodeBarcodes";
+        // Create a unique temporary directory where all generated barcode images will be stored.
+        string outputFolder = Path.Combine(Path.GetTempPath(), "MaxiCodeBatch_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputFolder);
+        Console.WriteLine($"Barcodes will be saved to: {outputFolder}");
 
-        // Ensure the output directory exists; create it if it does not.
-        if (!Directory.Exists(outputDir))
+        int index = 1; // Counter used to generate sequential file names.
+
+        // Iterate over each product identifier and generate a corresponding MaxiCode barcode.
+        foreach (var id in productIds)
         {
-            Directory.CreateDirectory(outputDir);
-        }
-
-        // Process each product identifier individually.
-        foreach (string id in productIds)
-        {
-            // Configure the MaxiCode codetext: Mode 4 with the product ID as the message.
-            var maxiCodeCodetext = new MaxiCodeStandardCodetext
+            try
             {
-                Mode = MaxiCodeMode.Mode4,
-                Message = id
-            };
+                // Configure MaxiCode data: use Mode4 (standard) and set the message to the product ID.
+                var maxiCodeData = new MaxiCodeStandardCodetext
+                {
+                    Mode = MaxiCodeMode.Mode4,
+                    Message = id
+                };
 
-            // Initialize the ComplexBarcodeGenerator with the prepared codetext.
-            using (var generator = new ComplexBarcodeGenerator(maxiCodeCodetext))
-            {
-                // Generate the barcode image in memory (required before saving).
-                generator.GenerateBarCodeImage();
+                // Initialise the complex barcode generator with the configured MaxiCode data.
+                using (var generator = new ComplexBarcodeGenerator(maxiCodeData))
+                {
+                    // Generate the barcode image in memory (optional, but ensures the image is ready before saving).
+                    generator.GenerateBarCodeImage();
 
-                // Build the full file path for the PNG output.
-                string filePath = Path.Combine(outputDir, $"MaxiCode_{id}.png");
+                    // Build the full file path for the PNG output, using a zero‑padded index.
+                    string filePath = Path.Combine(outputFolder, $"MaxiCode_{index:D3}.png");
 
-                // Save the generated barcode image to the specified file.
-                generator.Save(filePath);
-
-                // Inform the user that the barcode has been created.
-                Console.WriteLine($"Generated MaxiCode for '{id}' at '{filePath}'.");
+                    // Save the generated barcode image to disk in PNG format.
+                    generator.Save(filePath, BarCodeImageFormat.Png);
+                    Console.WriteLine($"Generated barcode for '{id}' -> {filePath}");
+                }
             }
+            catch (Exception ex)
+            {
+                // Log any errors that occur during barcode generation for the current product ID.
+                Console.WriteLine($"Failed to generate barcode for '{id}': {ex.Message}");
+            }
+
+            index++; // Increment the file name counter.
         }
+
+        Console.WriteLine("Batch processing completed.");
     }
 }

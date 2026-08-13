@@ -1,63 +1,52 @@
 // Title: Generate QR Code with Geographic Coordinates
-// Description: Creates a QR Code containing a geo URI for location sharing and saves it as an image.
-// Category-Description: This example demonstrates Aspose.BarCode's QR code generation and recognition capabilities. It shows how to embed geographic coordinates using the geo URI scheme, configure error correction, and read back the encoded data. Developers working with location-based services, mobile apps, or any scenario requiring QR code sharing of map coordinates will find this pattern useful.
+// Description: Creates a QR Code containing a geo URI for location sharing and saves it as a PNG file.
+// Category-Description: This example demonstrates Aspose.BarCode's QR Code generation capabilities, focusing on embedding location data using the geo: URI scheme. It showcases key API classes such as BarcodeGenerator, EncodeTypes, and QRErrorLevel, and typical use cases like sharing map coordinates via scannable images. Developers working with barcode creation, QR encoding, or mobile location sharing will find this pattern useful.
 // Prompt: Generate QR Code barcode and embed geographic coordinates for location sharing.
-// Tags: qr, geo, barcode, generation, recognition, png, aspose.barcode
+// Tags: qr code, barcode generation, geographic coordinates, location sharing, aspose.barcode, png
 
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
+using Aspose.BarCode;
 
 /// <summary>
-/// Demonstrates how to generate a QR Code containing geographic coordinates,
-/// save it as an image, and then read back the encoded data using Aspose.BarCode.
+/// Demonstrates how to generate a QR Code that encodes geographic coordinates
+/// using the Aspose.BarCode library and save it as a PNG image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a QR Code with a geo URI, saves it,
-    /// and verifies the content by decoding the saved image.
+    /// Entry point of the example. Generates a QR Code containing a geo URI
+    /// and writes the resulting image to a temporary folder.
     /// </summary>
     static void Main()
     {
-        // Define geographic coordinates (example: Eiffel Tower) and build the geo URI.
-        double latitude = 48.8584;
-        double longitude = 2.2945;
-        string geoCodeText = $"geo:{latitude},{longitude}";
+        // Sample geographic coordinates (latitude, longitude)
+        double latitude = 37.7749;
+        double longitude = -122.4194;
 
-        // Generate a QR Code that encodes the geo URI.
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, geoCodeText))
+        // Encode coordinates in the "geo:" URI format commonly used for location sharing
+        string codeText = $"geo:{latitude},{longitude}";
+
+        // Prepare output folder and file path
+        string outputFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
+        Directory.CreateDirectory(outputFolder);
+        string outputFile = Path.Combine(outputFolder, "LocationQR.png");
+
+        // Create QR Code generator with the encoded text
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, codeText))
         {
-            // Use high error correction level to improve scanning reliability.
+            // Set high error correction level to improve readability
             generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
 
-            // Ensure the QR Code uses UTF-8 encoding for the text payload.
-            generator.Parameters.Barcode.QR.ECIEncoding = ECIEncodings.UTF8;
+            // Optional: adjust module size (x-dimension) for better image size
+            generator.Parameters.Barcode.XDimension.Point = 2f;
 
-            // Define the output file name and save the QR Code as a PNG image.
-            string outputPath = "qr_location.png";
-            generator.Save(outputPath);
-            Console.WriteLine($"QR Code saved to: {Path.GetFullPath(outputPath)}");
+            // Save the QR code image as PNG
+            generator.Save(outputFile);
         }
 
-        // Verify that the QR Code image was created before attempting to read it.
-        if (!File.Exists("qr_location.png"))
-        {
-            Console.WriteLine("Generated QR Code image not found.");
-            return;
-        }
-
-        // Read the saved QR Code image and output the decoded text and region.
-        using (BarCodeReader reader = new BarCodeReader("qr_location.png", DecodeType.QR))
-        {
-            foreach (var result in reader.ReadBarCodes())
-            {
-                Console.WriteLine($"Detected QR Code Text: {result.CodeText}");
-                var bounds = result.Region.Rectangle;
-                Console.WriteLine($"Region - X:{bounds.X}, Y:{bounds.Y}, Width:{bounds.Width}, Height:{bounds.Height}");
-            }
-        }
+        Console.WriteLine($"QR code with geographic coordinates saved to: {outputFile}");
+        // Note: QR mask pattern selection is not exposed in the Aspose.BarCode API; the encoder applies optimal masking automatically.
     }
 }

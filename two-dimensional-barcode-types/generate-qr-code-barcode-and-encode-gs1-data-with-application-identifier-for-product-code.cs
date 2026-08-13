@@ -1,65 +1,46 @@
-// Title: Generate QR Code with GS1 Application Identifier (GTIN) and decode it
-// Description: Demonstrates creating a QR Code that encodes GS1 data using the (01) Application Identifier for a product GTIN, then reads it back to verify the content.
-// Category-Description: This example belongs to the Aspose.BarCode QR Code generation and recognition category. It showcases the BarcodeGenerator for QR encoding with GS1 Application Identifiers and the BarCodeReader for decoding. Developers often need to embed standardized product identifiers in QR codes for inventory, logistics, and retail applications, and this snippet illustrates the typical API usage for such scenarios.
+// Title: Generate GS1 QR Code with Product Identifier (GTIN-14)
+// Description: Demonstrates how to create a QR Code barcode that encodes GS1 data using the Application Identifier (01) for a product's GTIN-14 and saves it as a PNG image.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator with EncodeTypes.GS1QR. It shows how to format GS1 data, configure QR error correction, and output the barcode as an image. Developers working on retail, logistics, or inventory systems often need to generate GS1-compliant QR codes for product identification and tracking.
 // Prompt: Generate QR Code barcode and encode GS1 data with Application Identifier for product code.
-// Tags: qr code, gs1, product code, barcode generation, barcode recognition, aspose.barcode
+// Tags: qr code,gs1,gtin-14,barcode generation,aspose.barcode,encode types,output png
 
 using System;
-using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Example program that generates a QR Code containing GS1 product data
-/// and then reads the barcode back to verify its content.
+/// Example program that generates a GS1 QR Code containing a GTIN‑14 product identifier
+/// and saves the result as a PNG image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a QR Code with a GS1 Application Identifier,
-    /// saves it as a PNG file, and then decodes the image to display the extracted information.
+    /// Entry point of the example. Creates a QR Code with GS1 formatting and writes it to disk.
     /// </summary>
-    static void Main()
+    /// <param name="args">Command‑line arguments (not used).</param>
+    static void Main(string[] args)
     {
-        // Path for the generated QR code image
-        const string outputPath = "qr_gs1.png";
+        // Define a sample GTIN‑14 value for the Application Identifier (01). Must be exactly 14 digits.
+        string gtin = "00123456789012";
 
-        // Create a QR code generator with GS1 Application Identifier (01) for a product GTIN
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "(01)01234567890123"))
+        // Build the GS1 formatted string: (01) followed by the GTIN‑14.
+        string gs1CodeText = $"(01){gtin}";
+
+        // Initialize a barcode generator for the GS1 QR symbology.
+        using (var generator = new BarcodeGenerator(EncodeTypes.GS1QR))
         {
-            // Set a high error correction level for better resilience
+            // Assign the GS1 formatted text to the generator.
+            generator.CodeText = gs1CodeText;
+
+            // Optional: increase error correction to the highest level (Level H) for better resilience.
             generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
 
-            // Save the QR code image to a PNG file
+            // Define the output file path and save the barcode as a PNG image.
+            string outputPath = "gs1qr.png";
             generator.Save(outputPath);
-            Console.WriteLine($"QR Code saved to {outputPath}");
-        }
 
-        // Verify the generated QR code by reading it back
-        if (!File.Exists(outputPath))
-        {
-            Console.WriteLine("Error: Generated QR code file not found.");
-            return;
-        }
-
-        // Initialize a reader for QR codes
-        using (var reader = new BarCodeReader(outputPath, DecodeType.QR))
-        {
-            // Use a high-quality preset for reliable detection
-            reader.QualitySettings = QualitySettings.HighQuality;
-
-            // Read all detected barcodes (should be one QR code)
-            var results = reader.ReadBarCodes();
-            foreach (var result in results)
-            {
-                Console.WriteLine($"Detected Type: {result.CodeTypeName}");
-                Console.WriteLine($"Decoded Text: {result.CodeText}");
-
-                // Output the bounding rectangle of the detected barcode
-                var bounds = result.Region.Rectangle;
-                Console.WriteLine($"Region: X={bounds.X}, Y={bounds.Y}, Width={bounds.Width}, Height={bounds.Height}");
-            }
+            // Inform the user where the image was saved.
+            Console.WriteLine($"GS1 QR Code saved to: {outputPath}");
         }
     }
 }

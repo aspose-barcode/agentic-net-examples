@@ -1,53 +1,62 @@
-// Title: Generate QR Code with Calendar Event for Appointment Scheduling
-// Description: Demonstrates creating a QR Code that encodes an iCalendar event, useful for embedding appointment details in a scannable format.
-// Category-Description: This example belongs to the Aspose.BarCode QR code generation category, showcasing how to use BarcodeGenerator, EncodeTypes, and QR-specific parameters such as error correction and ECI encoding. Developers often need to embed structured data like calendar events, URLs, or contact information into QR codes for mobile scanning and automated processing.
+// Title: Generate QR Code with Calendar Event (iCalendar) for Appointment Scheduling
+// Description: Demonstrates how to create a QR Code barcode that encodes an iCalendar event, enabling recipients to add the appointment to their calendars directly from the scanned code.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on QR Code creation with custom data payloads. It showcases the use of BarcodeGenerator, EncodeTypes.QR, and QR-specific parameters such as error correction level and ECI encoding. Developers often need to embed structured information like contact details, URLs, or calendar events into QR codes for seamless data transfer in mobile and web applications.
 // Prompt: Generate QR Code barcode and embed calendar event details for appointment scheduling.
-// Tags: qr code, calendar event, ics, barcode generation, aspnet, aspose.barcode, png output
+// Tags: qr code, calendar, icalendar, barcode generation, aspose.barcode, png output, error correction, eci encoding
 
 using System;
+using System.IO;
+using System.Text;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a QR Code that contains an iCalendar event for appointment scheduling.
+/// Program that generates a QR Code containing an iCalendar event and saves it as a PNG image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Creates a QR Code with calendar details and saves it as a PNG image.
+    /// Entry point. Builds the iCalendar string, configures the QR Code generator, and writes the image to disk.
     /// </summary>
     static void Main()
     {
-        // Define the iCalendar formatted event details
+        // Define calendar event details in iCalendar format
         string calendarEvent = "BEGIN:VCALENDAR\r\n" +
                                "VERSION:2.0\r\n" +
                                "BEGIN:VEVENT\r\n" +
-                               "SUMMARY:Appointment with Dr. Smith\r\n" +
-                               "DTSTART:20230715T090000Z\r\n" +
-                               "DTEND:20230715T093000Z\r\n" +
-                               "LOCATION:Clinic Room 101\r\n" +
-                               "DESCRIPTION:Regular check‑up\r\n" +
+                               "SUMMARY:Meeting with Bob\r\n" +
+                               "DTSTART:20230815T090000Z\r\n" +
+                               "DTEND:20230815T100000Z\r\n" +
+                               "LOCATION:Conference Room\r\n" +
+                               "DESCRIPTION:Discuss project status\r\n" +
                                "END:VEVENT\r\n" +
                                "END:VCALENDAR";
 
-        // Initialize the QR code generator with the calendar event as the payload
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, calendarEvent))
+        // Determine output file path in the current working directory
+        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "appointment_qr.png");
+
+        // Initialize QR Code generator with QR symbology
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR))
         {
-            // Set a high error correction level to improve readability after printing or scanning
+            // Encode the iCalendar text using UTF-8 encoding
+            generator.SetCodeText(calendarEvent, Encoding.UTF8);
+
+            // Set a high error correction level (Level H) for improved readability under adverse conditions
             generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
 
-            // Ensure the payload is encoded using UTF‑8 (ECI) for proper character representation
+            // Specify ECI encoding to ensure the QR code correctly represents UTF-8 characters
             generator.Parameters.Barcode.QR.ECIEncoding = ECIEncodings.UTF8;
 
-            // Optionally increase the module (dot) size for a clearer image
-            generator.Parameters.Barcode.XDimension.Point = 3f;
+            // Optional: display a human‑readable caption below the QR code
+            generator.Parameters.Barcode.CodeTextParameters.TwoDDisplayText = "Meeting with Bob";
 
-            // Save the generated QR code as a PNG file
-            generator.Save("appointment_qr.png");
+            // Save the generated QR code as a PNG image
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user that the QR code has been generated
-        Console.WriteLine("QR code generated: appointment_qr.png");
+        // Inform the user where the QR code image has been saved
+        Console.WriteLine($"QR code saved to: {outputPath}");
     }
 }

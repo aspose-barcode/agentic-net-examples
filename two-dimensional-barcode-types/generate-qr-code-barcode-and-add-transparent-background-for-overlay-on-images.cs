@@ -1,62 +1,82 @@
-// Title: Generate QR Code with Transparent Background for Image Overlay
-// Description: Demonstrates creating a QR Code barcode with a transparent background and compositing it onto a simple image.
-// Category-Description: This example belongs to the Aspose.BarCode image generation and manipulation category. It showcases the use of BarcodeGenerator, EncodeTypes, and drawing classes to produce QR Code barcodes, adjust visual properties like background transparency, and overlay them onto other graphics. Developers often need to embed barcodes into UI elements, marketing materials, or composite images while preserving transparency for seamless integration.
-// Prompt: Generate QR Code barcode and add a transparent background for overlay on images.
-// Tags: qr code, transparent background, image overlay, aspose.barcode, aspose.drawing, png
+// Title: Generate QR Code with Transparent Background and Overlay on Image
+// Description: Demonstrates how to create a QR Code barcode with a transparent background, save it as PNG, and overlay it onto another image using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode generation and image manipulation category. It showcases the BarcodeGenerator class for QR Code creation, the use of Aspose.Drawing for bitmap handling, and typical scenarios such as creating transparent barcodes for UI overlays or composite graphics. Developers often need to generate barcodes with custom backgrounds and combine them with other images for marketing, packaging, or augmented reality applications.
+/// Prompt: Generate QR Code barcode and add a transparent background for overlay on images.
+/// Tags: qr code, barcode generation, transparent background, overlay, png, aspose.barcode, aspose.drawing
 
 using System;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a QR Code with a transparent background and overlaying it onto a background image.
+/// Example program that creates a QR Code with a transparent background
+/// and composites it onto a sample background image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates a background bitmap, generates a QR Code with transparency,
-    /// draws it onto the background, and saves the result as a PNG file.
+    /// Entry point of the example. Generates the QR Code, saves it,
+    /// creates a background bitmap, draws the QR Code onto it, and saves the result.
     /// </summary>
     static void Main()
     {
-        // Path where the final composite image will be saved
-        const string outputPath = "overlay.png";
+        // --------------------------------------------------------------------
+        // Prepare output directory in the system temporary folder
+        // --------------------------------------------------------------------
+        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
+        Directory.CreateDirectory(outputDir);
 
-        // Create a 400x400 pixel background image filled with light gray
-        using (var background = new Bitmap(400, 400))
+        // Define file paths for the generated images
+        string qrPath = Path.Combine(outputDir, "qr_transparent.png");
+        string overlayPath = Path.Combine(outputDir, "qr_overlay.png");
+
+        // --------------------------------------------------------------------
+        // Create QR code generator with a transparent background
+        // --------------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR))
         {
-            using (var graphics = Graphics.FromImage(background))
+            // Set the data to encode
+            generator.CodeText = "https://example.com";
+
+            // Configure a fully transparent background
+            generator.Parameters.BackColor = Aspose.Drawing.Color.Transparent;
+
+            // Optional visual tweaks: black foreground and high error correction level
+            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
+            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
+
+            // Save the QR code directly as a transparent PNG file
+            generator.Save(qrPath, BarCodeImageFormat.Png);
+
+            // ----------------------------------------------------------------
+            // Generate a bitmap of the QR code for further composition
+            // ----------------------------------------------------------------
+            using (Bitmap qrBitmap = generator.GenerateBarCodeImage())
             {
-                graphics.Clear(Aspose.Drawing.Color.LightGray);
-            }
-
-            // Initialize a QR Code generator with the desired data
-            using (var generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
-            {
-                // Set the QR Code background to transparent
-                generator.Parameters.BackColor = Aspose.Drawing.Color.Transparent;
-
-                // Optional: use the highest error correction level for better resilience
-                generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
-
-                // Generate the QR Code as a bitmap image
-                using (var qrBitmap = generator.GenerateBarCodeImage())
+                // Create a sample background image (300x300) with ARGB pixel format
+                using (Bitmap background = new Bitmap(300, 300, PixelFormat.Format32bppArgb))
                 {
-                    // Draw the QR Code onto the background at coordinates (50, 50)
-                    using (var graphics = Graphics.FromImage(background))
+                    // Obtain a graphics object to draw on the background bitmap
+                    using (Graphics g = Graphics.FromImage(background))
                     {
-                        graphics.DrawImage(qrBitmap, 50, 50, qrBitmap.Width, qrBitmap.Height);
+                        // Fill the background with a semi‑transparent light gray color
+                        g.Clear(Aspose.Drawing.Color.FromArgb(200, 200, 200, 200));
+
+                        // Draw the QR code bitmap onto the background at position (50, 50)
+                        g.DrawImage(qrBitmap, new Point(50, 50));
                     }
+
+                    // Save the combined image (background + QR code) as PNG
+                    background.Save(overlayPath, ImageFormat.Png);
                 }
             }
-
-            // Save the combined image as a PNG to preserve transparency
-            background.Save(outputPath, ImageFormat.Png);
         }
 
-        // Inform the user where the file was saved
-        Console.WriteLine($"QR code overlay image saved to: {outputPath}");
+        // Output the locations of the generated files
+        Console.WriteLine($"QR code with transparent background saved to: {qrPath}");
+        Console.WriteLine($"Overlay image saved to: {overlayPath}");
     }
 }

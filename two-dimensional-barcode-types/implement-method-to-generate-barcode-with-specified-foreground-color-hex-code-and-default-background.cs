@@ -1,8 +1,8 @@
-// Title: Generate Code128 barcode with custom foreground color
-// Description: Demonstrates creating a Code128 barcode image, applying a specific foreground color via hex code while using the default background.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to customize barcode appearance using the BarcodeGenerator class and its Parameters.Barcode properties. Typical use cases include branding, UI integration, and printing where specific colors are required. Developers often need to set bar colors, background colors, and output formats for various symbologies.
+// Title: Generate Code128 Barcode with Custom Foreground Color
+// Description: Demonstrates how to create a Code128 barcode image using Aspose.BarCode, applying a user‑specified foreground color supplied as a hex string while keeping the background white.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category. It shows how to configure the BarcodeGenerator, set bar color via System.Drawing.Color, and save the result as an image. Developers working with barcode creation often need to customize colors, choose symbologies, and output PNG/JPEG files. The key classes used are BarcodeGenerator, EncodeTypes, and the Parameters property for visual settings.
 // Prompt: Implement method to generate barcode with specified foreground color hex code and default background.
-// Tags: code128, barcode generation, color customization, png, aspose.barcode, aspose.drawing
+// Tags: barcode, code128, color, hex, generation, aspose.barcode, image, png
 
 using System;
 using System.Globalization;
@@ -10,67 +10,71 @@ using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a Code128 barcode with a custom foreground color.
+/// Example program that generates a barcode image with a custom foreground color.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Parses a hex color string (e.g., "#FF1122" or "FF1122") into an <see cref="Aspose.Drawing.Color"/>.
+    /// Entry point of the application. Generates a Code128 barcode with a red foreground color and saves it to a PNG file.
     /// </summary>
-    /// <param name="hex">Hexadecimal color representation.</param>
-    /// <returns>Corresponding <see cref="Color"/> instance.</returns>
-    /// <exception cref="ArgumentException">Thrown when the input is null, empty, or not in a recognized format.</exception>
-    static Color ParseHexColor(string hex)
+    static void Main()
     {
-        if (string.IsNullOrWhiteSpace(hex))
-            throw new ArgumentException("Hex color string cannot be null or empty.", nameof(hex));
+        // Input data for the barcode
+        string codeText = "123ABC";
+        string hexColor = "#FF0000"; // Red foreground color in hex notation
+        string outputPath = "barcode.png";
 
-        // Remove optional leading '#'
-        hex = hex.TrimStart('#');
-
-        if (hex.Length == 6) // RRGGBB format
+        try
         {
-            int r = int.Parse(hex.Substring(0, 2), NumberStyles.HexNumber);
-            int g = int.Parse(hex.Substring(2, 2), NumberStyles.HexNumber);
-            int b = int.Parse(hex.Substring(4, 2), NumberStyles.HexNumber);
-            return Color.FromArgb(r, g, b);
+            // Generate and save the barcode image
+            GenerateBarcode(codeText, hexColor, outputPath);
+            Console.WriteLine($"Barcode saved to '{outputPath}'.");
         }
-        else if (hex.Length == 8) // AARRGGBB format
+        catch (Exception ex)
         {
-            int a = int.Parse(hex.Substring(0, 2), NumberStyles.HexNumber);
-            int r = int.Parse(hex.Substring(2, 2), NumberStyles.HexNumber);
-            int g = int.Parse(hex.Substring(4, 2), NumberStyles.HexNumber);
-            int b = int.Parse(hex.Substring(6, 2), NumberStyles.HexNumber);
-            return Color.FromArgb(a, r, g, b);
-        }
-        else
-        {
-            throw new ArgumentException("Hex color must be in format RRGGBB or AARRGGBB.", nameof(hex));
+            // Report any errors that occur during generation
+            Console.WriteLine($"Error: {ex.Message}");
         }
     }
 
     /// <summary>
-    /// Entry point. Generates the barcode image and saves it to a file.
+    /// Generates a barcode image with the specified foreground color (hex) and default background.
     /// </summary>
-    static void Main()
+    /// <param name="codeText">Text to encode.</param>
+    /// <param name="hexColor">Foreground color in hex format (e.g., "#RRGGBB" or "RRGGBB").</param>
+    /// <param name="outputPath">File path to save the barcode image.</param>
+    static void GenerateBarcode(string codeText, string hexColor, string outputPath)
     {
-        // Define barcode parameters
-        string codeText = "1234567890";
-        string foregroundHex = "#0066CC"; // Desired foreground (bar) color
-        string outputPath = "barcode.png";
+        // Validate input parameters
+        if (string.IsNullOrEmpty(codeText))
+            throw new ArgumentException("codeText cannot be null or empty.", nameof(codeText));
 
-        // Create and configure the barcode generator
+        if (string.IsNullOrEmpty(hexColor))
+            throw new ArgumentException("hexColor cannot be null or empty.", nameof(hexColor));
+
+        // Remove any leading '#' from the hex string
+        string cleanHex = hexColor.TrimStart('#');
+
+        // Ensure the hex string represents exactly 6 hexadecimal digits (RRGGBB)
+        if (cleanHex.Length != 6)
+            throw new ArgumentException("hexColor must be in the format RRGGBB.", nameof(hexColor));
+
+        // Convert the hex components to integer values
+        int r = int.Parse(cleanHex.Substring(0, 2), NumberStyles.HexNumber);
+        int g = int.Parse(cleanHex.Substring(2, 2), NumberStyles.HexNumber);
+        int b = int.Parse(cleanHex.Substring(4, 2), NumberStyles.HexNumber);
+
+        // Initialize the barcode generator with Code128 symbology
         using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
         {
-            // Apply the custom foreground color parsed from hex
-            generator.Parameters.Barcode.BarColor = ParseHexColor(foregroundHex);
+            // Apply the custom foreground (bar) color
+            generator.Parameters.Barcode.BarColor = Color.FromArgb(255, r, g, b);
 
-            // Background color defaults to white; no explicit setting required
+            // Set the background to the default white color
+            generator.Parameters.BackColor = Color.White;
 
-            // Save the generated barcode as a PNG image
-            generator.Save(outputPath, BarCodeImageFormat.Png);
+            // Save the generated barcode image to the specified path
+            generator.Save(outputPath);
         }
-
-        Console.WriteLine($"Barcode saved to '{outputPath}'.");
     }
 }

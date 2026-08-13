@@ -1,68 +1,88 @@
-// Title: Generate and Validate QR Code Barcode
-// Description: Demonstrates creating a QR Code image and verifying its readability using Aspose.BarCode's generation and recognition APIs.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator for QR Code creation with high error correction, and BarCodeReader for decoding the generated image. Developers commonly use these APIs to embed scannable data in applications and to ensure barcode quality through programmatic validation.
+// Title: Generate QR Code barcode and verify readability with Aspose.BarCode
+// Description: Demonstrates creating a QR Code image, saving it as PNG, and reading it back to confirm that the barcode can be decoded.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, showcasing how to use BarcodeGenerator for QR Code creation and BarCodeReader for decoding. Typical use cases include embedding QR Codes in documents or applications and validating them programmatically. Developers often need to adjust error correction levels, module size, and verify scan results using the same library.
 // Prompt: Generate a QR Code barcode and verify readability with external scanner library.
-// Tags: qr code, generation, recognition, png, aspose.barcode, encode, decode, error-correction
+// Tags: qr code, barcode generation, barcode recognition, png, aspose.barcode, c#
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a QR Code barcode image and validating it using Aspose.BarCode recognition.
+/// Demonstrates QR Code generation and subsequent reading using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a QR Code, saves it as PNG, and reads it back to verify content and quality.
+    /// Entry point. Generates a QR Code image, saves it, reads it back, and cleans up temporary files.
     /// </summary>
     static void Main()
     {
-        // Define the full path for the output PNG file
-        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "qr.png");
+        // Prepare output folder and file path
+        string folderPath = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
+        string filePath = Path.Combine(folderPath, "qr.png");
 
-        // -------------------------------------------------
-        // Generate QR Code
-        // -------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
+        // Ensure the folder exists
+        if (!Directory.Exists(folderPath))
         {
-            // Configure high error correction (Level H) for better resilience
-            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
-
-            // Save the generated barcode as a PNG image
-            generator.Save(outputPath);
+            Directory.CreateDirectory(folderPath);
         }
 
-        // Verify that the image file was successfully created
-        if (!File.Exists(outputPath))
+        // ------------------- Generate QR Code -------------------
+        // Create a BarcodeGenerator for QR encoding with the desired text
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Hello Aspose QR"))
         {
-            Console.WriteLine("Failed to create QR code image.");
+            // Set QR specific parameters (optional)
+            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM; // Medium error correction
+            generator.Parameters.Barcode.XDimension.Point = 3f; // Module size
+
+            // Save the barcode image as PNG
+            generator.Save(filePath, BarCodeImageFormat.Png);
+        }
+
+        // Verify that the file was created
+        if (!File.Exists(filePath))
+        {
+            Console.WriteLine("Failed to generate the QR code image.");
             return;
         }
 
-        // -------------------------------------------------
-        // Read and validate the QR Code
-        // -------------------------------------------------
-        using (var reader = new BarCodeReader(outputPath, DecodeType.QR))
-        {
-            // Apply high-quality settings to improve detection robustness
-            reader.QualitySettings = QualitySettings.HighQuality;
+        // ------------------- Read QR Code -------------------
+        // DecodeType.QR returns a BaseDecodeType instance for QR codes
+        BaseDecodeType decodeType = DecodeType.QR;
 
-            // Iterate through all detected barcodes (should be one in this case)
+        // Use BarCodeReader to decode the generated image
+        using (var reader = new BarCodeReader(filePath, decodeType))
+        {
+            bool anyFound = false;
             foreach (var result in reader.ReadBarCodes())
             {
-                Console.WriteLine($"Barcode Type: {result.CodeTypeName}");
+                anyFound = true;
+                Console.WriteLine($"Detected Barcode Type: {result.CodeTypeName}");
                 Console.WriteLine($"Decoded Text: {result.CodeText}");
                 Console.WriteLine($"Confidence: {result.Confidence}");
                 Console.WriteLine($"Reading Quality: {result.ReadingQuality}");
-
-                // Output the location and size of the detected barcode region
-                var rect = result.Region.Rectangle;
-                Console.WriteLine($"Region - X:{rect.X}, Y:{rect.Y}, Width:{rect.Width}, Height:{rect.Height}");
+                Console.WriteLine();
             }
+
+            if (!anyFound)
+            {
+                Console.WriteLine("No barcode was detected in the generated image.");
+            }
+        }
+
+        // Clean up temporary files (optional)
+        try
+        {
+            File.Delete(filePath);
+            Directory.Delete(folderPath);
+        }
+        catch
+        {
+            // Ignore any cleanup errors
         }
     }
 }

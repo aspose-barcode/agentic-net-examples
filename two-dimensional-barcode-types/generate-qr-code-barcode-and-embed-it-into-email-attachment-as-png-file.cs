@@ -1,65 +1,74 @@
-// Title: Generate QR Code and embed in email attachment
-// Description: Demonstrates creating a QR Code barcode, saving it as a PNG file, and attaching it to an email message stored in a pickup directory.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and email integration category. It showcases the use of BarcodeGenerator (EncodeTypes, QRErrorLevel) to produce QR Code images, and System.Net.Mail (MailMessage, Attachment, SmtpClient) to compose an email with the barcode as an attachment. Developers often need to automate barcode creation and embed them in communications such as emails, reports, or documents; this snippet provides a concise reference for those scenarios.
-/// Prompt: Generate QR Code barcode and embed it into an email attachment as PNG file.
-/// Tags: qr code, barcode generation, email attachment, png, aspose.barcode, smtp
+// Title: Generate QR Code and embed as PNG email attachment
+// Description: Demonstrates creating a QR Code barcode, saving it as a PNG in memory, and attaching it to an email message.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to use BarcodeGenerator (EncodeTypes, QRErrorLevel) and BarCodeImageFormat to produce barcode images. Typical scenarios include embedding barcodes in documents, reports, or communications such as emails. Developers often need to create barcodes on the fly and attach them to messages without writing temporary files to disk.
+// Prompt: Generate QR Code barcode and embed it into an email attachment as PNG file.
+// Tags: qr code, barcode generation, email attachment, png, aspose.barcode, aspose.drawing, smtp
 
 using System;
 using System.IO;
 using System.Net.Mail;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
 /// Example program that generates a QR Code barcode, saves it as a PNG image,
-/// and attaches the image to an email saved in a specified pickup directory.
+/// and attaches it to an email message using <see cref="System.Net.Mail"/>.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
+    /// Entry point that runs the QR code email example.
     /// </summary>
     static void Main()
     {
-        // Define and create the output directory for the PNG and email pickup files
-        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "output");
-        Directory.CreateDirectory(outputDir);
+        GenerateQrAndCreateEmail();
+    }
 
-        // Build the full file path for the QR code image
-        string qrImagePath = Path.Combine(outputDir, "qrcode.png");
+    static void GenerateQrAndCreateEmail()
+    {
+        // Text to encode in QR code
+        const string qrText = "https://example.com";
 
-        // Generate the QR code barcode and save it as a PNG file
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
+        // Create a memory stream to hold the PNG image
+        using (MemoryStream ms = new MemoryStream())
         {
-            // Set the QR code error correction level (optional)
-            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
-            generator.Save(qrImagePath);
-        }
-
-        // Create an email message and attach the generated QR code image
-        using (var message = new MailMessage())
-        {
-            message.From = new MailAddress("sender@example.com");
-            message.To.Add(new MailAddress("recipient@example.com"));
-            message.Subject = "QR Code Attachment";
-            message.Body = "Please find the QR code attached.";
-
-            // Add the PNG file as an attachment to the email
-            using (var attachment = new Attachment(qrImagePath))
+            // Generate QR code and save as PNG into the memory stream
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, qrText))
             {
+                // Optional: set error correction level (LevelM provides a good balance of capacity and resilience)
+                generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
+                generator.Save(ms, BarCodeImageFormat.Png);
+            }
+
+            // Reset stream position before reading so the attachment can read from the beginning
+            ms.Position = 0;
+
+            // Prepare email message
+            using (MailMessage message = new MailMessage())
+            {
+                message.From = new MailAddress("sender@example.com");
+                message.To.Add("recipient@example.com");
+                message.Subject = "QR Code Attachment";
+                message.Body = "Please find the QR code attached.";
+
+                // Attach the PNG image directly from the memory stream
+                Attachment attachment = new Attachment(ms, "qr.png", "image/png");
                 message.Attachments.Add(attachment);
 
-                // Configure SmtpClient to write the email to the pickup directory instead of sending it
-                using (var client = new SmtpClient())
+                // Configure SmtpClient to write the email to a pickup directory (no actual SMTP server needed)
+                string pickupDir = Path.Combine(Path.GetTempPath(), "EmailPickup_" + Guid.NewGuid().ToString("N"));
+                Directory.CreateDirectory(pickupDir);
+
+                using (SmtpClient client = new SmtpClient())
                 {
                     client.DeliveryMethod = SmtpDeliveryMethod.SpecifiedPickupDirectory;
-                    client.PickupDirectoryLocation = outputDir;
+                    client.PickupDirectoryLocation = pickupDir;
                     client.Send(message);
                 }
+
+                Console.WriteLine($"Email with QR code saved to: {pickupDir}");
             }
         }
-
-        // Notify that the process has completed successfully
-        Console.WriteLine("QR code generated and email saved to pickup directory.");
     }
 }

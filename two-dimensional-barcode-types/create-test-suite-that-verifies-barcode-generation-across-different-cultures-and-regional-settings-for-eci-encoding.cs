@@ -1,8 +1,8 @@
-// Title: Barcode Generation and Verification with ECI Encoding Across Cultures
-// Description: Demonstrates generating QR barcodes using ECI encoding for different cultural texts and verifies them by reading back the encoded data.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator, BarCodeReader, and related parameter classes to handle multilingual content via ECI encodings. Developers often need to ensure correct encoding for international applications, making this pattern useful for testing and validation across locales.
+// Title: ECI Encoding Verification Across Cultures for QR Barcodes
+// Description: Demonstrates generating QR barcodes with ECI encoding for various cultures and verifying the decoded text matches the original.
+// Category-Description: Shows how to use Aspose.BarCode's BarcodeGenerator and BarCodeReader to create and read QR codes with ECI encodings. Useful for developers needing locale‑specific barcode generation, testing multilingual support, and ensuring correct encoding/decoding across different character sets. Covers key classes EncodeTypes, QREncodeMode, ECIEncodings, BarCodeImageFormat, and DecodeType.
 // Prompt: Create a test suite that verifies barcode generation across different cultures and regional settings for ECI encoding.
-// Tags: qr, eci, barcode generation, barcode recognition, png, aspose.barcode, aspose.barcode.generation, aspose.barcode.recognition, culture, localization
+// Tags: qr, eci, png, barcodegenerator, barcodereader, aspose.barcode
 
 using System;
 using System.Collections.Generic;
@@ -10,74 +10,74 @@ using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Generates QR barcodes with ECI encoding for various cultures, saves them as PNG files,
-/// and validates the encoded text by reading the barcodes back.
+/// Example program that generates QR barcodes with ECI encoding for multiple cultures,
+/// saves them as PNG files, and validates the decoded text using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the test suite. Executes barcode generation and verification for each test case.
+    /// Entry point of the test suite. Creates barcodes, saves them, reads them back,
+    /// and reports pass/fail results for each culture-specific test case.
     /// </summary>
     static void Main()
     {
-        // Define test cases: culture identifier, sample text, and the corresponding ECI encoding.
+        // Define test cases: culture name, sample text, and the corresponding ECI encoding.
         var testCases = new List<(string Culture, string Text, ECIEncodings Encoding)>
         {
-            ("en-US", "Hello", ECIEncodings.UTF8),
-            ("ja-JP", "こんにちは", ECIEncodings.Shift_JIS),
-            ("ru-RU", "Привет", ECIEncodings.ISO_8859_5),
-            ("ar-SA", "مرحبا", ECIEncodings.ISO_8859_6),
-            ("zh-CN", "你好", ECIEncodings.GB18030)
+            ("Japanese", "こんにちは", ECIEncodings.Shift_JIS),
+            ("Russian", "Привет", ECIEncodings.Win1251),
+            ("Arabic", "مرحبا", ECIEncodings.ISO_8859_6),
+            ("ChineseSimplified", "你好", ECIEncodings.GB2312),
+            ("Greek", "Γειά", ECIEncodings.ISO_8859_7)
         };
 
-        // Ensure the output directory exists for storing generated barcode images.
-        string outputDir = "Barcodes";
-        if (!Directory.Exists(outputDir))
-        {
-            Directory.CreateDirectory(outputDir);
-        }
+        // Create a unique temporary folder for generated barcode images.
+        string outputFolder = Path.Combine(Path.GetTempPath(), "BarcodeECITest_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputFolder);
 
-        // Process each test case: generate, save, read, and verify the barcode.
+        Console.WriteLine($"Barcodes will be saved to: {outputFolder}");
+        Console.WriteLine();
+
+        // Iterate over each test case, generate the barcode, and verify decoding.
         foreach (var (culture, text, encoding) in testCases)
         {
-            // Construct the file path for the current culture's barcode image.
-            string filePath = Path.Combine(outputDir, $"{culture}.png");
+            // Build the file path for the current culture's barcode image.
+            string filePath = Path.Combine(outputFolder, $"{culture}.png");
 
             // Generate a QR barcode with the specified ECI encoding.
             using (var generator = new BarcodeGenerator(EncodeTypes.QR))
             {
-                generator.CodeText = text;
-                generator.Parameters.Barcode.QR.EncodeMode = QREncodeMode.ECIEncoding;
+                generator.Parameters.Barcode.QR.EncodeMode = QREncodeMode.ECI;
                 generator.Parameters.Barcode.QR.ECIEncoding = encoding;
-                generator.Save(filePath);
+                generator.CodeText = text;
+                generator.Save(filePath, BarCodeImageFormat.Png);
             }
 
-            // Read the generated barcode and verify that the decoded text matches the original.
+            // Read back the barcode image and extract the decoded text.
+            string decodedText = null;
             using (var reader = new BarCodeReader(filePath, DecodeType.QR))
             {
-                // Enable automatic detection of the encoding used in the barcode.
-                reader.BarcodeSettings.DetectEncoding = true;
-
-                BarCodeResult[] results = reader.ReadBarCodes();
-                if (results.Length == 0)
+                foreach (var result in reader.ReadBarCodes())
                 {
-                    Console.WriteLine($"[{culture}] No barcode detected.");
-                    continue;
+                    decodedText = result.CodeText;
+                    break; // Expect only one barcode per image.
                 }
+            }
 
-                string decoded = results[0].CodeText;
-                bool match = decoded == text;
-                Console.WriteLine($"[{culture}] Original: \"{text}\" | Decoded: \"{decoded}\" | Match: {match}");
+            // Determine if the decoded text matches the original input.
+            bool passed = decodedText != null && decodedText == text;
+            Console.WriteLine($"{culture} ({encoding}): {(passed ? "PASS" : "FAIL")}");
+            if (!passed)
+            {
+                Console.WriteLine($"  Expected: {text}");
+                Console.WriteLine($"  Decoded : {decodedText ?? "null"}");
             }
         }
 
-        // Optional cleanup: remove generated files and directory.
-        // foreach (var file in Directory.GetFiles(outputDir, "*.png"))
-        // {
-        //     File.Delete(file);
-        // }
-        // Directory.Delete(outputDir);
+        Console.WriteLine();
+        Console.WriteLine("Test suite completed.");
     }
 }

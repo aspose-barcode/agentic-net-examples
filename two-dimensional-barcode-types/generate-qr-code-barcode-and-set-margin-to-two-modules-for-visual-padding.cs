@@ -1,43 +1,50 @@
-// Title: Generate QR Code with custom margin
-// Description: Demonstrates creating a QR Code barcode using Aspose.BarCode and applying a two‑module margin for visual padding.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on QR Code creation and layout customization. It showcases the BarcodeGenerator class, EncodeTypes enumeration, and barcode parameter settings such as XDimension and Padding. Developers use these APIs to produce QR codes with precise sizing and padding for integration into documents, web pages, or printed media.
+// Title: Generate QR Code with Custom Margin Using Aspose.BarCode
+// Description: Demonstrates how to create a QR Code barcode, set the module size, and apply a two‑module quiet‑zone margin for visual padding.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, showcasing how to configure barcode parameters such as XDimension and padding. It uses the BarcodeGenerator and related parameter classes to produce QR Code images, a common task for developers needing to embed machine‑readable data in applications, reports, or web pages. Typical use cases include generating QR codes for URLs, contact information, or product identifiers with precise visual layout control.
 // Prompt: Generate QR Code barcode and set margin to two modules for visual padding.
-// Tags: qr code, barcode generation, margin, padding, aspose.barcode, csharp
+// Tags: qr code, barcode generation, margin, padding, aspose.barcode, png
 
 using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generating a QR Code barcode with a two‑module margin using Aspose.BarCode.
+/// Example program that creates a QR Code barcode, configures its module size,
+/// applies a two‑module quiet‑zone margin, and saves the result as a PNG image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Creates a QR Code, configures module size and padding, and saves the image.
+    /// Entry point of the example. Generates the QR Code and writes the output file path to the console.
     /// </summary>
     static void Main()
     {
-        // Initialize a QR Code generator with the desired text.
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Hello Aspose"))
+        // Define the output file path for the generated PNG image.
+        string outputPath = "qr.png";
+
+        // Initialize a QR Code generator within a using block to ensure proper disposal.
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR))
         {
-            // Set the size of a single QR module (XDimension) to 2 points.
+            // Set the text that will be encoded into the QR Code.
+            generator.CodeText = "Sample QR";
+
+            // Define the size of a single QR module (XDimension) – 2 points per module.
             generator.Parameters.Barcode.XDimension.Point = 2f;
 
-            // Calculate margin equal to two modules (2 * XDimension).
-            float margin = generator.Parameters.Barcode.XDimension.Point * 2f;
+            // Calculate the padding value representing two modules.
+            float twoModules = 2f * generator.Parameters.Barcode.XDimension.Point;
 
-            // Apply the calculated margin to all sides of the barcode.
-            generator.Parameters.Barcode.Padding.Left.Point = margin;
-            generator.Parameters.Barcode.Padding.Top.Point = margin;
-            generator.Parameters.Barcode.Padding.Right.Point = margin;
-            generator.Parameters.Barcode.Padding.Bottom.Point = margin;
+            // Apply the calculated padding to all sides of the barcode (quiet zone).
+            generator.Parameters.Barcode.Padding.Left.Point   = twoModules;
+            generator.Parameters.Barcode.Padding.Top.Point    = twoModules;
+            generator.Parameters.Barcode.Padding.Right.Point  = twoModules;
+            generator.Parameters.Barcode.Padding.Bottom.Point = twoModules;
 
-            // Save the generated QR Code image to a PNG file.
-            generator.Save("qr.png");
+            // Save the configured barcode image as a PNG file.
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user that the QR Code has been generated.
-        Console.WriteLine("QR code generated: qr.png");
+        // Inform the user where the QR Code image has been saved.
+        Console.WriteLine($"QR Code saved to: {outputPath}");
     }
 }

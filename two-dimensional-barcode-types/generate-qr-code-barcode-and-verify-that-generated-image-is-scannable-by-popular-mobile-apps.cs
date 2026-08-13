@@ -1,8 +1,8 @@
-// Title: Generate QR Code and verify its scannability
-// Description: This example creates a QR Code image, saves it, and then reads it back to confirm that mobile apps can decode it.
-// Category-Description: Demonstrates Aspose.BarCode QR Code generation and recognition, covering the BarcodeGenerator, BarCodeReader, and related parameter classes. Typical use cases include creating scannable QR codes for URLs, product information, or authentication, and validating them programmatically. Developers often need to ensure correct error correction levels, image resolution, and successful decoding across devices.
+// Title: Generate and Verify QR Code Barcode with Aspose.BarCode
+// Description: This example creates a QR Code image containing a URL, saves it to a temporary file, and then reads it back to confirm it can be decoded, ensuring the barcode is scannable.
+// Category-Description: Demonstrates Aspose.BarCode barcode generation and recognition for QR Code symbology. It uses BarcodeGenerator to encode data, configures QR error correction, saves the image, and employs BarCodeReader with DecodeType.QR to validate the result. Developers working with QR Code creation, image output, and verification can use this pattern to ensure generated barcodes are readable by mobile scanning apps.
 // Prompt: Generate QR Code barcode and verify that generated image is scannable by popular mobile apps.
-// Tags: qr code, generation, recognition, image, aspose.barcode, encode, decode, barcode symbology, output format
+// Tags: qr code, barcode generation, barcode recognition, image output, aspose.barcode, encode types, decode types
 
 using System;
 using System.IO;
@@ -11,58 +11,58 @@ using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Example program that generates a QR Code barcode, saves it as an image,
-/// and verifies its readability using Aspose.BarCode's recognition engine.
+/// Example program that generates a QR Code, saves it as an image, and verifies its readability.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates the QR Code, writes it to disk, and reads it back to confirm scannability.
+    /// Entry point. Generates a QR Code, writes it to a temporary PNG file, and attempts to decode it.
     /// </summary>
     static void Main()
     {
-        // Define the full path for the output PNG file.
-        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "qr_code.png");
+        // Define the output file path in the system's temporary directory.
+        string outputPath = Path.Combine(Path.GetTempPath(), "qr_test.png");
 
-        // -------------------------------------------------
-        // Generate QR Code barcode
-        // -------------------------------------------------
+        // -------------------- QR Code Generation --------------------
+        // Create a BarcodeGenerator for QR symbology with the desired text (a URL in this case).
         using (var generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
         {
-            // Set a high error correction level (Level H) to improve readability on damaged or low‑quality scans.
-            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
-
-            // Define image resolution (dots per inch). Higher DPI yields a sharper image.
-            generator.Parameters.Resolution = 300;
+            // Configure a moderate error correction level to improve scan reliability.
+            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
 
             // Save the generated barcode image to the specified path.
             generator.Save(outputPath);
         }
 
-        // -------------------------------------------------
-        // Verify the generated barcode by reading it back
-        // -------------------------------------------------
+        // -------------------- Verification of Generated QR Code --------------------
+        // Ensure the image file was created before attempting to read it.
         if (!File.Exists(outputPath))
         {
-            Console.WriteLine($"Failed to create barcode image at {outputPath}");
+            Console.WriteLine("Failed to generate QR Code image.");
             return;
         }
 
-        // Initialize a reader for QR Code type using the saved image.
+        bool decoded = false;
+
+        // Initialize a BarCodeReader to decode QR Code symbols from the saved image.
         using (var reader = new BarCodeReader(outputPath, DecodeType.QR))
         {
-            // Iterate through all detected barcodes (normally one for this example).
+            // Iterate through all detected barcodes (should be one in this case).
             foreach (var result in reader.ReadBarCodes())
             {
-                Console.WriteLine($"Detected Type: {result.CodeTypeName}");
-                Console.WriteLine($"Code Text   : {result.CodeText}");
-                Console.WriteLine($"Confidence  : {result.Confidence}");
-                Console.WriteLine($"ReadingQuality: {result.ReadingQuality}");
-
-                // Output the bounding rectangle of the detected barcode (optional diagnostic info).
-                var bounds = result.Region.Rectangle;
-                Console.WriteLine($"Region      : X={bounds.X}, Y={bounds.Y}, Width={bounds.Width}, Height={bounds.Height}");
+                Console.WriteLine($"Decoded QR Code text: {result.CodeText}");
+                decoded = true;
             }
+        }
+
+        // Report the outcome of the verification step.
+        if (!decoded)
+        {
+            Console.WriteLine("The QR Code could not be decoded. It may not be scannable.");
+        }
+        else
+        {
+            Console.WriteLine("QR Code generation and verification succeeded.");
         }
     }
 }

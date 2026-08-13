@@ -1,84 +1,64 @@
-// Title: Generate QR Code batch and monitor memory usage
-// Description: Demonstrates creating multiple QR Code barcodes while tracking process memory to aid optimization.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use BarcodeGenerator with QR symbology, configure error correction, image size, and monitor memory consumption during large‑scale barcode creation. Developers often need to generate batches of barcodes efficiently and assess memory impact, making this pattern useful for performance tuning and resource‑aware applications.
+// Title: Generate QR Code Batch and Monitor Memory Usage
+// Description: Demonstrates generating multiple QR Code barcodes using Aspose.BarCode and tracking process memory to help optimize large‑scale generation.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to create QR Code barcodes with specific error correction levels, save them as PNG files, and monitor memory consumption during batch processing. It highlights key API classes such as BarcodeGenerator, EncodeTypes, QRErrorLevel, and BarCodeImageFormat, which developers commonly use for high‑volume barcode creation and performance tuning.
 // Prompt: Generate QR Code barcode and monitor memory usage during large batch generation for optimization.
-// Tags: qr code, barcode generation, memory monitoring, batch processing, aspose.barcode, encode types, qrcode
+// Tags: qr code, barcode generation, memory monitoring, batch processing, aspose.barcode, png
 
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
+using System.Diagnostics;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates batch generation of QR Code barcodes while monitoring memory usage.
+/// Example program that generates a batch of QR Code barcodes and reports memory usage after each creation.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates QR codes, saves them to disk, and logs memory statistics.
+    /// Entry point of the application. Creates a temporary folder, generates QR codes, and logs memory consumption.
     /// </summary>
     static void Main()
     {
-        // Define the output folder for generated QR code images.
-        string outputFolder = Path.Combine(Directory.GetCurrentDirectory(), "QrBatch");
-        if (!Directory.Exists(outputFolder))
+        // Create a unique temporary folder for the batch output
+        string outputFolder = Path.Combine(Path.GetTempPath(), "QRBatch_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputFolder);
+        Console.WriteLine($"Output folder: {outputFolder}");
+
+        // Define batch size (safe sample size)
+        const int batchSize = 10;
+
+        // Record initial memory usage
+        long initialMemory = Process.GetCurrentProcess().PrivateMemorySize64;
+        Console.WriteLine($"Initial memory: {initialMemory / 1024 / 1024} MB");
+
+        // Loop to generate each QR code in the batch
+        for (int i = 1; i <= batchSize; i++)
         {
-            Directory.CreateDirectory(outputFolder);
-        }
+            // Prepare code text for this QR code
+            string codeText = $"Sample QR {i}";
 
-        // Sample data to encode into QR codes.
-        List<string> qrTexts = new List<string>
-        {
-            "Sample QR 1",
-            "Sample QR 2",
-            "Sample QR 3",
-            "Sample QR 4",
-            "Sample QR 5"
-        };
-
-        // Obtain the current process to monitor private memory usage.
-        Process currentProcess = Process.GetCurrentProcess();
-
-        Console.WriteLine("Starting QR code batch generation...");
-
-        // Iterate over each text entry and generate a corresponding QR code.
-        for (int i = 0; i < qrTexts.Count; i++)
-        {
-            string text = qrTexts[i];
-            string filePath = Path.Combine(outputFolder, $"qr_{i + 1}.png");
-
-            // Generate QR code with high error correction and specific image dimensions.
-            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, text))
+            // Generate QR code and save to file
+            using (var generator = new BarcodeGenerator(EncodeTypes.QR, codeText))
             {
-                // Set high error correction level (Level H).
+                // Set high error correction level (Level H) for better resilience
                 generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
 
-                // Configure image size using interpolation mode.
-                generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
-                generator.Parameters.ImageWidth.Point = 300f;
-                generator.Parameters.ImageHeight.Point = 300f;
-
-                // Save the generated barcode image to the specified file.
-                generator.Save(filePath);
+                // Determine file path and save as PNG
+                string filePath = Path.Combine(outputFolder, $"qr_{i}.png");
+                generator.Save(filePath, BarCodeImageFormat.Png);
+                Console.WriteLine($"Generated: {filePath}");
             }
 
-            // Force garbage collection to obtain a more accurate memory reading.
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-
-            // Capture memory usage metrics.
-            long privateBytes = currentProcess.PrivateMemorySize64;
-            long gcBytes = GC.GetTotalMemory(forceFullCollection: false);
-
-            // Output generation details and memory statistics.
-            Console.WriteLine($"Generated QR {i + 1}: \"{text}\"");
-            Console.WriteLine($"  File saved to: {filePath}");
-            Console.WriteLine($"  Private memory (bytes): {privateBytes:N0}");
-            Console.WriteLine($"  Managed heap memory (bytes): {gcBytes:N0}");
+            // Measure memory after each generation
+            long currentMemory = Process.GetCurrentProcess().PrivateMemorySize64;
+            long delta = currentMemory - initialMemory;
+            Console.WriteLine($"After {i} items: {currentMemory / 1024 / 1024} MB (Δ {delta / 1024 / 1024} MB)");
         }
 
-        Console.WriteLine("QR code batch generation completed.");
+        // Final memory usage after completing the batch
+        long finalMemory = Process.GetCurrentProcess().PrivateMemorySize64;
+        Console.WriteLine($"Final memory: {finalMemory / 1024 / 1024} MB");
+        Console.WriteLine("Batch generation completed.");
     }
 }

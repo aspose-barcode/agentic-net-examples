@@ -1,118 +1,121 @@
-// Title: Generate QR Code and Read It with Runtime Configuration
-// Description: Demonstrates creating a QR Code barcode using Aspose.BarCode with parameters supplied via command‑line arguments, then reads the barcode back to verify its content.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, showcasing how to use BarcodeGenerator and BarCodeReader classes. Typical use cases include dynamic barcode creation based on runtime settings and immediate validation of the generated image. Developers often need to adjust error correction level, ECI encoding, and visual properties programmatically.
+// Title: Generate QR Code with Runtime Configuration
+// Description: Demonstrates creating a QR Code barcode using Aspose.BarCode, with parameters supplied via command‑line arguments for dynamic configuration.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category. It shows how to use the BarcodeGenerator class together with QR‑specific parameters such as error correction level and ECI encoding. Typical use cases include generating QR codes on the fly in web services or desktop applications where settings are provided at runtime. Developers often need to adjust dimensions, padding, and encoding without recompiling.
 // Prompt: Generate a QR Code barcode and read configuration values at runtime for dynamic settings.
-// Tags: qr code, barcode generation, barcode reading, runtime configuration, aspose.barcode
+// Tags: qr code, barcode generation, runtime configuration, aspose.barcode, encode types, png output
 
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates a QR Code barcode with runtime‑configurable settings
-/// and then reads the generated image to verify its content.
+/// Example program that generates a QR Code barcode using Aspose.BarCode.
+/// Configuration values (code text, error level, ECI encoding, dimensions, padding) can be supplied
+/// via command‑line arguments, allowing dynamic runtime settings.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Accepts optional command‑line arguments to customize the QR Code:
-    /// 0 – code text, 1 – error correction level, 2 – ECI encoding.
+    /// Entry point of the application.
+    /// Parses optional command‑line arguments, configures the QR Code generator, and saves the image as PNG.
     /// </summary>
-    /// <param name="args">Command‑line arguments.</param>
+    /// <param name="args">
+    /// Optional arguments:
+    /// <list type="bullet">
+    ///   <item><description>args[0] – Code text to encode.</description></item>
+    ///   <item><description>args[1] – Error correction level (L, M, Q, H).</description></item>
+    ///   <item><description>args[2] – ECI encoding (e.g., UTF8, UTF16BE, Win1251).</description></item>
+    ///   <item><description>args[3] – X dimension in points (float).</description></item>
+    ///   <item><description>args[4] – Padding in points (float).</description></item>
+    /// </list>
+    /// </param>
     static void Main(string[] args)
     {
-        // Default barcode parameters
-        string codeText = "Hello Aspose QR";
+        // Default configuration values
+        string codeText = "Hello, World!";
         QRErrorLevel errorLevel = QRErrorLevel.LevelM;
-        ECIEncodings? eciEncoding = null;
+        ECIEncodings eciEncoding = ECIEncodings.UTF8;
+        float xDimension = 2f; // points
+        float padding = 5f; // points
 
-        // --------------------------------------------------------------------
-        // Parse command‑line arguments (if any) to override defaults
-        // --------------------------------------------------------------------
+        // -----------------------------------------------------------------
+        // Parse command‑line arguments if provided
+        // -----------------------------------------------------------------
+        // args[0] = code text
+        // args[1] = error level (L, M, Q, H)
+        // args[2] = ECI encoding (UTF8, UTF16BE, Win1251, etc.)
+        // args[3] = X dimension (float)
+        // args[4] = padding (float)
         if (args.Length > 0 && !string.IsNullOrWhiteSpace(args[0]))
-        {
             codeText = args[0];
-        }
 
         if (args.Length > 1 && !string.IsNullOrWhiteSpace(args[1]))
-        {
-            if (Enum.TryParse<QRErrorLevel>(args[1], true, out var parsedLevel))
-            {
-                errorLevel = parsedLevel;
-            }
-            else
-            {
-                Console.WriteLine($"Invalid QR error level '{args[1]}', using default LevelM.");
-            }
-        }
+            errorLevel = ParseErrorLevel(args[1], errorLevel);
 
         if (args.Length > 2 && !string.IsNullOrWhiteSpace(args[2]))
-        {
-            if (Enum.TryParse<ECIEncodings>(args[2], true, out var parsedEci))
-            {
-                eciEncoding = parsedEci;
-            }
-            else
-            {
-                Console.WriteLine($"Invalid ECI encoding '{args[2]}', ignoring.");
-            }
-        }
+            eciEncoding = ParseEciEncoding(args[2], eciEncoding);
 
-        // Output file for the generated barcode image
-        string outputPath = "qr.png";
+        if (args.Length > 3 && float.TryParse(args[3], out float xDimParsed))
+            xDimension = xDimParsed;
 
-        // --------------------------------------------------------------------
-        // Generate QR Code using Aspose.BarCode
-        // --------------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, codeText))
+        if (args.Length > 4 && float.TryParse(args[4], out float padParsed))
+            padding = padParsed;
+
+        // -----------------------------------------------------------------
+        // Prepare output file path
+        // -----------------------------------------------------------------
+        string outputPath = Path.Combine(Path.GetTempPath(), "qr_generated.png");
+
+        // -----------------------------------------------------------------
+        // Create and configure the QR Code generator
+        // -----------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR))
         {
-            // Apply dynamic settings based on parsed arguments
+            // Set the data to encode
+            generator.CodeText = codeText;
+
+            // QR‑specific settings
             generator.Parameters.Barcode.QR.ErrorLevel = errorLevel;
-            if (eciEncoding.HasValue)
-            {
-                generator.Parameters.Barcode.QR.ECIEncoding = eciEncoding.Value;
-            }
+            generator.Parameters.Barcode.QR.ECIEncoding = eciEncoding;
 
-            // Optional visual customizations
-            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-            generator.Parameters.BackColor = Aspose.Drawing.Color.White;
-            generator.Parameters.ImageWidth.Point = 300f;   // Width in points
-            generator.Parameters.ImageHeight.Point = 300f; // Height in points
+            // General barcode settings
+            generator.Parameters.Barcode.XDimension.Point = xDimension;
+            generator.Parameters.Barcode.Padding.Left.Point = padding;
+            generator.Parameters.Barcode.Padding.Top.Point = padding;
+            generator.Parameters.Barcode.Padding.Right.Point = padding;
+            generator.Parameters.Barcode.Padding.Bottom.Point = padding;
 
-            // Save the barcode image to PNG format
+            // Save the barcode image as PNG
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // --------------------------------------------------------------------
-        // Verify that the image file was created successfully
-        // --------------------------------------------------------------------
-        if (!File.Exists(outputPath))
+        Console.WriteLine($"QR Code generated at: {outputPath}");
+    }
+
+    // Convert string like "L", "M", "Q", "H" to QRErrorLevel enum
+    private static QRErrorLevel ParseErrorLevel(string value, QRErrorLevel fallback)
+    {
+        return value.ToUpperInvariant() switch
         {
-            Console.WriteLine($"Failed to create barcode image at '{outputPath}'.");
-            return;
-        }
+            "L" => QRErrorLevel.LevelL,
+            "M" => QRErrorLevel.LevelM,
+            "Q" => QRErrorLevel.LevelQ,
+            "H" => QRErrorLevel.LevelH,
+            _ => fallback,
+        };
+    }
 
-        // --------------------------------------------------------------------
-        // Read and decode the generated QR Code to confirm its content
-        // --------------------------------------------------------------------
-        using (var reader = new BarCodeReader(outputPath, DecodeType.QR))
+    // Convert string to ECIEncodings enum; fallback to provided default if unknown
+    private static ECIEncodings ParseEciEncoding(string value, ECIEncodings fallback)
+    {
+        // Supported names are the enum member names (case‑insensitive)
+        foreach (ECIEncodings enc in Enum.GetValues(typeof(ECIEncodings)))
         {
-            // Use a high‑quality preset for robust reading
-            reader.QualitySettings = QualitySettings.HighQuality;
-
-            foreach (var result in reader.ReadBarCodes())
-            {
-                Console.WriteLine($"Detected Type : {result.CodeTypeName}");
-                Console.WriteLine($"Decoded Text  : {result.CodeText}");
-                Console.WriteLine($"Confidence    : {result.Confidence}");
-                Console.WriteLine($"ReadingQuality: {result.ReadingQuality}");
-
-                // Region bounds (optional diagnostic information)
-                var bounds = result.Region.Rectangle;
-                Console.WriteLine($"Region Bounds : X={bounds.X}, Y={bounds.Y}, W={bounds.Width}, H={bounds.Height}");
-            }
+            if (enc.ToString().Equals(value, StringComparison.OrdinalIgnoreCase))
+                return enc;
         }
+        return fallback;
     }
 }

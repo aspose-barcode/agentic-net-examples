@@ -1,52 +1,87 @@
-// Title: DataMatrix barcode generation with exception handling for oversized code text
-// Description: Demonstrates how to generate a DataMatrix barcode and catch the exception when the provided code text exceeds the maximum capacity of the selected symbol size.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, focusing on DataMatrix symbology. It showcases the use of BarcodeGenerator, EncodeTypes, and DataMatrixVersion classes to control symbol size and handle capacity limits. Developers often need to validate code text length against symbol constraints and gracefully handle overflow errors.
+// Title: Handle DataMatrix capacity overflow with exception handling
+// Description: Demonstrates generating a DataMatrix barcode, detecting when the supplied CodeText exceeds the capacity of a selected symbol size, and falling back to automatic size selection.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on DataMatrix symbology. It showcases the use of BarcodeGenerator, EncodeTypes, and DataMatrixVersion classes to control symbol size, handle capacity limits, and implement fallback logic. Developers often need to generate DataMatrix codes of a specific size or automatically select the optimal size while gracefully handling overflow errors.
 // Prompt: Handle exception when CodeText exceeds maximum capacity for the selected DataMatrix symbol size.
-// Tags: datamatrix, exception handling, barcode generation, aspose.barcode, code text capacity
+// Tags: datamatrix, barcode, exception handling, capacity, autosize, aspose.barcode, generation, png
 
 using System;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Generates a DataMatrix barcode and demonstrates exception handling when the code text exceeds the selected symbol's capacity.
+/// Demonstrates handling of capacity overflow when generating a DataMatrix barcode using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates a DataMatrix barcode with an intentionally oversized code text,
-    /// forces a small symbol size, and captures the resulting <see cref="BarCodeException"/>.
+    /// Entry point. Attempts to generate a DataMatrix barcode with a fixed small version, catches capacity overflow, and retries with automatic sizing.
     /// </summary>
     static void Main()
     {
-        // Define the output file path for the generated barcode image.
-        const string outputPath = "datamatrix.png";
+        // Create a code text that exceeds the capacity of a small 10x10 DataMatrix symbol.
+        string longCodeText = new string('A', 200);
 
-        // Create a code text that is intentionally too long for a small DataMatrix symbol (2000 characters).
-        string longCodeText = new string('A', 2000);
+        // Choose a small DataMatrix version to intentionally cause overflow.
+        DataMatrixVersion smallVersion = DataMatrixVersion.ECC200_10x10;
 
-        // Initialize the barcode generator with DataMatrix symbology and the oversized code text.
-        using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, longCodeText))
+        // Define output file paths in the system's temporary directory.
+        string tempDir = Path.GetTempPath();
+        string outputPath = Path.Combine(tempDir, "DataMatrix_Small.png");
+        string fallbackPath = Path.Combine(tempDir, "DataMatrix_Auto.png");
+
+        Console.WriteLine("Attempting to generate DataMatrix with fixed size {0}...", smallVersion);
+
+        // Try generating the barcode with the small version.
+        bool success = GenerateDataMatrix(longCodeText, smallVersion, outputPath);
+
+        if (!success)
         {
-            // Force a small symbol size (10x10) to trigger a capacity overflow.
-            generator.Parameters.Barcode.DataMatrix.DataMatrixVersion = DataMatrixVersion.ECC200_10x10;
+            // If generation fails due to capacity limits, retry with automatic version selection.
+            Console.WriteLine("Generation failed due to code text exceeding symbol capacity.");
+            Console.WriteLine("Retrying with automatic size selection (Version.Auto)...");
+            GenerateDataMatrix(longCodeText, DataMatrixVersion.Auto, fallbackPath);
+        }
 
-            // Enable throwing an exception when the code text does not fit the selected symbol.
-            generator.Parameters.Barcode.ThrowExceptionWhenCodeTextIncorrect = true;
+        Console.WriteLine("Execution completed.");
+    }
 
-            try
+    /// <summary>
+    /// Generates a DataMatrix barcode with the specified version.
+    /// Returns true if generation succeeds; false if an exception occurs due to capacity limits.
+    /// </summary>
+    /// <param name="codeText">The text to encode in the barcode.</param>
+    /// <param name="version">The DataMatrix version (symbol size) to use.</param>
+    /// <param name="outputFile">The file path where the barcode image will be saved.</param>
+    /// <returns>True if the barcode is generated successfully; otherwise, false.</returns>
+    static bool GenerateDataMatrix(string codeText, DataMatrixVersion version, string outputFile)
+    {
+        try
+        {
+            // Initialize the barcode generator for DataMatrix encoding.
+            using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, codeText))
             {
-                // Attempt to save the barcode image; this will throw if the code text exceeds capacity.
-                generator.Save(outputPath, BarCodeImageFormat.Png);
-                Console.WriteLine($"Barcode successfully saved to '{outputPath}'.");
+                // Set the desired DataMatrix version (symbol size).
+                generator.Parameters.Barcode.DataMatrix.Version = version;
+
+                // Configure optional padding around the barcode.
+                generator.Parameters.Barcode.Padding.Left.Point = 5f;
+                generator.Parameters.Barcode.Padding.Top.Point = 5f;
+                generator.Parameters.Barcode.Padding.Right.Point = 5f;
+                generator.Parameters.Barcode.Padding.Bottom.Point = 5f;
+
+                // Save the generated barcode as a PNG image.
+                generator.Save(outputFile, BarCodeImageFormat.Png);
+                Console.WriteLine("Barcode saved to: " + outputFile);
+                return true;
             }
-            catch (BarCodeException ex)
-            {
-                // Handle the overflow situation gracefully by outputting the error details.
-                Console.WriteLine("Error generating DataMatrix barcode:");
-                Console.WriteLine(ex.Message);
-            }
+        }
+        catch (Exception ex)
+        {
+            // Capture any exception (e.g., capacity overflow) and report the error.
+            Console.WriteLine("Error: " + ex.Message);
+            return false;
         }
     }
 }

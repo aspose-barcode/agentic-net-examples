@@ -1,8 +1,8 @@
 // Title: Barcode Generation with Retry Queue
-// Description: Demonstrates generating barcodes using Aspose.BarCode with a retry mechanism for failed tasks.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use the BarcodeGenerator class together with EncodeTypes to create barcode images. It illustrates typical use cases such as batch processing, error handling, and implementing a retry queue for transient failures. Developers working with barcode creation, image output, and robust task processing will find this pattern useful.
+// Description: Demonstrates how to generate barcodes using Aspose.BarCode with a retry mechanism that reprocesses failed tasks after a configurable delay.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing the use of BarcodeGenerator, EncodeTypes, and error handling patterns. Developers often need to batch‑process barcode creation and handle transient failures, such as unsupported symbologies or I/O issues. The sample illustrates typical retry logic, configurable delays, and maximum attempt limits useful in automated pipelines.
 // Prompt: Implement a retry queue that reprocesses failed barcode generation tasks after a configurable delay.
-// Tags: barcode, symbology, generation, retry, async, png, aspose.barcode
+// Tags: barcode, symbology, generation, retry, delay, aspose.barcode, encode-types, exception-handling
 
 using System;
 using System.Collections.Generic;
@@ -13,104 +13,111 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Sample program that generates barcodes and retries failed tasks using a configurable delay.
+/// Represents a single barcode generation task with symbology, data, and output location.
 /// </summary>
+class BarcodeTask
+{
+    public string SymbologyName { get; }
+    public string CodeText { get; }
+    public string OutputPath { get; }
+
+    public BarcodeTask(string symbologyName, string codeText, string outputPath)
+    {
+        SymbologyName = symbologyName;
+        CodeText = codeText;
+        OutputPath = outputPath;
+    }
+}
+
 class Program
 {
-    // Configuration constants
-    private const int MaxRetryCount = 2;               // Maximum number of retry attempts per task
-    private const int RetryDelayMilliseconds = 500;    // Delay between retries in milliseconds
+    // Configurable delay in milliseconds between retries
+    const int RetryDelayMs = 2000;
+
+    // Maximum number of attempts per task
+    const int MaxAttempts = 3;
 
     /// <summary>
-    /// Simple data structure representing a barcode generation task.
+    /// Entry point of the program that processes a list of barcode tasks with retry logic.
     /// </summary>
-    private class BarcodeTask
-    {
-        public string SymbologyName { get; set; }   // e.g., "Code128"
-        public string CodeText { get; set; }        // Text to encode into the barcode
-        public string OutputPath { get; set; }      // Destination file path for the generated image
-    }
-
-    /// <summary>
-    /// Entry point of the program. Prepares sample tasks and processes each with retry logic.
-    /// </summary>
-    /// <param name="args">Command‑line arguments (not used).</param>
     static async Task Main(string[] args)
     {
-        // Define a collection of sample barcode tasks, including intentional failures
+        // Define a collection of sample barcode generation tasks
         var tasks = new List<BarcodeTask>
         {
-            new BarcodeTask { SymbologyName = "Code128", CodeText = "ABC123", OutputPath = "code128_1.png" },
-            new BarcodeTask { SymbologyName = "QRCode", CodeText = "https://example.com", OutputPath = "qr_1.png" },
-            // Invalid symbology to trigger a failure
-            new BarcodeTask { SymbologyName = "InvalidSymbology", CodeText = "FAIL", OutputPath = "invalid.png" },
-            // Valid symbology but empty code text (may cause an exception)
-            new BarcodeTask { SymbologyName = "Code128", CodeText = "", OutputPath = "code128_empty.png" }
+            new BarcodeTask("Code128", "123ABC", Path.Combine(Path.GetTempPath(), "barcode1.png")),
+            new BarcodeTask("QR", "https://example.com", Path.Combine(Path.GetTempPath(), "barcode2.png")),
+            // This task uses an invalid symbology name and will trigger the error handling path
+            new BarcodeTask("InvalidSymbology", "Test", Path.Combine(Path.GetTempPath(), "barcode3.png"))
         };
 
         // Process each task sequentially, awaiting completion before moving to the next
         foreach (var task in tasks)
         {
-            await ProcessBarcodeTaskAsync(task);
+            await ProcessTaskAsync(task);
         }
 
         Console.WriteLine("All tasks processed.");
     }
 
     /// <summary>
-    /// Generates a barcode for the specified task, retrying on failure up to <see cref="MaxRetryCount"/>.
+    /// Generates a barcode for the specified task, applying retry logic on failure.
     /// </summary>
     /// <param name="task">The barcode generation task to process.</param>
-    private static async Task ProcessBarcodeTaskAsync(BarcodeTask task)
+    static async Task ProcessTaskAsync(BarcodeTask task)
     {
-        int attempt = 0;
-
-        // Retry loop: continue until success or retry limit reached
-        while (attempt <= MaxRetryCount)
+        // Resolve the symbology name to a BaseEncodeType enum value using reflection
+        var field = typeof(EncodeTypes).GetField(task.SymbologyName);
+        if (field == null)
         {
+            Console.WriteLine($"[Error] Unknown symbology: {task.SymbologyName}. Skipping task.");
+            return;
+        }
+
+        var encodeType = (BaseEncodeType)field.GetValue(null);
+        int attempt = 0;
+        bool success = false;
+
+        // Retry loop: continue until success or maximum attempts reached
+        while (attempt < MaxAttempts && !success)
+        {
+            attempt++;
             try
             {
-                // Resolve the symbology name to a BaseEncodeType enum value using reflection
-                var field = typeof(EncodeTypes).GetField(task.SymbologyName, BindingFlags.Public | BindingFlags.Static);
-                if (field == null)
-                    throw new ArgumentException($"Unknown symbology: {task.SymbologyName}");
-
-                var encodeType = (BaseEncodeType)field.GetValue(null);
-
-                // Ensure the output directory exists
-                var directory = Path.GetDirectoryName(task.OutputPath);
-                if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
-                    Directory.CreateDirectory(directory);
-
-                // Create the barcode generator, configure parameters, and save the image
-                using (var generator = new BarcodeGenerator(encodeType))
+                // Create a barcode generator with the resolved symbology and provided data
+                using (var generator = new BarcodeGenerator(encodeType, task.CodeText))
                 {
-                    generator.CodeText = task.CodeText;
-                    // Example of setting a simple parameter (optional)
+                    // Optional: set a barcode parameter (e.g., X-dimension)
                     generator.Parameters.Barcode.XDimension.Point = 2f;
-                    generator.Save(task.OutputPath, BarCodeImageFormat.Png);
+                    // Save the generated barcode image to the specified path
+                    generator.Save(task.OutputPath);
                 }
 
-                Console.WriteLine($"Successfully generated: {task.OutputPath}");
-                break; // Exit loop on success
+                Console.WriteLine($"[Success] Generated barcode '{task.OutputPath}' on attempt {attempt}.");
+                success = true;
             }
-            catch (Exception ex) when (ex is BarCodeException || ex is ArgumentException)
+            catch (BarCodeException ex)
             {
-                attempt++;
-
-                if (attempt > MaxRetryCount)
+                // Handle known barcode generation errors and schedule a retry if attempts remain
+                Console.WriteLine($"[Warning] Attempt {attempt} failed for '{task.OutputPath}': {ex.Message}");
+                if (attempt < MaxAttempts)
                 {
-                    // Exhausted retries – log failure
-                    Console.WriteLine($"Failed to generate {task.OutputPath} after {MaxRetryCount} retries. Error: {ex.Message}");
-                    break;
-                }
-                else
-                {
-                    // Log retry attempt and wait before next try
-                    Console.WriteLine($"Attempt {attempt} failed for {task.OutputPath}. Retrying in {RetryDelayMilliseconds} ms. Error: {ex.Message}");
-                    await Task.Delay(RetryDelayMilliseconds);
+                    Console.WriteLine($"Waiting {RetryDelayMs} ms before retry...");
+                    await Task.Delay(RetryDelayMs);
                 }
             }
+            catch (Exception ex)
+            {
+                // Unexpected errors are logged and not retried
+                Console.WriteLine($"[Error] Unexpected error on attempt {attempt} for '{task.OutputPath}': {ex.Message}");
+                break;
+            }
+        }
+
+        // Log final failure if all attempts were exhausted without success
+        if (!success)
+        {
+            Console.WriteLine($"[Failure] Could not generate barcode for '{task.OutputPath}' after {MaxAttempts} attempts.");
         }
     }
 }

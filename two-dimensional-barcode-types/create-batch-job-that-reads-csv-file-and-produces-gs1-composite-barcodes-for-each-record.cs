@@ -1,88 +1,111 @@
-// Title: Batch generation of GS1 Composite barcodes from CSV
-// Description: Reads a CSV file where each line contains a GS1 Composite codetext and creates a PNG barcode image for each record.
-// Category-Description: Demonstrates Aspose.BarCode batch processing for GS1 Composite symbology. Shows how to use BarcodeGenerator, configure linear and 2D components, and save images. Useful for developers automating barcode creation from data sources such as CSV, databases, or APIs.
+// Title: Batch Generation of GS1 Composite Barcodes from CSV
+// Description: Demonstrates reading a CSV file and creating a GS1 Composite barcode for each record, saving them as PNG images.
+// Category-Description: This example belongs to the Aspose.BarCode batch processing category. It showcases how to use the BarcodeGenerator class with EncodeTypes.GS1CompositeBar, configure linear and 2D components, and output images. Typical use cases include generating product barcodes in bulk for inventory, shipping, or retail labeling. Developers often need to read data sources, build GS1‑compliant codetext, and automate image creation.
 // Prompt: Create a batch job that reads a CSV file and produces GS1 Composite barcodes for each record.
-// Tags: gs1 composite, barcode generation, csv batch, png output, aspose.barcode, encoding
+// Tags: gs1 composite, barcode generation, csv processing, aspose barcode, png output, batch processing
 
 using System;
 using System.IO;
-using System.Collections.Generic;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 
 /// <summary>
-/// Program entry point for generating GS1 Composite barcodes from a CSV file.
+/// Demonstrates batch creation of GS1 Composite barcodes from a CSV file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Reads the CSV file (or creates a sample), generates a barcode for each line, and saves PNG images to the output folder.
+    /// Entry point that creates a temporary workspace, generates a sample CSV,
+    /// reads each record, builds the GS1 Composite codetext, and saves the barcode images.
     /// </summary>
-    /// <param name="args">Command‑line arguments; first argument can specify the CSV file path.</param>
+    /// <param name="args">Command‑line arguments (not used).</param>
     static void Main(string[] args)
     {
-        // Determine CSV file path (first argument or default)
-        string csvPath = args.Length > 0 ? args[0] : "input.csv";
+        // Create a unique temporary working directory
+        string workDir = Path.Combine(Path.GetTempPath(), "Gs1CompositeBatch_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(workDir);
 
-        // If the CSV does not exist, create a small sample file
+        // Paths for the sample CSV input and the output folder for barcodes
+        string csvPath = Path.Combine(workDir, "input.csv");
+        string outputDir = Path.Combine(workDir, "Barcodes");
+        Directory.CreateDirectory(outputDir);
+
+        // Generate a small sample CSV file (GTIN,Serial) with 5 records
+        using (var writer = new StreamWriter(csvPath))
+        {
+            writer.WriteLine("00123456789012,ABC001");
+            writer.WriteLine("00123456789013,ABC002");
+            writer.WriteLine("00123456789014,ABC003");
+            writer.WriteLine("00123456789015,ABC004");
+            writer.WriteLine("00123456789016,ABC005");
+        }
+
+        // Verify the CSV file exists
         if (!File.Exists(csvPath))
         {
-            Console.WriteLine($"CSV file not found at '{csvPath}'. Creating sample file.");
-            var sampleLines = new List<string>
-            {
-                // Each line contains the full GS1 Composite codetext (linear|2D)
-                "(01)00123456789012|(21)A12345678",
-                "(01)00012345678905|(21)B98765432",
-                "(01)01234567890128|(21)C11223344"
-            };
-            File.WriteAllLines(csvPath, sampleLines);
+            Console.WriteLine("CSV file not found: " + csvPath);
+            return;
         }
 
-        // Prepare output directory
-        string outputDir = "output";
-        if (!Directory.Exists(outputDir))
-        {
-            Directory.CreateDirectory(outputDir);
-        }
-
-        // Read all non‑empty lines from the CSV
-        string[] lines = File.ReadAllLines(csvPath);
+        // Process each record and generate a GS1 Composite barcode
         int index = 1;
-        foreach (string rawLine in lines)
+        using (var reader = new StreamReader(csvPath))
         {
-            string line = rawLine.Trim();
-            if (string.IsNullOrEmpty(line))
-                continue; // skip empty lines
-
-            // The line is expected to be the full GS1 Composite codetext
-            string codeText = line;
-
-            // Generate the barcode
-            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.GS1CompositeBar, codeText))
+            while (!reader.EndOfStream)
             {
-                // Configure linear and 2D components
-                generator.Parameters.Barcode.GS1CompositeBar.LinearComponentType = EncodeTypes.GS1Code128;
-                generator.Parameters.Barcode.GS1CompositeBar.TwoDComponentType = TwoDComponentType.CC_A;
+                string line = reader.ReadLine();
+                if (string.IsNullOrWhiteSpace(line))
+                    continue; // Skip empty lines
 
-                // Optional: enforce GS1 encoding for the 2D component
-                generator.Parameters.Barcode.GS1CompositeBar.AllowOnlyGS1Encoding = true;
+                string[] parts = line.Split(',');
+                if (parts.Length < 2)
+                {
+                    Console.WriteLine($"Skipping malformed line {index}: {line}");
+                    continue;
+                }
 
-                // Set visual parameters
-                generator.Parameters.Barcode.XDimension.Pixels = 3f;
-                generator.Parameters.Barcode.BarHeight.Pixels = 100f;
-                generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-                generator.Parameters.BackColor = Aspose.Drawing.Color.White;
+                string gtin = parts[0].Trim();   // Must be 14 digits for AI (01)
+                string serial = parts[1].Trim(); // Example serial number for AI (21)
 
-                // Save the image
-                string outputPath = Path.Combine(outputDir, $"barcode_{index}.png");
-                generator.Save(outputPath);
-                Console.WriteLine($"Saved barcode #{index} to '{outputPath}'.");
+                // Basic validation of GTIN length; pad with leading zeros if necessary
+                if (gtin.Length < 14)
+                    gtin = gtin.PadLeft(14, '0');
+                else if (gtin.Length > 14)
+                {
+                    Console.WriteLine($"GTIN length exceeds 14 digits on line {index}: {gtin}");
+                    continue;
+                }
+
+                // Build the GS1 Composite codetext using '|' as the separator
+                string codeText = $"(01){gtin}|(21){serial}";
+
+                // Define output file name
+                string outputPath = Path.Combine(outputDir, $"barcode_{index:D3}.png");
+
+                // Generate the barcode
+                using (var generator = new BarcodeGenerator(EncodeTypes.GS1CompositeBar, codeText))
+                {
+                    // Set linear component to GS1 Code128
+                    generator.Parameters.Barcode.GS1CompositeBar.LinearComponentType = EncodeTypes.GS1Code128;
+
+                    // Set 2D component type (CC_A is a MicroPDF417 variant)
+                    generator.Parameters.Barcode.GS1CompositeBar.TwoDComponentType = TwoDComponentType.CC_A;
+
+                    // Optional visual parameters
+                    generator.Parameters.Barcode.XDimension.Pixels = 3f;
+                    generator.Parameters.Barcode.BarHeight.Pixels = 100f;
+                    generator.Parameters.Barcode.Pdf417.AspectRatio = 3f;
+
+                    // Save the barcode image as PNG
+                    generator.Save(outputPath);
+                }
+
+                Console.WriteLine($"Generated barcode {index}: {outputPath}");
+                index++;
             }
-
-            index++;
         }
 
-        Console.WriteLine("Processing completed.");
+        Console.WriteLine("Barcode generation completed.");
+        Console.WriteLine("All files are located in: " + workDir);
     }
 }

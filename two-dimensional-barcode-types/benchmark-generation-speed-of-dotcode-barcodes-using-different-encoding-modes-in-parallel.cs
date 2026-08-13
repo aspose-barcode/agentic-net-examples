@@ -1,92 +1,78 @@
-// Title: Benchmark DotCode barcode generation speed across encoding modes in parallel
-// Description: Demonstrates measuring the time required to generate DotCode barcodes using various encoding modes, running each mode concurrently.
-// Category-Description: This example belongs to the Aspose.BarCode generation performance category. It showcases the use of BarcodeGenerator, EncodeTypes, and DotCodeEncodeMode to create DotCode symbols. Developers often need to benchmark different encoding settings to choose the optimal configuration for high‑throughput applications, such as bulk label printing or real‑time scanning systems.
+// Title: Benchmark DotCode barcode generation speed across encoding modes
+// Description: Demonstrates measuring the time required to generate DotCode barcodes using various encoding modes, useful for performance tuning.
+// Category-Description: This example belongs to the Aspose.BarCode performance benchmarking category, showcasing how to use BarcodeGenerator with DotCode symbology, configure encoding modes, and run parallel benchmarks. Developers often need to compare generation speed for different settings to optimize high‑throughput applications.
 // Prompt: Benchmark generation speed of DotCode barcodes using different encoding modes in parallel.
-// Tags: dotcode, benchmark, parallel, generation, aspnet, aspose.barcode, png
+// Tags: dotcode, barcode, performance, benchmark, parallel, aspose.barcode, generation
 
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
+using System.Diagnostics;
 using System.Threading.Tasks;
+using System.Collections.Concurrent;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Provides a benchmark for generating DotCode barcodes using various encoding modes in parallel.
+/// Demonstrates benchmarking the generation speed of DotCode barcodes using different encoding modes in parallel.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the benchmark application.
+    /// Entry point. Executes parallel benchmarks for each DotCode encoding mode and prints elapsed times.
     /// </summary>
     static void Main()
     {
-        // Define the DotCode encoding modes to benchmark.
-        var modes = new Dictionary<string, DotCodeEncodeMode>
+        // Define the encoding modes to benchmark
+        var modes = new DotCodeEncodeMode[]
         {
-            { "Auto", DotCodeEncodeMode.Auto },
-            { "Binary", DotCodeEncodeMode.Binary },
-            { "ECI", DotCodeEncodeMode.ECI },
-            { "Extended", DotCodeEncodeMode.Extended },
-            { "ExtendedCodetext", DotCodeEncodeMode.ExtendedCodetext }
+            DotCodeEncodeMode.Auto,
+            DotCodeEncodeMode.Binary,
+            DotCodeEncodeMode.ECI,
+            DotCodeEncodeMode.Extended
         };
 
-        // List to store benchmark results (mode name and elapsed time in milliseconds).
-        var results = new List<(string Mode, long ElapsedMs)>();
-        // Collection of tasks that will run each mode concurrently.
-        var tasks = new List<Task>();
+        // Thread‑safe collection to store benchmark results
+        var results = new ConcurrentDictionary<DotCodeEncodeMode, long>();
 
-        // Create a task for each encoding mode.
-        foreach (var kvp in modes)
+        // Run benchmarks for each mode concurrently
+        Parallel.ForEach(modes, mode =>
         {
-            string modeName = kvp.Key;
-            DotCodeEncodeMode mode = kvp.Value;
+            long elapsedMs = BenchmarkMode(mode);
+            results[mode] = elapsedMs;
+        });
 
-            tasks.Add(Task.Run(() =>
-            {
-                var stopwatch = Stopwatch.StartNew();
-
-                // Generate a small number of barcodes for the current mode.
-                for (int i = 0; i < 5; i++)
-                {
-                    using (var generator = new BarcodeGenerator(EncodeTypes.DotCode, "Sample"))
-                    {
-                        // Apply the specific DotCode encoding mode.
-                        generator.Parameters.Barcode.DotCode.DotCodeEncodeMode = mode;
-
-                        // Set ECI encoding when the mode requires it.
-                        if (mode == DotCodeEncodeMode.ECI)
-                        {
-                            generator.Parameters.Barcode.DotCode.ECIEncoding = ECIEncodings.UTF8;
-                        }
-
-                        // Save the barcode image to a memory stream (no file I/O).
-                        using (var ms = new MemoryStream())
-                        {
-                            generator.Save(ms, BarCodeImageFormat.Png);
-                        }
-                    }
-                }
-
-                stopwatch.Stop();
-
-                // Record the elapsed time for this mode in a thread‑safe manner.
-                lock (results)
-                {
-                    results.Add((modeName, stopwatch.ElapsedMilliseconds));
-                }
-            }));
+        // Output the measured generation times
+        foreach (var kvp in results)
+        {
+            Console.WriteLine($"Mode {kvp.Key}: {kvp.Value} ms");
         }
+    }
 
-        // Wait for all parallel tasks to finish.
-        Task.WaitAll(tasks.ToArray());
+    // Benchmarks a single DotCode encoding mode
+    static long BenchmarkMode(DotCodeEncodeMode mode)
+    {
+        const string codeText = "Sample123";
 
-        // Output the benchmark results to the console.
-        Console.WriteLine("DotCode generation benchmark (5 barcodes per mode):");
-        foreach (var result in results)
+        // Initialize generator for DotCode symbology with sample text
+        using (var generator = new BarcodeGenerator(EncodeTypes.DotCode, codeText))
         {
-            Console.WriteLine($"{result.Mode}: {result.ElapsedMs} ms");
+            // Apply the specific encode mode to the generator
+            generator.Parameters.Barcode.DotCode.EncodeMode = mode;
+
+            // For ECI mode, specify the character encoding (UTF‑8 in this example)
+            if (mode == DotCodeEncodeMode.ECI)
+            {
+                generator.Parameters.Barcode.DotCode.ECIEncoding = ECIEncodings.UTF8;
+            }
+
+            // Use a memory stream to avoid file I/O overhead during timing
+            using (var ms = new MemoryStream())
+            {
+                var sw = Stopwatch.StartNew();
+                generator.Save(ms, BarCodeImageFormat.Png);
+                sw.Stop();
+                return sw.ElapsedMilliseconds;
+            }
         }
     }
 }
