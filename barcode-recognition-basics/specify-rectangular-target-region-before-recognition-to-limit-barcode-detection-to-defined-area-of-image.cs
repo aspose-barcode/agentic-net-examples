@@ -1,52 +1,86 @@
-// Title: Barcode detection within a specified rectangular region
-// Description: Demonstrates how to limit barcode recognition to a defined area of an image by specifying a target rectangle before scanning.
+// Title: Specify Rectangular Target Region for Barcode Recognition
+// Description: Demonstrates how to limit barcode detection to a defined rectangular area of an image using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode image processing and recognition category. It showcases the use of BarcodeGenerator, BarCodeReader, and related classes to generate a barcode, then restrict recognition to specific regions. Developers often need to focus on a sub‑area of an image to improve performance or avoid false positives, especially when multiple barcodes or visual noise are present.
 // Prompt: Specify a rectangular target region before recognition to limit barcode detection to a defined area of the image.
-// Tags: barcode, code128, region, recognition, aspose.barcode
+// Tags: code128, region, recognition, barcode, aspose.barcode, generation, png
 
 using System;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates a Code128 barcode, defines a target region,
-/// and reads barcodes only within that region.
+/// Example program that generates a Code128 barcode, saves it as PNG,
+/// and demonstrates barcode recognition within specific rectangular regions.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a barcode image, sets a rectangular target region,
-    /// and uses BarCodeReader to detect barcodes confined to that region.
+    /// Entry point of the example. Generates a barcode image and runs two
+    /// recognition scenarios: one with an empty region and one with a region
+    /// that fully contains the barcode.
     /// </summary>
     static void Main()
     {
-        // Generate a sample Code128 barcode image in memory
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456789"))
+        // Path for the generated barcode image
+        string imagePath = "barcode.png";
+
+        // Generate a simple Code128 barcode and save it to a file
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            // Set image size using point units (300x150 points)
-            generator.Parameters.ImageWidth.Point = 300f;
-            generator.Parameters.ImageHeight.Point = 150f;
+            // Save as PNG format
+            generator.Save(imagePath, BarCodeImageFormat.Png);
+        }
 
-            // Create the barcode bitmap
-            using (var bitmap = generator.GenerateBarCodeImage())
+        // Verify that the image was created successfully
+        if (!File.Exists(imagePath))
+        {
+            Console.WriteLine($"Failed to create barcode image at '{imagePath}'.");
+            return;
+        }
+
+        // Load the generated image into a bitmap for recognition
+        using (var bitmap = new Bitmap(imagePath))
+        {
+            // -------------------------------------------------
+            // Example 1: Define a region that does NOT contain the barcode
+            // -------------------------------------------------
+            // Very small area at the top‑left corner (0,0) with size 10x10 pixels
+            var emptyRegion = new Rectangle(0, 0, 10, 10);
+
+            // Initialize the reader with the empty region and specify Code128 decoding
+            using (var reader = new BarCodeReader(bitmap, emptyRegion, DecodeType.Code128))
             {
-                // Define a rectangular region (top‑left quarter of the image)
-                var targetRegion = new Rectangle(0, 0, bitmap.Width / 2, bitmap.Height / 2);
+                // Perform recognition within the defined region
+                var results = reader.ReadBarCodes();
 
-                // Initialize a BarCodeReader that scans only within the specified region
-                using (var reader = new BarCodeReader(bitmap, targetRegion, DecodeType.Code128))
+                // Output the number of barcodes found (expected to be 0)
+                Console.WriteLine($"Results in empty region: {reader.FoundCount}");
+                foreach (var result in results)
                 {
-                    // Iterate through all detected barcodes in the region
-                    foreach (var result in reader.ReadBarCodes())
-                    {
-                        Console.WriteLine($"Detected Type: {result.CodeTypeName}");
-                        Console.WriteLine($"Code Text: {result.CodeText}");
+                    Console.WriteLine($"Type: {result.CodeTypeName}, Text: {result.CodeText}");
+                }
+            }
 
-                        // Retrieve and display the bounding rectangle of the detected barcode
-                        var bounds = result.Region.Rectangle;
-                        Console.WriteLine($"Barcode Region - X:{bounds.X}, Y:{bounds.Y}, Width:{bounds.Width}, Height:{bounds.Height}");
-                    }
+            // -------------------------------------------------
+            // Example 2: Define a region that fully contains the barcode
+            // -------------------------------------------------
+            // Region covering the entire image dimensions
+            var fullRegion = new Rectangle(0, 0, bitmap.Width, bitmap.Height);
+
+            // Initialize the reader with the full region and specify Code128 decoding
+            using (var reader = new BarCodeReader(bitmap, fullRegion, DecodeType.Code128))
+            {
+                // Perform recognition within the full image area
+                var results = reader.ReadBarCodes();
+
+                // Output the number of barcodes found (expected to be 1)
+                Console.WriteLine($"Results in full region: {reader.FoundCount}");
+                foreach (var result in results)
+                {
+                    Console.WriteLine($"Type: {result.CodeTypeName}, Text: {result.CodeText}");
                 }
             }
         }

@@ -1,66 +1,120 @@
-// Title: Barcode Confidence Level Scanner
-// Description: Scans a directory for supported image and PDF files, reads barcodes with default checksum validation, and prints each barcode's confidence level.
+// Title: Barcode Confidence Reader Console Utility
+// Description: Demonstrates reading barcodes from images in a directory, applying default checksum validation, and printing each barcode's confidence level.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, showcasing the use of BarCodeReader, BarcodeSettings, and DecodeType to process multiple image formats. Typical use cases include batch processing of scanned documents, validating barcode integrity, and extracting confidence metrics for quality control. Developers often need to configure checksum validation and iterate over detection results, as illustrated here.
 // Prompt: Create a console utility that accepts a directory path, applies ChecksumValidation.Default, and outputs each barcode's confidence level.
-// Tags: barcode, checksumvalidation, console, confidence, aspose.barcode, file-processing
+// Tags: barcode, checksumvalidation, confidence, console, aspnet, aspnetcore, aspnet-barcode, aspose.barcode, barcode-recognition, image-processing
 
 using System;
 using System.IO;
 using Aspose.BarCode;
+using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Console utility that scans a directory for barcode images/PDFs,
+/// Console utility that reads barcodes from image files in a specified directory,
 /// applies default checksum validation, and outputs each barcode's confidence level.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Accepts an optional directory path argument,
-    /// processes supported files, and writes barcode details to the console.
+    /// Entry point. Accepts an optional directory path argument, generates sample barcodes if needed,
+    /// and processes each image file to display barcode information.
     /// </summary>
     /// <param name="args">Command‑line arguments; first argument may be a directory path.</param>
     static void Main(string[] args)
     {
-        // Determine directory to scan; fallback to current directory if none provided.
-        string directoryPath = args.Length > 0 ? args[0] : Directory.GetCurrentDirectory();
-
-        // Verify that the directory exists before proceeding.
-        if (!Directory.Exists(directoryPath))
+        // Resolve the target folder: use the first argument if provided, otherwise create a temporary folder.
+        string folderPath;
+        if (args.Length > 0 && !string.IsNullOrWhiteSpace(args[0]))
         {
-            Console.WriteLine($"Directory not found: {directoryPath}");
+            folderPath = args[0];
+        }
+        else
+        {
+            // Create a temporary folder named "BarcodesSample" in the current working directory.
+            folderPath = Path.Combine(Directory.GetCurrentDirectory(), "BarcodesSample");
+            Directory.CreateDirectory(folderPath);
+        }
+
+        // Verify that the folder exists before proceeding.
+        if (!Directory.Exists(folderPath))
+        {
+            Console.WriteLine($"Directory does not exist: {folderPath}");
             return;
         }
 
-        // File extensions that Aspose.BarCode can read.
-        string[] extensions = new[] { ".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff", ".gif", ".pdf" };
-
-        // Enumerate all files in the target directory.
-        foreach (string filePath in Directory.GetFiles(directoryPath))
+        // If the folder is empty, generate a few sample barcode images for demonstration.
+        var sampleFiles = Directory.GetFiles(folderPath, "*.png");
+        if (sampleFiles.Length == 0)
         {
-            // Process only supported image/pdf files.
-            if (Array.IndexOf(extensions, Path.GetExtension(filePath).ToLowerInvariant()) < 0)
-                continue;
+            GenerateSampleBarcodes(folderPath);
+        }
 
-            // Double‑check file existence (defensive programming).
-            if (!File.Exists(filePath))
+        // Define the image file patterns to process (PNG, JPG, BMP).
+        string[] patterns = new[] { "*.png", "*.jpg", "*.bmp" };
+
+        // Iterate over each pattern and process matching files.
+        foreach (var pattern in patterns)
+        {
+            foreach (var filePath in Directory.GetFiles(folderPath, pattern))
             {
-                Console.WriteLine($"File not found (skipped): {filePath}");
-                continue;
-            }
-
-            // Open the barcode reader for the current file.
-            using (var reader = new BarCodeReader(filePath, DecodeType.AllSupportedTypes))
-            {
-                // Apply default checksum validation as required.
-                reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.Default;
-
-                // Read all barcodes in the file.
-                foreach (BarCodeResult result in reader.ReadBarCodes())
+                // Guard against missing files (should not happen, but defensive programming).
+                if (!File.Exists(filePath))
                 {
-                    // Output file name, barcode type, and confidence level.
-                    Console.WriteLine($"File: {Path.GetFileName(filePath)} | Type: {result.CodeTypeName} | Confidence: {result.Confidence}");
+                    Console.WriteLine($"File not found: {filePath}");
+                    continue;
+                }
+
+                // Open the image with BarCodeReader, requesting all supported barcode types.
+                using (var reader = new BarCodeReader(filePath, DecodeType.AllSupportedTypes))
+                {
+                    // Apply the default checksum validation setting.
+                    reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.Default;
+
+                    bool anyFound = false;
+
+                    // Enumerate all detected barcodes in the image.
+                    foreach (var result in reader.ReadBarCodes())
+                    {
+                        anyFound = true;
+                        Console.WriteLine($"File: {Path.GetFileName(filePath)}");
+                        Console.WriteLine($"  Type: {result.CodeTypeName}");
+                        Console.WriteLine($"  CodeText: {result.CodeText}");
+                        Console.WriteLine($"  Confidence: {result.Confidence}");
+                    }
+
+                    // If no barcodes were detected, inform the user.
+                    if (!anyFound)
+                    {
+                        Console.WriteLine($"No barcode detected in file: {Path.GetFileName(filePath)}");
+                    }
                 }
             }
+        }
+    }
+
+    // Generates a few barcode images into the specified folder for demonstration purposes.
+    private static void GenerateSampleBarcodes(string folder)
+    {
+        // Code128 barcode.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
+        {
+            string path = Path.Combine(folder, "code128.png");
+            generator.Save(path);
+        }
+
+        // QR code.
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "QR Sample Text"))
+        {
+            string path = Path.Combine(folder, "qr.png");
+            generator.Save(path);
+        }
+
+        // EAN13 barcode (requires a valid 12‑digit code; checksum is added automatically).
+        using (var generator = new BarcodeGenerator(EncodeTypes.EAN13, "590123412345"))
+        {
+            string path = Path.Combine(folder, "ean13.png");
+            generator.Save(path);
         }
     }
 }

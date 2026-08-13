@@ -1,71 +1,86 @@
-// Title: Code128 checksum validation confidence comparison
-// Description: Demonstrates how to generate a Code 128 barcode, then reads it twice—once with default checksum validation and once with forced checksum validation—to compare the confidence values returned by the recognizer.
+// Title: Compare checksum validation confidence for Code 128 barcodes
+// Description: Demonstrates how default and forced checksum validation affect recognition confidence and performance for a Code 128 barcode.
+// Category-Description: This example belongs to the Aspose.BarCode recognition performance benchmarks. It shows usage of BarcodeGenerator, BarCodeReader, and ChecksumValidation settings to compare confidence levels and processing time, a common task for developers optimizing barcode scanning reliability and speed.
 // Prompt: Compare recognition confidence between default and forced checksum validation for Code 128 barcodes in a performance benchmark.
-// Tags: code128, checksum validation, confidence, performance benchmark, aspose.barcode, barcode generation, barcode recognition
+// Tags: code128, checksumvalidation, confidence, performance, benchmark, generation, recognition, aspose.barcode
 
 using System;
+using System.Diagnostics;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Example program that generates a Code128 barcode, then reads it using default and forced checksum validation
-/// to illustrate the difference in recognition confidence values.
+/// Generates a Code 128 barcode, then measures and compares recognition confidence
+/// and execution time using default checksum validation versus forced checksum validation.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a barcode image, verifies its creation, and performs two recognition passes:
-    /// one with default checksum handling and another with checksum validation forced on.
+    /// Entry point of the example. Executes barcode generation, recognition, and timing.
     /// </summary>
     static void Main()
     {
-        // Define the file name for the generated barcode image
+        // Path for the generated barcode image
         const string imagePath = "code128.png";
 
         // ------------------------------------------------------------
-        // Generate a Code128 barcode with sample data and save it to disk
+        // Generate a Code128 barcode and save it to a file
         // ------------------------------------------------------------
         using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            // Save the barcode image to the specified path
             generator.Save(imagePath);
         }
 
-        // ------------------------------------------------------------
-        // Verify that the image file was successfully created
-        // ------------------------------------------------------------
+        // Verify that the image was created successfully
         if (!File.Exists(imagePath))
         {
-            Console.WriteLine($"Error: Barcode image '{imagePath}' was not created.");
+            Console.WriteLine("Failed to create barcode image.");
             return;
         }
 
-        // ------------------------------------------------------------
-        // Read the barcode using default checksum validation (no explicit setting)
-        // ------------------------------------------------------------
-        using (var readerDefault = new BarCodeReader(imagePath, DecodeType.Code128))
-        {
-            foreach (var result in readerDefault.ReadBarCodes())
-            {
-                Console.WriteLine($"Default Validation Confidence: {result.Confidence}");
-            }
-        }
+        // Variables to hold confidence values for each scenario
+        BarCodeConfidence defaultConfidence = BarCodeConfidence.None;
+        BarCodeConfidence forcedConfidence = BarCodeConfidence.None;
 
         // ------------------------------------------------------------
-        // Read the same barcode with forced checksum validation (ChecksumValidation.On)
+        // Measure default recognition (checksum validation follows default behavior)
         // ------------------------------------------------------------
-        using (var readerForced = new BarCodeReader(imagePath, DecodeType.Code128))
+        var defaultStopwatch = Stopwatch.StartNew();
+        using (var reader = new BarCodeReader(imagePath, DecodeType.Code128))
         {
-            // Enable forced checksum validation
-            readerForced.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
-
-            foreach (var result in readerForced.ReadBarCodes())
+            foreach (var result in reader.ReadBarCodes())
             {
-                Console.WriteLine($"Forced Validation Confidence: {result.Confidence}");
+                defaultConfidence = result.Confidence;
+                break; // Only one barcode expected
             }
         }
+        defaultStopwatch.Stop();
+
+        // ------------------------------------------------------------
+        // Measure recognition with forced checksum validation (ChecksumValidation.On)
+        // ------------------------------------------------------------
+        var forcedStopwatch = Stopwatch.StartNew();
+        using (var reader = new BarCodeReader(imagePath, DecodeType.Code128))
+        {
+            // Force checksum validation for this read operation
+            reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
+
+            foreach (var result in reader.ReadBarCodes())
+            {
+                forcedConfidence = result.Confidence;
+                break; // Only one barcode expected
+            }
+        }
+        forcedStopwatch.Stop();
+
+        // ------------------------------------------------------------
+        // Output the comparison results
+        // ------------------------------------------------------------
+        Console.WriteLine($"Default checksum validation confidence: {defaultConfidence}");
+        Console.WriteLine($"Forced checksum validation confidence: {forcedConfidence}");
+        Console.WriteLine($"Default recognition time: {defaultStopwatch.ElapsedMilliseconds} ms");
+        Console.WriteLine($"Forced checksum recognition time: {forcedStopwatch.ElapsedMilliseconds} ms");
     }
 }

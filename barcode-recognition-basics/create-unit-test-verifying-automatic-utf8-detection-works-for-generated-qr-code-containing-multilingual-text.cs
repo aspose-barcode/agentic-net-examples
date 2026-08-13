@@ -1,78 +1,76 @@
-// Title: QR Code UTF-8 Automatic Detection Unit Test
-// Description: Demonstrates generating a QR code with multilingual text and verifies that automatic UTF-8 detection correctly decodes it.
+// Title: UTF-8 Detection Test for QR Code
+// Description: Demonstrates generating a QR code with multilingual text and verifying automatic UTF-8 detection during recognition.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator (EncodeTypes.QR) to create a QR code, and BarCodeReader (DecodeType.QR) to read it back. Developers often need to ensure correct character encoding handling for multilingual data, especially when automatic UTF-8 detection is required. The snippet highlights key API classes, typical use cases, and serves as a reference for building unit tests around encoding detection.
 // Prompt: Create a unit test verifying automatic UTF8 detection works for a generated QR code containing multilingual text.
-// Tags: qr,utf-8,encoding,detection,barcode,generation,recognition,unit-test
+// Tags: qr, utf8 detection, barcode generation, barcode recognition, multilingual, aspose.barcode, unit test
 
 using System;
 using System.IO;
 using System.Text;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Example program that generates a QR code containing multilingual text,
-/// then reads it back with and without automatic UTF‑8 detection enabled.
+/// Contains the entry point that generates a QR code with multilingual text,
+/// then reads it back to verify that automatic UTF-8 detection works correctly.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a QR code, reads it twice,
-    /// and prints the results to verify automatic UTF‑8 detection.
+    /// Generates a QR code containing Latin, Chinese, and Cyrillic characters,
+    /// saves it to a memory stream, and validates that the reader automatically
+    /// detects UTF-8 encoding and returns the original text.
     /// </summary>
     static void Main()
     {
-        // Multilingual text (Russian + Chinese) to be encoded in the QR code.
-        string originalText = "Привет 世界";
+        // Multilingual text containing Latin, Chinese, and Cyrillic characters.
+        string originalText = "Hello 世界 Привет";
 
         // Use a memory stream to avoid file I/O.
-        using (var ms = new MemoryStream())
+        using (var memoryStream = new MemoryStream())
         {
-            // ---------- QR code generation ----------
+            // Create a QR code generator.
             using (var generator = new BarcodeGenerator(EncodeTypes.QR))
             {
-                // Encode the text using UTF‑8 (adds BOM if needed).
+                // Encode the text using UTF-8. This inserts the appropriate ECI identifier.
                 generator.SetCodeText(originalText, Encoding.UTF8);
-                // Save the generated QR code as PNG into the memory stream.
-                generator.Save(ms, BarCodeImageFormat.Png);
+
+                // Save the barcode image to the memory stream in PNG format.
+                generator.Save(memoryStream, BarCodeImageFormat.Png);
             }
 
-            // Reset the stream position so it can be read from the beginning.
-            ms.Position = 0;
+            // Reset the stream position to the beginning for reading.
+            memoryStream.Position = 0;
 
-            // ---------- Detection enabled ----------
-            string detectedWithEncoding;
-            using (var reader = new BarCodeReader(ms, DecodeType.QR))
+            // Initialize a reader for QR codes.
+            using (var reader = new BarCodeReader(memoryStream, DecodeType.QR))
             {
-                // Enable automatic UTF‑8 detection.
+                // Ensure automatic UTF-8 detection is enabled (default is true).
                 reader.BarcodeSettings.DetectEncoding = true;
-                // Read all barcodes from the stream.
-                var result = reader.ReadBarCodes();
-                // Extract the decoded text if a barcode was found.
-                detectedWithEncoding = result.Length > 0 ? result[0].CodeText : string.Empty;
+
+                bool detectionSucceeded = false;
+
+                // Iterate through all detected barcodes (should be only one).
+                foreach (var result in reader.ReadBarCodes())
+                {
+                    if (result.CodeText == originalText)
+                    {
+                        detectionSucceeded = true;
+                        Console.WriteLine("UTF-8 detection succeeded: " + result.CodeText);
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Mismatch detected. Expected: '{originalText}', Got: '{result.CodeText}'");
+                    }
+                }
+
+                // Report overall test outcome.
+                if (!detectionSucceeded)
+                {
+                    Console.WriteLine("UTF-8 detection failed.");
+                }
             }
-
-            // Reset the stream again for the second read operation.
-            ms.Position = 0;
-
-            // ---------- Detection disabled ----------
-            string detectedWithoutEncoding;
-            using (var reader = new BarCodeReader(ms, DecodeType.QR))
-            {
-                // Disable automatic UTF‑8 detection.
-                reader.BarcodeSettings.DetectEncoding = false;
-                var result = reader.ReadBarCodes();
-                detectedWithoutEncoding = result.Length > 0 ? result[0].CodeText : string.Empty;
-            }
-
-            // Verify that detection works: with detection the text matches,
-            // without detection it does not (due to encoding mismatch).
-            bool detectionWorks = detectedWithEncoding == originalText && detectedWithoutEncoding != originalText;
-
-            // Output the results to the console.
-            Console.WriteLine("Original Text:                     " + originalText);
-            Console.WriteLine("Detected (DetectEncoding=true):   " + detectedWithEncoding);
-            Console.WriteLine("Detected (DetectEncoding=false):  " + detectedWithoutEncoding);
-            Console.WriteLine("Automatic UTF-8 detection works:  " + detectionWorks);
         }
     }
 }

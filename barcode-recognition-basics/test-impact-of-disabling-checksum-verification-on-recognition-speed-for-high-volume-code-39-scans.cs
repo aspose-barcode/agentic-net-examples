@@ -1,105 +1,80 @@
-// Title: Code 39 checksum validation performance test
-// Description: Demonstrates how disabling checksum verification affects recognition speed when processing multiple Code 39 barcodes.
+// Title: Impact of Checksum Validation on Code 39 Recognition Speed
+// Description: Demonstrates how disabling checksum verification affects the time required to recognize a batch of Code 39 barcodes.
+// Category-Description: This example belongs to the Aspose.BarCode recognition performance category. It shows how to configure the BarCodeReader's ChecksumValidation property (On/Off) while processing multiple images, a common scenario for high‑volume scanning applications where speed is critical. Developers often need to balance validation accuracy against throughput using classes like BarCodeReader, BarcodeGenerator, and Stopwatch.
 // Prompt: Test impact of disabling checksum verification on recognition speed for high‑volume Code 39 scans.
-// Tags: code39, checksum, performance, barcode, generation, recognition, aspnet, csharp
+// Tags: code39, checksum, performance, recognition, aspose.barcode, barcodegenerator, barcodereader, stopwatch
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Program that generates a set of Code 39 barcodes, then measures recognition time with checksum validation enabled and disabled.
+/// Example program that measures the effect of enabling or disabling checksum validation
+/// on the recognition speed of a set of Code 39 barcode images.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates barcodes, runs recognition with checksum on/off, and prints timing results.
+    /// Entry point. Generates sample Code 39 barcodes, then times recognition with checksum
+    /// validation turned on and off, outputting the results.
     /// </summary>
     static void Main()
     {
-        // Sample data for Code 39 barcodes
-        List<string> samples = new List<string>
-        {
-            "CODE39A",
-            "CODE39B",
-            "CODE39C",
-            "CODE39D",
-            "CODE39E"
-        };
+        const int sampleCount = 10; // Number of barcode images to generate
+        string folder = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
+        Directory.CreateDirectory(folder); // Ensure output directory exists
 
-        // Generate barcode images and keep them in memory
-        List<Bitmap> barcodes = new List<Bitmap>();
-        foreach (string text in samples)
+        // Generate sample Code 39 barcode images
+        for (int i = 0; i < sampleCount; i++)
         {
-            using (MemoryStream ms = new MemoryStream())
+            string text = $"CODE{i:D4}";
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code39, text))
             {
-                // Create a barcode generator for Code 39 and save to memory stream as PNG
-                using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code39, text))
-                {
-                    generator.Save(ms, BarCodeImageFormat.Png);
-                }
-
-                ms.Position = 0;
-
-                // Load bitmap from memory stream and clone it to preserve after disposing the original
-                using (Bitmap bmp = new Bitmap(ms))
-                {
-                    barcodes.Add(new Bitmap(bmp));
-                }
+                string filePath = Path.Combine(folder, $"code{i}.png");
+                generator.Save(filePath); // Save PNG image to disk
             }
         }
 
-        // Measure recognition time with checksum validation ON
-        Stopwatch swOn = new Stopwatch();
-        swOn.Start();
-        foreach (Bitmap bmp in barcodes)
-        {
-            using (BarCodeReader reader = new BarCodeReader(bmp, DecodeType.Code39))
-            {
-                // Enable checksum validation
-                reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
+        // Measure recognition time with checksum validation enabled
+        long timeWithChecksum = MeasureRecognitionTime(folder, ChecksumValidation.On);
 
-                // Read all barcodes in the image
-                foreach (BarCodeResult result in reader.ReadBarCodes())
-                {
-                    // Access result to ensure processing
-                    string code = result.CodeText;
-                }
+        // Measure recognition time with checksum validation disabled
+        long timeWithoutChecksum = MeasureRecognitionTime(folder, ChecksumValidation.Off);
+
+        // Output timing results
+        Console.WriteLine($"Recognition time with checksum ON : {timeWithChecksum} ms");
+        Console.WriteLine($"Recognition time with checksum OFF: {timeWithoutChecksum} ms");
+    }
+
+    /// <summary>
+    /// Scans all PNG files in the specified folder using the given checksum setting
+    /// and returns the elapsed time in milliseconds.
+    /// </summary>
+    /// <param name="folderPath">Path to the folder containing barcode images.</param>
+    /// <param name="checksumSetting">Checksum validation mode (On or Off).</param>
+    /// <returns>Elapsed time in milliseconds for processing all images.</returns>
+    static long MeasureRecognitionTime(string folderPath, ChecksumValidation checksumSetting)
+    {
+        string[] files = Directory.GetFiles(folderPath, "*.png");
+        Stopwatch sw = Stopwatch.StartNew(); // Start timing
+
+        foreach (string file in files)
+        {
+            using (BarCodeReader reader = new BarCodeReader(file, DecodeType.Code39))
+            {
+                // Apply the requested checksum validation setting
+                reader.BarcodeSettings.ChecksumValidation = checksumSetting;
+
+                // ReadBarCodes returns an array; results are ignored for timing purposes
+                _ = reader.ReadBarCodes();
             }
         }
-        swOn.Stop();
 
-        // Measure recognition time with checksum validation OFF
-        Stopwatch swOff = new Stopwatch();
-        swOff.Start();
-        foreach (Bitmap bmp in barcodes)
-        {
-            using (BarCodeReader reader = new BarCodeReader(bmp, DecodeType.Code39))
-            {
-                // Disable checksum validation
-                reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.Off;
-
-                // Read all barcodes in the image
-                foreach (BarCodeResult result in reader.ReadBarCodes())
-                {
-                    string code = result.CodeText;
-                }
-            }
-        }
-        swOff.Stop();
-
-        // Output the timing results
-        Console.WriteLine($"Checksum ON  - Total time: {swOn.ElapsedMilliseconds} ms");
-        Console.WriteLine($"Checksum OFF - Total time: {swOff.ElapsedMilliseconds} ms");
-
-        // Clean up generated bitmaps
-        foreach (Bitmap bmp in barcodes)
-        {
-            bmp.Dispose();
-        }
+        sw.Stop(); // Stop timing
+        return sw.ElapsedMilliseconds;
     }
 }

@@ -1,7 +1,8 @@
-// Title: EAN13 Barcode Generation and Recognition with Checksum Validation Disabled
-// Description: This example generates a valid EAN13 barcode image, then reads it with checksum validation turned off to demonstrate false‑positive detection.
+// Title: Generate Code128 barcode and read with checksum validation off
+// Description: Demonstrates creating a Code128 barcode image and reading it while disabling checksum validation to show false positive detection handling.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category, illustrating the use of BarcodeGenerator for image creation and BarCodeReader with customizable settings such as ChecksumValidation. Developers often need to generate barcodes, save them in various formats, and later decode them while controlling validation behavior to handle imperfect scans or custom checksum requirements.
 // Prompt: Generate a barcode with BarcodeGenerator, then read it using ChecksumValidation.Off to observe false positive detections.
-// Tags: ean13, barcode generation, barcode recognition, checksumvalidation, off, aspnet, c#
+// Tags: code128, barcode generation, barcode recognition, checksumvalidation, off, png, aspose.barcode
 
 using System;
 using System.IO;
@@ -10,59 +11,51 @@ using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates how to generate an EAN13 barcode and read it with checksum validation disabled,
-/// which can lead to false‑positive detections.
+/// Demonstrates barcode generation and reading with checksum validation disabled.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a barcode image, verifies its creation,
-    /// and then reads it with <see cref="ChecksumValidation.Off"/> to show the effect on detection.
+    /// Entry point. Generates a Code128 barcode image, then reads it with checksum validation turned off.
     /// </summary>
     static void Main()
     {
-        // Path where the generated barcode image will be saved
-        string barcodePath = "barcode.png";
+        // Define the file path where the barcode image will be saved
+        string imagePath = "sample.png";
 
-        // ------------------------------------------------------------
-        // Generate an EAN13 barcode with a valid code text (includes correct checksum)
-        // ------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.EAN13, "1234567890128"))
+        // Create a Code128 barcode containing the specified data and save it as a PNG file
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456789012"))
         {
-            // Save the generated barcode image to the specified file
-            generator.Save(barcodePath);
+            // Persist the generated barcode image to disk
+            generator.Save(imagePath, BarCodeImageFormat.Png);
         }
 
-        // ------------------------------------------------------------
-        // Verify that the barcode image was successfully created
-        // ------------------------------------------------------------
-        if (!File.Exists(barcodePath))
+        // Verify that the image file was successfully created
+        if (!File.Exists(imagePath))
         {
-            Console.WriteLine($"Failed to create barcode image at '{barcodePath}'.");
+            Console.WriteLine($"Failed to create barcode image at {imagePath}");
             return;
         }
 
-        // ------------------------------------------------------------
-        // Read the barcode with checksum validation turned OFF (false positive detection)
-        // ------------------------------------------------------------
-        using (var reader = new BarCodeReader(barcodePath, DecodeType.EAN13))
+        // Initialize a barcode reader for the saved image, targeting Code128 symbology
+        using (var reader = new BarCodeReader(imagePath, DecodeType.Code128))
         {
-            // Disable checksum validation to allow detection of potentially invalid barcodes
+            // Turn off checksum validation to allow detection of barcodes even when checksums are incorrect
             reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.Off;
 
-            // Perform recognition and iterate over all detected barcodes
+            // Iterate through all detected barcodes in the image
             foreach (var result in reader.ReadBarCodes())
             {
-                // Output the raw code text detected in the barcode
-                Console.WriteLine($"Detected CodeText: {result.CodeText}");
+                // Output basic barcode information
+                Console.WriteLine($"Detected Type: {result.CodeType}");
+                Console.WriteLine($"CodeText: {result.CodeText}");
 
-                // Extended data for 1D barcodes: separate value and checksum components
-                Console.WriteLine($"Value: {result.Extended.OneD.Value}");
-                Console.WriteLine($"Checksum: {result.Extended.OneD.CheckSum}");
-
-                // Additional quality metrics provided by the recognizer
-                Console.WriteLine($"Confidence: {result.Confidence}");
-                Console.WriteLine($"ReadingQuality: {result.ReadingQuality}");
+                // If extended 1D barcode data is available, display value and checksum details
+                if (result.Extended != null && result.Extended.OneD != null)
+                {
+                    Console.WriteLine($"Value: {result.Extended.OneD.Value}");
+                    Console.WriteLine($"Checksum: {result.Extended.OneD.CheckSum}");
+                }
             }
         }
     }

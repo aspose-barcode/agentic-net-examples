@@ -1,7 +1,8 @@
-// Title: QR Code ReadingQuality Comparison Under Varying Lighting
-// Description: Generates QR codes with different background shades to simulate lighting conditions and compares their ReadingQuality values after recognition.
+// Title: QR Code Reading Quality under Different Lighting Conditions
+// Description: Demonstrates generating QR codes with varying background colors to simulate lighting and compares their recognition quality using ReadingQuality values.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating QR codes and BarCodeReader with QualitySettings for evaluating detection performance. Developers often need to assess how environmental factors like lighting affect barcode readability, making ReadingQuality a valuable metric for quality assurance and image preprocessing pipelines.
 // Prompt: Compare recognition quality of QR codes captured under different lighting conditions by analyzing ReadingQuality values.
-// Tags: qr, readingquality, lighting, barcode, generation, recognition, aspnet, csharp
+// Tags: qr, lighting, readingquality, barcode, generation, recognition, aspose.barcode, aspose.drawing
 
 using System;
 using System.IO;
@@ -11,74 +12,73 @@ using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates how lighting (background color) affects QR code recognition quality
-/// by generating three QR images and reporting their <c>ReadingQuality</c> values.
+/// Generates QR code images with different simulated lighting conditions and evaluates their
+/// recognition quality using the ReadingQuality property provided by Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates QR codes with normal, bright, and dark backgrounds,
-    /// then reads each image and prints the ReadingQuality metric.
+    /// Entry point of the example. Creates QR codes with bright and dim backgrounds,
+    /// saves them, and then reads each image to output the ReadingQuality metric.
     /// </summary>
     static void Main()
     {
-        // Text to encode in the QR code
+        // Define the directory where generated images will be stored.
+        string outputDir = "output";
+        if (!Directory.Exists(outputDir))
+        {
+            Directory.CreateDirectory(outputDir);
+        }
+
+        // Text to encode in the QR code.
         const string qrText = "Lighting Test QR";
 
-        // Create three memory streams – one for each simulated lighting condition
-        using (var streamNormal = new MemoryStream())
-        using (var streamBright = new MemoryStream())
-        using (var streamDark = new MemoryStream())
+        // Define lighting scenarios: a name and the background color that simulates the lighting.
+        var conditions = new (string Name, Color Background)[]
         {
-            // ---------- Generate QR code with normal lighting (white background) ----------
+            ("Bright", Color.White),      // Simulates well‑lit environment.
+            ("Dim", Color.LightGray)      // Simulates low‑light environment.
+        };
+
+        // --------------------------------------------------------------------
+        // Generate QR code images for each lighting condition.
+        // --------------------------------------------------------------------
+        foreach (var condition in conditions)
+        {
+            string filePath = Path.Combine(outputDir, $"{condition.Name}.png");
             using (var generator = new BarcodeGenerator(EncodeTypes.QR, qrText))
             {
-                generator.Parameters.BackColor = Color.White; // normal background
-                generator.Save(streamNormal, BarCodeImageFormat.Png);
+                // Apply the background color to mimic the lighting condition.
+                generator.Parameters.BackColor = condition.Background;
+
+                // Save the generated QR code as a PNG file.
+                generator.Save(filePath, BarCodeImageFormat.Png);
             }
-
-            // ---------- Generate QR code with bright lighting (light gray background) ----------
-            using (var generator = new BarcodeGenerator(EncodeTypes.QR, qrText))
-            {
-                generator.Parameters.BackColor = Color.LightGray; // brighter appearance
-                generator.Save(streamBright, BarCodeImageFormat.Png);
-            }
-
-            // ---------- Generate QR code with dark lighting (dark gray background) ----------
-            using (var generator = new BarcodeGenerator(EncodeTypes.QR, qrText))
-            {
-                generator.Parameters.BackColor = Color.DarkGray; // darker appearance
-                generator.Save(streamDark, BarCodeImageFormat.Png);
-            }
-
-            // Reset stream positions so the reader starts from the beginning of each image
-            streamNormal.Position = 0;
-            streamBright.Position = 0;
-            streamDark.Position = 0;
-
-            // ---------- Read and compare ReadingQuality values ----------
-            Console.WriteLine("ReadingQuality comparison for QR codes under different lighting conditions:");
-            ReadAndReport(streamNormal, "Normal Lighting (White BG)");
-            ReadAndReport(streamBright, "Bright Lighting (LightGray BG)");
-            ReadAndReport(streamDark, "Dark Lighting (DarkGray BG)");
         }
-    }
 
-    /// <summary>
-    /// Reads a QR code from the provided image stream and writes its ReadingQuality to the console.
-    /// </summary>
-    /// <param name="imageStream">Stream containing the QR code image.</param>
-    /// <param name="description">Human‑readable description of the lighting condition.</param>
-    static void ReadAndReport(Stream imageStream, string description)
-    {
-        // Initialize the reader for QR codes
-        using (var reader = new BarCodeReader(imageStream, DecodeType.QR))
+        // --------------------------------------------------------------------
+        // Recognize each generated image and output its ReadingQuality value.
+        // --------------------------------------------------------------------
+        foreach (var condition in conditions)
         {
-            // Iterate through all detected barcodes (normally just one)
-            foreach (var result in reader.ReadBarCodes())
+            string filePath = Path.Combine(outputDir, $"{condition.Name}.png");
+            if (!File.Exists(filePath))
             {
-                // ReadingQuality is a double representing the confidence percentage
-                Console.WriteLine($"{description}: ReadingQuality = {result.ReadingQuality}%");
+                Console.WriteLine($"File not found: {filePath}");
+                continue;
+            }
+
+            using (var reader = new BarCodeReader(filePath, DecodeType.QR))
+            {
+                // Use high‑quality settings to improve detection accuracy.
+                reader.QualitySettings = QualitySettings.HighQuality;
+
+                // Iterate through all detected barcodes (should be one per image).
+                foreach (var result in reader.ReadBarCodes())
+                {
+                    double quality = result.ReadingQuality;
+                    Console.WriteLine($"{condition.Name} lighting - ReadingQuality: {quality}");
+                }
             }
         }
     }

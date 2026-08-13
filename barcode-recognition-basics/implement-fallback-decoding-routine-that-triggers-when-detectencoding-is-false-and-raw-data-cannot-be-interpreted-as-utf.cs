@@ -1,7 +1,8 @@
-// Title: QR Code Generation and Decoding with UTF-8 Fallback
-// Description: Demonstrates generating a QR code containing Unicode text, reading it with encoding detection disabled, and applying a fallback decoding when UTF‑8 fails.
+// Title: QR Code Generation and Fallback Decoding with Aspose.BarCode
+// Description: Demonstrates creating a QR code containing Cyrillic text, saving it to a memory stream, and decoding it with custom encoding handling, including a fallback when UTF‑8 decoding fails.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes and BarCodeReader for extracting raw byte data. Developers often need to control text encoding, disable automatic detection, and implement fallback strategies for non‑UTF‑8 payloads, especially when handling international characters.
 // Prompt: Implement a fallback decoding routine that triggers when DetectEncoding is false and raw data cannot be interpreted as UTF8.
-// Tags: qr, barcode, encoding, fallback, aspose.barcode, utf8, windows-1252
+// Tags: qr, unicode, encoding, fallback, decoding, aspose.barcode, generation, recognition
 
 using System;
 using System.IO;
@@ -11,68 +12,62 @@ using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Example program that creates a QR code with Unicode text, reads it without automatic encoding detection,
-/// and demonstrates a manual fallback decoding strategy when UTF‑8 decoding is not successful.
+/// Generates a QR code with Cyrillic text, saves it to a memory stream,
+/// and reads it back using a custom decoding routine that includes a fallback
+/// when UTF‑8 decoding is not possible.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
+    /// Entry point of the example. Performs barcode generation, saves to a stream,
+    /// and reads the barcode with explicit encoding handling.
     /// </summary>
     static void Main()
     {
-        // ------------------------------------------------------------
-        // 1. Generate a QR code containing Cyrillic text using UTF‑8 encoding.
-        // ------------------------------------------------------------
+        // Create a memory stream to hold the generated QR code image.
         using (var ms = new MemoryStream())
         {
-            // Create a barcode generator for QR codes with the desired text.
+            // Generate a QR code containing the Cyrillic word "Привет".
             using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Привет"))
             {
-                // Explicitly set the code text with UTF‑8 encoding to ensure correct byte representation.
+                // Explicitly set the code text encoding to UTF‑8.
                 generator.SetCodeText("Привет", Encoding.UTF8);
-
-                // Save the generated barcode image into the memory stream in PNG format.
+                // Save the QR code as a PNG image into the memory stream.
                 generator.Save(ms, BarCodeImageFormat.Png);
             }
 
-            // ------------------------------------------------------------
-            // 2. Prepare the stream for reading the barcode image.
-            // ------------------------------------------------------------
-            ms.Position = 0; // Reset stream position to the beginning.
+            // Reset the stream position to the beginning for reading.
+            ms.Position = 0;
 
-            // ------------------------------------------------------------
-            // 3. Read the barcode with automatic encoding detection turned off.
-            // ------------------------------------------------------------
+            // Initialize a barcode reader for QR codes, disabling automatic encoding detection.
             using (var reader = new BarCodeReader(ms, DecodeType.QR))
             {
-                // Disable automatic detection so we can control the decoding process.
                 reader.BarcodeSettings.DetectEncoding = false;
 
-                // Iterate over all detected barcodes (in this case, just one).
-                foreach (BarCodeResult result in reader.ReadBarCodes())
+                // Iterate over all detected barcodes (there should be only one in this example).
+                foreach (var result in reader.ReadBarCodes())
                 {
-                    // Attempt to decode the raw data using UTF‑8.
-                    string textUtf8 = result.GetCodeText(Encoding.UTF8);
+                    Console.WriteLine("=== Detected Barcode ===");
+                    Console.WriteLine("Symbology: " + result.CodeTypeName);
 
-                    // Determine whether a fallback is needed:
-                    // - Empty or null result indicates decoding failure.
-                    // - Presence of the Unicode replacement character (�) signals invalid UTF‑8 sequences.
-                    bool needFallback = string.IsNullOrEmpty(textUtf8) || textUtf8.Contains('\uFFFD');
+                    // Attempt to decode the raw bytes using strict UTF‑8 decoding.
+                    string decodedText;
+                    var strictUtf8 = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+                    try
+                    {
+                        decodedText = strictUtf8.GetString(result.CodeBytes);
+                        Console.WriteLine("Decoded (UTF-8): " + decodedText);
+                    }
+                    catch (DecoderFallbackException)
+                    {
+                        // Fallback: decode using Windows‑1252 (or any other appropriate fallback encoding).
+                        var fallbackEncoding = Encoding.GetEncoding(1252);
+                        decodedText = fallbackEncoding.GetString(result.CodeBytes);
+                        Console.WriteLine("Decoded (fallback encoding 1252): " + decodedText);
+                    }
 
-                    if (needFallback)
-                    {
-                        // ------------------------------------------------------------
-                        // 4. Fallback decoding: try Windows‑1252 (or any other desired encoding).
-                        // ------------------------------------------------------------
-                        string fallbackText = result.GetCodeText(Encoding.GetEncoding(1252));
-                        Console.WriteLine($"Fallback decoded text: {fallbackText}");
-                    }
-                    else
-                    {
-                        // UTF‑8 decoding succeeded; output the result.
-                        Console.WriteLine($"UTF8 decoded text: {textUtf8}");
-                    }
+                    // Output the raw byte sequence for diagnostic purposes.
+                    Console.WriteLine("Raw bytes: " + BitConverter.ToString(result.CodeBytes));
                 }
             }
         }

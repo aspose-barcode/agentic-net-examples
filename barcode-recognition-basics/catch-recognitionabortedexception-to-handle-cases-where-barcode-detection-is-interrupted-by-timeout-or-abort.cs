@@ -1,59 +1,61 @@
-// Title: Barcode Generation and Recognition with Timeout Handling
-// Description: Demonstrates generating a Code128 barcode, reading it from a memory stream, and handling a RecognitionAbortedException when the read operation times out.
+// Title: Barcode recognition with timeout handling
+// Description: Demonstrates generating a Code128 barcode, setting a very low timeout, and catching RecognitionAbortedException when detection is aborted.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator, BarCodeReader, and DecodeType classes to create a barcode image in memory and attempt to read it with a custom timeout. Developers often need to handle recognition timeouts or aborts, making exception handling for RecognitionAbortedException essential for robust barcode scanning solutions.
 // Prompt: Catch RecognitionAbortedException to handle cases where barcode detection is interrupted by timeout or abort.
-// Tags: barcode, code128, generation, recognition, timeout, exception handling, aspose.barcode
+// Tags: barcode, code128, timeout, recognitionabortedexception, generation, recognition, aspnet, aspose.barcode
 
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Example program that creates a barcode, attempts to read it, and gracefully handles a timeout abort.
+/// Generates a Code128 barcode, attempts to read it with an extremely low timeout,
+/// and demonstrates handling of <see cref="RecognitionAbortedException"/> when the
+/// recognition process is aborted (e.g., due to timeout).
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a barcode, reads it, and catches RecognitionAbortedException.
+    /// Entry point of the example. Executes barcode generation, sets a short timeout,
+    /// and reads the barcode while handling possible abort scenarios.
     /// </summary>
     static void Main()
     {
-        // Define the text to encode in the barcode.
-        const string codeText = "1234567890";
-
-        // Use a memory stream to hold the generated barcode image.
-        using (var generationStream = new MemoryStream())
+        // Create a barcode generator for Code128 with sample data
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            // Create a barcode generator for Code128 symbology.
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+            // Generate the barcode image in memory
+            using (Bitmap barcodeImage = generator.GenerateBarCodeImage())
             {
-                // Save the barcode as a PNG image into the memory stream.
-                generator.Save(generationStream, BarCodeImageFormat.Png);
-            }
-
-            // Reset the stream position to the beginning before reading.
-            generationStream.Position = 0;
-
-            // Initialize a barcode reader for the generated image, specifying the expected symbology.
-            using (var reader = new BarCodeReader(generationStream, DecodeType.Code128))
-            {
-                // Set an extremely low timeout (1 ms) to force a RecognitionAbortedException.
-                reader.Timeout = 1; // milliseconds
-
-                try
+                // Initialize a barcode reader for the generated image, targeting Code128 symbology
+                using (var reader = new BarCodeReader(barcodeImage, DecodeType.Code128))
                 {
-                    // Iterate through all detected barcodes in the image.
-                    foreach (var result in reader.ReadBarCodes())
+                    // Configure an extremely low timeout (1 ms) to force an abort condition
+                    reader.Timeout = 1; // milliseconds
+
+                    try
                     {
-                        Console.WriteLine($"Detected Type: {result.CodeTypeName}");
-                        Console.WriteLine($"Detected Text: {result.CodeText}");
+                        // Attempt to read barcodes; may throw RecognitionAbortedException
+                        foreach (BarCodeResult result in reader.ReadBarCodes())
+                        {
+                            Console.WriteLine($"Detected Type: {result.CodeType}");
+                            Console.WriteLine($"Detected Text: {result.CodeText}");
+                        }
                     }
-                }
-                catch (RecognitionAbortedException ex)
-                {
-                    // Handle the case where recognition was aborted due to timeout or manual abort.
-                    Console.WriteLine($"Recognition aborted: {ex.Message}");
+                    catch (RecognitionAbortedException ex)
+                    {
+                        // Handle recognition abort (e.g., timeout) gracefully
+                        Console.WriteLine("Barcode recognition was aborted:");
+                        Console.WriteLine(ex.Message);
+                    }
+                    catch (Exception ex)
+                    {
+                        // Fallback for any other unexpected errors
+                        Console.WriteLine("An unexpected error occurred:");
+                        Console.WriteLine(ex.Message);
+                    }
                 }
             }
         }

@@ -1,69 +1,83 @@
-// Title: Demonstrate error handling for unsupported image format in BarCodeReader
-// Description: Shows how to catch and log errors when SetBarCodeImage receives a file that is not a supported image format, using Aspose.BarCode.
+// Title: Demonstrate barcode generation, reading, and error logging for unsupported image formats
+// Description: The example generates a Code128 barcode, reads it from a PNG image, then attempts to load a non‑image file and logs the resulting error.
+// Category-Description: This sample belongs to the Aspose.BarCode image handling category, illustrating how to use BarcodeGenerator to create barcodes, BarCodeReader to decode them, and how to handle invalid image inputs with SetBarCodeImage. Developers working with barcode generation and recognition often need to validate image sources and log errors when unsupported formats are encountered. The example showcases key classes such as BarcodeGenerator, BarCodeReader, and Image handling from Aspose.Drawing.
 // Prompt: Implement error logging for cases where SetBarCodeImage receives an unsupported image format argument.
-// Tags: barcode symbology, error handling, image format, aspose.barcode, barcodereader
+// Tags: barcode symbology, generation, recognition, error handling, image format, aspose.barcode
 
 using System;
 using System.IO;
-using Aspose.BarCode;
+using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Example program that attempts to read a barcode from an unsupported image file
-/// and logs appropriate error messages.
+/// Example program that generates a barcode, reads it, and demonstrates error logging
+/// when attempting to set a barcode image from an unsupported file format.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Creates a dummy non‑image file, tries to read a barcode,
-    /// and demonstrates error handling for unsupported image formats.
+    /// Entry point of the application.
     /// </summary>
     static void Main()
     {
-        // --------------------------------------------------------------------
-        // Prepare a dummy file with an unsupported image format (e.g., a text file)
-        // --------------------------------------------------------------------
-        string unsupportedFilePath = "unsupported.txt";
-        if (!File.Exists(unsupportedFilePath))
+        // ------------------------------------------------------------
+        // Generate a valid barcode image (PNG) using BarcodeGenerator
+        // ------------------------------------------------------------
+        const string validImagePath = "valid.png";
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
         {
-            File.WriteAllText(unsupportedFilePath, "This is not an image.");
+            generator.Save(validImagePath, BarCodeImageFormat.Png);
         }
 
-        // --------------------------------------------------------------------
-        // Attempt to use BarCodeReader with the unsupported file.
-        // BarCodeReader expects a supported image format (png, jpg, bmp, etc.).
-        // The constructor will throw an exception for unsupported formats.
-        // --------------------------------------------------------------------
+        // ------------------------------------------------------------
+        // Create a file with an unsupported image format (plain text)
+        // ------------------------------------------------------------
+        const string unsupportedPath = "unsupported.txt";
+        File.WriteAllText(unsupportedPath, "This is not an image.");
+
+        // ------------------------------------------------------------
+        // Read barcode from the valid image (normal operation)
+        // ------------------------------------------------------------
+        using (var reader = new BarCodeReader(validImagePath, DecodeType.Code128))
+        {
+            foreach (var result in reader.ReadBarCodes())
+            {
+                Console.WriteLine($"Read from valid image: {result.CodeText}");
+            }
+        }
+
+        // ------------------------------------------------------------
+        // Attempt to set a barcode image using an unsupported format
+        // ------------------------------------------------------------
         try
         {
-            using (var reader = new BarCodeReader(unsupportedFilePath, DecodeType.Code128))
+            // Load the file as an Image; this will succeed for any file but will fail later when casting
+            using (Image image = Image.FromFile(unsupportedPath))
             {
-                // If no exception, attempt to read (unlikely for unsupported format)
-                foreach (BarCodeResult result in reader.ReadBarCodes())
+                // BarCodeReader supports setting the image via SetBarCodeImage
+                using (var reader = new BarCodeReader())
                 {
-                    Console.WriteLine($"Found barcode: Type={result.CodeTypeName}, Text={result.CodeText}");
+                    // Cast to Bitmap as required by SetBarCodeImage; this throws for non‑image files
+                    reader.SetBarCodeImage((Bitmap)image);
+
+                    // Attempt to read (won't be reached for unsupported format)
+                    foreach (var result in reader.ReadBarCodes())
+                    {
+                        Console.WriteLine($"Unexpected read: {result.CodeText}");
+                    }
                 }
             }
         }
-        catch (BarCodeException ex)
-        {
-            // Log the specific Aspose.BarCode exception indicating unsupported format
-            Console.WriteLine($"Error: Unsupported image format for SetBarCodeImage. Details: {ex.Message}");
-        }
         catch (Exception ex)
         {
-            // Log any other unexpected exceptions
-            Console.WriteLine($"Unexpected error: {ex.GetType().Name} - {ex.Message}");
-        }
-        finally
-        {
-            // --------------------------------------------------------------------
-            // Clean up the dummy file
-            // --------------------------------------------------------------------
-            if (File.Exists(unsupportedFilePath))
-            {
-                File.Delete(unsupportedFilePath);
-            }
+            // Log the error to console
+            Console.WriteLine($"Error loading unsupported image format: {ex.Message}");
+
+            // Append detailed error information to a simple log file
+            File.AppendAllText(
+                "error.log",
+                $"[{DateTime.Now}] Unsupported image load error: {ex}{Environment.NewLine}");
         }
     }
 }

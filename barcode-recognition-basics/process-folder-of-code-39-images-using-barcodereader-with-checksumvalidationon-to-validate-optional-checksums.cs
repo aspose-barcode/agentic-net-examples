@@ -1,64 +1,77 @@
-// Title: Process Code 39 images with checksum validation
-// Description: Demonstrates reading Code 39 barcodes from a folder of images, enabling optional checksum validation to ensure data integrity.
+// Title: Validate Code 39 barcodes with optional checksum using BarCodeReader
+// Description: Demonstrates generating Code 39 barcode images, some with checksum enabled, and then reading them back while validating optional checksums.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator for creating Code 39 images and BarCodeReader with ChecksumValidation.On to verify optional checksums. Developers often need to batch‑process barcode images, ensure data integrity, and handle checksum validation in scanning workflows.
 // Prompt: Process a folder of Code 39 images using BarCodeReader with ChecksumValidation.On to validate optional checksums.
-// Tags: code39, barcode, checksumvalidation, barcodereader, imageprocessing
+// Tags: code39, checksum validation, barcode generation, barcode recognition, aspose.barcode
 
 using System;
 using System.IO;
-using System.Linq;
+using Aspose.BarCode;
+using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates processing a folder of Code 39 barcode images with checksum validation.
+/// Example program that generates Code 39 barcode images (including one with checksum enabled)
+/// and then reads all images in a folder while validating optional checksums.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Reads barcode images from a specified folder (or default) and prints decoded values.
+    /// Entry point. Generates sample barcodes, saves them to a folder, and processes the folder
+    /// using BarCodeReader with checksum validation turned on.
     /// </summary>
-    /// <param name="args">Optional command‑line argument specifying the folder path.</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Determine the folder containing Code 39 barcode images.
-        // Use the first command‑line argument if provided; otherwise default to "Code39Images".
-        string folderPath = args.Length > 0 ? args[0] : "Code39Images";
+        // --------------------------------------------------------------------
+        // Create a folder for sample barcode images
+        // --------------------------------------------------------------------
+        string folderPath = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
+        Directory.CreateDirectory(folderPath);
 
-        // Verify that the folder exists before proceeding.
-        if (!Directory.Exists(folderPath))
+        // Sample Code39 texts (one with checksum enabled)
+        string[] sampleTexts = { "CODE39", "CODE39CHK", "123ABC" };
+
+        // --------------------------------------------------------------------
+        // Generate sample barcode images
+        // --------------------------------------------------------------------
+        foreach (string text in sampleTexts)
         {
-            Console.WriteLine($"Folder not found: {folderPath}");
-            return;
-        }
-
-        // Retrieve image files (common bitmap extensions) from the folder.
-        string[] imageFiles = Directory.GetFiles(folderPath, "*.*")
-            .Where(f => f.EndsWith(".png", StringComparison.OrdinalIgnoreCase) ||
-                        f.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) ||
-                        f.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase) ||
-                        f.EndsWith(".bmp", StringComparison.OrdinalIgnoreCase))
-            .ToArray();
-
-        // If no image files are found, inform the user and exit.
-        if (imageFiles.Length == 0)
-        {
-            Console.WriteLine($"No image files found in folder: {folderPath}");
-            return;
-        }
-
-        // Process each image file individually.
-        foreach (string imagePath in imageFiles)
-        {
-            // Initialize BarCodeReader for Code 39 decoding.
-            using (var reader = new BarCodeReader(imagePath, DecodeType.Code39))
+            string imagePath = Path.Combine(folderPath, $"{text}.png");
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code39, text))
             {
-                // Enable checksum validation for optional Code 39 checksums.
+                // Enable checksum for the second sample (CODE39CHK)
+                if (text == "CODE39CHK")
+                {
+                    generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
+                }
+
+                // Save the generated barcode image to disk
+                generator.Save(imagePath);
+                Console.WriteLine($"Generated barcode: {imagePath}");
+            }
+        }
+
+        // --------------------------------------------------------------------
+        // Process all PNG images in the folder using BarCodeReader with checksum validation
+        // --------------------------------------------------------------------
+        string[] imageFiles = Directory.GetFiles(folderPath, "*.png");
+        foreach (string file in imageFiles)
+        {
+            if (!File.Exists(file))
+            {
+                Console.WriteLine($"File not found: {file}");
+                continue;
+            }
+
+            using (var reader = new BarCodeReader(file, DecodeType.Code39))
+            {
+                // Turn on validation of optional checksums
                 reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
 
-                // Read all barcodes present in the current image.
+                // Read and output each detected barcode
                 foreach (var result in reader.ReadBarCodes())
                 {
-                    // Output the file name, barcode type, and decoded text to the console.
-                    Console.WriteLine($"File: {Path.GetFileName(imagePath)} | Type: {result.CodeTypeName} | Text: {result.CodeText}");
+                    Console.WriteLine($"File: {Path.GetFileName(file)} - Detected CodeText: {result.CodeText}");
                 }
             }
         }

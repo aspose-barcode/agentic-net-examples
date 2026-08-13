@@ -1,7 +1,8 @@
 // Title: QR Code Generation and QR-Only Decoding Example
-// Description: Demonstrates generating a QR code image and then reading it using Aspose.BarCode with DecodeType set to QR to restrict recognition to QR symbology only.
+// Description: Demonstrates generating a QR barcode image and then decoding it while restricting recognition to QR symbology.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator for creating QR codes and BarCodeReader with DecodeType.QR to limit decoding to a specific symbology. Developers often need to generate barcodes and later read them efficiently, especially when only one type of barcode is expected, to improve performance and accuracy.
 // Prompt: Set DecodeType to QR before reading an image to limit recognition to QR symbology only.
-// Tags: qr, barcode, generation, recognition, decode, aspose.barcode
+// Tags: barcode symbology, qr, generation, decoding, aspose.barcode, decode type
 
 using System;
 using System.IO;
@@ -10,49 +11,44 @@ using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Generates a QR code image (if missing) and reads it using a QR‑only decoder.
+/// Generates a QR barcode image and reads it back, limiting the decoding process to QR symbology only.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates a QR code image and decodes it with DecodeType.QR.
+    /// Entry point of the example. Creates a QR code, saves it as PNG, and then decodes it using QR‑only recognition.
     /// </summary>
     static void Main()
     {
-        // Path to the QR code image file
-        const string imagePath = "qr.png";
+        // Path where the generated QR image will be saved
+        string qrImagePath = "qr.png";
 
         // ------------------------------------------------------------
-        // Generate a QR code image if it does not already exist
+        // Generate a QR barcode image
         // ------------------------------------------------------------
-        if (!File.Exists(imagePath))
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Hello QR"))
         {
-            // Initialize the generator with QR symbology and sample text
-            using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Hello QR"))
-            {
-                // Save the generated QR code to a PNG file
-                generator.Save(imagePath);
-            }
+            // Save the QR code as a PNG file
+            generator.Save(qrImagePath, BarCodeImageFormat.Png);
         }
 
-        // ------------------------------------------------------------
-        // Verify that the image file exists before attempting to read it
-        // ------------------------------------------------------------
-        if (!File.Exists(imagePath))
+        // Verify that the image file was successfully created
+        if (!File.Exists(qrImagePath))
         {
-            Console.WriteLine($"Image file not found: {imagePath}");
+            Console.WriteLine("Failed to create QR image.");
             return;
         }
 
         // ------------------------------------------------------------
-        // Create a BarCodeReader limited to QR symbology only
+        // Read the image, limiting recognition to QR symbology only
         // ------------------------------------------------------------
-        using (var reader = new BarCodeReader(imagePath, DecodeType.QR))
+        using (var reader = new BarCodeReader(qrImagePath, DecodeType.QR))
         {
-            // Iterate through all detected barcodes (expected: only QR codes)
+            // Iterate through all detected barcodes (expected to be one QR code)
             foreach (var result in reader.ReadBarCodes())
             {
-                Console.WriteLine($"Detected QR Code: {result.CodeText}");
+                Console.WriteLine($"Detected Type: {result.CodeTypeName}");
+                Console.WriteLine($"Decoded Text: {result.CodeText}");
             }
         }
     }

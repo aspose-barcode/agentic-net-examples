@@ -1,84 +1,63 @@
-// Title: Demonstrate checksum validation for mandatory and optional symbologies in a single read
-// Description: This example generates an EAN13 barcode (mandatory checksum) and a Code39 barcode (optional checksum), combines them, and reads both with checksum validation turned on.
+// Title: Barcode checksum validation for multiple symbologies in a single read
+// Description: Demonstrates enabling checksum validation for both mandatory and optional checksum symbologies while reading multiple barcodes in one image.
+// Category-Description: This example belongs to the Aspose.BarCode reading and validation category. It shows how to use BarCodeReader with BarcodeSettings.ChecksumValidation to enforce checksum checks across all supported symbologies, a common requirement when processing 1D barcodes such as EAN13 (mandatory checksum) and Code39 (optional checksum). Developers often need to validate data integrity in batch scanning scenarios, and this snippet illustrates the typical API usage for combined image generation and validation.
 // Prompt: Configure BarcodeSettings.ChecksumValidation to On for both obligatory and optional checksum symbologies in a single read operation.
-// Tags: barcode symbology, checksum validation, read operation, aspose.barcode, csharp
+// Tags: barcode symbology, checksum validation, read operation, aspose.barcode, generation, recognition
 
 using System;
-using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Sample program that creates two barcodes, merges them into a single image,
-/// and reads them back with checksum validation enabled for both mandatory
-/// and optional checksum symbologies.
+/// Example program that generates two barcodes, combines them into a single image,
+/// and reads them back with checksum validation enabled for both mandatory and optional checksum symbologies.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates barcodes, combines them, and performs a single read
-    /// operation with <c>ChecksumValidation</c> set to <c>On</c>.
+    /// Entry point. Generates EAN13 and Code39 barcodes, merges them, and reads them with checksum validation turned on.
     /// </summary>
     static void Main()
     {
-        // Generate first barcode (EAN13) – checksum is mandatory
+        // Generate an EAN13 barcode (checksum is mandatory)
         using (var eanGenerator = new BarcodeGenerator(EncodeTypes.EAN13, "1234567890128"))
+        using (var eanImage = eanGenerator.GenerateBarCodeImage())
+        // Generate a Code39 barcode (checksum is optional)
+        using (var code39Generator = new BarcodeGenerator(EncodeTypes.Code39, "CODE39"))
+        using (var code39Image = code39Generator.GenerateBarCodeImage())
+        // Combine both images side by side into a single bitmap
+        using (var combined = new Bitmap(eanImage.Width + code39Image.Width,
+                                         Math.Max(eanImage.Height, code39Image.Height)))
         {
-            using (var eanStream = new MemoryStream())
+            // Draw the two barcode images onto the combined bitmap
+            using (var graphics = Graphics.FromImage(combined))
             {
-                eanGenerator.Save(eanStream, BarCodeImageFormat.Png);
-                eanStream.Position = 0;
+                graphics.DrawImage(eanImage, 0, 0);
+                graphics.DrawImage(code39Image, eanImage.Width, 0);
+            }
 
-                // Generate second barcode (Code39) – checksum is optional
-                using (var code39Generator = new BarcodeGenerator(EncodeTypes.Code39, "CODE39"))
+            // Read both barcodes in a single operation with checksum validation enabled
+            using (var reader = new BarCodeReader(combined, DecodeType.AllSupportedTypes))
+            {
+                // Enable checksum validation for all symbologies (mandatory and optional)
+                reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
+
+                // Iterate through all detected barcodes
+                foreach (var result in reader.ReadBarCodes())
                 {
-                    using (var code39Stream = new MemoryStream())
+                    Console.WriteLine($"Detected Type: {result.CodeTypeName}");
+                    Console.WriteLine($"Code Text: {result.CodeText}");
+
+                    // For 1D barcodes, also output the checksum if available
+                    if (result.Extended?.OneD != null)
                     {
-                        code39Generator.Save(code39Stream, BarCodeImageFormat.Png);
-                        code39Stream.Position = 0;
-
-                        // Load both images from the memory streams
-                        using (var eanImage = new Bitmap(eanStream))
-                        using (var code39Image = new Bitmap(code39Stream))
-                        {
-                            // Create a combined image (side by side)
-                            int combinedWidth = eanImage.Width + code39Image.Width;
-                            int combinedHeight = Math.Max(eanImage.Height, code39Image.Height);
-                            using (var combinedImage = new Bitmap(combinedWidth, combinedHeight))
-                            {
-                                using (var graphics = Graphics.FromImage(combinedImage))
-                                {
-                                    graphics.DrawImage(eanImage, 0, 0);
-                                    graphics.DrawImage(code39Image, eanImage.Width, 0);
-                                }
-
-                                // Read both barcodes in a single operation with checksum validation enabled
-                                using (var reader = new BarCodeReader(combinedImage, DecodeType.EAN13, DecodeType.Code39))
-                                {
-                                    // Enable checksum validation for all symbologies (mandatory and optional)
-                                    reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
-
-                                    // Iterate through detected barcodes and output details
-                                    foreach (var result in reader.ReadBarCodes())
-                                    {
-                                        Console.WriteLine("Detected Type: " + result.CodeTypeName);
-                                        Console.WriteLine("CodeText: " + result.CodeText);
-
-                                        // For 1D barcodes, checksum info is available in Extended.OneD
-                                        if (result.Extended.OneD != null)
-                                        {
-                                            Console.WriteLine("Value: " + result.Extended.OneD.Value);
-                                            Console.WriteLine("Checksum: " + result.Extended.OneD.CheckSum);
-                                        }
-
-                                        Console.WriteLine();
-                                    }
-                                }
-                            }
-                        }
+                        Console.WriteLine($"Checksum: {result.Extended.OneD.CheckSum}");
                     }
+
+                    Console.WriteLine();
                 }
             }
         }

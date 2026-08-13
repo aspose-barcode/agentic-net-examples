@@ -1,77 +1,69 @@
-// Title: Read barcodes from PDF pages using Aspose
-// Description: Demonstrates extracting each PDF page as an image and scanning it for barcodes with BarCodeReader.
+// Title: Read barcodes from PDF pages by converting each page to an image
+// Description: Demonstrates extracting each page of a PDF as an image and using Aspose.BarCode's BarCodeReader to detect all supported barcode types.
+// Category-Description: This example belongs to the Aspose.BarCode PDF processing category, illustrating how to combine Aspose.Pdf and Aspose.BarCode APIs. It shows how to render PDF pages to images, enable barcode optimization, and read barcodes using BarCodeReader. Developers often need to scan documents for embedded barcodes, automate data capture, or validate printed codes in PDFs.
 // Prompt: Read barcodes from PDF pages by extracting each page as an image and feeding it to BarCodeReader.
-// Tags: barcode, pdf, image extraction, aspose.pdf, aspose.barcode, csharp
+// Tags: pdf, barcode, extraction, image, aspose.pdf, aspose.barcode, decode, allsupportedtypes
 
 using System;
 using System.IO;
 using Aspose.Pdf;
-using Aspose.Pdf.Devices;
+using Aspose.Pdf.Facades;
+using Aspose.BarCode;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Sample program that reads barcodes from each page of a PDF file.
+/// Demonstrates reading barcodes from each page of a PDF by converting pages to images and using BarCodeReader.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Loads a PDF, converts each page to an image, and scans for barcodes.
+    /// Entry point. Processes the PDF, extracts pages as images, and prints detected barcode information.
     /// </summary>
     static void Main()
     {
-        // Path to the PDF file (adjust as needed)
-        string pdfPath = "sample.pdf";
+        // Path to the PDF file to be processed.
+        const string pdfPath = "sample.pdf";
 
-        // Verify that the PDF file exists
+        // Verify that the PDF file exists before attempting to read it.
         if (!File.Exists(pdfPath))
         {
-            Console.WriteLine($"PDF file not found: {pdfPath}");
+            Console.WriteLine($"File not found: {pdfPath}");
+            Console.WriteLine("Please provide a PDF containing barcodes and place it in the executable directory.");
             return;
         }
 
-        // Load the PDF document
+        // Open the PDF document.
         using (var pdfDocument = new Document(pdfPath))
         {
-            int pageCount = pdfDocument.Pages.Count;
-            Console.WriteLine($"Processing {pageCount} page(s) from '{pdfPath}'.");
-
-            // Iterate through each page
-            for (int pageIndex = 1; pageIndex <= pageCount; pageIndex++)
+            // Initialize the PDF converter.
+            using (var pdfConverter = new PdfConverter(pdfDocument))
             {
-                var page = pdfDocument.Pages[pageIndex];
+                // Enable barcode optimization for better extraction.
+                pdfConverter.RenderingOptions.BarcodeOptimization = true;
 
-                // Convert the page to a JPEG image stored in a memory stream
-                using (var imageStream = new MemoryStream())
+                // Process each page individually.
+                for (int pageNumber = 1; pageNumber <= pdfDocument.Pages.Count; pageNumber++)
                 {
-                    var resolution = new Resolution(300);
-                    var jpegDevice = new JpegDevice(resolution);
-                    jpegDevice.Process(page, imageStream);
-                    imageStream.Position = 0; // Reset stream position for reading
+                    // Configure the converter to render only the current page.
+                    pdfConverter.StartPage = pageNumber;
+                    pdfConverter.EndPage = pageNumber;
 
-                    // Load the image into an Aspose.Drawing.Bitmap
-                    using (var bitmap = new Bitmap(imageStream))
+                    // Perform the conversion.
+                    pdfConverter.DoConvert();
+
+                    // Retrieve the rendered page as an image stream.
+                    using (var imageStream = new MemoryStream())
                     {
-                        // Initialize the barcode reader for all supported symbologies
-                        using (var reader = new BarCodeReader(bitmap, DecodeType.AllSupportedTypes))
+                        pdfConverter.GetNextImage(imageStream);
+                        imageStream.Position = 0; // Reset stream for reading.
+
+                        // Create a barcode reader for the image stream.
+                        using (var reader = new BarCodeReader(imageStream, DecodeType.AllSupportedTypes))
                         {
-                            // Use a standard quality preset
-                            reader.QualitySettings = QualitySettings.NormalQuality;
-
-                            // Perform barcode detection
-                            var results = reader.ReadBarCodes();
-
-                            if (results.Length == 0)
+                            // Iterate through all detected barcodes on this page.
+                            foreach (var result in reader.ReadBarCodes())
                             {
-                                Console.WriteLine($"Page {pageIndex}: No barcodes detected.");
-                            }
-                            else
-                            {
-                                Console.WriteLine($"Page {pageIndex}: Detected {results.Length} barcode(s).");
-                                foreach (var result in results)
-                                {
-                                    Console.WriteLine($"  Type: {result.CodeTypeName}, Text: {result.CodeText}");
-                                }
+                                Console.WriteLine($"Page {pageNumber}: Type = {result.CodeTypeName}, Text = {result.CodeText}");
                             }
                         }
                     }

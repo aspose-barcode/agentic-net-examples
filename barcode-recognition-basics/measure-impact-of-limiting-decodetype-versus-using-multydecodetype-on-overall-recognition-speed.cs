@@ -1,118 +1,117 @@
-// Title: DecodeType vs MultiDecodeType performance comparison
-// Description: Demonstrates how limiting the DecodeType to a single symbology versus using MultiDecodeType affects barcode recognition speed.
+// Title: Measure impact of limited vs multi decode types on barcode recognition speed
+// Description: Demonstrates generating sample barcodes and comparing recognition time when using a specific DecodeType versus MultiDecodeType.
+// Category-Description: This example belongs to the Aspose.BarCode recognition performance category, illustrating how to use BarcodeGenerator, BarCodeReader, DecodeType, and MultiDecodeType classes. Developers often need to benchmark decoding speed for different symbologies to optimize scanning applications. The snippet shows typical use cases such as generating test images, configuring decoders, and measuring execution time, useful for performance tuning and CI testing.
 // Prompt: Measure the impact of limiting DecodeType versus using MultyDecodeType on overall recognition speed.
-// Tags: barcode, decode, multidecode, performance, aspnet, csharp
+// Tags: barcode, decode, multidecode, performance, aspose.barcode, generation, recognition
 
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
-using System.Linq;
+using System.Diagnostics;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Sample program that generates several barcode images and measures the
-/// recognition time when using a single <see cref="DecodeType"/> versus a
-/// <see cref="MultiDecodeType"/> that includes multiple symbologies.
+/// Demonstrates measuring the performance difference between limited <see cref="DecodeType"/>
+/// and <see cref="MultiDecodeType"/> when recognizing barcodes using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates barcodes, reads them with
-    /// different decode configurations, and reports average recognition times.
+    /// Entry point. Generates sample barcode images, then measures and prints average recognition times.
     /// </summary>
     static void Main()
     {
-        // --------------------------------------------------------------------
-        // Prepare a temporary folder for the generated barcode images.
-        // --------------------------------------------------------------------
-        string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeSample");
-        if (!Directory.Exists(tempFolder))
-            Directory.CreateDirectory(tempFolder);
+        // Prepare a folder for sample barcode images
+        string folder = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
+        if (!Directory.Exists(folder))
+        {
+            Directory.CreateDirectory(folder);
+        }
 
-        // --------------------------------------------------------------------
-        // Define the barcode specifications: symbology, text, and output file name.
-        // --------------------------------------------------------------------
-        var specs = new List<(BaseEncodeType encode, string text, string fileName)>
+        // Define sample barcodes to generate (type, text, file name)
+        var samples = new (BaseEncodeType encode, string text, string fileName)[]
         {
             (EncodeTypes.Code128, "CODE128_SAMPLE", "code128.png"),
             (EncodeTypes.QR, "QR_SAMPLE", "qr.png"),
             (EncodeTypes.DataMatrix, "DATAMATRIX_SAMPLE", "datamatrix.png")
         };
 
-        // --------------------------------------------------------------------
-        // Generate barcode images based on the specifications.
-        // --------------------------------------------------------------------
-        var imagePaths = new List<string>();
-        foreach (var spec in specs)
+        // Generate barcode images and save them to the folder
+        foreach (var sample in samples)
         {
-            string path = Path.Combine(tempFolder, spec.fileName);
-            using (var generator = new BarcodeGenerator(spec.encode, spec.text))
+            string path = Path.Combine(folder, sample.fileName);
+            using (var generator = new BarcodeGenerator(sample.encode, sample.text))
             {
                 generator.Save(path);
             }
-            imagePaths.Add(path);
         }
 
-        // --------------------------------------------------------------------
-        // Prepare decode configurations:
-        //   - limitedDecode: only Code128 is allowed.
-        //   - multiDecode:   Code128, QR, and DataMatrix are allowed.
-        // --------------------------------------------------------------------
-        var limitedDecode = DecodeType.Code128; // example limited to Code128
+        // Define decode types for limited (single) and multi decode scenarios
+        var limitedDecodes = new (string name, BaseDecodeType decode)[]
+        {
+            ("Code128", DecodeType.Code128),
+            ("QR", DecodeType.QR),
+            ("DataMatrix", DecodeType.DataMatrix)
+        };
+
+        // MultiDecodeType that includes all three symbologies
         var multiDecode = new MultiDecodeType(DecodeType.Code128, DecodeType.QR, DecodeType.DataMatrix);
 
-        // --------------------------------------------------------------------
-        // Containers for timing results.
-        // --------------------------------------------------------------------
-        var limitedTimes = new List<long>();
-        var multiTimes = new List<long>();
+        // Header for the performance comparison output
+        Console.WriteLine("Recognition speed comparison (average over 5 runs per image):");
 
-        // --------------------------------------------------------------------
-        // Iterate over each generated image and measure recognition speed for both
-        // decode configurations.
-        // --------------------------------------------------------------------
-        foreach (string imagePath in imagePaths)
+        // Iterate over each sample image and measure both decoding approaches
+        foreach (var sample in samples)
         {
-            if (!File.Exists(imagePath))
+            string imagePath = Path.Combine(folder, sample.fileName);
+            Console.WriteLine($"\nImage: {sample.fileName}");
+
+            // Find the matching limited decode type based on the file name (without extension)
+            var limited = Array.Find(limitedDecodes, d => d.name == Path.GetFileNameWithoutExtension(sample.fileName));
+            if (limited.decode == null)
             {
-                Console.WriteLine($"File not found: {imagePath}");
+                Console.WriteLine("  No matching limited decode type found.");
                 continue;
             }
 
-            // ---- Limited DecodeType (single symbology) ----
-            using (var readerLimited = new BarCodeReader(imagePath, limitedDecode))
+            // Measure average time for limited (single) decode
+            long limitedTotalMs = 0;
+            for (int i = 0; i < 5; i++)
             {
                 var sw = Stopwatch.StartNew();
-                var results = readerLimited.ReadBarCodes();
+                using (var reader = new BarCodeReader(imagePath, limited.decode))
+                {
+                    foreach (var result in reader.ReadBarCodes())
+                    {
+                        // Force recognition; result is not used further
+                    }
+                }
                 sw.Stop();
-
-                limitedTimes.Add(sw.ElapsedMilliseconds);
-                Console.WriteLine($"Limited decode on '{Path.GetFileName(imagePath)}' found {results.Length} barcode(s) in {sw.ElapsedMilliseconds} ms.");
+                limitedTotalMs += sw.ElapsedMilliseconds;
             }
+            double limitedAvg = limitedTotalMs / 5.0;
 
-            // ---- MultiDecodeType (multiple symbologies) ----
-            using (var readerMulti = new BarCodeReader(imagePath, multiDecode))
+            // Measure average time for multi decode (all three types)
+            long multiTotalMs = 0;
+            for (int i = 0; i < 5; i++)
             {
                 var sw = Stopwatch.StartNew();
-                var results = readerMulti.ReadBarCodes();
+                using (var reader = new BarCodeReader(imagePath, multiDecode))
+                {
+                    foreach (var result in reader.ReadBarCodes())
+                    {
+                        // Force recognition; result is not used further
+                    }
+                }
                 sw.Stop();
-
-                multiTimes.Add(sw.ElapsedMilliseconds);
-                Console.WriteLine($"Multi decode on '{Path.GetFileName(imagePath)}' found {results.Length} barcode(s) in {sw.ElapsedMilliseconds} ms.");
+                multiTotalMs += sw.ElapsedMilliseconds;
             }
+            double multiAvg = multiTotalMs / 5.0;
+
+            // Output the average times for both approaches
+            Console.WriteLine($"  Limited decode ({limited.name}) avg time: {limitedAvg:F2} ms");
+            Console.WriteLine($"  Multi decode (Code128+QR+DataMatrix) avg time: {multiAvg:F2} ms");
         }
-
-        // --------------------------------------------------------------------
-        // Compute and display average recognition times for both configurations.
-        // --------------------------------------------------------------------
-        double avgLimited = limitedTimes.Count > 0 ? (double)limitedTimes.Sum() / limitedTimes.Count : 0;
-        double avgMulti = multiTimes.Count > 0 ? (double)multiTimes.Sum() / multiTimes.Count : 0;
-
-        Console.WriteLine();
-        Console.WriteLine($"Average recognition time (limited DecodeType): {avgLimited:F2} ms");
-        Console.WriteLine($"Average recognition time (MultiDecodeType): {avgMulti:F2} ms");
     }
 }

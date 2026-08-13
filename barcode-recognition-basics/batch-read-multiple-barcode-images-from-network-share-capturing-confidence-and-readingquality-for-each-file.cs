@@ -1,87 +1,108 @@
-// Title: Batch Barcode Reader with Confidence and ReadingQuality
-// Description: Demonstrates reading multiple barcode images from a network share and retrieving confidence and reading quality metrics for each detected barcode.
+// Title: Batch barcode reading with confidence and quality metrics
+// Description: Demonstrates how to read multiple barcode images from a folder (or network share) and capture each barcode's confidence and reading quality.
+// Category-Description: This example belongs to the Aspose.BarCode reading category, showcasing the use of BarCodeReader, DecodeType, and related result properties. Typical scenarios include bulk processing of scanned documents, inventory verification, and quality assessment of barcode captures. Developers often need to iterate over image collections, extract barcode data, and evaluate confidence and reading quality to ensure reliable downstream processing.
 // Prompt: Batch read multiple barcode images from a network share, capturing Confidence and ReadingQuality for each file.
-// Tags: barcode, batch, confidence, readingquality, aspose, csharp, network-share
+// Tags: code128, qr, datamatrix, batch-read, confidence, readingquality, console-output, barcodereader, barcodegenerator, decodetype, encodetypes
 
 using System;
 using System.IO;
-using System.Linq;
+using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
-namespace BarcodeBatchReader
+/// <summary>
+/// Example program that batch‑reads barcode images from a folder (or network share),
+/// printing each barcode's type, text, confidence, and reading quality.
+/// </summary>
+class Program
 {
     /// <summary>
-    /// Entry point for the batch barcode reading example.
+    /// Entry point. Accepts an optional folder path argument; otherwise uses a default "Barcodes" folder.
+    /// Generates sample barcodes if none are found, then reads all supported images.
     /// </summary>
-    class Program
+    /// <param name="args">Command‑line arguments; first argument may specify the barcode folder path.</param>
+    static void Main(string[] args)
     {
-        /// <summary>
-        /// Scans a network share for up to five barcode images, reads each barcode,
-        /// and prints its type, text, confidence, and reading quality.
-        /// </summary>
-        static void Main()
+        // Determine the folder containing barcode images.
+        // In production replace this with a UNC path, e.g. @"\\Server\Share\Barcodes".
+        string folderPath = args.Length > 0 ? args[0] : "Barcodes";
+
+        // Ensure the target folder exists.
+        if (!Directory.Exists(folderPath))
         {
-            // Path to the network share containing barcode images.
-            // Adjust the UNC path as needed for your environment.
-            string folderPath = @"\\networkshare\barcodes";
+            Directory.CreateDirectory(folderPath);
+        }
 
-            // Verify that the folder exists before proceeding.
-            if (!Directory.Exists(folderPath))
+        // Check whether the folder already contains supported image files.
+        bool hasImages = Directory.GetFiles(folderPath, "*.png").Length > 0 ||
+                         Directory.GetFiles(folderPath, "*.jpg").Length > 0 ||
+                         Directory.GetFiles(folderPath, "*.bmp").Length > 0;
+
+        // If no images are present, generate a few sample barcode files.
+        if (!hasImages)
+        {
+            GenerateSampleBarcodes(folderPath);
+        }
+
+        // Gather all supported image files (PNG, JPG, BMP) into a single array.
+        string[] pngFiles = Directory.GetFiles(folderPath, "*.png");
+        string[] jpgFiles = Directory.GetFiles(folderPath, "*.jpg");
+        string[] bmpFiles = Directory.GetFiles(folderPath, "*.bmp");
+
+        string[] allFiles = new string[pngFiles.Length + jpgFiles.Length + bmpFiles.Length];
+        pngFiles.CopyTo(allFiles, 0);
+        jpgFiles.CopyTo(allFiles, pngFiles.Length);
+        bmpFiles.CopyTo(allFiles, pngFiles.Length + jpgFiles.Length);
+
+        // Iterate over each image file and attempt to read any barcodes it contains.
+        foreach (string filePath in allFiles)
+        {
+            if (!File.Exists(filePath))
             {
-                Console.WriteLine($"Folder not found: {folderPath}");
-                return;
+                Console.WriteLine($"File not found: {filePath}");
+                continue;
             }
 
-            // Define the set of image file extensions that will be processed.
-            string[] supportedExtensions = { ".png", ".jpg", ".jpeg", ".bmp", ".gif" };
-
-            // Retrieve up to 5 image files that match the supported extensions.
-            string[] files = Directory.GetFiles(folderPath)
-                .Where(f => supportedExtensions.Contains(Path.GetExtension(f), StringComparer.OrdinalIgnoreCase))
-                .Take(5)
-                .ToArray();
-
-            // If no matching files are found, inform the user and exit.
-            if (files.Length == 0)
+            // Use BarCodeReader with AllSupportedTypes to detect any barcode format.
+            using (BarCodeReader reader = new BarCodeReader(filePath, DecodeType.AllSupportedTypes))
             {
-                Console.WriteLine("No barcode image files found in the specified folder.");
-                return;
-            }
-
-            // Process each discovered image file.
-            foreach (string filePath in files)
-            {
-                // Double‑check that the file still exists (it could have been removed).
-                if (!File.Exists(filePath))
+                // ReadBarCodes returns an enumerable of detection results.
+                foreach (var result in reader.ReadBarCodes())
                 {
-                    Console.WriteLine($"File not found: {filePath}");
-                    continue;
-                }
-
-                // Create a BarCodeReader for the current file, using all supported symbologies.
-                using (var reader = new BarCodeReader(filePath, DecodeType.AllSupportedTypes))
-                {
-                    // Perform the barcode recognition operation.
-                    BarCodeResult[] results = reader.ReadBarCodes();
-
-                    // If no barcodes were detected, report and move to the next file.
-                    if (results.Length == 0)
-                    {
-                        Console.WriteLine($"No barcode detected in file: {Path.GetFileName(filePath)}");
-                        continue;
-                    }
-
-                    // Output details for each detected barcode.
-                    foreach (var result in results)
-                    {
-                        Console.WriteLine($"File: {Path.GetFileName(filePath)}");
-                        Console.WriteLine($"  Type: {result.CodeTypeName}");
-                        Console.WriteLine($"  Text: {result.CodeText}");
-                        Console.WriteLine($"  Confidence: {result.Confidence}");
-                        Console.WriteLine($"  ReadingQuality: {result.ReadingQuality}");
-                    }
+                    Console.WriteLine($"File: {Path.GetFileName(filePath)}");
+                    Console.WriteLine($"  Type: {result.CodeTypeName}");
+                    Console.WriteLine($"  CodeText: {result.CodeText}");
+                    Console.WriteLine($"  Confidence: {result.Confidence}");
+                    Console.WriteLine($"  ReadingQuality: {result.ReadingQuality}");
                 }
             }
+        }
+    }
+
+    /// <summary>
+    /// Generates a set of sample barcode images (Code128, QR, DataMatrix) in the specified folder.
+    /// </summary>
+    /// <param name="folderPath">The directory where sample images will be saved.</param>
+    private static void GenerateSampleBarcodes(string folderPath)
+    {
+        // Sample 1: Code128 barcode.
+        string code128Path = Path.Combine(folderPath, "sample_code128.png");
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
+        {
+            generator.Save(code128Path);
+        }
+
+        // Sample 2: QR Code.
+        string qrPath = Path.Combine(folderPath, "sample_qr.png");
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
+        {
+            generator.Save(qrPath);
+        }
+
+        // Sample 3: DataMatrix barcode.
+        string dmPath = Path.Combine(folderPath, "sample_datamatrix.png");
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.DataMatrix, "DM123456"))
+        {
+            generator.Save(dmPath);
         }
     }
 }
