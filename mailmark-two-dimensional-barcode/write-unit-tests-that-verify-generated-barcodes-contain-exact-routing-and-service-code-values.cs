@@ -1,94 +1,105 @@
-// Title: Verify routing and service codes in generated Code128 barcode
-// Description: Demonstrates generating a Code128 barcode containing routing and service codes, then reading it back to confirm the exact values.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, showcasing how to use BarcodeGenerator and BarCodeReader classes to create and validate barcodes. Typical use cases include encoding custom data strings such as routing and service identifiers and verifying them programmatically. Developers often need unit‑testable code that confirms the encoded content matches expectations.
+// Title: Generate and verify UPC-A with GS1 Code128 coupon barcode
+// Description: Demonstrates creating a UPC-A barcode combined with a GS1 Code128 coupon, then reading it back to confirm that the routing and service code values are encoded correctly.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, showing how to use BarcodeGenerator with EncodeTypes.UpcaGs1Code128Coupon and BarCodeReader to validate encoded data. Typical use cases include testing barcode output for retail coupons where precise routing and service codes are required. Developers often need unit‑testable code that confirms the generated CodeText matches expected values.
 // Prompt: Write unit tests that verify generated barcodes contain the exact routing and service code values.
-// Tags: code128, barcode generation, barcode recognition, routing code, service code, unit test
+// Tags: upc-a,gs1-code128,coupon,barcode-generation,barcode-recognition,unit-test,aspose.barcode
 
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates a Code128 barcode containing routing and service codes,
-/// then reads the barcode to verify the encoded text matches the expected values.
+/// Demonstrates generation and verification of a UPC‑A with GS1 Code128 coupon barcode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the program. Executes the routing and service code verification test
-    /// and outputs the result to the console.
+    /// Entry point that runs a simple verification test for routing and service code values.
     /// </summary>
     static void Main()
     {
-        // Run the test and output the result.
-        bool testResult = TestRoutingAndServiceCode();
-        Console.WriteLine(testResult ? "Test Passed" : "Test Failed");
-    }
+        // Counters for total executed tests and failed tests
+        int totalTests = 0;
+        int failedTests = 0;
 
-    /// <summary>
-    /// Generates a barcode with predefined routing and service codes, saves it to a file,
-    /// reads it back, and verifies that the decoded text matches the expected concatenated value.
-    /// </summary>
-    /// <returns>True if the decoded barcode text matches the expected value; otherwise, false.</returns>
-    static bool TestRoutingAndServiceCode()
-    {
-        // Define expected routing and service codes.
-        string routingCode = "R12345";
-        string serviceCode = "S67890";
-
-        // Combine them into the barcode text (format can be adjusted as needed).
-        string expectedCodeText = routingCode + serviceCode;
-
-        // Prepare a temporary file path for the generated barcode image.
-        string imagePath = Path.Combine(Directory.GetCurrentDirectory(), "routing_service.png");
-
-        // Ensure any previous file is removed.
-        if (File.Exists(imagePath))
+        // ------------------------------------------------------------
+        // Test 1: UPC-A with GS1 Code128 coupon (routing and service code)
+        // ------------------------------------------------------------
+        totalTests++;
+        try
         {
-            File.Delete(imagePath);
-        }
+            // Expected full code text (UPCA part + GS1 Code128 part)
+            string expectedCodeText = "514141100906(8102)03";
 
-        // Generate the barcode.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, expectedCodeText))
-        {
-            // Optional: set image size via AutoSizeMode.Interpolation to avoid manual dimensions.
-            generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
-
-            // Save the barcode image.
-            generator.Save(imagePath);
-        }
-
-        // Verify that the file was created.
-        if (!File.Exists(imagePath))
-        {
-            Console.WriteLine("Failed to create barcode image.");
-            return false;
-        }
-
-        // Read the barcode back and compare the decoded text.
-        using (var reader = new BarCodeReader(imagePath, DecodeType.Code128))
-        {
-            foreach (BarCodeResult result in reader.ReadBarCodes())
+            // Generate barcode image in memory using the specified symbology and data
+            using (var generator = new BarcodeGenerator(EncodeTypes.UpcaGs1Code128Coupon, expectedCodeText))
             {
-                // Compare the decoded CodeText with the expected value.
-                if (result.CodeText == expectedCodeText)
+                using (var ms = new MemoryStream())
                 {
-                    // Success: exact routing and service codes are present.
-                    return true;
-                }
-                else
-                {
-                    Console.WriteLine($"Decoded text mismatch. Expected: {expectedCodeText}, Got: {result.CodeText}");
-                    return false;
+                    // Save the generated barcode as PNG into the memory stream
+                    generator.Save(ms, BarCodeImageFormat.Png);
+                    ms.Position = 0; // Reset stream position for reading
+
+                    // Read barcode back from the memory stream
+                    using (var reader = new BarCodeReader(ms, DecodeType.AllSupportedTypes))
+                    {
+                        var results = reader.ReadBarCodes();
+
+                        // Verify that at least one barcode was detected
+                        if (results.Length == 0)
+                        {
+                            Console.WriteLine("FAILED: No barcode detected.");
+                            failedTests++;
+                        }
+                        else
+                        {
+                            // Check if any detected barcode matches the expected CodeText
+                            bool matchFound = false;
+                            foreach (var result in results)
+                            {
+                                if (result.CodeText == expectedCodeText)
+                                {
+                                    matchFound = true;
+                                    break;
+                                }
+                            }
+
+                            if (matchFound)
+                            {
+                                Console.WriteLine("PASSED: Routing and service code values match.");
+                            }
+                            else
+                            {
+                                Console.WriteLine($"FAILED: Detected CodeText does not match. Expected '{expectedCodeText}'.");
+                                foreach (var result in results)
+                                {
+                                    Console.WriteLine($"  Detected: '{result.CodeText}'");
+                                }
+                                failedTests++;
+                            }
+                        }
+                    }
                 }
             }
         }
+        catch (Exception ex)
+        {
+            // Report any unexpected exceptions as test failures
+            Console.WriteLine($"FAILED: Exception occurred - {ex.Message}");
+            failedTests++;
+        }
 
-        // If no barcode was read, the test fails.
-        Console.WriteLine("No barcode detected in the image.");
-        return false;
+        // ------------------------------------------------------------
+        // Summary of test results
+        // ------------------------------------------------------------
+        if (failedTests == 0)
+        {
+            Console.WriteLine($"ALL TESTS PASSED: {totalTests} tests executed.");
+        }
+        else
+        {
+            Console.WriteLine($"FAILED: {failedTests} out of {totalTests} tests failed.");
+        }
     }
 }

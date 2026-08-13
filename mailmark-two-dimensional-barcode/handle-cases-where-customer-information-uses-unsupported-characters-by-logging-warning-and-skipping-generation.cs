@@ -1,97 +1,92 @@
-// Title: Australia Post Barcode Generation with Customer Info Validation
-// Description: Demonstrates generating Australia Post barcodes while validating customer information and handling unsupported characters.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, focusing on the EncodeTypes.AustraliaPost symbology. It showcases the use of BarcodeGenerator, encoding tables (CustomerInformationInterpretingType), and common validation patterns required when creating postal barcodes. Developers often need to ensure that customer data conforms to specific character sets before barcode creation, making this a typical use case for postal applications.
+// Title: Australia Post Barcode Generation with Customer Information Validation
+// Description: Demonstrates generating an Australia Post barcode while validating customer information for unsupported characters and skipping generation when invalid.
+// Category-Description: Shows how to use Aspose.BarCode to create Australia Post barcodes, covering the BarcodeGenerator class, encoding tables, and error handling. Typical use cases include postal services and logistics where customer data must conform to specific symbology rules. Developers often need to validate input, set encoding tables, and manage code‑text errors.
 // Prompt: Handle cases where customer information uses unsupported characters by logging a warning and skipping generation.
-// Tags: barcode, australia post, generation, validation, customer information, aspose.barcode, encoding table
+// Tags: barcode, australia post, validation, customer information, aspose.barcode, encoding table, ctable, ntable, other, image output
 
 using System;
-using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing;
 
 /// <summary>
-/// Generates Australia Post barcodes for a set of sample data, validating the customer information
-/// part according to the selected <see cref="CustomerInformationInterpretingType"/>. Invalid data
-/// triggers a warning and the barcode generation is skipped.
+/// Example program that generates an Australia Post barcode after validating
+/// customer information against the selected interpreting type. If validation fails,
+/// a warning is logged and barcode generation is skipped.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Iterates through sample codes, validates customer information,
-    /// and creates barcode images when the data is supported.
+    /// Entry point of the example. Performs validation and generates the barcode image.
     /// </summary>
     static void Main()
     {
-        // Sample data: each tuple contains the full code text and the interpreting type to use.
-        var samples = new (string CodeText, CustomerInformationInterpretingType Interpreting)[]
+        // Example customer information that may contain unsupported characters
+        string customerInfo = "ABC$123";
+
+        // Choose the interpreting type for the customer information field
+        var interpretingType = CustomerInformationInterpretingType.CTable;
+
+        // Validate the customer information against the selected interpreting type
+        if (!IsValidCustomerInfo(customerInfo, interpretingType))
         {
-            ("5912345678ABCde", CustomerInformationInterpretingType.CTable),   // valid CTable
-            ("591234567812345", CustomerInformationInterpretingType.NTable),   // valid NTable (digits only)
-            ("5912345678# #", CustomerInformationInterpretingType.CTable),     // valid CTable (space and #)
-            ("5912345678XYZ@", CustomerInformationInterpretingType.CTable),   // invalid CTable (contains '@')
-            ("5912345678AB12", CustomerInformationInterpretingType.Other),    // invalid Other (contains 'A','B')
-            ("591234567800123", CustomerInformationInterpretingType.Other)    // valid Other (only 0,1,2,3)
-        };
+            // Log a warning and exit without generating the barcode
+            Console.WriteLine($"Warning: Customer information contains characters not allowed for {interpretingType}. Barcode generation skipped.");
+            return;
+        }
 
-        int index = 0;
-        foreach (var (codeText, interpreting) in samples)
+        // Combine the mandatory part of the Australia Post code with the customer information
+        string fullCodeText = "5912345678" + customerInfo;
+
+        // Initialize the barcode generator for Australia Post symbology
+        using (var generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, fullCodeText))
         {
-            // Customer information part is everything after the first 10 characters (postal part).
-            string customerInfo = codeText.Length > 10 ? codeText.Substring(10) : string.Empty;
+            // Set the interpreting type (CTable, NTable, or Other)
+            generator.Parameters.Barcode.AustralianPost.EncodingTable = interpretingType;
 
-            // Validate the customer information according to the selected interpreting type.
-            if (!IsCustomerInfoValid(customerInfo, interpreting))
+            // Ensure that code‑text errors do not raise exceptions for this symbology
+            generator.Parameters.Barcode.ThrowExceptionWhenCodeTextIncorrect = false;
+
+            // Generate the barcode image (Aspose.Drawing.Bitmap)
+            using (Aspose.Drawing.Bitmap image = generator.GenerateBarCodeImage())
             {
-                // Log a warning and skip barcode generation for invalid data.
-                Console.WriteLine($"Warning: Customer information \"{customerInfo}\" is invalid for {interpreting}. Skipping generation.");
-                continue;
+                // Save the generated image to a file
+                string outputPath = "AustraliaPost.png";
+                image.Save(outputPath);
+                Console.WriteLine($"Barcode saved to {outputPath}");
             }
-
-            // Generate Australia Post barcode using the valid code text.
-            using (var generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, codeText))
-            {
-                // Apply the appropriate encoding table for the customer information.
-                generator.Parameters.Barcode.AustralianPost.AustralianPostEncodingTable = interpreting;
-
-                // Save the barcode image to a PNG file.
-                string fileName = $"AustraliaPost_{index}.png";
-                generator.Save(fileName);
-                Console.WriteLine($"Generated barcode saved to {Path.GetFullPath(fileName)}");
-            }
-
-            index++;
         }
     }
 
-    // Validation according to the interpreting type.
-    static bool IsCustomerInfoValid(string info, CustomerInformationInterpretingType type)
+    // Validates customer information according to the selected interpreting type
+    static bool IsValidCustomerInfo(string info, CustomerInformationInterpretingType type)
     {
         switch (type)
         {
             case CustomerInformationInterpretingType.CTable:
-                // Allows A-Z, a-z, 1-9, space and '#'.
-                foreach (char ch in info)
+                foreach (char c in info)
                 {
-                    if (char.IsLetter(ch) || (ch >= '1' && ch <= '9') || ch == ' ' || ch == '#')
-                        continue;
-                    return false;
+                    // CTable allows letters, digits, space and '#'
+                    if (!(char.IsLetterOrDigit(c) || c == ' ' || c == '#'))
+                        return false;
                 }
                 return true;
 
             case CustomerInformationInterpretingType.NTable:
-                // Allows digits only.
-                foreach (char ch in info)
+                foreach (char c in info)
                 {
-                    if (!char.IsDigit(ch))
+                    // NTable allows digits only
+                    if (!char.IsDigit(c))
                         return false;
                 }
                 return true;
 
             case CustomerInformationInterpretingType.Other:
-                // Allows only symbols '0', '1', '2', '3'.
-                foreach (char ch in info)
+                // Other allows only 0‑3 symbols and a maximum length of 3
+                if (info.Length > 3) return false;
+                foreach (char c in info)
                 {
-                    if (ch != '0' && ch != '1' && ch != '2' && ch != '3')
+                    if (c < '0' || c > '3')
                         return false;
                 }
                 return true;

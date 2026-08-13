@@ -1,40 +1,44 @@
-// Title: Custom Foreground and Background Colors for Barcode Image
-// Description: Demonstrates how to apply custom bar (foreground) and background colors when generating a barcode with Aspose.BarCode.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and the Parameters property to customize visual aspects of barcodes. Typical scenarios include branding, UI integration, and printing where specific color schemes are required. Developers often need to adjust bar and background colors to match corporate identity or improve readability on various media.
+// Title: Custom Foreground and Background Colors for a Code128 Barcode
+// Description: Demonstrates how to set custom bar (foreground) and background colors when generating a Code128 barcode image using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to customize visual appearance of barcodes via the BarcodeGenerator and its Parameters API. Developers often need to match corporate branding or improve scan reliability by adjusting bar and background colors. Typical use cases include creating PNG, JPEG, or PDF barcode assets with specific color schemes.
 // Prompt: Apply custom foreground and background colors to the barcode image using generator settings.
-// Tags: barcode, color, generation, png, aspose.barcode, csharp
+// Tags: code128, color, png, barcodegenerator, generation
 
 using System;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
-/// <summary>
-/// Shows how to set custom foreground (bar) and background colors for a generated barcode image.
-/// </summary>
-class Program
+namespace BarcodeColorExample
 {
     /// <summary>
-    /// Entry point of the example. Generates a Code128 barcode with blue bars on a light‑gray background and saves it as a PNG file.
+    /// Generates a Code128 barcode image with custom foreground (bar) and background colors.
     /// </summary>
-    static void Main()
+    class Program
     {
-        // Define the output file path for the generated barcode image.
-        string outputPath = "custom_color_barcode.png";
-
-        // Initialize a BarcodeGenerator for the Code128 symbology with sample text.
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
+        /// <summary>
+        /// Entry point of the example. Creates a barcode, applies color settings, and saves it as a PNG file.
+        /// </summary>
+        static void Main()
         {
-            // Set the foreground color (the color of the bars) to blue.
-            generator.Parameters.Barcode.BarColor = Color.Blue;
+            // Output file path for the generated barcode image
+            const string outputFile = "barcode.png";
 
-            // Set the background color of the image to light gray.
-            generator.Parameters.BackColor = Color.LightGray;
+            // Initialize a BarcodeGenerator for the Code128 symbology with sample data
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+            {
+                // Set the color of the barcode bars (foreground)
+                generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Blue;
 
-            // Save the generated barcode image to the specified file path (default format is PNG).
-            generator.Save(outputPath);
+                // Set the background color of the image
+                generator.Parameters.BackColor = Aspose.Drawing.Color.Yellow;
+
+                // Render and save the barcode as a PNG image
+                generator.Save(outputFile, BarCodeImageFormat.Png);
+            }
+
+            // Output the location of the saved barcode image
+            Console.WriteLine($"Barcode image saved to: {outputFile}");
         }
-
-        // Inform the user where the barcode image has been saved.
-        Console.WriteLine($"Barcode image saved to: {outputPath}");
     }
 }

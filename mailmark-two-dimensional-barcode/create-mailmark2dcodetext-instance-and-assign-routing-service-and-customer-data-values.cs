@@ -1,56 +1,64 @@
-// Title: Generate Mailmark 2D Barcode with Routing, Service, and Customer Data
-// Description: Demonstrates creating a Mailmark2DCodetext instance, assigning routing, service, and customer data, and generating a PNG barcode image.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It showcases the use of ComplexBarcodeGenerator and Mailmark2DCodetext to produce Mailmark 2D barcodes, a common requirement for postal automation and tracking solutions. Developers often need to set routing, service, and custom payload fields before rendering the barcode in various image formats.
+// Title: Generate Mailmark 2D barcode with routing, service, and customer data
+// Description: Demonstrates creating a Mailmark2DCodetext, assigning routing, service class, and custom content, then generating a Mailmark 2D barcode image.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It showcases the Mailmark2DCodetext class, which is used to build Mailmark 2‑D barcodes for postal services. Typical use cases include setting routing information, service class, and customer‑specific data before rendering the barcode as an image. Developers working with postal automation or logistics often need to generate such barcodes programmatically.
 // Prompt: Create a Mailmark2DCodetext instance and assign routing, service, and customer data values.
-// Tags: mailmark, 2d, barcode, generation, png, aspose.barcode, complexbarcode, codetext, dataencoding
+// Tags: mailmark, 2d, barcode, complexbarcode, generation, aspose.barcode
 
 using System;
-using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.ComplexBarcode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Example program that builds a Mailmark 2D barcode by populating routing,
-/// service, and customer data fields, then saves the result as a PNG image.
+/// Example program that builds a Mailmark 2‑D barcode by populating routing,
+/// service, and customer data fields, then saves the barcode as a PNG image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates a Mailmark2DCodetext, sets required
-    /// properties, generates the barcode, and writes it to disk.
+    /// Entry point of the example. Creates a Mailmark2DCodetext, configures its
+    /// required fields, generates the barcode, and writes the output file name
+    /// to the console.
     /// </summary>
     static void Main()
     {
-        // Instantiate a Mailmark2DCodetext object to hold barcode data.
+        // Instantiate a Mailmark2DCodetext object which holds all barcode data.
         var mailmark2d = new Mailmark2DCodetext();
 
-        // Set routing information: destination postcode plus DPS (trailing space required).
-        mailmark2d.DestinationPostCodeAndDPS = "EF61AH8T ";
+        // ------------------------------------------------------------
+        // Required routing and service information
+        // ------------------------------------------------------------
+        mailmark2d.VersionID = "1";                 // Version identifier (single character)
+        mailmark2d.InformationTypeID = "0";         // Routing information (Information Type ID)
+        mailmark2d.Class = "1";                     // Service class identifier
+        mailmark2d.RTSFlag = "0";                   // Return‑to‑sender flag
 
-        // Set service information: information type ID, class, version, and RTS flag.
-        mailmark2d.InformationTypeID = "0"; // example service type
-        mailmark2d.Class = "1";             // example class
-        mailmark2d.VersionID = "1";         // version identifier
-        mailmark2d.RTSFlag = "0";           // return‑to‑sender flag
+        // ------------------------------------------------------------
+        // Additional mandatory fields (sample values)
+        // ------------------------------------------------------------
+        mailmark2d.SupplyChainID = 384224;          // Supply chain identifier
+        mailmark2d.ItemID = 16563762;               // Unique item identifier
+        mailmark2d.DestinationPostCodeAndDPS = "EF61AH8T "; // Destination postcode + DPS (trailing space required)
+        mailmark2d.ReturnToSenderPostCode = "SW1A1AA";     // Return‑to‑sender postcode (no DPS)
+        mailmark2d.UPUCountryID = "GB";            // UPU country identifier
 
-        // Set customer-specific data and its encoding mode.
-        mailmark2d.CustomerContent = "CUSTOMER123";
-        mailmark2d.CustomerContentEncodeMode = DataMatrixEncodeMode.C40;
+        // ------------------------------------------------------------
+        // Customer‑specific content
+        // ------------------------------------------------------------
+        mailmark2d.CustomerContent = "CUSTOMER DATA";
+        mailmark2d.CustomerContentEncodeMode = DataMatrixEncodeMode.C40; // Encode mode for the customer content
 
-        // Populate additional required fields with sample values.
-        mailmark2d.SupplyChainID = 384224;
-        mailmark2d.ItemID = 16563762;
-        mailmark2d.UPUCountryID = "GB";
+        // Optional: specify DataMatrix type (default is sufficient for most scenarios)
+        // mailmark2d.DataMatrixType = DataMatrixType.DataMatrix; // Uncomment if needed and enum exists
 
-        // Use ComplexBarcodeGenerator to create the barcode based on the codetext.
+        // ------------------------------------------------------------
+        // Generate the barcode and save it as a PNG file
+        // ------------------------------------------------------------
         using (var generator = new ComplexBarcodeGenerator(mailmark2d))
         {
-            // Define output file path and save the barcode as a PNG image.
-            const string outputPath = "mailmark2d.png";
-            generator.Save(outputPath, BarCodeImageFormat.Png);
-
-            // Inform the user where the file was saved.
-            Console.WriteLine($"Mailmark 2D barcode saved to {Path.GetFullPath(outputPath)}");
+            generator.Save("Mailmark2D.png");
         }
+
+        Console.WriteLine("Mailmark 2D barcode generated: Mailmark2D.png");
     }
 }

@@ -1,42 +1,50 @@
-// Title: Generate Code128 barcode and save as PNG
-// Description: Demonstrates creating a Code128 barcode image using Aspose.BarCode and saving it to disk, which can be adapted to return as a FileResult in ASP.NET MVC.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to use the BarcodeGenerator class to encode data, customize colors, and output images. Developers working on web applications often need to generate barcodes on-the-fly for reports, tickets, or inventory systems, and then return the image via an MVC controller action as a FileResult.
+// Title: Generate Code128 Barcode and Output as Base64 String
+// Description: Demonstrates creating a Code128 barcode using Aspose.BarCode, converting it to PNG, and encoding the image as a Base64 string, which can be returned from an ASP.NET MVC controller as a FileResult.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category. It showcases the use of BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes to produce barcode images. Typical scenarios include generating barcodes on-the-fly for web applications, embedding them in PDFs, or returning them via API endpoints. Developers often need to render barcodes in common image formats and stream them directly to HTTP responses.
 // Prompt: Integrate barcode generation into an ASP.NET MVC controller and return the image as a FileResult.
-// Tags: code128, barcode generation, png, aspnet mvc, filereturn, aspose.barcode
+// Tags: barcode generation, code128, png, base64, aspnet mvc, fileresult, aspose.barcode, c#
 
 using System;
 using System.IO;
-using Aspose.BarCode.Generation;
 using Aspose.BarCode;
+using Aspose.BarCode.Generation;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates barcode generation using Aspose.BarCode.
+/// Demonstrates barcode generation logic suitable for an ASP.NET MVC controller.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point for the console demonstration. In an MVC app this logic would reside in a controller action returning a FileResult.
+    /// Generates a Code128 barcode, encodes it to PNG, and writes the image as a Base64 string.
     /// </summary>
     static void Main()
     {
-        // Define the output file path for the generated barcode image.
-        string outputPath = "barcode.png";
+        // In a real MVC controller this code would be placed inside an action method
+        // and the resulting byte array would be returned as a FileResult.
 
-        // Create a BarcodeGenerator for Code128 symbology with the desired data.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456789"))
+        // Initialize a BarcodeGenerator for the Code128 symbology with sample data.
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "123ABC"))
         {
-            // Set the barcode's foreground (bar) color.
+            // Set visual appearance: black bars on a white background.
             generator.Parameters.Barcode.BarColor = Color.Black;
-
-            // Set the background color of the image.
             generator.Parameters.BackColor = Color.White;
 
-            // Save the generated barcode image to the specified file path.
-            generator.Save(outputPath);
+            // Render the barcode to a memory stream in PNG format.
+            using (MemoryStream ms = new MemoryStream())
+            {
+                generator.Save(ms, BarCodeImageFormat.Png);
+                byte[] imageBytes = ms.ToArray();
+
+                // Convert the PNG bytes to a Base64 string.
+                // In an MVC action you would return File(imageBytes, "image/png").
+                string base64 = Convert.ToBase64String(imageBytes);
+                Console.WriteLine("Generated barcode image (Base64):");
+                Console.WriteLine(base64);
+            }
         }
 
-        // Output the full path of the saved barcode image for verification.
-        Console.WriteLine($"Barcode image saved to: {Path.GetFullPath(outputPath)}");
+        // Program ends successfully.
     }
 }
