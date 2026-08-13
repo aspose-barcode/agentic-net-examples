@@ -1,96 +1,94 @@
-// Title: Barcode generation at multiple DPI settings with file size comparison
-// Description: Demonstrates creating Code128 barcodes at 96, 150, and 300 dpi, saving as PNG, and comparing the resulting file sizes.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to configure the Resolution property of BarcodeGenerator, save images, and analyze output size. Developers working with barcode image rendering often need to balance image quality against file size, and this snippet shows typical usage of EncodeTypes, BarcodeGenerator, and file I/O for such assessments.
+// Title: Generate barcodes at multiple DPI settings and compare file sizes
+// Description: Demonstrates creating Code128 barcodes at 96, 150, and 300 dpi, saving them as PNG, and reporting the resulting file sizes.
+// Category-Description: This example belongs to the Aspose.BarCode image generation category, illustrating how to configure the Resolution property of BarcodeGenerator, save images in various formats, and analyze output size. Developers working with barcode rendering, DPI optimization, or storage considerations can use these patterns to balance quality and file size.
 // Prompt: Write script generating barcodes at 96, 150, and 300 dpi and comparing output file sizes.
-// Tags: code128, barcode generation, png, resolution, file size, aspose.barcode, barcodegenerator
+// Tags: barcode, code128, resolution, dpi, png, file-size, aspose.barcode, generation
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generating Code128 barcodes at various DPI settings and comparing the resulting file sizes.
+/// Demonstrates generating Code128 barcodes at different DPI settings and comparing the resulting PNG file sizes.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates barcodes at 96, 150, and 300 dpi, saves them as PNG files, and reports file size statistics.
+    /// Entry point of the example. Generates barcodes, saves them, and prints size comparisons.
     /// </summary>
     static void Main()
     {
-        // Sample barcode data to encode
-        const string codeText = "1234567890";
+        // Barcode content and symbology
+        string codeText = "1234567890";
+        BaseEncodeType encodeType = EncodeTypes.Code128;
 
         // Resolutions (dots per inch) to test
-        float[] resolutions = new float[] { 96f, 150f, 300f };
+        float[] resolutions = { 96f, 150f, 300f };
 
-        // Array to store generated file sizes for each resolution
-        long[] fileSizes = new long[resolutions.Length];
+        // Dictionary to store file size for each DPI
+        Dictionary<float, long> fileSizes = new Dictionary<float, long>();
 
-        // Loop through each resolution, generate barcode, and record file size
-        for (int i = 0; i < resolutions.Length; i++)
+        // Iterate over each resolution, generate and save the barcode
+        foreach (float dpi in resolutions)
         {
-            // Build output file name based on current DPI
-            string fileName = $"barcode_{(int)resolutions[i]}dpi.png";
+            string fileName = $"barcode_{dpi}.png";
 
-            // Create and configure the barcode generator
-            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+            // Create a generator instance and configure it
+            using (BarcodeGenerator generator = new BarcodeGenerator(encodeType, codeText))
             {
-                // Set the desired image resolution
-                generator.Parameters.Resolution = resolutions[i];
+                // Apply the desired DPI resolution
+                generator.Parameters.Resolution = dpi;
 
-                // Save the generated barcode as a PNG image
-                generator.Save(fileName);
+                // Save the barcode as a PNG image
+                generator.Save(fileName, BarCodeImageFormat.Png);
             }
 
-            // Verify that the file was created and capture its size
+            // Record the size of the generated file
             if (File.Exists(fileName))
             {
-                fileSizes[i] = new FileInfo(fileName).Length;
-                Console.WriteLine($"Generated {fileName}: {fileSizes[i]} bytes (Resolution: {resolutions[i]} dpi)");
+                FileInfo info = new FileInfo(fileName);
+                fileSizes[dpi] = info.Length;
+                Console.WriteLine($"Resolution {dpi} dpi: file size = {info.Length} bytes");
             }
             else
             {
-                Console.WriteLine($"Failed to generate {fileName}");
-                fileSizes[i] = -1;
+                Console.WriteLine($"Failed to create file for resolution {dpi} dpi.");
             }
         }
 
-        // Output a simple comparison of file sizes across resolutions
+        // Output a summary of all recorded sizes
         Console.WriteLine();
-        Console.WriteLine("File size comparison:");
-        for (int i = 0; i < resolutions.Length; i++)
+        Console.WriteLine("Size comparison:");
+        foreach (var kvp in fileSizes)
         {
-            Console.WriteLine($"{(int)resolutions[i]} dpi -> {fileSizes[i]} bytes");
+            Console.WriteLine($"{kvp.Key} dpi -> {kvp.Value} bytes");
         }
 
-        // Determine which resolution produced the smallest and largest files
-        long minSize = long.MaxValue;
-        long maxSize = long.MinValue;
-        int minIndex = -1;
-        int maxIndex = -1;
-
-        for (int i = 0; i < fileSizes.Length; i++)
+        // Determine and display the smallest and largest files
+        if (fileSizes.Count > 0)
         {
-            if (fileSizes[i] >= 0 && fileSizes[i] < minSize)
-            {
-                minSize = fileSizes[i];
-                minIndex = i;
-            }
-            if (fileSizes[i] > maxSize)
-            {
-                maxSize = fileSizes[i];
-                maxIndex = i;
-            }
-        }
+            float minDpi = 0f, maxDpi = 0f;
+            long minSize = long.MaxValue, maxSize = long.MinValue;
 
-        // Report the resolutions with the smallest and largest file sizes
-        if (minIndex >= 0 && maxIndex >= 0)
-        {
+            foreach (var kvp in fileSizes)
+            {
+                if (kvp.Value < minSize)
+                {
+                    minSize = kvp.Value;
+                    minDpi = kvp.Key;
+                }
+                if (kvp.Value > maxSize)
+                {
+                    maxSize = kvp.Value;
+                    maxDpi = kvp.Key;
+                }
+            }
+
             Console.WriteLine();
-            Console.WriteLine($"Smallest file: {resolutions[minIndex]} dpi ({minSize} bytes)");
-            Console.WriteLine($"Largest  file: {resolutions[maxIndex]} dpi ({maxSize} bytes)");
+            Console.WriteLine($"Smallest file: {minDpi} dpi ({minSize} bytes)");
+            Console.WriteLine($"Largest file: {maxDpi} dpi ({maxSize} bytes)");
         }
     }
 }

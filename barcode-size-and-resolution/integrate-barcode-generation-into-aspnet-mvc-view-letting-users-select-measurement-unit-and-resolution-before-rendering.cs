@@ -1,69 +1,63 @@
-// Title: Barcode generation with selectable measurement unit and resolution
-// Description: Demonstrates how to generate a barcode image while allowing users to choose the measurement unit and DPI resolution before rendering.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and image parameter settings. Developers often need to customize barcode size and resolution for web applications, print media, or UI integration, and this snippet shows typical API usage for those scenarios.
+// Title: Barcode generation with selectable unit and resolution for ASP.NET MVC
+// Description: Demonstrates creating a barcode image where the measurement unit and DPI resolution are configurable, suitable for rendering in an MVC view.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to use BarcodeGenerator, set resolution, measurement units (points, pixels, millimeters), and image dimensions. Developers often need to generate barcodes dynamically in web applications, customize size, and serve the image from a view. The snippet shows typical API usage for such scenarios.
 // Prompt: Integrate barcode generation into ASP.NET MVC view, letting users select measurement unit and resolution before rendering.
-// Tags: barcode, generation, measurement unit, resolution, aspnet mvc, code128, png
+// Tags: barcode generation, aspnet mvc, measurement unit, resolution, code128, png, aspose.barcode
 
 using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates core barcode generation logic that can be used behind an ASP.NET MVC view.
+/// Demonstrates core barcode generation logic that can be integrated into an ASP.NET MVC view.
+/// The example shows how to configure measurement units, resolution, and image dimensions before saving the barcode image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that simulates user selections, configures the barcode generator, and saves the image.
+    /// Entry point of the console application.
+    /// In a real MVC scenario, the same logic would be invoked from a controller action and the image streamed to the view.
     /// </summary>
     static void Main()
     {
-        // Simulated user inputs: measurement unit and DPI resolution
-        string selectedUnit = "Pixel"; // Options: "Point", "Pixel", "Inch", "Millimeter"
-        float selectedResolution = 300f; // DPI
-
-        // Barcode content and symbology type
+        // Sample input parameters (in a real MVC app these would be bound from user input)
         string codeText = "Sample123";
-        BaseEncodeType encodeType = EncodeTypes.Code128;
+        BaseEncodeType encodeType = EncodeTypes.Code128; // 1D barcode symbology
+        float resolutionDpi = 300f; // User‑selected DPI resolution
 
-        // Create the barcode generator with the chosen type and content
+        // Measurement unit selection: Points (could also be Pixels or Millimeters)
+        // All size‑related properties are set using the .Point member.
+
+        // Initialize the barcode generator with the chosen symbology and data
         using (var generator = new BarcodeGenerator(encodeType, codeText))
         {
-            // Apply the selected resolution (dots per inch)
-            generator.Parameters.Resolution = selectedResolution;
+            // Apply the user‑selected resolution (DPI)
+            generator.Parameters.Resolution = resolutionDpi;
 
-            // Set image size using the chosen measurement unit
-            // Example size: 300 x 150 in the selected unit
-            switch (selectedUnit)
-            {
-                case "Point":
-                    generator.Parameters.ImageWidth.Point = 300f;
-                    generator.Parameters.ImageHeight.Point = 150f;
-                    break;
-                case "Pixel":
-                    generator.Parameters.ImageWidth.Pixels = 300f;
-                    generator.Parameters.ImageHeight.Pixels = 150f;
-                    break;
-                case "Inch":
-                    generator.Parameters.ImageWidth.Inches = 3f;
-                    generator.Parameters.ImageHeight.Inches = 1.5f;
-                    break;
-                case "Millimeter":
-                    generator.Parameters.ImageWidth.Millimeters = 76.2f; // 3 inches
-                    generator.Parameters.ImageHeight.Millimeters = 38.1f; // 1.5 inches
-                    break;
-                default:
-                    throw new ArgumentException($"Unsupported unit: {selectedUnit}");
-            }
-
-            // Optional: set auto-size mode to interpolation to respect ImageWidth/Height settings
+            // Use interpolation mode to ensure the image size matches the specified dimensions exactly
             generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
 
-            // Save the generated barcode image to a file
-            string outputPath = "barcode.png";
-            generator.Save(outputPath);
+            // Define the output image size in points
+            generator.Parameters.ImageWidth.Point = 300f;   // Width in points
+            generator.Parameters.ImageHeight.Point = 150f;  // Height in points
 
-            Console.WriteLine($"Barcode saved to '{outputPath}' using unit '{selectedUnit}' and resolution {selectedResolution} DPI.");
+            // Configure barcode-specific dimensions in points
+            generator.Parameters.Barcode.XDimension.Point = 2f;      // Module (X) width
+            generator.Parameters.Barcode.BarHeight.Point = 40f;     // Bar height for 1D barcode
+
+            // Optional: set foreground (bars) and background colors
+            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
+            generator.Parameters.BackColor = Aspose.Drawing.Color.White;
+
+            // Save the generated barcode image to a file (could be streamed instead in MVC)
+            string outputPath = "barcode.png";
+            generator.Save(outputPath, BarCodeImageFormat.Png);
+
+            // Informational output for debugging or logging purposes
+            Console.WriteLine($"Barcode generated and saved to '{outputPath}'.");
+            Console.WriteLine($"Resolution: {generator.Parameters.Resolution} DPI");
+            Console.WriteLine($"Image size: {generator.Parameters.ImageWidth.Point}pt x {generator.Parameters.ImageHeight.Point}pt");
         }
     }
 }

@@ -1,73 +1,83 @@
-// Title: Verify auto‑size behavior of barcode when BarCodeHeight is zero
-// Description: Demonstrates a unit‑test‑style check that a barcode generated with BarCodeHeight left at its default (zero) automatically sizes itself based on the encoded content.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to use the AutoSizeMode property (especially Interpolation) together with default measurement units to let the library determine optimal barcode dimensions. Developers working with dynamic barcode rendering, layout‑aware image creation, or automated testing of barcode size behavior will find this pattern useful.
+// Title: Verify auto‑size of barcode when BarCodeHeight is zero
+// Description: Demonstrates that setting BarCodeHeight to zero (by not assigning it) and using AutoSizeMode.Interpolation automatically adjusts the barcode height based on its content.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to control barcode dimensions using the AutoSizeMode property of BarcodeGenerator. It shows default behavior versus interpolation auto‑sizing, a common requirement when developers need dynamic barcode sizing without manually calculating dimensions.
 // Prompt: Create unit test verifying barcode with BarCodeHeight zero enables auto‑size based on content, using default units.
-// Tags: barcode, autosize, interpolation, code128, unit-test, default-units, aspnet, aspose.barcode
+// Tags: barcode, code128, autosize, interpolation, generation, unit-test, aspose.barcode
 
 using System;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Contains a simple console‑based test that verifies auto‑size functionality
-/// of a generated barcode when the bar height is not explicitly set (default zero).
+/// Example program that compares default barcode height with height obtained
+/// when AutoSizeMode.Interpolation is applied (BarCodeHeight left unset, i.e., zero).
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the console application. Executes the auto‑size test and
-    /// writes the result to the console.
+    /// Entry point. Generates two barcodes and validates that interpolation auto‑size
+    /// produces a greater image height than the default configuration.
     /// </summary>
     static void Main()
     {
-        // Run the test and output result
-        try
-        {
-            bool result = TestAutoSizeWithDefaultUnits();
+        // Sample barcode text to encode
+        const string codeText = "12345678901234567890";
 
-            // Report PASS or FAIL based on the test outcome
-            Console.WriteLine(result ? "PASS: Auto-size enabled correctly." : "FAIL: Auto-size not as expected.");
-        }
-        catch (Exception ex)
-        {
-            // Unexpected exception handling – report as failure
-            Console.WriteLine($"FAIL: Unexpected exception - {ex.GetType().Name}: {ex.Message}");
-        }
-    }
-
-    // Verifies that when AutoSizeMode is set to Interpolation (and BarHeight is not set),
-    // the generated barcode image size adapts to the content using default units.
-    static bool TestAutoSizeWithDefaultUnits()
-    {
-        // Sample barcode text
-        const string codeText = "Test12345";
-
-        // Create generator for Code128 (a 1D barcode)
+        // --------------------------------------------------------------------
+        // Generate barcode using default settings (AutoSizeMode = None)
+        // --------------------------------------------------------------------
+        int defaultHeight;
         using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
         {
-            // Enable auto-size via interpolation mode.
-            generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
-
-            // Do NOT set BarHeight; leaving it at default allows auto-sizing.
-            // Generate the barcode image.
+            // No explicit BarHeight or AutoSizeMode assignment – defaults are used
             using (Bitmap bitmap = generator.GenerateBarCodeImage())
             {
-                // Ensure an image was created.
-                if (bitmap == null)
-                    return false;
+                // Capture the height of the generated image
+                defaultHeight = bitmap.Height;
 
-                // Verify that the image has a non‑zero height and width (auto‑sized).
-                if (bitmap.Height <= 0 || bitmap.Width <= 0)
-                    return false;
-
-                // Optionally, save the image for manual inspection (not required for the test).
-                // bitmap.Save("autoSizeBarcode.png", ImageFormat.Png);
-
-                // If we reach this point, auto‑size behaved as expected.
-                return true;
+                // Optional: save image to memory stream for visual inspection
+                using (var stream = new MemoryStream())
+                {
+                    bitmap.Save(stream, ImageFormat.Png);
+                }
             }
+        }
+
+        // --------------------------------------------------------------------
+        // Generate barcode with AutoSizeMode.Interpolation (auto‑size based on content)
+        // --------------------------------------------------------------------
+        int interpolatedHeight;
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+        {
+            // Enable interpolation auto‑size; BarHeight remains unset (zero)
+            generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
+
+            using (Bitmap bitmap = generator.GenerateBarCodeImage())
+            {
+                // Capture the height of the interpolated image
+                interpolatedHeight = bitmap.Height;
+
+                // Optional: save image to memory stream for visual inspection
+                using (var stream = new MemoryStream())
+                {
+                    bitmap.Save(stream, ImageFormat.Png);
+                }
+            }
+        }
+
+        // --------------------------------------------------------------------
+        // Validation: interpolated height should be greater than default height
+        // --------------------------------------------------------------------
+        if (interpolatedHeight > defaultHeight && interpolatedHeight > 0)
+        {
+            Console.WriteLine("PASS: AutoSizeMode.Interpolation increased barcode height based on content.");
+        }
+        else
+        {
+            Console.WriteLine("FAIL: AutoSizeMode.Interpolation did not adjust barcode height as expected.");
         }
     }
 }
