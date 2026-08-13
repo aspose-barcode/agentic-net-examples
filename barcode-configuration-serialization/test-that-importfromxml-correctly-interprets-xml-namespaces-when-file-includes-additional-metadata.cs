@@ -1,95 +1,69 @@
-// Title: ImportFromXml with XML namespaces handling demonstration
-// Description: Shows how to export a barcode generator to XML, inject extra namespaced metadata, and import it back, verifying that namespaces are correctly interpreted.
+// Title: Import barcode settings from XML with namespace handling
+// Description: Demonstrates using Aspose.BarCode's ImportFromXml to generate a barcode from an XML configuration that includes namespaces and extra metadata.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to load barcode settings from an XML file using the BarcodeGenerator class. Typical use cases involve configuring barcodes via external XML files, handling namespaces, and integrating metadata. Developers often need to import settings, generate images, and verify readability in automated workflows.
 // Prompt: Test that ImportFromXml correctly interprets XML namespaces when the file includes additional metadata.
-// Tags: barcode, import, xml, namespaces, code128, aspose.barcodes
+// Tags: barcode symbology, generation, png, importfromxml, aspose.barcode
 
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates exporting a barcode to XML, adding extra namespaced metadata, and importing it back using Aspose.BarCode.
+/// Example program that imports barcode generation settings from an XML file,
+/// creates a barcode image, and verifies that the barcode can be read back.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Performs export, modification, import, and validation steps.
+    /// Entry point of the example. Writes an XML configuration, imports it,
+    /// generates a barcode image, and reads the barcode to confirm correctness.
     /// </summary>
     static void Main()
     {
-        // Paths for temporary files
-        string xmlPath = "barcode.xml";
-        string modifiedXmlPath = "barcode_modified.xml";
+        // Define XML configuration with a namespace and extra metadata
+        string xmlContent = @"<?xml version=""1.0"" encoding=""utf-8""?>
+<BarcodeGenerator xmlns=""http://schemas.aspose.com/barcode/2021"">
+  <EncodeType>Code128</EncodeType>
+  <CodeText>Test123</CodeText>
+  <Metadata>
+    <Author>TestUser</Author>
+    <Comment>Sample barcode generated from XML</Comment>
+  </Metadata>
+</BarcodeGenerator>";
 
-        // Step 1: Create a barcode generator and set a property
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Test123"))
+        // Paths for the temporary XML file and the resulting barcode image
+        string xmlPath = "barcode_config.xml";
+        string imagePath = "imported_barcode.png";
+
+        // Write the XML configuration to a file on disk
+        File.WriteAllText(xmlPath, xmlContent);
+
+        // Import barcode generator settings from the XML file
+        using (BarcodeGenerator generator = BarcodeGenerator.ImportFromXml(xmlPath))
         {
-            // Set the barcode color to blue
-            generator.Parameters.Barcode.BarColor = Color.Blue;
-
-            // Export the generator settings to XML
-            generator.ExportToXml(xmlPath);
+            // Save the generated barcode image in PNG format
+            generator.Save(imagePath, BarCodeImageFormat.Png);
         }
 
-        // Verify the original XML file exists
-        if (!File.Exists(xmlPath))
+        // Verify that the barcode image was created and can be decoded
+        if (File.Exists(imagePath))
         {
-            Console.WriteLine("Failed to create the original XML file.");
-            return;
+            // Initialize a reader for Code128 barcodes
+            using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.Code128))
+            {
+                // Iterate through all detected barcodes and output their decoded text
+                foreach (BarCodeResult result in reader.ReadBarCodes())
+                {
+                    Console.WriteLine("Decoded CodeText: " + result.CodeText);
+                }
+            }
         }
-
-        // Step 2: Load the XML and insert additional metadata with its own namespace
-        string xmlContent = File.ReadAllText(xmlPath);
-
-        // Find the position before the closing root element to insert extra data
-        int insertPos = xmlContent.LastIndexOf("</BarcodeGenerator>", StringComparison.Ordinal);
-        if (insertPos == -1)
+        else
         {
-            Console.WriteLine("Unexpected XML format.");
-            return;
-        }
-
-        // Define extra metadata using a custom namespace
-        string extraMetadata = @"
-  <ExtraInfo xmlns:ex=""http://example.com/schema"">
-    <ex:Note>Sample metadata</ex:Note>
-  </ExtraInfo>
-";
-
-        // Insert the extra metadata into the original XML content
-        string modifiedXml = xmlContent.Insert(insertPos, extraMetadata);
-        File.WriteAllText(modifiedXmlPath, modifiedXml);
-
-        // Verify the modified XML file exists
-        if (!File.Exists(modifiedXmlPath))
-        {
-            Console.WriteLine("Failed to create the modified XML file.");
-            return;
-        }
-
-        // Step 3: Import the barcode generator from the modified XML
-        BarcodeGenerator importedGenerator = BarcodeGenerator.ImportFromXml(modifiedXmlPath);
-        if (importedGenerator == null)
-        {
-            Console.WriteLine("ImportFromXml returned null.");
-            return;
-        }
-
-        // Output key properties to confirm successful import
-        Console.WriteLine("Imported CodeText: " + importedGenerator.CodeText);
-        Console.WriteLine("Imported BarColor: " + importedGenerator.Parameters.Barcode.BarColor.Name);
-
-        // Clean up temporary files (optional)
-        try
-        {
-            File.Delete(xmlPath);
-            File.Delete(modifiedXmlPath);
-        }
-        catch
-        {
-            // Ignored - cleanup not critical for the test
+            Console.WriteLine("Failed to generate barcode image.");
         }
     }
 }

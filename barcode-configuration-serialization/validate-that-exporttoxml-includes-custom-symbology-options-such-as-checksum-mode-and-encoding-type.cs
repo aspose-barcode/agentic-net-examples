@@ -1,80 +1,55 @@
-// Title: ExportToXml with custom symbology options demonstration
-// Description: Shows how to export barcode generator settings, including checksum mode and encoding type, to XML and then import them back.
+// Title: Export QR barcode settings to XML and verify custom symbology options
+// Description: Demonstrates exporting a QR barcode generator's configuration, including checksum and encoding settings, to XML and re-importing it to confirm the options are preserved.
+// Category-Description: This example belongs to the Aspose.BarCode generation and serialization category, showcasing how to use BarcodeGenerator, its Parameters, and the ExportToXml/ImportFromXml APIs. Developers often need to persist barcode settings for later reuse, configuration files, or cross‑application sharing. The snippet illustrates setting custom symbology options, exporting them to an XML stream, and validating that they survive a round‑trip.
 // Prompt: Validate that ExportToXml includes custom symbology options such as checksum mode and encoding type.
-// Tags: barcode symbology, export, xml, checksum, encoding, aspose.barcode
+// Tags: barcode symbology, export, xml, checksum, encoding, aspose.barcode, generation
 
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates exporting barcode generation settings (including custom symbology options)
-/// to XML and importing them back to verify that the options are preserved.
+/// Example program that creates a QR barcode, configures custom symbology options,
+/// exports the generator settings to XML, and verifies that the options are retained
+/// after importing the XML back into a new generator instance.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Executes export/import validation for Codabar and QR symbologies.
+    /// Entry point of the example. Performs the export‑import validation of custom QR barcode options.
     /// </summary>
     static void Main()
     {
-        // Prepare a temporary directory for XML files
-        string tempDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
-        Directory.CreateDirectory(tempDir);
-
-        // ---------- Codabar with checksum mode ----------
-        string codabarXml = Path.Combine(tempDir, "codabar.xml");
-        using (var codabarGen = new BarcodeGenerator(EncodeTypes.Codabar, "A123B"))
+        // Initialize a QR barcode generator with sample text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Test123"))
         {
-            // Set custom checksum mode (Mod10) for Codabar
-            codabarGen.Parameters.Barcode.Codabar.ChecksumMode = CodabarChecksumMode.Mod10;
+            // Configure custom symbology options.
+            generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes; // Enable checksum calculation.
+            generator.Parameters.Barcode.QR.ECIEncoding = ECIEncodings.UTF8;       // Set UTF‑8 encoding for QR data.
 
-            // Export the generator settings to an XML file
-            bool exported = codabarGen.ExportToXml(codabarXml);
-            Console.WriteLine($"Codabar ExportToXml success: {exported}");
-        }
+            // Export the generator's configuration to an in‑memory XML stream.
+            using (var xmlStream = new MemoryStream())
+            {
+                bool exportResult = generator.ExportToXml(xmlStream);
+                Console.WriteLine($"ExportToXml succeeded: {exportResult}");
 
-        // Import the Codabar settings from XML and validate the checksum mode
-        using (var importedCodabar = BarcodeGenerator.ImportFromXml(codabarXml))
-        {
-            var mode = importedCodabar.Parameters.Barcode.Codabar.ChecksumMode;
-            Console.WriteLine($"Imported Codabar ChecksumMode: {mode}");
-        }
+                // Reset the stream position to the beginning for reading.
+                xmlStream.Position = 0;
 
-        // ---------- QR with ECI encoding ----------
-        string qrXml = Path.Combine(tempDir, "qr.xml");
-        using (var qrGen = new BarcodeGenerator(EncodeTypes.QR, "Sample QR"))
-        {
-            // Set QR encoding mode to ECI and specify UTF-8 as the ECI encoding
-            qrGen.Parameters.Barcode.QR.EncodeMode = QREncodeMode.ECIEncoding;
-            qrGen.Parameters.Barcode.QR.ECIEncoding = ECIEncodings.UTF8;
+                // Import the settings from the XML stream into a new generator instance.
+                using (var importedGenerator = BarcodeGenerator.ImportFromXml(xmlStream))
+                {
+                    // Verify that the checksum option was preserved.
+                    bool checksumRestored = importedGenerator.Parameters.Barcode.IsChecksumEnabled == EnableChecksum.Yes;
+                    // Verify that the encoding type was preserved.
+                    bool eciRestored = importedGenerator.Parameters.Barcode.QR.ECIEncoding == ECIEncodings.UTF8;
 
-            // Export the QR generator settings to an XML file
-            bool exported = qrGen.ExportToXml(qrXml);
-            Console.WriteLine($"QR ExportToXml success: {exported}");
-        }
-
-        // Import the QR settings from XML and validate the encoding options
-        using (var importedQr = BarcodeGenerator.ImportFromXml(qrXml))
-        {
-            var encodeMode = importedQr.Parameters.Barcode.QR.EncodeMode;
-            var eci = importedQr.Parameters.Barcode.QR.ECIEncoding;
-            Console.WriteLine($"Imported QR EncodeMode: {encodeMode}");
-            Console.WriteLine($"Imported QR ECIEncoding: {eci}");
-        }
-
-        // Cleanup temporary files (optional)
-        try
-        {
-            File.Delete(codabarXml);
-            File.Delete(qrXml);
-            Directory.Delete(tempDir);
-        }
-        catch
-        {
-            // Ignore any errors during cleanup
+                    Console.WriteLine($"Checksum option restored: {checksumRestored}");
+                    Console.WriteLine($"Encoding type restored: {eciRestored}");
+                }
+            }
         }
     }
 }

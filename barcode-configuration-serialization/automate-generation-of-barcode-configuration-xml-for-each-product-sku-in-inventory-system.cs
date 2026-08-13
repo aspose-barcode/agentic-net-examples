@@ -1,73 +1,55 @@
-// Title: Generate Barcode Configuration XML for Inventory SKUs
-// Description: Creates Code128 barcode configuration XML files for each product SKU in an inventory, demonstrating how to automate barcode setup using Aspose.BarCode.
+// Title: Generate Code128 Barcodes and Export Configuration XML for Product SKUs
+// Description: This example creates Code128 barcode images for a list of product SKUs and saves the generation settings as XML files.
+// Category-Description: Demonstrates Aspose.BarCode generation and configuration export. It uses BarcodeGenerator, EncodeTypes, and BarCodeImageFormat to produce barcode images and ExportToXml to persist settings. Ideal for inventory systems needing automated barcode creation and reusable configuration files. Suitable for developers working with barcode symbologies, image output, and XML configuration management.
 // Prompt: Automate generation of barcode configuration XML for each product SKU in an inventory system.
-// Tags: barcode symbology, generation, xml, aspose.barcode, inventory
+// Tags: barcode symbology, generation, png, xml, aspose.barcode, code128
 
 using System;
-using System.Collections.Generic;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates how to generate barcode configuration XML files for a set of product SKUs.
+/// Example program that generates Code128 barcode images for a set of product SKUs
+/// and exports the corresponding generation settings to XML configuration files.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Iterates through a sample inventory and creates
-    /// an XML configuration file for each SKU using the Aspose.BarCode library.
+    /// Entry point of the application. Iterates over sample SKUs, creates barcode images,
+    /// and writes XML configuration files for each.
     /// </summary>
     static void Main()
     {
-        // Sample inventory: SKU -> barcode value (Code128)
-        var inventory = new Dictionary<string, string>
-        {
-            { "SKU001", "1234567890" },
-            { "SKU002", "ABCDEF1234" },
-            { "SKU003", "9876543210" },
-            { "SKU004", "XYZ7890123" },
-            { "SKU005", "0011223344" }
-        };
+        // Define a sample collection of product SKUs to process
+        string[] skus = { "SKU001", "SKU002", "SKU003", "SKU004", "SKU005" };
 
-        // Determine output folder for XML files
-        string outputFolder = Path.Combine(Directory.GetCurrentDirectory(), "BarcodeConfigs");
-        if (!Directory.Exists(outputFolder))
-        {
-            // Create the folder if it does not exist
-            Directory.CreateDirectory(outputFolder);
-        }
+        // Specify the output directory for both barcode images and XML configuration files
+        string outputDir = "Barcodes";
+        Directory.CreateDirectory(outputDir); // Ensure the directory exists
 
-        // Process each inventory entry
-        foreach (var kvp in inventory)
+        // Process each SKU individually
+        foreach (string sku in skus)
         {
-            string sku = kvp.Key;
-            string codeText = kvp.Value;
+            // Build full file paths for the image and XML files
+            string imagePath = Path.Combine(outputDir, $"{sku}.png");
+            string xmlPath   = Path.Combine(outputDir, $"{sku}.xml");
 
-            // Validate SKU input
-            if (string.IsNullOrWhiteSpace(sku))
+            // Initialize the barcode generator with Code128 symbology and the current SKU value
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, sku))
             {
-                Console.WriteLine("Warning: SKU is empty. Skipping entry.");
-                continue;
-            }
+                // Example of customizing a barcode parameter: set X-dimension (module width) to 2 points
+                generator.Parameters.Barcode.XDimension.Point = 2f;
 
-            // Create a Code128 barcode generator for the current SKU
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
-            {
-                // Optional: customize appearance
-                generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-                generator.Parameters.BackColor = Aspose.Drawing.Color.White;
-                generator.Parameters.Barcode.XDimension.Point = 2f;   // Module size
-                generator.Parameters.Barcode.BarHeight.Point = 40f; // Bar height
+                // Save the generated barcode as a PNG image
+                generator.Save(imagePath, BarCodeImageFormat.Png);
 
-                // Export configuration to XML file named after the SKU
-                string xmlPath = Path.Combine(outputFolder, $"{sku}.xml");
+                // Export the current generation settings to an XML configuration file
                 generator.ExportToXml(xmlPath);
-                Console.WriteLine($"Exported barcode configuration for {sku} to {xmlPath}");
             }
-        }
 
-        // Indicate successful completion
-        Console.WriteLine("All barcode configurations have been generated.");
+            // Inform the user about the generated files
+            Console.WriteLine($"Generated barcode for {sku}: image={imagePath}, config={xmlPath}");
+        }
     }
 }

@@ -1,105 +1,70 @@
-// Title: Barcode visual properties persistence after XML deserialization
-// Description: Demonstrates creating a barcode with specific visual settings, exporting to XML, importing back, and verifying that size, colors, text, and padding remain unchanged.
+// Title: Verify visual property persistence after XML deserialization
+// Description: Demonstrates creating a barcode, customizing visual properties, exporting to XML, importing back, and confirming that size, color, and text settings remain unchanged.
+// Category-Description: This example belongs to the Aspose.BarCode serialization category, illustrating how to use BarcodeGenerator, ExportToXml, and ImportFromXml for persisting barcode configuration. Developers often need to store barcode settings in XML for later reuse, configuration files, or cross‑application sharing. The snippet shows typical use cases such as saving visual appearance, dimensions, and text attributes.
 // Prompt: Verify that all visual properties such as size, color, and text persist after XML deserialization.
-// Tags: barcode, code128, xml, serialization, visual properties, aspose.barcode, c#
+// Tags: barcode symbology, serialization, xml, visual properties, aspose.barcode, code128, generation
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Example program that creates a barcode, saves its configuration to XML,
-/// reloads it, and checks that visual properties are preserved.
+/// Example program that creates a barcode, customizes its visual appearance,
+/// serializes the settings to XML, deserializes them, and verifies that all
+/// visual properties persist correctly.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Executes the barcode creation, XML export/import, and verification steps.
+    /// Entry point of the example. Executes the barcode generation,
+    /// XML export/import, and property verification steps.
     /// </summary>
     static void Main()
     {
-        // Define file paths for the XML configuration and optional PNG image.
-        string xmlPath = Path.Combine(Directory.GetCurrentDirectory(), "barcode.xml");
-        string imagePath = Path.Combine(Directory.GetCurrentDirectory(), "barcode.png");
-
-        // --------------------------------------------------------------------
-        // Create a barcode generator and configure its visual appearance.
-        // --------------------------------------------------------------------
+        // Initialize a barcode generator with Code128 symbology and sample text.
         using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Test123"))
         {
-            // Set foreground (barcode) and background colors.
+            // Configure visual properties: colors, dimensions, and text formatting.
             generator.Parameters.Barcode.BarColor = Color.Blue;
             generator.Parameters.BackColor = Color.Yellow;
-
-            // Configure image size. AutoSizeMode.Interpolation uses the explicit dimensions.
-            generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
             generator.Parameters.ImageWidth.Point = 300f;
             generator.Parameters.ImageHeight.Point = 150f;
-
-            // Define human‑readable text (code text) appearance.
             generator.Parameters.Barcode.CodeTextParameters.Font.FamilyName = "Arial";
             generator.Parameters.Barcode.CodeTextParameters.Font.Size.Point = 12f;
             generator.Parameters.Barcode.CodeTextParameters.Alignment = TextAlignment.Center;
 
-            // Apply uniform padding around the barcode.
-            generator.Parameters.Barcode.Padding.Left.Point = 5f;
-            generator.Parameters.Barcode.Padding.Top.Point = 5f;
-            generator.Parameters.Barcode.Padding.Right.Point = 5f;
-            generator.Parameters.Barcode.Padding.Bottom.Point = 5f;
+            // Export the current generator settings to an in‑memory XML stream.
+            using (var xmlStream = new MemoryStream())
+            {
+                generator.ExportToXml(xmlStream);
+                xmlStream.Position = 0; // Reset stream position for reading.
 
-            // Save the barcode image (optional, provides a visual reference).
-            generator.Save(imagePath, BarCodeImageFormat.Png);
+                // Import a new generator instance from the XML data.
+                using (var importedGenerator = BarcodeGenerator.ImportFromXml(xmlStream))
+                {
+                    // Compare each visual property between the original and imported generators.
+                    bool barColorMatch = importedGenerator.Parameters.Barcode.BarColor.ToArgb() == generator.Parameters.Barcode.BarColor.ToArgb();
+                    bool backColorMatch = importedGenerator.Parameters.BackColor.ToArgb() == generator.Parameters.BackColor.ToArgb();
+                    bool widthMatch = Math.Abs(importedGenerator.Parameters.ImageWidth.Point - generator.Parameters.ImageWidth.Point) < 0.001f;
+                    bool heightMatch = Math.Abs(importedGenerator.Parameters.ImageHeight.Point - generator.Parameters.ImageHeight.Point) < 0.001f;
+                    bool fontFamilyMatch = importedGenerator.Parameters.Barcode.CodeTextParameters.Font.FamilyName == generator.Parameters.Barcode.CodeTextParameters.Font.FamilyName;
+                    bool fontSizeMatch = Math.Abs(importedGenerator.Parameters.Barcode.CodeTextParameters.Font.Size.Point - generator.Parameters.Barcode.CodeTextParameters.Font.Size.Point) < 0.001f;
+                    bool alignmentMatch = importedGenerator.Parameters.Barcode.CodeTextParameters.Alignment == generator.Parameters.Barcode.CodeTextParameters.Alignment;
+                    bool codeTextMatch = importedGenerator.CodeText == generator.CodeText;
 
-            // Export the complete generator configuration to an XML file.
-            generator.ExportToXml(xmlPath);
-        }
-
-        // --------------------------------------------------------------------
-        // Import the generator configuration from the previously saved XML.
-        // --------------------------------------------------------------------
-        using (var imported = BarcodeGenerator.ImportFromXml(xmlPath))
-        {
-            // Verify that colors persisted correctly.
-            bool colorsMatch = imported.Parameters.Barcode.BarColor.Equals(Color.Blue) &&
-                               imported.Parameters.BackColor.Equals(Color.Yellow);
-
-            // Verify that size and auto‑size mode persisted.
-            bool sizeMatch = imported.Parameters.ImageWidth.Point == 300f &&
-                             imported.Parameters.ImageHeight.Point == 150f &&
-                             imported.Parameters.AutoSizeMode == AutoSizeMode.Interpolation;
-
-            // Verify that code‑text font settings persisted.
-            bool textFontMatch = imported.Parameters.Barcode.CodeTextParameters.Font.FamilyName == "Arial" &&
-                                 imported.Parameters.Barcode.CodeTextParameters.Font.Size.Point == 12f &&
-                                 imported.Parameters.Barcode.CodeTextParameters.Alignment == TextAlignment.Center;
-
-            // Verify that padding values persisted.
-            bool paddingMatch = imported.Parameters.Barcode.Padding.Left.Point == 5f &&
-                                imported.Parameters.Barcode.Padding.Top.Point == 5f &&
-                                imported.Parameters.Barcode.Padding.Right.Point == 5f &&
-                                imported.Parameters.Barcode.Padding.Bottom.Point == 5f;
-
-            // Output verification results to the console.
-            Console.WriteLine($"Colors persisted: {colorsMatch}");
-            Console.WriteLine($"Size persisted: {sizeMatch}");
-            Console.WriteLine($"Text font persisted: {textFontMatch}");
-            Console.WriteLine($"Padding persisted: {paddingMatch}");
-        }
-
-        // --------------------------------------------------------------------
-        // Clean up generated files (optional).
-        // --------------------------------------------------------------------
-        try
-        {
-            if (File.Exists(xmlPath)) File.Delete(xmlPath);
-            if (File.Exists(imagePath)) File.Delete(imagePath);
-        }
-        catch
-        {
-            // Suppress any exceptions that occur during cleanup.
+                    // Output verification results to the console.
+                    Console.WriteLine($"BarColor persisted: {barColorMatch}");
+                    Console.WriteLine($"BackColor persisted: {backColorMatch}");
+                    Console.WriteLine($"ImageWidth persisted: {widthMatch}");
+                    Console.WriteLine($"ImageHeight persisted: {heightMatch}");
+                    Console.WriteLine($"FontFamily persisted: {fontFamilyMatch}");
+                    Console.WriteLine($"FontSize persisted: {fontSizeMatch}");
+                    Console.WriteLine($"TextAlignment persisted: {alignmentMatch}");
+                    Console.WriteLine($"CodeText persisted: {codeTextMatch}");
+                }
+            }
         }
     }
 }

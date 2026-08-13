@@ -1,122 +1,105 @@
-// Title: Logging wrapper for barcode XML export/import
-// Description: Demonstrates how to log timestamps and file paths when exporting barcode settings to XML and importing them back, using Aspose.BarCode.
+// Title: Logging wrapper for Aspose.BarCode XML export/import operations
+// Description: Demonstrates how to wrap ExportToXml and ImportFromXml with logging that records timestamps and file paths.
+// Category-Description: This example belongs to the Aspose.BarCode configuration management category, showcasing how to persist and restore barcode generator settings using XML. It highlights key API classes such as BarcodeGenerator, EncodeTypes, and the ExportToXml/ImportFromXml methods. Developers often need to serialize settings for reuse, versioning, or deployment, and logging these actions aids troubleshooting and audit trails.
 // Prompt: Create a logging wrapper around ExportToXml and ImportFromXml to record timestamps and file paths.
-// Tags: barcode symbology, export, import, xml, logging, aspose.barcode, csharp
+// Tags: barcode, code128, export, import, xml, logging, aspose.barcode, generation
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
 
-namespace BarcodeXmlLoggingDemo
+/// <summary>
+/// Provides static methods that wrap Aspose.BarCode XML export and import operations
+/// with simple file-based logging of timestamps and file paths.
+/// </summary>
+class BarcodeXmlLogger
 {
+    // Log file name used for all logging entries.
+    private const string LogFile = "barcode_log.txt";
+
     /// <summary>
-    /// Provides static methods that wrap Aspose.BarCode XML export/import operations with console logging.
+    /// Exports the specified <see cref="BarcodeGenerator"/> settings to an XML file
+    /// while writing start and end timestamps to the log.
     /// </summary>
-    public static class BarcodeXmlLogger
+    /// <param name="generator">The barcode generator whose settings are to be exported.</param>
+    /// <param name="xmlPath">The destination XML file path.</param>
+    /// <returns>True if the export succeeded; otherwise, false.</returns>
+    public static bool ExportToXmlWithLog(BarcodeGenerator generator, string xmlPath)
     {
-        /// <summary>
-        /// Exports the settings of a <see cref="BarcodeGenerator"/> to an XML file and logs the operation.
-        /// </summary>
-        /// <param name="generator">The barcode generator whose settings are to be exported.</param>
-        /// <param name="xmlFilePath">The full path of the XML file to write.</param>
-        /// <returns>True if the export succeeded; otherwise false.</returns>
-        public static bool ExportToXmlWithLog(BarcodeGenerator generator, string xmlFilePath)
-        {
-            // Validate input arguments
-            if (generator == null) throw new ArgumentNullException(nameof(generator));
-            if (string.IsNullOrWhiteSpace(xmlFilePath)) throw new ArgumentException("XML file path must be provided.", nameof(xmlFilePath));
+        // Log the start of the export operation.
+        string startMessage = $"{DateTime.Now:o} - ExportToXml started. Path: {xmlPath}{Environment.NewLine}";
+        File.AppendAllText(LogFile, startMessage);
 
-            // Log start of export
-            Console.WriteLine($"[{DateTime.Now:O}] Exporting barcode settings to XML: {xmlFilePath}");
-            bool result = false;
-            try
-            {
-                // Perform the actual export
-                result = generator.ExportToXml(xmlFilePath);
-                // Log successful completion
-                Console.WriteLine($"[{DateTime.Now:O}] Export completed. Success: {result}");
-            }
-            catch (Exception ex)
-            {
-                // Log any exception and rethrow
-                Console.WriteLine($"[{DateTime.Now:O}] Export failed: {ex.Message}");
-                throw;
-            }
-            return result;
-        }
+        // Perform the actual export.
+        bool result = generator.ExportToXml(xmlPath);
 
-        /// <summary>
-        /// Imports barcode settings from an XML file, creates a <see cref="BarcodeGenerator"/>, and logs the operation.
-        /// </summary>
-        /// <param name="xmlFilePath">The full path of the XML file to read.</param>
-        /// <returns>A new <see cref="BarcodeGenerator"/> initialized with the imported settings.</returns>
-        public static BarcodeGenerator ImportFromXmlWithLog(string xmlFilePath)
-        {
-            // Validate input arguments
-            if (string.IsNullOrWhiteSpace(xmlFilePath)) throw new ArgumentException("XML file path must be provided.", nameof(xmlFilePath));
-            if (!File.Exists(xmlFilePath))
-                throw new FileNotFoundException("XML file not found.", xmlFilePath);
+        // Log the completion status of the export operation.
+        string endMessage = $"{DateTime.Now:o} - ExportToXml completed. Success: {result}{Environment.NewLine}";
+        File.AppendAllText(LogFile, endMessage);
 
-            // Log start of import
-            Console.WriteLine($"[{DateTime.Now:O}] Importing barcode settings from XML: {xmlFilePath}");
-            BarcodeGenerator generator = null;
-            try
-            {
-                // Perform the actual import
-                generator = BarcodeGenerator.ImportFromXml(xmlFilePath);
-                // Log successful creation with symbology info
-                Console.WriteLine($"[{DateTime.Now:O}] Import completed. Generator created for symbology: {generator.BarcodeType.TypeName}");
-            }
-            catch (Exception ex)
-            {
-                // Log any exception and rethrow
-                Console.WriteLine($"[{DateTime.Now:O}] Import failed: {ex.Message}");
-                throw;
-            }
-            return generator;
-        }
+        return result;
     }
 
-    class Program
+    /// <summary>
+    /// Imports a <see cref="BarcodeGenerator"/> from an XML file while logging timestamps.
+    /// </summary>
+    /// <param name="xmlPath">The source XML file path.</param>
+    /// <returns>A new <see cref="BarcodeGenerator"/> instance created from the XML.</returns>
+    public static BarcodeGenerator ImportFromXmlWithLog(string xmlPath)
     {
-        /// <summary>
-        /// Entry point of the demo. Exports barcode settings to XML, imports them back, generates an image, and cleans up temporary files.
-        /// </summary>
-        static void Main()
+        // Log the start of the import operation.
+        string startMessage = $"{DateTime.Now:o} - ImportFromXml started. Path: {xmlPath}{Environment.NewLine}";
+        File.AppendAllText(LogFile, startMessage);
+
+        // Perform the actual import.
+        BarcodeGenerator generator = BarcodeGenerator.ImportFromXml(xmlPath);
+
+        // Log the successful creation of the generator.
+        string endMessage = $"{DateTime.Now:o} - ImportFromXml completed. Generator created.{Environment.NewLine}";
+        File.AppendAllText(LogFile, endMessage);
+
+        return generator;
+    }
+}
+
+/// <summary>
+/// Entry point of the example that demonstrates exporting, importing, and saving a barcode
+/// while using the logging wrapper defined in <see cref="BarcodeXmlLogger"/>.
+/// </summary>
+class Program
+{
+    /// <summary>
+    /// Main method that orchestrates the barcode generation, XML persistence, and image saving.
+    /// </summary>
+    static void Main()
+    {
+        // Ensure a clean log file for each run.
+        if (File.Exists("barcode_log.txt"))
         {
-            // Define temporary file paths for XML settings and barcode image
-            string tempDir = Path.GetTempPath();
-            string xmlPath = Path.Combine(tempDir, "barcode_settings.xml");
-            string imagePath = Path.Combine(tempDir, "barcode_image.png");
-
-            // Create a barcode generator, export its settings, then import them back
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
-            {
-                // Export settings to XML with logging
-                BarcodeXmlLogger.ExportToXmlWithLog(generator, xmlPath);
-            }
-
-            // Import settings from XML with logging and generate the barcode image
-            using (var importedGenerator = BarcodeXmlLogger.ImportFromXmlWithLog(xmlPath))
-            {
-                // Save the generated barcode image to verify the imported settings
-                importedGenerator.Save(imagePath);
-                Console.WriteLine($"[{DateTime.Now:O}] Barcode image saved to: {imagePath}");
-            }
-
-            // Optional cleanup of temporary files
-            try
-            {
-                if (File.Exists(xmlPath)) File.Delete(xmlPath);
-                if (File.Exists(imagePath)) File.Delete(imagePath);
-                Console.WriteLine($"[{DateTime.Now:O}] Temporary files cleaned up.");
-            }
-            catch (Exception cleanupEx)
-            {
-                Console.WriteLine($"[{DateTime.Now:O}] Cleanup error: {cleanupEx.Message}");
-            }
+            File.Delete("barcode_log.txt");
         }
+
+        // Create a barcode generator for Code128 with sample data.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123ABC"))
+        {
+            // Export generator settings to XML with logging.
+            string xmlPath = "barcode_settings.xml";
+            BarcodeXmlLogger.ExportToXmlWithLog(generator, xmlPath);
+        }
+
+        // Import generator settings from XML with logging.
+        BarcodeGenerator importedGenerator = BarcodeXmlLogger.ImportFromXmlWithLog("barcode_settings.xml");
+
+        // Save the imported barcode as an image file.
+        using (importedGenerator)
+        {
+            string imagePath = "imported_barcode.png";
+            importedGenerator.Save(imagePath);
+            Console.WriteLine($"Barcode image saved to {Path.GetFullPath(imagePath)}");
+        }
+
+        // Indicate that processing has completed.
+        Console.WriteLine("Processing completed.");
     }
 }
