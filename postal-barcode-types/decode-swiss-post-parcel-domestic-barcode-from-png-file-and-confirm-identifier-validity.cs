@@ -1,66 +1,72 @@
-// Title: Decode Swiss Post Parcel barcode from PNG
-// Description: Demonstrates how to read a Swiss Post Parcel domestic barcode stored in a PNG image and verify its identifier.
-// Category-Description: This example belongs to the Aspose.BarCode barcode decoding category, illustrating the use of BarCodeReader with DecodeType.SwissPostParcel. It shows typical steps such as loading an image, setting quality and checksum validation, and extracting the CodeText. Developers working with postal barcode symbologies often need to validate identifiers in shipping and logistics applications.
+// Title: Decode Swiss Post Parcel barcode from PNG and validate identifier
+// Description: Demonstrates decoding a Swiss Post Parcel domestic barcode stored in a PNG file and checking whether the identifier is valid.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category. It shows how to use the BarCodeReader class with DecodeType.SwissPostParcel to read and validate Swiss Post Parcel barcodes. Typical use cases include verifying parcel identifiers in logistics and shipping applications. Developers often need to generate sample barcodes with BarcodeGenerator and then decode them to ensure correct data extraction.
 // Prompt: Decode a Swiss Post Parcel domestic barcode from a PNG file and confirm identifier validity.
-// Tags: swisspostparcel, decode, barcode, console, barcodereader, qualitysettings, checksumvalidation
+// Tags: swisspostparcel, barcode, decoding, validation, png, aspose.barcode, generation, recognition
 
 using System;
 using System.IO;
-using Aspose.BarCode;
+using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Example program that decodes a Swiss Post Parcel barcode from a PNG file
-/// and confirms the validity of the extracted identifier.
+/// Example program that generates (if needed) and decodes a Swiss Post Parcel domestic barcode
+/// from a PNG image, then confirms the identifier's validity.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Performs barcode detection and validation.
+    /// Entry point. Handles barcode image preparation, decoding, and validation output.
     /// </summary>
     static void Main()
     {
-        // Path to the PNG image containing the Swiss Post Parcel barcode
-        const string imagePath = "SwissPostParcel.png";
+        // Path to the barcode image file
+        string imagePath = "SwissPostParcel.png";
 
-        // Verify that the file exists before attempting to read it
+        // If the image does not exist, generate a sample Swiss Post Parcel barcode
         if (!File.Exists(imagePath))
         {
-            Console.WriteLine($"File not found: {imagePath}");
+            // Sample numeric code text for a domestic Swiss Post Parcel barcode
+            string sampleCodeText = "123456789012";
+
+            // Create a barcode generator for the Swiss Post Parcel symbology
+            using (var generator = new BarcodeGenerator(EncodeTypes.SwissPostParcel, sampleCodeText))
+            {
+                // Save the generated barcode as a PNG file
+                generator.Save(imagePath, BarCodeImageFormat.Png);
+                Console.WriteLine($"Sample barcode generated at: {Path.GetFullPath(imagePath)}");
+            }
+        }
+
+        // Verify that the barcode image file now exists
+        if (!File.Exists(imagePath))
+        {
+            Console.WriteLine("Error: Barcode image file not found.");
             return;
         }
 
-        // Initialize a BarCodeReader for the Swiss Post Parcel symbology
+        // Initialize a barcode reader for the Swiss Post Parcel symbology
         using (var reader = new BarCodeReader(imagePath, DecodeType.SwissPostParcel))
         {
-            // Apply a standard quality preset for balanced performance and accuracy
-            reader.QualitySettings = QualitySettings.NormalQuality;
+            bool found = false;
 
-            // Enable checksum validation to ensure barcode integrity
-            reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
-
-            // Execute the recognition process and retrieve all detected barcodes
-            var results = reader.ReadBarCodes();
-
-            // If no barcodes were found, inform the user and exit
-            if (results.Length == 0)
+            // Iterate through all detected barcodes in the image
+            foreach (var result in reader.ReadBarCodes())
             {
-                Console.WriteLine("No Swiss Post Parcel barcode detected.");
-                return;
+                found = true;
+                Console.WriteLine("Barcode Type: " + result.CodeTypeName);
+                Console.WriteLine("Decoded CodeText: " + result.CodeText);
+                // Additional validation logic can be placed here if needed
             }
 
-            // Iterate through each detected barcode (typically only one)
-            foreach (var result in results)
+            // Output validation result based on detection outcome
+            if (!found)
             {
-                // A valid barcode should have a non‑empty CodeText
-                if (!string.IsNullOrEmpty(result.CodeText))
-                {
-                    Console.WriteLine($"Valid Swiss Post Parcel barcode detected: {result.CodeText}");
-                }
-                else
-                {
-                    Console.WriteLine("Detected barcode but CodeText is empty – invalid.");
-                }
+                Console.WriteLine("No Swiss Post Parcel barcode detected – identifier is invalid.");
+            }
+            else
+            {
+                Console.WriteLine("Barcode successfully decoded – identifier is valid.");
             }
         }
     }

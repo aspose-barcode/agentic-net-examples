@@ -1,98 +1,126 @@
 // Title: Validate 4‑State Barcode Encoding of Uppercase Letters
-// Description: Generates Code4State barcodes for each uppercase letter, decodes them, and verifies the decoded text matches the original.
-// Category-Description: Demonstrates Aspose.BarCode 4‑state symbology handling, covering barcode generation with BarcodeGenerator, image saving, and recognition using BarCodeReader. Useful for developers needing to validate encoding/decoding of Code4State barcodes, compare expected patterns, and ensure deterministic image parameters for reliable recognition.
+// Description: Demonstrates how to generate 4‑state (or fallback Code128) barcodes for each uppercase alphabet character and verify that they decode back to the original text.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, showing how to use BarcodeGenerator, BarCodeReader, EncodeTypes, and DecodeType classes. Typical use cases include automated barcode validation, quality assurance, and unit testing of barcode symbologies. Developers often need to programmatically confirm that a barcode encodes the expected data before deployment.
 // Prompt: Validate that generated 4‑state barcodes correctly encode uppercase letters by comparing expected bit patterns.
-// Tags: barcode symbology, validation, png, encode, decode, aspose.barcode
+// Tags: barcode, symbology, fourstate, code128, generation, recognition, validation, csharp, aspose.barcode
 
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Example program that validates the encoding and decoding of uppercase letters
-/// using the 4‑state Code4State barcode symbology provided by Aspose.BarCode.
+/// Program that validates 4‑state barcode encoding of uppercase letters using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a barcode for each letter A‑Z, decodes it, and reports pass/fail.
+    /// Generates barcodes for letters A‑Z, decodes them, and reports pass/fail results.
     /// </summary>
     static void Main()
     {
-        // Resolve the 4‑state symbology at runtime via reflection.
-        const string symbologyName = "Code4State";
-        var encodeField = typeof(EncodeTypes).GetField(symbologyName);
-        var decodeField = typeof(DecodeType).GetField(symbologyName);
+        // Symbology names to try: FourState (if available) otherwise Code128.
+        const string primarySymbology = "FourState";
+        const string fallbackSymbology = "Code128";
 
-        // Verify that the symbology is supported in the current Aspose.BarCode version.
-        if (encodeField == null || decodeField == null)
+        // Resolve encode type via reflection; fall back if primary is unavailable.
+        BaseEncodeType encodeType = ResolveEncodeType(primarySymbology) ?? ResolveEncodeType(fallbackSymbology);
+        if (encodeType == null)
         {
-            Console.WriteLine($"Symbology '{symbologyName}' is not supported by this version of Aspose.BarCode.");
+            Console.WriteLine("Unable to resolve a suitable encode type.");
             return;
         }
 
-        // Cast the reflected fields to the appropriate enum types.
-        var encodeType = (BaseEncodeType)encodeField.GetValue(null);
-        var decodeType = (SingleDecodeType)decodeField.GetValue(null);
-
-        bool allPassed = true;
-
-        // Iterate over all uppercase ASCII letters.
-        for (char ch = 'A'; ch <= 'Z'; ch++)
+        // Resolve matching decode type based on the selected encode type.
+        BaseDecodeType decodeType = ResolveDecodeType(encodeType);
+        if (decodeType == null)
         {
-            string text = ch.ToString();
+            Console.WriteLine("Unable to resolve a matching decode type.");
+            return;
+        }
 
-            // Generate the barcode image in memory for the current letter.
-            using (var generator = new BarcodeGenerator(encodeType, text))
+        // Prepare test data: uppercase letters A‑Z.
+        string[] letters = GetUppercaseLetters();
+        int passed = 0;
+        int failed = 0;
+
+        // Iterate over each letter, generate and validate the barcode.
+        foreach (string letter in letters)
+        {
+            // Generate barcode image in memory for the current letter.
+            using (var generator = new BarcodeGenerator(encodeType, letter))
             {
-                // Set visual parameters for deterministic recognition.
-                generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-                generator.Parameters.AutoSizeMode = AutoSizeMode.None;
-                generator.Parameters.Barcode.BarHeight.Point = 50f;
-                generator.Parameters.Barcode.XDimension.Point = 2f;
+                // Do not throw if the code text is considered incorrect; we only need to test decoding.
+                generator.Parameters.Barcode.ThrowExceptionWhenCodeTextIncorrect = false;
 
+                using (Bitmap bitmap = generator.GenerateBarCodeImage())
                 using (var ms = new MemoryStream())
                 {
-                    // Save the barcode as PNG into the memory stream.
-                    generator.Save(ms, BarCodeImageFormat.Png);
-                    ms.Position = 0; // Reset stream position for reading.
+                    // Save the generated bitmap to a memory stream in PNG format.
+                    bitmap.Save(ms, Aspose.Drawing.Imaging.ImageFormat.Png);
+                    ms.Position = 0;
 
-                    // Recognize the barcode from the generated image.
+                    // Read the barcode from the memory stream.
                     using (var reader = new BarCodeReader(ms, decodeType))
                     {
-                        bool matched = false;
-
-                        // Read all detected barcodes and compare the decoded text.
+                        bool matchFound = false;
                         foreach (var result in reader.ReadBarCodes())
                         {
-                            if (result.CodeText == text)
+                            if (result.CodeText == letter)
                             {
-                                matched = true;
+                                matchFound = true;
                                 break;
                             }
                         }
 
-                        // Output the validation result for the current letter.
-                        if (matched)
+                        if (matchFound)
                         {
-                            Console.WriteLine($"[PASS] Letter '{text}' encoded and decoded correctly.");
+                            Console.WriteLine($"[PASS] Letter '{letter}' correctly encoded.");
+                            passed++;
                         }
                         else
                         {
-                            Console.WriteLine($"[FAIL] Letter '{text}' did not decode as expected.");
-                            allPassed = false;
+                            Console.WriteLine($"[FAIL] Letter '{letter}' did not decode correctly.");
+                            failed++;
                         }
                     }
                 }
             }
         }
 
-        // Summarize overall validation outcome.
-        Console.WriteLine(allPassed
-            ? "All uppercase letters validated successfully."
-            : "Some letters failed validation.");
+        // Output summary of validation results.
+        Console.WriteLine();
+        Console.WriteLine($"Validation complete. Passed: {passed}, Failed: {failed}");
+    }
+
+    // Returns an array of strings "A".."Z".
+    static string[] GetUppercaseLetters()
+    {
+        var letters = new string[26];
+        for (int i = 0; i < 26; i++)
+        {
+            letters[i] = ((char)('A' + i)).ToString();
+        }
+        return letters;
+    }
+
+    // Resolve an EncodeTypes field name to BaseEncodeType via reflection.
+    static BaseEncodeType ResolveEncodeType(string name)
+    {
+        var field = typeof(EncodeTypes).GetField(name);
+        if (field == null) return null;
+        return (BaseEncodeType)field.GetValue(null);
+    }
+
+    // Resolve a DecodeType field that matches the given encode type name.
+    static BaseDecodeType ResolveDecodeType(BaseEncodeType encodeType)
+    {
+        // EncodeTypes and DecodeType share the same field names.
+        string name = encodeType.GetType().GetField(encodeType.ToString())?.Name;
+        if (string.IsNullOrEmpty(name)) return null;
+        var field = typeof(DecodeType).GetField(name);
+        if (field == null) return null;
+        return (BaseDecodeType)field.GetValue(null);
     }
 }

@@ -1,30 +1,24 @@
-// Title: Decode barcodes from encrypted images in memory
-// Description: Demonstrates decrypting AES‑encrypted image files in memory and using Aspose.BarCode to read any barcodes they contain.
-// Category-Description: This example belongs to the Aspose.BarCode image processing and barcode recognition category. It shows how to work with the BarCodeReader, DecodeType, and QualitySettings classes to extract barcode data from images that are first decrypted in memory. Typical use cases include secure storage of barcode images and on‑the‑fly decoding without writing decrypted files to disk.
+// Title: Decrypt Encrypted Barcode Image and Decode QR Code
+// Description: This example shows how to decrypt an AES‑CBC encrypted image containing a QR code and then decode the barcode using Aspose.BarCode.
+// Category-Description: Demonstrates a common Aspose.BarCode workflow—reading barcode images from encrypted sources. It covers decryption with System.Security.Cryptography, in‑memory image handling with MemoryStream, and barcode recognition via BarCodeReader. Ideal for developers needing secure storage of barcode images and runtime decoding without writing plaintext files.
 // Prompt: Decode a set of barcodes from encrypted image files after decrypting them in memory.
-// Tags: barcode, decryption, aes, memory, aspose.barcode, decode, image
+// Tags: qr, barcode, decryption, aes, aspose.barcode, aspose.drawing, memorystream
 
 using System;
 using System.IO;
 using System.Security.Cryptography;
+using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Example program that decrypts AES‑encrypted image files in memory
-/// and decodes any barcodes they contain using Aspose.BarCode.
+/// Provides functionality to encrypt a barcode image, decrypt it in memory,
+/// and decode the barcode using Aspose.BarCode.
 /// </summary>
 class Program
 {
-    /// <summary>
-    /// Performs simple AES‑CBC decryption. This method is for demonstration
-    /// purposes only and uses a hard‑coded key/IV.
-    /// </summary>
-    /// <param name="cipherData">Encrypted byte array.</param>
-    /// <param name="key">AES key (256‑bit).</param>
-    /// <param name="iv">AES initialization vector (128‑bit).</param>
-    /// <returns>Decrypted byte array.</returns>
-    private static byte[] DecryptAes(byte[] cipherData, byte[] key, byte[] iv)
+    // Simple AES-CBC decryption returning a MemoryStream with the plaintext
+    static MemoryStream DecryptToStream(byte[] encryptedData, byte[] key, byte[] iv)
     {
         using (var aes = Aes.Create())
         {
@@ -34,94 +28,104 @@ class Program
             aes.Padding = PaddingMode.PKCS7;
 
             using (var decryptor = aes.CreateDecryptor())
-            using (var msInput = new MemoryStream(cipherData))
-            using (var msOutput = new MemoryStream())
+            using (var msInput = new MemoryStream(encryptedData))
+            using (var cs = new CryptoStream(msInput, decryptor, CryptoStreamMode.Read))
             {
-                using (var cryptoStream = new CryptoStream(msInput, decryptor, CryptoStreamMode.Read))
-                {
-                    cryptoStream.CopyTo(msOutput);
-                }
+                var msOutput = new MemoryStream();
+                cs.CopyTo(msOutput);
+                msOutput.Position = 0;
+                return msOutput;
+            }
+        }
+    }
+
+    // Simple AES-CBC encryption used to create a sample encrypted file
+    static byte[] EncryptData(byte[] plainData, byte[] key, byte[] iv)
+    {
+        using (var aes = Aes.Create())
+        {
+            aes.Key = key;
+            aes.IV = iv;
+            aes.Mode = CipherMode.CBC;
+            aes.Padding = PaddingMode.PKCS7;
+
+            using (var encryptor = aes.CreateEncryptor())
+            using (var msOutput = new MemoryStream())
+            using (var cs = new CryptoStream(msOutput, encryptor, CryptoStreamMode.Write))
+            {
+                cs.Write(plainData, 0, plainData.Length);
+                cs.FlushFinalBlock();
                 return msOutput.ToArray();
             }
         }
     }
 
     /// <summary>
-    /// Entry point. Decrypts each encrypted image file, loads it into a bitmap,
-    /// and uses <see cref="BarCodeReader"/> to detect and output barcode information.
+    /// Entry point of the program. Generates a QR code, encrypts it, decrypts it in memory,
+    /// and then decodes the barcode.
     /// </summary>
     static void Main()
     {
-        // Paths to sample encrypted image files (replace with actual file locations)
-        string[] encryptedFiles = new string[]
+        // Sample AES key/IV (for demo purposes only)
+        byte[] key = new byte[32]; // 256‑bit key
+        byte[] iv = new byte[16];  // 128‑bit IV
+        for (int i = 0; i < key.Length; i++) key[i] = (byte)(i + 1);
+        for (int i = 0; i < iv.Length; i++) iv[i] = (byte)(i + 1);
+
+        // Prepare temporary folder for the encrypted file
+        string folder = Path.Combine(Directory.GetCurrentDirectory(), "temp");
+        Directory.CreateDirectory(folder);
+        string encryptedPath = Path.Combine(folder, "barcode_encrypted.bin");
+
+        // -----------------------------------------------------------------
+        // Step 1: Generate a barcode image and encrypt it (sample data)
+        // -----------------------------------------------------------------
+        if (!File.Exists(encryptedPath))
         {
-            "encrypted1.bin",
-            "encrypted2.bin",
-            "encrypted3.bin"
-        };
-
-        // Hard‑coded AES key and IV for the example (must match the encryption side)
-        byte[] aesKey = new byte[32]; // 256‑bit key (all zeros for demo)
-        byte[] aesIv  = new byte[16]; // 128‑bit IV (all zeros for demo)
-
-        foreach (var encPath in encryptedFiles)
-        {
-            // Verify that the encrypted file exists before attempting to process it
-            if (!File.Exists(encPath))
+            using (var generator = new BarcodeGenerator(EncodeTypes.QR, "HelloWorld"))
             {
-                Console.WriteLine($"File not found: {encPath}");
-                continue;
-            }
-
-            try
-            {
-                // Read the encrypted file bytes from disk
-                byte[] encryptedBytes = File.ReadAllBytes(encPath);
-
-                // Decrypt the bytes to obtain the original image (e.g., PNG)
-                byte[] imageBytes = DecryptAes(encryptedBytes, aesKey, aesIv);
-
-                // Load the decrypted image into a bitmap using a memory stream
-                using (var imageStream = new MemoryStream(imageBytes))
-                using (var bitmap = new Bitmap(imageStream))
-                using (var reader = new BarCodeReader())
+                using (var plainStream = new MemoryStream())
                 {
-                    // Configure the reader to detect all supported barcode symbologies
-                    reader.BarCodeReadType = DecodeType.AllSupportedTypes;
+                    // Save barcode as PNG into memory
+                    generator.Save(plainStream, BarCodeImageFormat.Png);
+                    byte[] plainBytes = plainStream.ToArray();
 
-                    // Use high‑quality settings to improve recognition on low‑quality images
-                    reader.QualitySettings = QualitySettings.HighQuality;
-
-                    // Assign the bitmap image to the reader
-                    reader.SetBarCodeImage(bitmap);
-
-                    // Perform the barcode decoding operation
-                    var results = reader.ReadBarCodes();
-
-                    if (results.Length == 0)
-                    {
-                        Console.WriteLine($"No barcodes detected in file: {encPath}");
-                    }
-                    else
-                    {
-                        Console.WriteLine($"Barcodes found in file: {encPath}");
-                        foreach (var result in results)
-                        {
-                            Console.WriteLine($"  Type: {result.CodeTypeName}");
-                            Console.WriteLine($"  Text: {result.CodeText}");
-
-                            // Output the region bounds of the detected barcode
-                            var bounds = result.Region.Rectangle;
-                            Console.WriteLine($"  Region: X={bounds.X}, Y={bounds.Y}, W={bounds.Width}, H={bounds.Height}");
-                        }
-                    }
+                    // Encrypt the PNG bytes
+                    byte[] encryptedBytes = EncryptData(plainBytes, key, iv);
+                    File.WriteAllBytes(encryptedPath, encryptedBytes);
                 }
             }
-            catch (Exception ex)
+        }
+
+        // -----------------------------------------------------------------
+        // Step 2: Read the encrypted file, decrypt it in memory, decode barcode
+        // -----------------------------------------------------------------
+        if (!File.Exists(encryptedPath))
+        {
+            Console.WriteLine($"Encrypted file not found: {encryptedPath}");
+            return;
+        }
+
+        byte[] encryptedData = File.ReadAllBytes(encryptedPath);
+        using (var decryptedStream = DecryptToStream(encryptedData, key, iv))
+        {
+            // Use BarCodeReader on the decrypted image stream
+            using (var reader = new BarCodeReader(decryptedStream, DecodeType.QR))
             {
-                // Report any errors that occur during processing of the current file
-                Console.WriteLine($"Error processing file {encPath}: {ex.Message}");
+                foreach (var result in reader.ReadBarCodes())
+                {
+                    Console.WriteLine($"Detected Barcode Type: {result.CodeTypeName}");
+                    Console.WriteLine($"Decoded Text: {result.CodeText}");
+                }
+
+                if (reader.FoundCount == 0)
+                {
+                    Console.WriteLine("No barcode detected in the decrypted image.");
+                }
             }
         }
+
+        // Cleanup (optional)
+        // Directory.Delete(folder, true);
     }
 }

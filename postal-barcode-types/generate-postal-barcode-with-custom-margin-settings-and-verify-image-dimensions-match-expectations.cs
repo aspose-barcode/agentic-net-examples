@@ -1,8 +1,8 @@
-// Title: Generate Postnet Barcode with Custom Margins and Verify Image Size
-// Description: Creates a Postnet postal barcode, applies custom padding, saves as PNG, and checks that the resulting image dimensions meet the expected minimum based on the margins.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, demonstrating how to configure barcode appearance (padding, X‑dimension) and export to an image file. It uses BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes—common tools for developers who need to produce printable barcodes with precise layout requirements. Ideal for tutorials, reference guides, and search results about barcode image customization.
+// Title: Generate a Postnet postal barcode with custom margins and verify image size
+// Description: Demonstrates how to create a Postnet barcode, apply custom padding, set image dimensions, and confirm the saved PNG matches expected pixel size.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing barcode creation, layout customization, and image export. It uses BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes to configure symbology, margins, and output format—common tasks for developers integrating barcode printing or validation into applications.
 // Prompt: Generate a postal barcode with custom margin settings and verify image dimensions match expectations.
-// Tags: postnet, barcode, margin, png, aspose.barcode, image verification
+// Tags: postnet, margin, image, generation, aspose.barcode, aspose.drawing
 
 using System;
 using System.IO;
@@ -12,64 +12,61 @@ using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a Postnet barcode with custom margins,
-/// saving it as a PNG image, and verifying the resulting image dimensions.
+/// Example program that generates a Postnet postal barcode with custom margins,
+/// saves it as a PNG file, and verifies the resulting image dimensions.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates the barcode, applies padding,
-    /// saves the image, and performs a simple size verification.
+    /// Entry point of the example. Performs barcode generation, saves the image,
+    /// and checks that the image size matches the expected dimensions.
     /// </summary>
     static void Main()
     {
-        // Define the output file path for the generated barcode image.
-        string outputPath = "postal.png";
+        // Define the output file path for the generated barcode image
+        string outputPath = "postal_barcode.png";
 
-        // Initialize a BarcodeGenerator for the Postnet symbology with sample data.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Postnet, "12345"))
+        // Remove any existing file to ensure a clean run
+        if (File.Exists(outputPath))
         {
-            // Apply custom padding of 10 points on each side.
+            File.Delete(outputPath);
+        }
+
+        // Create a BarcodeGenerator for the Postnet symbology with sample data
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Postnet, "12345678"))
+        {
+            // Configure custom margins (padding) in points
             generator.Parameters.Barcode.Padding.Left.Point = 10f;
-            generator.Parameters.Barcode.Padding.Top.Point = 10f;
+            generator.Parameters.Barcode.Padding.Top.Point = 15f;
             generator.Parameters.Barcode.Padding.Right.Point = 10f;
-            generator.Parameters.Barcode.Padding.Bottom.Point = 10f;
+            generator.Parameters.Barcode.Padding.Bottom.Point = 15f;
 
-            // Optionally adjust the X‑dimension to influence overall barcode size.
-            generator.Parameters.Barcode.XDimension.Point = 2f;
+            // Set the desired image size (including margins) in points
+            generator.Parameters.ImageWidth.Point = 300f;
+            generator.Parameters.ImageHeight.Point = 150f;
 
-            // Save the generated barcode as a PNG image.
+            // Save the barcode image to the specified path in PNG format
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Verify that the image file was successfully created.
-        if (!File.Exists(outputPath))
+        // Load the saved image to verify its dimensions
+        using (Bitmap bitmap = new Bitmap(outputPath))
         {
-            Console.WriteLine($"Error: Barcode image file '{outputPath}' was not created.");
-            return;
-        }
+            // Calculate expected pixel dimensions.
+            // Aspose.Drawing uses pixels; points are converted using the default DPI (96).
+            const float dpi = 96f;
+            int expectedWidth = (int)Math.Round(300f * dpi / 72f);
+            int expectedHeight = (int)Math.Round(150f * dpi / 72f);
 
-        // Load the saved image to retrieve its width and height in pixels.
-        using (Image image = Image.FromFile(outputPath))
-        {
-            int width = image.Width;
-            int height = image.Height;
+            // Output actual vs. expected dimensions for diagnostic purposes
+            Console.WriteLine($"Actual Width: {bitmap.Width}px, Expected Width: {expectedWidth}px");
+            Console.WriteLine($"Actual Height: {bitmap.Height}px, Expected Height: {expectedHeight}px");
 
-            Console.WriteLine($"Barcode image dimensions: Width = {width} px, Height = {height} px");
-
-            // Expected minimum dimensions based on the total padding (10 + 10 points each side).
-            const int expectedMinWidth = 20;  // left + right padding
-            const int expectedMinHeight = 20; // top + bottom padding
-
-            // Simple verification: ensure the image dimensions are not smaller than the padding.
-            if (width < expectedMinWidth || height < expectedMinHeight)
-            {
-                Console.WriteLine("Verification failed: Image dimensions are smaller than expected based on padding.");
-            }
-            else
-            {
-                Console.WriteLine("Verification succeeded: Image dimensions meet the expected minimum size.");
-            }
+            // Determine whether the dimensions match the expectations
+            bool sizeMatches = bitmap.Width == expectedWidth && bitmap.Height == expectedHeight;
+            Console.WriteLine(sizeMatches
+                ? "Image dimensions match the expectations."
+                : "Image dimensions do NOT match the expectations.");
         }
     }
 }

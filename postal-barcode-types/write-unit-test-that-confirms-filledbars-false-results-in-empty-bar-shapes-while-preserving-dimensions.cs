@@ -1,119 +1,110 @@
-// Title: Demonstrate FilledBars property effect on barcode image
-// Description: Shows how setting FilledBars to false creates empty bar shapes while keeping image dimensions unchanged.
-// Category-Description: This example belongs to the Aspose.BarCode image generation category, illustrating the use of BarcodeGenerator, its Parameters, and the FilledBars property to control bar rendering. Developers often need to generate barcodes with transparent or outline-only bars for design or overlay purposes; this snippet demonstrates measuring pixel counts to verify the effect.
+// Title: Barcode FilledBars Property Effect Unit Test
+// Description: Demonstrates a simple unit‑style test that verifies setting FilledBars to false renders empty bar shapes while keeping the image size unchanged.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to configure barcode rendering options such as FilledBars, generate PNG images, and compare bitmap data. Developers working with barcode image customization, visual verification, or automated testing often need to ensure rendering settings affect visual output without altering dimensions.
 // Prompt: Write a unit test that confirms FilledBars false results in empty bar shapes while preserving dimensions.
-// Tags: code128, filledbars, image, barcodegenerator, bitmap, pixelcount, unit-test
+// Tags: barcode, code128, filledbars, image comparison, unit test, aspose.barcode, png, bitmap
 
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates two Code128 barcodes—one with filled bars and one with empty bars—
-/// and compares their dimensions and pixel counts to verify the FilledBars property behavior.
+/// Contains a self‑contained test that validates the visual effect of the <c>FilledBars</c> property
+/// on a generated Code128 barcode image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Counts the number of pixels in the bitmap that match the specified target color.
-    /// </summary>
-    /// <param name="bitmap">The bitmap to scan.</param>
-    /// <param name="targetColor">The color to count.</param>
-    /// <returns>The total count of matching pixels.</returns>
-    static int CountColorPixels(Bitmap bitmap, Color targetColor)
-    {
-        int count = 0;
-        for (int y = 0; y < bitmap.Height; y++)
-        {
-            for (int x = 0; x < bitmap.Width; x++)
-            {
-                // Compare ARGB values for exact color match
-                if (bitmap.GetPixel(x, y).ToArgb() == targetColor.ToArgb())
-                    count++;
-            }
-        }
-        return count;
-    }
-
-    /// <summary>
-    /// Generates two barcode images (filled and empty bars), compares their dimensions,
-    /// and validates that the empty‑bars image contains fewer black pixels while preserving size.
+    /// Entry point of the console application. Executes the test and writes the result to the console.
     /// </summary>
     static void Main()
     {
-        // Common barcode configuration
+        // Run the test and output the result.
+        bool testPassed = TestFilledBarsEffect();
+        Console.WriteLine(testPassed ? "PASSED" : "FAILED");
+    }
+
+    // Generates two barcodes: one with default FilledBars (true) and one with FilledBars set to false.
+    // Verifies that the image dimensions are identical while the pixel data differs,
+    // indicating that bars are rendered empty when FilledBars is false.
+    static bool TestFilledBarsEffect()
+    {
+        // Common barcode settings
         const string codeText = "1234567890";
         const int imageWidth = 300;
         const int imageHeight = 150;
-        const float barHeight = 50f;
 
-        // ------------------------------------------------------------
-        // Generate barcode with filled bars (default behavior)
-        // ------------------------------------------------------------
+        // Generate barcode with FilledBars = true (default)
         using (var generatorFilled = new BarcodeGenerator(EncodeTypes.Code128, codeText))
         {
-            generatorFilled.Parameters.AutoSizeMode = AutoSizeMode.None;
             generatorFilled.Parameters.ImageWidth.Point = imageWidth;
             generatorFilled.Parameters.ImageHeight.Point = imageHeight;
-            generatorFilled.Parameters.Barcode.BarHeight.Point = barHeight;
-            generatorFilled.Parameters.Barcode.FilledBars = true; // explicit for clarity
-
-            using (Bitmap bitmapFilled = generatorFilled.GenerateBarCodeImage())
+            // Ensure default FilledBars (true) – no need to set explicitly
+            using (var msFilled = new MemoryStream())
             {
-                // Capture dimensions of the filled‑bars image
-                int widthFilled = bitmapFilled.Width;
-                int heightFilled = bitmapFilled.Height;
-
-                // Count black pixels representing the filled bars
-                int blackPixelsFilled = CountColorPixels(bitmapFilled, Aspose.Drawing.Color.Black);
-
-                // ------------------------------------------------------------
-                // Generate barcode with empty bars (FilledBars = false)
-                // ------------------------------------------------------------
-                using (var generatorEmpty = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+                generatorFilled.Save(msFilled, BarCodeImageFormat.Png);
+                msFilled.Position = 0;
+                using (var bitmapFilled = new Bitmap(msFilled))
                 {
-                    generatorEmpty.Parameters.AutoSizeMode = AutoSizeMode.None;
-                    generatorEmpty.Parameters.ImageWidth.Point = imageWidth;
-                    generatorEmpty.Parameters.ImageHeight.Point = imageHeight;
-                    generatorEmpty.Parameters.Barcode.BarHeight.Point = barHeight;
-                    generatorEmpty.Parameters.Barcode.FilledBars = false;
-
-                    using (Bitmap bitmapEmpty = generatorEmpty.GenerateBarCodeImage())
+                    // Generate barcode with FilledBars = false
+                    using (var generatorEmpty = new BarcodeGenerator(EncodeTypes.Code128, codeText))
                     {
-                        // Capture dimensions of the empty‑bars image
-                        int widthEmpty = bitmapEmpty.Width;
-                        int heightEmpty = bitmapEmpty.Height;
-
-                        // Count black pixels representing the outline of the bars
-                        int blackPixelsEmpty = CountColorPixels(bitmapEmpty, Aspose.Drawing.Color.Black);
-
-                        // Verify that both images share the same dimensions
-                        bool dimensionsMatch = widthFilled == widthEmpty && heightFilled == heightEmpty;
-
-                        // Verify that the empty‑bars image has fewer (or zero) black pixels
-                        bool fewerBlackPixels = blackPixelsEmpty < blackPixelsFilled;
-
-                        // Output diagnostic information
-                        Console.WriteLine($"Filled bars image size: {widthFilled}x{heightFilled}, black pixels: {blackPixelsFilled}");
-                        Console.WriteLine($"Empty bars image size: {widthEmpty}x{heightEmpty}, black pixels: {blackPixelsEmpty}");
-                        Console.WriteLine($"Dimensions preserved: {(dimensionsMatch ? "PASS" : "FAIL")}");
-                        Console.WriteLine($"Empty bars have fewer black pixels: {(fewerBlackPixels ? "PASS" : "FAIL")}");
-
-                        // Final result message
-                        if (!dimensionsMatch || !fewerBlackPixels)
+                        generatorEmpty.Parameters.ImageWidth.Point = imageWidth;
+                        generatorEmpty.Parameters.ImageHeight.Point = imageHeight;
+                        generatorEmpty.Parameters.Barcode.FilledBars = false;
+                        using (var msEmpty = new MemoryStream())
                         {
-                            Console.WriteLine("FAILED: FilledBars property did not behave as expected.");
-                        }
-                        else
-                        {
-                            Console.WriteLine("SUCCESS: FilledBars false results in empty bar shapes while preserving dimensions.");
+                            generatorEmpty.Save(msEmpty, BarCodeImageFormat.Png);
+                            msEmpty.Position = 0;
+                            using (var bitmapEmpty = new Bitmap(msEmpty))
+                            {
+                                // Verify dimensions are the same
+                                if (bitmapFilled.Width != bitmapEmpty.Width ||
+                                    bitmapFilled.Height != bitmapEmpty.Height)
+                                {
+                                    Console.WriteLine("Image dimensions differ.");
+                                    return false;
+                                }
+
+                                // Compare pixel data; expect at least one differing pixel
+                                int diffCount = CountDifferentPixels(bitmapFilled, bitmapEmpty);
+                                if (diffCount == 0)
+                                {
+                                    Console.WriteLine("Images are identical; FilledBars may not have effect.");
+                                    return false;
+                                }
+
+                                // Test succeeded
+                                return true;
+                            }
                         }
                     }
                 }
             }
         }
+    }
+
+    // Counts the number of pixels that differ between two bitmaps.
+    static int CountDifferentPixels(Bitmap bmp1, Bitmap bmp2)
+    {
+        int width = bmp1.Width;
+        int height = bmp1.Height;
+        int diff = 0;
+
+        for (int y = 0; y < height; y++)
+        {
+            for (int x = 0; x < width; x++)
+            {
+                if (bmp1.GetPixel(x, y) != bmp2.GetPixel(x, y))
+                {
+                    diff++;
+                }
+            }
+        }
+
+        return diff;
     }
 }

@@ -1,80 +1,89 @@
-// Title: Postal barcode generation with XDimension validation
-// Description: Demonstrates creating a Postnet barcode while validating the XDimension parameter to ensure it is positive.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on postal symbologies. It showcases the use of BarcodeGenerator, EncodeTypes, and barcode parameter settings such as XDimension, BarColor, and BackColor. Developers often need to generate valid postal barcodes for mailing applications and must validate dimensions to meet specification requirements.
-// Prompt: Implement error handling for invalid XDimension values when creating a postal barcode.
-// Tags: barcode, postal, xdimension, validation, generation, aspose.barcode, png
+// Title: Postal Barcode Generation with XDimension Validation
+// Description: Demonstrates creating a Postnet postal barcode using Aspose.BarCode while validating the XDimension parameter to ensure it is positive.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on postal symbologies such as Postnet. It shows how to configure barcode parameters (e.g., XDimension), handle invalid input, and save the image using BarcodeGenerator and related classes. Developers working with postal barcode creation, parameter validation, and image output can use this pattern as a reference.
+/// Prompt: Implement error handling for invalid XDimension values when creating a postal barcode.
+/// Tags: barcode, postal, postnet, xdimension, validation, aspnet, aspnetcore, aspose.barcode, image, png, error-handling
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates Postnet barcodes with validation for the XDimension parameter.
+/// Example program that generates Postnet postal barcodes and demonstrates validation of the XDimension parameter.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Iterates over sample XDimension values,
-    /// attempts to generate a barcode for each, and reports success or errors.
+    /// Entry point of the application. Generates a valid barcode and attempts to generate an invalid one to showcase error handling.
     /// </summary>
     static void Main()
     {
-        // Sample XDimension values to demonstrate validation (valid, negative, zero)
-        float[] xDimensions = { 2f, -1f, 0f };
-
-        foreach (float xDim in xDimensions)
+        // ------------------------------------------------------------
+        // Generate a valid postal barcode
+        // ------------------------------------------------------------
+        try
         {
-            try
-            {
-                // Build a unique file name based on the current XDimension value
-                string fileName = $"postal_{xDim}.png";
+            // Create a barcode with a positive XDimension value
+            CreatePostalBarcode("12345", 2f, "postal_valid.png");
+            Console.WriteLine("Valid barcode generated successfully.");
+        }
+        catch (Exception ex)
+        {
+            // Unexpected errors during valid barcode generation
+            Console.WriteLine($"Error generating valid barcode: {ex.Message}");
+        }
 
-                // Attempt to create and save the barcode
-                CreatePostalBarcode(xDim, fileName);
-
-                // Inform the user of successful generation
-                Console.WriteLine($"Barcode generated and saved to '{fileName}' with XDimension = {xDim}");
-            }
-            catch (ArgumentOutOfRangeException ex)
-            {
-                // Handle validation errors for XDimension
-                Console.WriteLine($"Invalid XDimension ({xDim}): {ex.Message}");
-            }
-            catch (Aspose.BarCode.BarCodeException ex)
-            {
-                // Handle errors thrown by the Aspose.BarCode library
-                Console.WriteLine($"Barcode generation error for XDimension ({xDim}): {ex.Message}");
-            }
+        // ------------------------------------------------------------
+        // Attempt to generate a barcode with an invalid XDimension
+        // ------------------------------------------------------------
+        try
+        {
+            // XDimension is negative, which should trigger validation logic
+            CreatePostalBarcode("12345", -1f, "postal_invalid.png");
+        }
+        catch (ArgumentOutOfRangeException ex)
+        {
+            // Expected validation exception for non‑positive XDimension
+            Console.WriteLine($"Caught expected argument error: {ex.Message}");
+        }
+        catch (Exception ex)
+        {
+            // Any other unexpected exceptions
+            Console.WriteLine($"Unexpected error: {ex.Message}");
         }
     }
 
     /// <summary>
-    /// Creates a Postnet barcode using the specified XDimension and saves it to the given path.
+    /// Creates a Postnet postal barcode with the specified XDimension.
+    /// Throws <see cref="ArgumentOutOfRangeException"/> if <paramref name="xDimension"/> is not positive.
     /// </summary>
-    /// <param name="xDimension">The XDimension (module width) in points; must be greater than zero.</param>
-    /// <param name="outputPath">The file path where the generated barcode image will be saved.</param>
-    static void CreatePostalBarcode(float xDimension, string outputPath)
+    /// <param name="codeText">The postal code to encode.</param>
+    /// <param name="xDimension">Module size in points (must be &gt; 0).</param>
+    /// <param name="outputPath">File path to save the generated barcode image.</param>
+    static void CreatePostalBarcode(string codeText, float xDimension, string outputPath)
     {
-        // Validate XDimension before applying it to the generator
+        // Validate that the XDimension is a positive value
         if (xDimension <= 0f)
         {
             throw new ArgumentOutOfRangeException(nameof(xDimension), "XDimension must be greater than zero.");
         }
 
-        // Initialize the barcode generator for the Postnet symbology with sample data
-        using (var generator = new BarcodeGenerator(EncodeTypes.Postnet, "12345678"))
+        // Ensure the output directory exists before saving the image
+        string directory = Path.GetDirectoryName(outputPath);
+        if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
         {
-            // Apply the validated XDimension to control module size
+            Directory.CreateDirectory(directory);
+        }
+
+        // Initialize the barcode generator for the Postnet symbology
+        using (var generator = new BarcodeGenerator(EncodeTypes.Postnet, codeText))
+        {
+            // Apply the validated XDimension (module size) to the barcode parameters
             generator.Parameters.Barcode.XDimension.Point = xDimension;
 
-            // Optional visual settings: black bars on a white background
-            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-            generator.Parameters.BackColor = Aspose.Drawing.Color.White;
-
-            // Save the generated barcode image to the specified file
-            generator.Save(outputPath);
+            // Save the generated barcode as a PNG image
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
     }
 }

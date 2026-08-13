@@ -1,67 +1,71 @@
 // Title: Generate Swiss Post Parcel barcode with embedded QR code
-// Description: Demonstrates creating a Swiss Post Parcel Additional Service Code barcode and a QR code for supplementary data, then combining them into a single image.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use BarcodeGenerator with EncodeTypes.SwissPostParcel and EncodeTypes.QR. It illustrates typical use cases such as combining multiple symbologies, adjusting dimensions, and saving the result as an image—common tasks for developers integrating postal and QR barcodes.
+// Description: Demonstrates creating a Swiss Post Parcel barcode and a QR code with supplementary data, then combining them into a single image.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to use BarcodeGenerator with different symbologies (SwissPostParcel and QR) and combine multiple barcode images. Typical use cases include packaging labels that require a primary barcode plus an auxiliary QR code for tracking URLs or additional information. Developers often need to generate, customize, and merge barcode graphics for printing or digital distribution.
 // Prompt: Generate a Swiss Post Parcel additional service code barcode with embedded QR code for supplementary data.
 // Tags: swisspostparcel, qr, barcode generation, image composition, aspose.barcode, csharp
 
 using System;
-using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a Swiss Post Parcel Additional Service Code barcode with an embedded QR code and saving the combined image.
+/// Example program that creates a Swiss Post Parcel barcode, generates a QR code with
+/// supplementary tracking data, and merges both images side‑by‑side into a single PNG file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Creates the Swiss Post barcode, QR code, merges them side‑by‑side, and writes the result to a PNG file.
+    /// Entry point of the example. Generates the barcodes, composes them, and saves the result.
     /// </summary>
     static void Main()
     {
-        // Primary Swiss Post Parcel barcode (Additional Service Code)
-        const string swissPostCodeText = "1234567890"; // example code text
-        using (var swissGenerator = new BarcodeGenerator(EncodeTypes.SwissPostParcel, swissPostCodeText))
+        // Sample parcel identifier (Swiss Post Parcel service code) and supplementary tracking URL
+        string parcelCode = "1234567890123456";
+        string supplementaryData = "https://example.com/track/123456";
+
+        // Create a Swiss Post Parcel barcode generator with the parcel identifier
+        using (var parcelGenerator = new BarcodeGenerator(EncodeTypes.SwissPostParcel, parcelCode))
         {
-            // Optional: adjust size or colors if needed
-            swissGenerator.Parameters.Barcode.XDimension.Point = 2f;
-            swissGenerator.Parameters.ImageWidth.Point = 300f;
-            swissGenerator.Parameters.ImageHeight.Point = 150f;
-
-            using (var swissImage = swissGenerator.GenerateBarCodeImage())
+            // Render the Swiss Post Parcel barcode to a bitmap
+            using (Bitmap parcelImage = parcelGenerator.GenerateBarCodeImage())
             {
-                // QR code for supplementary data
-                const string qrSupplementText = "Supplementary Info";
-                using (var qrGenerator = new BarcodeGenerator(EncodeTypes.QR, qrSupplementText))
+                // Create a QR code generator containing the supplementary tracking URL
+                using (var qrGenerator = new BarcodeGenerator(EncodeTypes.QR, supplementaryData))
                 {
-                    // Set QR error correction level
-                    qrGenerator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
-                    qrGenerator.Parameters.ImageWidth.Point = 150f;
-                    qrGenerator.Parameters.ImageHeight.Point = 150f;
+                    // Use high error correction level for better robustness of the QR code
+                    qrGenerator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
 
-                    using (var qrImage = qrGenerator.GenerateBarCodeImage())
+                    // Render the QR code to a bitmap
+                    using (Bitmap qrImage = qrGenerator.GenerateBarCodeImage())
                     {
-                        // Combine both images side by side
-                        int combinedWidth = swissImage.Width + qrImage.Width;
-                        int combinedHeight = Math.Max(swissImage.Height, qrImage.Height);
-                        using (var combinedBitmap = new Bitmap(combinedWidth, combinedHeight))
+                        // Define spacing between the two barcodes
+                        int margin = 10;
+
+                        // Calculate dimensions for the combined image
+                        int combinedWidth = parcelImage.Width + qrImage.Width + margin;
+                        int combinedHeight = Math.Max(parcelImage.Height, qrImage.Height);
+
+                        // Create a new bitmap to hold the combined image
+                        using (Bitmap combined = new Bitmap(combinedWidth, combinedHeight))
                         {
-                            using (var graphics = Graphics.FromImage(combinedBitmap))
+                            // Draw both barcode images onto the combined bitmap
+                            using (Graphics g = Graphics.FromImage(combined))
                             {
                                 // Fill background with white
-                                graphics.Clear(Aspose.Drawing.Color.White);
-                                // Draw Swiss Post barcode on the left
-                                graphics.DrawImage(swissImage, 0, 0, swissImage.Width, swissImage.Height);
-                                // Draw QR code on the right
-                                graphics.DrawImage(qrImage, swissImage.Width, 0, qrImage.Width, qrImage.Height);
+                                g.Clear(Color.White);
+
+                                // Center the parcel barcode vertically
+                                g.DrawImage(parcelImage, 0, (combinedHeight - parcelImage.Height) / 2);
+
+                                // Center the QR code vertically, positioned after the parcel barcode plus margin
+                                g.DrawImage(qrImage, parcelImage.Width + margin, (combinedHeight - qrImage.Height) / 2);
                             }
 
-                            // Save the final combined barcode image
-                            const string outputPath = "SwissPostParcel_With_QR.png";
-                            combinedBitmap.Save(outputPath, ImageFormat.Png);
-                            Console.WriteLine($"Combined barcode saved to: {outputPath}");
+                            // Save the combined image as PNG
+                            string outputPath = "SwissPostParcelWithQR.png";
+                            combined.Save(outputPath, ImageFormat.Png);
+                            Console.WriteLine($"Combined barcode saved to {outputPath}");
                         }
                     }
                 }

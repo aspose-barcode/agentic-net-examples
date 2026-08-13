@@ -1,111 +1,115 @@
-// Title: Asynchronous barcode decoding with Task Parallel Library
-// Description: Demonstrates generating sample barcode images and decoding them concurrently using TPL for high‑throughput scenarios.
-// Category-Description: This example belongs to the Aspose.BarCode batch processing category, showcasing how to use BarcodeGenerator for image creation and BarCodeReader for recognition. It illustrates typical use cases such as large‑scale image collections, where developers need efficient, asynchronous decoding using core API classes like BarcodeGenerator, BarCodeReader, and QualitySettings.
+// Title: Asynchronous Barcode Decoding with TPL
+// Description: Demonstrates generating sample barcode images and decoding them asynchronously using the Task Parallel Library to improve throughput for large image collections.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, showcasing how to use BarCodeReader, BarcodeGenerator, and related classes for batch processing. Typical use cases include high‑volume scanning, automated inventory, and document processing where many images must be decoded efficiently. Developers often need to configure processor settings and run recognition in parallel to maximize performance.
 // Prompt: Implement asynchronous barcode decoding for large image collections using Task Parallel Library.
-// Tags: code128, generation, recognition, png, tpl, aspose.barcode, aspose.drawing, barcode decoding, asynchronous processing
+// Tags: barcode, decoding, asynchronous, task parallel library, aspose.barcode, image processing, batch, recognition
 
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Sample program that generates a set of barcode images and decodes them asynchronously
-/// using the Task Parallel Library. Demonstrates high‑performance batch processing with
-/// Aspose.BarCode APIs.
+/// Provides methods to generate sample barcode images and decode them asynchronously.
 /// </summary>
 class Program
 {
-    /// <summary>
-    /// Entry point of the application. Generates sample barcodes, decodes them in parallel,
-    /// and cleans up temporary resources.
-    /// </summary>
-    /// <param name="args">Command‑line arguments (not used).</param>
-    static async Task Main(string[] args)
+    // Generates a set of sample barcode images in the specified folder.
+    private static void GenerateSampleBarcodes(string folderPath)
     {
-        // --------------------------------------------------------------------
-        // Prepare a temporary folder for sample barcode images
-        // --------------------------------------------------------------------
-        string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeSamples");
-        if (!Directory.Exists(tempFolder))
-        {
-            Directory.CreateDirectory(tempFolder);
-        }
+        // Ensure the output folder exists.
+        Directory.CreateDirectory(folderPath);
 
-        // --------------------------------------------------------------------
-        // Generate a small set of sample barcode images (5 items)
-        // --------------------------------------------------------------------
-        int sampleCount = 5;
-        List<string> imagePaths = new List<string>();
-        for (int i = 0; i < sampleCount; i++)
+        // Sample data: each tuple contains the symbology and the text to encode.
+        var samples = new (BaseEncodeType encodeType, string text)[]
         {
-            string filePath = Path.Combine(tempFolder, $"barcode_{i}.png");
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, $"Sample{i}"))
+            (EncodeTypes.Code128, "Sample123"),
+            (EncodeTypes.QR, "https://example.com"),
+            (EncodeTypes.DataMatrix, "DM12345"),
+            (EncodeTypes.Pdf417, "PDF417 Sample Text"),
+            (EncodeTypes.Aztec, "AztecCode")
+        };
+
+        int index = 0;
+        foreach (var (encodeType, text) in samples)
+        {
+            string filePath = Path.Combine(folderPath, $"barcode_{index}.png");
+            using (var generator = new BarcodeGenerator(encodeType, text))
             {
-                // Auto‑size the barcode image for optimal dimensions
-                generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
+                // Save as PNG.
                 generator.Save(filePath, BarCodeImageFormat.Png);
             }
-            imagePaths.Add(filePath);
+            index++;
         }
+    }
 
-        // --------------------------------------------------------------------
-        // Asynchronously decode all images using TPL
-        // --------------------------------------------------------------------
-        List<Task> decodeTasks = new List<Task>();
-        foreach (string path in imagePaths)
+    // Asynchronously decodes a single barcode image and returns the first detected code text.
+    private static Task<string> DecodeBarcodeAsync(string imagePath)
+    {
+        return Task.Run(() =>
         {
-            // Queue each decode operation on the thread pool
-            decodeTasks.Add(Task.Run(() => DecodeBarcode(path)));
-        }
-
-        // Wait for all decoding tasks to complete
-        await Task.WhenAll(decodeTasks);
-
-        // --------------------------------------------------------------------
-        // Clean up temporary files (optional)
-        // --------------------------------------------------------------------
-        foreach (string path in imagePaths)
-        {
-            try { File.Delete(path); } catch { /* ignore cleanup errors */ }
-        }
-        try { Directory.Delete(tempFolder); } catch { /* ignore cleanup errors */ }
+            using (var reader = new BarCodeReader())
+            {
+                // Use all supported symbologies.
+                reader.BarCodeReadType = DecodeType.AllSupportedTypes;
+                // Assign the image file.
+                reader.SetBarCodeImage(imagePath);
+                // Perform recognition.
+                var results = reader.ReadBarCodes();
+                if (results != null && results.Length > 0 && !string.IsNullOrEmpty(results[0].CodeText))
+                {
+                    return results[0].CodeText;
+                }
+                return null;
+            }
+        });
     }
 
     /// <summary>
-    /// Decodes a single barcode image and writes the results to the console.
+    /// Entry point of the program. Generates sample barcodes (if needed), then decodes all PNG images in the folder asynchronously.
     /// </summary>
-    /// <param name="imagePath">Full path to the barcode image file.</param>
-    private static void DecodeBarcode(string imagePath)
+    static async Task Main(string[] args)
     {
-        if (!File.Exists(imagePath))
+        // Folder to hold sample barcode images.
+        string barcodeFolder = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
+
+        // Generate sample images if the folder is empty.
+        if (!Directory.Exists(barcodeFolder) || Directory.GetFiles(barcodeFolder, "*.png").Length == 0)
         {
-            Console.WriteLine($"File not found: {imagePath}");
+            GenerateSampleBarcodes(barcodeFolder);
+            Console.WriteLine($"Generated sample barcodes in '{barcodeFolder}'.");
+        }
+
+        // Get all PNG files in the folder.
+        string[] imageFiles = Directory.GetFiles(barcodeFolder, "*.png");
+        if (imageFiles.Length == 0)
+        {
+            Console.WriteLine("No barcode images found to decode.");
             return;
         }
 
-        // Use BarCodeReader to read all supported barcode types
-        using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
+        // Configure the reader to use all available processor cores.
+        BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount = Environment.ProcessorCount;
+
+        // Create a decoding task for each image.
+        var decodeTasks = new Task<string>[imageFiles.Length];
+        for (int i = 0; i < imageFiles.Length; i++)
         {
-            // Apply a high‑performance quality preset for faster processing
-            reader.QualitySettings = QualitySettings.HighPerformance;
+            decodeTasks[i] = DecodeBarcodeAsync(imageFiles[i]);
+        }
 
-            BarCodeResult[] results = reader.ReadBarCodes();
-            if (results.Length == 0)
-            {
-                Console.WriteLine($"No barcode detected in {Path.GetFileName(imagePath)}");
-                return;
-            }
+        // Await all decoding operations.
+        string[] decodedTexts = await Task.WhenAll(decodeTasks);
 
-            // Output each detected barcode's type and text
-            foreach (var result in results)
-            {
-                Console.WriteLine($"File: {Path.GetFileName(imagePath)} | Type: {result.CodeTypeName} | Text: {result.CodeText}");
-            }
+        // Output the results.
+        Console.WriteLine("Decoding results:");
+        for (int i = 0; i < imageFiles.Length; i++)
+        {
+            string fileName = Path.GetFileName(imageFiles[i]);
+            string codeText = decodedTexts[i] ?? "(no code detected)";
+            Console.WriteLine($"{fileName}: {codeText}");
         }
     }
 }

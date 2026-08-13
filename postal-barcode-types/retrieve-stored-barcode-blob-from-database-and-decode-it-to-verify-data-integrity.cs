@@ -1,8 +1,8 @@
 // Title: Retrieve and Decode Barcode BLOB from Database
-// Description: Demonstrates reading a barcode image stored as a BLOB, decoding it, and verifying that the decoded data matches the original text.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category, showcasing how to work with binary data (BLOBs) using BarcodeGenerator and BarCodeReader classes. Typical use cases include persisting barcodes in databases, retrieving them for verification, and ensuring data integrity in inventory or tracking systems. Developers often need to convert between image files, byte arrays, and decoded values, which this sample illustrates.
+// Description: Demonstrates generating a barcode, storing it as a BLOB, retrieving it, and decoding to verify data integrity.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It shows how to use BarcodeGenerator to create a barcode image, store it as a binary BLOB, and then use BarCodeReader with DecodeType.AllSupportedTypes to detect and decode the barcode. Developers often need to persist barcodes in databases and later validate them, making this pattern useful for inventory, ticketing, and authentication systems.
 // Prompt: Retrieve a stored barcode BLOB from the database and decode it to verify data integrity.
-// Tags: barcode, blob, decode, data integrity, code128, aspnet, aspose.barcode, generation, recognition
+// Tags: barcode, code128, generation, recognition, blob, data integrity, aspose.barcode, csharp
 
 using System;
 using System.IO;
@@ -11,112 +11,85 @@ using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Example program that simulates retrieving a barcode image stored as a BLOB,
-/// decodes it using Aspose.BarCode, and verifies data integrity against the original text.
+/// Demonstrates generating a barcode, persisting it as a BLOB, retrieving it, and decoding to verify data integrity.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates or loads a barcode BLOB, decodes it,
-    /// and checks that the decoded value matches the expected text.
+    /// Entry point of the example. Generates a Code128 barcode, saves it to a temporary file,
+    /// reads the file into a byte array (simulating a database BLOB), decodes the barcode,
+    /// and checks that the decoded text matches the original.
     /// </summary>
     static void Main()
     {
-        // Paths for simulated BLOB storage and temporary image file
-        const string blobPath = "barcode_blob.bin";
-        const string imagePath = "sample_barcode.png";
+        // Sample data to encode
+        const string originalText = "HelloAspose";
 
-        // The original text that we expect to encode/decode
-        const string originalCodeText = "Sample123";
+        // Path for temporary barcode image
+        string imagePath = Path.Combine(Path.GetTempPath(), "sample_barcode.png");
 
-        // ------------------------------------------------------------
-        // Simulate retrieving a barcode image BLOB from a database.
-        // In a real scenario you would fetch the byte[] from the DB,
-        // e.g. using ADO.NET. The code is shown as a comment below.
-        // ------------------------------------------------------------
-        // byte[] barcodeBytesFromDb;
-        // using (var connection = new SqlConnection("your-connection-string"))
-        // {
-        //     connection.Open();
-        //     using (var command = new SqlCommand("SELECT BarcodeBlob FROM Barcodes WHERE Id = @id", connection))
-        //     {
-        //         command.Parameters.AddWithValue("@id", 1);
-        //         barcodeBytesFromDb = (byte[])command.ExecuteScalar();
-        //     }
-        // }
-
-        byte[] barcodeBytes;
-
-        if (File.Exists(blobPath))
+        // -------------------------------------------------
+        // Step 1: Generate a barcode and save it to a file
+        // -------------------------------------------------
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, originalText))
         {
-            // BLOB file exists – read the stored bytes
-            barcodeBytes = File.ReadAllBytes(blobPath);
+            // Save as PNG
+            generator.Save(imagePath, BarCodeImageFormat.Png);
         }
-        else
+
+        // -------------------------------------------------
+        // Step 2: Simulate retrieving the barcode BLOB from a database
+        // -------------------------------------------------
+        if (!File.Exists(imagePath))
         {
-            // BLOB does not exist – generate a sample barcode, save it,
-            // and write its bytes to the simulated BLOB file.
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, originalCodeText))
+            Console.WriteLine("Failed to create barcode image.");
+            return;
+        }
+
+        byte[] barcodeBlob;
+        using (FileStream readStream = new FileStream(imagePath, FileMode.Open, FileAccess.Read))
+        using (MemoryStream ms = new MemoryStream())
+        {
+            // Copy file contents into memory stream
+            readStream.CopyTo(ms);
+            barcodeBlob = ms.ToArray();
+        }
+
+        // -------------------------------------------------
+        // Step 3: Decode the barcode from the BLOB and verify integrity
+        // -------------------------------------------------
+        using (MemoryStream blobStream = new MemoryStream(barcodeBlob))
+        using (BarCodeReader reader = new BarCodeReader(blobStream, DecodeType.AllSupportedTypes))
+        {
+            // Read all barcodes in the image
+            BarCodeResult[] results = reader.ReadBarCodes();
+
+            if (results.Length == 0)
             {
-                // Save the barcode image to a PNG file
-                generator.Save(imagePath, BarCodeImageFormat.Png);
+                Console.WriteLine("No barcode detected.");
             }
-
-            // Read the generated image bytes
-            barcodeBytes = File.ReadAllBytes(imagePath);
-
-            // Store the bytes as a simulated BLOB
-            File.WriteAllBytes(blobPath, barcodeBytes);
-        }
-
-        // ------------------------------------------------------------
-        // Decode the barcode image from the byte array
-        // ------------------------------------------------------------
-        using (var ms = new MemoryStream(barcodeBytes))
-        using (var reader = new BarCodeReader(ms, DecodeType.AllSupportedTypes))
-        {
-            bool anyFound = false;
-
-            // Iterate through all detected barcodes
-            foreach (var result in reader.ReadBarCodes())
+            else
             {
-                anyFound = true;
-
-                // Output detection details
-                Console.WriteLine($"Detected Type : {result.CodeTypeName}");
-                Console.WriteLine($"Decoded Text  : {result.CodeText}");
-                Console.WriteLine($"Confidence    : {result.Confidence}");
-                Console.WriteLine($"ReadingQuality: {result.ReadingQuality}");
-                Console.WriteLine();
-
-                // Verify data integrity by comparing with the original text
-                if (result.CodeText == originalCodeText)
+                foreach (BarCodeResult result in results)
                 {
-                    Console.WriteLine("Data integrity check: SUCCESS – decoded text matches the original.");
-                }
-                else
-                {
-                    Console.WriteLine("Data integrity check: FAILURE – decoded text does NOT match the original.");
+                    Console.WriteLine($"Detected Type: {result.CodeTypeName}");
+                    Console.WriteLine($"Decoded Text: {result.CodeText}");
+
+                    // Verify data integrity
+                    bool isValid = string.Equals(originalText, result.CodeText, StringComparison.Ordinal);
+                    Console.WriteLine($"Data Integrity Check: {(isValid ? "PASS" : "FAIL")}");
                 }
             }
-
-            if (!anyFound)
-            {
-                Console.WriteLine("No barcode was detected in the provided image.");
-            }
         }
 
-        // Clean up temporary image file (optional)
-        if (File.Exists(imagePath))
+        // Cleanup temporary file
+        try
         {
-            try
-            {
-                File.Delete(imagePath);
-            }
-            catch
-            {
-                // Ignore any errors during cleanup
-            }
+            File.Delete(imagePath);
+        }
+        catch
+        {
+            // Ignored - cleanup failure should not affect program flow
         }
     }
 }

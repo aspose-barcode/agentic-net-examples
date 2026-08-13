@@ -1,8 +1,8 @@
-// Title: Batch decode Dutch KIX barcodes from local folder and log failures
-// Description: Demonstrates generating sample Dutch KIX barcodes, decoding them in bulk, and writing any failures to a log file.
-// Category-Description: This example belongs to the Aspose.BarCode batch processing category, showcasing how to use BarcodeGenerator to create barcodes and BarCodeReader with DecodeType.DutchKIX to read them. Typical use cases include automated verification of large barcode sets stored in cloud or local containers, where developers need to handle success and failure reporting. The snippet highlights key classes such as BarcodeGenerator, BarCodeReader, and common parameters for image handling.
+// Title: Batch decode Dutch KIX (DotCode) barcodes from a folder and log failures
+// Description: Demonstrates generating sample Dutch KIX (DotCode) barcode images, then batch decoding them from a directory that simulates a cloud storage container, while recording any decoding failures.
+// Category-Description: This example belongs to the Aspose.BarCode barcode processing category, focusing on batch recognition of specific symbologies. It showcases the use of BarcodeGenerator for image creation, BarCodeReader with DecodeType.DutchKIX for recognition, and handling of results and errors. Developers often need to process large sets of barcode images from storage, extract data, and log problematic files for further analysis.
 // Prompt: Perform batch decoding of Dutch KIX barcodes from a cloud storage container and log failures.
-// Tags: dutch kix, decoding, batch, log, aspose.barcode, barcodegenerator, barcodeReader, png
+// Tags: dotcode, dutchkix, batch-decoding, png, aspose.barcode, aspose.drawing
 
 using System;
 using System.IO;
@@ -12,98 +12,99 @@ using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates batch decoding of Dutch KIX barcodes and logging failures.
+/// Demonstrates batch decoding of Dutch KIX (DotCode) barcodes from a simulated cloud storage container,
+/// including generation of sample images and logging of any decoding failures.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates sample barcodes if missing, decodes each PNG, and records any failures.
+    /// Entry point of the example. Generates sample barcode images, decodes them, and logs failures.
     /// </summary>
-    static void Main()
+    /// <param name="args">Command‑line arguments (not used).</param>
+    static void Main(string[] args)
     {
-        // Define the folder that will hold sample barcode images.
-        string folderPath = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
-        if (!Directory.Exists(folderPath))
-        {
-            // Create the folder when it does not exist.
-            Directory.CreateDirectory(folderPath);
-        }
+        // Folder that represents the cloud storage container.
+        string inputFolder = "InputBarcodes";
+        string logFile = "failures.log";
 
-        // Sample Dutch KIX code texts (5 items for safety).
-        string[] sampleCodes = new[]
-        {
-            "1234567890",
-            "0987654321",
-            "1122334455",
-            "5566778899",
-            "0001112223"
-        };
+        // Ensure a clean log file before starting.
+        if (File.Exists(logFile))
+            File.Delete(logFile);
 
-        // Generate sample barcode images (if they do not already exist).
-        for (int i = 0; i < sampleCodes.Length; i++)
+        // Create the input folder if it does not exist.
+        if (!Directory.Exists(inputFolder))
+            Directory.CreateDirectory(inputFolder);
+
+        // -----------------------------------------------------------------
+        // Generate a few sample Dutch KIX (DotCode) barcode images.
+        // In a real scenario these images would be downloaded from cloud storage.
+        // -----------------------------------------------------------------
+        string[] sampleTexts = { "123456", "ABCDEF", "9876543210" };
+        for (int i = 0; i < sampleTexts.Length; i++)
         {
-            string filePath = Path.Combine(folderPath, $"sample_{i + 1}.png");
-            if (!File.Exists(filePath))
+            string filePath = Path.Combine(inputFolder, $"sample_{i + 1}.png");
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.DotCode, sampleTexts[i]))
             {
-                // EncodeTypes.DutchKIX is assumed to exist in the Aspose.BarCode library.
-                using (var generator = new BarcodeGenerator(EncodeTypes.DutchKIX, sampleCodes[i]))
-                {
-                    // Optional visual settings.
-                    generator.Parameters.Barcode.BarColor = Color.Black;
-                    generator.Parameters.BackColor = Color.White;
-                    generator.Parameters.ImageWidth.Point = 300f;
-                    generator.Parameters.ImageHeight.Point = 150f;
+                // Optional: set visual parameters for better readability.
+                generator.Parameters.Barcode.XDimension.Point = 2f;
+                generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
+                generator.Parameters.BackColor = Aspose.Drawing.Color.White;
 
-                    // Save the generated barcode as PNG.
-                    generator.Save(filePath, BarCodeImageFormat.Png);
-                }
+                // Save the generated barcode as a PNG image.
+                generator.Save(filePath, BarCodeImageFormat.Png);
             }
         }
 
-        // Path to the log file that will capture any decoding failures.
-        string logFilePath = Path.Combine(Directory.GetCurrentDirectory(), "decode_log.txt");
-        using (var logWriter = new StreamWriter(logFilePath, false))
+        // -----------------------------------------------------------------
+        // Batch decode all PNG images in the folder as Dutch KIX barcodes.
+        // -----------------------------------------------------------------
+        string[] imageFiles = Directory.GetFiles(inputFolder, "*.png");
+        foreach (string imagePath in imageFiles)
         {
-            // Retrieve all PNG images from the folder.
-            string[] imageFiles = Directory.GetFiles(folderPath, "*.png");
-            foreach (string imagePath in imageFiles)
+            try
             {
-                try
+                // Use the DutchKIX decode type to recognize the specific symbology.
+                using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.DutchKIX))
                 {
-                    // Initialize a reader for Dutch KIX barcodes.
-                    using (var reader = new BarCodeReader(imagePath, DecodeType.DutchKIX))
+                    BarCodeResult[] results = reader.ReadBarCodes();
+
+                    if (results.Length == 0)
                     {
-                        bool decoded = false;
+                        // No barcode detected – log the failure.
+                        LogFailure(logFile, imagePath, "No barcode detected.");
+                        continue;
+                    }
 
-                        // Iterate through all detected barcodes in the image.
-                        foreach (var result in reader.ReadBarCodes())
+                    foreach (BarCodeResult result in results)
+                    {
+                        if (string.IsNullOrEmpty(result.CodeText))
                         {
-                            if (!string.IsNullOrEmpty(result.CodeText))
-                            {
-                                Console.WriteLine($"SUCCESS: File '{Path.GetFileName(imagePath)}' decoded as '{result.CodeText}'.");
-                                decoded = true;
-                            }
+                            // Barcode detected but the text is empty – log the failure.
+                            LogFailure(logFile, imagePath, "Detected barcode but CodeText is empty.");
                         }
-
-                        // If no barcode was decoded, log the failure.
-                        if (!decoded)
+                        else
                         {
-                            string message = $"FAILURE: No Dutch KIX barcode detected in file '{Path.GetFileName(imagePath)}'.";
-                            Console.WriteLine(message);
-                            logWriter.WriteLine(message);
+                            // Successful decode – output details to the console.
+                            Console.WriteLine($"File: {Path.GetFileName(imagePath)} | Type: {result.CodeTypeName} | Text: {result.CodeText}");
                         }
                     }
                 }
-                catch (Exception ex)
-                {
-                    // Log any exceptions that occur during processing.
-                    string errorMsg = $"ERROR: Exception processing file '{Path.GetFileName(imagePath)}' - {ex.Message}";
-                    Console.WriteLine(errorMsg);
-                    logWriter.WriteLine(errorMsg);
-                }
+            }
+            catch (Exception ex)
+            {
+                // Unexpected exception – log the failure with the exception message.
+                LogFailure(logFile, imagePath, $"Exception: {ex.Message}");
             }
         }
 
-        Console.WriteLine("Batch decoding completed. See 'decode_log.txt' for any failures.");
+        Console.WriteLine("Batch decoding completed.");
+    }
+
+    // Helper method to append failure information to the log file and echo it to the console.
+    static void LogFailure(string logPath, string imagePath, string message)
+    {
+        string logEntry = $"[FAIL] File: {Path.GetFileName(imagePath)} - {message}{Environment.NewLine}";
+        File.AppendAllText(logPath, logEntry);
+        Console.WriteLine(logEntry.TrimEnd());
     }
 }
