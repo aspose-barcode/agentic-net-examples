@@ -1,29 +1,37 @@
-// Title: Generate ITF14 barcodes with alternating frame styles and export as multi‑page PDF
-// Description: Demonstrates creating ITF14 barcodes with different border styles per row and compiling them into a single PDF document.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating how to use BarcodeGenerator with ITF14 symbology, customize border styles via ITF parameters, and combine generated images into a multi‑page PDF using Aspose.Pdf. Developers often need to produce batch barcode PDFs with varied visual styles for packaging or inventory labeling.
+// Title: Generate ITF-14 Barcodes with Alternating Frame Styles and Export to Multi-Page PDF
+// Description: Demonstrates creating ITF-14 barcodes with different frame styles per row, embedding each barcode into its own PDF page, and saving the result as a multi-page PDF document.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating how to use BarcodeGenerator with ITF-14 symbology, customize border types, and combine generated images into a PDF using Aspose.Pdf. Typical use cases include batch creation of product barcodes with varied visual frames and compiling them into a single PDF for printing or distribution. Developers often need to generate multiple barcodes, adjust appearance settings, and programmatically assemble them into documents.
 // Prompt: Generate ITF barcodes with alternating frame styles per row, export multi‑page PDF collection.
-// Tags: itf14, barcode, generation, pdf, aspose.barcode, aspose.pdf, borderstyle, image
-
+// Tags: itf14, barcode generation, frame style, pdf export, aspose.barcode, aspose.pdf, multi-page pdf, barcode border, c#
 using System;
-using System.Collections.Generic;
 using System.IO;
+using System.Collections.Generic;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Pdf;
 using Aspose.Pdf.Text;
 
 /// <summary>
-/// Demonstrates generating ITF14 barcodes with alternating frame styles and exporting them as a multi‑page PDF.
+/// Demonstrates generating ITF‑14 barcodes with alternating frame styles and exporting them to a multi‑page PDF.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates barcode images, adds them to a PDF, and saves the document.
+    /// Entry point that creates barcode images, embeds them into a PDF, and saves the file.
     /// </summary>
     static void Main()
     {
-        // Define border styles to alternate per row (max 4 rows for evaluation mode)
-        ITF14BorderType[] borderStyles = new ITF14BorderType[]
+        // Prepare sample data for ITF barcodes (14‑digit numeric strings)
+        var codeTexts = new List<string>
+        {
+            "12345678901231", // valid ITF14
+            "98765432109876",
+            "11111111111111",
+            "22222222222222"
+        };
+
+        // Define alternating frame styles for each barcode
+        var borderTypes = new ITF14BorderType[]
         {
             ITF14BorderType.Frame,
             ITF14BorderType.Bar,
@@ -31,62 +39,60 @@ class Program
             ITF14BorderType.BarOut
         };
 
-        // Sample 14‑digit ITF code (ITF14 requires exactly 14 digits)
-        const string itfCode = "12345678901231";
+        // Store generated barcode images in memory streams
+        var barcodeStreams = new List<MemoryStream>();
 
-        // List to hold barcode image streams until PDF is saved
-        List<MemoryStream> barcodeStreams = new List<MemoryStream>();
-
-        // Generate barcode images with alternating border styles
-        for (int i = 0; i < borderStyles.Length; i++)
+        // Generate up to four barcodes (evaluation mode limit)
+        for (int i = 0; i < Math.Min(codeTexts.Count, 4); i++)
         {
-            using (var generator = new BarcodeGenerator(EncodeTypes.ITF14, itfCode))
+            using (var generator = new BarcodeGenerator(EncodeTypes.ITF14, codeTexts[i]))
             {
-                // Set barcode colors
+                // Set common appearance options
                 generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
                 generator.Parameters.BackColor = Aspose.Drawing.Color.White;
+                generator.Parameters.Barcode.XDimension.Point = 2f;
 
-                // Apply the specific ITF border style and a modest thickness
-                generator.Parameters.Barcode.ITF.BorderType = borderStyles[i];
+                // Apply the alternating border style for the current barcode
+                generator.Parameters.Barcode.ITF.BorderType = borderTypes[i % borderTypes.Length];
                 generator.Parameters.Barcode.ITF.BorderThickness.Point = 2f;
 
-                // Save barcode to a memory stream (PNG format)
+                // Render the barcode to a PNG image stored in a memory stream
                 var ms = new MemoryStream();
                 generator.Save(ms, BarCodeImageFormat.Png);
-                ms.Position = 0; // Reset for reading by Aspose.Pdf
+                ms.Position = 0; // Reset stream position for later reading
                 barcodeStreams.Add(ms);
             }
         }
 
-        // Create a PDF document and add one page per barcode row
+        // Create a PDF document and embed each barcode on its own page
         using (var pdfDoc = new Document())
         {
             for (int i = 0; i < barcodeStreams.Count; i++)
             {
                 var page = pdfDoc.Pages.Add();
 
-                // Add the barcode image to the page, centered
-                var pdfImage = new Aspose.Pdf.Image
+                var pdfImage = new Image
                 {
                     ImageStream = barcodeStreams[i],
                     FixWidth = 200,
-                    FixHeight = 100,
+                    FixHeight = 200,
                     HorizontalAlignment = HorizontalAlignment.Center,
-                    VerticalAlignment = VerticalAlignment.Center
+                    Margin = new MarginInfo { Top = 20 }
                 };
+
                 page.Paragraphs.Add(pdfImage);
             }
 
-            // Save the multi‑page PDF
+            // Save the multi‑page PDF to disk
             const string outputPdf = "ITF_Barcodes.pdf";
             pdfDoc.Save(outputPdf);
-            Console.WriteLine($"PDF saved to {Path.GetFullPath(outputPdf)}");
+            Console.WriteLine($"PDF saved to: {Path.GetFullPath(outputPdf)}");
         }
 
-        // Dispose all memory streams after PDF is saved
-        foreach (var stream in barcodeStreams)
+        // Dispose all memory streams after the PDF has been saved
+        foreach (var ms in barcodeStreams)
         {
-            stream.Dispose();
+            ms.Dispose();
         }
     }
 }

@@ -1,72 +1,56 @@
-// Title: Enable Mod10 checksum for Codabar barcode and verify it
-// Description: Demonstrates generating a Codabar barcode with checksum enabled using the Mod10 algorithm, then reads the barcode to confirm the checksum is present.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category, illustrating how to configure checksum settings for one‑dimensional symbologies. It uses BarcodeGenerator for creating barcodes and BarCodeReader for decoding, common tasks when developers need data integrity verification in inventory, shipping, or point‑of‑sale systems.
+// Title: Generate and Verify Codabar Barcode with Mod10 Checksum
+// Description: Demonstrates how to generate a Codabar barcode with checksum enabled using the Mod10 algorithm, save it as an image, and then recognize it while validating the checksum.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It shows how to configure checksum settings on the BarcodeGenerator, use Codabar-specific parameters, and perform checksum validation with BarCodeReader. Developers working with one-dimensional symbologies often need to ensure data integrity by enabling and verifying checksums during both encoding and decoding phases.
 // Prompt: Enable checksum calculation, choose Mod10 algorithm, and verify the checksum after generation.
-// Tags: codabar, checksum, mod10, generation, recognition, aspose.barcode, one-dimensional
+// Tags: codabar, checksum, mod10, barcode generation, barcode recognition, aspose.barcode, one-dimensional, csharp
 
 using System;
-using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates enabling Mod10 checksum for a Codabar barcode, saving it, and verifying the checksum during recognition.
+/// Example program that creates a Codabar barcode with a Mod10 checksum,
+/// saves it to a PNG file, and then reads it back while validating the checksum.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a Codabar barcode with checksum, saves it, and validates the checksum on read.
+    /// Entry point of the example. Generates the barcode, saves it, and verifies the checksum during recognition.
     /// </summary>
     static void Main()
     {
-        // Define the output file path for the generated barcode image
-        string outputPath = "codabar.png";
-
-        // Sample Codabar text including start/stop symbols (A...A)
-        string codeText = "A123456A";
-
-        // Create a barcode generator for Codabar with the specified text
-        using (var generator = new BarcodeGenerator(EncodeTypes.Codabar, codeText))
+        // Initialize a Codabar barcode generator with sample code text.
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Codabar, "A12345B"))
         {
-            // Enable checksum calculation for the barcode
+            // Enable checksum generation for the barcode.
             generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
 
-            // Set the checksum algorithm to Mod10 for Codabar
+            // Select the Mod10 algorithm for Codabar checksum calculation.
             generator.Parameters.Barcode.Codabar.ChecksumMode = CodabarChecksumMode.Mod10;
 
-            // Save the generated barcode image to the specified file
-            generator.Save(outputPath);
-        }
+            // Allow generation even if the code text is slightly incorrect.
+            generator.Parameters.Barcode.ThrowExceptionWhenCodeTextIncorrect = false;
 
-        // Verify that the barcode image file was successfully created
-        if (!File.Exists(outputPath))
-        {
-            Console.WriteLine("Failed to generate the barcode image.");
-            return;
-        }
-
-        // Initialize a barcode reader to decode the saved image using Codabar symbology
-        using (var reader = new BarCodeReader(outputPath, DecodeType.Codabar))
-        {
-            // Turn on checksum validation during the recognition process
-            reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
-
-            // Iterate through all recognized barcodes (should be only one in this case)
-            foreach (var result in reader.ReadBarCodes())
+            // Generate the barcode image and save it to a file (format inferred from extension).
+            using (Aspose.Drawing.Bitmap image = generator.GenerateBarCodeImage())
             {
-                // Output the recognized text and the extracted checksum value
-                Console.WriteLine($"Recognized CodeText: {result.CodeText}");
-                Console.WriteLine($"Extracted Checksum: {result.Extended.OneD.CheckSum}");
+                generator.Save("codabar.png");
+            }
 
-                // Simple verification: ensure a checksum value was returned
-                if (!string.IsNullOrEmpty(result.Extended.OneD.CheckSum))
+            // Create a reader to recognize the saved barcode and validate its checksum.
+            using (BarCodeReader reader = new BarCodeReader("codabar.png", DecodeType.Codabar))
+            {
+                // Turn on checksum validation during the recognition process.
+                reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
+
+                // Iterate through all recognized barcodes (there should be one).
+                foreach (BarCodeResult result in reader.ReadBarCodes())
                 {
-                    Console.WriteLine("Checksum verification succeeded.");
-                }
-                else
-                {
-                    Console.WriteLine("Checksum verification failed.");
+                    Console.WriteLine("Recognized CodeText: " + result.CodeText);
+                    // Output the checksum value if it is present in the extended OneD parameters.
+                    Console.WriteLine("Checksum (if any): " + result.Extended.OneD.CheckSum);
                 }
             }
         }

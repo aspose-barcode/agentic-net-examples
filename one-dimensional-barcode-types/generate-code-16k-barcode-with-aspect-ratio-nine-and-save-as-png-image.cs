@@ -1,35 +1,38 @@
 // Title: Generate Code 16K barcode with aspect ratio nine and save as PNG
-// Description: Demonstrates creating a Code 16K barcode, setting its aspect ratio to nine, and saving it as a PNG image using Aspose.BarCode.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating how to configure symbology‑specific parameters such as aspect ratio for Code 16K. It showcases the use of the BarcodeGenerator class together with EncodeTypes and barcode parameter objects, a common task for developers needing to produce high‑density linear barcodes for inventory, shipping, or packaging applications.
+// Description: Demonstrates creating a Code 16K barcode, setting its aspect ratio to nine, and saving it as a PNG image file.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating how to use the BarcodeGenerator class with EncodeTypes.Code16K. It shows configuring symbology‑specific parameters such as AspectRatio, a common requirement when customizing barcode dimensions for printing or scanning applications. Developers looking for code samples on barcode creation, parameter tuning, and image export will find this pattern useful.
 // Prompt: Generate a Code 16K barcode with aspect ratio nine and save as PNG image.
-// Tags: code16k, barcode, generation, png, aspose.barcode, aspectratio
+// Tags: code16k, barcode, generation, aspectratio, png, aspose.barcode, csharp
 
 using System;
-using Aspose.BarCode.Generation;
 using Aspose.BarCode;
+using Aspose.BarCode.Generation;
+using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Example program that generates a Code 16K barcode with a custom aspect ratio
-/// and saves it as a PNG image file.
+/// Demonstrates generating a Code 16K barcode with a custom aspect ratio and saving it as a PNG image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
+    /// Entry point that creates the barcode, configures its aspect ratio, saves the image, and writes a confirmation message.
     /// </summary>
     static void Main()
     {
         // Initialize a barcode generator for the Code 16K symbology
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code16K))
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code16K))
         {
             // Define the data to encode in the barcode
             generator.CodeText = "1234567890";
 
-            // Configure the Code 16K specific parameter: set aspect ratio to 9
+            // Configure the aspect ratio (height/width) to 9 for Code 16K
             generator.Parameters.Barcode.Code16K.AspectRatio = 9f;
 
-            // Save the generated barcode as a PNG image in the current directory
+            // Export the generated barcode to a PNG file
             generator.Save("code16k.png");
         }
+
+        // Inform the user that the barcode image has been created
+        Console.WriteLine("Code 16K barcode generated and saved as code16k.png");
     }
 }

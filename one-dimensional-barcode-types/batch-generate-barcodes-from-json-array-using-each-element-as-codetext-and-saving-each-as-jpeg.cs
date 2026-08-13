@@ -1,54 +1,58 @@
-// Title: Batch Barcode Generation from JSON to JPEG
-// Description: Demonstrates how to read a JSON array of strings, generate a Code128 barcode for each entry, and save the images as JPEG files.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use BarcodeGenerator with EncodeTypes to create 1D barcodes. Typical use cases include batch processing of identifiers from data sources such as JSON, CSV, or databases, and exporting them as image files for printing or digital distribution. Developers often need to automate barcode creation in bulk, customize formats, and manage output directories.
+// Title: Batch barcode generation from JSON array
+// Description: Demonstrates how to deserialize a JSON array of strings and generate a separate Code128 barcode image for each entry, saving them as JPEG files.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating bulk barcode creation using the BarcodeGenerator class. It shows typical use cases such as processing data-driven lists, exporting barcodes for inventory or labeling, and handling file output. Developers working with batch barcode generation often need to parse input data (e.g., JSON, CSV) and produce image files in formats like JPEG, PNG, or BMP.
 // Prompt: Batch generate barcodes from a JSON array, using each element as CodeText and saving each as JPEG.
-// Tags: barcode symbology, batch generation, jpeg, aspose.barcode, json
+// Tags: barcode generation, json, batch processing, code128, jpeg, aspose.barcode, csharp
 
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode;
 
 /// <summary>
-/// Provides an example of batch barcode generation from a JSON array and saves each barcode as a JPEG image.
+/// Example program that reads a JSON array of strings, creates a Code128 barcode for each string,
+/// and saves the barcodes as JPEG images in an output folder.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Reads a JSON array, generates Code128 barcodes, and writes JPEG files.
+    /// Entry point of the application. Performs JSON deserialization, barcode generation, and file saving.
     /// </summary>
     static void Main()
     {
-        // Sample JSON array containing the code texts for the barcodes.
-        string json = "[\"12345\",\"ABCDEF\",\"Hello World\",\"9876543210\",\"SampleCode\"]";
+        // Sample JSON array containing code texts
+        string json = @"[ ""ABC123"", ""XYZ789"", ""HELLO"", ""WORLD"", ""CODE5"" ]";
 
-        // Deserialize the JSON array into a list of strings.
-        List<string> codeTexts = JsonSerializer.Deserialize<List<string>>(json) ?? new List<string>();
+        // Deserialize the JSON array into a string[]
+        string[] codeTexts = JsonSerializer.Deserialize<string[]>(json);
 
-        // Ensure the output directory exists.
-        string outputDir = "Barcodes";
-        if (!Directory.Exists(outputDir))
+        // Ensure the output folder exists (creates it if missing)
+        string outputFolder = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
+        Directory.CreateDirectory(outputFolder);
+
+        // Choose a barcode symbology (e.g., Code128)
+        BaseEncodeType barcodeType = EncodeTypes.Code128;
+
+        // Iterate over each code text and generate a corresponding JPEG barcode
+        for (int i = 0; i < codeTexts.Length; i++)
         {
-            Directory.CreateDirectory(outputDir);
-        }
+            string text = codeTexts[i];
+            string fileName = $"barcode_{i + 1}.jpg";
+            string filePath = Path.Combine(outputFolder, fileName);
 
-        // Generate a barcode for each code text and save it as a JPEG file.
-        for (int i = 0; i < codeTexts.Count; i++)
-        {
-            string code = codeTexts[i];
-            string filePath = Path.Combine(outputDir, $"barcode_{i + 1}.jpeg");
-
-            // Use Code128 as a generic 1D barcode type.
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, code))
+            // Create a BarcodeGenerator for the selected symbology
+            using (var generator = new BarcodeGenerator(barcodeType))
             {
-                // Save the barcode image in JPEG format.
+                // Assign the text to be encoded
+                generator.CodeText = text;
+
+                // Save the barcode directly as a JPEG image
                 generator.Save(filePath, BarCodeImageFormat.Jpeg);
             }
         }
 
-        // Indicate successful completion.
-        Console.WriteLine($"Generated {codeTexts.Count} barcode images in '{outputDir}' directory.");
+        // Indicate completion (no waiting for user input)
+        Console.WriteLine($"Generated {codeTexts.Length} barcode images in '{outputFolder}'.");
     }
 }

@@ -1,42 +1,40 @@
 // Title: Generate Code128 barcode with text above bars
-// Description: Demonstrates creating a Code128 barcode, showing the human‑readable text above the bars with a small vertical offset.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to configure barcode appearance using BarcodeGenerator, EncodeTypes, and CodeTextParameters. Typical use cases include adding readable text to barcodes for labeling products or documents, where developers need to control text location, spacing, and font. The snippet serves as a reference for developers searching for barcode text positioning techniques.
+// Description: Demonstrates how to create a Code128 barcode, enable the human‑readable text, position it above the bars, and apply a small vertical offset before saving as PNG.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating the use of BarcodeGenerator and related parameter classes (CodeTextParameters, CodeLocation, TextAlignment). Typical use cases include creating printable barcodes with customized text placement for inventory, shipping, or retail applications. Developers often need to adjust text location, alignment, and spacing to meet branding or layout requirements.
 // Prompt: Generate a barcode, set ShowCodeText to true, and position text above bars with a small vertical offset.
-// Tags: code128, barcode, generation, showcodetext, textposition, aspnet, aspose.barcode, imageoutput
+// Tags: code128, barcode generation, showcodetext, text above, vertical offset, png, aspose.barcode, barcodgenerator, codetextparameters
 
 using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates a Code128 barcode, displays the human‑readable text
-/// above the bars, and applies a small vertical offset for better visual separation.
+/// Demonstrates generating a Code128 barcode with human‑readable text positioned above the bars.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates the barcode, configures text appearance,
-    /// and saves the result as a PNG image.
+    /// Entry point that creates the barcode, configures text display, and saves the image.
     /// </summary>
     static void Main()
     {
-        // Initialize a BarcodeGenerator for Code128 with the sample value "1234567890"
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+        // Initialize the barcode generator for Code128 with the sample text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123ABC"))
         {
-            // Ensure the human‑readable text is displayed (ShowCodeText is true by default when location is set)
-            // Position the text above the barcode bars
+            // Show the human‑readable text and place it above the bars.
             generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.Above;
 
-            // Apply a small vertical offset (2 points) between the text and the bars
+            // Apply a small vertical offset (2 points) between the text and the bars.
             generator.Parameters.Barcode.CodeTextParameters.Space.Point = 2f;
 
-            // Optional: customize the font for better visibility
-            generator.Parameters.Barcode.CodeTextParameters.Font.FamilyName = "Arial";
-            generator.Parameters.Barcode.CodeTextParameters.Font.Size.Point = 10f;
+            // Center the text horizontally.
+            generator.Parameters.Barcode.CodeTextParameters.Alignment = TextAlignment.Center;
 
-            // Save the generated barcode image to a file
+            // Save the generated barcode as a PNG image.
             generator.Save("barcode.png");
         }
+
+        // Output the location of the generated file.
+        Console.WriteLine("Barcode generated: barcode.png");
     }
 }

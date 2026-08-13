@@ -1,38 +1,45 @@
-// Title: Generate high‑resolution Code128 barcode image
-// Description: Demonstrates creating a Code128 barcode and saving it as a PNG with 600 DPI resolution for high‑quality glossy label printing.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating how to configure barcode parameters such as resolution using the BarcodeGenerator class. Typical use cases include producing high‑resolution images for printing on glossy labels, packaging, or product identification. Developers often need to set DPI, choose symbology, and export to common image formats.
+// Title: Generate high‑resolution barcode image for glossy label printing
+// Description: Demonstrates how to create a Code128 barcode image at 600 DPI, suitable for high‑quality glossy label output.
+// Category-Description: This example belongs to the Aspose.BarCode image generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and resolution settings. Typical use cases include producing printable barcodes for product labels, packaging, and inventory tags where high resolution and color control are required. Developers often need to adjust DPI, anti‑aliasing, and colors to meet printing specifications.
 // Prompt: Generate a barcode image at 600 DPI resolution for high‑quality glossy label printing.
-// Tags: code128, barcode generation, resolution, png, aspose.barcode, aspose.drawing
+// Tags: barcode, code128, resolution, dpi, png, aspose.barcode, image generation, anti-aliasing, color
 
 using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
-namespace BarcodeSample
+/// <summary>
+/// Example program that generates a Code128 barcode image at 600 DPI for high‑quality glossy label printing.
+/// </summary>
+class Program
 {
     /// <summary>
-    /// Sample program that generates a Code128 barcode image with a resolution of 600 DPI.
+    /// Entry point. Creates the barcode, configures resolution, colors, and saves as PNG.
     /// </summary>
-    class Program
+    static void Main()
     {
-        /// <summary>
-        /// Entry point of the application. Creates a barcode, sets high resolution, and saves it as PNG.
-        /// </summary>
-        static void Main()
+        // Define the output file path for the generated barcode image.
+        string outputPath = "barcode.png";
+
+        // Initialize a BarcodeGenerator for Code128 with the sample code text.
+        using (Aspose.BarCode.Generation.BarcodeGenerator generator = new Aspose.BarCode.Generation.BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            // Initialize the barcode generator with Code128 symbology and sample data.
-            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
-            {
-                // Configure the generator to use 600 DPI for high‑quality glossy label printing.
-                generator.Parameters.Resolution = 600f;
+            // Set the image resolution to 600 DPI for high‑quality printing.
+            generator.Parameters.Resolution = 600f;
 
-                // Save the generated barcode as a PNG file.
-                generator.Save("barcode.png");
-            }
+            // Enable anti‑aliasing to improve visual smoothness.
+            generator.Parameters.UseAntiAlias = true;
 
-            // Inform the user that the barcode image has been created.
-            Console.WriteLine("Barcode image generated at 600 DPI: barcode.png");
+            // Configure bar (foreground) and background colors suitable for glossy labels.
+            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
+            generator.Parameters.BackColor = Aspose.Drawing.Color.White;
+
+            // Save the barcode image as PNG (lossless format) with the specified resolution.
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
+
+        // Inform the user where the barcode image was saved.
+        Console.WriteLine($"Barcode image saved to {outputPath}");
     }
 }

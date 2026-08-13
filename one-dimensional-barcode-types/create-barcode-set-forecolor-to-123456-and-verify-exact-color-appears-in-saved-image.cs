@@ -1,70 +1,69 @@
-// Title: Create Code128 barcode with custom foreground color and verify it
-// Description: This example creates a Code128 barcode, sets its bar color to #123456, saves it as a PNG file, and checks that the exact color appears in the generated image.
-// Category-Description: Demonstrates Aspose.BarCode generation and image verification techniques. It uses BarcodeGenerator, EncodeTypes, BarCodeImageFormat, and Aspose.Drawing classes to customize barcode appearance, save the image, and programmatically inspect pixel data. Ideal for developers needing to ensure visual fidelity of generated barcodes in automated pipelines.
+// Title: Generate Code128 Barcode with Custom Foreground Color and Verify It
+// Description: This example creates a Code128 barcode, sets its bar color to the hexadecimal value #123456, saves it as a PNG file, and then checks the saved image to confirm the exact color is present.
+// Category-Description: Aspose.BarCode barcode generation examples demonstrating color customization. Shows how to use BarcodeGenerator, set BarColor via Parameters.Barcode, save to PNG, and read the image with Aspose.Drawing.Bitmap for verification. Useful for developers needing precise visual styling of barcodes in .NET applications.
 // Prompt: Create a barcode, set ForeColor to #123456, and verify the exact color appears in the saved image.
-// Tags: code128, color, png, barcode, generation, verification, aspose.barcode, aspose.drawing
+// Tags: barcode, code128, color, verification, png, aspose.barcode, aspose.drawing, c#
 
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates creating a barcode with a custom foreground color and verifying the color in the saved image.
+/// Demonstrates creating a Code128 barcode with a custom foreground color,
+/// saving it to a PNG file, and verifying the color in the output image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a Code128 barcode, sets its bar color to #123456, saves it as PNG,
-    /// and scans the resulting image to confirm the exact color is present.
+    /// Entry point of the example.
     /// </summary>
     static void Main()
     {
-        // Define the output file path for the generated barcode image.
-        string outputPath = "barcode.png";
+        const string outputPath = "barcode.png";
 
-        // Create a BarcodeGenerator for Code128 symbology with sample text "Test123".
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Test123"))
+        // Initialize a barcode generator for Code128 symbology with sample text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "12345"))
         {
-            // Set the foreground (bar) color to the custom hex value #123456.
-            generator.Parameters.Barcode.BarColor = Color.FromArgb(0x12, 0x34, 0x56);
-            // Set the background color to white to ensure good contrast.
-            generator.Parameters.BackColor = Color.White;
+            // Define the desired bar (foreground) color using its RGB components.
+            var barColor = Color.FromArgb(0x12, 0x34, 0x56);
+            // Apply the custom color to the barcode.
+            generator.Parameters.Barcode.BarColor = barColor;
 
-            // Save the barcode image in PNG format to the specified path.
+            // Save the generated barcode as a PNG image.
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Verify that the barcode image file was successfully created.
+        // Ensure the image file was created before attempting verification.
         if (!File.Exists(outputPath))
         {
             Console.WriteLine("Failed to create the barcode image.");
             return;
         }
 
-        // Load the saved PNG image for pixel inspection.
-        using (var bitmap = (Bitmap)Image.FromFile(outputPath))
-        {
-            bool colorFound = false;
-            // Define the target color to search for in the image.
-            Color targetColor = Color.FromArgb(0x12, 0x34, 0x56);
+        bool colorFound = false;
+        var expectedColor = Color.FromArgb(0x12, 0x34, 0x56);
 
-            // Scan the image pixels until the target color is found.
+        // Load the saved image and scan its pixels for the expected color.
+        using (var bitmap = new Bitmap(outputPath))
+        {
             for (int y = 0; y < bitmap.Height && !colorFound; y++)
             {
                 for (int x = 0; x < bitmap.Width && !colorFound; x++)
                 {
-                    // Compare the ARGB values of the current pixel and the target color.
-                    if (bitmap.GetPixel(x, y).ToArgb() == targetColor.ToArgb())
+                    // Compare each pixel's ARGB value with the expected color.
+                    if (bitmap.GetPixel(x, y).ToArgb() == expectedColor.ToArgb())
                     {
                         colorFound = true;
                     }
                 }
             }
-
-            // Output verification result.
-            Console.WriteLine(colorFound ? "Bar color verified." : "Bar color not found in the image.");
         }
+
+        // Output the verification result.
+        Console.WriteLine(colorFound
+            ? "Bar color #123456 verified in the saved image."
+            : "Bar color #123456 not found in the saved image.");
     }
 }

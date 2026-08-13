@@ -1,35 +1,44 @@
-// Title: Generate a lime-colored Code128 barcode and save as high‑resolution TIFF
-// Description: Demonstrates how to set a custom foreground color (#00FF00) for a barcode and export it as a high‑quality TIFF image.
-// Category-Description: This example belongs to the Aspose.BarCode image generation category, illustrating usage of BarcodeGenerator, EncodeTypes, and rendering parameters such as BarColor and Resolution. Developers often need to customize barcode appearance and output format for printing or archival purposes. The snippet shows typical steps for creating, styling, and saving barcodes in .NET applications.
+// Title: Generate a Code128 barcode with lime foreground color and save as high‑quality TIFF
+// Description: This example creates a Code128 barcode, applies a custom lime (#00FF00) bar color, sets a high resolution, and saves the result as a TIFF file.
+// Category-Description: Aspose.BarCode generation examples showing how to customize barcode appearance and output format. It covers using BarcodeGenerator, setting Parameters such as Resolution and BarColor, and saving to image formats like TIFF. Developers often need to produce high‑resolution barcodes for print media, requiring precise color and DPI control.
 // Prompt: Generate a barcode with custom foreground color #00FF00 (lime) and save as a high‑quality TIFF file.
-// Tags: code128, barcode, color, tiff, highresolution, aspnet, aspose.barcode, generation
+// Tags: code128, barcode-generation, tiff, aspose.barcode, aspose.drawing
 
 using System;
-using Aspose.BarCode;
+using System.IO;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
-/// <summary>
-/// Entry point for the barcode generation example.
-/// </summary>
-class Program
+namespace BarcodeExample
 {
     /// <summary>
-    /// Generates a Code128 barcode with lime foreground color and saves it as a 300 DPI TIFF file.
+    /// Demonstrates generating a Code128 barcode with a custom lime foreground color and saving it as a high‑quality TIFF image.
     /// </summary>
-    static void Main()
+    class Program
     {
-        // Initialize the barcode generator with Code128 symbology and sample data.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
+        /// <summary>
+        /// Entry point of the example. Creates the barcode, configures appearance, and writes the image to disk.
+        /// </summary>
+        static void Main()
         {
-            // Apply lime color (#00FF00) to the bars.
-            generator.Parameters.Barcode.BarColor = Color.FromArgb(0, 255, 0);
+            // Define the output file name
+            string outputFile = "barcode.tiff";
 
-            // Set resolution to 300 DPI for high‑quality output.
-            generator.Parameters.Resolution = 300f;
+            // Initialize a BarcodeGenerator for Code128 with sample data
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+            {
+                // Configure high resolution (e.g., 300 DPI) for print‑quality output
+                generator.Parameters.Resolution = 300f;
 
-            // Save the generated barcode as a TIFF image.
-            generator.Save("barcode.tiff");
+                // Set the bar (foreground) color to lime (#00FF00)
+                generator.Parameters.Barcode.BarColor = Color.FromArgb(0, 255, 0);
+
+                // Save the generated barcode as a TIFF image
+                generator.Save(outputFile, BarCodeImageFormat.Tiff);
+            }
+
+            // Inform the user where the file was saved
+            Console.WriteLine($"Barcode saved to {Path.GetFullPath(outputFile)}");
         }
     }
 }

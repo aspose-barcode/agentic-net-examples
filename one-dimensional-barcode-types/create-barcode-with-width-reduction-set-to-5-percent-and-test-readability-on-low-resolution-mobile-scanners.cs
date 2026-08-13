@@ -1,68 +1,83 @@
-// Title: Create Code128 barcode with 5% width reduction for low‑resolution scanner testing
-// Description: Demonstrates generating a Code128 barcode with a 5 percent bar‑width reduction and simulating a low‑resolution mobile scanner to verify readability.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, illustrating how to configure barcode appearance (bar‑width reduction) and resolution settings, then read the barcode using high‑quality recognition. Developers often need to adjust bar dimensions and test scanning performance on devices with limited DPI, using classes like BarcodeGenerator, BarCodeReader, and QualitySettings.
+// Title: Barcode generation with width reduction and low‑resolution readability test
+// Description: Demonstrates creating a Code128 barcode with a 5 percent bar‑width reduction, then simulates a low‑resolution mobile scanner by downscaling the image and verifies that the barcode can still be read.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, showcasing how to adjust barcode appearance using the BarcodeGenerator.Parameters.Barcode.BarWidthReduction property and how to validate readability with BarCodeReader. Typical use cases include optimizing barcodes for small screens or low‑resolution capture devices. Developers often need to balance visual size reduction with scan reliability, making this pattern useful for mobile and IoT applications.
 // Prompt: Create a barcode with width reduction set to 5 percent and test readability on low‑resolution mobile scanners.
-// Tags: code128, barwidthreduction, lowresolution, barcode-generation, barcode-recognition, qualitysettings, png
+// Tags: code128, barwidthreduction, lowresolution, barcodegeneration, barcoderecognition, png, aspnet
 
 using System;
 using System.IO;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Generates a Code128 barcode with a 5 percent bar‑width reduction,
-/// saves it as a PNG, and then reads it back using high‑quality settings
-/// to simulate scanning on a low‑resolution mobile device.
+/// Demonstrates generating a Code128 barcode with a 5% bar‑width reduction,
+/// downscaling it to simulate a low‑resolution mobile scanner, and reading it back.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates the barcode, saves it,
-    /// verifies the file, and performs recognition.
+    /// Entry point of the example. Generates the barcode, creates a low‑resolution version,
+    /// and attempts to decode it using Aspose.BarCode.
     /// </summary>
     static void Main()
     {
-        // Define the output file path for the generated barcode image.
-        string outputPath = "barcode.png";
+        const string originalPath = "barcode.png";
+        const string lowResPath = "barcode_lowres.png";
 
-        // Create a Code128 barcode with sample text "1234567890".
+        // ------------------------------------------------------------
+        // 1. Generate a high‑resolution Code128 barcode with 5% width reduction
+        // ------------------------------------------------------------
         using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            // Simulate a low‑resolution mobile scanner by setting the image resolution to 72 DPI.
-            generator.Parameters.Resolution = 72f;
-
-            // Apply a 5 percent bar‑width reduction to the barcode.
+            // Apply a 5 percent bar‑width reduction
             generator.Parameters.Barcode.BarWidthReduction.Point = 5f;
 
-            // Save the generated barcode as a PNG file.
-            generator.Save(outputPath, BarCodeImageFormat.Png);
+            // Save the generated barcode as a PNG image
+            generator.Save(originalPath, BarCodeImageFormat.Png);
         }
 
-        // Verify that the barcode image file was successfully created.
-        if (!File.Exists(outputPath))
+        // ------------------------------------------------------------
+        // 2. Simulate a low‑resolution mobile scanner by downscaling the image
+        // ------------------------------------------------------------
+        using (var originalBitmap = new Bitmap(originalPath))
         {
-            Console.WriteLine($"Failed to create barcode image at '{outputPath}'.");
-            return;
+            // Target width for the low‑resolution image (maintain aspect ratio)
+            int targetWidth = 100;
+            int targetHeight = (int)Math.Round((double)originalBitmap.Height * targetWidth / originalBitmap.Width);
+
+            using (var lowResBitmap = new Bitmap(targetWidth, targetHeight))
+            {
+                using (var graphics = Graphics.FromImage(lowResBitmap))
+                {
+                    // Draw the original image onto the smaller bitmap (no high‑quality scaling needed)
+                    graphics.DrawImage(originalBitmap, 0, 0, targetWidth, targetHeight);
+                }
+
+                // Save the low‑resolution image for recognition testing
+                lowResBitmap.Save(lowResPath, ImageFormat.Png);
+            }
         }
 
-        // Read the barcode using high‑quality settings to emulate a mobile scanner.
-        using (var reader = new BarCodeReader(outputPath, DecodeType.AllSupportedTypes))
+        // ------------------------------------------------------------
+        // 3. Attempt to read the barcode from the low‑resolution image
+        // ------------------------------------------------------------
+        using (var reader = new BarCodeReader(lowResPath, DecodeType.AllSupportedTypes))
         {
-            // Enable high‑quality recognition to improve detection of low‑resolution images.
-            reader.QualitySettings = QualitySettings.HighQuality;
+            bool found = false;
 
-            // Iterate through all detected barcodes in the image.
+            // Iterate through all detected barcodes
             foreach (var result in reader.ReadBarCodes())
             {
-                Console.WriteLine($"Detected Type: {result.CodeTypeName}");
-                Console.WriteLine($"Code Text: {result.CodeText}");
-                Console.WriteLine($"Confidence: {result.Confidence}");
-                Console.WriteLine($"Reading Quality: {result.ReadingQuality}");
+                Console.WriteLine($"Detected Barcode Type: {result.CodeTypeName}");
+                Console.WriteLine($"Decoded Text: {result.CodeText}");
+                found = true;
+            }
 
-                // Output the bounding rectangle of the detected barcode region.
-                var bounds = result.Region.Rectangle;
-                Console.WriteLine($"Region: X={bounds.X}, Y={bounds.Y}, Width={bounds.Width}, Height={bounds.Height}");
+            if (!found)
+            {
+                Console.WriteLine("No barcode detected in the low‑resolution image.");
             }
         }
     }

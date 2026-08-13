@@ -1,8 +1,8 @@
-// Title: Create Code128 barcode with 30% width reduction and verify readability
-// Description: Demonstrates how to generate a Code128 barcode with a 30 percent bar‑width reduction, save it as PNG, and confirm that a scanner can read it.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, illustrating the use of BarcodeGenerator for customizing barcode appearance (e.g., BarWidthReduction) and BarCodeReader for validating scan results. Developers often need to adjust visual parameters while ensuring scanner compatibility, making this pattern useful for packaging, inventory, and logistics applications.
-// Prompt: Create a barcode with width reduction set to 30 percent and verify scanner readability.
-// Tags: code128, width-reduction, barcode-generation, barcode-recognition, png, aspose.barcode
+// Title: Generate Code128 Barcode with 30% Width Reduction and Verify Readability
+// Description: This example creates a Code128 barcode, applies a 30 percent bar‑width reduction, saves it as a PNG image, and then reads it back to confirm scanner readability.
+// Category-Description: Demonstrates Aspose.BarCode generation and recognition workflows. It showcases the use of BarcodeGenerator to customize barcode appearance (e.g., bar‑width reduction) and BarCodeReader to validate that the produced image can be decoded. Typical for developers who need to fine‑tune barcode dimensions for space‑constrained layouts and ensure downstream scanning reliability. Ideal for collections of examples on barcode customization, image output, and verification using Aspose.BarCode for .NET.
+/// Prompt: Create a barcode with width reduction set to 30 percent and verify scanner readability.
+/// Tags: code128, width reduction, barcode generation, barcode recognition, png, aspose.barcode, c#
 
 using System;
 using System.IO;
@@ -11,72 +11,55 @@ using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Generates a Code128 barcode with a 30 percent bar‑width reduction,
-/// saves it as a PNG image, and verifies that the barcode can be read
-/// by a scanner using Aspose.BarCode's recognition API.
+/// Demonstrates creating a Code128 barcode with a 30 percent bar‑width reduction,
+/// saving it as PNG, and verifying that it can be read by a scanner.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Executes barcode creation,
-    /// saves the image, and validates readability.
+    /// Entry point of the example. Generates the barcode, saves it, and validates readability.
     /// </summary>
     static void Main()
     {
-        // Define output file and barcode content
-        const string outputPath = "barcode.png";
-        const string codeText = "1234567890";
+        // Define the output file path for the generated barcode image.
+        string outputPath = "barcode.png";
 
-        // --------------------------------------------------------------------
-        // Generate the barcode with custom visual parameters
-        // --------------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+        // Create a barcode generator for Code128 with the sample text "1234567890".
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            // Apply a 30 percent reduction to the bar width
+            // Apply a 30 percent bar‑width reduction (value expressed in points).
             generator.Parameters.Barcode.BarWidthReduction.Point = 30f;
 
-            // Set foreground (bars) and background colors for clear contrast
-            generator.Parameters.Barcode.BarColor = Color.Black;
-            generator.Parameters.BackColor = Color.White;
-
-            // Save the generated barcode as a PNG image
+            // Save the generated barcode as a PNG image to the specified path.
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // --------------------------------------------------------------------
-        // Verify that the generated image exists before attempting recognition
-        // --------------------------------------------------------------------
+        // Verify that the barcode image file was created successfully.
         if (!File.Exists(outputPath))
         {
-            Console.WriteLine($"Failed to generate barcode image at '{outputPath}'.");
+            Console.WriteLine($"Failed to create barcode image at '{outputPath}'.");
             return;
         }
 
-        // --------------------------------------------------------------------
-        // Use BarCodeReader to scan the saved image and confirm readability
-        // --------------------------------------------------------------------
-        using (var reader = new BarCodeReader(outputPath, DecodeType.AllSupportedTypes))
+        // Use BarCodeReader to decode the saved image and confirm scanner readability.
+        using (BarCodeReader reader = new BarCodeReader(outputPath, DecodeType.Code128))
         {
-            bool readable = false;
+            bool found = false;
 
-            // Iterate through all detected barcodes in the image
+            // Iterate through all detected barcodes in the image.
             foreach (var result in reader.ReadBarCodes())
             {
-                Console.WriteLine($"Detected CodeText: {result.CodeText}");
+                Console.WriteLine($"Detected Barcode Type: {result.CodeTypeName}");
+                Console.WriteLine($"Decoded Text: {result.CodeText}");
                 Console.WriteLine($"Confidence: {result.Confidence}");
-                Console.WriteLine($"Reading Quality: {result.ReadingQuality}");
-
-                // Check if the detected text matches the original input
-                if (result.CodeText == codeText)
-                {
-                    readable = true;
-                }
+                found = true;
             }
 
-            // Output final verification result
-            Console.WriteLine(readable
-                ? "Barcode is readable by the scanner."
-                : "Barcode could not be read correctly.");
+            // Inform the user if no readable barcode was found.
+            if (!found)
+            {
+                Console.WriteLine("No barcode detected or unreadable.");
+            }
         }
     }
 }

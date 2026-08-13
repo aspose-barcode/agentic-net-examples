@@ -1,35 +1,37 @@
-// Title: Set barcode height to 50 mm while preserving XDimension
-// Description: Demonstrates how to configure a barcode's bar height in millimeters using Aspose.BarCode without altering the default XDimension, ensuring the aspect ratio remains unchanged.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to adjust barcode dimensions via the BarcodeGenerator.Parameters API. Typical use cases include customizing barcode size for printing or display while maintaining visual fidelity. Developers often need to modify bar height, XDimension, or other layout properties to meet design specifications.
+// Title: Set barcode height to 50 mm while preserving default XDimension
+// Description: Demonstrates how to generate a Code128 barcode image with a specific height of 50 mm, keeping the default XDimension to maintain the correct aspect ratio.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and barcode parameter settings. Typical use cases include creating barcodes with custom dimensions for printing or embedding in documents. Developers often need to adjust size properties while preserving default scaling factors to ensure readability and scanner compatibility.
 // Prompt: Set barcode height to 50 mm while keeping default XDimension to preserve aspect ratio.
-// Tags: code128, set-height, png, aspose.barcode, barcodegenerator
+// Tags: code128, set-height, png, barcodegenerator, parameters
 
 using System;
-using Aspose.BarCode.Generation;
 using Aspose.BarCode;
+using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates setting the barcode height to 50 mm while keeping the default XDimension.
+/// Generates a Code128 barcode image with a custom height while preserving the default XDimension.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a Code128 barcode with a specific height and saves it as PNG.
+    /// Entry point of the example. Creates a barcode, configures its height, and saves it as a PNG file.
     /// </summary>
     static void Main()
     {
-        // Initialize a barcode generator for Code128 with the sample text "Sample123"
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
+        // Initialize the barcode generator for Code128 symbology
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128))
         {
-            // Set the bar height to 50 millimeters; XDimension remains at its default value,
-            // preserving the original aspect ratio of the barcode.
+            // Define the data to encode in the barcode
+            generator.CodeText = "123456";
+
+            // Set the barcode height to 50 millimeters; XDimension remains at its default value
             generator.Parameters.Barcode.BarHeight.Millimeters = 50f;
 
-            // Save the generated barcode image to a PNG file in the current directory.
+            // Save the generated barcode image to a PNG file
             generator.Save("barcode.png");
         }
 
-        // Inform the user that the barcode has been generated successfully.
-        Console.WriteLine("Barcode generated successfully.");
+        // Inform the user that the barcode has been created
+        Console.WriteLine("Barcode generated and saved as barcode.png");
     }
 }

@@ -1,70 +1,109 @@
-// Title: Dynamic Code 16K Aspect Ratio Based on Text Length
-// Description: Demonstrates adjusting the Code 16K barcode's aspect ratio according to the length of the input string to maintain a consistent visual size.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on symbology-specific parameter tuning. It shows how to use BarcodeGenerator, EncodeTypes, and the Code16K parameters to modify aspect ratio and image dimensions. Developers creating barcodes that need uniform appearance regardless of data length can use this pattern to dynamically calculate visual properties.
+// Title: Dynamic Aspect Ratio Adjustment for Code 16K Barcodes
+// Description: Demonstrates how to calculate and apply a variable aspect ratio to Code 16K barcodes so that the visual size stays consistent across different input lengths.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and barcode parameter settings. It shows a common scenario where developers need to create Code 16K barcodes with a visual size that does not vary dramatically with the length of the encoded data, a frequent requirement in inventory and labeling systems.
 // Prompt: Write method dynamically adjusting Code 16K aspect ratio based on input string length for consistent visual size.
-// Tags: barcode, code16k, aspectratio, dynamic, generation, image, aspose.barcode
+// Tags: barcode, symbology, code16k, aspectratio, generation, png, aspose.barcode, csharp
 
 using System;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates dynamic adjustment of Code 16K barcode aspect ratio based on input string length.
+/// Generates Code 16K barcodes with a dynamically calculated aspect ratio to keep visual size consistent.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Calculates an aspect ratio based on the length of the codetext.
-    /// Longer text results in a higher height‑to‑width ratio to keep the visual size consistent.
+    /// Calculates an aspect ratio that tries to keep the visual size of the barcode
+    /// roughly constant regardless of the length of the encoded text.
+    /// Shorter texts get a larger aspect ratio (taller), longer texts get a smaller one (wider).
     /// </summary>
     /// <param name="codeText">The text to encode in the barcode.</param>
-    /// <returns>A float representing the calculated aspect ratio.</returns>
+    /// <returns>A float representing the height‑to‑width ratio.</returns>
     static float CalculateAspectRatio(string codeText)
     {
-        const float baseAspect = 1.0f;   // Default ratio for a typical length.
-        const int baseLength = 10;       // Reference length for the default ratio.
-
-        if (codeText == null) throw new ArgumentNullException(nameof(codeText));
-
-        // If the text length does not exceed the reference, return the base aspect.
-        if (codeText.Length <= baseLength)
-            return baseAspect;
-
-        // Increase the ratio by 0.05 for each character beyond the base length.
-        // Adjust the multiplier as needed for different visual requirements.
-        float extraRatio = (codeText.Length - baseLength) * 0.05f;
-        return baseAspect + extraRatio;
+        const float baseAspect = 1.0f;                     // default height/width ratio
+        // Simple heuristic: inverse proportional to length, with a minimum divisor of 1.
+        float lengthFactor = Math.Max(1, codeText.Length);
+        float ratio = baseAspect * (10f / lengthFactor);   // 10 is an arbitrary scaling constant
+        return ratio;
     }
 
     /// <summary>
-    /// Entry point that generates a Code 16K barcode with a calculated aspect ratio and saves it as an image.
+    /// Resolves a symbology name to the corresponding EncodeTypes field using reflection.
     /// </summary>
-    static void Main()
+    /// <param name="symbologyName">The name of the symbology (e.g., "Code16K").</param>
+    /// <returns>The matching <see cref="BaseEncodeType"/> instance.</returns>
+    static BaseEncodeType ResolveEncodeType(string symbologyName)
     {
-        // Sample codetext; replace with any string as needed.
-        string codeText = "DynamicAspectRatioExample";
-
-        // Determine the appropriate aspect ratio based on the input length.
-        float aspectRatio = CalculateAspectRatio(codeText);
-
-        // Create the barcode generator for Code16K using the provided codetext.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code16K, codeText))
+        var field = typeof(EncodeTypes).GetField(symbologyName);
+        if (field == null)
         {
-            // Apply the calculated aspect ratio to the Code16K parameters.
-            generator.Parameters.Barcode.Code16K.AspectRatio = aspectRatio;
-
-            // Optional: set a fixed image width to keep output size predictable.
-            generator.Parameters.ImageWidth.Point = 300f;
-
-            // Use interpolation mode so the image size respects ImageWidth.
-            generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
-
-            // Save the barcode image to a file.
-            string outputPath = "code16k.png";
-            generator.Save(outputPath);
-
-            // Inform the user about the saved file and the used aspect ratio.
-            Console.WriteLine($"Barcode saved to '{outputPath}' with aspect ratio {aspectRatio:F2}");
+            throw new ArgumentException($"Unknown symbology: {symbologyName}");
         }
+        return (BaseEncodeType)field.GetValue(null);
+    }
+
+    /// <summary>
+    /// Generates a Code 16K barcode image with an aspect ratio adjusted for the supplied text.
+    /// </summary>
+    /// <param name="codeText">The text to encode.</param>
+    /// <param name="outputPath">Full file path where the PNG image will be saved.</param>
+    static void GenerateCode16K(string codeText, string outputPath)
+    {
+        // Resolve the Code16K encode type.
+        BaseEncodeType encodeType = ResolveEncodeType("Code16K");
+
+        // Create the barcode generator with the specified text.
+        using (var generator = new BarcodeGenerator(encodeType, codeText))
+        {
+            // Adjust the aspect ratio based on the length of the code text.
+            float aspect = CalculateAspectRatio(codeText);
+            generator.Parameters.Barcode.Code16K.AspectRatio = aspect;
+
+            // Optional: set a modest XDimension so the image is not too small.
+            generator.Parameters.Barcode.XDimension.Point = 2f;
+
+            // Save the barcode as PNG.
+            generator.Save(outputPath, BarCodeImageFormat.Png);
+            Console.WriteLine($"Generated '{outputPath}' with AspectRatio={aspect:F3}");
+        }
+    }
+
+    /// <summary>
+    /// Entry point. Generates a set of Code 16K barcodes with varying text lengths to demonstrate aspect‑ratio adjustment.
+    /// </summary>
+    /// <param name="args">Command‑line arguments (not used).</param>
+    static void Main(string[] args)
+    {
+        // Sample inputs of varying lengths.
+        string[] samples = new[]
+        {
+            "ABC",
+            "ABCDEFGHIJ",
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+            "12345678901234567890",
+            "LongerSampleTextToTestAspectRatioAdjustment"
+        };
+
+        // Ensure the output directory exists.
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
+        if (!Directory.Exists(outputDir))
+        {
+            Directory.CreateDirectory(outputDir);
+        }
+
+        // Generate a barcode for each sample.
+        for (int i = 0; i < samples.Length; i++)
+        {
+            string text = samples[i];
+            string fileName = $"Code16K_{i + 1}.png";
+            string outputPath = Path.Combine(outputDir, fileName);
+            GenerateCode16K(text, outputPath);
+        }
+
+        Console.WriteLine("Barcode generation completed.");
     }
 }

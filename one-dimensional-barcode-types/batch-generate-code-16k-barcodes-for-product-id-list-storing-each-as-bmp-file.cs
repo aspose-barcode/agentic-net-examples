@@ -1,28 +1,28 @@
-// Title: Batch generate Code 16K barcodes and save as BMP files
-// Description: Demonstrates creating Code 16K barcodes for a collection of product IDs and storing each barcode as an individual BMP image.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to use the BarcodeGenerator class with EncodeTypes.Code16K for batch processing. Typical use cases include inventory labeling, product tracking, and bulk barcode creation where developers need to automate image output in a specific format.
+// Title: Batch generation of Code 16K barcodes to BMP files
+// Description: Demonstrates how to generate Code 16K barcodes for a list of product IDs and save each barcode as a BMP image file.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing the use of EncodeTypes, BarcodeGenerator, and BarCodeImageFormat classes. Typical scenarios include bulk creation of product barcodes for inventory systems, packaging, or point‑of‑sale applications. Developers often need to automate barcode creation for multiple items and store them in common image formats such as BMP.
 // Prompt: Batch generate Code 16K barcodes for product ID list, storing each as BMP file.
-// Tags: code16k, barcode, generation, bmp, batch, aspose.barcode
+// Tags: code16k, barcode, generation, bmp, aspose.barcode
 
 using System;
-using System.Collections.Generic;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Provides an entry point for generating a set of Code 16K barcodes from a list of product identifiers
-/// and saving each barcode as a BMP image file.
+/// Provides an example that creates Code 16K barcodes for a collection of product identifiers
+/// and stores each barcode as a BMP image file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Generates Code 16K barcodes for predefined product IDs and writes each image to the "Barcodes" folder.
+    /// Entry point that iterates over product IDs, generates corresponding Code 16K barcodes,
+    /// and saves them as BMP files in a dedicated output folder.
     /// </summary>
     static void Main()
     {
-        // Define a sample collection of product identifiers.
-        List<string> productIds = new List<string>
+        // Define a sample list of product IDs to encode.
+        string[] productIds = new[]
         {
             "PROD001",
             "PROD002",
@@ -31,36 +31,31 @@ class Program
             "PROD005"
         };
 
-        // Determine the output directory relative to the current working directory.
+        // Determine the output directory for BMP files (creates "Barcodes" folder in the current directory).
         string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
-
-        // Ensure the output directory exists; create it if it does not.
         if (!Directory.Exists(outputDir))
         {
             Directory.CreateDirectory(outputDir);
         }
 
-        // Iterate over each product ID and generate a corresponding barcode.
+        // Process each product ID.
         foreach (string id in productIds)
         {
-            // Initialize a barcode generator for the Code 16K symbology.
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code16K))
+            // Initialize a BarcodeGenerator for the Code16K symbology.
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code16K))
             {
-                // Assign the product ID as the text to encode in the barcode.
+                // Assign the product ID as the text to encode.
                 generator.CodeText = id;
 
-                // Optional: adjust the aspect ratio if required (default is 1.0).
-                // generator.Parameters.Barcode.Code16K.AspectRatio = 1.0f;
+                // Optional: configure Code16K‑specific parameters.
+                generator.Parameters.Barcode.Code16K.AspectRatio = 1.0f;          // Height/Width ratio.
+                generator.Parameters.Barcode.Code16K.QuietZoneLeftCoef = 10;   // Left quiet zone coefficient.
+                generator.Parameters.Barcode.Code16K.QuietZoneRightCoef = 1;   // Right quiet zone coefficient.
 
-                // Construct the full file path for the BMP output.
-                string filePath = Path.Combine(outputDir, $"Product_{id}.bmp");
-
-                // Save the generated barcode image in BMP format.
-                generator.Save(filePath);
+                // Build the full file path and save the barcode as a BMP image.
+                string filePath = Path.Combine(outputDir, $"{id}.bmp");
+                generator.Save(filePath, BarCodeImageFormat.Bmp);
             }
         }
-
-        // Notify the user that the batch operation has completed.
-        Console.WriteLine("Barcode generation completed.");
     }
 }
