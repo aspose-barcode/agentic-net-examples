@@ -2,7 +2,7 @@
 
 > Build-validated, standalone C# console examples for Aspose.BarCode for .NET 26.7.0.
 
-- Examples: 1267
+- Examples: 1212
 - Categories: 21
 - Coding-agent instructions: ./AGENTS.md
 - Structured index: ./index.json
@@ -11,8 +11,8 @@
 
 ## Categories
 
-- [barcode-appearance-customization](./barcode-appearance-customization/): 88 standalone examples; instructions in [AGENTS.md](./barcode-appearance-customization/AGENTS.md)
-- [barcode-checksum-control](./barcode-checksum-control/): 87 standalone examples; instructions in [AGENTS.md](./barcode-checksum-control/AGENTS.md)
+- [barcode-appearance-customization](./barcode-appearance-customization/): 60 standalone examples; instructions in [AGENTS.md](./barcode-appearance-customization/AGENTS.md)
+- [barcode-checksum-control](./barcode-checksum-control/): 60 standalone examples; instructions in [AGENTS.md](./barcode-checksum-control/AGENTS.md)
 - [barcode-color-customization](./barcode-color-customization/): 56 standalone examples; instructions in [AGENTS.md](./barcode-color-customization/AGENTS.md)
 - [barcode-configuration-serialization](./barcode-configuration-serialization/): 30 standalone examples; instructions in [AGENTS.md](./barcode-configuration-serialization/AGENTS.md)
 - [barcode-reading-properties](./barcode-reading-properties/): 50 standalone examples; instructions in [AGENTS.md](./barcode-reading-properties/AGENTS.md)
