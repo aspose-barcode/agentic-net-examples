@@ -1,8 +1,8 @@
-// Title: Batch Mailmark Barcode Generation to BMP Files
-// Description: Demonstrates generating Mailmark barcodes for a list of customer records and saving each barcode as an individual BMP image.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, focusing on complex barcode types such as Mailmark. It showcases the use of Aspose.BarCode.Generation.ComplexBarcodeGenerator and Aspose.BarCode.ComplexBarcode.MailmarkCodetext to create barcodes programmatically. Developers often need to batch‑process records, embed specific data fields, and export barcodes to image formats for printing or archival purposes.
+// Title: Batch generation of Mailmark barcodes to BMP files
+// Description: Demonstrates how to create Mailmark barcodes for multiple customer records and save each barcode as an individual BMP image.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on complex barcode types such as Mailmark. It showcases the use of ComplexBarcodeGenerator and MailmarkCodetext classes to produce high‑volume barcode images, a common requirement for logistics, mailing, and inventory systems. Developers often need to generate barcodes in bulk, customize codetext, and export them to various image formats.
 // Prompt: Batch generate Mailmark barcodes from customer records, saving each as separate BMP files.
-// Tags: mailmark, barcode, generation, bmp, aspose.barcode, complexbarcode
+// Tags: mailmark, barcode generation, bmp, batch processing, aspose.barcode, complexbarcode, codetext
 
 using System;
 using System.Collections.Generic;
@@ -12,56 +12,70 @@ using Aspose.BarCode.Generation;
 using Aspose.BarCode.ComplexBarcode;
 
 /// <summary>
-/// Generates Mailmark barcodes for a collection of customer records and saves each barcode as a BMP file.
+/// Example program that generates Mailmark barcodes for a list of customer records
+/// and saves each barcode as a separate BMP file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Creates an output folder, iterates over sample records,
-    /// builds Mailmark codetext, generates the barcode, and writes it to disk.
+    /// Entry point of the application. Iterates over sample customer data,
+    /// builds Mailmark codetext, generates the barcode image, and writes it to disk.
     /// </summary>
     static void Main()
     {
-        // Define the output directory and ensure it exists
-        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "MailmarkBarcodes");
-        if (!Directory.Exists(outputDir))
+        // Sample customer records – in a real scenario these would come from a database or file.
+        var customers = new List<CustomerRecord>
         {
-            Directory.CreateDirectory(outputDir);
-        }
-
-        // Sample customer records (limited to 5 for safe execution)
-        var records = new List<(int ItemID, string DestinationPostCodePlusDPS)>
-        {
-            (16563762, "EF61AH8T "),
-            (16563763, "EF61AH8T "),
-            (16563764, "EF61AH8T "),
-            (16563765, "EF61AH8T "),
-            (16563766, "EF61AH8T ")
+            new CustomerRecord { Class = "0", SupplychainID = 384224, ItemID = 16563762 },
+            new CustomerRecord { Class = "1", SupplychainID = 384224, ItemID = 16563763 },
+            new CustomerRecord { Class = "2", SupplychainID = 384224, ItemID = 16563764 },
+            new CustomerRecord { Class = "3", SupplychainID = 384224, ItemID = 16563765 },
+            new CustomerRecord { Class = "4", SupplychainID = 384224, ItemID = 16563766 }
         };
 
-        int index = 1;
-        foreach (var record in records)
+        // Determine output folder for generated BMP files.
+        string outputFolder = Path.Combine(Directory.GetCurrentDirectory(), "MailmarkBarcodes");
+        if (!Directory.Exists(outputFolder))
         {
-            // Build the Mailmark codetext with required fields for each record
+            // Create the folder if it does not already exist.
+            Directory.CreateDirectory(outputFolder);
+        }
+
+        int index = 1;
+        foreach (var record in customers)
+        {
+            // Construct Mailmark codetext according to the specification.
             var mailmark = new MailmarkCodetext
             {
-                Format = 4,                     // 4‑state (unspecified/default)
-                VersionID = 1,
-                Class = "0",                    // Test/Null class
-                SupplychainID = 384224,
+                Format = 4,                     // 4‑state Mailmark.
+                VersionID = 1,                  // Version identifier.
+                Class = record.Class,           // Class as string.
+                SupplychainID = record.SupplychainID,
                 ItemID = record.ItemID,
-                DestinationPostCodePlusDPS = record.DestinationPostCodePlusDPS
+                DestinationPostCodePlusDPS = "EF61AH8T " // Trailing space is required.
             };
 
-            // Generate the barcode and save it as a BMP image
+            // Generate the barcode image using ComplexBarcodeGenerator.
             using (var generator = new ComplexBarcodeGenerator(mailmark))
             {
-                string filePath = Path.Combine(outputDir, $"Mailmark_{index}.bmp");
+                // Build file name and path for the current barcode.
+                string filePath = Path.Combine(outputFolder, $"Mailmark_{index}.bmp");
+                // Save the barcode as a BMP image.
                 generator.Save(filePath, BarCodeImageFormat.Bmp);
-                Console.WriteLine($"Saved Mailmark barcode to: {filePath}");
+                Console.WriteLine($"Saved Mailmark barcode #{index} to: {filePath}");
             }
 
             index++;
         }
+
+        Console.WriteLine("All Mailmark barcodes have been generated.");
+    }
+
+    // Simple data holder for demonstration purposes.
+    private class CustomerRecord
+    {
+        public string Class { get; set; }
+        public int SupplychainID { get; set; }
+        public int ItemID { get; set; }
     }
 }

@@ -1,11 +1,13 @@
-// Title: Mailmark barcode decoding with Reed‑Solomon error simulation
-// Description: Demonstrates generating a Mailmark barcode, corrupting it with simulated Reed‑Solomon errors, and verifying successful decoding.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category, focusing on complex barcode types such as Mailmark. It showcases the use of ComplexBarcodeGenerator, BarCodeReader, and related quality settings to handle damaged barcodes, a common requirement for developers implementing robust mail processing systems. The snippet illustrates typical workflows for creating, corrupting, and validating Mailmark barcodes using Aspose.BarCode APIs.
+// Title: Mailmark barcode decoding with simulated Reed‑Solomon errors
+// Description: Demonstrates generating Mailmark barcodes, corrupting the image to simulate Reed‑Solomon errors, and successfully decoding them using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category, focusing on complex barcode symbologies such as Mailmark. It showcases the use of ComplexBarcodeGenerator, BarCodeReader, and related classes to create, corrupt, and decode barcodes, a common task for developers testing error‑correction capabilities and robustness of barcode scanning solutions.
 // Prompt: Write unit tests verifying successful decoding of Mailmark barcodes with intentional Reed‑Solomon error patterns.
-// Tags: mailmark, barcode, decoding, reed-solomon, error-correction, generation, recognition, aspnet, csharp
+// Tags: mailmark, barcode, decoding, error-correction, reed-solomon, aspose.barcode, complexbarcode, unit-test
 
 using System;
+using System.Collections.Generic;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.BarCode.ComplexBarcode;
@@ -13,109 +15,146 @@ using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a Mailmark barcode, corrupting it, and verifying decoding using Aspose.BarCode.
+/// Demonstrates generating, corrupting, and decoding Mailmark barcodes using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point for the Mailmark decoding demonstration.
+    /// Entry point that runs a series of Mailmark decoding tests and reports results.
     /// </summary>
     static void Main()
     {
-        // Run the Mailmark decoding test
-        RunMailmarkDecodingTest();
+        // Prepare test cases with different ItemID values
+        var testCases = new List<MailmarkCodetext>
+        {
+            CreateMailmark(16563762),
+            CreateMailmark(16563763),
+            CreateMailmark(16563764)
+        };
+
+        int passed = 0;
+        int failed = 0;
+
+        // Execute each test case
+        for (int i = 0; i < testCases.Count; i++)
+        {
+            bool result = RunTest(testCases[i], i + 1);
+            if (result)
+                passed++;
+            else
+                failed++;
+        }
+
+        // Output summary of test results
+        Console.WriteLine($"TOTAL: {testCases.Count}, PASSED: {passed}, FAILED: {failed}");
     }
 
-    /// <summary>
-    /// Generates a Mailmark barcode, introduces simulated Reed‑Solomon errors, and validates successful decoding.
-    /// </summary>
-    static void RunMailmarkDecodingTest()
+    // Creates a MailmarkCodetext with known valid values
+    static MailmarkCodetext CreateMailmark(int itemId)
     {
-        // Prepare a valid Mailmark codetext
         var mailmark = new MailmarkCodetext();
-        mailmark.Format = 4;                     // Default/unspecified format
+        mailmark.Format = 4; // 4‑state Mailmark
         mailmark.VersionID = 1;
         mailmark.Class = "0";
         mailmark.SupplychainID = 384224;
-        mailmark.ItemID = 16563762;
-        mailmark.DestinationPostCodePlusDPS = "EF61AH8T ";
+        mailmark.ItemID = itemId;
+        mailmark.DestinationPostCodePlusDPS = "EF61AH8T "; // trailing space is required
+        return mailmark;
+    }
 
-        // Generate the Mailmark barcode image using ComplexBarcodeGenerator
-        using (var complexGenerator = new ComplexBarcodeGenerator(mailmark))
+    // Generates a barcode image, corrupts it, decodes it and verifies the result
+    static bool RunTest(MailmarkCodetext original, int testNumber)
+    {
+        // Step 1: generate barcode image into a memory stream
+        using (var barcodeStream = new MemoryStream())
         {
-            using (Bitmap bitmap = complexGenerator.GenerateBarCodeImage())
+            using (var generator = new ComplexBarcodeGenerator(original))
             {
-                // Save the image to a memory stream (PNG format)
-                using (var originalStream = new MemoryStream())
+                generator.Save(barcodeStream, BarCodeImageFormat.Png);
+            }
+
+            // Step 2: corrupt the image to simulate Reed‑Solomon errors
+            using (var corruptedStream = CorruptImage(barcodeStream))
+            {
+                // Step 3: decode the corrupted image
+                using (var reader = new BarCodeReader(corruptedStream, DecodeType.Mailmark))
                 {
-                    bitmap.Save(originalStream, ImageFormat.Png);
-                    byte[] originalBytes = originalStream.ToArray();
+                    // Allow engine to try to read even if some data is damaged
+                    reader.QualitySettings.AllowIncorrectBarcodes = true;
 
-                    // Introduce intentional Reed‑Solomon error patterns by corrupting a few bytes
-                    // (simple pixel corruption for demonstration purposes)
-                    byte[] corruptedBytes = (byte[])originalBytes.Clone();
-                    int errorsToIntroduce = 5;
-                    Random rnd = new Random(0);
-                    for (int i = 0; i < errorsToIntroduce; i++)
+                    foreach (var result in reader.ReadBarCodes())
                     {
-                        int index = rnd.Next(corruptedBytes.Length);
-                        corruptedBytes[index] ^= 0xFF; // Invert bits at the selected position
-                    }
-
-                    // Decode the corrupted image
-                    using (var corruptedStream = new MemoryStream(corruptedBytes))
-                    {
-                        using (var reader = new BarCodeReader(corruptedStream, DecodeType.Mailmark))
+                        // Verify that a code text was obtained
+                        if (string.IsNullOrEmpty(result.CodeText))
                         {
-                            // Allow the engine to attempt recovery from damaged barcodes
-                            reader.QualitySettings.AllowIncorrectBarcodes = true;
-                            reader.QualitySettings.Deconvolution = DeconvolutionMode.Fast;
+                            Console.WriteLine($"Test {testNumber}: FAILED – empty CodeText.");
+                            return false;
+                        }
 
-                            var results = reader.ReadBarCodes();
+                        // Decode the complex codetext back to a MailmarkCodetext object
+                        var decoded = ComplexCodetextReader.TryDecodeMailmark(result.CodeText);
+                        if (decoded == null)
+                        {
+                            Console.WriteLine($"Test {testNumber}: FAILED – ComplexCodetextReader returned null.");
+                            return false;
+                        }
 
-                            if (results.Length == 0)
-                            {
-                                Console.WriteLine("Test FAILED: No barcode detected.");
-                                return;
-                            }
+                        // Compare all fields
+                        bool match =
+                            decoded.Format == original.Format &&
+                            decoded.VersionID == original.VersionID &&
+                            decoded.Class == original.Class &&
+                            decoded.SupplychainID == original.SupplychainID &&
+                            decoded.ItemID == original.ItemID &&
+                            decoded.DestinationPostCodePlusDPS == original.DestinationPostCodePlusDPS;
 
-                            // Expect only one Mailmark barcode
-                            var result = results[0];
-                            if (string.IsNullOrEmpty(result.CodeText))
-                            {
-                                Console.WriteLine("Test FAILED: Decoded CodeText is empty.");
-                                return;
-                            }
-
-                            // Verify that the decoded codetext can be parsed back to a MailmarkCodetext object
-                            MailmarkCodetext decodedMailmark = ComplexCodetextReader.TryDecodeMailmark(result.CodeText);
-                            if (decodedMailmark == null)
-                            {
-                                Console.WriteLine("Test FAILED: ComplexCodetextReader could not parse the codetext.");
-                                return;
-                            }
-
-                            // Simple field comparisons to ensure integrity
-                            bool fieldsMatch =
-                                decodedMailmark.Format == mailmark.Format &&
-                                decodedMailmark.VersionID == mailmark.VersionID &&
-                                decodedMailmark.Class == mailmark.Class &&
-                                decodedMailmark.SupplychainID == mailmark.SupplychainID &&
-                                decodedMailmark.ItemID == mailmark.ItemID &&
-                                decodedMailmark.DestinationPostCodePlusDPS == mailmark.DestinationPostCodePlusDPS;
-
-                            if (fieldsMatch)
-                            {
-                                Console.WriteLine("Test PASSED: Mailmark barcode decoded successfully despite errors.");
-                            }
-                            else
-                            {
-                                Console.WriteLine("Test FAILED: Decoded fields do not match original values.");
-                            }
+                        if (match)
+                        {
+                            Console.WriteLine($"Test {testNumber}: PASS");
+                            return true;
+                        }
+                        else
+                        {
+                            Console.WriteLine($"Test {testNumber}: FAILED – decoded values do not match original.");
+                            return false;
                         }
                     }
+
+                    Console.WriteLine($"Test {testNumber}: FAILED – no barcode detected.");
+                    return false;
                 }
             }
+        }
+    }
+
+    // Introduces random pixel errors into the PNG image to mimic Reed‑Solomon corruption
+    static MemoryStream CorruptImage(MemoryStream originalStream)
+    {
+        // Load the original image
+        originalStream.Position = 0;
+        using (var bitmap = new Bitmap(originalStream))
+        {
+            // Simple deterministic "random" corruption
+            var rand = new Random(12345);
+            int errorCount = Math.Max(1, bitmap.Width * bitmap.Height / 2000); // ~0.05% of pixels
+
+            for (int i = 0; i < errorCount; i++)
+            {
+                int x = rand.Next(bitmap.Width);
+                int y = rand.Next(bitmap.Height);
+                // Flip the pixel color (black <-> white)
+                var current = bitmap.GetPixel(x, y);
+                var newColor = (current.ToArgb() == Aspose.Drawing.Color.Black.ToArgb())
+                    ? Aspose.Drawing.Color.White
+                    : Aspose.Drawing.Color.Black;
+                bitmap.SetPixel(x, y, newColor);
+            }
+
+            // Save the corrupted image to a new memory stream
+            var corruptedStream = new MemoryStream();
+            bitmap.Save(corruptedStream, ImageFormat.Png);
+            corruptedStream.Position = 0;
+            return corruptedStream;
         }
     }
 }
