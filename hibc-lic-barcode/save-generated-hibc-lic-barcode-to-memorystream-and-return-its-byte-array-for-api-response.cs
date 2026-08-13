@@ -1,59 +1,59 @@
-// Title: Generate HIBC LIC Barcode and Return PNG Byte Array
-// Description: Demonstrates creating a HIBC Code128 LIC barcode with secondary data, saving it to a MemoryStream, and obtaining the PNG byte array for API responses.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It showcases the use of ComplexBarcodeGenerator, HIBCLICSecondaryAndAdditionalDataCodetext, and related data classes to produce HIBC LIC barcodes. Developers often need to embed secondary information such as lot numbers, serial numbers, and dates, then deliver the barcode image as a byte array for web APIs or other services.
+// Title: Generate HIBC LIC barcode and return PNG byte array
+// Description: Demonstrates creating a HIBC LIC barcode with Aspose.BarCode, saving it as a PNG image into a MemoryStream, and obtaining the byte array for API responses.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on complex barcode types such as HIBC LIC. It showcases the use of ComplexBarcodeGenerator, HIBCLICSecondaryAndAdditionalDataCodetext, and related data classes to encode secondary and additional data. Developers commonly need to generate HIBC barcodes for healthcare product labeling and return the image data via web APIs.
 // Prompt: Save the generated HIBC LIC barcode to a MemoryStream and return its byte array for an API response.
-// Tags: hibc, lic, barcode generation, png, memory stream, aspose.barcode, complexbarcode
+// Tags: hibc, lic, barcode generation, png, memorystream, aspose.barcode, complexbarcodegenerator
 
 using System;
 using System.IO;
-using Aspose.BarCode.ComplexBarcode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.Generation; // for BarCodeImageFormat
-using Aspose.Drawing.Imaging; // for ImageFormat if needed (not used here)
+using Aspose.BarCode.ComplexBarcode;
+using Aspose.BarCode;
 
 /// <summary>
-/// Example program that creates a HIBC LIC barcode with secondary data,
-/// saves it to a MemoryStream, and outputs the resulting byte array.
+/// Example program that generates a HIBC LIC barcode and returns its PNG byte array.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates the barcode and writes diagnostic information to the console.
+    /// Generates the barcode, saves it to a MemoryStream, and outputs the byte array length.
     /// </summary>
     static void Main()
     {
-        // Prepare secondary and additional data for the HIBC LIC barcode.
-        var secondaryCodetext = new HIBCLICSecondaryAndAdditionalDataCodetext
+        // Prepare HIBC LIC secondary and additional data codetext
+        var hibcCodetext = new HIBCLICSecondaryAndAdditionalDataCodetext
         {
-            // Select the HIBC Code128 LIC symbology.
+            // Set the barcode symbology (Code128 LIC in this example)
             BarcodeType = EncodeTypes.HIBCCode128LIC,
-            // The link character is required by the HIBC specification.
+            // Link character is mandatory; '+' is the default
             LinkCharacter = '+',
-            // Populate the secondary data fields.
+            // Populate secondary data (example fields)
             Data = new SecondaryAndAdditionalData
             {
                 LotNumber = "LOT123",
-                SerialNumber = "SER123",
+                SerialNumber = "SERIAL123",
                 Quantity = 10,
-                ExpiryDate = DateTime.Now.AddMonths(6),
+                ExpiryDate = DateTime.Today.AddMonths(6),
                 ExpiryDateFormat = HIBCLICDateFormat.MMDDYY,
-                DateOfManufacture = DateTime.Now.AddMonths(-1)
+                DateOfManufacture = DateTime.Today.AddMonths(-1)
             }
         };
 
-        // Generate the barcode and write it to a MemoryStream in PNG format.
-        using (var generator = new ComplexBarcodeGenerator(secondaryCodetext))
-        using (var memoryStream = new MemoryStream())
+        // Generate the barcode and save it to a MemoryStream
+        byte[] barcodeBytes;
+        using (var generator = new ComplexBarcodeGenerator(hibcCodetext))
         {
-            // Save the barcode image to the stream.
-            generator.Save(memoryStream, BarCodeImageFormat.Png);
-
-            // Retrieve the raw PNG bytes from the stream.
-            byte[] barcodeBytes = memoryStream.ToArray();
-
-            // Output diagnostic information (length and Base64 representation) for verification.
-            Console.WriteLine($"Barcode byte array length: {barcodeBytes.Length}");
-            Console.WriteLine($"Base64: {Convert.ToBase64String(barcodeBytes)}");
+            using (var ms = new MemoryStream())
+            {
+                // Save as PNG image into the stream
+                generator.Save(ms, BarCodeImageFormat.Png);
+                // Retrieve the byte array for API response
+                barcodeBytes = ms.ToArray();
+            }
         }
+
+        // Example output: display the size of the generated byte array
+        Console.WriteLine($"Generated HIBC LIC barcode byte array length: {barcodeBytes.Length}");
+        // The 'barcodeBytes' variable now contains the PNG image data ready for an API response.
     }
 }

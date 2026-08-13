@@ -1,8 +1,8 @@
 // Title: Generate HIBC LIC barcode with secondary data and save as LZW‑compressed TIFF
-// Description: Demonstrates creating a HIBC LIC barcode that contains only secondary data (lot and serial numbers) and saving the result as a TIFF image using LZW compression.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on complex barcode types such as HIBC LIC. It showcases the use of ComplexBarcodeGenerator, HIBCLICSecondaryAndAdditionalDataCodetext, and image encoding classes to produce high‑quality TIFF output. Developers needing to embed secondary information in HIBC barcodes for healthcare or logistics can follow this pattern.
+// Description: Demonstrates creating a HIBC LIC barcode that contains only secondary and additional data, then saving the image as a TIFF file using LZW compression.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It shows how to use ComplexBarcodeGenerator with HIBCLICSecondaryAndAdditionalDataCodetext to encode HIBC LIC symbology, a common requirement in healthcare and logistics for encoding lot and serial numbers. Developers often need to generate such barcodes and export them to lossless image formats like TIFF with specific compression settings.
 // Prompt: Generate a HIBC LIC barcode with secondary data only and save it as a TIFF image with LZW compression.
-// Tags: hibc, lic, barcode, generation, tiff, lzw, aspose.barcode, complexbarcode
+// Tags: hibc, lic, secondary-data, tiff, lzw, complexbarcode, generation
 
 using System;
 using System.IO;
@@ -13,51 +13,65 @@ using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Program demonstrating generation of a HIBC LIC barcode with secondary data only and saving it as an LZW‑compressed TIFF image.
+/// Example program that creates a HIBC LIC barcode containing only secondary data
+/// and saves it as a TIFF image using LZW compression.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Creates the barcode, encodes it, and writes the TIFF file.
+    /// Entry point of the example. Generates the barcode and writes the output file.
     /// </summary>
     static void Main()
     {
-        // Prepare secondary data for the HIBC LIC barcode
-        var secondaryCodetext = new HIBCLICSecondaryAndAdditionalDataCodetext
+        // Prepare secondary data (lot number and serial number) for the HIBC LIC barcode
+        var secondaryData = new SecondaryAndAdditionalData
         {
-            BarcodeType = EncodeTypes.HIBCCode128LIC,
-            LinkCharacter = '+',
-            Data = new SecondaryAndAdditionalData
-            {
-                LotNumber = "LOT123",
-                SerialNumber = "SN456"
-            }
+            LotNumber = "LOT123",
+            SerialNumber = "SN456"
         };
 
-        // Define the output file path
-        string outputPath = "hibc_secondary.tiff";
-
-        // Generate the barcode image and save it as an LZW‑compressed TIFF
-        using (var generator = new ComplexBarcodeGenerator(secondaryCodetext))
-        using (Image image = generator.GenerateBarCodeImage())
-        using (var bitmap = new Bitmap(image))
+        // Build the codetext object that represents HIBC LIC secondary‑and‑additional‑data
+        var hibcCodetext = new HIBCLICSecondaryAndAdditionalDataCodetext
         {
-            // Retrieve the TIFF codec information
-            var tiffCodec = ImageCodecInfo.GetImageEncoders()
-                .First(c => c.FormatID == ImageFormat.Tiff.Guid);
+            BarcodeType = EncodeTypes.HIBCCode128LIC, // HIBC LIC Code128 symbology
+            LinkCharacter = '+',                     // Required link character for HIBC
+            Data = secondaryData
+        };
 
-            // Set encoder parameters to use LZW compression
-            using (var encoderParams = new EncoderParameters(1))
+        // Generate the barcode image using ComplexBarcodeGenerator
+        using (var generator = new ComplexBarcodeGenerator(hibcCodetext))
+        {
+            using (Bitmap bitmap = generator.GenerateBarCodeImage())
             {
-                encoderParams.Param[0] = new EncoderParameter(
-                    Encoder.Compression, (long)EncoderValue.CompressionLZW);
+                // Locate the TIFF encoder from the installed image codecs
+                var tiffEncoder = ImageCodecInfo.GetImageEncoders()
+                    .FirstOrDefault(enc => enc.FormatID == ImageFormat.Tiff.Guid);
+                if (tiffEncoder == null)
+                {
+                    Console.WriteLine("TIFF encoder not found.");
+                    return;
+                }
 
-                // Save the bitmap to the specified path with the chosen codec and parameters
-                bitmap.Save(outputPath, tiffCodec, encoderParams);
+                // Configure encoder parameters to use LZW compression
+                using (var encoderParams = new EncoderParameters(1))
+                {
+                    encoderParams.Param[0] = new EncoderParameter(
+                        Encoder.Compression,
+                        (long)EncoderValue.CompressionLZW);
+
+                    // Save the bitmap to a memory stream with the specified encoder settings
+                    using (var ms = new MemoryStream())
+                    {
+                        bitmap.Save(ms, tiffEncoder, encoderParams);
+                        ms.Position = 0;
+
+                        // Write the resulting TIFF file to disk
+                        File.WriteAllBytes("hibc_lic_secondary.tif", ms.ToArray());
+                    }
+                }
             }
         }
 
-        // Output the full path of the saved barcode image
-        Console.WriteLine($"Barcode saved to {Path.GetFullPath(outputPath)}");
+        Console.WriteLine("HIBC LIC barcode with secondary data saved as TIFF (LZW compression).");
     }
 }

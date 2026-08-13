@@ -1,89 +1,72 @@
-// Title: Encode primary fields into Code 128 HIBC LIC barcode and verify via unit test
-// Description: Demonstrates creating a HIBC LIC barcode from primary data fields, generating an image, and decoding it to confirm correct encoding.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation and recognition category. It shows how to use ComplexBarcodeGenerator with HIBCLICPrimaryDataCodetext, image generation, and BarCodeReader to validate encoding. Developers working with healthcare product identification (HIBC) often need to encode primary fields into a Code 128 LIC barcode and verify the result programmatically.
+// Title: Unit Test for Encoding Primary Fields in Code 128 HIBC LIC Barcode
+// Description: Demonstrates generating a Code 128 HIBC LIC barcode from primary data, then decoding it to verify that the encoded fields match the original values.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation and recognition category. It shows how to use the ComplexBarcodeGenerator with HIBCLICPrimaryDataCodetext, EncodeTypes.HIBCCode128LIC, and BarCodeReader to create and validate HIBC‑LIC barcodes. Developers working with healthcare or logistics labeling often need to encode primary product information into HIBC barcodes and confirm correctness via decoding.
 // Prompt: Create a unit test verifying correct encoding of primary fields into a Code 128 HIBC LIC barcode.
-// Tags: barcode symbology, encoding, png, complexbarcode, generator, reader
+// Tags: barcode, code128, hibc, lic, complexbarcode, generation, recognition, unit-test, aspose.barcode
 
 using System;
 using System.IO;
-using Aspose.BarCode.ComplexBarcode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
+using Aspose.BarCode.ComplexBarcode;
 
 /// <summary>
-/// Example program that generates a HIBC LIC Code 128 barcode from primary data,
-/// then reads it back to verify that the encoded fields match the original values.
+/// Demonstrates a simple verification of primary field encoding for a Code 128 HIBC LIC barcode using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Performs barcode generation, image saving,
-    /// decoding, and validation of primary data fields.
+    /// Entry point that generates a barcode from primary data, decodes it, and checks field integrity.
     /// </summary>
     static void Main()
     {
-        // Define primary data fields that will be encoded into the barcode
-        const string productNumber = "12345";
-        const string labelerCode = "A999";
-        const int unitOfMeasure = 1;
-
-        // Build the complex codetext object with the required primary data
-        var primaryCodetext = new HIBCLICPrimaryDataCodetext
+        // Prepare primary data for HIBC LIC Code128 barcode
+        var primaryData = new PrimaryData
         {
-            BarcodeType = EncodeTypes.HIBCCode128LIC,
-            Data = new PrimaryData
-            {
-                ProductOrCatalogNumber = productNumber,
-                LabelerIdentificationCode = labelerCode,
-                UnitOfMeasureID = unitOfMeasure
-            }
+            ProductOrCatalogNumber = "12345",
+            LabelerIdentificationCode = "A999",
+            UnitOfMeasureID = 1
         };
 
-        // Generate the barcode image using ComplexBarcodeGenerator
-        using (var generator = new ComplexBarcodeGenerator(primaryCodetext))
-        // Render the barcode to an image object
-        using (var image = generator.GenerateBarCodeImage())
-        // Prepare a memory stream to hold the PNG data
+        // Build complex codetext containing only the primary data
+        var complexCodetext = new HIBCLICPrimaryDataCodetext
+        {
+            BarcodeType = EncodeTypes.HIBCCode128LIC,
+            Data = primaryData
+        };
+
+        // Generate the barcode image and store it in a memory stream
+        using (var generator = new ComplexBarcodeGenerator(complexCodetext))
         using (var ms = new MemoryStream())
         {
-            // Save the image as PNG into the memory stream
-            image.Save(ms, ImageFormat.Png);
+            generator.Save(ms, BarCodeImageFormat.Png);
             ms.Position = 0; // Reset stream position for reading
 
-            // Decode the barcode from the memory stream using BarCodeReader
+            // Decode the barcode from the memory stream
             using (var reader = new BarCodeReader(ms, DecodeType.HIBCCode128LIC))
             {
                 var results = reader.ReadBarCodes();
 
-                // Verify that at least one barcode was detected
+                // Verify that a barcode was detected
                 if (results.Length == 0)
                 {
                     Console.WriteLine("FAILED: No barcode detected.");
                     return;
                 }
 
-                // Extract the raw codetext from the first detection result
+                // Extract the decoded text and attempt to parse it as primary data codetext
                 var decodedText = results[0].CodeText;
+                var decodedCodetext = ComplexCodetextReader.TryDecodeHIBCLIC(decodedText) as HIBCLICPrimaryDataCodetext;
 
-                // Parse the complex codetext back into a HIBCLICPrimaryDataCodetext object
-                var decodedComplex = ComplexCodetextReader.TryDecodeHIBCLIC(decodedText) as HIBCLICPrimaryDataCodetext;
-
-                // Ensure decoding succeeded and returned the expected type
-                if (decodedComplex == null)
-                {
-                    Console.WriteLine("FAILED: Decoding returned null or wrong type.");
-                    return;
-                }
-
-                // Compare each primary field with the original values
-                bool passed = decodedComplex.Data.ProductOrCatalogNumber == productNumber &&
-                              decodedComplex.Data.LabelerIdentificationCode == labelerCode &&
-                              decodedComplex.Data.UnitOfMeasureID == unitOfMeasure;
+                // Compare each field of the decoded data with the original primary data
+                bool passed = decodedCodetext != null &&
+                              decodedCodetext.Data.ProductOrCatalogNumber == primaryData.ProductOrCatalogNumber &&
+                              decodedCodetext.Data.LabelerIdentificationCode == primaryData.LabelerIdentificationCode &&
+                              decodedCodetext.Data.UnitOfMeasureID == primaryData.UnitOfMeasureID;
 
                 // Output the test result
-                Console.WriteLine(passed ? "PASSED" : "FAILED");
+                Console.WriteLine(passed ? "PASSED: Primary fields encoded and decoded correctly."
+                                         : "FAILED: Decoded data does not match original.");
             }
         }
     }
