@@ -1,65 +1,71 @@
-// Title: Code128 checksum verification in BMP image
-// Description: Demonstrates how to read Code128 barcodes from a BMP file and display their checksum status.
+// Title: Check 1D barcode checksum status for Code128 barcodes in BMP
+// Description: Demonstrates how to read a Code128 barcode from a BMP image and retrieve its checksum value using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, illustrating the use of BarCodeReader with DecodeType.Code128 and enabling ChecksumValidation. Developers often need to verify checksum status for 1D symbologies such as Code128 when processing scanned images, ensuring data integrity in inventory, shipping, or point‑of‑sale applications.
 // Prompt: Check 1D barcode checksum status for Code128 barcodes detected in a BMP file.
-// Tags: code128, checksum, barcode, bmp, aspose.barcode, console
+// Tags: code128, checksum, barcode recognition, bmp, aspose.barcode, 1d
 
 using System;
 using System.IO;
+using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Example program that reads Code128 barcodes from a BMP image and reports checksum information.
+/// Example program that generates (if needed) a BMP image containing a Code128 barcode,
+/// reads the barcode using Aspose.BarCode, and displays its checksum status.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Loads the image, reads barcodes, and prints type, text, and checksum status.
+    /// Entry point of the application.
     /// </summary>
     static void Main()
     {
-        // Path to the BMP image containing barcodes
-        string imagePath = "barcode.bmp";
+        const string imagePath = "code128.bmp";
 
-        // Verify that the file exists before attempting to load it
+        // Ensure a sample BMP exists; generate one if missing.
         if (!File.Exists(imagePath))
         {
-            Console.WriteLine($"File not found: {imagePath}");
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "ABC123"))
+            {
+                // Save the generated barcode as a BMP image.
+                generator.Save(imagePath, BarCodeImageFormat.Bmp);
+                Console.WriteLine($"Generated sample barcode image: {imagePath}");
+            }
+        }
+
+        // Verify the file exists before attempting to read it.
+        if (!File.Exists(imagePath))
+        {
+            Console.WriteLine($"Error: File not found - {imagePath}");
             return;
         }
 
-        // Load the image as a bitmap (ensures proper disposal with using)
-        using (Bitmap bitmap = new Bitmap(imagePath))
+        // Open the BMP file and read Code128 barcodes.
+        using (var reader = new BarCodeReader(imagePath, DecodeType.Code128))
         {
-            // Initialize the barcode reader for Code128 symbology
-            using (BarCodeReader reader = new BarCodeReader(bitmap, DecodeType.Code128))
+            // Enable checksum validation so the checksum value is evaluated.
+            reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
+
+            // Iterate through all detected barcodes.
+            foreach (var result in reader.ReadBarCodes())
             {
-                // Enable checksum validation (optional, ensures checksum is checked)
-                reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
+                // Output basic barcode information.
+                Console.WriteLine($"Detected Barcode Type: {result.CodeTypeName}");
+                Console.WriteLine($"Code Text: {result.CodeText}");
 
-                // Iterate through all detected barcodes in the image
-                foreach (BarCodeResult result in reader.ReadBarCodes())
+                // Retrieve the checksum for 1D barcodes (if available).
+                string checksum = result.Extended?.OneD?.CheckSum;
+                if (!string.IsNullOrEmpty(checksum))
                 {
-                    // Output the detected barcode type (e.g., Code128)
-                    Console.WriteLine($"Detected Barcode Type: {result.CodeTypeName}");
-
-                    // Output the decoded text of the barcode
-                    Console.WriteLine($"Code Text: {result.CodeText}");
-
-                    // Retrieve checksum from extended parameters (if available)
-                    string checksum = result.Extended.OneD?.CheckSum;
-                    if (!string.IsNullOrEmpty(checksum))
-                    {
-                        Console.WriteLine($"Checksum: {checksum}");
-                    }
-                    else
-                    {
-                        Console.WriteLine("Checksum: not available");
-                    }
-
-                    // Add a blank line for readability between results
-                    Console.WriteLine();
+                    Console.WriteLine($"Checksum: {checksum}");
                 }
+                else
+                {
+                    Console.WriteLine("Checksum: not available for this barcode.");
+                }
+
+                Console.WriteLine(); // Blank line between results.
             }
         }
     }

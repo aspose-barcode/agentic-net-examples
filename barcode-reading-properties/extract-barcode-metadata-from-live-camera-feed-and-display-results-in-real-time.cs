@@ -1,58 +1,59 @@
-// Title: Extract barcode metadata from a generated image (simulated live feed)
-// Description: Demonstrates generating a barcode, reading its metadata, and displaying results, simulating a live camera feed scenario.
+// Title: Extract barcode metadata from generated image (simulated live feed)
+// Description: Generates a QR code, reads it, and outputs metadata such as type, text, confidence, and region.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It demonstrates using BarcodeGenerator to create barcodes and BarCodeReader to extract metadata, a common task for developers building scanning applications, inventory systems, or real‑time camera processing pipelines. The snippet shows key API classes (BarcodeGenerator, BarCodeReader, QualitySettings) and typical usage patterns for extracting barcode information.
 // Prompt: Extract barcode metadata from live camera feed and display results in real time.
-// Tags: barcode symbology, metadata extraction, console output, aspose.barcode, csharp
+// Tags: barcode, qr, metadata, generation, recognition, realtime
 
 using System;
-using Aspose.BarCode;
+using System.IO;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates barcode metadata extraction using Aspose.BarCode.
+/// Demonstrates how to generate a QR code, read it, and display its metadata.
+/// This simulates the extraction logic that would be applied to each frame of a live camera feed.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a sample barcode, reads its metadata, and prints details to the console.
+    /// Entry point of the example. Generates a barcode image, reads it, and prints metadata to the console.
     /// </summary>
     static void Main()
     {
-        // The console runner cannot access a live camera feed.
-        // Instead, we generate a sample barcode image and extract its metadata.
+        // NOTE: Real‑time live camera feed processing would require continuous monitoring,
+        // which is not possible in a self‑contained console example without external input.
+        // This sample generates a barcode image, reads it, and displays metadata,
+        // demonstrating the extraction logic that would be applied to each frame.
 
-        // Create a barcode generator for Code128 with sample text.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
+        // Create a BarcodeGenerator for a QR code with sample text
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Sample QR Code"))
         {
-            // Generate the barcode image in memory.
-            using (var bitmap = generator.GenerateBarCodeImage())
-            {
-                // Initialize a reader that can decode all supported barcode types.
-                using (var reader = new BarCodeReader(bitmap, DecodeType.AllSupportedTypes))
-                {
-                    int processed = 0; // Counter to limit processing to the first barcode.
+            // Optional: configure visual appearance of the generated barcode
+            generator.Parameters.Barcode.XDimension.Point = 2f;
+            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
 
-                    // Iterate through all detected barcodes in the image.
+            // Generate the barcode image in memory
+            using (Bitmap barcodeImage = generator.GenerateBarCodeImage())
+            {
+                // Initialize a BarCodeReader to decode any supported barcode type from the image
+                using (var reader = new BarCodeReader(barcodeImage, DecodeType.AllSupportedTypes))
+                {
+                    // Set recognition quality (default is NormalQuality)
+                    reader.QualitySettings = QualitySettings.NormalQuality;
+
+                    // Iterate through all detected barcodes and output their metadata
                     foreach (var result in reader.ReadBarCodes())
                     {
-                        // Stop after processing the first detected barcode.
-                        if (processed >= 1) break;
-
-                        // Output basic barcode information.
-                        Console.WriteLine($"Barcode Type: {result.CodeTypeName}");
-                        Console.WriteLine($"Code Text: {result.CodeText}");
+                        Console.WriteLine($"BarCode Type: {result.CodeTypeName}");
+                        Console.WriteLine($"BarCode CodeText: {result.CodeText}");
                         Console.WriteLine($"Confidence: {result.Confidence}");
                         Console.WriteLine($"Reading Quality: {result.ReadingQuality}");
 
-                        // Output the location and size of the barcode region.
-                        var region = result.Region.Rectangle;
-                        Console.WriteLine($"Region - X:{region.X}, Y:{region.Y}, Width:{region.Width}, Height:{region.Height}");
-
-                        // Output the rotation angle of the barcode region.
-                        Console.WriteLine($"Angle: {result.Region.Angle}");
-
-                        processed++; // Increment the processed counter.
+                        // Retrieve the bounding rectangle of the detected barcode region
+                        var bounds = result.Region.Rectangle;
+                        Console.WriteLine($"Region: X={bounds.X}, Y={bounds.Y}, Width={bounds.Width}, Height={bounds.Height}");
+                        Console.WriteLine(new string('-', 40));
                     }
                 }
             }

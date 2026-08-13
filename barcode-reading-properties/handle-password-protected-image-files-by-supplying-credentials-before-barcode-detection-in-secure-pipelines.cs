@@ -1,100 +1,126 @@
-// Title: Detect barcodes in password‑protected images by supplying credentials
-// Description: Demonstrates loading a password‑protected image (simulated) and detecting any barcodes it contains using Aspose.BarCode.
+// Title: Detect Barcodes in Password‑Protected PDFs and Images
+// Description: Demonstrates loading a password‑protected PDF (or regular image), converting it to a bitmap, and reading barcodes using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, illustrating how to handle secure image sources. It shows using Aspose.Pdf to open password‑protected PDFs, converting pages to images with Aspose.Drawing, and reading barcodes with BarCodeReader. Developers often need to process protected documents in automated pipelines, requiring credential handling and robust detection.
 // Prompt: Handle password‑protected image files by supplying credentials before barcode detection in secure pipelines.
-// Tags: barcode symbology, detection, image, aspose.barcode, credentials
+// Tags: barcode detection, pdf password, aspose.barcode, aspose.pdf, image processing, barcodereader, decodeall
 
 using System;
 using System.IO;
-using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
+using Aspose.Pdf;
+using Aspose.Pdf.Facades;
 
 /// <summary>
-/// Example program that generates a barcode, simulates a password‑protected image,
-/// and reads barcodes from the image using Aspose.BarCode.
+/// Example program that loads a password‑protected PDF (or a regular image),
+/// converts it to a bitmap, and detects barcodes using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a sample barcode, copies it to a simulated protected file,
-    /// and reads any barcodes present.
+    /// Entry point of the application.
     /// </summary>
     static void Main()
     {
-        // --------------------------------------------------------------------
-        // 1. Generate a sample barcode image (used later for detection)
-        // --------------------------------------------------------------------
-        const string barcodePath = "sample_barcode.png";
-        const string barcodeText = "Secure123";
+        // Path to the input file (could be a password‑protected PDF or a regular image)
+        string inputPath = "protected.pdf";
+        // Password for the protected PDF (if applicable)
+        string pdfPassword = "secret";
 
-        // Create the barcode image only if it does not already exist
-        if (!File.Exists(barcodePath))
+        // If the file does not exist, create a simple barcode image to demonstrate the flow.
+        if (!File.Exists(inputPath))
         {
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, barcodeText))
+            Console.WriteLine($"File '{inputPath}' not found. Generating a sample barcode image.");
+
+            // Generate a sample Code128 barcode image.
+            using (var generator = new Aspose.BarCode.Generation.BarcodeGenerator(
+                Aspose.BarCode.Generation.EncodeTypes.Code128, "Sample123"))
             {
-                generator.Save(barcodePath);
-                Console.WriteLine($"Generated barcode image: {barcodePath}");
+                string sampleImagePath = "sample.png";
+                generator.Save(sampleImagePath);
+                inputPath = sampleImagePath; // Use the generated image for reading.
             }
         }
 
-        // --------------------------------------------------------------------
-        // 2. Prepare a simulated password‑protected image file
-        // --------------------------------------------------------------------
-        const string protectedImagePath = "protected_image.png";
+        // Determine processing based on file extension.
+        string extension = Path.GetExtension(inputPath).ToLowerInvariant();
 
-        // For demonstration, copy the generated barcode to the protected image path.
-        // In a real scenario, this file would be password‑protected and require credentials.
-        if (!File.Exists(protectedImagePath))
+        // Bitmap that will hold the image to be scanned.
+        Aspose.Drawing.Bitmap barcodeBitmap = null;
+
+        if (extension == ".pdf")
         {
-            File.Copy(barcodePath, protectedImagePath);
+            // Handle password‑protected PDF.
+            try
+            {
+                // Load the PDF with the supplied password.
+                var pdfDocument = new Document(inputPath, pdfPassword);
+
+                // Convert the first page to an image.
+                var pdfConverter = new PdfConverter(pdfDocument);
+                pdfConverter.RenderingOptions.BarcodeOptimization = true;
+                pdfConverter.StartPage = 1;
+                pdfConverter.EndPage = 1;
+                pdfConverter.DoConvert();
+
+                using (var imageStream = new MemoryStream())
+                {
+                    pdfConverter.GetNextImage(imageStream);
+                    imageStream.Position = 0;
+                    barcodeBitmap = new Aspose.Drawing.Bitmap(imageStream);
+                }
+
+                pdfConverter.Close();
+                pdfDocument.Dispose();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to open PDF: {ex.Message}");
+                return;
+            }
+        }
+        else
+        {
+            // Assume a regular image file.
+            try
+            {
+                barcodeBitmap = new Aspose.Drawing.Bitmap(inputPath);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to load image: {ex.Message}");
+                return;
+            }
         }
 
-        // Verify that the protected image file exists before proceeding
-        if (!File.Exists(protectedImagePath))
+        // Ensure the bitmap was created.
+        if (barcodeBitmap == null)
         {
-            Console.WriteLine($"Error: File not found - {protectedImagePath}");
+            Console.WriteLine("No image available for barcode detection.");
             return;
         }
 
-        // --------------------------------------------------------------------
-        // 3. Simulated credentials for a protected image
-        // --------------------------------------------------------------------
-        // Aspose.BarCode does not directly support password handling for images.
-        // In a real implementation, you would use the appropriate Aspose product
-        // (e.g., Aspose.Pdf, Aspose.Imaging) to open the protected file with credentials,
-        // then pass the resulting bitmap to BarCodeReader.
-        string username = "user";
-        string password = "pass";
-
-        // Placeholder for real protected image loading logic:
-        // -------------------------------------------------
-        // // Example using Aspose.Pdf (not available in the snippet runner):
-        // // var pdfDoc = new Aspose.Pdf.Document(protectedImagePath, new Aspose.Pdf.LoadOptions { Password = password });
-        // // var page = pdfDoc.Pages[1];
-        // // using (var bitmap = page.ConvertToImage(Aspose.Pdf.Devices.Resolution.Default))
-        // // {
-        // //     ProcessBarcode(bitmap);
-        // // }
-        // -------------------------------------------------
-
-        // Since we cannot load a protected image here, load the image directly.
-        using (var bitmap = new Bitmap(protectedImagePath))
+        // Perform barcode detection.
+        using (barcodeBitmap)
+        using (var reader = new BarCodeReader(barcodeBitmap, DecodeType.AllSupportedTypes))
         {
-            // ----------------------------------------------------------------
-            // 4. Initialize BarCodeReader for all supported barcode types
-            // ----------------------------------------------------------------
-            using (var reader = new BarCodeReader(bitmap, DecodeType.AllSupportedTypes))
-            {
-                // Optional: improve detection of damaged or low‑quality barcodes
-                reader.QualitySettings.AllowIncorrectBarcodes = true;
+            // Optional: improve detection of damaged barcodes.
+            reader.QualitySettings.AllowIncorrectBarcodes = true;
 
-                // Iterate through all detected barcodes and output their details
-                foreach (var result in reader.ReadBarCodes())
-                {
-                    Console.WriteLine($"Detected Barcode Type: {result.CodeTypeName}");
-                    Console.WriteLine($"Detected Code Text: {result.CodeText}");
-                }
+            int count = 0;
+            foreach (var result in reader.ReadBarCodes())
+            {
+                Console.WriteLine($"Detected Barcode Type: {result.CodeTypeName}");
+                Console.WriteLine($"Code Text: {result.CodeText}");
+                count++;
+
+                // Limit to first 5 barcodes for safety.
+                if (count >= 5)
+                    break;
             }
+
+            if (count == 0)
+                Console.WriteLine("No barcodes were detected in the image.");
         }
     }
 }

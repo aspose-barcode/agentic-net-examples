@@ -1,7 +1,8 @@
-// Title: Code128 barcode generation with checksum validation
-// Description: Demonstrates generating a Code128 barcode, enabling checksum validation during recognition, and reporting any verification failures.
+// Title: Enable checksum validation for Code128 barcode
+// Description: Demonstrates generating a Code128 barcode, then reading it with checksum validation to detect any verification failures.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes and BarCodeReader with checksum validation for verifying Code128 symbology. Developers commonly need to ensure data integrity when scanning barcodes, and this pattern illustrates how to enable and handle checksum checks using Aspose.BarCode APIs.
 // Prompt: Enable checksum validation for Code128 barcodes and report any verification failures during processing.
-// Tags: barcode symbology, checksum validation, code128, generation, recognition, console output
+// Tags: code128, checksum validation, barcode generation, barcode recognition, aspose.barcode, symbology
 
 using System;
 using System.IO;
@@ -10,78 +11,65 @@ using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Example program that generates a Code128 barcode, validates its checksum during recognition,
-/// and reports verification results.
+/// Example program that generates a Code128 barcode, reads it back with checksum validation,
+/// and reports any verification failures.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a temporary barcode image, reads it with checksum validation,
-    /// and outputs detection details or failure messages.
+    /// Entry point of the example. Generates a barcode, validates it, and cleans up resources.
     /// </summary>
     static void Main()
     {
-        // Prepare a temporary file path for the barcode image
+        // Define a temporary file path for the barcode image
         string imagePath = Path.Combine(Path.GetTempPath(), "code128.png");
 
-        // -------------------------------------------------
-        // Generate a Code128 barcode and save it to file
-        // -------------------------------------------------
+        // Generate a Code128 barcode; the checksum is added automatically by the generator
         using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            // Save the generated barcode image to the temporary location
-            generator.Save(imagePath);
+            generator.Save(imagePath, BarCodeImageFormat.Png);
         }
 
-        // -------------------------------------------------
-        // Verify the barcode with checksum validation enabled
-        // -------------------------------------------------
+        // Verify that the barcode image was successfully created
+        if (!File.Exists(imagePath))
+        {
+            Console.WriteLine("Failed to create the barcode image.");
+            return;
+        }
+
+        // Initialize a reader for Code128 barcodes and enable checksum validation
         using (var reader = new BarCodeReader(imagePath, DecodeType.Code128))
         {
-            // Turn on checksum validation for the reader
+            // Turn on checksum validation during the recognition process
             reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
 
-            bool anyResult = false;
+            // Attempt to read barcodes from the image
+            BarCodeResult[] results = reader.ReadBarCodes();
 
-            // Iterate through all detected barcodes (should be only one)
-            foreach (BarCodeResult result in reader.ReadBarCodes())
-            {
-                anyResult = true;
-                Console.WriteLine("Barcode detected:");
-                Console.WriteLine("  CodeText : " + result.CodeText);
-
-                // For Code128, checksum information is available in the extended 1D data
-                if (result.Extended?.OneD != null)
-                {
-                    Console.WriteLine("  Value    : " + result.Extended.OneD.Value);
-                    Console.WriteLine("  CheckSum : " + result.Extended.OneD.CheckSum);
-                }
-                else
-                {
-                    Console.WriteLine("  No extended 1D data available.");
-                }
-            }
-
-            // If no barcode was read, report checksum validation failure
-            if (!anyResult)
+            // If no results are returned, checksum validation has failed
+            if (results.Length == 0)
             {
                 Console.WriteLine("Checksum validation failed: no valid barcode detected.");
             }
+            else
+            {
+                // Output the decoded text and checksum information for each detected barcode
+                foreach (var result in results)
+                {
+                    Console.WriteLine($"CodeText: {result.CodeText}");
+                    Console.WriteLine($"Checksum: {result.Extended.OneD.CheckSum}");
+                }
+            }
         }
 
-        // -------------------------------------------------
-        // Clean up the temporary image file
-        // -------------------------------------------------
-        if (File.Exists(imagePath))
+        // Attempt to delete the temporary barcode image; ignore any errors during cleanup
+        try
         {
-            try
-            {
-                File.Delete(imagePath);
-            }
-            catch
-            {
-                // Ignore any cleanup errors
-            }
+            File.Delete(imagePath);
+        }
+        catch
+        {
+            // No action needed if cleanup fails
         }
     }
 }

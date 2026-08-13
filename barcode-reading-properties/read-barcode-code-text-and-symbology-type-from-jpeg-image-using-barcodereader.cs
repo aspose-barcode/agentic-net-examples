@@ -1,43 +1,41 @@
-// Title: Read barcode text and symbology from JPEG using BarCodeReader
-// Description: Demonstrates how to load a JPEG image, detect all supported barcodes, and output their symbology type and decoded text.
+// Title: Read barcode text and symbology from a JPEG image using BarCodeReader
+// Description: Demonstrates how to load a JPEG file, detect barcodes, and output their symbology type and decoded text.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, showcasing the BarCodeReader class for scanning images. It covers typical use cases such as extracting information from product labels, documents, or inventory images. Developers often need to read multiple symbologies from various image formats, and this snippet illustrates the straightforward approach using Aspose.BarCode APIs.
 // Prompt: Read barcode code text and symbology type from a JPEG image using BarCodeReader.
-// Tags: barcode, symbology, read, jpeg, aspose, barcodereader
+// Tags: barcode, symbology, read, jpeg, aspose.barcode, barcodereader
 
 using System;
 using System.IO;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Example program that reads barcode information from a JPEG image using Aspose.BarCode.
+/// Demonstrates reading barcode text and symbology type from a JPEG image using Aspose.BarCode's BarCodeReader.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Scans the specified image (or a default one) for barcodes
-    /// and prints each barcode's symbology type and decoded text to the console.
+    /// Entry point of the example. Scans the specified JPEG image for all supported barcode types and prints each result.
     /// </summary>
-    /// <param name="args">Optional command‑line arguments; the first argument can specify the image path.</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Determine the image file to process; allow override via first command‑line argument.
-        string imagePath = args.Length > 0 ? args[0] : "barcode.jpg";
+        // Path to the JPEG image containing the barcode.
+        string imagePath = "barcode.jpg";
 
-        // Verify that the image file exists before attempting to read it.
+        // Verify that the image file exists before attempting to read.
         if (!File.Exists(imagePath))
         {
-            Console.WriteLine($"Image file not found: {imagePath}");
+            Console.WriteLine($"File not found: {imagePath}");
             return;
         }
 
-        // Initialize a BarCodeReader that will attempt to decode all supported barcode types.
-        using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
+        // Initialize BarCodeReader to scan the image for every supported symbology.
+        using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
         {
-            // Loop through each detected barcode and output its details.
+            // Iterate through all detected barcodes in the image.
             foreach (var result in reader.ReadBarCodes())
             {
-                Console.WriteLine($"Symbology: {result.CodeTypeName}");
-                Console.WriteLine($"Code Text : {result.CodeText}");
-                Console.WriteLine();
+                // Output the detected symbology name and its decoded text.
+                Console.WriteLine($"Symbology: {result.CodeTypeName}, CodeText: {result.CodeText}");
             }
         }
     }

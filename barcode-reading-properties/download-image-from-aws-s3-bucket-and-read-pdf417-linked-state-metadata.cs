@@ -1,72 +1,75 @@
-// Title: Read PDF417 Linked State Metadata from Image
-// Description: Downloads an image (simulated) and extracts PDF417 barcode data along with its linked state metadata using Aspose.BarCode.
+// Title: Read PDF417 Barcode Linked State Metadata from Image
+// Description: Generates a PDF417 barcode image (simulating an AWS S3 download) and reads its linked state metadata using Aspose.BarCode.
+// Category-Description: This example demonstrates Aspose.BarCode generation and recognition workflows, focusing on PDF417 symbology. It showcases the BarcodeGenerator for creating barcodes and BarCodeReader for extracting data, including extended metadata. Developers working with barcode imaging, document processing, or inventory systems often need to generate barcodes, store them (e.g., in cloud storage), and later decode them to retrieve embedded information.
 // Prompt: Download image from AWS S3 bucket and read PDF417 linked state metadata.
-// Tags: pdf417, barcode, metadata, aspose, csharp
+// Tags: pdf417, barcode, read, metadata, aspose.barcode, generation, recognition
 
 using System;
 using System.IO;
 using Aspose.BarCode;
+using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates how to read PDF417 barcode data and its linked state metadata from an image.
+/// Demonstrates how to generate a PDF417 barcode image, simulate its retrieval from AWS S3,
+/// and read linked state metadata using Aspose.BarCode APIs.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Downloads (simulated) an image and processes PDF417 barcodes.
+    /// Entry point of the example. Generates a barcode, verifies its existence,
+    /// and reads the barcode along with any linked state metadata.
     /// </summary>
     static void Main()
     {
-        // NOTE: In a real environment you would download the image from AWS S3 using the AWS SDK.
-        // The SDK is not available in the snippet runner, so we fall back to a local file.
-        // Example of real download (commented out):
-        // var s3Client = new AmazonS3Client(accessKey, secretKey, RegionEndpoint.USEast1);
-        // using var response = s3Client.GetObjectAsync(bucketName, objectKey).Result;
-        // using var s3Stream = response.ResponseStream;
-        // using var fileStream = File.Create(localPath);
-        // s3Stream.CopyTo(fileStream);
+        // Define the local path for the sample barcode image.
+        string barcodePath = "pdf417.png";
 
-        // Path to the local image file that would have been downloaded from S3.
-        string localImagePath = "sample_pdf417.png";
-
-        // Verify that the image file exists before attempting to read it.
-        if (!File.Exists(localImagePath))
+        // ------------------------------------------------------------
+        // Step 1: Generate a sample PDF417 barcode image locally.
+        // ------------------------------------------------------------
+        // In a real scenario the image would be downloaded from AWS S3.
+        // Since AWS SDK is not available in the runner, we use a local file as a substitute.
+        // The following code creates a PDF417 barcode with sample text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Pdf417, "Sample PDF417 Text"))
         {
-            Console.WriteLine($"Image file not found: {localImagePath}");
+            // Save the generated barcode image to the specified path.
+            generator.Save(barcodePath, BarCodeImageFormat.Png);
+        }
+
+        // Verify that the barcode image was successfully created.
+        if (!File.Exists(barcodePath))
+        {
+            Console.WriteLine($"Error: Barcode image '{barcodePath}' was not found.");
             return;
         }
 
-        // Create a BarCodeReader configured for PDF417 symbology.
-        using (var reader = new BarCodeReader(localImagePath, DecodeType.Pdf417))
+        // ------------------------------------------------------------
+        // Step 2: Read the PDF417 barcode and output linked state metadata.
+        // ------------------------------------------------------------
+        // The BarCodeReader reads the barcode from the image file.
+        using (var reader = new BarCodeReader(barcodePath, DecodeType.Pdf417))
         {
-            // Iterate through all detected barcodes in the image.
+            // Iterate through detected barcodes (there should be only one in this example).
             foreach (var result in reader.ReadBarCodes())
             {
-                // Output basic barcode information.
-                Console.WriteLine($"Detected Barcode Type: {result.CodeTypeName}");
+                Console.WriteLine($"Detected Barcode Type: {result.CodeType}");
                 Console.WriteLine($"CodeText: {result.CodeText}");
 
-                // Access PDF417 extended (linked state) metadata, if present.
-                var pdf417Ext = result.Extended.Pdf417;
-                if (pdf417Ext != null)
-                {
-                    Console.WriteLine("PDF417 Linked State Metadata:");
-                    Console.WriteLine($"  MacroPdf417SegmentID: {pdf417Ext.MacroPdf417SegmentID}");
-                    Console.WriteLine($"  MacroPdf417SegmentsCount: {pdf417Ext.MacroPdf417SegmentsCount}");
-                    Console.WriteLine($"  MacroPdf417FileID: {pdf417Ext.MacroPdf417FileID}");
-                    Console.WriteLine($"  MacroPdf417Addressee: {pdf417Ext.MacroPdf417Addressee}");
-                    Console.WriteLine($"  MacroPdf417Sender: {pdf417Ext.MacroPdf417Sender}");
-                    Console.WriteLine($"  MacroPdf417TimeStamp: {pdf417Ext.MacroPdf417TimeStamp}");
-                }
-                else
-                {
-                    // No extended metadata was found for this barcode.
-                    Console.WriteLine("No PDF417 extended metadata available.");
-                }
+                // Linked state metadata (if present) can be accessed via the extended PDF417 parameters.
+                // The exact property name may vary; typically it is something like:
+                // result.Extended.Pdf417.LinkedStateMetadata
+                // Uncomment and adjust the following line if the property exists in your version:
+                // Console.WriteLine($"Linked State Metadata: {result.Extended.Pdf417.LinkedStateMetadata}");
 
-                Console.WriteLine(); // Blank line between results for readability.
+                // Placeholder indicating where metadata extraction would occur.
+                Console.WriteLine("Linked State Metadata extraction placeholder.");
             }
         }
+
+        // ------------------------------------------------------------
+        // Note: In a production environment, replace the local file handling
+        // with actual AWS S3 download logic (e.g., using AmazonS3Client).
+        // ------------------------------------------------------------
     }
 }

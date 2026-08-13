@@ -1,41 +1,59 @@
-// Title: Barcode Generation and Recognition with Proper Resource Disposal
-// Description: Demonstrates generating a Code128 barcode, reading it back, and disposing all unmanaged resources using using blocks.
+// Title: Generate and Read a Code128 Barcode Using Aspose.BarCode
+// Description: This example creates a Code128 barcode image, saves it to disk, then reads and displays the barcode data, demonstrating proper disposal of BarCodeReader.
+// Category-Description: This sample belongs to the Aspose.BarCode generation and recognition category, illustrating how to use BarcodeGenerator for creating barcodes and BarCodeReader for decoding them. Developers commonly need to generate barcodes for labeling and later validate them by reading the encoded information, requiring proper resource management of unmanaged handles.
 // Prompt: Dispose BarCodeReader instance properly within a using block to release unmanaged resources.
-// Tags: barcode, code128, generation, recognition, using, disposal, aspose, aspnet
+// Tags: barcode generation, barcode recognition, code128, aspose.barcode, csharp, using, disposal
 
 using System;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Example program that creates a Code128 barcode, reads it, and ensures all unmanaged resources are released.
+/// Demonstrates generating a Code128 barcode, saving it to a file, and reading it back using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a barcode image, reads it, and writes detection results to the console.
+    /// Entry point of the example. Generates a barcode image, reads it, outputs the decoded information, and cleans up.
     /// </summary>
     static void Main()
     {
-        // Initialize a barcode generator for Code128 with sample text
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+        // Define the output file path for the generated barcode image
+        string filePath = "barcode.png";
+
+        // Generate a Code128 barcode and save it to the specified file
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
         {
-            // Generate the barcode image as a Bitmap object
-            using (var bitmap = generator.GenerateBarCodeImage())
+            generator.Save(filePath);
+        }
+
+        // Verify that the barcode image was successfully created
+        if (!File.Exists(filePath))
+        {
+            Console.WriteLine("Barcode image was not created.");
+            return;
+        }
+
+        // Read the barcode from the image using BarCodeReader within a using block to ensure proper disposal
+        using (var reader = new BarCodeReader(filePath, DecodeType.Code128))
+        {
+            foreach (var result in reader.ReadBarCodes())
             {
-                // Create a BarCodeReader to decode all supported barcode types from the bitmap
-                using (var reader = new BarCodeReader(bitmap, DecodeType.AllSupportedTypes))
-                {
-                    // Iterate through each detected barcode and output its type and text
-                    foreach (var result in reader.ReadBarCodes())
-                    {
-                        Console.WriteLine($"Detected Type: {result.CodeTypeName}");
-                        Console.WriteLine($"Code Text: {result.CodeText}");
-                    }
-                } // BarCodeReader disposed here, releasing unmanaged resources
-            } // Bitmap disposed here
-        } // BarcodeGenerator disposed here
+                Console.WriteLine("Detected Type: " + result.CodeTypeName);
+                Console.WriteLine("Detected Text: " + result.CodeText);
+            }
+        }
+
+        // Optional cleanup: delete the generated barcode image file
+        try
+        {
+            File.Delete(filePath);
+        }
+        catch
+        {
+            // Suppress any exceptions that occur during file cleanup
+        }
     }
 }

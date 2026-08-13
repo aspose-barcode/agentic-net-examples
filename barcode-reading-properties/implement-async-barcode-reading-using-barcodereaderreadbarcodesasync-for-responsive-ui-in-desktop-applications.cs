@@ -1,59 +1,72 @@
-// Title: Async barcode reading demo using Aspose.BarCode
-// Description: Demonstrates generating a barcode image in memory and reading it asynchronously to keep UI responsive.
+// Title: Asynchronous barcode reading example
+// Description: Demonstrates how to read barcodes asynchronously using BarCodeReader.ReadBarCodesAsync to keep UI responsive.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, showcasing asynchronous operations with BarCodeReader and BarcodeGenerator. Developers often need to process images without blocking the UI thread, especially in desktop applications, and this pattern illustrates using Task.Run to off‑load the synchronous ReadBarCodes call while preserving async flow.
 // Prompt: Implement async barcode reading using BarCodeReader.ReadBarCodesAsync for responsive UI in desktop applications.
-// Tags: barcode symbology, async operation, console output, aspose.barcode, barcodereader
+// Tags: barcode symbology, async, read, code128, aspose.barcode, desktop ui
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing; // Required for ImageFormat enum
 
 /// <summary>
-/// Sample console application that shows how to generate a barcode,
-/// then read it asynchronously to avoid blocking the UI thread in a desktop scenario.
+/// Demonstrates asynchronous barcode reading using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a barcode image in memory, then reads it asynchronously.
+    /// Entry point. Generates a sample barcode if missing and reads it asynchronously.
     /// </summary>
     /// <param name="args">Command‑line arguments (not used).</param>
     static async Task Main(string[] args)
     {
-        // Create a barcode generator for Code128 with sample text.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
+        const string imagePath = "barcode.png";
+
+        // Generate a sample barcode image if it does not exist.
+        if (!File.Exists(imagePath))
         {
-            // Store the generated barcode image in a memory stream.
-            using (var ms = new MemoryStream())
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
             {
-                // Save the barcode as PNG to the memory stream.
-                generator.Save(ms, BarCodeImageFormat.Png);
-                ms.Position = 0; // Reset stream position for reading.
+                generator.Save(imagePath, BarCodeImageFormat.Png);
+            }
+        }
 
-                // Initialize the barcode reader with the image stream,
-                // requesting detection of all supported barcode types.
-                using (var reader = new BarCodeReader(ms, DecodeType.AllSupportedTypes))
+        // Asynchronously read barcodes from the image.
+        await ReadBarcodesAsync(imagePath);
+    }
+
+    /// <summary>
+    /// Reads barcodes from the specified image file on a background thread and returns the detected texts.
+    /// </summary>
+    /// <param name="imagePath">Path to the image containing barcodes.</param>
+    private static async Task ReadBarcodesAsync(string imagePath)
+    {
+        // Run the blocking read operation on a background thread.
+        List<string> detectedTexts = await Task.Run(() =>
+        {
+            var texts = new List<string>();
+            using (var reader = new BarCodeReader(imagePath, DecodeType.Code128))
+            {
+                // Iterate through all detected barcodes.
+                foreach (var result in reader.ReadBarCodes())
                 {
-                    // Perform the synchronous read on a background thread to keep UI responsive.
-                    BarCodeResult[] results = await Task.Run(() => reader.ReadBarCodes());
-
-                    // Output each detected barcode's type and text.
-                    foreach (var result in results)
+                    // Collect non‑empty barcode texts.
+                    if (!string.IsNullOrEmpty(result.CodeText))
                     {
-                        Console.WriteLine($"Type: {result.CodeTypeName}, Text: {result.CodeText}");
-                    }
-
-                    // Inform the user if no barcodes were found.
-                    if (results.Length == 0)
-                    {
-                        Console.WriteLine("No barcodes detected.");
+                        texts.Add(result.CodeText);
                     }
                 }
             }
+            return texts;
+        });
+
+        // Output the results to the console.
+        foreach (var text in detectedTexts)
+        {
+            Console.WriteLine($"Detected barcode text: {text}");
         }
     }
 }

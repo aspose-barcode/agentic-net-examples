@@ -1,7 +1,8 @@
-// Title: PDF417 barcode generation and linked segment detection
-// Description: Demonstrates generating a PDF417 barcode with the IsLinked flag and reading the flag via extended parameters.
+// Title: Access PDF417 Extended Parameters to Determine Linkage
+// Description: Demonstrates how to set and read the IsLinked property of a PDF417 barcode using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode PDF417 barcode manipulation category, showcasing the use of BarcodeGenerator, BarCodeReader, and extended PDF417 parameters. Developers often need to control and verify segment linking for multi‑segment PDF417 codes in document processing and scanning solutions.
 // Prompt: Access PDF417 extended parameters to check if the barcode is linked to another segment.
-// Tags: pdf417, barcode, generation, recognition, extended-parameters, islinked
+// Tags: pdf417, extended-parameters, islinked, barcode-generation, barcode-recognition, aspnet, csharp
 
 using System;
 using System.IO;
@@ -10,49 +11,49 @@ using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Example program that generates a PDF417 barcode with the IsLinked flag and reads the flag using extended parameters.
+/// Example program that creates a PDF417 barcode with the IsLinked flag set,
+/// saves it as an image, and then reads the barcode to verify the flag using
+/// Aspose.BarCode's extended PDF417 parameters.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a PDF417 barcode, saves it, and reads back the IsLinked property.
+    /// Entry point of the example. Generates a PDF417 barcode, saves it,
+    /// and reads back the IsLinked property from the extended parameters.
     /// </summary>
     static void Main()
     {
-        // Define the text to encode in the barcode
-        const string codeText = "Sample PDF417 Text";
+        // Define the output file path for the generated barcode image.
+        string outputPath = "pdf417.png";
 
-        // Determine the output file path for the generated barcode image
-        string outputPath = Path.Combine(Environment.CurrentDirectory, "pdf417.png");
-
-        // Generate a PDF417 barcode and set the IsLinked flag to true
-        using (var generator = new BarcodeGenerator(EncodeTypes.Pdf417, codeText))
+        // Create a PDF417 barcode generator with sample text.
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Pdf417, "Sample PDF417 Text"))
         {
-            // Enable linked mode for PDF417
+            // Enable the IsLinked flag to indicate this barcode is linked to another segment.
             generator.Parameters.Barcode.Pdf417.IsLinked = true;
 
-            // Save the generated barcode as a PNG image
+            // Save the generated barcode as a PNG image.
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Verify that the barcode image file was successfully created
+        // Verify that the barcode image was successfully created.
         if (!File.Exists(outputPath))
         {
-            Console.WriteLine("Failed to create barcode image.");
+            Console.WriteLine("Failed to create the barcode image.");
             return;
         }
 
-        // Initialize a reader to decode the PDF417 barcode from the saved image
-        using (var reader = new BarCodeReader(outputPath, DecodeType.Pdf417))
+        // Initialize a barcode reader for PDF417 type to read the saved image.
+        using (BarCodeReader reader = new BarCodeReader(outputPath, DecodeType.Pdf417))
         {
-            // Iterate through all detected barcode results
+            // Iterate through all detected barcode results.
             foreach (BarCodeResult result in reader.ReadBarCodes())
             {
-                // Output the decoded text
-                Console.WriteLine($"CodeText: {result.CodeText}");
+                // Retrieve the IsLinked flag from the extended PDF417 parameters.
+                bool isLinked = result.Extended.Pdf417.IsLinked;
 
-                // Output the IsLinked flag from the extended PDF417 parameters
-                Console.WriteLine($"IsLinked: {result.Extended.Pdf417.IsLinked}");
+                // Output the flag value to the console.
+                Console.WriteLine($"IsLinked: {isLinked}");
             }
         }
     }
