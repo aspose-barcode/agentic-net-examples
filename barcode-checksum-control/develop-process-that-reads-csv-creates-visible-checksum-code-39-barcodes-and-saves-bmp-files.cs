@@ -1,103 +1,104 @@
-// Title: Generate visible‑checksum Code 39 barcodes from CSV and save BMP
-// Description: Reads a CSV file, creates Code 39 barcodes with visible checksum, and writes each barcode to a BMP image.
-// Category-Description: Demonstrates Aspose.BarCode barcode generation using BarcodeGenerator, EncodeTypes.Code39FullASCII, and image export. This example belongs to the “Barcode Generation” category, showing how to configure checksum, colors, and file handling for batch processing. Developers often need to generate multiple barcodes from data sources such as CSV files, customize appearance, and save them in common image formats.
+// Title: Generate Code39 Barcodes from CSV and Save as BMP
+// Description: This example reads a CSV file containing code texts, generates Code 39 barcodes with visible checksums, and saves each barcode as a BMP image.
+// Category-Description: Demonstrates Aspose.BarCode barcode generation using the BarcodeGenerator class. It shows how to configure checksum visibility, set code text location, and export images in BMP format—common tasks when integrating barcode creation into batch processing or reporting workflows. Ideal for developers needing to automate barcode production from data sources such as CSV files.
 // Prompt: Develop a process that reads a CSV, creates visible‑checksum Code 39 barcodes, and saves BMP files.
-// Tags: barcode symbology, generation, code39, checksum, bmp, csv, aspose.barcode, aspose.drawing
+// Tags: code39, barcode, generation, csv, bmp, checksum, aspose.barcode, aspose.drawing
 
 using System;
 using System.IO;
-using System.Collections.Generic;
+using System.Text;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Program that reads a CSV file, generates Code 39 barcodes with visible checksum, and saves them as BMP images.
+/// Reads a CSV file, generates Code 39 barcodes with visible checksums, and saves each barcode as a BMP image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Handles directory setup, CSV reading, barcode generation, and file saving.
+    /// Entry point of the example. Prepares temporary folders, ensures a sample CSV exists,
+    /// processes each line to create a barcode, and writes the output files.
     /// </summary>
     static void Main()
     {
-        // Define input CSV path and output directory
-        string csvPath = "input.csv";
-        string outputDir = "Barcodes";
+        // --------------------------------------------------------------------
+        // Prepare temporary folders for input CSV and output barcode images
+        // --------------------------------------------------------------------
+        string tempRoot = Path.GetTempPath();
+        string csvPath = Path.Combine(tempRoot, "sample_codes.csv");
+        string outputDir = Path.Combine(tempRoot, "Barcodes_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputDir);
 
-        // Ensure output directory exists
-        if (!Directory.Exists(outputDir))
-        {
-            Directory.CreateDirectory(outputDir);
-        }
-
-        // If CSV does not exist, create a sample file with a few entries
+        // --------------------------------------------------------------------
+        // Create a sample CSV file if it does not already exist
+        // --------------------------------------------------------------------
         if (!File.Exists(csvPath))
         {
-            var sampleLines = new List<string>
-            {
-                "ABC123",
-                "XYZ789",
-                "CODE39",
-                "HELLO WORLD",
-                "1234567890"
-            };
-            File.WriteAllLines(csvPath, sampleLines);
+            var sb = new StringBuilder();
+            sb.AppendLine("CodeText");
+            sb.AppendLine("ABC123");
+            sb.AppendLine("CODE39");
+            sb.AppendLine("HELLO");
+            File.WriteAllText(csvPath, sb.ToString());
         }
 
-        // Read CSV lines
-        var lines = new List<string>();
-        using (var reader = new StreamReader(csvPath))
+        // --------------------------------------------------------------------
+        // Verify that the CSV file exists before attempting to read it
+        // --------------------------------------------------------------------
+        if (!File.Exists(csvPath))
         {
-            string line;
-            while ((line = reader.ReadLine()) != null)
-            {
-                // Trim and skip empty lines
-                line = line.Trim();
-                if (line.Length == 0) continue;
-
-                // Use first column as code text (comma‑separated)
-                string[] parts = line.Split(',');
-                lines.Add(parts[0]);
-            }
+            Console.WriteLine($"CSV file not found: {csvPath}");
+            return;
         }
 
-        // Process each code text
-        foreach (var codeText in lines)
+        // --------------------------------------------------------------------
+        // Read all lines from the CSV file
+        // --------------------------------------------------------------------
+        string[] lines = File.ReadAllLines(csvPath);
+        if (lines.Length <= 1)
         {
-            // Create barcode generator for Code39FullASCII
+            Console.WriteLine("CSV file contains no data.");
+            return;
+        }
+
+        // --------------------------------------------------------------------
+        // Process each code text (skip header row)
+        // --------------------------------------------------------------------
+        for (int i = 1; i < lines.Length; i++)
+        {
+            string line = lines[i];
+            if (string.IsNullOrWhiteSpace(line))
+                continue; // Skip empty lines
+
+            // Split CSV line (comma‑separated) and trim the first column as the code text
+            string[] parts = line.Split(',');
+            string codeText = parts[0].Trim();
+            if (string.IsNullOrEmpty(codeText))
+                continue; // Skip rows without a code text
+
+            // Determine output file path for the current barcode image
+            string outputPath = Path.Combine(outputDir, $"barcode_{i}.bmp");
+
+            // ----------------------------------------------------------------
+            // Generate the barcode with checksum enabled and visible
+            // ----------------------------------------------------------------
             using (var generator = new BarcodeGenerator(EncodeTypes.Code39FullASCII, codeText))
             {
-                // Enable checksum generation
+                // Enable checksum calculation and force its display
                 generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
-                // Show checksum in human‑readable text
                 generator.Parameters.Barcode.ChecksumAlwaysShow = true;
 
-                // Optional: set colors
-                generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-                generator.Parameters.BackColor = Aspose.Drawing.Color.White;
+                // Position the human‑readable text below the barcode
+                generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.Below;
 
-                // Build safe file name
-                string safeFileName = GetSafeFileName(codeText) + ".bmp";
-                string outputPath = Path.Combine(outputDir, safeFileName);
-
-                // Save as BMP
+                // Save the generated barcode as a BMP image
                 generator.Save(outputPath, BarCodeImageFormat.Bmp);
-                Console.WriteLine($"Saved barcode for \"{codeText}\" to \"{outputPath}\"");
             }
-        }
-    }
 
-    // Replace characters that are invalid in file names and limit length
-    private static string GetSafeFileName(string name)
-    {
-        foreach (char c in Path.GetInvalidFileNameChars())
-        {
-            name = name.Replace(c, '_');
+            Console.WriteLine($"Generated barcode for '{codeText}' at: {outputPath}");
         }
-        // Limit length to avoid overly long paths
-        if (name.Length > 100)
-            name = name.Substring(0, 100);
-        return name;
+
+        Console.WriteLine("Barcode generation completed.");
     }
 }

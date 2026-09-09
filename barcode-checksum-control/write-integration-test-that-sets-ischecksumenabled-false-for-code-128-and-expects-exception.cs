@@ -1,61 +1,61 @@
-// Title: Integration test for disabling checksum in Code128 barcode generation
-// Description: Demonstrates how to configure a Code 128 barcode generator to disable checksum validation and verify that an exception is thrown when saving an invalid barcode.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and generator parameters such as IsChecksumEnabled and ThrowExceptionWhenCodeTextIncorrect. Developers often need to validate barcode data integrity or test error handling for unsupported configurations, making this pattern useful for unit and integration testing of barcode generation logic.
+// Title: Code128 checksum disabled integration test
+// Description: Demonstrates setting IsChecksumEnabled to false for a Code 128 barcode and verifies that an exception is thrown.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to configure barcode parameters such as checksum handling using the BarcodeGenerator and its Parameters.Barcode properties. Developers often need to test invalid configurations to ensure proper error handling, making this pattern useful for integration testing of barcode generation scenarios.
 // Prompt: Write an integration test that sets IsChecksumEnabled false for Code 128 and expects an exception.
-// Tags: barcode, code128, checksum, exception, integration-test, aspose.barcode, generation
+// Tags: code128, checksum, integration-test, exception-handling, aspose.barcode, generation
 
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing;
 
 /// <summary>
-/// Provides an integration test that disables checksum for a Code 128 barcode and expects an exception during save.
+/// Demonstrates an integration‑style test that disables checksum for a Code 128 barcode and expects an exception during generation.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the test application.
+    /// Entry point that performs the test, writes result to console, and cleans up temporary files.
     /// </summary>
     static void Main()
     {
-        // Define a temporary file path for the generated barcode image.
-        string outputPath = Path.Combine(Path.GetTempPath(), "code128_test.png");
+        // Define a temporary file path for the generated barcode image
+        string tempFile = Path.Combine(Path.GetTempPath(), "code128_test.png");
 
         try
         {
-            // Initialize a BarcodeGenerator for Code128 with sample text.
+            // Create a BarcodeGenerator for Code128 with sample data
             using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
             {
-                // Disable checksum generation for Code128.
+                // Disable checksum calculation – this configuration is expected to cause an exception
                 generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.No;
 
-                // Configure the generator to throw an exception if the code text is incorrect.
-                generator.Parameters.Barcode.ThrowExceptionWhenCodeTextIncorrect = true;
-
-                // Attempt to save the barcode; an exception is expected due to disabled checksum.
-                generator.Save(outputPath);
-
-                // If execution reaches this point, no exception was thrown and the test fails.
-                Console.WriteLine("FAIL: No exception was thrown.");
+                // Attempt to save the barcode image; an exception should be thrown
+                generator.Save(tempFile, BarCodeImageFormat.Png);
             }
+
+            // If no exception occurs, the test has failed
+            Console.WriteLine("Test failed: no exception was thrown.");
         }
         catch (Exception ex)
         {
-            // Expected outcome: an exception should be caught, indicating the test passed.
-            Console.WriteLine($"PASS: Caught expected exception: {ex.GetType().Name} - {ex.Message}");
+            // Expected path: an exception was caught, indicating the test passed
+            Console.WriteLine("Test passed: expected exception caught.");
+            Console.WriteLine("Exception message: " + ex.Message);
         }
         finally
         {
-            // Clean up the temporary file if it was created.
-            if (File.Exists(outputPath))
+            // Clean up the temporary file if it was created
+            if (File.Exists(tempFile))
             {
                 try
                 {
-                    File.Delete(outputPath);
+                    File.Delete(tempFile);
                 }
                 catch
                 {
-                    // Suppress any errors during cleanup.
+                    // Ignore any errors during cleanup
                 }
             }
         }

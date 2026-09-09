@@ -1,60 +1,69 @@
-// Title: Barcode generation with optional forced checksum visibility
-// Description: Demonstrates how to generate a Code128 barcode and optionally force the checksum digit to appear in the human‑readable text.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating use of BarcodeGenerator, EncodeTypes, and checksum display settings. Developers often need to customize barcode appearance, such as showing or hiding checksum digits, for compliance or readability in labeling applications.
+// Title: Barcode Generation with Optional Forced Checksum Visibility
+// Description: Demonstrates generating a barcode image using Aspose.BarCode, allowing the caller to force the checksum to be displayed regardless of the symbology's default behavior.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use EncodeTypes, BarcodeGenerator, and related parameter settings to create barcodes. Typical use cases include producing printable barcode images for inventory, shipping, or retail, where developers often need to control checksum calculation and visibility across different symbologies.
 // Prompt: Extend the barcode generation routine to accept a flag that forces checksum visibility regardless of symbology defaults.
-// Tags: barcode symbology, generation, checksum, code128, image output, aspose.barcode
+// Tags: barcode, symbology, checksum, generation, image, aspose.barcode
 
 using System;
 using System.IO;
+using System.Reflection;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Generates a barcode image and optionally forces the checksum digit to be displayed
-/// in the human‑readable text, regardless of the symbology's default behavior.
+/// Demonstrates barcode generation with optional forced checksum visibility using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Accepts an optional command‑line argument
-    /// "showchecksum" to enable forced checksum visibility.
+    /// Entry point. Parses command‑line arguments, creates a barcode, optionally forces checksum display, and saves the image.
     /// </summary>
-    /// <param name="args">Command‑line arguments.</param>
+    /// <param name="args">Command‑line arguments: symbology name, code text, and optional flag to force checksum visibility.</param>
     static void Main(string[] args)
     {
-        // Determine whether to force checksum visibility based on the first argument.
-        bool forceShowChecksum = false;
-        if (args.Length > 0 && string.Equals(args[0], "showchecksum", StringComparison.OrdinalIgnoreCase))
+        // Default values for symbology, data, and checksum visibility flag
+        string symbologyName = "Code128";
+        string codeText = "123456";
+        bool forceShowChecksum = true;
+
+        // Override defaults with command‑line arguments when provided
+        if (args.Length >= 1 && !string.IsNullOrWhiteSpace(args[0]))
+            symbologyName = args[0];
+        if (args.Length >= 2 && !string.IsNullOrWhiteSpace(args[1]))
+            codeText = args[1];
+        if (args.Length >= 3 && bool.TryParse(args[2], out bool flag))
+            forceShowChecksum = flag;
+
+        // Resolve the symbology name to a BaseEncodeType enum value via reflection
+        FieldInfo field = typeof(EncodeTypes).GetField(symbologyName);
+        if (field == null)
         {
-            forceShowChecksum = true;
+            Console.WriteLine($"Unknown symbology: {symbologyName}");
+            return;
         }
 
-        // Define barcode parameters: Code128 symbology and sample text.
-        BaseEncodeType encodeType = EncodeTypes.Code128;
-        string codeText = "123ABC";
+        BaseEncodeType encodeType = (BaseEncodeType)field.GetValue(null);
 
-        // Create the barcode generator within a using block to ensure proper disposal.
+        // Build a temporary file path for the output PNG image
+        string outputPath = Path.Combine(Path.GetTempPath(), $"barcode_{Guid.NewGuid():N}.png");
+
+        // Create the barcode generator with the selected symbology and data
         using (var generator = new BarcodeGenerator(encodeType, codeText))
         {
-            // If the flag is set, force the checksum digit to be shown in the human‑readable text.
-            if (forceShowChecksum)
-            {
-                generator.Parameters.Barcode.ChecksumAlwaysShow = true;
-            }
+            // Enable checksum calculation (required for symbologies that support optional checksums)
+            generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
 
-            // Optional: adjust image dimensions for better visibility.
-            generator.Parameters.ImageWidth.Point = 300f;
-            generator.Parameters.ImageHeight.Point = 150f;
+            // Force the checksum to be shown if the flag is set
+            generator.Parameters.Barcode.ChecksumAlwaysShow = forceShowChecksum;
 
-            // Build the output file path in the current working directory.
-            string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "barcode.png");
-
-            // Save the generated barcode image to the specified path.
-            generator.Save(outputPath);
-
-            // Inform the user about the saved file and the checksum flag status.
-            Console.WriteLine($"Barcode saved to: {outputPath}");
-            Console.WriteLine($"Force checksum visibility: {forceShowChecksum}");
+            // Save the generated barcode as a PNG image
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
+
+        // Output information about the generated barcode
+        Console.WriteLine($"Barcode saved to: {outputPath}");
+        Console.WriteLine($"Symbology: {symbologyName}");
+        Console.WriteLine($"CodeText: {codeText}");
+        Console.WriteLine($"Checksum visibility forced: {forceShowChecksum}");
     }
 }

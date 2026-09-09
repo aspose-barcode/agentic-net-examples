@@ -1,8 +1,8 @@
-// Title: Verify checksum visibility toggles rendering in Code128 barcodes
-// Description: Demonstrates generating Code128 barcodes with checksum shown and hidden, then validates that the rendering changes.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category, illustrating how to enable checksum calculation, control its visual display, and verify results using the BarcodeGenerator and BarCodeReader classes. Developers often need to toggle checksum visibility for compliance or aesthetic reasons, and this snippet shows typical API usage for such scenarios.
+// Title: Checksum Visibility Toggle Example
+// Description: Demonstrates how to generate a Code128 barcode with and without displaying the checksum digit and verifies the effect using barcode recognition.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator to control checksum rendering via IsChecksumEnabled and ChecksumAlwaysShow, and BarCodeReader to decode the resulting images. Developers often need to validate that checksum visibility settings are applied correctly for compliance and readability in scanning systems.
 // Prompt: Write a unit test confirming the checksum visibility property correctly toggles rendering of the checksum digit.
-// Tags: code128, checksum, visibility, generation, recognition, unit-test, aspose.barcode
+// Tags: code128, checksum, barcode generation, barcode recognition, aspose.barcode, unit test, image, png
 
 using System;
 using System.IO;
@@ -11,88 +11,90 @@ using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Example program that generates Code128 barcodes with and without visible checksum
-/// and validates that the checksum visibility property affects the rendered image.
+/// Generates Code128 barcodes with and without displaying the checksum digit,
+/// then verifies that the checksum visibility setting affects the decoded text.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates two barcode images, compares their file sizes,
-    /// and reads back the checksum values using <see cref="BarCodeReader"/>.
+    /// Entry point of the example. Creates temporary barcode images, reads them back,
+    /// and evaluates whether the checksum visibility property works as expected.
     /// </summary>
     static void Main()
     {
-        // Prepare a temporary directory for output images
-        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeChecksumTest");
-        if (!Directory.Exists(outputDir))
-            Directory.CreateDirectory(outputDir);
+        // Create a unique temporary directory for the test files
+        string tempDir = Path.Combine(Path.GetTempPath(), "ChecksumTest_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
 
-        // Define file paths for the images with checksum shown and hidden
-        string pathShow = Path.Combine(outputDir, "code128_show.png");
-        string pathHide = Path.Combine(outputDir, "code128_hide.png");
+        // Define file paths for the two barcode images
+        string pathWithout = Path.Combine(tempDir, "code128_no_checksum.png");
+        string pathWith = Path.Combine(tempDir, "code128_with_checksum.png");
 
-        // Barcode data to encode
-        const string codeText = "12345";
-
-        // Generate barcode with checksum always shown
-        using (var generatorShow = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+        // Generate a Code128 barcode with checksum enabled
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "CODE"))
         {
             // Enable checksum calculation
-            generatorShow.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
-            // Force visual display of the checksum digit
-            generatorShow.Parameters.Barcode.ChecksumAlwaysShow = true;
-            // Save the generated image
-            generatorShow.Save(pathShow);
+            generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
+
+            // Save barcode without displaying the checksum digit
+            generator.Parameters.Barcode.ChecksumAlwaysShow = false;
+            generator.Save(pathWithout, BarCodeImageFormat.Png);
+
+            // Save barcode with the checksum digit displayed
+            generator.Parameters.Barcode.ChecksumAlwaysShow = true;
+            generator.Save(pathWith, BarCodeImageFormat.Png);
         }
 
-        // Generate barcode with checksum hidden
-        using (var generatorHide = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+        // Decode the generated images to obtain the textual representation
+        string codeTextWithout = ReadCodeText(pathWithout);
+        string codeTextWith = ReadCodeText(pathWith);
+
+        // Verify that the checksum digit is present only in the second image
+        bool testPassed = !string.IsNullOrEmpty(codeTextWithout) &&
+                          !string.IsNullOrEmpty(codeTextWith) &&
+                          codeTextWithout.Length < codeTextWith.Length &&
+                          codeTextWith.StartsWith(codeTextWithout, StringComparison.Ordinal);
+
+        // Output the test result and the decoded texts
+        Console.WriteLine(testPassed ? "Test Passed" : "Test Failed");
+        Console.WriteLine($"Without checksum: {codeTextWithout}");
+        Console.WriteLine($"With checksum:    {codeTextWith}");
+
+        // Clean up temporary files and directory
+        try
         {
-            // Enable checksum calculation
-            generatorHide.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
-            // Do not display the checksum digit
-            generatorHide.Parameters.Barcode.ChecksumAlwaysShow = false;
-            // Save the generated image
-            generatorHide.Save(pathHide);
+            Directory.Delete(tempDir, true);
+        }
+        catch
+        {
+            // Ignore any errors during cleanup
+        }
+    }
+
+    /// <summary>
+    /// Reads the first decoded barcode text from the specified image file.
+    /// </summary>
+    /// <param name="imagePath">Path to the barcode image.</param>
+    /// <returns>The decoded barcode text, or an empty string if decoding fails.</returns>
+    static string ReadCodeText(string imagePath)
+    {
+        // Verify that the image file exists before attempting to read it
+        if (!File.Exists(imagePath))
+        {
+            Console.WriteLine($"File not found: {imagePath}");
+            return string.Empty;
         }
 
-        // Verify that both image files were successfully created
-        if (!File.Exists(pathShow) || !File.Exists(pathHide))
+        // Use BarCodeReader to decode the barcode from the image
+        using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.Code128))
         {
-            Console.WriteLine("FAILED: One or both barcode images were not created.");
-            return;
-        }
-
-        // Simple visual‑rendering check: file sizes should differ because the checksum text length changes
-        long sizeShow = new FileInfo(pathShow).Length;
-        long sizeHide = new FileInfo(pathHide).Length;
-
-        if (sizeShow == sizeHide)
-        {
-            Console.WriteLine("FAILED: Image sizes are identical; checksum visibility may not have affected rendering.");
-        }
-        else
-        {
-            Console.WriteLine("PASSED: Checksum visibility toggles rendering (file sizes differ).");
-            Console.WriteLine($"Size with checksum shown: {sizeShow} bytes");
-            Console.WriteLine($"Size with checksum hidden: {sizeHide} bytes");
-        }
-
-        // Optional: read the checksum value using BarCodeReader to ensure it is present in both images
-        using (var readerShow = new BarCodeReader(pathShow, DecodeType.Code128))
-        {
-            foreach (BarCodeResult result in readerShow.ReadBarCodes())
+            foreach (BarCodeResult result in reader.ReadBarCodes())
             {
-                Console.WriteLine($"Show - Detected checksum: {result.Extended.OneD.CheckSum}");
+                return result.CodeText ?? string.Empty;
             }
         }
 
-        using (var readerHide = new BarCodeReader(pathHide, DecodeType.Code128))
-        {
-            foreach (BarCodeResult result in readerHide.ReadBarCodes())
-            {
-                Console.WriteLine($"Hide - Detected checksum: {result.Extended.OneD.CheckSum}");
-            }
-        }
+        // Return empty string if no barcode was found
+        return string.Empty;
     }
 }
