@@ -1,91 +1,76 @@
 // Title: Serialize barcode recognition parameters and results to XML
-// Description: Demonstrates generating a QR barcode, recognizing it, and saving both recognition settings and results into an XML file.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, showcasing how to use BarcodeGenerator, BarCodeReader, and related classes to create barcodes, configure recognition parameters such as timeout and quality, and serialize the output. Developers often need to log or exchange barcode data with metadata, and this pattern provides a reusable approach for XML reporting.
+// Description: Demonstrates how to generate a QR barcode, read it with custom recognition settings, and export both the settings and detection results into an XML file.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator, BarCodeReader, and related settings classes to customize scan mode, timeout, and other parameters, then serialize the reader state. Developers working with barcode scanning automation often need to persist recognition configurations and outcomes for auditing or downstream processing; this snippet provides a concise reference for such tasks.
 // Prompt: Serialize recognition parameters like scan mode and timeout together with results into an XML document.
-// Tags: qr, barcode, generation, recognition, xml, aspose.barcode, aspose.drawing
+// Tags: barcode, qr, recognition, xml, serialization, settings, aspose.barcode, generation, reading
 
 using System;
 using System.IO;
-using System.Linq;
-using System.Xml.Linq;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates a QR barcode, reads it back, and writes
-/// both the recognition parameters and the results to an XML document.
+/// Demonstrates barcode generation, customized recognition, and exporting the reader state to XML.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a barcode, reads it, and serializes
-    /// the recognition data to XML.
+    /// Entry point. Generates a QR code, reads it with specific settings, and writes the reader state to an XML file.
     /// </summary>
     static void Main()
     {
-        // Define file paths for the barcode image and the XML output.
-        string barcodeImagePath = "barcode.png";
-        string xmlOutputPath = "barcode_info.xml";
+        // Create a unique temporary folder for all generated files
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
 
-        // ------------------------------------------------------------
-        // Generate a QR barcode and save it as a PNG image.
-        // ------------------------------------------------------------
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "Hello World"))
+        // Define file paths for the barcode image and the exported XML document
+        string barcodePath = Path.Combine(tempFolder, "sample.png");
+        string xmlPath = Path.Combine(tempFolder, "readerState.xml");
+
+        // Generate a simple QR barcode and save it as PNG
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "HelloWorld"))
         {
-            generator.Save(barcodeImagePath, BarCodeImageFormat.Png);
+            generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        // Verify that the barcode image was successfully created.
-        if (!File.Exists(barcodeImagePath))
+        // Verify that the barcode image was created successfully
+        if (!File.Exists(barcodePath))
         {
             Console.WriteLine("Failed to create barcode image.");
             return;
         }
 
-        // ------------------------------------------------------------
-        // Set up a BarCodeReader to recognize the barcode from the image.
-        // ------------------------------------------------------------
-        using (BarCodeReader reader = new BarCodeReader(barcodeImagePath, DecodeType.AllSupportedTypes))
+        // Initialize the reader with the generated image and specify QR as the decode type
+        using (var reader = new BarCodeReader(barcodePath, DecodeType.QR))
         {
-            // Configure recognition parameters: timeout (milliseconds) and quality preset.
-            reader.Timeout = 5000; // 5 seconds
-            reader.QualitySettings = QualitySettings.HighQuality;
+            // Configure recognition parameters
+            reader.BarcodeSettings.StripFNC = true;          // Example setting: ignore FNC characters
+            reader.QualitySettings.XDimension = XDimensionMode.Small; // Adjust X-dimension for quality
+            reader.Timeout = 2000; // Set timeout to 2000 ms
 
-            // Perform the recognition and obtain all detected results.
+            // Perform barcode recognition
             BarCodeResult[] results = reader.ReadBarCodes();
 
-            // ------------------------------------------------------------
-            // Build an XML document that includes both the parameters used
-            // for recognition and the details of each recognized barcode.
-            // ------------------------------------------------------------
-            XDocument doc = new XDocument(
-                new XElement("BarCodeInfo",
-                    new XElement("RecognitionParameters",
-                        new XElement("Timeout", reader.Timeout),
-                        new XElement("QualityPreset", "HighQuality")
-                    ),
-                    new XElement("Results",
-                        from result in results
-                        select new XElement("Result",
-                            new XElement("CodeText", result.CodeText ?? string.Empty),
-                            new XElement("CodeType", result.CodeTypeName ?? string.Empty),
-                            new XElement("ReadingQuality", result.ReadingQuality),
-                            new XElement("Angle", result.Region.Angle),
-                            new XElement("Region",
-                                new XElement("X", result.Region.Rectangle.X),
-                                new XElement("Y", result.Region.Rectangle.Y),
-                                new XElement("Width", result.Region.Rectangle.Width),
-                                new XElement("Height", result.Region.Rectangle.Height)
-                            )
-                        )
-                    )
-                )
-            );
+            // Output recognition results to the console
+            Console.WriteLine($"Barcodes found: {results.Length}");
+            foreach (var result in results)
+            {
+                Console.WriteLine($"Type: {result.CodeTypeName}, Text: {result.CodeText}");
+            }
 
-            // Save the constructed XML document to the specified file.
-            doc.Save(xmlOutputPath);
-            Console.WriteLine("Recognition data saved to: " + xmlOutputPath);
+            // Serialize both the configured parameters and the recognition results to XML
+            reader.ExportToXml(xmlPath);
+        }
+
+        // Confirm that the XML export succeeded
+        if (File.Exists(xmlPath))
+        {
+            Console.WriteLine($"Reader state exported to: {xmlPath}");
+        }
+        else
+        {
+            Console.WriteLine("Failed to export reader state to XML.");
         }
     }
 }

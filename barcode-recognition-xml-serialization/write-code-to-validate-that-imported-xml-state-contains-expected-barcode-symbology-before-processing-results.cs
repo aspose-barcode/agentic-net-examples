@@ -1,69 +1,108 @@
 // Title: Validate barcode symbology from imported XML state
-// Description: Demonstrates how to load a barcode generator state from XML and verify that it uses the expected symbology before further processing.
-// Category-Description: This example belongs to the Aspose.BarCode generation and validation category. It shows how to use BarcodeGenerator.ImportFromXml, access the BarcodeType property, and perform symbology checks. Typical use cases include validating saved barcode configurations, ensuring compatibility before rendering, and preventing processing of unexpected barcode types. Developers often need to read saved states, compare symbology, and conditionally generate images.
+// Description: Demonstrates generating a QR barcode, exporting the reader state to XML, importing it back, and confirming that the detected symbology matches the expected type.
+// Category-Description: This example belongs to the Aspose.BarCode state management category, showcasing how to use BarcodeGenerator, BarCodeReader, and the ExportToXml/ImportFromXml APIs. Typical use cases include persisting recognition settings, sharing reader configurations across services, and validating that imported states still correspond to the intended barcode symbology. Developers often need to verify symbology before processing results to ensure data integrity.
 // Prompt: Write code to validate that an imported XML state contains the expected barcode symbology before processing results.
-// Tags: barcode, symbology, validation, import, xml, generation, aspose.barcode
+// Tags: barcode symbology, validation, xml, export, import, aspose.barcode, generation, recognition
 
 using System;
 using System.IO;
+using System.Reflection;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that validates the barcode symbology stored in an imported XML state
-/// before generating the barcode image.
+/// Example program that validates the barcode symbology after importing a BarCodeReader state from XML.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Loads a barcode generator from an XML file, checks its symbology,
-    /// and generates an image only if the symbology matches the expected value.
+    /// Entry point. Generates a QR code, exports the reader state, re-imports it, and checks that the detected symbology matches the expected value.
     /// </summary>
     static void Main()
     {
-        // Path to the XML file that contains the barcode generator state.
-        string xmlPath = "barcode_state.xml";
+        // --------------------------------------------------------------------
+        // Prepare a temporary working directory for generated files.
+        // --------------------------------------------------------------------
+        string workDir = Path.Combine(Path.GetTempPath(), "BarcodeValidate_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(workDir);
 
-        // Expected symbology name (e.g., "Code128", "QR", "DataMatrix").
-        string expectedSymbology = "Code128";
+        string barcodePath = Path.Combine(workDir, "qr.png");
+        string readerXmlPath = Path.Combine(workDir, "readerState.xml");
+        string expectedSymbology = "QR";
 
-        // Verify that the XML file exists before attempting import.
-        if (!File.Exists(xmlPath))
+        // --------------------------------------------------------------------
+        // Generate a QR barcode image and save it as PNG.
+        // --------------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "SampleText"))
         {
-            Console.WriteLine($"Error: XML file not found at '{xmlPath}'.");
-            return;
+            generator.Parameters.Barcode.XDimension.Pixels = 4f;
+            generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        try
+        // --------------------------------------------------------------------
+        // Create a BarCodeReader, read the barcode, and export its internal state to XML.
+        // --------------------------------------------------------------------
+        using (var reader = new BarCodeReader(barcodePath, DecodeType.QR))
         {
-            // Import the barcode generator state from the XML file.
-            using (BarcodeGenerator generator = BarcodeGenerator.ImportFromXml(xmlPath))
+            var initialResults = reader.ReadBarCodes();
+            Console.WriteLine($"Initial read count: {initialResults.Length}");
+            reader.ExportToXml(readerXmlPath);
+        }
+
+        // --------------------------------------------------------------------
+        // Import the BarCodeReader state from the previously saved XML file.
+        // --------------------------------------------------------------------
+        using (var importedReader = BarCodeReader.ImportFromXml(readerXmlPath))
+        {
+            // The image source is not stored in XML, so set it explicitly.
+            importedReader.SetBarCodeImage(barcodePath);
+
+            // Resolve the expected symbology string to the corresponding BaseDecodeType via reflection.
+            var field = typeof(DecodeType).GetField(expectedSymbology);
+            if (field == null)
             {
-                // Retrieve the actual symbology of the imported generator.
-                string actualSymbology = generator.BarcodeType.TypeName;
+                Console.WriteLine($"Unknown expected symbology: {expectedSymbology}");
+                return;
+            }
+            BaseDecodeType expectedDecode = (BaseDecodeType)field.GetValue(null);
 
-                // Compare the actual symbology with the expected value (case‑insensitive).
-                if (string.Equals(actualSymbology, expectedSymbology, StringComparison.OrdinalIgnoreCase))
-                {
-                    Console.WriteLine($"Symbology validation succeeded: '{actualSymbology}'.");
+            // Read barcodes using the imported state.
+            var results = importedReader.ReadBarCodes();
 
-                    // Proceed with further processing, e.g., generate and save the barcode image.
-                    string outputImage = "generated_barcode.png";
-                    generator.Save(outputImage);
-                    Console.WriteLine($"Barcode image saved to '{outputImage}'.");
-                }
-                else
+            if (results.Length == 0)
+            {
+                Console.WriteLine("No barcodes detected.");
+            }
+            else
+            {
+                // Iterate over detection results and verify symbology.
+                foreach (var result in results)
                 {
-                    // Symbology does not match; skip further processing.
-                    Console.WriteLine($"Warning: Expected symbology '{expectedSymbology}' but found '{actualSymbology}'. Skipping processing.");
+                    bool matches = result.CodeType.Equals(expectedDecode);
+                    Console.WriteLine($"Detected: {result.CodeTypeName}, Text: {result.CodeText}, MatchExpected: {matches}");
+                    if (!matches)
+                    {
+                        Console.WriteLine("Validation failed: unexpected symbology.");
+                    }
                 }
             }
         }
-        catch (Exception ex)
+
+        // --------------------------------------------------------------------
+        // Cleanup temporary files and directory.
+        // --------------------------------------------------------------------
+        try
         {
-            // Handle any errors that occur during import or processing.
-            Console.WriteLine($"Exception occurred: {ex.Message}");
+            if (File.Exists(barcodePath)) File.Delete(barcodePath);
+            if (File.Exists(readerXmlPath)) File.Delete(readerXmlPath);
+            Directory.Delete(workDir, true);
+        }
+        catch
+        {
+            // Ignored - cleanup failure should not affect program exit.
         }
     }
 }

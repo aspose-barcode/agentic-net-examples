@@ -1,8 +1,8 @@
-// Title: Deserialize BarCodeReader state from XML and reuse the same image
-// Description: Demonstrates exporting a BarCodeReader's state to an XML stream, importing it back, and reapplying the original barcode image for further analysis.
-// Category-Description: This example belongs to the Aspose.BarCode serialization and deserialization category. It showcases the use of BarCodeReader.ExportToXml, BarCodeReader.ImportFromXml, and related classes such as BarcodeGenerator. Developers often need to persist reader configurations, share them across services, or reload them for repeated scans without reconfiguring the reader each time.
+// Title: Deserialize BarCodeReader state from XML and reuse barcode image
+// Description: Demonstrates exporting a BarCodeReader configuration to an XML stream, importing it back, and applying the same barcode image for recognition.
+// Category-Description: This example belongs to the Aspose.BarCode state management category, showcasing how to serialize and deserialize BarCodeReader settings using XML. It uses key API classes such as BarcodeGenerator, BarCodeReader, and related settings. Typical use cases include persisting reader configurations, sharing settings across applications, and reapplying them to different images for consistent barcode analysis. Developers often need to export reader state for storage or transport and later import it to maintain identical recognition parameters.
 // Prompt: Deserialize the reader state from an XML stream, then reapply the same barcode image for analysis.
-// Tags: code128, serialization, png, barcodereader, barcodegenerator
+// Tags: barcode, serialization, xml, reader, generation, recognition, code128, aspose.barcode
 
 using System;
 using System.IO;
@@ -10,73 +10,72 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates a Code128 barcode, exports the reader state to XML,
-/// imports it back, and reuses the same image for barcode recognition.
+/// Demonstrates exporting a BarCodeReader's configuration to XML, importing it,
+/// and reusing the same barcode image for recognition.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Performs barcode generation, state serialization,
-    /// deserialization, and recognition without requiring interactive console input.
+    /// Entry point of the example.
     /// </summary>
     static void Main()
     {
-        // Define the barcode text to encode.
-        const string codeText = "1234567890";
+        // Create a temporary folder for demo files
+        string tempDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        string barcodePath = Path.Combine(tempDir, "barcode.png");
 
-        // Path for the temporary PNG image that will hold the generated barcode.
-        const string imagePath = "temp_barcode.png";
-
-        // Generate a Code128 barcode and save it as a PNG file.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+        // Generate a sample barcode image (Code128) and save it as PNG
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            generator.Save(imagePath, BarCodeImageFormat.Png);
+            generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        // Load the generated PNG image into a bitmap for processing.
-        using (var bitmap = new Bitmap(imagePath))
+        // Initialize a BarCodeReader, configure it, and export its state to an XML memory stream
+        using (var reader = new BarCodeReader())
         {
-            // Initialize a BarCodeReader and configure it to decode Code128 symbology.
-            using (var reader = new BarCodeReader())
+            // Load the generated barcode image into the reader
+            reader.SetBarCodeImage(barcodePath);
+            // Restrict decoding to Code128 symbology
+            reader.SetBarCodeReadType(DecodeType.Code128);
+            // Example setting: ignore FNC characters during decoding
+            reader.BarcodeSettings.StripFNC = true;
+
+            // Export the configured reader state to XML
+            using (var ms = new MemoryStream())
             {
-                reader.SetBarCodeReadType(DecodeType.Code128);
-                reader.SetBarCodeImage(bitmap);
+                reader.ExportToXml(ms);
+                ms.Position = 0; // Reset stream position for reading
 
-                // Export the current reader configuration and state to an in‑memory XML stream.
-                using (var xmlStream = new MemoryStream())
+                // Import the reader state from the XML stream
+                using (var importedReader = BarCodeReader.ImportFromXml(ms))
                 {
-                    reader.ExportToXml(xmlStream);
-                    xmlStream.Position = 0; // Reset stream position for subsequent reading.
+                    // Reapply the same barcode image and read type (these are not stored in XML)
+                    importedReader.SetBarCodeImage(barcodePath);
+                    importedReader.SetBarCodeReadType(DecodeType.Code128);
 
-                    // Import the previously saved state into a new BarCodeReader instance.
-                    var importedReader = BarCodeReader.ImportFromXml(xmlStream);
-
-                    // Reassign the same bitmap image to the imported reader for analysis.
-                    importedReader.SetBarCodeImage(bitmap);
-
-                    // Execute barcode recognition and output results to the console.
-                    foreach (var result in importedReader.ReadBarCodes())
+                    // Perform barcode recognition using the imported configuration
+                    var results = importedReader.ReadBarCodes();
+                    Console.WriteLine($"Barcodes read: {results.Length}");
+                    foreach (var result in results)
                     {
-                        Console.WriteLine($"Detected Type: {result.CodeTypeName}");
-                        Console.WriteLine($"Detected Text: {result.CodeText}");
+                        Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
                     }
                 }
             }
         }
 
-        // Attempt to delete the temporary image file; ignore any errors that occur.
-        if (File.Exists(imagePath))
+        // Clean up temporary files and directory
+        try
         {
-            try
-            {
-                File.Delete(imagePath);
-            }
-            catch
-            {
-                // Suppress cleanup exceptions.
-            }
+            Directory.Delete(tempDir, true);
+        }
+        catch
+        {
+            // Ignore cleanup errors
         }
     }
 }

@@ -1,119 +1,132 @@
-// Title: Barcode generation, state export, and decoding batch processing
-// Description: Demonstrates creating barcode images, exporting generator state to XML, then reading back each image to decode and log results.
-// Category-Description: This example belongs to the Aspose.BarCode batch processing category, showcasing how to use BarcodeGenerator for image creation, ExportToXml for persisting generator settings, and BarCodeReader for decoding. Typical use cases include automated barcode workflows, bulk processing, and state persistence for later reuse. Developers often need to generate, store, and later validate barcodes in large volumes.
+// Title: Batch barcode generation, recognition, and XML export
+// Description: Demonstrates generating multiple barcode images, reading each image, exporting the recognition state to XML, and logging the results.
+// Category-Description: Shows a typical Aspose.BarCode workflow for batch processing: using BarcodeGenerator to create barcodes, BarCodeReader to recognize them, and ExportToXml to obtain detailed recognition data. Useful for developers who need to automate barcode creation, validation, and state persistence across large image sets.
 // Prompt: Develop a method that loops through a directory, sets each image, exports state to XML, and logs results.
-// Tags: barcode generation, barcode decoding, xml export, code128, aspose.barcode, batch processing
+// Tags: barcode, generation, recognition, xml, file-io, aspose.barcode
 
 using System;
 using System.IO;
+using System.Collections.Generic;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates batch creation of Code128 barcodes, exporting generator state to XML,
-/// and decoding each generated image while logging the process.
+/// Example program that creates sample barcode images, reads them, exports recognition state to XML,
+/// and writes a processing log. Demonstrates a typical batch workflow with Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates barcodes, exports their state, decodes them,
-    /// and writes detailed logs to a file.
+    /// Entry point. Sets up a temporary folder, generates sample barcodes, and processes them.
     /// </summary>
     static void Main()
     {
-        // Define the working directory for barcode images and logs.
-        string workDir = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
-        if (!Directory.Exists(workDir))
-        {
-            Directory.CreateDirectory(workDir);
-        }
+        // Create a dedicated temporary folder for this run
+        string tempFolder = Path.Combine(Path.GetTempPath(), "Batch_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
 
-        // Initialize a simple log file with a start timestamp.
-        string logPath = Path.Combine(workDir, "process.log");
-        File.WriteAllText(logPath, $"Process started at {DateTime.Now}{Environment.NewLine}");
+        // Generate sample barcode images and collect their file paths
+        List<string> imageFiles = GenerateSampleBarcodes(tempFolder);
 
-        // --------------------------------------------------------------------
-        // Generate sample barcode images and export their generator state to XML.
-        // --------------------------------------------------------------------
-        for (int i = 1; i <= 5; i++)
-        {
-            string codeText = $"Sample{i}";
-            string imagePath = Path.Combine(workDir, $"barcode{i}.png");
-            string xmlPath = Path.Combine(workDir, $"barcode{i}.xml");
-
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
-            {
-                // Configure generator properties.
-                generator.Parameters.Barcode.XDimension.Point = 2f;
-                generator.Parameters.Barcode.BarHeight.Point = 40f;
-                generator.Parameters.Barcode.FilledBars = false;
-                generator.Parameters.Barcode.ThrowExceptionWhenCodeTextIncorrect = false;
-                generator.Parameters.Barcode.CodeTextParameters.Font.FamilyName = "Helvetica";
-                generator.Parameters.Barcode.CodeTextParameters.Font.Size.Point = 10f;
-                generator.Parameters.Barcode.CodeTextParameters.Alignment = TextAlignment.Center;
-
-                // Save the barcode image to disk.
-                generator.Save(imagePath);
-
-                // Export the current generator configuration to an XML file.
-                generator.ExportToXml(xmlPath);
-            }
-
-            // Log the successful generation and export.
-            Log(logPath, $"Generated barcode {i}: {imagePath}, state exported to {xmlPath}");
-        }
-
-        // --------------------------------------------------------------------
-        // Decode each generated barcode image and log the results.
-        // --------------------------------------------------------------------
-        string[] imageFiles = Directory.GetFiles(workDir, "*.png");
-        foreach (string imgFile in imageFiles)
-        {
-            if (!File.Exists(imgFile))
-            {
-                Log(logPath, $"File not found: {imgFile}");
-                continue;
-            }
-
-            try
-            {
-                using (var reader = new BarCodeReader(imgFile, DecodeType.Code128))
-                {
-                    bool found = false;
-                    foreach (var result in reader.ReadBarCodes())
-                    {
-                        // Log each decoded barcode's type and text.
-                        Log(logPath, $"Decoded from {Path.GetFileName(imgFile)}: Type={result.CodeTypeName}, Text={result.CodeText}");
-                        found = true;
-                    }
-
-                    if (!found)
-                    {
-                        // No barcode detected in the current image.
-                        Log(logPath, $"No barcode detected in {Path.GetFileName(imgFile)}");
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                // Log any errors that occur during decoding.
-                Log(logPath, $"Error processing {Path.GetFileName(imgFile)}: {ex.Message}");
-            }
-        }
-
-        // Final log entry indicating completion.
-        Log(logPath, $"Process completed at {DateTime.Now}");
+        // Process each image: load, export recognition state to XML, and log outcomes
+        ProcessBarcodes(tempFolder, imageFiles);
     }
 
     /// <summary>
-    /// Writes a message to both the console and the specified log file with a timestamp.
+    /// Generates a set of sample barcode images using various symbologies.
+    /// </summary>
+    /// <param name="folder">Folder where the images will be saved.</param>
+    /// <returns>List of full file paths to the generated images.</returns>
+    static List<string> GenerateSampleBarcodes(string folder)
+    {
+        var files = new List<string>();
+
+        // Define sample data: (symbology, encoded text, output file name)
+        var samples = new (BaseEncodeType encode, string text, string name)[]
+        {
+            (EncodeTypes.Code128, "ABC123", "code128.png"),
+            (EncodeTypes.QR, "https://example.com", "qr.png"),
+            (EncodeTypes.DataMatrix, "DM12345", "datamatrix.png"),
+            (EncodeTypes.Pdf417, "PDF417 Sample", "pdf417.png"),
+            (EncodeTypes.Aztec, "AztecSample", "aztec.png")
+        };
+
+        // Iterate over each sample, generate the barcode, and save as PNG
+        foreach (var (encode, text, name) in samples)
+        {
+            string filePath = Path.Combine(folder, name);
+            using (var generator = new BarcodeGenerator(encode, text))
+            {
+                // Simple configuration: set X-dimension for better readability
+                generator.Parameters.Barcode.XDimension.Pixels = 2f;
+                generator.Save(filePath, BarCodeImageFormat.Png);
+            }
+            files.Add(filePath);
+        }
+
+        return files;
+    }
+
+    /// <summary>
+    /// Reads each barcode image, exports the recognition state to an XML file, and logs the process.
+    /// </summary>
+    /// <param name="folder">Base folder for log and XML output.</param>
+    /// <param name="imageFiles">List of barcode image file paths to process.</param>
+    static void ProcessBarcodes(string folder, List<string> imageFiles)
+    {
+        // Initialize log file
+        string logPath = Path.Combine(folder, "process_log.txt");
+        File.WriteAllText(logPath, $"Processing started at {DateTime.Now}{Environment.NewLine}");
+
+        // Process each image file
+        foreach (string imagePath in imageFiles)
+        {
+            if (!File.Exists(imagePath))
+            {
+                AppendLog(logPath, $"File not found: {imagePath}");
+                continue;
+            }
+
+            // Determine XML output path based on image file name
+            string xmlPath = Path.ChangeExtension(imagePath, ".xml");
+            try
+            {
+                using (var reader = new BarCodeReader())
+                {
+                    // Load the image for recognition
+                    reader.SetBarCodeImage(imagePath);
+
+                    // Export detailed recognition state to XML
+                    reader.ExportToXml(xmlPath);
+                }
+                AppendLog(logPath, $"Successfully processed: {Path.GetFileName(imagePath)} -> {Path.GetFileName(xmlPath)}");
+            }
+            catch (ArgumentException ex)
+            {
+                // Handles image loading failures or unsupported formats
+                AppendLog(logPath, $"Failed to process {Path.GetFileName(imagePath)}: {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                // Catch-all for unexpected errors
+                AppendLog(logPath, $"Unexpected error for {Path.GetFileName(imagePath)}: {ex.Message}");
+            }
+        }
+
+        // Finalize log
+        AppendLog(logPath, $"Processing completed at {DateTime.Now}");
+        Console.WriteLine($"Log written to: {logPath}");
+    }
+
+    /// <summary>
+    /// Appends a timestamped message to the specified log file.
     /// </summary>
     /// <param name="logFile">Path to the log file.</param>
-    /// <param name="message">Message to log.</param>
-    static void Log(string logFile, string message)
+    /// <param name="message">Message to append.</param>
+    static void AppendLog(string logFile, string message)
     {
-        Console.WriteLine(message);
         File.AppendAllText(logFile, $"{DateTime.Now}: {message}{Environment.NewLine}");
     }
 }

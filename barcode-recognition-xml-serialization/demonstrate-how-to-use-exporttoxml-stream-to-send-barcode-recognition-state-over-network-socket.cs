@@ -1,8 +1,8 @@
-// Title: Export barcode recognition state to XML and transmit via TCP
-// Description: Demonstrates generating a Code128 barcode, recognizing it, exporting the recognition state to XML, and sending that XML over a TCP socket.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, showcasing how to use BarcodeGenerator, BarCodeReader, and the ExportToXml(Stream) method. Typical use cases include transmitting barcode scan results between services or perserving recognition state. Developers often need to serialize recognition data for network communication or later analysis.
+// Title: Export barcode recognition state to XML and transmit via TCP socket
+// Description: This example generates a Code128 barcode, captures the recognition state as XML, and sends it over a TCP socket to a client, which then imports the state and reads the barcode.
+// Category-Description: Demonstrates Aspose.BarCode recognition state export and import using ExportToXml and ImportFromXml. The example covers BarCodeGenerator, BarCodeReader, XML serialization, and network transmission with TcpListener/TcpClient. Ideal for developers needing to share barcode processing state across processes or services.
 // Prompt: Demonstrate how to use ExportToXml(Stream) to send barcode recognition state over a network socket.
-// Tags: code128, exporttoxml, xml, network, aspose.barcode, generation, recognition
+// Tags: barcode, code128, export, xml, network, tcp, aspose.barcode, barcodereader, barcodegenerator
 
 using System;
 using System.IO;
@@ -11,80 +11,113 @@ using System.Net.Sockets;
 using System.Threading.Tasks;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a barcode, recognizing it, exporting the recognition state to XML,
-/// and transmitting that XML over a TCP socket using Aspose.BarCode APIs.
+/// Shows how to export a <see cref="BarCodeReader"/> state to XML,
+/// transmit it over a TCP socket, import it on the client side,
+/// and then read the barcode using the imported state.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Executes the barcode generation, recognition, XML export,
-    /// and network transmission steps.
+    /// Application entry point.
     /// </summary>
     static void Main()
     {
-        // Step 1: Generate a simple Code128 barcode image in memory.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "12345"))
+        // ------------------------------------------------------------
+        // 1. Generate a sample Code128 barcode image in memory.
+        // ------------------------------------------------------------
+        byte[] imageData;
+        using (MemoryStream imgStream = new MemoryStream())
         {
-            using (var barcodeStream = new MemoryStream())
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "12345678"))
             {
-                // Save the barcode image to a memory stream (PNG format).
-                generator.Save(barcodeStream, BarCodeImageFormat.Png);
-                barcodeStream.Position = 0; // Reset stream position for reading.
+                generator.Save(imgStream, BarCodeImageFormat.Png);
+            }
+            imageData = imgStream.ToArray();
+        }
 
-                // Step 2: Create a BarCodeReader to recognize the barcode from the stream.
-                using (var reader = new BarCodeReader(barcodeStream, DecodeType.AllSupportedTypes))
+        // ------------------------------------------------------------
+        // 2. Create a BarCodeReader, configure it, and export its state to an XML stream.
+        // ------------------------------------------------------------
+        MemoryStream xmlStream = new MemoryStream();
+        using (MemoryStream imgForReader = new MemoryStream(imageData))
+        {
+            using (BarCodeReader reader = new BarCodeReader(imgForReader, DecodeType.Code128))
+            {
+                // Example setting: ignore FNC characters during decoding.
+                reader.BarcodeSettings.StripFNC = true;
+                reader.ExportToXml(xmlStream);
+            }
+        }
+        // Reset the XML stream position for later reading.
+        xmlStream.Position = 0;
+
+        // ------------------------------------------------------------
+        // 3. Start a simple TCP server that sends the XML over the socket.
+        // ------------------------------------------------------------
+        const int port = 5000;
+        Task serverTask = Task.Run(() =>
+        {
+            using (TcpListener listener = new TcpListener(IPAddress.Loopback, port))
+            {
+                listener.Start();
+                using (TcpClient client = listener.AcceptTcpClient())
                 {
-                    // Perform recognition to populate internal state (optional).
-                    foreach (var result in reader.ReadBarCodes())
+                    using (NetworkStream ns = client.GetStream())
                     {
-                        Console.WriteLine($"Detected: {result.CodeTypeName} - {result.CodeText}");
+                        // Transmit the XML data to the connected client.
+                        xmlStream.CopyTo(ns);
+                        ns.Flush();
                     }
+                }
+                listener.Stop();
+            }
+        });
 
-                    // Step 3: Export the recognition state to an XML memory stream.
-                    using (var xmlStateStream = new MemoryStream())
+        // Give the server a moment to start listening.
+        Task.Delay(100).Wait();
+
+        // ------------------------------------------------------------
+        // 4. Client connects, receives the XML, imports the reader state,
+        //    and reads the barcode from the original image.
+        // ------------------------------------------------------------
+        using (TcpClient client = new TcpClient())
+        {
+            client.Connect(IPAddress.Loopback, port);
+            using (NetworkStream ns = client.GetStream())
+            {
+                using (MemoryStream receivedXml = new MemoryStream())
+                {
+                    // Receive the XML data sent by the server.
+                    ns.CopyTo(receivedXml);
+                    receivedXml.Position = 0;
+
+                    // Recreate the BarCodeReader from the received XML.
+                    using (BarCodeReader importedReader = BarCodeReader.ImportFromXml(receivedXml))
                     {
-                        reader.ExportToXml(xmlStateStream);
-                        xmlStateStream.Position = 0; // Prepare stream for sending.
-
-                        // Step 4: Set up a TCP listener (server) on localhost.
-                        const int port = 5000;
-                        var listener = new TcpListener(IPAddress.Loopback, port);
-                        listener.Start();
-
-                        // Step 5: Start a client task that connects to the server.
-                        var clientTask = Task.Run(() =>
+                        // Provide the original barcode image to the imported reader.
+                        using (MemoryStream imgForImport = new MemoryStream(imageData))
                         {
-                            using (var client = new TcpClient())
+                            importedReader.SetBarCodeImage(imgForImport);
+                            BarCodeResult[] results = importedReader.ReadBarCodes();
+
+                            Console.WriteLine($"Barcodes read after import: {results.Length}");
+                            foreach (BarCodeResult result in results)
                             {
-                                client.Connect(IPAddress.Loopback, port);
-                                // Keep the connection open; no data is read in this demo.
-                                using (var ns = client.GetStream())
-                                {
-                                    // Placeholder for potential client-side read logic.
-                                }
+                                Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
                             }
-                        });
-
-                        // Step 6: Accept the client connection on the server side.
-                        using (var serverClient = listener.AcceptTcpClient())
-                        using (var networkStream = serverClient.GetStream())
-                        {
-                            // Send the XML state over the network stream.
-                            xmlStateStream.CopyTo(networkStream);
-                            networkStream.Flush();
-                            Console.WriteLine("Barcode recognition state sent over network.");
                         }
-
-                        // Clean up the listener.
-                        listener.Stop();
-
-                        // Ensure the client task completes before exiting.
-                        clientTask.Wait();
                     }
                 }
             }
         }
+
+        // ------------------------------------------------------------
+        // 5. Ensure the server task has completed before exiting.
+        // ------------------------------------------------------------
+        serverTask.Wait();
     }
 }
