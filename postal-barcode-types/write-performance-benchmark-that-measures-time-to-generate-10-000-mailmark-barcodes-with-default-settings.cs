@@ -1,61 +1,59 @@
 // Title: Performance benchmark for generating Mailmark barcodes
-// Description: Demonstrates measuring the time required to generate 10,000 Mailmark barcodes using default settings.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation benchmarks category. It showcases the ComplexBarcodeGenerator and MailmarkCodetext classes for creating Mailmark symbology, a common requirement in postal automation and logistics. Developers use such benchmarks to evaluate throughput, optimize resource usage, and compare performance across different barcode symbologies or configuration options.
+// Description: Demonstrates measuring the time required to generate a series of Mailmark barcodes with default settings using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, showcasing the ComplexBarcodeGenerator and MailmarkCodetext classes. It illustrates typical use cases such as bulk barcode creation for mail processing, where developers need to assess performance and resource usage when generating large numbers of barcodes.
 // Prompt: Write a performance benchmark that measures time to generate 10,000 Mailmark barcodes with default settings.
-// Tags: mailmark, barcode, benchmark, performance, generation, aspose.barcode, complexbarcodegenerator, codetext
+// Tags: mailmark, barcode, performance, benchmark, aspose.barcode, complexbarcodegenerator, png
 
 using System;
 using System.Diagnostics;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.ComplexBarcode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Provides a performance benchmark for generating Mailmark barcodes using Aspose.BarCode.
+/// Demonstrates a simple performance benchmark for generating Mailmark barcodes using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Generates a specified number of Mailmark barcodes and measures the elapsed time.
+    /// Entry point that generates a set of Mailmark barcodes and measures elapsed time.
     /// </summary>
-    /// <param name="args">Command‑line arguments (not used).</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Number of barcodes to generate. Adjust to 10000 for a real benchmark.
-        const int barcodeCount = 5;
+        // Number of barcodes to generate (adjustable for larger benchmarks)
+        const int count = 10;
 
-        // Prepare a stopwatch to measure the total generation time.
-        var stopwatch = new Stopwatch();
-        stopwatch.Start();
+        // Start timing the barcode generation process
+        var stopwatch = Stopwatch.StartNew();
 
-        for (int i = 0; i < barcodeCount; i++)
+        // Loop to create each Mailmark barcode
+        for (int i = 0; i < count; i++)
         {
-            // Create a Mailmark codetext with default settings.
+            // Configure the Mailmark codetext with default example values
             var mailmark = new MailmarkCodetext
             {
-                // Required fields with valid values.
-                Format = 4,                         // 4‑state Mailmark
+                Format = 4,
                 VersionID = 1,
                 Class = "0",
                 SupplychainID = 384224,
-                ItemID = 16563760 + i,              // Vary ItemID to keep each record unique
-                DestinationPostCodePlusDPS = "EF61AH8T " // Trailing space is mandatory
+                ItemID = 16563762,
+                DestinationPostCodePlusDPS = "EF61AH8T "
             };
 
-            // Generate the barcode using ComplexBarcodeGenerator.
+            // Use ComplexBarcodeGenerator to create the barcode image
             using (var generator = new ComplexBarcodeGenerator(mailmark))
             {
-                // Save to a memory stream to avoid file I/O overhead.
+                // Save the generated barcode to a memory stream in PNG format
                 using (var ms = new MemoryStream())
                 {
                     generator.Save(ms, BarCodeImageFormat.Png);
-                    // The stream can be used further if needed; here we simply discard it.
                 }
             }
         }
 
+        // Stop the timer and output the elapsed time
         stopwatch.Stop();
-        Console.WriteLine($"Generated {barcodeCount} Mailmark barcodes in {stopwatch.Elapsed.TotalMilliseconds} ms.");
+        Console.WriteLine($"Generated {count} Mailmark barcodes in {stopwatch.Elapsed.TotalMilliseconds} ms.");
     }
 }

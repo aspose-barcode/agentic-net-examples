@@ -1,83 +1,69 @@
-// Title: Barcode generation with fallback automatic bar height
-// Description: Shows how to configure a barcode generator to use a specified bar height or automatically determine it when the height is zero or negative.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator, its Parameters, and AutoSizeMode for dynamic sizing. Developers often need to adjust bar height for different output media while ensuring automatic sizing works as a fallback, a common requirement in barcode rendering pipelines.
+// Title: Barcode Generation with Automatic Bar Height Fallback
+// Description: Demonstrates how to generate Code128 barcodes while automatically falling back to the library's default bar height when a zero value is supplied.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing the use of BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes. It illustrates typical scenarios where developers need to control barcode dimensions programmatically but also want to rely on automatic sizing for certain cases, such as when a bar height of zero is provided. Ideal for learning how to apply conditional parameter settings in barcode creation workflows.
 // Prompt: Implement fallback logic to use automatic bar height when BarHeight property is set to zero.
-// Tags: barcode, barheight, autosizemode, fallback, generation, png, aspose.barcode, code128
+// Tags: barcode, code128, barheight, fallback, automatic, generation, png, aspose.barcode, aspose.drawing
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates how to apply fallback logic for bar height when generating barcodes with Aspose.BarCode.
-/// If a positive height is provided, it is used; otherwise the generator switches to automatic sizing.
+/// Demonstrates generating Code128 barcodes with optional custom bar height,
+/// falling back to automatic height when the supplied value is zero.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Configures the barcode generator's bar height.
-    /// If the supplied height is greater than zero, it is applied.
-    /// Otherwise automatic sizing is enabled by setting AutoSizeMode to Interpolation.
+    /// Entry point of the example. Creates an output folder, iterates over sample heights,
+    /// and generates corresponding barcode images.
     /// </summary>
-    /// <param name="generator">The BarcodeGenerator instance to configure.</param>
-    /// <param name="barHeight">Desired bar height in points; zero or negative triggers automatic sizing.</param>
-    static void ConfigureBarHeight(BarcodeGenerator generator, float barHeight)
+    static void Main()
     {
-        if (barHeight > 0f)
+        // Create a unique temporary output folder
+        string outputFolder = Path.Combine(Path.GetTempPath(), "BarHeightDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputFolder);
+        Console.WriteLine("Output folder: " + outputFolder);
+
+        // Sample bar heights (0 triggers fallback to automatic height)
+        float[] heights = new float[] { 0f, 40f, 80f };
+        string codeText = "ASPOSE";
+
+        // Generate a barcode for each height value
+        foreach (float height in heights)
         {
-            // Apply explicit bar height (in points).
-            generator.Parameters.Barcode.BarHeight.Point = barHeight;
-            Console.WriteLine($"BarHeight set to {barHeight} pt.");
-        }
-        else
-        {
-            // Enable automatic sizing; do not set BarHeight (zero would throw).
-            generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
-            Console.WriteLine("BarHeight is zero or negative; using automatic bar height (AutoSizeMode.Interpolation).");
+            string fileName = $"Code128_Height{height}.png";
+            string filePath = Path.Combine(outputFolder, fileName);
+            GenerateBarcode(codeText, height, filePath);
+            Console.WriteLine($"Generated barcode with requested height {height} -> {filePath}");
         }
     }
 
     /// <summary>
-    /// Entry point of the example. Generates barcode images using a set of test bar heights,
-    /// demonstrating the fallback to automatic sizing when the height is not positive.
+    /// Generates a Code128 barcode image using the specified text and bar height.
+    /// If <paramref name="barHeight"/> is zero, the generator uses its automatic sizing.
     /// </summary>
-    static void Main()
+    /// <param name="codeText">The text to encode in the barcode.</param>
+    /// <param name="barHeight">Desired bar height in pixels; zero enables automatic height.</param>
+    /// <param name="outputPath">File path where the PNG image will be saved.</param>
+    static void GenerateBarcode(string codeText, float barHeight, string outputPath)
     {
-        // Output file path for the generated PNG barcode.
-        const string outputPath = "barcode.png";
-
-        // Example bar height values to test the fallback logic.
-        float[] testBarHeights = { 30f, 0f, -5f };
-
-        foreach (float height in testBarHeights)
+        // Initialize the barcode generator with Code128 symbology
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
         {
-            // Ensure any previous file is removed before saving a new one.
-            if (File.Exists(outputPath))
-                File.Delete(outputPath);
+            // Set common parameters (e.g., X-dimension)
+            generator.Parameters.Barcode.XDimension.Pixels = 2f;
 
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128))
+            // Apply custom bar height only when a positive value is provided
+            if (barHeight > 0f)
             {
-                generator.CodeText = "Sample123";
-
-                // Apply the fallback logic for the current test height.
-                ConfigureBarHeight(generator, height);
-
-                // Generate the barcode image.
-                using (Bitmap bitmap = generator.GenerateBarCodeImage())
-                {
-                    // Save as PNG using Aspose.Drawing.Imaging.ImageFormat.
-                    bitmap.Save(outputPath, ImageFormat.Png);
-                }
+                generator.Parameters.Barcode.BarHeight.Pixels = barHeight;
             }
 
-            Console.WriteLine($"Barcode saved to '{outputPath}' with BarHeight input {height}.");
-            Console.WriteLine();
+            // Save the generated barcode as a PNG image
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
-
-        // Indicate completion.
-        Console.WriteLine("All barcode images generated.");
     }
 }

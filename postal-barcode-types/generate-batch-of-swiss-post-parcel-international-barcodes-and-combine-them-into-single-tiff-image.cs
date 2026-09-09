@@ -1,103 +1,99 @@
-// Title: Generate Swiss Post Parcel barcodes and combine into a TIFF
-// Description: Demonstrates creating multiple Swiss Post Parcel international barcodes and merging them into a single TIFF image for batch processing.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use BarcodeGenerator with EncodeTypes.SwissPostParcel, manipulate bitmap images, and produce multi-page TIFF output. Developers working with postal barcode standards often need to generate batches of barcodes and combine them for printing or archival; this snippet illustrates the typical workflow using Aspose.BarCode and Aspose.Drawing APIs.
+// Title: Generate Swiss Post Parcel International barcodes batch and merge into TIFF
+// Description: Demonstrates creating multiple Swiss Post Parcel International barcodes and combining them into a single multi-page TIFF image.
+// Category-Description: This example belongs to the Aspose.BarCode generation and image processing category. It shows how to use BarcodeGenerator (EncodeTypes.SwissPostParcel) to produce barcode images, adjust dimensions, and then compose them using Aspose.Drawing's Bitmap and Graphics classes. Developers often need to batch‑create barcodes and export them as a combined image for shipping labels or archival purposes.
 // Prompt: Generate a batch of Swiss Post Parcel international barcodes and combine them into a single TIFF image.
-// Tags: swisspostparcel, barcode generation, tiff, aspose.barcode, aspose.drawing, batch processing
+// Tags: barcode, swisspostparcel, generation, batch, tiff, aspose.barcode, aspose.drawing
 
 using System;
-using System.Collections.Generic;
 using System.IO;
+using System.Collections.Generic;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a batch of Swiss Post Parcel barcodes and combining them into a single TIFF image.
+/// Demonstrates batch generation of Swiss Post Parcel International barcodes and merging them into a single TIFF file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates barcodes for sample texts and saves the combined TIFF.
+    /// Entry point. Generates barcodes, composes them vertically, and saves the result as a TIFF image.
     /// </summary>
     static void Main()
     {
-        // Sample Swiss Post Parcel international code texts
-        var codeTexts = new List<string>
+        // Create a temporary folder to store the generated TIFF file
+        string tempFolder = Path.Combine(Path.GetTempPath(), "SwissPostBatch_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
+
+        // Sample Swiss Post Parcel International Mail codes to encode
+        List<string> codes = new List<string>
         {
-            "12345678901234567890",
-            "09876543210987654321",
-            "11223344556677889900",
-            "00112233445566778899",
-            "99988877766655544433"
+            "RM999605013CH",
+            "RM999605014CH",
+            "RM999605015CH",
+            "RM999605016CH",
+            "RM999605017CH"
         };
 
-        // Path for the combined TIFF image
-        string outputPath = "SwissPostParcelBatch.tiff";
+        // Collection to hold individual barcode bitmap images
+        List<Bitmap> barcodeImages = new List<Bitmap>();
 
-        // Generate the combined TIFF from the list of barcode texts
-        GenerateCombinedTiff(codeTexts, outputPath);
-
-        // Inform the user where the file was saved
-        Console.WriteLine($"Combined TIFF saved to: {Path.GetFullPath(outputPath)}");
-    }
-
-    /// <summary>
-    /// Generates individual barcode images from the provided texts and merges them vertically into a single TIFF file.
-    /// </summary>
-    /// <param name="codeTexts">Collection of barcode data strings.</param>
-    /// <param name="outputFile">File path for the resulting TIFF image.</param>
-    static void GenerateCombinedTiff(List<string> codeTexts, string outputFile)
-    {
-        if (codeTexts == null || codeTexts.Count == 0)
-            throw new ArgumentException("codeTexts collection must contain at least one element.");
-
-        // Store generated barcode bitmaps
-        var barcodeImages = new List<Bitmap>();
-
-        // Generate each barcode image
-        foreach (var text in codeTexts)
+        // Generate a barcode image for each code
+        foreach (string code in codes)
         {
-            using (var generator = new BarcodeGenerator(EncodeTypes.SwissPostParcel, text))
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.SwissPostParcel, code))
             {
-                // Optional: adjust module size if needed
-                generator.Parameters.Barcode.XDimension.Point = 2f;
+                // Set barcode dimensions
+                generator.Parameters.Barcode.XDimension.Pixels = 2f;
+                generator.Parameters.Barcode.BarHeight.Pixels = 40f;
 
-                // Generate the bitmap for the current barcode
+                // Generate the bitmap and add it to the list
                 Bitmap bmp = generator.GenerateBarCodeImage();
                 barcodeImages.Add(bmp);
             }
         }
 
-        // Determine final image dimensions (stack vertically)
+        // Calculate the size of the combined image (vertical stack)
         int maxWidth = 0;
         int totalHeight = 0;
-        foreach (var img in barcodeImages)
+        int spacing = 10; // pixels between consecutive barcodes
+
+        foreach (Bitmap img in barcodeImages)
         {
             if (img.Width > maxWidth) maxWidth = img.Width;
-            totalHeight += img.Height;
+            totalHeight += img.Height + spacing;
         }
+        totalHeight -= spacing; // remove extra spacing after the last image
 
-        // Create the final bitmap that will hold all barcodes
-        using (var finalBitmap = new Bitmap(maxWidth, totalHeight))
+        // Create a new bitmap that will contain all barcodes stacked vertically
+        using (Bitmap combined = new Bitmap(maxWidth, totalHeight))
         {
-            using (var graphics = Graphics.FromImage(finalBitmap))
+            using (Graphics g = Graphics.FromImage(combined))
             {
                 // Fill background with white
-                graphics.Clear(Color.White);
-                int offsetY = 0;
+                g.Clear(Aspose.Drawing.Color.White);
+                int currentY = 0;
 
-                // Draw each barcode image onto the final bitmap
-                foreach (var img in barcodeImages)
+                // Draw each barcode image onto the combined bitmap
+                foreach (Bitmap img in barcodeImages)
                 {
-                    graphics.DrawImage(img, 0, offsetY, img.Width, img.Height);
-                    offsetY += img.Height;
-                    img.Dispose(); // Dispose individual barcode bitmap after drawing
+                    g.DrawImage(img, 0, currentY);
+                    currentY += img.Height + spacing;
                 }
             }
 
-            // Save the combined image as a TIFF file (single-page in this case)
-            finalBitmap.Save(outputFile, ImageFormat.Tiff);
+            // Save the combined image as a TIFF file
+            string outputPath = Path.Combine(tempFolder, "SwissPostBatch.tiff");
+            combined.Save(outputPath, Aspose.Drawing.Imaging.ImageFormat.Tiff);
+            Console.WriteLine($"Combined TIFF saved to: {outputPath}");
+        }
+
+        // Release resources held by individual barcode images
+        foreach (Bitmap img in barcodeImages)
+        {
+            img.Dispose();
         }
     }
 }

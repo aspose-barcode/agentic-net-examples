@@ -1,8 +1,8 @@
-// Title: Generate Australia Post barcode and email as attachment
-// Description: Demonstrates creating an Australia Post (postal) barcode image and sending it via SMTP as an email attachment.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating how to use BarcodeGenerator with EncodeTypes.AustraliaPost, configure encoding tables, and save the image. It also shows integrating the generated barcode into a System.Net.Mail message for typical scenarios such as automated mailing of shipping labels. Developers often need to generate postal barcodes and embed them in emails for logistics workflows.
+// Title: Generate Swiss Post Postal Barcode and Email as Attachment
+// Description: Demonstrates generating a Swiss Post domestic mail barcode and sending it as a PNG attachment via SMTP.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and email integration category. It shows how to use the BarcodeGenerator class with EncodeTypes.SwissPostParcel, configure barcode dimensions, render the image to a stream, and attach it to a System.Net.Mail.MailMessage for sending through SmtpClient. Developers often need to embed barcodes in communications such as order confirmations or shipping notifications, and this pattern illustrates the typical workflow.
 // Prompt: Generate a postal barcode and embed it as an attachment in an email message using SMTP client.
-// Tags: australia post barcode generation email smtp attachment image png
+// Tags: barcode generation, swisspost, postal, email attachment, smtp, aspnet, aspose.barcode, png
 
 using System;
 using System.IO;
@@ -13,84 +13,56 @@ using Aspose.BarCode.Generation;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Generates an Australia Post barcode, saves it as a PNG file, and sends it as an email attachment using SMTP.
+/// Example program that creates a Swiss Post barcode and sends it as an email attachment.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates the barcode, composes the email, sends it, and cleans up temporary files.
+    /// Entry point. Generates the barcode, attaches it to an email, and sends via SMTP.
     /// </summary>
     static void Main()
     {
-        // Define barcode content and output file name
-        const string barcodeText = "5980123456AB"; // Sample data: FCC=59, DPID=8 digits, 2 CTable chars
-        const string barcodeFile = "postal_barcode.png";
-
-        // -------------------------------------------------
-        // Generate the Australia Post barcode and save it
-        // -------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, barcodeText))
+        // Create a barcode generator for Swiss Post Domestic Mail with the required data string.
+        using (var generator = new BarcodeGenerator(EncodeTypes.SwissPostParcel, "98.34.123456.12345678"))
         {
-            // Use CTable encoding for customer information
-            generator.Parameters.Barcode.AustralianPost.EncodingTable = CustomerInformationInterpretingType.CTable;
+            // Set barcode visual parameters: X-dimension and bar height in pixels.
+            generator.Parameters.Barcode.XDimension.Pixels = 2f;
+            generator.Parameters.Barcode.BarHeight.Pixels = 40f;
 
-            // Save the barcode directly to a PNG file
-            generator.Save(barcodeFile, BarCodeImageFormat.Png);
-        }
-
-        // -------------------------------------------------
-        // Prepare email message with the barcode attached
-        // -------------------------------------------------
-        var fromAddress = new MailAddress("sender@example.com", "Sender");
-        var toAddress = new MailAddress("recipient@example.com", "Recipient");
-        const string subject = "Australia Post Barcode Attachment";
-        const string body = "Please find the generated Australia Post barcode attached.";
-
-        using (var message = new MailMessage())
-        {
-            message.From = fromAddress;
-            message.To.Add(toAddress);
-            message.Subject = subject;
-            message.Body = body;
-
-            // Attach the generated barcode image
-            using (var attachmentStream = new FileStream(barcodeFile, FileMode.Open, FileAccess.Read))
+            // Render the barcode to a memory stream in PNG format.
+            using (var barcodeStream = new MemoryStream())
             {
-                var attachment = new Attachment(attachmentStream, "postal_barcode.png", "image/png");
-                message.Attachments.Add(attachment);
+                generator.Save(barcodeStream, BarCodeImageFormat.Png);
+                barcodeStream.Position = 0; // Reset stream position for reading.
 
-                // -------------------------------------------------
-                // Configure and use the SMTP client to send the email
-                // -------------------------------------------------
-                using (var smtp = new SmtpClient("smtp.example.com", 587))
+                // Build the email message and attach the barcode image.
+                using (var message = new MailMessage())
                 {
-                    smtp.EnableSsl = true;
-                    smtp.Credentials = new NetworkCredential("username", "password");
+                    message.From = new MailAddress("sender@example.com");
+                    message.To.Add("recipient@example.com");
+                    message.Subject = "Postal Barcode Attachment";
+                    message.Body = "Please find the postal barcode attached.";
+                    message.Attachments.Add(new Attachment(barcodeStream, "barcode.png", "image/png"));
 
-                    try
+                    // Configure the SMTP client (localhost on port 25 by default).
+                    using (var client = new SmtpClient("localhost", 25))
                     {
-                        smtp.Send(message);
-                        Console.WriteLine("Email sent successfully.");
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"Failed to send email: {ex.Message}");
+                        // Uncomment and set credentials if the SMTP server requires authentication.
+                        // client.Credentials = new NetworkCredential("username", "password");
+                        // client.EnableSsl = true;
+
+                        try
+                        {
+                            client.Send(message);
+                            Console.WriteLine("Email sent successfully.");
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"Failed to send email: {ex.Message}");
+                        }
                     }
                 }
             }
-        }
-
-        // -------------------------------------------------
-        // Clean up the temporary barcode file
-        // -------------------------------------------------
-        try
-        {
-            if (File.Exists(barcodeFile))
-                File.Delete(barcodeFile);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Could not delete temporary file: {ex.Message}");
         }
     }
 }

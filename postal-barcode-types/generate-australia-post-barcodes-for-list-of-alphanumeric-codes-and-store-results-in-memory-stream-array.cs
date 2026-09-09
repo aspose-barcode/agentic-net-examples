@@ -1,82 +1,77 @@
-// Title: Generate Australia Post barcodes and store them in memory streams
-// Description: Demonstrates how to create Australia Post barcodes from a list of alphanumeric codes using Aspose.BarCode and keep the PNG images in memory.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating the use of BarcodeGenerator with EncodeTypes.AustraliaPost, setting the CustomerInformationInterpretingType, and saving images to MemoryStream. Developers often need to generate barcodes programmatically for mailing services, batch processing, or web APIs, and this pattern shows typical API classes and workflow for such scenarios.
+// Title: Generate Australia Post barcodes and store in memory streams
+// Description: Demonstrates creating Australia Post barcodes from a list of alphanumeric codes and saving each barcode as a PNG image in a MemoryStream.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on the Australia Post symbology. It shows how to configure barcode parameters such as X‑dimension, bar height, and the CTable encoding for customer information, then render the barcode to a PNG image using the BarcodeGenerator class. Developers working with postal barcode standards can use this pattern to produce barcodes programmatically for batch processing or web services.
 // Prompt: Generate Australia Post barcodes for a list of alphanumeric codes and store results in a memory stream array.
-// Tags: australia post, barcode generation, memory stream, png, aspose.barcode, csharp
+// Tags: australia post, barcode generation, png, aspose.barcode, memory stream, ctable
 
 using System;
 using System.Collections.Generic;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
-namespace AustraliaPostBarcodeDemo
+/// <summary>
+/// Example program that generates Australia Post barcodes for a set of codes
+/// and stores each barcode image in a <see cref="MemoryStream"/> as PNG.
+/// </summary>
+class Program
 {
     /// <summary>
-    /// Demonstrates generating Australia Post barcodes from a set of codes and storing the PNG images in memory streams.
+    /// Entry point. Iterates over sample Australia Post codes, creates a barcode for each,
+    /// saves it to a memory stream, and reports the number of successfully generated barcodes.
     /// </summary>
-    class Program
+    static void Main()
     {
-        /// <summary>
-        /// Entry point. Generates barcodes for predefined codes, logs results, and returns an array of MemoryStream objects.
-        /// </summary>
-        static void Main()
+        // Sample Australia Post codes (FCC + 8‑digit DPID + optional customer info)
+        List<string> codes = new List<string>
         {
-            // Sample list of valid Australia Post codes.
-            // Format: FCC (2 digits) + DPID (8 digits) + optional customer info.
-            var codes = new List<string>
+            "1101234567",            // FCC 11, no customer info
+            "5901234567AB",          // FCC 59, CTable (2 letters)
+            "6201234567ASPO",        // FCC 62, CTable (4 letters)
+            "5901234567ABCDE",       // FCC 59, CTable (5 letters, max)
+            "6201234567XYZ"          // FCC 62, CTable (3 letters)
+        };
+
+        // Collection to hold the generated barcode images
+        List<MemoryStream> streams = new List<MemoryStream>();
+
+        // Process each code individually
+        foreach (string code in codes)
+        {
+            try
             {
-                "1100000000",          // FCC=11, no customer info
-                "5980123456AB",        // FCC=59, 2 CTable chars
-                "6280123456ABCDE",     // FCC=62, 5 CTable chars (max)
-                "9280123456AB"         // FCC=92, 2 CTable chars
-            };
-
-            // Container for the generated barcode images.
-            var barcodeStreams = new List<MemoryStream>();
-
-            // Iterate over each code and generate the corresponding barcode.
-            foreach (var code in codes)
-            {
-                try
+                // Create a generator for the Australia Post symbology with the current code
+                using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, code))
                 {
-                    // Create a generator for Australia Post barcode with the given code text.
-                    using (var generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, code))
-                    {
-                        // Use CTable encoding for customer information (optional).
-                        generator.Parameters.Barcode.AustralianPost.EncodingTable = CustomerInformationInterpretingType.CTable;
+                    // Configure basic appearance
+                    generator.Parameters.Barcode.XDimension.Pixels = 4f;   // width of the smallest bar
+                    generator.Parameters.Barcode.BarHeight.Pixels = 50f; // height of the bars
 
-                        // Generate the barcode image into a memory stream (PNG format).
-                        var ms = new MemoryStream();
-                        generator.Save(ms, BarCodeImageFormat.Png);
-                        ms.Position = 0; // Reset position for later reading.
+                    // Enable alphanumeric customer information using the CTable encoding
+                    generator.Parameters.Barcode.AustralianPost.EncodingTable = CustomerInformationInterpretingType.CTable;
 
-                        // Store the stream for later use.
-                        barcodeStreams.Add(ms);
-                    }
-
-                    Console.WriteLine($"Successfully generated barcode for code: {code}");
-                }
-                catch (Exception ex)
-                {
-                    // Handle any validation or generation errors gracefully.
-                    Console.WriteLine($"Error generating barcode for code '{code}': {ex.Message}");
+                    // Render the barcode to a memory stream in PNG format
+                    MemoryStream ms = new MemoryStream();
+                    generator.Save(ms, BarCodeImageFormat.Png);
+                    ms.Position = 0; // reset stream position for downstream consumers
+                    streams.Add(ms);
                 }
             }
-
-            // Convert the list to an array as required.
-            MemoryStream[] barcodeArray = barcodeStreams.ToArray();
-
-            Console.WriteLine($"Total barcodes generated: {barcodeArray.Length}");
-
-            // Example usage of the generated streams (e.g., write sizes).
-            for (int i = 0; i < barcodeArray.Length; i++)
+            catch (Exception ex)
             {
-                Console.WriteLine($"Barcode {i + 1}: Stream length = {barcodeArray[i].Length} bytes");
+                // Log any generation errors without terminating the whole process
+                Console.WriteLine($"Failed to generate barcode for '{code}': {ex.Message}");
             }
+        }
 
-            // Note: The memory streams remain open; they will be disposed when the application exits.
+        // Summarize the result
+        Console.WriteLine($"Generated {streams.Count} Australia Post barcodes.");
+
+        // Clean up all memory streams before exiting
+        foreach (MemoryStream ms in streams)
+        {
+            ms.Dispose();
         }
     }
 }

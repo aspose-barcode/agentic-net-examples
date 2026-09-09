@@ -1,40 +1,41 @@
-// Title: Set XDimension for Planet Barcode and Verify Module Width
-// Description: Demonstrates how to set the XDimension (module width) to 0.75 mm for a Planet barcode using Aspose.BarCode and confirms the setting.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on barcode parameter configuration. It showcases the use of BarcodeGenerator, EncodeTypes, and the XDimension property to control module size, a common requirement when matching printing specifications or integrating with scanning hardware. Developers often need to adjust dimensions for compliance with standards or to achieve desired visual density.
+// Title: Set XDimension for Planet barcode and verify module width
+// Description: Demonstrates how to configure the XDimension (module width) of a Planet barcode to 0.75 mm using Aspose.BarCode and confirms the setting.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and barcode parameter settings. Typical use cases include customizing barcode dimensions for printing standards and ensuring compliance with size specifications. Developers often need to adjust XDimension to control module width for various symbologies.
 // Prompt: Set XDimension to 0.75 mm for a Planet barcode and verify resulting module width.
-// Tags: planet barcode, xdimension, module width, barcode generation, aspose.barcode, c#
+// Tags: planet barcode, xdimension, module width, barcode generation, aspose.barcode, png output
 
 using System;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that creates a Planet barcode, sets its XDimension to 0.75 mm,
-/// verifies the value, and saves the image to a file.
+/// Demonstrates setting XDimension for a Planet barcode and verifying the module width.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates the barcode, configures XDimension,
-    /// outputs the configured value, and saves the result.
+    /// Entry point. Generates a Planet barcode with XDimension set to 0.75 mm, saves it as PNG, and outputs the set value.
     /// </summary>
     static void Main()
     {
-        // Initialize a BarcodeGenerator for the Planet symbology.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Planet))
-        {
-            // Assign sample numeric data to be encoded in the barcode.
-            generator.CodeText = "1234567890";
+        // Determine temporary output file path
+        string outputPath = Path.Combine(Path.GetTempPath(), "PlanetBarcode.png");
 
-            // Configure the module width (XDimension) to 0.75 millimeters.
+        // Initialize barcode generator for Planet symbology with sample data
+        using (var generator = new BarcodeGenerator(EncodeTypes.Planet, "123456"))
+        {
+            // Configure XDimension (module width) to 0.75 millimeters
             generator.Parameters.Barcode.XDimension.Millimeters = 0.75f;
 
-            // Retrieve and display the XDimension value to verify the setting.
-            float xDimMm = generator.Parameters.Barcode.XDimension.Millimeters;
-            Console.WriteLine($"XDimension is set to {xDimMm} mm.");
+            // Save the generated barcode image as PNG
+            generator.Save(outputPath, BarCodeImageFormat.Png);
 
-            // Save the generated barcode image as a PNG file.
-            generator.Save("planet.png");
+            // Retrieve and display the XDimension value to verify the setting
+            float setValue = generator.Parameters.Barcode.XDimension.Millimeters;
+            Console.WriteLine($"XDimension set to {setValue} mm for Planet barcode.");
+            Console.WriteLine($"Barcode image saved to: {outputPath}");
         }
     }
 }

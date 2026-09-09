@@ -1,8 +1,8 @@
-// Title: Generate a Postnet postal barcode with custom margins and verify image size
-// Description: Demonstrates how to create a Postnet barcode, apply custom padding, set image dimensions, and confirm the saved PNG matches expected pixel size.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing barcode creation, layout customization, and image export. It uses BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes to configure symbology, margins, and output format—common tasks for developers integrating barcode printing or validation into applications.
+// Title: Generate a Planet postal barcode with custom margins and verify dimensions
+// Description: Demonstrates creating a Planet postal barcode, applying custom padding, saving images, and checking that the resulting image dimensions reflect the added margins.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, showcasing the use of BarcodeGenerator, EncodeTypes, and barcode parameter settings such as XDimension, BarHeight, and Padding. Typical use cases include generating postal barcodes for mailing applications where precise image sizing and margin control are required. Developers often need to adjust padding to meet printing specifications, and this sample illustrates how to verify the effect programmatically.
 // Prompt: Generate a postal barcode with custom margin settings and verify image dimensions match expectations.
-// Tags: postnet, margin, image, generation, aspose.barcode, aspose.drawing
+// Tags: barcode, postal, planet, padding, image-dimensions, aspose.barcode, generation
 
 using System;
 using System.IO;
@@ -12,61 +12,68 @@ using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates a Postnet postal barcode with custom margins,
-/// saves it as a PNG file, and verifies the resulting image dimensions.
+/// Demonstrates generating a Planet postal barcode with and without custom padding,
+/// saving the images, and verifying that the padded image dimensions match the expected size.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Performs barcode generation, saves the image,
-    /// and checks that the image size matches the expected dimensions.
+    /// Entry point of the example. Creates output folder, generates barcode images,
+    /// applies padding, saves files, and prints dimension verification results.
     /// </summary>
     static void Main()
     {
-        // Define the output file path for the generated barcode image
-        string outputPath = "postal_barcode.png";
+        // Create a unique temporary folder for output files
+        string outputDir = Path.Combine(Path.GetTempPath(), "PostalBarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputDir);
 
-        // Remove any existing file to ensure a clean run
-        if (File.Exists(outputPath))
+        // Initialize barcode generator for Planet symbology with sample data
+        using (var generator = new BarcodeGenerator(EncodeTypes.Planet, "123456"))
         {
-            File.Delete(outputPath);
+            // Set basic barcode appearance parameters
+            generator.Parameters.Barcode.XDimension.Pixels = 4f;
+            generator.Parameters.Barcode.BarHeight.Pixels = 50f;
+
+            // Generate barcode image without any custom padding
+            using (var bitmapNoPad = generator.GenerateBarCodeImage())
+            {
+                int widthNoPad = bitmapNoPad.Width;
+                int heightNoPad = bitmapNoPad.Height;
+                string noPadPath = Path.Combine(outputDir, "planet_nopad.png");
+                bitmapNoPad.Save(noPadPath, ImageFormat.Png);
+
+                // Apply custom padding (10 pixels on each side)
+                generator.Parameters.Barcode.Padding.Left.Pixels = 10f;
+                generator.Parameters.Barcode.Padding.Top.Pixels = 10f;
+                generator.Parameters.Barcode.Padding.Right.Pixels = 10f;
+                generator.Parameters.Barcode.Padding.Bottom.Pixels = 10f;
+
+                // Generate barcode image with the specified padding
+                using (var bitmapPad = generator.GenerateBarCodeImage())
+                {
+                    int widthPad = bitmapPad.Width;
+                    int heightPad = bitmapPad.Height;
+                    string padPath = Path.Combine(outputDir, "planet_pad.png");
+                    bitmapPad.Save(padPath, ImageFormat.Png);
+
+                    // Calculate expected dimensions: original size plus left+right and top+bottom padding
+                    int expectedWidth = widthNoPad + 20; // 10 left + 10 right
+                    int expectedHeight = heightNoPad + 20; // 10 top + 10 bottom
+
+                    bool widthMatches = widthPad == expectedWidth;
+                    bool heightMatches = heightPad == expectedHeight;
+
+                    // Output dimension information and verification results
+                    Console.WriteLine($"No padding size: {widthNoPad}x{heightNoPad}");
+                    Console.WriteLine($"With padding size: {widthPad}x{heightPad}");
+                    Console.WriteLine($"Expected size with padding: {expectedWidth}x{expectedHeight}");
+                    Console.WriteLine($"Width match: {widthMatches}");
+                    Console.WriteLine($"Height match: {heightMatches}");
+                }
+            }
         }
 
-        // Create a BarcodeGenerator for the Postnet symbology with sample data
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Postnet, "12345678"))
-        {
-            // Configure custom margins (padding) in points
-            generator.Parameters.Barcode.Padding.Left.Point = 10f;
-            generator.Parameters.Barcode.Padding.Top.Point = 15f;
-            generator.Parameters.Barcode.Padding.Right.Point = 10f;
-            generator.Parameters.Barcode.Padding.Bottom.Point = 15f;
-
-            // Set the desired image size (including margins) in points
-            generator.Parameters.ImageWidth.Point = 300f;
-            generator.Parameters.ImageHeight.Point = 150f;
-
-            // Save the barcode image to the specified path in PNG format
-            generator.Save(outputPath, BarCodeImageFormat.Png);
-        }
-
-        // Load the saved image to verify its dimensions
-        using (Bitmap bitmap = new Bitmap(outputPath))
-        {
-            // Calculate expected pixel dimensions.
-            // Aspose.Drawing uses pixels; points are converted using the default DPI (96).
-            const float dpi = 96f;
-            int expectedWidth = (int)Math.Round(300f * dpi / 72f);
-            int expectedHeight = (int)Math.Round(150f * dpi / 72f);
-
-            // Output actual vs. expected dimensions for diagnostic purposes
-            Console.WriteLine($"Actual Width: {bitmap.Width}px, Expected Width: {expectedWidth}px");
-            Console.WriteLine($"Actual Height: {bitmap.Height}px, Expected Height: {expectedHeight}px");
-
-            // Determine whether the dimensions match the expectations
-            bool sizeMatches = bitmap.Width == expectedWidth && bitmap.Height == expectedHeight;
-            Console.WriteLine(sizeMatches
-                ? "Image dimensions match the expectations."
-                : "Image dimensions do NOT match the expectations.");
-        }
+        // Inform the user where the generated images are stored
+        Console.WriteLine($"Barcode images saved to: {outputDir}");
     }
 }

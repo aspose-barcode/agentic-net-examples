@@ -1,63 +1,77 @@
-// Title: Generate Swiss Post Parcel Barcode with Auto‑Checksum and Save to Cloud
-// Description: Demonstrates how to create a Swiss Post Parcel (international) barcode, enable automatic checksum correction, and save the image as PNG.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category. It shows how to use the BarcodeGenerator class with EncodeTypes.SwissPostParcel, configure checksum settings, and export the result to an image file. Developers working with postal symbologies often need to generate barcodes that comply with specific standards and then store them in cloud storage for downstream processing.
+// Title: Generate Swiss Post Parcel International Barcode with Auto‑Checksum Correction
+// Description: This example creates a Swiss Post Parcel International barcode, lets Aspose.BarCode automatically correct an invalid checksum, saves the image, and demonstrates reading the corrected value.
+// Category-Description: Shows how to work with Aspose.BarCode's Swiss Post symbology, covering barcode generation, automatic checksum correction, image saving, and basic recognition. Developers dealing with postal barcode standards use EncodeTypes.SwissPostParcel, BarcodeGenerator, and BarCodeReader to produce and validate barcodes for shipping and logistics applications.
 // Prompt: Generate a Swiss Post Parcel international barcode with checksum auto‑correction and store in a cloud storage bucket.
-// Tags: barcode, swisspostparcel, checksum, image, png, cloud, aspose.barcode, generation
+// Tags: swisspost, parcel, barcode, generation, recognition, checksum, image, png, aspose.barcode
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing.Imaging;
+using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Example program that generates a Swiss Post Parcel barcode,
-/// enables automatic checksum correction, saves it as a PNG file,
-/// and provides a placeholder for uploading the file to cloud storage.
+/// Demonstrates generating a Swiss Post Parcel International barcode with automatic checksum correction,
+/// saving it to a file, and reading it back using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates the barcode and writes the image to disk.
+    /// Entry point of the example. Generates the barcode, saves it, reads it back, and (optionally) shows how to upload to cloud storage.
     /// </summary>
     static void Main()
     {
-        // Define the raw data for the Swiss Post Parcel (international) barcode.
-        // In a real scenario, this should follow the Swiss Post specification.
-        string codeText = "1234567890123";
+        // Prepare a temporary output directory for the generated barcode image.
+        string outputDir = Path.Combine(Path.GetTempPath(), "SwissPostBarcodes");
+        Directory.CreateDirectory(outputDir);
 
-        // Initialize the barcode generator for the Swiss Post Parcel symbology.
-        using (var generator = new BarcodeGenerator(EncodeTypes.SwissPostParcel, codeText))
+        // Define the full file path for the PNG image.
+        string barcodePath = Path.Combine(outputDir, "SwissPostInternational.png");
+
+        // ----------------------------------------------------------------------
+        // Generate a Swiss Post Parcel International barcode.
+        // The input data contains an incorrect checksum; Aspose.BarCode will
+        // automatically correct it during generation.
+        // ----------------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.SwissPostParcel, "RM999605017CH"))
         {
-            // Allow the generator to automatically correct the checksum
-            // instead of throwing an exception for incorrect code text.
-            generator.Parameters.Barcode.ThrowExceptionWhenCodeTextIncorrect = false;
+            // Set barcode visual parameters.
+            generator.Parameters.Barcode.XDimension.Pixels = 2f;
+            generator.Parameters.Barcode.BarHeight.Pixels = 40f;
 
-            // Enable checksum generation (required for most postal barcodes).
-            generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
-
-            // Build the full path for the output PNG file.
-            string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "SwissPostParcel.png");
-
-            // Save the generated barcode image to the specified path in PNG format.
-            generator.Save(outputPath, BarCodeImageFormat.Png);
-
-            Console.WriteLine($"Barcode image saved to: {outputPath}");
-
-            // -----------------------------------------------------------------
-            // Cloud storage upload placeholder.
-            // The actual upload would require a cloud SDK (e.g., Google Cloud,
-            // AWS S3, Azure Blob). Since such packages are not available in the
-            // snippet runner, the implementation is shown as a comment.
-            //
-            // Example (Google Cloud Storage):
-            // using Google.Cloud.Storage.V1;
-            // var storage = StorageClient.Create();
-            // string bucketName = "my-bucket";
-            // string objectName = "SwissPostParcel.png";
-            // using var fileStream = File.OpenRead(outputPath);
-            // storage.UploadObject(bucketName, objectName, "image/png", fileStream);
-            // -----------------------------------------------------------------
+            // Save the generated barcode as a PNG image.
+            generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
+
+        Console.WriteLine($"Barcode saved to: {barcodePath}");
+
+        // ----------------------------------------------------------------------
+        // Read back the generated barcode to verify that the checksum was corrected.
+        // ----------------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.SwissPostParcel, "RM999605017CH"))
+        {
+            using (var reader = new BarCodeReader(generator.GenerateBarCodeImage(), DecodeType.SwissPostParcel))
+            {
+                foreach (BarCodeResult result in reader.ReadBarCodes())
+                {
+                    Console.WriteLine($"Detected Type: {result.CodeTypeName}, Data: {result.CodeText}");
+                }
+            }
+        }
+
+        // ----------------------------------------------------------------------
+        // Cloud storage upload (example placeholder)
+        // The following commented code illustrates how one might upload the file
+        // to a cloud storage bucket (e.g., Azure Blob Storage, AWS S3, Google Cloud
+        // Storage). SDK references are omitted for brevity.
+        // ----------------------------------------------------------------------
+        // // Example for Azure Blob Storage:
+        // // var blobServiceClient = new Azure.Storage.Blobs.BlobServiceClient(connectionString);
+        // // var containerClient = blobServiceClient.GetBlobContainerClient(containerName);
+        // // var blobClient = containerClient.GetBlobClient("SwissPostInternational.png");
+        // // using (FileStream fs = File.OpenRead(barcodePath))
+        // // {
+        // //     blobClient.Upload(fs, overwrite: true);
+        // // }
     }
 }

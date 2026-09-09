@@ -1,69 +1,109 @@
-// Title: Generate Swiss Post Parcel Service Barcodes and Save as SVG
-// Description: Demonstrates how to create Swiss Post Parcel barcodes for a list of service codes and export each barcode as an SVG file.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing the use of BarcodeGenerator with EncodeTypes.SwissPostParcel. It illustrates typical scenarios such as batch barcode creation for logistics, customizing barcode dimensions, and exporting to vector formats like SVG. Developers working with postal services, shipping labels, or bulk barcode generation will find this pattern useful.
+// Title: Generate Swiss Post Parcel additional service barcodes as SVG
+// Description: Demonstrates creating Swiss Post Parcel barcodes for various additional services, adding a caption, and saving each as an SVG file.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the BarcodeGenerator class with EncodeTypes.SwissPostParcel, configuring visual parameters, and using BarCodeReader for verification. Developers working with postal barcode standards often need to generate service-specific codes and validate them, making this pattern useful for batch processing and automated testing.
 // Prompt: Generate Swiss Post Parcel additional service code barcodes for multiple service descriptions and save as SVG files.
-// Tags: barcode, swisspostparcel, svg, generation, aspose.barcode, encode types
+// Tags: swisspost, parcel, additional service, barcode generation, svg, aspose.barcode, barcodegenerator, barcodereader
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates Swiss Post Parcel barcodes for multiple service codes and saves them as SVG files.
+/// Demonstrates generating Swiss Post Parcel additional service barcodes and saving them as SVG files.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates barcodes for predefined service codes and writes them to the file system.
+    /// Entry point. Generates barcodes for a predefined list of service codes, saves each as SVG,
+    /// optionally falls back to PNG, and verifies the generated barcode using <see cref="BarCodeReader"/>.
     /// </summary>
     static void Main()
     {
-        // Define a set of sample service descriptions for Swiss Post Parcel additional services
-        string[] services = new[]
+        // Define service codes together with their abbreviations and descriptions.
+        var services = new List<(string Code, string Abbreviation, string Description)>
         {
-            "A1",               // Example service code
-            "B2",               // Another service code
-            "C3D4",             // Composite service code
-            "E5F6G7",           // Longer service code
-            "H8I9J0K1L2"        // Even longer service code
+            ("0203", "GAS", "Business reply label"),
+            ("0322", "RMP", "Personal delivery"),
+            ("0327", "AR",  "Return receipt"),
+            ("0328", "eAR", "Electronic return receipt"),
+            ("0340", "COD", "Cash on delivery (obsolete)"),
+            ("0341", "BLN", "Electronic cash on delivery"),
+            ("0470", "IDR", "ID Check"),
+            ("0610", "CEC", "Items for the blind"),
+            ("1007", "MIL", "Military mail"),
+            ("2512", "SAT", "Second attempted delivery on Saturday")
         };
 
-        // Determine the output folder path and ensure it exists
-        string outputFolder = Path.Combine(Directory.GetCurrentDirectory(), "SwissPostBarcodes");
-        if (!Directory.Exists(outputFolder))
-        {
-            Directory.CreateDirectory(outputFolder);
-        }
+        // Prepare output directory.
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "SwissPostAdditionalService");
+        Directory.CreateDirectory(outputDir);
 
-        // Iterate over each service code and generate a corresponding barcode
-        foreach (string service in services)
+        // Process each service definition.
+        foreach (var service in services)
         {
-            // Sanitize the file name by removing invalid characters and replacing spaces with underscores
-            string safeFileName = string.Concat(service.Split(Path.GetInvalidFileNameChars()))
-                                      .Replace(' ', '_');
-            string outputPath = Path.Combine(outputFolder, $"{safeFileName}.svg");
+            // Build file name and full path for the SVG output.
+            string fileName = $"{service.Abbreviation}_AdditionalService.svg";
+            string filePath = Path.Combine(outputDir, fileName);
 
-            // Initialize the barcode generator for Swiss Post Parcel using the service description as the code text
-            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.SwissPostParcel, service))
+            // Create a barcode generator for the Swiss Post Parcel symbology using the service code.
+            using (var generator = new BarcodeGenerator(EncodeTypes.SwissPostParcel, service.Code))
             {
-                // Optionally adjust the module size (x-dimension) for better visual quality
-                generator.Parameters.Barcode.XDimension.Point = 2f;
+                // Set basic size parameters.
+                generator.Parameters.Barcode.XDimension.Pixels = 2f;
+                generator.Parameters.Barcode.BarHeight.Pixels = 40f;
 
-                // Attempt to save the barcode as an SVG file; handle potential licensing restrictions
+                // Hide the encoded text; we will display the abbreviation as a caption.
+                generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.None;
+
+                // Configure the caption that appears above the barcode.
+                generator.Parameters.CaptionAbove.Visible = true;
+                generator.Parameters.CaptionAbove.Alignment = TextAlignment.Left;
+                generator.Parameters.CaptionAbove.Text = service.Abbreviation;
+                generator.Parameters.CaptionAbove.Font.Size.Pixels = 24f;
+                generator.Parameters.CaptionAbove.Font.Style = Aspose.Drawing.FontStyle.Bold;
+
                 try
                 {
-                    generator.Save(outputPath, BarCodeImageFormat.Svg);
-                    Console.WriteLine($"Saved barcode for service '{service}' to '{outputPath}'.");
+                    // Attempt to save the barcode as an SVG file.
+                    generator.Save(filePath, BarCodeImageFormat.Svg);
+                    Console.WriteLine($"Saved SVG: {filePath}");
                 }
                 catch (Exception ex)
                 {
-                    // Notify the user if SVG export fails (e.g., due to evaluation license limitations)
-                    Console.WriteLine($"Failed to save SVG for service '{service}': {ex.Message}");
+                    // If SVG saving fails, fall back to PNG.
+                    Console.WriteLine($"Failed to save SVG for {service.Abbreviation}: {ex.Message}");
+                    string pngPath = Path.ChangeExtension(filePath, ".png");
+                    try
+                    {
+                        generator.Save(pngPath, BarCodeImageFormat.Png);
+                        Console.WriteLine($"Saved fallback PNG: {pngPath}");
+                    }
+                    catch (Exception fallbackEx)
+                    {
+                        Console.WriteLine($"Fallback PNG also failed: {fallbackEx.Message}");
+                    }
                 }
             }
-        }
 
-        Console.WriteLine("Barcode generation completed.");
+            // Optional verification: read back the generated barcode.
+            try
+            {
+                using (var reader = new BarCodeReader(filePath, DecodeType.SwissPostParcel))
+                {
+                    foreach (BarCodeResult result in reader.ReadBarCodes())
+                    {
+                        Console.WriteLine($"Read {service.Abbreviation}: Type={result.CodeTypeName}, Text={result.CodeText}");
+                    }
+                }
+            }
+            catch (Exception readEx)
+            {
+                Console.WriteLine($"Reading barcode for {service.Abbreviation} failed: {readEx.Message}");
+            }
+        }
     }
 }

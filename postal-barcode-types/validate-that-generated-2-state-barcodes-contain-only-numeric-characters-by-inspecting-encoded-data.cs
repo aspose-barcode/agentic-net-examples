@@ -1,82 +1,109 @@
-// Title: Validate numeric-only content of generated 2‑state barcodes
-// Description: Demonstrates generating Code128 barcodes, recognizing them, and checking that the decoded data contains only digits.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, illustrating how to use BarcodeGenerator, BarCodeReader, and related classes to create, read, and validate barcodes. Typical use cases include automated verification of barcode data integrity in inventory, shipping, and document processing systems. Developers often need to ensure that encoded information meets format constraints such as numeric‑only content.
+// Title: Validate numeric content of generated 2‑state barcodes
+// Description: Demonstrates how to generate Planet and Postnet 2‑state barcodes, save them as PNG images, and verify that the decoded data consists solely of numeric characters.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator for creating 2‑state postal symbologies and BarCodeReader for decoding them. Developers often need to programmatically validate barcode data integrity, especially for numeric‑only postal codes, using the API classes in Aspose.BarCode.Generation and Aspose.BarCode.BarCodeRecognition.
 // Prompt: Validate that generated 2‑state barcodes contain only numeric characters by inspecting the encoded data.
-// Tags: code128, barcode generation, barcode recognition, numeric validation, png, barcodegenerator, barcodereader
+// Tags: barcode, two-state, validation, png, generation, recognition, aspose.barcode
 
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
+using System.Collections.Generic;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating Code128 barcodes, recognizing them, and validating that the decoded text consists only of numeric characters.
+/// Example program that generates 2‑state barcodes, saves them as PNG files,
+/// and validates that the decoded text contains only numeric characters.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates barcodes from sample texts, saves them as PNG, reads them back, and reports whether each decoded value is numeric‑only.
+    /// Entry point. Generates barcodes, decodes them, checks for numeric‑only content,
+    /// and cleans up temporary files.
     /// </summary>
     static void Main()
     {
-        // Sample code texts: some numeric, some containing letters or other characters
-        var codeTexts = new List<string>
+        // Create a unique temporary folder for generated barcode images
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeValidate_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
+
+        // Define test cases for 2‑state postal barcodes (Planet and Postnet)
+        var testCases = new List<(string Name, BaseEncodeType Encode, string CodeText)>
         {
-            "1234567890",          // numeric only
-            "ABC12345",            // contains letters
-            "987654321",           // numeric only
-            "12-34-56",            // contains non‑digit characters
-            "20231130"             // numeric only (date)
+            ("Planet", EncodeTypes.Planet, "1234567890"),
+            ("Postnet", EncodeTypes.Postnet, "987654321")
         };
 
-        // Create a temporary directory to store generated barcode images
-        string tempDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
-        if (!Directory.Exists(tempDir))
-        {
-            Directory.CreateDirectory(tempDir);
-        }
+        var generatedFiles = new List<string>();
 
-        int index = 0;
-        foreach (string text in codeTexts)
+        // Generate barcode images and store their file paths
+        foreach (var (name, encode, codeText) in testCases)
         {
-            // Build the file path for the current barcode image
-            string filePath = Path.Combine(tempDir, $"barcode_{index}.png");
-
-            // Generate barcode image (using Code128 as a 2‑state barcode example)
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, text))
+            string filePath = Path.Combine(tempFolder, $"{name}.png");
+            using (var generator = new BarcodeGenerator(encode, codeText))
             {
-                // Save the barcode to a PNG file
+                // Optional: set module size for better visibility
+                generator.Parameters.Barcode.XDimension.Pixels = 4;
                 generator.Save(filePath, BarCodeImageFormat.Png);
             }
-
-            // Recognize the barcode and retrieve the encoded text
-            using (var reader = new BarCodeReader(filePath, DecodeType.Code128))
-            {
-                foreach (BarCodeResult result in reader.ReadBarCodes())
-                {
-                    string decodedText = result.CodeText ?? string.Empty;
-                    bool isNumeric = IsAllDigits(decodedText);
-                    Console.WriteLine($"Barcode {index}: Original=\"{text}\", Decoded=\"{decodedText}\", NumericOnly={isNumeric}");
-                }
-            }
-
-            index++;
+            generatedFiles.Add(filePath);
+            Console.WriteLine($"Generated {name} barcode at: {filePath}");
         }
 
-        // Cleanup: optionally delete temporary files
-        // foreach (var file in Directory.GetFiles(tempDir, "*.png"))
-        // {
-        //     File.Delete(file);
-        // }
-        // Directory.Delete(tempDir);
-    }
+        // Prepare a decoder that supports all barcode types
+        BaseDecodeType decodeAll = DecodeType.AllSupportedTypes;
 
-    // Returns true if the string consists solely of decimal digits
-    static bool IsAllDigits(string s)
-    {
-        return s.All(char.IsDigit);
+        // Validate each generated barcode by decoding its image
+        foreach (string file in generatedFiles)
+        {
+            if (!File.Exists(file))
+            {
+                Console.WriteLine($"File not found: {file}");
+                continue;
+            }
+
+            using (var reader = new BarCodeReader(file, decodeAll))
+            {
+                BarCodeResult[] results = reader.ReadBarCodes();
+                if (results.Length == 0)
+                {
+                    Console.WriteLine($"No barcode detected in file: {Path.GetFileName(file)}");
+                    continue;
+                }
+
+                // Assume the first result corresponds to the generated barcode
+                string decodedText = results[0].CodeText ?? string.Empty;
+
+                // Check that every character in the decoded text is a digit
+                bool isNumeric = true;
+                foreach (char c in decodedText)
+                {
+                    if (!char.IsDigit(c))
+                    {
+                        isNumeric = false;
+                        break;
+                    }
+                }
+
+                if (isNumeric)
+                {
+                    Console.WriteLine($"Validation passed for {Path.GetFileName(file)}: decoded text \"{decodedText}\" is numeric.");
+                }
+                else
+                {
+                    Console.WriteLine($"Validation failed for {Path.GetFileName(file)}: decoded text \"{decodedText}\" contains non‑numeric characters.");
+                }
+            }
+        }
+
+        // Cleanup: delete temporary folder and its contents
+        try
+        {
+            Directory.Delete(tempFolder, true);
+        }
+        catch
+        {
+            // If cleanup fails, ignore – the folder will be removed by the OS eventually
+        }
     }
 }

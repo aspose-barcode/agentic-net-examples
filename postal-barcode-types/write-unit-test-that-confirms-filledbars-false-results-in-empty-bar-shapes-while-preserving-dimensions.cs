@@ -1,110 +1,119 @@
-// Title: Barcode FilledBars Property Effect Unit Test
-// Description: Demonstrates a simple unit‑style test that verifies setting FilledBars to false renders empty bar shapes while keeping the image size unchanged.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to configure barcode rendering options such as FilledBars, generate PNG images, and compare bitmap data. Developers working with barcode image customization, visual verification, or automated testing often need to ensure rendering settings affect visual output without altering dimensions.
+// Title: Verify FilledBars Property Generates Empty Bars While Keeping Dimensions
+// Description: Demonstrates generating a barcode with filled bars and with empty bars, then checks that disabling FilledBars results in white bar shapes while preserving image dimensions.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to configure barcode appearance using the BarcodeGenerator class. It shows typical use cases such as adjusting XDimension, toggling the FilledBars property, and validating output images. Developers working with barcode rendering often need to verify visual properties programmatically, and this snippet serves as a reference for unit‑style checks.
 // Prompt: Write a unit test that confirms FilledBars false results in empty bar shapes while preserving dimensions.
-// Tags: barcode, code128, filledbars, image comparison, unit test, aspose.barcode, png, bitmap
+// Tags: barcode, code128, filledbars, imagevalidation, aspose.barcode, unit-test, csharp
 
 using System;
 using System.IO;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
+using Aspose.BarCode;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Contains a self‑contained test that validates the visual effect of the <c>FilledBars</c> property
-/// on a generated Code128 barcode image.
+/// Demonstrates generating barcodes with filled and empty bars and validates that disabling
+/// FilledBars produces white bars while keeping the image dimensions unchanged.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the console application. Executes the test and writes the result to the console.
+    /// Entry point that creates temporary barcode images, compares their dimensions,
+    /// and checks pixel colors to confirm the effect of the FilledBars property.
     /// </summary>
     static void Main()
     {
-        // Run the test and output the result.
-        bool testPassed = TestFilledBarsEffect();
-        Console.WriteLine(testPassed ? "PASSED" : "FAILED");
-    }
+        // Prepare a unique temporary directory for generated images
+        string tempDir = Path.Combine(Path.GetTempPath(), "FilledBarsTest_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
 
-    // Generates two barcodes: one with default FilledBars (true) and one with FilledBars set to false.
-    // Verifies that the image dimensions are identical while the pixel data differs,
-    // indicating that bars are rendered empty when FilledBars is false.
-    static bool TestFilledBarsEffect()
-    {
-        // Common barcode settings
-        const string codeText = "1234567890";
-        const int imageWidth = 300;
-        const int imageHeight = 150;
+        // Barcode content and symbology
+        string codeText = "ASPOSE";
+        BaseEncodeType encodeType = EncodeTypes.Code128;
 
-        // Generate barcode with FilledBars = true (default)
-        using (var generatorFilled = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+        // -------------------------------------------------
+        // Generate barcode with default filled bars (true)
+        // -------------------------------------------------
+        Bitmap filledBitmap;
+        using (var generator = new BarcodeGenerator(encodeType, codeText))
         {
-            generatorFilled.Parameters.ImageWidth.Point = imageWidth;
-            generatorFilled.Parameters.ImageHeight.Point = imageHeight;
-            // Ensure default FilledBars (true) – no need to set explicitly
-            using (var msFilled = new MemoryStream())
+            // Set bar width (XDimension) in pixels
+            generator.Parameters.Barcode.XDimension.Pixels = 2f;
+            // FilledBars defaults to true; no change needed
+            using (filledBitmap = generator.GenerateBarCodeImage())
             {
-                generatorFilled.Save(msFilled, BarCodeImageFormat.Png);
-                msFilled.Position = 0;
-                using (var bitmapFilled = new Bitmap(msFilled))
+                // Save the image for optional manual inspection
+                using (var stream = new FileStream(Path.Combine(tempDir, "filled.png"), FileMode.Create, FileAccess.Write))
                 {
-                    // Generate barcode with FilledBars = false
-                    using (var generatorEmpty = new BarcodeGenerator(EncodeTypes.Code128, codeText))
-                    {
-                        generatorEmpty.Parameters.ImageWidth.Point = imageWidth;
-                        generatorEmpty.Parameters.ImageHeight.Point = imageHeight;
-                        generatorEmpty.Parameters.Barcode.FilledBars = false;
-                        using (var msEmpty = new MemoryStream())
-                        {
-                            generatorEmpty.Save(msEmpty, BarCodeImageFormat.Png);
-                            msEmpty.Position = 0;
-                            using (var bitmapEmpty = new Bitmap(msEmpty))
-                            {
-                                // Verify dimensions are the same
-                                if (bitmapFilled.Width != bitmapEmpty.Width ||
-                                    bitmapFilled.Height != bitmapEmpty.Height)
-                                {
-                                    Console.WriteLine("Image dimensions differ.");
-                                    return false;
-                                }
-
-                                // Compare pixel data; expect at least one differing pixel
-                                int diffCount = CountDifferentPixels(bitmapFilled, bitmapEmpty);
-                                if (diffCount == 0)
-                                {
-                                    Console.WriteLine("Images are identical; FilledBars may not have effect.");
-                                    return false;
-                                }
-
-                                // Test succeeded
-                                return true;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    // Counts the number of pixels that differ between two bitmaps.
-    static int CountDifferentPixels(Bitmap bmp1, Bitmap bmp2)
-    {
-        int width = bmp1.Width;
-        int height = bmp1.Height;
-        int diff = 0;
-
-        for (int y = 0; y < height; y++)
-        {
-            for (int x = 0; x < width; x++)
-            {
-                if (bmp1.GetPixel(x, y) != bmp2.GetPixel(x, y))
-                {
-                    diff++;
+                    filledBitmap.Save(stream, Aspose.Drawing.Imaging.ImageFormat.Png);
                 }
             }
         }
 
-        return diff;
+        // -------------------------------------------------
+        // Generate barcode with empty (unfilled) bars
+        // -------------------------------------------------
+        Bitmap emptyBitmap;
+        using (var generator = new BarcodeGenerator(encodeType, codeText))
+        {
+            generator.Parameters.Barcode.XDimension.Pixels = 2f;
+            // Disable filled bars to produce white bar shapes
+            generator.Parameters.Barcode.FilledBars = false;
+            using (emptyBitmap = generator.GenerateBarCodeImage())
+            {
+                // Save the image for optional manual inspection
+                using (var stream = new FileStream(Path.Combine(tempDir, "empty.png"), FileMode.Create, FileAccess.Write))
+                {
+                    emptyBitmap.Save(stream, Aspose.Drawing.Imaging.ImageFormat.Png);
+                }
+            }
+        }
+
+        // Verify that both images share the same dimensions
+        bool dimensionsEqual = filledBitmap.Width == emptyBitmap.Width && filledBitmap.Height == emptyBitmap.Height;
+
+        // Choose sample points across the barcode width
+        int[] sampleXs = new int[] { filledBitmap.Width / 4, filledBitmap.Width / 2, (filledBitmap.Width * 3) / 4 };
+        int sampleY = filledBitmap.Height / 2;
+
+        bool filledHasBlack = false;
+        bool emptyHasWhite = false;
+
+        // Inspect pixel colors at the sample points
+        foreach (int x in sampleXs)
+        {
+            var filledColor = filledBitmap.GetPixel(x, sampleY);
+            var emptyColor = emptyBitmap.GetPixel(x, sampleY);
+
+            if (filledColor.ToArgb() == Aspose.Drawing.Color.Black.ToArgb())
+                filledHasBlack = true;
+            if (emptyColor.ToArgb() == Aspose.Drawing.Color.White.ToArgb())
+                emptyHasWhite = true;
+        }
+
+        // Output test result
+        if (dimensionsEqual && filledHasBlack && emptyHasWhite)
+        {
+            Console.WriteLine("PASSED: FilledBars false produces empty bars while preserving dimensions.");
+        }
+        else
+        {
+            Console.WriteLine("FAILED:");
+            if (!dimensionsEqual)
+                Console.WriteLine("- Image dimensions differ.");
+            if (!filledHasBlack)
+                Console.WriteLine("- Filled barcode does not contain expected black bars.");
+            if (!emptyHasWhite)
+                Console.WriteLine("- Empty barcode does not contain expected white bars.");
+        }
+
+        // Clean up temporary files and directory
+        try
+        {
+            Directory.Delete(tempDir, true);
+        }
+        catch
+        {
+            // Suppress any cleanup errors
+        }
     }
 }

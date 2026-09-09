@@ -1,71 +1,60 @@
-// Title: Generate Dutch KIX 2‑state Postal Barcode with Validation and Checksum
-// Description: Demonstrates creating a Dutch KIX (2‑state postal) barcode from numeric input, validating the data and enabling automatic checksum calculation.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating how to select a specific symbology (EncodeTypes.DutchKIX), configure checksum options, and output the result as an image file. Developers working with postal barcodes often need to validate numeric data, enable checksum generation, and produce printable graphics; this snippet shows the typical API usage for those scenarios.
+// Title: Generate Dutch KIX 2‑state Postal Barcode
+// Description: Demonstrates how to create a Dutch KIX 2‑state postal barcode from a numeric string, including input validation and automatic checksum handling.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, showcasing the use of BarcodeGenerator with EncodeTypes.DutchKIX. It illustrates typical tasks such as validating numeric input, configuring visual parameters, and saving the result as an image. Developers working with postal barcodes, especially Dutch KIX, can use this pattern for automated label creation.
 // Prompt: Generate a Dutch KIX 2‑state postal barcode with numeric input validation and automatic checksum.
-// Tags: barcode, generation, dutch kix, checksum, validation, image, aspose.barcode
+// Tags: dutch kix, barcode generation, numeric validation, png, aspose.barcode, generation
 
 using System;
 using System.IO;
-using System.Linq;
+using System.Text.RegularExpressions;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generating a Dutch KIX 2‑state postal barcode with input validation and automatic checksum.
+/// Demonstrates generation of a Dutch KIX 2‑state postal barcode with numeric validation.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates the barcode and writes status messages to the console.
+    /// Entry point that creates and saves a Dutch KIX barcode image.
     /// </summary>
     static void Main()
     {
-        // Sample numeric data for Dutch KIX barcode
-        string input = "1234567890123";
-        string outputPath = "dutchkix.png";
+        // Sample numeric input for the barcode
+        string codeText = "123456";
 
-        try
+        // Validate that the input contains only digits
+        ValidateNumeric(codeText);
+
+        // Prepare the output directory and file path
+        string outputDir = Path.Combine(Path.GetTempPath(), "DutchKIXDemo");
+        Directory.CreateDirectory(outputDir);
+        string outputPath = Path.Combine(outputDir, "DutchKIX.png");
+
+        // Generate Dutch KIX barcode using Aspose.BarCode
+        using (var generator = new BarcodeGenerator(EncodeTypes.DutchKIX, codeText))
         {
-            // Generate the barcode and save it to the specified file
-            GenerateDutchKix(input, outputPath);
-            Console.WriteLine($"Dutch KIX barcode saved to '{outputPath}'.");
+            // Optional visual settings: set module size and bar height
+            generator.Parameters.Barcode.XDimension.Pixels = 4;
+            generator.Parameters.Barcode.BarHeight.Pixels = 50;
+
+            // Save the barcode image as PNG
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
-        catch (Exception ex)
-        {
-            // Output any errors that occur during generation
-            Console.WriteLine($"Error: {ex.Message}");
-        }
+
+        // Inform the user where the barcode image was saved
+        Console.WriteLine($"Dutch KIX barcode saved to: {outputPath}");
     }
 
     /// <summary>
-    /// Generates a Dutch KIX barcode from numeric data, validates the input, enables checksum, and saves the image.
+    /// Ensures the provided text consists solely of numeric characters.
     /// </summary>
-    /// <param name="numericData">The numeric string to encode.</param>
-    /// <param name="filePath">The full path where the barcode image will be saved.</param>
-    static void GenerateDutchKix(string numericData, string filePath)
+    /// <param name="text">The string to validate.</param>
+    static void ValidateNumeric(string text)
     {
-        // Validate input: must be non‑empty and contain only digits
-        if (string.IsNullOrEmpty(numericData))
-            throw new ArgumentException("Input cannot be null or empty.", nameof(numericData));
-
-        if (!numericData.All(char.IsDigit))
-            throw new ArgumentException("Input must contain only numeric characters.", nameof(numericData));
-
-        // Ensure the output directory exists
-        string directory = Path.GetDirectoryName(filePath);
-        if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
-            Directory.CreateDirectory(directory);
-
-        // Create the barcode generator for Dutch KIX (2‑state postal) symbology
-        using (var generator = new BarcodeGenerator(EncodeTypes.DutchKIX, numericData))
+        if (string.IsNullOrEmpty(text) || !Regex.IsMatch(text, @"^\d+$"))
         {
-            // Enable automatic checksum generation
-            generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
-            // Optionally display the checksum in the human‑readable text
-            generator.Parameters.Barcode.ChecksumAlwaysShow = true;
-
-            // Save the barcode image (format inferred from file extension)
-            generator.Save(filePath);
+            throw new ArgumentException("Input must be a non-empty numeric string.");
         }
     }
 }

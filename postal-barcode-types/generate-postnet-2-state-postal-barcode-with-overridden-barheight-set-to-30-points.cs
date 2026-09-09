@@ -1,37 +1,38 @@
 // Title: Generate Postnet 2‑state barcode with custom bar height
-// Description: Demonstrates creating a Postnet 2‑state postal barcode and overriding the bar height to 30 points.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use the BarcodeGenerator class with EncodeTypes.Postnet to produce postal barcodes. Typical use cases include printing ZIP codes on mail pieces, customizing barcode dimensions, and exporting to image formats. Developers often need to control size properties such as BarHeight to meet mailing standards.
+// Description: Demonstrates creating a Postnet 2‑state postal barcode and saving it as a PNG image, with the bar height overridden to 30 points.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating how to configure barcode parameters such as bar height for postal symbologies. It uses the BarcodeGenerator class together with EncodeTypes and BarCodeImageFormat to produce image files. Developers often need to customize visual properties of generated barcodes for printing or embedding in documents.
 // Prompt: Generate a Postnet 2‑state postal barcode with overridden BarHeight set to 30 points.
-// Tags: postnet, barcode, generation, barheight, png, aspose.barcode
+// Tags: postnet, barcode, generation, barheight, png, aspnet, aspose.barcode
 
 using System;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Provides an entry point that creates a Postnet barcode with a custom bar height and saves it as a PNG file.
+/// Demonstrates generating a Postnet 2‑state barcode with a custom bar height and saving it as a PNG file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Generates a Postnet 2‑state barcode for a sample ZIP code, sets the bar height to 30 points, and writes the image to disk.
+    /// Entry point of the example. Creates the barcode, sets bar height, saves the image, and writes the output path.
     /// </summary>
     static void Main()
     {
-        // Initialize a BarcodeGenerator for the Postnet symbology with a 5‑digit ZIP code.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Postnet, "12345"))
-        {
-            // Disable automatic sizing so the explicit BarHeight value is applied.
-            generator.Parameters.AutoSizeMode = AutoSizeMode.None;
+        // Define the full path for the output PNG file
+        string outputPath = Path.Combine(Environment.CurrentDirectory, "PostnetBarcode.png");
 
-            // Set the bar height to 30 points (1 point = 1/72 inch).
+        // Initialize the barcode generator with Postnet symbology and the data to encode
+        using (var generator = new BarcodeGenerator(EncodeTypes.Postnet, "123456"))
+        {
+            // Override the default bar height to 30 points
             generator.Parameters.Barcode.BarHeight.Point = 30f;
 
-            // Save the generated barcode as a PNG image file.
-            generator.Save("postnet.png");
-
-            // Inform the user that the file has been created.
-            Console.WriteLine("Postnet barcode saved to postnet.png");
+            // Save the generated barcode as a PNG image to the specified path
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
+
+        // Output the location of the saved barcode image
+        Console.WriteLine($"Postnet barcode saved to: {outputPath}");
     }
 }

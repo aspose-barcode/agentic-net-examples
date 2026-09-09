@@ -1,8 +1,8 @@
-// Title: Decode Dutch KIX barcode from byte array with exception handling
+// Title: Decode Dutch KIX barcode from a byte array
 // Description: Demonstrates generating a Dutch KIX barcode, converting it to a PNG byte array, and decoding it while handling format exceptions.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes, BarCodeReader for decoding, and handling BarCodeException. Developers often need to generate barcodes in memory, transmit them as byte arrays, and reliably decode them in various applications such as inventory systems or document processing.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator to create a barcode image, BarCodeReader to decode barcodes from streams, and handling of potential format errors. Developers working with barcode creation, image-to-byte conversions, and runtime decoding will find these APIs essential for building scanning solutions.
 // Prompt: Decode a Dutch KIX barcode from a byte array and handle potential format exceptions.
-// Tags: barcode, dutch kix, decode, byte array, exception handling, aspose.barcode, generation, recognition
+// Tags: dutch kix, barcode, decode, byte array, format exception, aspose.barcode, generation, recognition
 
 using System;
 using System.IO;
@@ -12,88 +12,61 @@ using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Provides an example of generating and decoding a Dutch KIX barcode using Aspose.BarCode.
+/// Example program that generates a Dutch KIX barcode, converts it to a byte array,
+/// and then decodes it while handling possible format exceptions.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a Dutch KIX barcode, obtains its PNG byte array,
-    /// and decodes the barcode while handling possible exceptions.
+    /// Entry point of the example. Generates a barcode, reads it from a memory stream,
+    /// and outputs the decoded information to the console.
     /// </summary>
     static void Main()
     {
-        // Sample code text for Dutch KIX barcode (example value)
-        const string sampleCodeText = "123456789";
-
-        // Generate a Dutch KIX barcode image and obtain its byte array
-        byte[] barcodeBytes = GenerateDutchKixBarcode(sampleCodeText);
-
-        // Decode the barcode from the byte array
-        DecodeDutchKixFromBytes(barcodeBytes);
-    }
-
-    /// <summary>
-    /// Generates a Dutch KIX barcode image and returns the image bytes in PNG format.
-    /// </summary>
-    /// <param name="codeText">The text to encode in the barcode.</param>
-    /// <returns>Byte array containing the PNG image of the generated barcode.</returns>
-    static byte[] GenerateDutchKixBarcode(string codeText)
-    {
-        // Use a memory stream to hold the generated image
-        using (var ms = new MemoryStream())
+        // ------------------------------------------------------------
+        // Generate a Dutch KIX barcode and obtain its image as a byte array
+        // ------------------------------------------------------------
+        byte[] barcodeBytes;
+        using (var generator = new BarcodeGenerator(EncodeTypes.DutchKIX, "123456ASPOSE"))
         {
-            // Initialize the generator with Dutch KIX symbology
-            using (var generator = new BarcodeGenerator(EncodeTypes.DutchKIX, codeText))
+            // Configure barcode appearance
+            generator.Parameters.Barcode.XDimension.Pixels = 4;
+            generator.Parameters.Barcode.BarHeight.Pixels = 50;
+
+            // Save the barcode image to a memory stream in PNG format
+            using (var ms = new MemoryStream())
             {
-                // Save the barcode image to the memory stream in PNG format
                 generator.Save(ms, BarCodeImageFormat.Png);
+                barcodeBytes = ms.ToArray(); // Extract the byte array
             }
-
-            // Return the image bytes from the memory stream
-            return ms.ToArray();
-        }
-    }
-
-    /// <summary>
-    /// Decodes a Dutch KIX barcode from a byte array and prints the result.
-    /// Handles both barcode-specific and general exceptions.
-    /// </summary>
-    /// <param name="imageBytes">Byte array containing the barcode image.</param>
-    static void DecodeDutchKixFromBytes(byte[] imageBytes)
-    {
-        // Validate input
-        if (imageBytes == null || imageBytes.Length == 0)
-        {
-            Console.WriteLine("No image data provided.");
-            return;
         }
 
-        // Create a memory stream from the byte array for decoding
-        using (var ms = new MemoryStream(imageBytes))
+        // ------------------------------------------------------------
+        // Decode the barcode from the byte array
+        // ------------------------------------------------------------
+        try
         {
-            try
+            using (var stream = new MemoryStream(barcodeBytes))
+            using (var reader = new BarCodeReader(stream, DecodeType.DutchKIX))
             {
-                // Initialize the reader for Dutch KIX decode type
-                using (var reader = new BarCodeReader(ms, DecodeType.DutchKIX))
+                // Iterate through all detected barcodes (should be one in this case)
+                foreach (BarCodeResult result in reader.ReadBarCodes())
                 {
-                    // Iterate through all detected barcodes in the image
-                    foreach (BarCodeResult result in reader.ReadBarCodes())
-                    {
-                        Console.WriteLine($"Decoded Type: {result.CodeTypeName}");
-                        Console.WriteLine($"Decoded Text: {result.CodeText}");
-                    }
+                    Console.WriteLine($"CodeText: {result.CodeText}");
+                    Console.WriteLine($"CodeType: {result.CodeType}");
+                    Console.WriteLine($"CodeTypeName: {result.CodeTypeName}");
                 }
             }
-            catch (BarCodeException ex)
-            {
-                // Handle format or recognition errors specific to Aspose.BarCode
-                Console.WriteLine($"BarCodeException: {ex.Message}");
-            }
-            catch (Exception ex)
-            {
-                // General exception handling
-                Console.WriteLine($"Error: {ex.Message}");
-            }
+        }
+        catch (FormatException ex)
+        {
+            // Handle cases where the barcode format is invalid or unreadable
+            Console.WriteLine($"Format exception: {ex.Message}");
+        }
+        catch (Exception ex)
+        {
+            // Handle any other unexpected errors during decoding
+            Console.WriteLine($"Error decoding barcode: {ex.Message}");
         }
     }
 }

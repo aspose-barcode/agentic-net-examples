@@ -1,8 +1,8 @@
-// Title: Generate Australia Post barcode with custom colors from JSON
-// Description: Demonstrates loading bar and background colors from a JSON file, applying them to an Australia Post barcode, and saving the result as a JPEG image.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to customize barcode appearance using the BarcodeGenerator class. It shows typical use cases such as reading configuration files, setting bar and background colors, and exporting to common image formats. Developers working with postal barcodes or needing dynamic visual styling can reference this pattern for quick implementation.
+// Title: Generate Postal Barcode with Custom Colors and Save as JPEG
+// Description: Demonstrates creating a Planet postal barcode, applying colors from a JSON configuration, and saving the result as a JPEG image.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use BarcodeGenerator with postal symbologies, customize visual appearance via color settings, and persist the output in common image formats. Developers working with shipping, logistics, or any system that requires printable postal codes can reference this pattern to integrate custom branding or visual requirements.
 // Prompt: Generate a postal barcode using a custom color scheme defined in a JSON configuration and save as JPEG.
-// Tags: barcode, australia post, color, json, jpeg, generation, aspose.barcode
+// Tags: postal barcode, generation, jpeg, custom colors, json configuration, aspose.barcode, aspose.drawing
 
 using System;
 using System.IO;
@@ -12,94 +12,118 @@ using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating an Australia Post barcode with colors defined in a JSON configuration and saving it as a JPEG image.
+/// Example program that creates a Planet postal barcode, applies custom colors from a JSON file,
+/// and saves the barcode as a JPEG image.
 /// </summary>
 class Program
 {
-    // Represents the JSON configuration for colors.
-    private class ColorConfig
+    /// <summary>
+    /// Entry point of the application.
+    /// </summary>
+    static void Main()
     {
-        public string BarColor { get; set; }
-        public string BackColor { get; set; }
+        // Build the path to the JSON configuration file containing color definitions.
+        string configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "colorConfig.json");
+        ColorConfig config = LoadConfig(configPath);
+
+        // Determine the output file path for the generated JPEG barcode image.
+        string outputPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "postal_barcode.jpg");
+
+        // Sample postal barcode data using the Planet symbology.
+        string codeText = "123456";
+
+        // Initialize the barcode generator with the chosen symbology and data.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Planet, codeText))
+        {
+            // Apply custom bar color if defined in the configuration.
+            if (config.BarColor != null)
+                generator.Parameters.Barcode.BarColor = ParseColor(config.BarColor);
+
+            // Apply custom background color if defined in the configuration.
+            if (config.BackColor != null)
+                generator.Parameters.BackColor = ParseColor(config.BackColor);
+
+            // Set visual dimensions for the barcode elements.
+            generator.Parameters.Barcode.XDimension.Pixels = 4f;
+            generator.Parameters.Barcode.BarHeight.Pixels = 50f;
+            generator.Parameters.Barcode.Postal.ShortBarHeight.Pixels = 20f;
+
+            // Save the generated barcode as a JPEG file.
+            generator.Save(outputPath, BarCodeImageFormat.Jpeg);
+        }
+
+        // Inform the user where the barcode image has been saved.
+        Console.WriteLine($"Barcode saved to: {outputPath}");
     }
 
-    // Parses a hex color string (e.g., "#FF1122") into an Aspose.Drawing.Color.
-    private static Color ParseHexColor(string hex)
+    /// <summary>
+    /// Loads the color configuration from a JSON file. Returns default colors if the file is missing or invalid.
+    /// </summary>
+    /// <param name="path">Full path to the JSON configuration file.</param>
+    /// <returns>A <see cref="ColorConfig"/> instance with the parsed color values.</returns>
+    private static ColorConfig LoadConfig(string path)
+    {
+        if (!File.Exists(path))
+        {
+            Console.WriteLine($"Config file not found at {path}. Using default colors.");
+            return new ColorConfig();
+        }
+
+        try
+        {
+            string json = File.ReadAllText(path);
+            return JsonSerializer.Deserialize<ColorConfig>(json) ?? new ColorConfig();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to read config: {ex.Message}. Using default colors.");
+            return new ColorConfig();
+        }
+    }
+
+    /// <summary>
+    /// Parses a hexadecimal color string (e.g., "#FF112233" or "112233") into an <see cref="Color"/> object.
+    /// </summary>
+    /// <param name="hex">Hexadecimal representation of the color.</param>
+    /// <returns>A <see cref="Color"/> with the specified ARGB values.</returns>
+    /// <exception cref="ArgumentException">Thrown when the input string is null, empty, or not a valid hex color.</exception>
+    private static Color ParseColor(string hex)
     {
         if (string.IsNullOrWhiteSpace(hex))
-            throw new ArgumentException("Hex color string is null or empty.");
+            throw new ArgumentException("Invalid color value.");
 
-        // Remove leading '#', if present.
-        hex = hex.TrimStart('#');
+        // Remove any leading '#' and whitespace.
+        string clean = hex.Trim().TrimStart('#');
 
-        if (hex.Length != 6 && hex.Length != 8)
-            throw new ArgumentException($"Invalid hex color length: {hex}");
+        // Validate length (6 for RGB, 8 for ARGB).
+        if (clean.Length != 6 && clean.Length != 8)
+            throw new ArgumentException("Color hex must be 6 or 8 characters.");
 
-        // If only RRGGBB is provided, assume full opacity.
-        if (hex.Length == 6)
-            hex = "FF" + hex; // prepend alpha
+        // Default alpha to fully opaque.
+        byte a = 255;
+        int start = 0;
 
-        // Parse ARGB integer.
-        uint argb = Convert.ToUInt32(hex, 16);
-        byte a = (byte)((argb >> 24) & 0xFF);
-        byte r = (byte)((argb >> 16) & 0xFF);
-        byte g = (byte)((argb >> 8) & 0xFF);
-        byte b = (byte)(argb & 0xFF);
+        // If an alpha component is present, extract it.
+        if (clean.Length == 8)
+        {
+            a = Convert.ToByte(clean.Substring(0, 2), 16);
+            start = 2;
+        }
+
+        // Extract red, green, and blue components.
+        byte r = Convert.ToByte(clean.Substring(start, 2), 16);
+        byte g = Convert.ToByte(clean.Substring(start + 2, 2), 16);
+        byte b = Convert.ToByte(clean.Substring(start + 4, 2), 16);
+
         return Color.FromArgb(a, r, g, b);
     }
 
     /// <summary>
-    /// Entry point. Loads color settings, creates the barcode, applies colors, and saves the image.
+    /// Simple DTO for deserializing color settings from JSON.
     /// </summary>
-    static void Main()
+    private class ColorConfig
     {
-        // Path to the JSON configuration file.
-        const string configPath = "config.json";
-
-        // Default colors (black bars on white background).
-        Color barColor = Color.Black;
-        Color backColor = Color.White;
-
-        // Load colors from JSON if the file exists.
-        if (File.Exists(configPath))
-        {
-            try
-            {
-                string json = File.ReadAllText(configPath);
-                ColorConfig cfg = JsonSerializer.Deserialize<ColorConfig>(json);
-                if (cfg != null)
-                {
-                    if (!string.IsNullOrWhiteSpace(cfg.BarColor))
-                        barColor = ParseHexColor(cfg.BarColor);
-                    if (!string.IsNullOrWhiteSpace(cfg.BackColor))
-                        backColor = ParseHexColor(cfg.BackColor);
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Failed to read or parse config file: {ex.Message}");
-                Console.WriteLine("Using default colors.");
-            }
-        }
-        else
-        {
-            Console.WriteLine("Config file not found. Using default colors.");
-        }
-
-        // Sample Australia Post barcode text (FCC 59, DPID 12345678, CTable "AB").
-        const string codeText = "5912345678AB";
-
-        // Generate and save the barcode.
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, codeText))
-        {
-            // Apply custom colors.
-            generator.Parameters.Barcode.BarColor = barColor;
-            generator.Parameters.BackColor = backColor;
-
-            // Save as JPEG.
-            const string outputFile = "postal_barcode.jpg";
-            generator.Save(outputFile, BarCodeImageFormat.Jpeg);
-            Console.WriteLine($"Barcode saved to '{outputFile}'.");
-        }
+        public string? BarColor { get; set; }
+        public string? BackColor { get; set; }
     }
 }

@@ -1,54 +1,76 @@
-// Title: Decode Planet barcode from image file
-// Description: This example shows how to read a Planet barcode from an image file and obtain its numeric text using Aspose.BarCode.
-// Category-Description: The sample belongs to the barcode decoding category of Aspose.BarCode, illustrating the use of BarCodeReader with DecodeType.Planet. It demonstrates typical scenarios such as processing scanned images to extract data from Planet symbology, a numeric‑only barcode used in logistics. Developers often need to validate or import such codes, and this example provides a concise reference for implementing the operation.
+// Title: Decode Planet Barcode from Image File
+// Description: Demonstrates generating a Planet barcode, saving it as a PNG image, and decoding it to retrieve the encoded numeric string.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator (for creating barcodes) and BarCodeReader (for decoding). Typical scenarios include creating barcode images for inventory, shipping, or labeling and later extracting the data programmatically. Developers often need to generate barcodes, store them as image files, and later read them back in batch processing or validation workflows.
 // Prompt: Decode a Planet barcode image from a file path and retrieve the encoded numeric string.
-// Tags: planet, barcode, decode, image, aspose.barcode, barcodereader, decode type, console
+// Tags: planet, barcode, decode, generation, png, aspose.barcode, csharp
 
 using System;
 using System.IO;
 using Aspose.BarCode;
+using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates decoding of a Planet barcode image using Aspose.BarCode.
+/// Example program that creates a Planet barcode image, saves it, and then decodes it to extract the encoded numeric string.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Reads the image path from arguments (or defaults), decodes any Planet barcodes, and prints the result.
+    /// Entry point of the example. Generates a Planet barcode, writes it to a temporary PNG file, reads the file back,
+    /// decodes the barcode, and outputs the decoded text to the console.
     /// </summary>
-    /// <param name="args">Command‑line arguments; first argument may be the image file path.</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Determine the image file path: use the first argument if supplied, otherwise fall back to a default file name.
-        string imagePath = args.Length > 0 ? args[0] : "planet.png";
+        // Create a unique temporary folder for the barcode image
+        string tempFolder = Path.Combine(Path.GetTempPath(), "PlanetDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
 
-        // Ensure the specified file exists before attempting to decode.
+        // Define the full path for the generated barcode image
+        string imagePath = Path.Combine(tempFolder, "planet.png");
+
+        // Generate a Planet barcode image with sample numeric data
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Planet, "1234567890"))
+        {
+            // Set the X-dimension (module width) to 4 pixels for better readability
+            generator.Parameters.Barcode.XDimension.Pixels = 4;
+            // Save the barcode as a PNG file
+            generator.Save(imagePath, BarCodeImageFormat.Png);
+        }
+
+        // Verify that the image file was successfully created
         if (!File.Exists(imagePath))
         {
-            Console.WriteLine($"File not found: {imagePath}");
+            Console.WriteLine("Failed to create the barcode image.");
             return;
         }
 
-        // Create a BarCodeReader configured for the Planet symbology.
+        // Decode the Planet barcode from the saved image file
         using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.Planet))
         {
-            // Retrieve all barcodes detected in the image.
-            BarCodeResult[] results = reader.ReadBarCodes();
+            bool anyFound = false;
+            // Iterate through all detected barcodes (should be only one in this case)
+            foreach (BarCodeResult result in reader.ReadBarCodes())
+            {
+                anyFound = true;
+                Console.WriteLine($"Decoded CodeText: {result.CodeText}");
+            }
 
-            if (results.Length == 0)
+            // Inform the user if no barcode was detected
+            if (!anyFound)
             {
-                // No Planet barcode was found in the supplied image.
-                Console.WriteLine("No Planet barcode detected in the image.");
+                Console.WriteLine("No barcode detected in the image.");
             }
-            else
-            {
-                // Iterate through each detected barcode and output its decoded text.
-                foreach (BarCodeResult result in results)
-                {
-                    Console.WriteLine($"Decoded Planet barcode text: {result.CodeText}");
-                }
-            }
+        }
+
+        // Clean up temporary files and folder
+        try
+        {
+            File.Delete(imagePath);
+            Directory.Delete(tempFolder);
+        }
+        catch
+        {
+            // Ignored - cleanup failure should not affect program outcome
         }
     }
 }

@@ -1,8 +1,8 @@
-// Title: Decode Swiss Post Parcel barcode from BMP and verify checksum
-// Description: Demonstrates generating a Swiss Post Parcel international barcode, saving it as a BMP image, decoding it with checksum validation, and confirming any checksum correction.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator for creating SwissPostParcel barcodes, BarCodeReader for decoding, and the ChecksumValidation feature to ensure data integrity. Developers working with postal symbologies often need to generate barcodes, read them from images, and validate checksums, making this pattern common in logistics and mailing applications.
+// Title: Decode Swiss Post Parcel barcode with checksum correction
+// Description: Demonstrates decoding a Swiss Post Parcel international barcode from a BMP image, showing automatic checksum correction when the barcode contains an incorrect checksum.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It illustrates how to use BarcodeGenerator to create Swiss Post Parcel barcodes, BarCodeReader to decode them, and how the library automatically corrects checksum errors. Developers working with postal barcodes, parcel tracking, or any scenario requiring reliable barcode validation will find these APIs essential.
 // Prompt: Decode a Swiss Post Parcel international barcode from a BMP image and verify checksum correction.
-// Tags: swisspostparcel, barcode, generation, recognition, checksum, bmp, aspose.barcode
+// Tags: swisspost, parcel, barcode, decode, checksum, bmp, aspose.barcode, generation, recognition
 
 using System;
 using System.IO;
@@ -12,73 +12,80 @@ using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating, saving, decoding, and checksum validation of a Swiss Post Parcel barcode.
+/// Example program that generates Swiss Post Parcel barcodes with both correct and incorrect checksums,
+/// then decodes the erroneous barcode to demonstrate automatic checksum correction.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a barcode, decodes it with checksum validation, and reports results.
+    /// Entry point of the example. Generates temporary barcode images, decodes the one with a wrong checksum,
+    /// and outputs the result to the console.
     /// </summary>
     static void Main()
     {
-        // Define a temporary file path for the generated BMP image
-        string imagePath = Path.Combine(Path.GetTempPath(), "SwissPostParcel.bmp");
+        // Create a unique temporary folder for the demo files
+        string tempDir = Path.Combine(Path.GetTempPath(), "SwissPostDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
 
-        // Sample code text for a Swiss Post Parcel (international) barcode
-        string originalCodeText = "1234567890123";
+        // Define file paths for the generated images
+        string wrongImagePath = Path.Combine(tempDir, "SwissPostInternational_WrongChecksum.bmp");
+        string correctImagePath = Path.Combine(tempDir, "SwissPostInternational_CorrectChecksum.bmp");
 
-        // Generate a Swiss Post Parcel barcode and save it as a BMP file
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.SwissPostParcel, originalCodeText))
+        // -----------------------------------------------------------------
+        // Generate a barcode with an intentionally wrong checksum
+        // -----------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.SwissPostParcel, "RM999605017CH"))
         {
-            // Persist the barcode image to the temporary location
-            generator.Save(imagePath, BarCodeImageFormat.Bmp);
+            generator.Parameters.Barcode.XDimension.Pixels = 2f;
+            generator.Parameters.Barcode.BarHeight.Pixels = 40f;
+            generator.Save(wrongImagePath, BarCodeImageFormat.Bmp);
         }
 
-        // Verify that the image file was successfully created
-        if (!File.Exists(imagePath))
+        // -----------------------------------------------------------------
+        // Generate a barcode with the correct checksum for comparison
+        // -----------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.SwissPostParcel, "RM999605013CH"))
         {
-            Console.WriteLine("Failed to create the barcode image.");
-            return;
+            generator.Parameters.Barcode.XDimension.Pixels = 2f;
+            generator.Parameters.Barcode.BarHeight.Pixels = 40f;
+            generator.Save(correctImagePath, BarCodeImageFormat.Bmp);
         }
 
-        // Decode the barcode from the BMP image with checksum validation enabled
-        using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.SwissPostParcel))
-        {
-            // Force checksum validation; Aspose.BarCode will correct the code text if needed
-            reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
+        // Expected text after checksum correction
+        const string expectedCorrectCode = "RM999605013CH";
 
-            // Iterate through all detected barcodes in the image
+        // -----------------------------------------------------------------
+        // Decode the barcode that contains the wrong checksum
+        // The library should automatically correct the checksum during decoding
+        // -----------------------------------------------------------------
+        using (var reader = new BarCodeReader(wrongImagePath, DecodeType.SwissPostParcel))
+        {
             foreach (BarCodeResult result in reader.ReadBarCodes())
             {
                 Console.WriteLine($"Decoded CodeText: {result.CodeText}");
-
-                // Compare the decoded text with the original to determine if correction occurred
-                if (result.CodeText == originalCodeText)
+                if (string.Equals(result.CodeText, expectedCorrectCode, StringComparison.OrdinalIgnoreCase))
                 {
-                    Console.WriteLine("Checksum is valid (no correction needed).");
+                    Console.WriteLine("Checksum was automatically corrected during decoding.");
                 }
                 else
                 {
-                    Console.WriteLine($"Checksum corrected. Original: {originalCodeText}, Corrected: {result.CodeText}");
-                }
-
-                // If extended data is available, display the value without checksum and the checksum itself
-                if (result.Extended?.OneD != null)
-                {
-                    Console.WriteLine($"Extracted Value (without checksum): {result.Extended.OneD.Value}");
-                    Console.WriteLine($"Extracted Checksum: {result.Extended.OneD.CheckSum}");
+                    Console.WriteLine("Decoded text does not match the expected corrected value.");
                 }
             }
         }
 
-        // Clean up the temporary image file
+        // -----------------------------------------------------------------
+        // Clean up temporary files (optional)
+        // -----------------------------------------------------------------
         try
         {
-            File.Delete(imagePath);
+            File.Delete(wrongImagePath);
+            File.Delete(correctImagePath);
+            Directory.Delete(tempDir);
         }
         catch
         {
-            // Ignored – file may be in use or deletion may fail on some platforms
+            // Ignored – cleanup failures should not affect program outcome
         }
     }
 }
