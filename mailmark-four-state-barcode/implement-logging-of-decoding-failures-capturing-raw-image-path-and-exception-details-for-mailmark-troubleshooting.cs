@@ -1,119 +1,113 @@
-// Title: Mailmark Barcode Decoding with Failure Logging
-// Description: Demonstrates generating Mailmark barcodes, attempting to decode them, and logging any decoding failures including the image path and exception details.
-// Category-Description: Shows how to use Aspose.BarCode's ComplexBarcodeGenerator to create Mailmark symbols and BarCodeReader to decode them. Typical use cases include batch processing of Mailmark images, error handling, and troubleshooting when decoding fails. Developers often need to capture raw image paths and exception information for diagnostics, which this example logs to a text file.
+// Title: Mailmark 4-State Barcode Generation and Decoding with Failure Logging
+// Description: Demonstrates generating a Mailmark 4‑state barcode, saving it as PNG, then attempting to decode it while logging any decoding failures, including image path and exception details.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, focusing on complex barcode types such as Mailmark. It showcases the use of ComplexBarcodeGenerator, MailmarkCodetext, BarCodeReader, and DecodeType.Mailmark. Developers commonly need to create Mailmark barcodes for postal services, read them from images, and capture detailed logs when decoding fails for troubleshooting purposes. The pattern illustrated here is useful for batch processing and automated CI pipelines.
 // Prompt: Implement logging of decoding failures, capturing raw image path and exception details for Mailmark troubleshooting.
-// Tags: mailmark, barcode, decoding, logging, aspose.barcode, complexbarcode, barcodereader, image, exception handling
+// Tags: mailmark, barcode, generation, recognition, logging, complexbarcode, csharp, aspose.barcode
 
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.BarCode.ComplexBarcode;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates Mailmark barcodes, attempts to decode them,
-/// and logs any decoding failures for troubleshooting purposes.
+/// Generates a Mailmark 4‑state barcode, attempts to decode it, and logs any failures.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates sample barcodes, creates a non‑barcode image,
-    /// scans all PNG files in the working folder, and logs success or failure of each decode attempt.
+    /// Entry point of the example. Creates a temporary folder, generates a barcode image,
+    /// reads the barcode, and writes detailed failure information to a log file.
     /// </summary>
     static void Main()
     {
-        // --------------------------------------------------------------------
-        // Prepare working folder and log file
-        // --------------------------------------------------------------------
-        string folderPath = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
-        Directory.CreateDirectory(folderPath);
+        // Create a unique temporary folder for the demo files
+        string tempFolder = Path.Combine(Path.GetTempPath(), "MailmarkDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
 
-        string logPath = Path.Combine(folderPath, "decode_log.txt");
-        if (!File.Exists(logPath))
+        // Define paths for the generated image and the log file
+        string imagePath = Path.Combine(tempFolder, "Mailmark4State.png");
+        string logPath = Path.Combine(tempFolder, "decode_log.txt");
+
+        // Configure the Mailmark codetext (4‑state format)
+        var mailmark = new MailmarkCodetext
         {
-            File.WriteAllText(logPath, $"Decode Log - {DateTime.Now}{Environment.NewLine}");
-        }
+            Format = 4,
+            VersionID = 1,
+            Class = "0",
+            SupplychainID = 384224,
+            ItemID = 16563762,
+            DestinationPostCodePlusDPS = "EF61AH8T "
+        };
 
-        // --------------------------------------------------------------------
-        // Generate sample Mailmark barcode images (2 records)
-        // --------------------------------------------------------------------
-        for (int i = 0; i < 2; i++)
+        // Generate the barcode image with a specific X‑dimension
+        var generator = new ComplexBarcodeGenerator(mailmark);
+        generator.Parameters.Barcode.XDimension.Pixels = 4f;
+        generator.Save(imagePath, BarCodeImageFormat.Png);
+
+        // Attempt to read the barcode and log any failures
+        try
         {
-            var mailmark = new MailmarkCodetext
+            using (var reader = new BarCodeReader(imagePath, DecodeType.Mailmark))
             {
-                Format = 4,                     // 4‑state Mailmark
-                VersionID = 1,
-                Class = "0",
-                SupplychainID = 384224,
-                ItemID = 16563762 + i,          // vary ItemID to keep records unique
-                DestinationPostCodePlusDPS = "EF61AH8T " // trailing space required
-            };
+                var results = reader.ReadBarCodes();
 
-            using (var generator = new ComplexBarcodeGenerator(mailmark))
-            {
-                string imagePath = Path.Combine(folderPath, $"mailmark_{i + 1}.png");
-                generator.Save(imagePath, BarCodeImageFormat.Png);
-            }
-        }
-
-        // --------------------------------------------------------------------
-        // Create a non‑barcode image to force a decoding failure
-        // --------------------------------------------------------------------
-        string nonBarcodePath = Path.Combine(folderPath, "nonbarcode.png");
-        using (var bitmap = new Bitmap(200, 200))
-        {
-            using (var graphics = Graphics.FromImage(bitmap))
-            {
-                graphics.Clear(Color.White);
-            }
-            bitmap.Save(nonBarcodePath, ImageFormat.Png);
-        }
-
-        // --------------------------------------------------------------------
-        // Scan folder for PNG images and attempt to decode each one
-        // --------------------------------------------------------------------
-        string[] imageFiles = Directory.GetFiles(folderPath, "*.png");
-        foreach (string imageFile in imageFiles)
-        {
-            // Defensive check: ensure the file still exists
-            if (!File.Exists(imageFile))
-            {
-                continue;
-            }
-
-            try
-            {
-                using (var reader = new BarCodeReader(imageFile, DecodeType.Mailmark))
+                // No results returned – log the failure
+                if (results == null || results.Length == 0)
                 {
-                    var results = reader.ReadBarCodes();
-                    bool anyFound = false;
-
+                    LogFailure(logPath, imagePath, "No barcode detected.");
+                }
+                else
+                {
+                    // Process each detected barcode
                     foreach (var result in results)
                     {
-                        anyFound = true;
-                        Console.WriteLine($"SUCCESS: {Path.GetFileName(imageFile)} -> {result.CodeText}");
-                    }
-
-                    if (!anyFound)
-                    {
-                        string msg = $"No Mailmark barcode detected in '{imageFile}'.";
-                        Console.WriteLine($"INFO: {msg}");
-                        File.AppendAllText(logPath, $"{DateTime.Now}: {msg}{Environment.NewLine}");
+                        var decoded = ComplexCodetextReader.TryDecodeMailmark(result.CodeText);
+                        if (decoded != null)
+                        {
+                            Console.WriteLine($"Decoded Mailmark ItemID: {decoded.ItemID}");
+                        }
+                        else
+                        {
+                            // Parsing of the codetext failed – log the issue
+                            LogFailure(logPath, imagePath, "Failed to parse Mailmark codetext.");
+                        }
                     }
                 }
             }
-            catch (Exception ex)
-            {
-                // Log decoding failure with image path and exception details
-                string error = $"Failed to decode '{imageFile}'. Exception: {ex.GetType().Name} - {ex.Message}";
-                Console.WriteLine($"ERROR: {error}");
-                File.AppendAllText(logPath, $"{DateTime.Now}: {error}{Environment.NewLine}");
-            }
+        }
+        catch (Exception ex)
+        {
+            // Unexpected exception while reading – log full details
+            LogFailure(logPath, imagePath, ex);
         }
 
-        Console.WriteLine("Decoding process completed. See log file for details.");
+        Console.WriteLine($"Log written to: {logPath}");
+    }
+
+    /// <summary>
+    /// Writes a simple error message to the log file and echoes it to the console.
+    /// </summary>
+    /// <param name="logFile">Path to the log file.</param>
+    /// <param name="imagePath">Path to the image that caused the error.</param>
+    /// <param name="message">Human‑readable error description.</param>
+    static void LogFailure(string logFile, string imagePath, string message)
+    {
+        string entry = $"{DateTime.UtcNow:u} | Image: {imagePath} | Error: {message}{Environment.NewLine}";
+        File.AppendAllText(logFile, entry);
+        Console.WriteLine(message);
+    }
+
+    /// <summary>
+    /// Writes exception details to the log file and echoes a short message to the console.
+    /// </summary>
+    /// <param name="logFile">Path to the log file.</param>
+    /// <param name="imagePath">Path to the image that caused the exception.</param>
+    /// <param name="ex">The caught exception.</param>
+    static void LogFailure(string logFile, string imagePath, Exception ex)
+    {
+        string entry = $"{DateTime.UtcNow:u} | Image: {imagePath} | Exception: {ex.Message}{Environment.NewLine}{ex.StackTrace}{Environment.NewLine}";
+        File.AppendAllText(logFile, entry);
+        Console.WriteLine($"Exception: {ex.Message}");
     }
 }

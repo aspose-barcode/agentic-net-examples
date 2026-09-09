@@ -1,8 +1,8 @@
-// Title: Decode Barcode from Network Stream and Verify Type
-// Description: Demonstrates downloading a barcode image via HTTP, decoding it with Aspose.BarCode, and checking that the detected symbology matches an expected value.
-// Category-Description: This example belongs to the Aspose.BarCode decoding category, showcasing how to use BarCodeReader with DecodeType.AllSupportedTypes to read barcodes from streams. Typical scenarios include processing images received over a network, validating barcode types in automated workflows, and integrating barcode verification into web services. Developers often need to download image data, invoke the reader, and compare the resulting CodeTypeName against business rules.
-// Prompt: Load a barcode image from a network stream, decode it, and verify service type matches expected value.
-// Tags: barcode, decode, network, http, aspose.barcode, barcodereader
+// Title: Decode QR Code from Network Stream and Verify Symbology
+// Description: Loads a barcode image from a URL, decodes it using Aspose.BarCode, and checks that the detected symbology matches the expected value.
+// Category-Description: This example demonstrates how to retrieve a barcode image over HTTP, use Aspose.BarCode's BarCodeReader to recognize all supported symbologies, and validate the result. It showcases key API classes such as BarCodeReader, BarCodeResult, DecodeType, and BaseDecodeType—common in scenarios like inventory scanning, ticket validation, or any application that needs to process barcodes received from remote sources. Developers often need to combine network I/O with barcode recognition to automate verification workflows.
+/// Prompt: Load a barcode image from a network stream, decode it, and verify service type matches expected value.
+/// Tags: barcode, decoding, network, qrcode, aspose.barcode, csharp
 
 using System;
 using System.IO;
@@ -11,68 +11,72 @@ using Aspose.BarCode;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Example program that downloads a barcode image, decodes it, and validates the detected symbology.
+/// Demonstrates loading a barcode image from a remote URL, decoding it, and verifying that the detected symbology matches an expected value.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example.
+    /// Entry point of the example. Retrieves the image, decodes barcodes, and validates the symbology.
     /// </summary>
     static void Main()
     {
-        // URL of the barcode image to download.
-        const string imageUrl = "https://example.com/barcode.png";
+        // URL of the barcode image to process
+        string imageUrl = "https://example.com/samplebarcode.png";
 
-        // Expected barcode type name (e.g., "Code128", "QR", etc.).
-        const string expectedCodeType = "Code128";
+        // Expected symbology identifier (e.g., "QR")
+        string expectedSymbology = "QR";
 
-        // Create an HttpClient to download the image via HTTP.
+        // Resolve the expected symbology to a BaseDecodeType enum value using reflection
+        var field = typeof(DecodeType).GetField(expectedSymbology);
+        if (field == null)
+        {
+            Console.WriteLine($"Unknown expected symbology: {expectedSymbology}");
+            return;
+        }
+        BaseDecodeType expectedDecodeType = (BaseDecodeType)field.GetValue(null);
+
+        // Create an HttpClient to download the image stream
         using (var httpClient = new HttpClient())
         {
-            // Send a GET request and wait synchronously for the response.
-            using (var response = httpClient.GetAsync(imageUrl).Result)
+            try
             {
-                // Verify the request succeeded.
-                if (!response.IsSuccessStatusCode)
+                // Synchronously fetch the image stream from the URL
+                using (Stream stream = httpClient.GetStreamAsync(imageUrl).GetAwaiter().GetResult())
                 {
-                    Console.WriteLine($"Failed to download image. HTTP status: {response.StatusCode}");
-                    return;
-                }
-
-                // Obtain the response content as a stream.
-                using (var imageStream = response.Content.ReadAsStreamAsync().Result)
-                {
-                    // Initialize BarCodeReader with the image stream and enable all supported barcode types.
-                    using (var reader = new BarCodeReader(imageStream, DecodeType.AllSupportedTypes))
+                    // Initialize the barcode reader to recognize all supported types
+                    using (var reader = new BarCodeReader(stream, DecodeType.AllSupportedTypes))
                     {
-                        // Read all barcodes found in the image.
-                        var results = reader.ReadBarCodes();
+                        bool any = false;
 
-                        // Check if any barcodes were detected.
-                        if (results == null || results.Length == 0)
+                        // Iterate through all detected barcodes in the image
+                        foreach (BarCodeResult result in reader.ReadBarCodes())
                         {
-                            Console.WriteLine("No barcode detected in the image.");
-                            return;
-                        }
+                            any = true;
+                            Console.WriteLine($"Detected: {result.CodeTypeName} - {result.CodeText}");
 
-                        // Iterate through each detected barcode.
-                        foreach (var result in results)
-                        {
-                            Console.WriteLine($"Detected barcode type: {result.CodeTypeName}");
-                            Console.WriteLine($"Decoded text: {result.CodeText}");
-
-                            // Compare the detected type with the expected value (case‑insensitive).
-                            if (string.Equals(result.CodeTypeName, expectedCodeType, StringComparison.OrdinalIgnoreCase))
+                            // Compare the detected symbology with the expected one
+                            if (result.CodeType.Equals(expectedDecodeType))
                             {
-                                Console.WriteLine("Service type matches the expected value.");
+                                Console.WriteLine("Service type matches expected value.");
                             }
                             else
                             {
-                                Console.WriteLine($"Service type mismatch. Expected: {expectedCodeType}");
+                                Console.WriteLine($"Service type mismatch. Expected: {expectedSymbology}, Got: {result.CodeTypeName}");
                             }
+                        }
+
+                        // Inform the user if no barcodes were found
+                        if (!any)
+                        {
+                            Console.WriteLine("No barcode detected in the image.");
                         }
                     }
                 }
+            }
+            catch (Exception ex)
+            {
+                // Handle any errors that occur during download or decoding
+                Console.WriteLine($"Error processing barcode: {ex.Message}");
             }
         }
     }

@@ -1,103 +1,90 @@
-// Title: Batch conversion of CSV rows to Mailmark barcode images using Aspose.BarCode
-// Description: Demonstrates reading a CSV file and generating a separate Mailmark barcode image for each data row.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use ComplexBarcodeGenerator and MailmarkCodetext to create Mailmark barcodes in bulk. Typical use cases include converting data sources such as CSV files into individual barcode images for mailing, logistics, or inventory tracking. Developers often need to automate barcode creation for large datasets, and this pattern illustrates the essential API classes and workflow.
+// Title: Batch conversion of CSV rows to Mailmark barcode images
+// Description: Demonstrates reading a CSV file, parsing each record, and generating a separate Mailmark barcode image per row using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category, focusing on the Mailmark symbology. It showcases the use of ComplexBarcodeGenerator, MailmarkCodetext, and BarCodeImageFormat to create PNG images from structured data. Developers often need to automate barcode creation from data sources such as CSV files for mailing, logistics, and tracking applications.
 // Prompt: Create a PowerShell script invoking the .NET library to batch convert CSV rows into individual Mailmark barcode images.
-// Tags: mailmark, barcode, generation, csv, batch, aspose.barcode, png, complexbarcodegenerator
+// Tags: mailmark, barcode, batch, csv, image, png, aspose.barcode, complexbarcode, generation
 
 using System;
 using System.IO;
+using System.Text;
+using Aspose.BarCode;
 using Aspose.BarCode.ComplexBarcode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates batch conversion of CSV data rows into individual Mailmark barcode PNG images.
+/// Demonstrates batch processing of CSV data to generate Mailmark barcode images using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that reads CSV, creates output folder, and generates barcode images.
+    /// Entry point of the example. Reads a CSV file, creates Mailmark codetext for each row,
+    /// and saves the resulting barcode images as PNG files.
     /// </summary>
     static void Main()
     {
-        // Define the input CSV file path; fall back to a sample file if it does not exist.
-        string csvPath = "mailmark_data.csv";
-        if (!File.Exists(csvPath))
-        {
-            // Create a small sample CSV to ensure the example runs without external data.
-            File.WriteAllText(csvPath,
-                "Class,DestinationPostCodePlusDPS,Format,VersionID,ItemID,SupplychainID\n" +
-                "\"0\",\"EF61AH8T \",1,1,16563762,384224\n" +
-                "\"1\",\"EF61AH8T \",2,1,16563763,384224");
-            Console.WriteLine($"Sample CSV created at '{Path.GetFullPath(csvPath)}'.");
-        }
+        // Create a dedicated temporary working folder for all generated files.
+        string workFolder = Path.Combine(Path.GetTempPath(), "MailmarkBatch_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(workFolder);
 
-        // Prepare the output folder where generated barcode images will be saved.
-        string outputFolder = "MailmarkBarcodes";
-        if (!Directory.Exists(outputFolder))
+        // Prepare a sample CSV file containing Mailmark data.
+        string csvPath = Path.Combine(workFolder, "data.csv");
+        string[] csvLines = new[]
         {
-            Directory.CreateDirectory(outputFolder);
-        }
+            "Format,VersionID,Class,SupplychainID,ItemID,DestinationPostCodePlusDPS",
+            "4,1,0,384224,16563762,EF61AH8T ",
+            "4,1,1,123456,98765432,EF61AH8T ",
+            "4,2,0,111111,22222222,EF61AH8T "
+        };
+        File.WriteAllLines(csvPath, csvLines, Encoding.UTF8);
 
-        // Read all lines from the CSV file.
-        string[] lines = File.ReadAllLines(csvPath);
-        if (lines.Length <= 1)
-        {
-            Console.WriteLine("CSV contains no data rows.");
-            return;
-        }
+        // Output folder where generated barcode images will be stored.
+        string outputFolder = Path.Combine(workFolder, "Barcodes");
+        Directory.CreateDirectory(outputFolder);
 
-        // Process each data row (skip header line at index 0).
-        for (int i = 1; i < lines.Length; i++)
+        // Read all lines from the CSV file (UTF‑8) and process each data row (skip header).
+        string[] allLines = File.ReadAllLines(csvPath, Encoding.UTF8);
+        for (int i = 1; i < allLines.Length; i++)
         {
-            string line = lines[i];
+            string line = allLines[i];
             if (string.IsNullOrWhiteSpace(line))
                 continue; // Skip empty lines.
 
-            // Simple CSV split (does not handle escaped commas).
+            // Split the CSV line into its six expected columns.
             string[] parts = line.Split(',');
+            if (parts.Length != 6)
+                continue; // Skip malformed rows.
 
-            if (parts.Length < 6)
+            // Parse individual fields.
+            int format = int.Parse(parts[0]);
+            int versionId = int.Parse(parts[1]);
+            string classValue = parts[2];
+            int supplyChainId = int.Parse(parts[3]);
+            int itemId = int.Parse(parts[4]);
+            string destination = parts[5];
+
+            // Build the Mailmark codetext object using parsed values.
+            var mailmark = new MailmarkCodetext
             {
-                Console.WriteLine($"Skipping malformed line {i + 1}: insufficient columns.");
-                continue;
+                Format = format,
+                VersionID = versionId,
+                Class = classValue,
+                SupplychainID = supplyChainId,
+                ItemID = itemId,
+                DestinationPostCodePlusDPS = destination
+            };
+
+            // Generate the barcode image and save it as PNG.
+            string imagePath = Path.Combine(outputFolder, $"Mailmark_{i}.png");
+            using (var generator = new ComplexBarcodeGenerator(mailmark))
+            {
+                // Set X‑dimension (module size) to 4 pixels for better readability.
+                generator.Parameters.Barcode.XDimension.Pixels = 4f;
+                generator.Save(imagePath, BarCodeImageFormat.Png);
             }
 
-            try
-            {
-                // Extract and clean individual column values.
-                string classValue = parts[0].Trim().Trim('\"');
-                string destination = parts[1].Trim().Trim('\"'); // Keep trailing space as required.
-                int format = int.Parse(parts[2].Trim());
-                int versionId = int.Parse(parts[3].Trim());
-                int itemId = int.Parse(parts[4].Trim());
-                int supplyChainId = int.Parse(parts[5].Trim());
-
-                // Build the Mailmark codetext object with the extracted values.
-                var mailmark = new MailmarkCodetext
-                {
-                    Class = classValue,
-                    DestinationPostCodePlusDPS = destination,
-                    Format = format,
-                    VersionID = versionId,
-                    ItemID = itemId,
-                    SupplychainID = supplyChainId
-                };
-
-                // Generate the barcode image using ComplexBarcodeGenerator.
-                using (var generator = new ComplexBarcodeGenerator(mailmark))
-                {
-                    string fileName = $"Mailmark_{i:D4}_{itemId}.png";
-                    string outputPath = Path.Combine(outputFolder, fileName);
-                    generator.Save(outputPath, BarCodeImageFormat.Png);
-                    Console.WriteLine($"Generated: {outputPath}");
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error processing line {i + 1}: {ex.Message}");
-            }
+            Console.WriteLine($"Generated: {imagePath}");
         }
 
-        Console.WriteLine("Batch conversion completed.");
+        Console.WriteLine("Batch processing completed.");
     }
 }
