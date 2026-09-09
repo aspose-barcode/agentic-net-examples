@@ -1,122 +1,65 @@
-// Title: Generate MaxiCode barcodes in GIF format using Aspose.BarCode
-// Description: Demonstrates how to create MaxiCode barcodes for various modes and save them as GIF images.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It showcases the use of ComplexBarcodeGenerator together with MaxiCode codetext classes (e.g., MaxiCodeCodetextMode2, MaxiCodeStandardCodetext) to produce different MaxiCode modes. Developers commonly need to generate MaxiCode symbols for shipping and logistics applications, selecting appropriate modes and output image formats such as GIF.
+// Title: Generate MaxiCode barcodes and save as GIF images
+// Description: Demonstrates how to create MaxiCode barcodes in different modes using Aspose.BarCode and save them as GIF files.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on MaxiCode symbology. It showcases the use of BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes to configure barcode parameters, select MaxiCode modes, and output images in GIF format. Developers working with shipping, logistics, or retail applications often need to generate MaxiCode barcodes for package tracking and inventory management.
 // Prompt: Set the generator's ImageFormat property to GIF and produce a series of MaxiCode images.
-// Tags: maxicode, barcode generation, gif, aspose.barcode, complexbarcode, imageformat, c#
+// Tags: maxicode, barcode generation, gif, imageformat, aspose.barcode, encode types, barcodegenerator
 
 using System;
-using Aspose.BarCode.ComplexBarcode;
-using Aspose.BarCode.Generation;
+using System.IO;
 using Aspose.BarCode;
+using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Example program that creates MaxiCode barcodes in GIF format for several modes
-/// using Aspose.BarCode's ComplexBarcodeGenerator.
+/// Demonstrates generating MaxiCode barcodes in different modes and saving them as GIF images.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates MaxiCode images for modes 2‑6 and saves them as GIF files.
+    /// Entry point of the example. Creates a temporary output folder, defines sample data,
+    /// generates MaxiCode barcodes, and saves them as GIF files.
     /// </summary>
     static void Main()
     {
-        // ---------- Mode 2 with a standard second message ----------
-        var mode2Standard = new MaxiCodeCodetextMode2
+        // Create a unique temporary directory for the generated images
+        string tempDir = Path.Combine(Path.GetTempPath(), "MaxiCodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+
+        // Control characters used in the structured MaxiCode format
+        string gs = "\u001d"; // Group Separator
+        string rs = "\u001e"; // Record Separator
+        string eot = "\u0004"; // End Of Transmission
+
+        // Define sample data: each tuple contains the MaxiCode mode, the text to encode, and the output file name
+        var samples = new (MaxiCodeMode mode, string codeText, string fileName)[]
         {
-            PostalCode = "524032140",
-            CountryCode = 56,
-            ServiceCategory = 999,
-            SecondMessage = new MaxiCodeStandardSecondMessage { Message = "Standard message" }
+            // Mode 2 with structured format (postal code, country code, service category, secondary message)
+            (MaxiCodeMode.Mode2,
+             $"[)>{rs}01{gs}B1050{gs}056{gs}001{gs}ADDITIONAL DATA{eot}",
+             "MaxiCode_Mode2.gif"),
+
+            // Mode 4 with arbitrary text
+            (MaxiCodeMode.Mode4,
+             "Sample MaxiCode Mode4",
+             "MaxiCode_Mode4.gif")
         };
-        using (var generator = new ComplexBarcodeGenerator(mode2Standard))
+
+        // Iterate over each sample, generate the barcode, and save it as a GIF image
+        foreach (var (mode, codeText, fileName) in samples)
         {
-            generator.Save("MaxiCode_Mode2_Standard.gif");
+            using (var generator = new BarcodeGenerator(EncodeTypes.MaxiCode, codeText))
+            {
+                // Set barcode visual properties
+                generator.Parameters.Barcode.XDimension.Pixels = 15f;
+                generator.Parameters.Barcode.MaxiCode.Mode = mode;
+
+                // Build the full output path and save the image in GIF format
+                string outputPath = Path.Combine(tempDir, fileName);
+                generator.Save(outputPath, BarCodeImageFormat.Gif);
+
+                Console.WriteLine($"Saved {outputPath}");
+            }
         }
 
-        // ---------- Mode 2 with a structured second message ----------
-        var structuredMsg2 = new MaxiCodeStructuredSecondMessage();
-        structuredMsg2.Add("634 ALPHA DRIVE");
-        structuredMsg2.Add("PITTSBURGH");
-        structuredMsg2.Add("PA");
-        structuredMsg2.Year = 99;
-
-        var mode2Structured = new MaxiCodeCodetextMode2
-        {
-            PostalCode = "524032140",
-            CountryCode = 56,
-            ServiceCategory = 999,
-            SecondMessage = structuredMsg2
-        };
-        using (var generator = new ComplexBarcodeGenerator(mode2Structured))
-        {
-            generator.Save("MaxiCode_Mode2_Structured.gif");
-        }
-
-        // ---------- Mode 3 with a standard second message ----------
-        var mode3Standard = new MaxiCodeCodetextMode3
-        {
-            PostalCode = "B1050",
-            CountryCode = 56,
-            ServiceCategory = 999,
-            SecondMessage = new MaxiCodeStandardSecondMessage { Message = "Standard message" }
-        };
-        using (var generator = new ComplexBarcodeGenerator(mode3Standard))
-        {
-            generator.Save("MaxiCode_Mode3_Standard.gif");
-        }
-
-        // ---------- Mode 3 with a structured second message ----------
-        var structuredMsg3 = new MaxiCodeStructuredSecondMessage();
-        structuredMsg3.Add("634 ALPHA DRIVE");
-        structuredMsg3.Add("PITTSBURGH");
-        structuredMsg3.Add("PA");
-        structuredMsg3.Year = 99;
-
-        var mode3Structured = new MaxiCodeCodetextMode3
-        {
-            PostalCode = "B1050",
-            CountryCode = 56,
-            ServiceCategory = 999,
-            SecondMessage = structuredMsg3
-        };
-        using (var generator = new ComplexBarcodeGenerator(mode3Structured))
-        {
-            generator.Save("MaxiCode_Mode3_Structured.gif");
-        }
-
-        // ---------- Mode 4 (standard) ----------
-        var mode4 = new MaxiCodeStandardCodetext
-        {
-            Mode = MaxiCodeMode.Mode4,
-            Message = "Mode 4 message"
-        };
-        using (var generator = new ComplexBarcodeGenerator(mode4))
-        {
-            generator.Save("MaxiCode_Mode4.gif");
-        }
-
-        // ---------- Mode 5 (standard) ----------
-        var mode5 = new MaxiCodeStandardCodetext
-        {
-            Mode = MaxiCodeMode.Mode5,
-            Message = "Mode 5 message"
-        };
-        using (var generator = new ComplexBarcodeGenerator(mode5))
-        {
-            generator.Save("MaxiCode_Mode5.gif");
-        }
-
-        // ---------- Mode 6 (standard) ----------
-        var mode6 = new MaxiCodeStandardCodetext
-        {
-            Mode = MaxiCodeMode.Mode6,
-            Message = "Mode 6 message"
-        };
-        using (var generator = new ComplexBarcodeGenerator(mode6))
-        {
-            generator.Save("MaxiCode_Mode6.gif");
-        }
-
-        Console.WriteLine("All MaxiCode GIF images have been generated.");
+        Console.WriteLine("All MaxiCode images generated.");
     }
 }

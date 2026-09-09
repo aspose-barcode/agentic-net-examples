@@ -1,48 +1,45 @@
-// Title: Generate MaxiCode Mode 6 barcode with transparent background and save to memory stream
-// Description: Demonstrates how to create a MaxiCode Mode 6 barcode, set a transparent background, and write the PNG image to a MemoryStream using Aspose.BarCode.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on complex barcode symbologies such as MaxiCode. It showcases the use of ComplexBarcodeGenerator, MaxiCodeStandardCodetext, and image formatting options. Developers often need to generate high‑density 2‑D barcodes for logistics and apply custom visual settings like transparent backgrounds before streaming the result.
+// Title: Generate a MaxiCode Mode 6 barcode with transparent background into a memory stream
+// Description: Demonstrates how to create a MaxiCode Mode 6 barcode, set a transparent background, and save the image as PNG to a MemoryStream.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on 2‑D symbologies. It showcases the use of BarcodeGenerator, EncodeTypes, and MaxiCodeMode classes to produce a MaxiCode image, a common requirement for shipping and logistics applications. Developers often need to render barcodes to streams for further processing or embedding in documents.
 // Prompt: Create a MaxiCode Mode 6 barcode, apply a transparent background, and write the file to a memory stream.
-// Tags: maxicode, mode6, transparent background, memory stream, png, aspose.barcode, complexbarcodegenerator
+// Tags: maxicode, barcode, generation, png, memory-stream, transparent-background, aspose.barcode
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.ComplexBarcode;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a MaxiCode Mode 6 barcode with a transparent background and saving it to a memory stream.
+/// Example program that generates a MaxiCode Mode 6 barcode with a transparent background
+/// and writes the PNG image to a memory stream.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates the barcode, applies visual settings, and outputs the image size.
+    /// Entry point. Creates the barcode, configures its appearance, saves to a MemoryStream,
+    /// and writes the generated image size to the console.
     /// </summary>
     static void Main()
     {
-        // Prepare MaxiCode standard codetext for Mode 6
-        var maxiCode = new MaxiCodeStandardCodetext
+        // Create a memory stream that will hold the generated barcode image.
+        using (MemoryStream memoryStream = new MemoryStream())
         {
-            Mode = MaxiCodeMode.Mode6,
-            Message = "Sample message"
-        };
-
-        // Create a memory stream to hold the generated image
-        using (var ms = new MemoryStream())
-        {
-            // Initialize the complex barcode generator with the MaxiCode settings
-            using (var generator = new ComplexBarcodeGenerator(maxiCode))
+            // Initialize the barcode generator for the MaxiCode symbology with sample data.
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.MaxiCode, "Sample Text"))
             {
-                // Apply a transparent background to the barcode image
+                // Set the MaxiCode mode to Mode 6 (used for specific data encoding requirements).
+                generator.Parameters.Barcode.MaxiCode.Mode = MaxiCodeMode.Mode6;
+
+                // Make the background of the barcode transparent.
                 generator.Parameters.BackColor = Color.Transparent;
 
-                // Save the barcode as a PNG image into the memory stream
-                generator.Save(ms, BarCodeImageFormat.Png);
+                // Save the barcode as a PNG image into the memory stream.
+                generator.Save(memoryStream, BarCodeImageFormat.Png);
             }
 
-            // Output the size of the generated image (for demonstration purposes)
-            Console.WriteLine($"Generated barcode image size: {ms.Length} bytes");
+            // Output the size of the generated image (in bytes) for verification.
+            Console.WriteLine($"Generated barcode image size: {memoryStream.Length} bytes");
         }
     }
 }

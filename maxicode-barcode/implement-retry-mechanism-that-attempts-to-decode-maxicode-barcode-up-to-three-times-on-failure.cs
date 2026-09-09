@@ -1,6 +1,6 @@
-// Title: MaxiCode barcode generation and retry decode example
-// Description: Demonstrates generating a MaxiCode barcode, saving it to a memory stream, and attempting to decode it up to three times with retry logic.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category, illustrating how to use BarcodeGenerator, BarCodeReader, and related classes to create and read MaxiCode symbology. Developers often need to generate barcodes for packaging and then verify them by decoding, handling transient failures with retry loops. The snippet shows typical usage patterns for encoding, saving to streams, and robust decoding.
+// Title: MaxiCode barcode generation and retry decoding example
+// Description: Demonstrates generating a MaxiCode barcode, saving it as PNG, and attempting to decode it up to three times, handling failures gracefully.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator for creating a MaxiCode symbology and BarCodeReader for decoding. Typical use cases include batch processing of shipping labels or inventory tags where decoding may need retries due to image quality issues. Developers often need to implement retry logic around the ReadBarCodes method to improve robustness.
 // Prompt: Implement a retry mechanism that attempts to decode a MaxiCode barcode up to three times on failure.
 // Tags: maxicode, barcode generation, barcode recognition, retry, aspose.barcode, c#
 
@@ -11,71 +11,100 @@ using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates generating a MaxiCode barcode and decoding it with retry logic.
+/// Demonstrates creating a MaxiCode barcode image and decoding it with a retry mechanism.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a MaxiCode barcode, saves it to a memory stream, and tries to decode it up to three times.
+    /// Entry point of the example. Generates a MaxiCode barcode, saves it, and attempts to decode it up to three times.
     /// </summary>
     static void Main()
     {
-        // Create a MaxiCode barcode generator with sample codetext
-        using (var generator = new BarcodeGenerator(EncodeTypes.MaxiCode, "Sample MaxiCode"))
+        // ----------------------------------------------------------------------
+        // Prepare a temporary folder and file path for the generated barcode image.
+        // ----------------------------------------------------------------------
+        string tempFolder = Path.Combine(Path.GetTempPath(), "MaxiCodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
+        string imagePath = Path.Combine(tempFolder, "maxicode.png");
+
+        // --------------------------------------------------------------
+        // Generate a simple MaxiCode barcode and save it as a PNG file.
+        // --------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.MaxiCode, "1234567890"))
         {
-            // Save the generated barcode to a memory stream in PNG format
-            using (var ms = new MemoryStream())
+            // Set the X-dimension (module size) in pixels.
+            generator.Parameters.Barcode.XDimension.Pixels = 15f;
+            generator.Save(imagePath, BarCodeImageFormat.Png);
+        }
+
+        const int maxAttempts = 3; // Maximum number of decode attempts.
+        bool decoded = false;      // Flag indicating successful decoding.
+
+        // --------------------------------------------------------------
+        // Attempt to decode the barcode up to the defined number of tries.
+        // --------------------------------------------------------------
+        for (int attempt = 1; attempt <= maxAttempts; attempt++)
+        {
+            try
             {
-                generator.Save(ms, BarCodeImageFormat.Png);
-
-                // Reset stream position for reading
-                ms.Position = 0;
-
-                const int maxAttempts = 3;
-                bool decoded = false;
-
-                // Retry loop: attempt to decode up to maxAttempts times
-                for (int attempt = 1; attempt <= maxAttempts && !decoded; attempt++)
+                // Verify that the image file exists before trying to read it.
+                if (!File.Exists(imagePath))
                 {
-                    try
+                    Console.WriteLine($"File not found: {imagePath}");
+                    break;
+                }
+
+                // Create a reader configured for MaxiCode symbology.
+                using (var reader = new BarCodeReader(imagePath, DecodeType.MaxiCode))
+                {
+                    // Iterate through all detected barcodes in the image.
+                    foreach (BarCodeResult result in reader.ReadBarCodes())
                     {
-                        // Ensure the stream is positioned at the beginning before each decode attempt
-                        ms.Position = 0;
-
-                        // Decode the barcode from the memory stream
-                        using (var reader = new BarCodeReader(ms, DecodeType.MaxiCode))
+                        // If a non‑empty code text is found, report success.
+                        if (!string.IsNullOrEmpty(result.CodeText))
                         {
-                            var results = reader.ReadBarCodes();
-
-                            if (results != null && results.Length > 0)
-                            {
-                                // Successful decode – output details
-                                var result = results[0];
-                                Console.WriteLine($"Decoded on attempt {attempt}:");
-                                Console.WriteLine($"  Code Type: {result.CodeType}");
-                                Console.WriteLine($"  Code Text: {result.CodeText}");
-                                decoded = true;
-                            }
-                            else
-                            {
-                                Console.WriteLine($"Attempt {attempt}: No barcode detected.");
-                            }
+                            Console.WriteLine($"Decoded on attempt {attempt}: {result.CodeText}");
+                            decoded = true;
+                            break;
                         }
                     }
-                    catch (Exception ex)
-                    {
-                        // Log exception and continue to next attempt
-                        Console.WriteLine($"Attempt {attempt}: Exception - {ex.Message}");
-                    }
-
-                    // Optional: add a small delay here before the next attempt if needed
                 }
 
-                if (!decoded)
-                {
-                    Console.WriteLine("Failed to decode the MaxiCode barcode after 3 attempts.");
-                }
+                // Exit the retry loop if decoding succeeded.
+                if (decoded)
+                    break;
+
+                // Inform that the current attempt did not locate a barcode.
+                Console.WriteLine($"Attempt {attempt} did not find a barcode.");
             }
+            catch (Exception ex)
+            {
+                // Log any exception that occurs during the decode attempt.
+                Console.WriteLine($"Attempt {attempt} exception: {ex.Message}");
+            }
+        }
+
+        // --------------------------------------------------------------
+        // Report final outcome if decoding was not successful after retries.
+        // --------------------------------------------------------------
+        if (!decoded)
+        {
+            Console.WriteLine("Failed to decode the MaxiCode barcode after maximum attempts.");
+        }
+
+        // --------------------------------------------------------------
+        // Clean up temporary files and directories.
+        // --------------------------------------------------------------
+        try
+        {
+            if (File.Exists(imagePath))
+                File.Delete(imagePath);
+            if (Directory.Exists(tempFolder))
+                Directory.Delete(tempFolder, true);
+        }
+        catch
+        {
+            // Ignored – cleanup failures should not affect program outcome.
         }
     }
 }

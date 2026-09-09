@@ -1,14 +1,15 @@
 // Title: Generate MaxiCode barcode image asynchronously
-// Description: Demonstrates how to create a MaxiCode barcode using Aspose.BarCode and save it to a PNG file without blocking the UI thread.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on complex barcode symbologies such as MaxiCode. It showcases the use of ComplexBarcodeGenerator, MaxiCodeCodetextMode2, and asynchronous file I/O to produce barcode images efficiently. Developers working with shipping, logistics, or inventory systems often need to generate MaxiCode symbols programmatically for labeling and tracking purposes.
+// Description: Demonstrates creating a MaxiCode barcode with Aspose.BarCode and saving it as a PNG file using async I/O to avoid UI blocking.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, showcasing the use of BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes. Typical scenarios include generating shipping labels, inventory tags, or any application requiring MaxiCode symbology. Developers often need non‑blocking image creation for responsive UI or high‑throughput services.
 // Prompt: Use async methods to generate a MaxiCode image and write it to a file without blocking the UI.
-// Tags: maxicode, barcode, async, file-io, png, aspose.barcode, complexbarcodegenerator
+// Tags: maxicode, barcode, generation, async, png, aspose.barcode
 
 using System;
 using System.IO;
 using System.Threading.Tasks;
-using Aspose.BarCode.ComplexBarcode;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing;
 
 /// <summary>
 /// Demonstrates asynchronous generation of a MaxiCode barcode image and saving it to a file.
@@ -16,43 +17,62 @@ using Aspose.BarCode.Generation;
 class Program
 {
     /// <summary>
-    /// Asynchronous entry point that creates a MaxiCode barcode and writes it to a PNG file without blocking the UI thread.
+    /// Asynchronous entry point that determines the output path, generates the barcode, and reports the result.
     /// </summary>
-    /// <returns>A task representing the asynchronous operation.</returns>
-    static async Task Main()
+    /// <param name="args">Command‑line arguments; the first argument can specify the output file path.</param>
+    static async Task Main(string[] args)
     {
-        // Define the output file path for the generated PNG image.
-        string outputPath = "maxicode.png";
+        // Determine the output file path: use the first argument if provided, otherwise default to the current directory.
+        string outputPath = args.Length > 0
+            ? args[0]
+            : Path.Combine(Directory.GetCurrentDirectory(), "MaxiCode.png");
 
-        // Prepare MaxiCode data using Mode 2 (postal code, country code, service category).
-        var maxiCodeData = new MaxiCodeCodetextMode2
+        try
         {
-            PostalCode = "524032140",   // 9‑digit postal code for Mode 2
-            CountryCode = 56,           // Example country code
-            ServiceCategory = 999       // Example service category
-        };
-
-        // Use a memory stream to hold the generated barcode image in memory.
-        using (var memoryStream = new MemoryStream())
-        {
-            // Generate the barcode image on a background thread to avoid UI blocking.
-            await Task.Run(() =>
-            {
-                using (var generator = new ComplexBarcodeGenerator(maxiCodeData))
-                {
-                    // Save the barcode directly to the memory stream in PNG format.
-                    generator.Save(memoryStream, BarCodeImageFormat.Png);
-                }
-            });
-
-            // Reset the stream position to the beginning before reading its contents.
-            memoryStream.Position = 0;
-
-            // Asynchronously write the image bytes from the memory stream to the file system.
-            await File.WriteAllBytesAsync(outputPath, memoryStream.ToArray());
+            // Generate the MaxiCode barcode and save it asynchronously.
+            await GenerateMaxiCodeAsync(outputPath);
+            Console.WriteLine($"MaxiCode image saved to: {outputPath}");
         }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error: {ex.Message}");
+        }
+    }
 
-        // Inform the user where the image has been saved.
-        Console.WriteLine($"MaxiCode image saved to '{Path.GetFullPath(outputPath)}'.");
+    /// <summary>
+    /// Generates a MaxiCode barcode, writes it to a memory stream, and then copies it to a file using asynchronous I/O.
+    /// </summary>
+    /// <param name="filePath">The full path where the PNG image will be saved.</param>
+    private static async Task GenerateMaxiCodeAsync(string filePath)
+    {
+        // Simple code text for demonstration.
+        const string codeText = "Sample MaxiCode";
+
+        // Initialize the barcode generator with MaxiCode symbology.
+        using (var generator = new BarcodeGenerator(EncodeTypes.MaxiCode, codeText))
+        {
+            // Configure visual parameters.
+            generator.Parameters.Barcode.XDimension.Pixels = 15f;          // Set module size.
+            generator.Parameters.Barcode.MaxiCode.AspectRatio = 1f;      // Optional: enforce a square aspect ratio.
+
+            // Save the generated barcode to a memory stream in PNG format.
+            using (var memoryStream = new MemoryStream())
+            {
+                generator.Save(memoryStream, BarCodeImageFormat.Png);
+                memoryStream.Position = 0; // Reset stream position for reading.
+
+                // Asynchronously copy the memory stream to the target file.
+                using (var fileStream = new FileStream(
+                    filePath,
+                    FileMode.Create,
+                    FileAccess.Write,
+                    FileShare.None,
+                    bufferSize: 4096,
+                    useAsync: true))
+                {
+                    await memoryStream.CopyToAsync(fileStream);
+                }
+            }
+        }
     }
 }
