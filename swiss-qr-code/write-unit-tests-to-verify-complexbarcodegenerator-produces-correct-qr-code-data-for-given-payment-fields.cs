@@ -1,87 +1,149 @@
 // Title: Generate and Verify Swiss QR Code using ComplexBarcodeGenerator
-// Description: Demonstrates creating a Swiss QR bill barcode with Aspose.BarCode, saving it to a PNG stream, and validating the encoded data by reading it back.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation and recognition category. It showcases the ComplexBarcodeGenerator, SwissQRCodetext, and BarCodeReader classes for QR code creation, error correction configuration, and data verification—common tasks for developers implementing payment QR codes or other structured data barcodes.
+// Description: Demonstrates creating a Swiss QR bill barcode, saving it as PNG, and verifying the encoded data by reading it back.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, showcasing the ComplexBarcodeGenerator and BarCodeReader classes for QR code creation and validation. Typical use cases include payment QR codes, data matrix generation, and automated testing of barcode content. Developers often need to generate barcodes, customize parameters, and ensure correctness via decoding.
 // Prompt: Write unit tests to verify ComplexBarcodeGenerator produces correct QR code data for given payment fields.
-// Tags: qr, swiss, barcode, generation, recognition, complexbarcode, png, aspose.barcode
+// Tags: swissqr, qr, barcode, generation, recognition, aspose.barcode, complexbarcodegenerator
 
 using System;
 using System.IO;
+using System.Collections.Generic;
+using Aspose.BarCode;
 using Aspose.BarCode.ComplexBarcode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a Swiss QR code and verifying its content using Aspose.BarCode.
+/// Demonstrates generating Swiss QR bill barcodes, saving them, and verifying the encoded data using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that runs the Swiss QR code verification test.
+    /// Entry point of the example. Executes a series of QR code generation tests and reports the results.
     /// </summary>
     static void Main()
     {
-        // Execute the test that generates a Swiss QR code and validates its data.
-        RunSwissQrTest();
+        // Define a collection of test cases, each with a name and a delegate that runs the test.
+        var tests = new List<(string Name, Func<bool> Test)>
+        {
+            ("Test1_SimplePayment", () => TestSwissQR(
+                "SimplePayment",
+                qr =>
+                {
+                    // Configure a simple Swiss QR bill with creditor and debtor details.
+                    qr.Bill.Version = SwissQRBill.QrBillStandardVersion.V2_0;
+                    qr.Bill.Account = "CH4431999123000889012";
+                    qr.Bill.Amount = 1000.25m;
+                    qr.Bill.Currency = "CHF";
+                    qr.Bill.Reference = "210000000003139471430009017";
+                    qr.Bill.Creditor = new Address
+                    {
+                        Name = "Muster & Söhne",
+                        Street = "Musterstrasse",
+                        HouseNo = "12b",
+                        PostalCode = "8200",
+                        Town = "Zürich",
+                        CountryCode = "CH"
+                    };
+                    qr.Bill.Debtor = new Address
+                    {
+                        Name = "Muster AG",
+                        Street = "Musterstrasse",
+                        HouseNo = "1",
+                        PostalCode = "3030",
+                        Town = "Bern",
+                        CountryCode = "CH"
+                    };
+                })),
+            ("Test2_AnotherPayment", () => TestSwissQR(
+                "AnotherPayment",
+                qr =>
+                {
+                    // Configure a second Swiss QR bill with different payment details.
+                    qr.Bill.Version = SwissQRBill.QrBillStandardVersion.V2_0;
+                    qr.Bill.Account = "CH9300762011623852957";
+                    qr.Bill.Amount = 199.95m;
+                    qr.Bill.Currency = "CHF";
+                    qr.Bill.Reference = "210000000000000000000000001";
+                    qr.Bill.Creditor = new Address
+                    {
+                        Name = "John Doe",
+                        Street = "Main Street",
+                        HouseNo = "10",
+                        PostalCode = "8000",
+                        Town = "Zurich",
+                        CountryCode = "CH"
+                    };
+                    qr.Bill.Debtor = new Address
+                    {
+                        Name = "Acme Corp",
+                        Street = "Industrial Road",
+                        HouseNo = "5",
+                        PostalCode = "3000",
+                        Town = "Bern",
+                        CountryCode = "CH"
+                    };
+                }))
+        };
+
+        int passed = 0;
+
+        // Execute each test and count the passed ones.
+        foreach (var (name, test) in tests)
+        {
+            try
+            {
+                bool result = test();
+                Console.WriteLine($"{name}: {(result ? "PASS" : "FAIL")}");
+                if (result) passed++;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"{name}: EXCEPTION - {ex.Message}");
+            }
+        }
+
+        // Summarize the test run.
+        Console.WriteLine($"TOTAL: {passed}/{tests.Count} tests passed.");
     }
 
-    static void RunSwissQrTest()
+    /// <summary>
+    /// Generates a Swiss QR code using the provided configuration, saves it to a memory stream,
+    /// reads it back, and verifies that the decoded text matches the expected codetext.
+    /// </summary>
+    /// <param name="testName">Identifier for the test (unused but kept for signature compatibility).</param>
+    /// <param name="configure">Action that configures the <see cref="SwissQRCodetext"/> instance.</param>
+    /// <returns>True if the decoded codetext matches the expected value; otherwise, false.</returns>
+    static bool TestSwissQR(string testName, Action<SwissQRCodetext> configure)
     {
-        // Define expected payment data for the Swiss QR bill.
-        const string creditorName = "John Doe";
-        const string creditorCountryCode = "CH";
-        const string account = "CH9300762011623852957";
-        const decimal amount = 199.95m;
-        const SwissQRBill.QrBillStandardVersion version = SwissQRBill.QrBillStandardVersion.V2_0;
+        // Create and configure the Swiss QR code data.
+        var swissQRCode = new SwissQRCodetext();
+        configure(swissQRCode);
+        string expectedCodetext = swissQRCode.GetConstructedCodetext();
 
-        // Build the Swiss QR codetext using the provided payment details.
-        var swissQr = new SwissQRCodetext();
-        swissQr.Bill.Creditor.Name = creditorName;
-        swissQr.Bill.Creditor.CountryCode = creditorCountryCode;
-        swissQr.Bill.Account = account;
-        swissQr.Bill.Amount = amount;
-        swissQr.Bill.Version = version;
-
-        // Construct the expected plain codetext string from the SwissQRCodetext object.
-        string expectedCodeText = swissQr.GetConstructedCodetext();
-
-        // Generate the QR barcode image and write it to a memory stream.
-        using (var generator = new ComplexBarcodeGenerator(swissQr))
+        // Generate the barcode image using ComplexBarcodeGenerator.
+        using (var generator = new ComplexBarcodeGenerator(swissQRCode))
         {
-            // Optional: set a high error correction level for better resilience.
+            // Set barcode rendering parameters.
+            generator.Parameters.Barcode.XDimension.Pixels = 4f;
             generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
 
+            // Save the generated barcode to a memory stream in PNG format.
             using (var ms = new MemoryStream())
             {
-                // Save the generated barcode as PNG into the memory stream.
                 generator.Save(ms, BarCodeImageFormat.Png);
-                ms.Position = 0; // Reset stream position for subsequent reading.
+                ms.Position = 0; // Reset stream position for reading.
 
-                // Read the barcode back from the memory stream to verify its content.
-                using (var reader = new BarCodeReader(ms, DecodeType.QR))
+                // Decode the barcode from the memory stream.
+                using (var reader = new BarCodeReader(ms, DecodeType.AllSupportedTypes))
                 {
                     var results = reader.ReadBarCodes();
+                    if (results == null || results.Length == 0)
+                        return false; // No barcode detected.
 
-                    // Ensure at least one barcode was detected.
-                    if (results.Length == 0)
-                    {
-                        Console.WriteLine("FAILED: No barcode detected.");
-                        return;
-                    }
-
-                    // Retrieve the decoded codetext from the first result.
-                    string actualCodeText = results[0].CodeText;
-
-                    // Compare the generated codetext with the expected codetext.
-                    if (actualCodeText == expectedCodeText)
-                    {
-                        Console.WriteLine("PASSED: Generated QR code matches expected codetext.");
-                    }
-                    else
-                    {
-                        Console.WriteLine("FAILED: Mismatch in QR code data.");
-                        Console.WriteLine($"Expected: {expectedCodeText}");
-                        Console.WriteLine($"Actual  : {actualCodeText}");
-                    }
+                    string actualCodetext = results[0].CodeText;
+                    // Compare the decoded text with the expected codetext.
+                    return string.Equals(actualCodetext, expectedCodetext, StringComparison.Ordinal);
                 }
             }
         }

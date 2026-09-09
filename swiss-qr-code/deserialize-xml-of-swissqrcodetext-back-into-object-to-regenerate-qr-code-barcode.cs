@@ -1,89 +1,106 @@
-// Title: Regenerate Swiss QR Code from Exported XML
-// Description: This example creates a Swiss QR Code, exports its generator settings to XML, imports the XML, decodes the Swiss QR codetext, and regenerates the barcode.
-// Category-Description: Demonstrates Aspose.BarCode's XML serialization and complex barcode generation workflow. It uses BarcodeGenerator for QR encoding, ExportToXml/ImportFromXml for configuration persistence, ComplexCodetextReader to parse Swiss QR codetext, and ComplexBarcodeGenerator to produce the final image. Developers working with QR codes and needing to store or transfer barcode settings will find this pattern useful.
+// Title: Swiss QR Code generation, XML export, and regeneration from deserialized data
+// Description: Demonstrates creating a Swiss QR code, exporting its configuration to XML, then deserializing the XML to reconstruct the QR code.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode operations, showcasing how to work with Swiss QR (SwissQR) codetext using the ComplexBarcode API. It covers generating a QR code, exporting generator settings to XML, decoding the codetext back into a SwissQRCodetext object, and regenerating the barcode. Developers needing to persist and later restore complex barcode configurations will find this pattern useful.
 // Prompt: Deserialize XML of SwissQRCodetext back into an object to regenerate the QR code barcode.
-// Tags: qr, swissqr, xml, serialization, barcodegenerator, complexbarcodegenerator, aspose.barcode
+// Tags: swissqr, qr, barcode, xml, deserialization, complexbarcode, generation, aspose.barcode
 
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode.BarCodeRecognition;
 using Aspose.BarCode.ComplexBarcode;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a Swiss QR Code, exporting its configuration to XML,
-/// importing it back, decoding the codetext, and regenerating the barcode.
+/// Demonstrates creating a Swiss QR code, exporting its configuration to XML,
+/// deserializing the XML back into a SwissQRCodetext object, and regenerating the QR code.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that performs the full create‑export‑import‑decode‑regenerate cycle.
+    /// Entry point of the example. Performs QR code generation, XML export, import, and regeneration.
     /// </summary>
     static void Main()
     {
-        // Define file paths for the original image, XML configuration, and regenerated image
-        string pngPath = "SwissQR.png";
-        string xmlPath = "SwissQR.xml";
-        string regeneratedPngPath = "SwissQR_fromXml.png";
+        // Prepare a unique temporary directory for all generated files
+        string tempDir = Path.Combine(Path.GetTempPath(), "SwissQRDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
 
-        // -------------------------------------------------
-        // Step 1: Create a SwissQRCodetext object and set required fields
-        // -------------------------------------------------
-        var swissQr = new SwissQRCodetext();
-        swissQr.Bill.Creditor.Name = "John Doe";
-        swissQr.Bill.Creditor.CountryCode = "CH";
-        swissQr.Bill.Account = "CH9300762011623852957";
-        swissQr.Bill.Amount = 199.95m;
-        swissQr.Bill.Version = SwissQRBill.QrBillStandardVersion.V2_0;
+        // Define file paths for XML configuration and PNG images
+        string xmlPath = Path.Combine(tempDir, "SwissQR.xml");
+        string firstImagePath = Path.Combine(tempDir, "SwissQR_original.png");
+        string restoredImagePath = Path.Combine(tempDir, "SwissQR_restored.png");
 
-        // Construct the plain codetext string that represents the Swiss QR data
-        string plainCodeText = swissQr.GetConstructedCodetext();
+        // ------------------------------------------------------------
+        // 1. Create SwissQRCodetext, generate the initial QR code, and export configuration to XML
+        // ------------------------------------------------------------
+        var swissCodetext = new SwissQRCodetext();
+        swissCodetext.Bill.Version = SwissQRBill.QrBillStandardVersion.V2_0;
+        swissCodetext.Bill.Account = "CH4431999123000889012";
+        swissCodetext.Bill.Amount = 1000.25m;
+        swissCodetext.Bill.Currency = "CHF";
+        swissCodetext.Bill.Reference = "210000000003139471430009017";
+        swissCodetext.Bill.Creditor = new Address
+        {
+            Name = "Muster & Söhne",
+            Street = "Musterstrasse",
+            HouseNo = "12b",
+            PostalCode = "8200",
+            Town = "Zürich",
+            CountryCode = "CH"
+        };
+        swissCodetext.Bill.Debtor = new Address
+        {
+            Name = "Muster AG",
+            Street = "Musterstrasse",
+            HouseNo = "1",
+            PostalCode = "3030",
+            Town = "Bern",
+            CountryCode = "CH"
+        };
 
-        // -------------------------------------------------
-        // Step 2: Generate a QR barcode and export its configuration to XML
-        // -------------------------------------------------
+        // Build the plain text representation required for QR generation
+        string plainCodeText = swissCodetext.GetConstructedCodetext();
+
+        // Generate QR code image and export generator settings to XML
         using (var generator = new BarcodeGenerator(EncodeTypes.QR, plainCodeText))
         {
-            // Save the initial barcode image (optional, just to have a file)
-            generator.Save(pngPath, BarCodeImageFormat.Png);
-
-            // Export generator settings, including the codetext, to an XML file
+            generator.Parameters.Barcode.XDimension.Pixels = 4f;
+            generator.Parameters.Barcode.QR.EncodeMode = QREncodeMode.ECI;
+            generator.Parameters.Barcode.QR.ECIEncoding = ECIEncodings.UTF8;
+            generator.Save(firstImagePath, BarCodeImageFormat.Png);
             generator.ExportToXml(xmlPath);
         }
 
-        // -------------------------------------------------
-        // Step 3: Import the generator configuration from XML
-        // -------------------------------------------------
-        if (!File.Exists(xmlPath))
-        {
-            Console.WriteLine($"XML file not found: {xmlPath}");
-            return;
-        }
+        Console.WriteLine($"Initial QR code saved to: {firstImagePath}");
+        Console.WriteLine($"Configuration exported to XML: {xmlPath}");
 
+        // ------------------------------------------------------------
+        // 2. Import generator configuration from XML and decode the Swiss QR codetext
+        // ------------------------------------------------------------
         using (var importedGenerator = BarcodeGenerator.ImportFromXml(xmlPath))
         {
-            // Retrieve the codetext that was stored in the XML
-            string importedCodeText = importedGenerator.CodeText;
-
-            // -------------------------------------------------
-            // Step 4: Decode the SwissQR codetext back into a SwissQRCodetext object
-            // -------------------------------------------------
-            SwissQRCodetext decodedSwissQr = ComplexCodetextReader.TryDecodeSwissQR(importedCodeText);
-            if (decodedSwissQr == null)
+            // Decode the plain code text back into a SwissQRCodetext object
+            SwissQRCodetext decodedCodetext = ComplexCodetextReader.TryDecodeSwissQR(importedGenerator.CodeText);
+            if (decodedCodetext == null)
             {
-                Console.WriteLine("Failed to decode SwissQR codetext from imported XML.");
+                Console.WriteLine("Failed to decode Swiss QR code text from imported configuration.");
                 return;
             }
 
-            // -------------------------------------------------
-            // Step 5: Regenerate the SwissQR barcode using ComplexBarcodeGenerator
-            // -------------------------------------------------
-            using (var complexGenerator = new ComplexBarcodeGenerator(decodedSwissQr))
+            // ------------------------------------------------------------
+            // 3. Regenerate QR code from the decoded SwissQRCodetext object
+            // ------------------------------------------------------------
+            using (var complexGenerator = new ComplexBarcodeGenerator(decodedCodetext))
             {
-                // Save the regenerated barcode image to a new file
-                complexGenerator.Save(regeneratedPngPath, BarCodeImageFormat.Png);
+                complexGenerator.Save(restoredImagePath, BarCodeImageFormat.Png);
             }
+
+            Console.WriteLine($"Restored QR code saved to: {restoredImagePath}");
         }
 
-        Console.WriteLine("SwissQR barcode regenerated successfully.");
+        // Cleanup: optional removal of temporary files (comment out if inspection needed)
+        // Directory.Delete(tempDir, true);
     }
 }

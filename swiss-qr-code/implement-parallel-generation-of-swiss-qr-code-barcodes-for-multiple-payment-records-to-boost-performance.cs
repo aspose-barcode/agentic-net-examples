@@ -1,109 +1,91 @@
-// Title: Parallel generation of Swiss QR Code barcodes for multiple payments
-// Description: Demonstrates how to create Swiss QR Code barcodes concurrently using Aspose.BarCode's ComplexBarcodeGenerator, improving throughput for batch payment processing.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on Swiss QR (QR‑Bill) creation. It showcases the use of SwissQRCodetext, ComplexBarcodeGenerator, and parallel processing to efficiently produce PNG images for payment records—common in financial and invoicing applications where bulk QR‑Bill generation is required.
+// Title: Parallel generation of Swiss QR Code barcodes for payment records
+// Description: Demonstrates how to create Swiss QR Code barcodes for multiple payment records using Aspose.BarCode in parallel to improve performance.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on complex barcode types such as Swiss QR Code. It showcases the use of ComplexBarcodeGenerator, SwissQRCodetext, and related QR settings to produce PNG images, a common requirement for payment processing systems. Developers often need to generate many QR codes quickly, and this pattern illustrates parallel execution for scalability.
 // Prompt: Implement parallel generation of Swiss QR Code barcodes for multiple payment records to boost performance.
-// Tags: barcode symbology, generation, png, swissqr, complexbarcodegenerator, parallel
+// Tags: swissqr, barcode, generation, png, parallel, aspose.barcode, complexbarcodegenerator
 
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
-using Aspose.BarCode.ComplexBarcode;
 using Aspose.BarCode;
+using Aspose.BarCode.Generation;
+using Aspose.BarCode.ComplexBarcode;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates parallel generation of Swiss QR Code barcodes for a collection of payment records.
+/// Demonstrates parallel generation of Swiss QR Code barcodes for a set of payment records.
 /// </summary>
 class Program
 {
-    // Simple model representing a payment record required for Swiss QR generation
-    class PaymentRecord
-    {
-        public string CreditorName { get; set; }
-        public string CountryCode { get; set; }   // ISO country code, e.g., "CH"
-        public string Account { get; set; }       // Valid IBAN
-        public decimal Amount { get; set; }       // Payment amount
-    }
-
     /// <summary>
-    /// Entry point that creates sample payment data, generates Swiss QR Code barcodes in parallel, and saves them as PNG files.
+    /// Entry point. Generates Swiss QR Code PNG files in parallel and writes their paths to the console.
     /// </summary>
     static void Main()
     {
-        // Prepare a small set of sample payment records (safe size for CI)
-        var records = new List<PaymentRecord>
+        // Create a unique temporary output directory for the generated images
+        string outputDir = Path.Combine(Path.GetTempPath(), "SwissQRBatch_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputDir);
+
+        // Define a collection of sample payment records to be encoded as Swiss QR Codes
+        var payments = new List<PaymentRecord>
         {
-            new PaymentRecord
-            {
-                CreditorName = "John Doe",
-                CountryCode = "CH",
-                Account = "CH9300762011623852957",
-                Amount = 199.95m
-            },
-            new PaymentRecord
-            {
-                CreditorName = "Alice Smith",
-                CountryCode = "CH",
-                Account = "CH9300762011623852957",
-                Amount = 50.00m
-            },
-            new PaymentRecord
-            {
-                CreditorName = "Bob Müller",
-                CountryCode = "CH",
-                Account = "CH9300762011623852957",
-                Amount = 123.45m
-            },
-            new PaymentRecord
-            {
-                CreditorName = "Carol Lee",
-                CountryCode = "CH",
-                Account = "CH9300762011623852957",
-                Amount = 75.20m
-            },
-            new PaymentRecord
-            {
-                CreditorName = "David Zhang",
-                CountryCode = "CH",
-                Account = "CH9300762011623852957",
-                Amount = 300.00m
-            }
+            new PaymentRecord { Amount = 150.00m, Reference = "210000000001", CreditorName = "Alice Smith" },
+            new PaymentRecord { Amount = 250.50m, Reference = "210000000002", CreditorName = "Bob Johnson" },
+            new PaymentRecord { Amount = 99.99m,  Reference = "210000000003", CreditorName = "Carol Lee" },
+            new PaymentRecord { Amount = 500.00m, Reference = "210000000004", CreditorName = "David Brown" },
+            new PaymentRecord { Amount = 75.25m,  Reference = "210000000005", CreditorName = "Eve Davis" }
         };
 
-        // Ensure output directory exists
-        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "SwissQR_Output");
-        if (!Directory.Exists(outputDir))
+        // Process each payment record in parallel to speed up barcode generation
+        Parallel.ForEach(payments, payment =>
         {
-            Directory.CreateDirectory(outputDir);
-        }
-
-        // Parallel generation of Swiss QR Code barcodes
-        Parallel.ForEach(records, (record, state, index) =>
-        {
-            // Build Swiss QR codetext based on the current payment record
+            // Build the Swiss QR Code data structure (codetext) for the current payment
             var swissQr = new SwissQRCodetext();
-            swissQr.Bill.Creditor.Name = record.CreditorName;
-            swissQr.Bill.Creditor.CountryCode = record.CountryCode;
-            swissQr.Bill.Account = record.Account;
-            swissQr.Bill.Amount = record.Amount;
             swissQr.Bill.Version = SwissQRBill.QrBillStandardVersion.V2_0;
-            // Optional: set currency (default is CHF)
+            swissQr.Bill.Account = "CH9300762011623852957";
+            swissQr.Bill.Amount = payment.Amount;
             swissQr.Bill.Currency = "CHF";
+            swissQr.Bill.Reference = payment.Reference;
+            swissQr.Bill.Creditor = new Address
+            {
+                Name = payment.CreditorName,
+                Street = "Main Street",
+                HouseNo = "1",
+                PostalCode = "8000",
+                Town = "Zurich",
+                CountryCode = "CH"
+            };
+            // Optional debtor information can be added here if needed
 
-            // Create a unique file name for the barcode image
-            string fileName = $"SwissQR_{index + 1}_{record.CreditorName.Replace(' ', '_')}.png";
-            string filePath = Path.Combine(outputDir, fileName);
+            // Determine the file path for the generated PNG image
+            string filePath = Path.Combine(outputDir, $"SwissQR_{payment.Reference}.png");
 
-            // Generate the barcode and save it directly to the file system
+            // Generate the barcode image using ComplexBarcodeGenerator
             using (var generator = new ComplexBarcodeGenerator(swissQr))
             {
-                // ComplexBarcodeGenerator handles image creation internally
-                generator.Save(filePath);
+                generator.Parameters.Barcode.XDimension.Pixels = 4f;               // Set module size
+                generator.Parameters.Barcode.QR.EncodeMode = QREncodeMode.ECI;   // Use ECI encoding mode
+                generator.Parameters.Barcode.QR.ECIEncoding = ECIEncodings.UTF8; // Specify UTF-8 character set
+                generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH; // High error correction
+                generator.Save(filePath, BarCodeImageFormat.Png);                // Save as PNG
             }
 
+            // Output the location of the generated barcode
             Console.WriteLine($"Generated: {filePath}");
         });
 
+        // Inform the user that all barcodes have been processed
         Console.WriteLine("All Swiss QR Code barcodes have been generated.");
+    }
+
+    /// <summary>
+    /// Simple DTO representing a payment record to be encoded in a Swiss QR Code.
+    /// </summary>
+    class PaymentRecord
+    {
+        public decimal Amount { get; set; }
+        public string Reference { get; set; }
+        public string CreditorName { get; set; }
     }
 }
