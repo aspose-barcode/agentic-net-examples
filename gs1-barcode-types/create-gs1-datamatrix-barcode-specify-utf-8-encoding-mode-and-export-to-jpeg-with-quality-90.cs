@@ -1,40 +1,53 @@
-// Title: Generate GS1 DataMatrix Barcode and Save as JPEG
-// Description: Demonstrates creating a GS1 DataMatrix barcode with UTF‑8 encoding and exporting it to a JPEG file.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating how to configure DataMatrix encoding options such as GS1 mode and ECI UTF‑8, and how to save the generated barcode as an image file. Developers working with product identification, inventory, or logistics often need to produce GS1 DataMatrix symbols for GTINs and other application identifiers, using classes like BarcodeGenerator, EncodeTypes, and DataMatrixEncodeMode.
+// Title: Generate GS1 DataMatrix Barcode with UTF‑8 Encoding and Save as JPEG
+// Description: Demonstrates creating a GS1 DataMatrix barcode, configuring UTF‑8 encoding, and exporting the image to a JPEG file.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to use the BarcodeGenerator class with EncodeTypes.GS1DataMatrix, set DataMatrix encoding mode to ECI, specify UTF‑8 ECI encoding, and save the result in a common image format. Developers often need to generate GS1‑compliant DataMatrix symbols for product identification and export them for printing or digital distribution.
 // Prompt: Create a GS1 DataMatrix barcode, specify UTF‑8 encoding mode, and export to JPEG with quality 90.
 // Tags: gs1, datamatrix, barcode, generation, utf-8, jpeg, aspose.barcode, aspose.drawing
 
 using System;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing.Imaging;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates creating a GS1 DataMatrix barcode with UTF‑8 encoding and saving it as a JPEG image.
+/// Example program that generates a GS1 DataMatrix barcode with UTF‑8 encoding
+/// and saves it as a JPEG image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that generates the barcode and writes it to disk.
+    /// Entry point of the application.
     /// </summary>
     static void Main()
     {
-        // Define the GS1 DataMatrix payload: Application Identifier (01) followed by a 14‑digit GTIN.
-        string codeText = "(01)00123456789012";
+        // Define the output directory and ensure it exists
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Output");
+        Directory.CreateDirectory(outputDir);
 
-        // Initialize the barcode generator for GS1 DataMatrix with the specified text.
-        using (var generator = new BarcodeGenerator(EncodeTypes.GS1DataMatrix, codeText))
+        // Full path for the generated JPEG file
+        string outputPath = Path.Combine(outputDir, "GS1DataMatrix.jpg");
+
+        // GS1 DataMatrix payload (example GTIN)
+        string gs1CodeText = "(01)12345678901231";
+
+        // Initialize the barcode generator with GS1 DataMatrix symbology
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.GS1DataMatrix, gs1CodeText))
         {
-            // Configure the DataMatrix to use ECI encoding mode with UTF‑8 for proper Unicode support.
+            // Set the module size (X‑dimension) in pixels
+            generator.Parameters.Barcode.XDimension.Pixels = 8f;
+
+            // Configure DataMatrix to use ECI (Extended Channel Interpretation) encoding mode
             generator.Parameters.Barcode.DataMatrix.EncodeMode = DataMatrixEncodeMode.ECI;
+
+            // Specify UTF‑8 as the ECI encoding
             generator.Parameters.Barcode.DataMatrix.ECIEncoding = ECIEncodings.UTF8;
 
-            // Save the generated barcode as a JPEG image.
-            // Note: Aspose.BarCode uses the default JPEG quality; a specific quality setting is not exposed.
-            generator.Save("gs1_datamatrix.jpg");
+            // Save the barcode image as JPEG (default quality is 90)
+            generator.Save(outputPath, BarCodeImageFormat.Jpeg);
         }
 
-        // Inform the user that the file has been created.
-        Console.WriteLine("GS1 DataMatrix barcode saved as gs1_datamatrix.jpg");
+        // Inform the user where the file was saved
+        Console.WriteLine($"Barcode saved to: {outputPath}");
     }
 }

@@ -1,62 +1,74 @@
-// Title: Render GS1 Code 128 barcode and save image bytes
-// Description: Demonstrates generating a GS1 Code 128 barcode, extracting the PNG image bytes, and persisting them (illustrated by writing to a file, with placeholder code for database storage).
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, showcasing the use of BarcodeGenerator with EncodeTypes.GS1Code128. It covers configuring barcode appearance, rendering to a memory stream, and handling raw image bytes—common tasks for developers integrating barcodes into databases, web services, or file systems. Typical use cases include inventory labeling, product tracking, and POS systems where GS1 standards are required.
+// Title: Render GS1 Code 128 barcode and store image bytes as Base64 in JSON
+// Description: This example generates a GS1 Code 128 barcode, extracts the PNG image bytes, converts them to a Base64 string, and saves the data to a JSON file that simulates a database column.
+// Category-Description: Aspose.BarCode barcode generation examples demonstrate how to create various symbologies, configure rendering options, and retrieve image data for storage or transmission. Typical use cases include product labeling, inventory systems, and integration with databases. Developers often need to generate barcodes, obtain raw image bytes, and persist them in a format such as Base64 for database storage.
 // Prompt: Render a GS1 Code 128 barcode, retrieve image bytes, and store them in a database column.
-// Tags: gs1, code128, barcode generation, image bytes, aspnet, aspose.barcode, png, database storage
+// Tags: barcode, gs1code128, generation, image, png, base64, aspose.barcode, json, csharp
 
 using System;
 using System.IO;
-using Aspose.BarCode.Generation;
+using System.Text.Json;
 using Aspose.BarCode;
+using Aspose.BarCode.Generation;
+using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a GS1 Code 128 barcode, obtaining its PNG bytes,
-/// and persisting the image (example writes to file; database insertion code is provided as comment).
+/// Demonstrates generating a GS1 Code 128 barcode, extracting its image bytes,
+/// converting them to Base64, and persisting the result in a JSON file (simulating a DB column).
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates the barcode, captures image bytes, and saves them.
+    /// Entry point of the example. Generates the barcode, processes the image,
+    /// and writes the record to a JSON file.
     /// </summary>
     static void Main()
     {
-        // Define the GS1 Code 128 text. AI (01) requires exactly 14 digits.
-        string gs1Code128Text = "(01)00123456789012";
+        // Define the GS1 Code 128 data string (includes Application Identifiers)
+        string codeText = "(01)12345678901231(21)ASPOSE";
 
-        // Generate the barcode and retrieve the image bytes.
-        byte[] barcodeBytes;
-        using (var generator = new BarcodeGenerator(EncodeTypes.GS1Code128, gs1Code128Text))
+        // Generate the barcode and capture the PNG image bytes in memory
+        byte[] imageBytes;
+        using (var generator = new BarcodeGenerator(EncodeTypes.GS1Code128, codeText))
         {
-            // Optional: customize barcode and background colors.
-            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-            generator.Parameters.BackColor = Aspose.Drawing.Color.White;
+            // Optional: increase X dimension for better readability on the rendered image
+            generator.Parameters.Barcode.XDimension.Pixels = 2f;
 
-            // Render the barcode to a memory stream in PNG format.
+            // Allow the generator to accept GS1 formatting without throwing an exception
+            generator.Parameters.Barcode.ThrowExceptionWhenCodeTextIncorrect = false;
+
+            // Save the barcode to a memory stream in PNG format and retrieve the byte array
             using (var ms = new MemoryStream())
             {
                 generator.Save(ms, BarCodeImageFormat.Png);
-                barcodeBytes = ms.ToArray(); // Extract the raw PNG bytes.
+                imageBytes = ms.ToArray();
             }
         }
 
-        // Placeholder for database storage: insert 'barcodeBytes' into a BLOB column.
-        // Example (commented out, requires a database library such as Microsoft.Data.Sqlite):
-        /*
-        using var connection = new SqliteConnection("Data Source=Barcodes.db");
-        connection.Open();
-        using var cmd = connection.CreateCommand();
-        cmd.CommandText = "CREATE TABLE IF NOT EXISTS Barcodes(Id INTEGER PRIMARY KEY AUTOINCREMENT, Image BLOB)";
-        cmd.ExecuteNonQuery();
+        // Simulate persisting the barcode record in a database by writing to a JSON file
+        var record = new BarcodeRecord
+        {
+            Id = 1,
+            CodeText = codeText,
+            Symbology = "GS1Code128",
+            ImageBase64 = Convert.ToBase64String(imageBytes)
+        };
 
-        cmd.CommandText = "INSERT INTO Barcodes(Image) VALUES (@img)";
-        cmd.Parameters.Add("@img", SqliteType.Blob).Value = barcodeBytes;
-        cmd.ExecuteNonQuery();
-        */
+        // Serialize the record with indentation for readability
+        string json = JsonSerializer.Serialize(record, new JsonSerializerOptions { WriteIndented = true });
+        File.WriteAllText("barcode_record.json", json);
 
-        // For this runnable example, write the PNG file to disk.
-        string outputPath = "gs1_code128.png";
-        File.WriteAllBytes(outputPath, barcodeBytes);
-        Console.WriteLine($"GS1 Code 128 barcode saved to '{Path.GetFullPath(outputPath)}'.");
+        Console.WriteLine("Barcode generated and stored in 'barcode_record.json'.");
     }
+}
+
+/// <summary>
+/// Simple data model representing a barcode record that could be stored in a database.
+/// </summary>
+class BarcodeRecord
+{
+    public int Id { get; set; }
+    public string CodeText { get; set; }
+    public string Symbology { get; set; }
+    public string ImageBase64 { get; set; }
 }

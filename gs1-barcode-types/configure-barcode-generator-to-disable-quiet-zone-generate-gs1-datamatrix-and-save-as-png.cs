@@ -1,40 +1,47 @@
-// Title: Generate GS1 DataMatrix barcode without quiet zone and save as PNG
-// Description: Demonstrates how to create a GS1 DataMatrix barcode using Aspose.BarCode, configure resolution, and save the image as PNG. The quiet zone remains at its default because the GS1 DataMatrix standard mandates its presence.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, showcasing the use of EncodeTypes, BarcodeGenerator, and generator parameters. Typical use cases include creating GS1-compliant DataMatrix symbols for product identification, inventory tracking, and packaging. Developers often need to adjust resolution, format, and other settings while adhering to symbology standards.
+// Title: Generate a GS1 DataMatrix barcode without quiet zone and save as PNG
+// Description: Demonstrates how to configure Aspose.BarCode to disable the quiet zone, generate a GS1 DataMatrix barcode, and export it as a PNG image.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on symbology configuration and image output. It showcases the use of BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes to customize barcode parameters such as module size and padding. Developers often need to produce compact barcodes for packaging or labeling where quiet zones are undesirable, and this snippet provides a concise reference.
 // Prompt: Configure the barcode generator to disable the quiet zone, generate a GS1 DataMatrix, and save as PNG.
-// Tags: gs1, datamatrix, barcode, generation, png, aspose.barcode, encode types
+// Tags: datamatrix, gs1, quietzone, png, aspose.barcode, generation, barcode
 
 using System;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generation of a GS1 DataMatrix barcode and saving it as a PNG file.
+/// Demonstrates generating a GS1 DataMatrix barcode without a quiet zone and saving it as a PNG file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example.
+    /// Entry point of the example. Creates a barcode generator, configures parameters, and saves the image.
     /// </summary>
     static void Main()
     {
-        // Define the GS1 DataMatrix payload (GTIN‑14 in AI (01))
-        string codeText = "(01)00123456789012";
+        // Define the GS1 DataMatrix payload (GTIN with Application Identifier 01)
+        string codeText = "(01)12345678901231";
 
-        // Initialize the barcode generator for GS1 DataMatrix with the specified text
+        // Determine the output file path in the current working directory
+        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "gs1_datamatrix.png");
+
+        // Initialize the barcode generator for GS1 DataMatrix symbology
         using (var generator = new BarcodeGenerator(EncodeTypes.GS1DataMatrix, codeText))
         {
-            // The quiet zone cannot be disabled for DataMatrix/GS1DataMatrix symbols
-            // because the standard requires its presence. No quiet‑zone configuration is applied.
+            // Optional: set the module (X) dimension to control barcode size
+            generator.Parameters.Barcode.XDimension.Point = 2f;
 
-            // Optionally increase the image resolution (e.g., 300 DPI) for higher quality output
-            generator.Parameters.Resolution = 300; // DPI
+            // Disable the quiet zone by setting all padding values to zero
+            generator.Parameters.Barcode.Padding.Left.Point = 0f;
+            generator.Parameters.Barcode.Padding.Right.Point = 0f;
+            generator.Parameters.Barcode.Padding.Top.Point = 0f;
+            generator.Parameters.Barcode.Padding.Bottom.Point = 0f;
 
-            // Save the generated barcode as a PNG image file
-            generator.Save("gs1datamatrix.png");
+            // Save the generated barcode as a PNG image
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user that the barcode has been generated
-        Console.WriteLine("GS1 DataMatrix barcode generated: gs1datamatrix.png");
+        // Inform the user where the file was saved
+        Console.WriteLine($"GS1 DataMatrix barcode saved to: {outputPath}");
     }
 }

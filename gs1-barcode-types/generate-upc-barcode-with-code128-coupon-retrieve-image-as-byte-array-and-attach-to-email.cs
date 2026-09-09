@@ -1,19 +1,18 @@
-// Title: Generate UPC‑A barcode with Code128 coupon and attach as PNG to email
-// Description: Demonstrates creating a UPC‑A barcode that includes a GS1‑128 coupon segment, converting it to a PNG byte array, and attaching it to an email message.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, showcasing how to use BarcodeGenerator with EncodeTypes.UpcaGs1Code128Coupon, customize visual parameters, export the image to a memory stream, and integrate the result into .NET email APIs. Developers often need to embed barcodes in communications such as order confirmations or promotional emails, requiring image extraction and attachment handling.
+// Title: Generate UPC‑A barcode with Code128 coupon and email attachment
+// Description: Demonstrates creating a UPC‑A barcode that includes a GS1 Code128 coupon, converting it to a PNG byte array, and attaching it to an email message.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, showcasing the use of BarcodeGenerator with EncodeTypes.UpcaGs1Code128Coupon, image export via BarCodeImageFormat, and integration with System.Net.Mail for email delivery. Developers often need to produce combined symbology barcodes and send them as attachments in automated notifications or order processing workflows.
 // Prompt: Generate a UPC‑A barcode with a Code128 coupon, retrieve image as byte array, and attach to email.
-// Tags: upc-a, code128, coupon, barcode generation, image png, email attachment, aspose.barcode, aspose.drawing
+// Tags: upc-a, code128, coupon, barcode, image, email, aspose.barcode, png
 
 using System;
 using System.IO;
 using System.Net.Mail;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that creates a UPC‑A barcode with an embedded Code128 coupon,
-/// converts the barcode to a PNG byte array, and prepares an email with the image attached.
+/// Example program that generates a UPC‑A barcode with an embedded Code128 coupon,
+/// converts the barcode image to a PNG byte array, and prepares an email with the image attached.
 /// </summary>
 class Program
 {
@@ -22,52 +21,43 @@ class Program
     /// </summary>
     static void Main()
     {
-        // Define the UPC‑A code text that includes a Code128 coupon segment.
-        // Example format: "514141100906(8102)03"
-        string codeText = "514141100906(8102)03";
+        // Define the barcode text, including the GS1 coupon segment.
+        string codeText = "123456789012(8110)ASPOSE";
 
-        // Initialize the barcode generator for UPC‑A with GS1‑128 coupon symbology.
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.UpcaGs1Code128Coupon, codeText))
+        // Generate the barcode and capture the PNG image as a byte array.
+        byte[] imageBytes;
+        using (var generator = new BarcodeGenerator(EncodeTypes.UpcaGs1Code128Coupon, codeText))
         {
-            // Optional visual customizations.
-            generator.Parameters.Barcode.XDimension.Point = 2f;      // Set module (X) size.
-            generator.Parameters.Barcode.BarHeight.Point = 50f;    // Set bar height for the linear part.
-            generator.Parameters.BackColor = Aspose.Drawing.Color.White;
-            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
+            // Set the X-dimension (module width) to 2 pixels for better readability.
+            generator.Parameters.Barcode.XDimension.Pixels = 2;
 
-            // Render the barcode to a memory stream in PNG format.
-            using (MemoryStream imageStream = new MemoryStream())
+            // Save the barcode to a memory stream in PNG format.
+            using (var ms = new MemoryStream())
             {
-                generator.Save(imageStream, BarCodeImageFormat.Png);
-                byte[] imageBytes = imageStream.ToArray(); // Retrieve the PNG image as a byte array.
+                generator.Save(ms, BarCodeImageFormat.Png);
+                imageBytes = ms.ToArray(); // Extract the byte array from the stream.
+            }
+        }
 
-                // Compose an email message and attach the barcode image.
-                using (MailMessage mail = new MailMessage())
+        // Compose an email message and attach the barcode image.
+        using (var message = new MailMessage())
+        {
+            message.From = new MailAddress("sender@example.com");
+            message.To.Add("recipient@example.com");
+            message.Subject = "UPC‑A with Code128 Coupon Barcode";
+            message.Body = "Please find the generated barcode attached.";
+
+            // Create an attachment from the image byte array.
+            using (var attachmentStream = new MemoryStream(imageBytes))
+            {
+                var attachment = new Attachment(attachmentStream, "barcode.png", "image/png");
+                message.Attachments.Add(attachment);
+
+                // Configure the SMTP client (placeholder configuration).
+                using (var client = new SmtpClient("localhost"))
                 {
-                    mail.From = new MailAddress("sender@example.com");
-                    mail.To.Add("recipient@example.com");
-                    mail.Subject = "UPC‑A Barcode with Code128 Coupon";
-                    mail.Body = "Please find the generated barcode attached.";
-
-                    // Create an attachment from the image byte array.
-                    using (MemoryStream attachmentStream = new MemoryStream(imageBytes))
-                    {
-                        Attachment attachment = new Attachment(attachmentStream, "barcode.png", "image/png");
-                        mail.Attachments.Add(attachment);
-
-                        // Demonstrate email preparation. In CI environments, sending is omitted.
-                        using (SmtpClient smtp = new SmtpClient())
-                        {
-                            // Uncomment and configure the following lines for real email sending.
-                            // smtp.Host = "smtp.example.com";
-                            // smtp.Port = 587;
-                            // smtp.Credentials = new System.Net.NetworkCredential("user", "password");
-                            // smtp.EnableSsl = true;
-                            // smtp.Send(mail);
-
-                            Console.WriteLine("Email prepared with barcode attachment (size: {0} bytes).", imageBytes.Length);
-                        }
-                    }
+                    // client.Send(message); // Uncomment when a valid SMTP server is available.
+                    Console.WriteLine($"Email prepared with barcode attachment ({imageBytes.Length} bytes).");
                 }
             }
         }
