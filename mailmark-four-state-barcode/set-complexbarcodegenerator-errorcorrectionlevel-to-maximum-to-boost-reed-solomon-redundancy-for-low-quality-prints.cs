@@ -1,8 +1,8 @@
-// Title: Generate Swiss QR Code with Maximum Reed‑Solomon Error Correction
-// Description: Demonstrates how to create a Swiss QR bill barcode and set the QR error correction level to the highest (Level H) to improve readability on low‑quality prints.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It shows usage of ComplexBarcodeGenerator, SwissQRCodetext, and QR parameters to produce a Swiss QR bill image. Developers working with payment QR codes often need to adjust error correction levels, colors, and output formats, making this a common pattern in financial and invoicing applications.
+// Title: Generate Swiss QR Code with Maximum Error Correction
+// Description: Demonstrates creating a Swiss QR bill barcode using Aspose.BarCode with the highest QR error correction level to improve readability on low‑quality prints.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It showcases the use of ComplexBarcodeGenerator, SwissQRCodetext, and QR error correction settings. Developers working with payment QR codes, such as Swiss QR bills, often need to adjust error correction levels to ensure reliable scanning under suboptimal printing conditions. The snippet illustrates typical steps: preparing codetext, configuring generator parameters, and saving the image.
 // Prompt: Set ComplexBarcodeGenerator ErrorCorrectionLevel to maximum to boost Reed‑Solomon redundancy for low‑quality prints.
-// Tags: swiss qr, error correction, png, complexbarcodegenerator, swissqrcodetext, barcode generation
+// Tags: barcode, complex barcode, swiss qr, error correction, qr, png, aspose.barcode, generation
 
 using System;
 using System.IO;
@@ -10,18 +10,19 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.ComplexBarcode;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that creates a Swiss QR bill barcode with maximum error correction.
+/// Example program that generates a Swiss QR bill barcode with the highest QR error correction level.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Builds the Swiss QR codetext, configures the generator, and saves the image.
+    /// Entry point. Prepares Swiss QR codetext, configures the generator, and saves the barcode image.
     /// </summary>
     static void Main()
     {
-        // Prepare Swiss QR codetext with required fields
+        // Prepare Swiss QR codetext with creditor and payment details
         var swissQr = new SwissQRCodetext();
         swissQr.Bill.Creditor.Name = "John Doe";
         swissQr.Bill.Creditor.CountryCode = "CH";
@@ -29,22 +30,21 @@ class Program
         swissQr.Bill.Amount = 199.95m;
         swissQr.Bill.Version = SwissQRBill.QrBillStandardVersion.V2_0;
 
-        // Create ComplexBarcodeGenerator for the Swiss QR codetext
+        // Create a ComplexBarcodeGenerator using the prepared codetext
         using (var generator = new ComplexBarcodeGenerator(swissQr))
         {
-            // Set maximum Reed‑Solomon error correction (Level H) for QR part
+            // Set the QR error correction level to the maximum (Level H) for better redundancy
             generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
 
-            // Optional: set colors for better visibility
-            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-            generator.Parameters.BackColor = Aspose.Drawing.Color.White;
+            // Optionally adjust the module size (X dimension) for visual clarity
+            generator.Parameters.Barcode.XDimension.Point = 2f;
 
-            // Save the generated barcode image as PNG
-            string outputPath = "SwissQR_MaxError.png";
+            // Define the output file path and save the barcode as a PNG image
+            string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "SwissQR_MaxError.png");
             generator.Save(outputPath, BarCodeImageFormat.Png);
 
-            // Inform the user where the file was saved
-            Console.WriteLine($"Barcode saved to {Path.GetFullPath(outputPath)}");
+            // Inform the user where the image was saved
+            Console.WriteLine($"Barcode saved to: {outputPath}");
         }
     }
 }

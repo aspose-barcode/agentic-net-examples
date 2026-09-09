@@ -1,63 +1,92 @@
-// Title: Read Mailmark barcode from an image stream using BarCodeReader
-// Description: Demonstrates generating a Mailmark barcode, saving it to a memory stream, and decoding it with BarCodeReader using DecodeType.Mailmark.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of ComplexBarcodeGenerator for creating Mailmark barcodes and BarCodeReader for decoding them. Developers working with postal services, logistics, or any application that requires Mailmark symbology can refer to this pattern for generating and reading Mailmark codes in .NET.
+// Title: Read Mailmark barcode from JPEG stream using BarCodeReader
+// Description: Demonstrates generating a Mailmark 4‑state barcode, saving it as a JPEG in a memory stream, and decoding it with BarCodeReader.
+// Category-Description: This example belongs to the Aspose.BarCode suite covering complex barcode generation and recognition. It showcases the use of ComplexBarcodeGenerator for creating Mailmark symbols, BarCodeImageFormat for image output, and BarCodeReader with DecodeType.Mailmark for extraction. Developers working with postal automation, supply‑chain tracking, or any scenario requiring Mailmark decoding will find these APIs essential for creating and reading high‑density barcodes.
 // Prompt: Read a Mailmark barcode from a JPEG stream using BarCodeReader with DecodeType.Mailmark.
-// Tags: mailmark, barcode, generation, recognition, decode, c#, aspose.barcode
+// Tags: mailmark, barcode, read, jpeg, aspose.barcode, complexbarcode, decode, csharp
 
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.BarCode.ComplexBarcode;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that creates a Mailmark barcode, stores it in a memory stream,
-/// and reads it back using <see cref="BarCodeReader"/> with <see cref="DecodeType.Mailmark"/>.
+/// Example program that generates a Mailmark barcode, stores it in a JPEG memory stream,
+/// and then reads and decodes the barcode using Aspose.BarCode APIs.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a Mailmark barcode, writes it to a stream,
-    /// then decodes the barcode from the same stream and prints the result.
+    /// Entry point of the example. Executes the generation, saving, and reading of a Mailmark barcode.
     /// </summary>
     static void Main()
     {
-        // Create a valid Mailmark codetext object with required fields.
+        // ------------------------------------------------------------
+        // 1. Create a Mailmark 4‑state codetext instance with sample data.
+        // ------------------------------------------------------------
         var mailmark = new MailmarkCodetext
         {
-            Format = 4,                     // 4‑state Mailmark
+            Format = 4,
             VersionID = 1,
             Class = "0",
             SupplychainID = 384224,
             ItemID = 16563762,
-            DestinationPostCodePlusDPS = "EF61AH8T " // trailing space is required
+            DestinationPostCodePlusDPS = "EF61AH8T "
         };
 
-        // Generate the Mailmark barcode image into a memory stream.
-        using (var barcodeStream = new MemoryStream())
+        // ------------------------------------------------------------
+        // 2. Generate the barcode image and write it to a memory stream as JPEG.
+        // ------------------------------------------------------------
+        using (var ms = new MemoryStream())
         {
-            // Use ComplexBarcodeGenerator to create the barcode image.
             using (var generator = new ComplexBarcodeGenerator(mailmark))
             {
-                // Save the generated barcode as PNG into the stream.
-                generator.Save(barcodeStream, BarCodeImageFormat.Png);
+                // Set the X‑dimension (module size) to 4 pixels for better readability.
+                generator.Parameters.Barcode.XDimension.Pixels = 4f;
+
+                // Save the generated barcode into the memory stream in JPEG format.
+                generator.Save(ms, BarCodeImageFormat.Jpeg);
             }
 
-            // Reset the stream position to the beginning before reading.
-            barcodeStream.Position = 0;
+            // Reset stream position to the beginning before reading.
+            ms.Position = 0;
 
-            // Set the decode type to Mailmark for the reader.
-            BaseDecodeType decodeType = DecodeType.Mailmark;
-
-            // Initialize BarCodeReader with the stream and specified decode type.
-            using (var reader = new BarCodeReader(barcodeStream, decodeType))
+            // ------------------------------------------------------------
+            // 3. Read the barcode from the memory stream using BarCodeReader.
+            // ------------------------------------------------------------
+            using (var reader = new BarCodeReader(ms, DecodeType.Mailmark))
             {
-                // Iterate through all detected barcodes (should be one in this case).
-                foreach (var result in reader.ReadBarCodes())
+                // Attempt to read all barcodes of the specified type.
+                var results = reader.ReadBarCodes();
+
+                // If no barcode was detected, inform the user and exit.
+                if (results.Length == 0)
                 {
-                    // Output the decoded Mailmark CodeText to the console.
-                    Console.WriteLine($"Detected Mailmark CodeText: {result.CodeText}");
+                    Console.WriteLine("No Mailmark barcode detected.");
+                    return;
                 }
+
+                // --------------------------------------------------------
+                // 4. Decode the complex Mailmark codetext into its components.
+                // --------------------------------------------------------
+                var decoded = ComplexCodetextReader.TryDecodeMailmark(results[0].CodeText);
+                if (decoded == null)
+                {
+                    Console.WriteLine("Failed to decode Mailmark codetext.");
+                    return;
+                }
+
+                // --------------------------------------------------------
+                // 5. Output the decoded Mailmark fields to the console.
+                // --------------------------------------------------------
+                Console.WriteLine($"Format: {decoded.Format}");
+                Console.WriteLine($"VersionID: {decoded.VersionID}");
+                Console.WriteLine($"Class: {decoded.Class}");
+                Console.WriteLine($"SupplychainID: {decoded.SupplychainID}");
+                Console.WriteLine($"ItemID: {decoded.ItemID}");
+                Console.WriteLine($"DestinationPostCodePlusDPS: '{decoded.DestinationPostCodePlusDPS}'");
             }
         }
     }

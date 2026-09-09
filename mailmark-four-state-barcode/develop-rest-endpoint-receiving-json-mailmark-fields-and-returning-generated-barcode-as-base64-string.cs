@@ -1,98 +1,115 @@
-// Title: Generate Mailmark 4‑state barcode and return Base64 string
-// Description: Demonstrates creating a Mailmark 4‑state barcode from JSON input and encoding the image as a Base64 string, suitable for returning from a REST endpoint.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It showcases the use of Aspose.BarCode.ComplexBarcode.MailmarkCodetext and Aspose.BarCode.Generation.ComplexBarcodeGenerator to produce Mailmark barcodes, a common requirement in postal automation and logistics. Developers often need to convert barcode images to Base64 for web APIs, email attachments, or storage.
+// Title: Generate Mailmark 2D barcode and return Base64 string
+// Description: Demonstrates parsing Mailmark JSON fields, creating a Mailmark 2D barcode with Aspose.BarCode, and outputting the image as a Base64 string.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on complex barcode types such as Mailmark 2D. It showcases the use of ComplexBarcodeGenerator, Mailmark2DCodetext, and related parameter settings to produce PNG images. Developers building REST services that need to generate barcodes from JSON payloads can adapt this pattern for on‑the‑fly image creation and Base64 encoding.
 // Prompt: Develop a REST endpoint receiving JSON Mailmark fields and returning the generated barcode as Base64 string.
-// Tags: mailmark, barcode, generation, base64, aspnet, aspose.barcode, json, rest
+// Tags: mailmark, barcode, generation, base64, json, aspnet, aspose.barcode, complexbarcode
 
 using System;
 using System.IO;
 using System.Text.Json;
+using Aspose.BarCode;
 using Aspose.BarCode.ComplexBarcode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing;
 
-namespace MailmarkBarcodeDemo
+/// <summary>
+/// Example program that creates a Mailmark 2D barcode from JSON input and outputs the image as a Base64 string.
+/// </summary>
+class Program
 {
-    /// <summary>
-    /// Model matching the expected JSON payload for Mailmark barcode generation.
-    /// </summary>
-    public class MailmarkRequest
-    {
-        public int Format { get; set; }               // Must be 4 for 4‑state Mailmark
-        public int VersionID { get; set; }            // Typically 1
-        public string Class { get; set; }             // e.g. "0"
-        public int SupplychainID { get; set; }        // e.g. 384224
-        public int ItemID { get; set; }               // e.g. 16563762
-        public string DestinationPostCodePlusDPS { get; set; } // Must include trailing space
-    }
+    // Sample JSON representing Mailmark 2D fields (in a real service this would be received via HTTP POST)
+    private const string SampleJson = @"{
+        ""UPUCountryID"": ""JGB "",
+        ""InformationTypeID"": ""0"",
+        ""VersionID"": ""1"",
+        ""Class"": ""1"",
+        ""SupplyChainID"": 123,
+        ""ItemID"": 1234,
+        ""DestinationPostCodeAndDPS"": ""EF61AH8T "",
+        ""RTSFlag"": ""0"",
+        ""ReturnToSenderPostCode"": ""QWE2 "",
+        ""CustomerContent"": ""CUSTOM DATA"",
+        ""DataMatrixType"": ""Type_9""
+    }";
 
     /// <summary>
-    /// Demonstrates generating a Mailmark barcode from JSON data and outputting the image as a Base64 string.
+    /// Entry point. Parses JSON, generates a Mailmark 2D barcode, and writes the PNG image as a Base64 string.
     /// </summary>
-    class Program
+    static void Main()
     {
-        /// <summary>
-        /// Entry point – simulates a REST call by deserializing a JSON payload, creating a Mailmark barcode,
-        /// and writing the Base64‑encoded PNG image to the console (representing the HTTP response body).
-        /// </summary>
-        static void Main()
+        // In a real application this JSON would come from an HTTP POST request.
+        // The console example parses the JSON, generates the barcode, and prints the Base64 string.
+        try
         {
-            // Sample JSON input – in a real REST service this would come from the request body
-            string jsonInput = @"{
-                ""Format"": 4,
-                ""VersionID"": 1,
-                ""Class"": ""0"",
-                ""SupplychainID"": 384224,
-                ""ItemID"": 16563762,
-                ""DestinationPostCodePlusDPS"": ""EF61AH8T ""
-            }";
-
-            // Deserialize JSON to a strongly‑typed request object
-            MailmarkRequest request = JsonSerializer.Deserialize<MailmarkRequest>(jsonInput);
+            // Deserialize the incoming JSON into a strongly‑typed request object
+            MailmarkRequest request = JsonSerializer.Deserialize<MailmarkRequest>(SampleJson);
             if (request == null)
             {
-                Console.WriteLine("Invalid input.");
+                Console.WriteLine("Failed to deserialize request.");
                 return;
             }
 
-            // Basic validation of required fields
-            if (request.Format != 4)
+            // Populate the Mailmark2DCodetext object with values from the request
+            Mailmark2DCodetext mailmark = new Mailmark2DCodetext
             {
-                Console.WriteLine("Only Mailmark 4‑state (Format=4) is supported.");
-                return;
-            }
-            if (string.IsNullOrEmpty(request.Class) ||
-                string.IsNullOrEmpty(request.DestinationPostCodePlusDPS))
-            {
-                Console.WriteLine("Missing required Mailmark fields.");
-                return;
-            }
-
-            // Populate the MailmarkCodetext object with request data
-            var mailmark = new MailmarkCodetext
-            {
-                Format = request.Format,
+                UPUCountryID = request.UPUCountryID,
+                InformationTypeID = request.InformationTypeID,
                 VersionID = request.VersionID,
                 Class = request.Class,
-                SupplychainID = request.SupplychainID,
+                SupplyChainID = request.SupplyChainID,
                 ItemID = request.ItemID,
-                DestinationPostCodePlusDPS = request.DestinationPostCodePlusDPS
+                DestinationPostCodeAndDPS = request.DestinationPostCodeAndDPS,
+                RTSFlag = request.RTSFlag,
+                ReturnToSenderPostCode = request.ReturnToSenderPostCode,
+                CustomerContent = request.CustomerContent
             };
 
-            // Generate the barcode image into a memory stream
-            using (var ms = new MemoryStream())
+            // Resolve DataMatrixType enum value via reflection (as per rules)
+            var field = typeof(Mailmark2DType).GetField(request.DataMatrixType);
+            if (field == null)
             {
-                using (var generator = new ComplexBarcodeGenerator(mailmark))
+                Console.WriteLine($"Unknown DataMatrixType: {request.DataMatrixType}");
+                return;
+            }
+            mailmark.DataMatrixType = (Mailmark2DType)field.GetValue(null);
+
+            // Generate the barcode using ComplexBarcodeGenerator
+            using (var generator = new ComplexBarcodeGenerator(mailmark))
+            {
+                // Set X‑dimension (pixel size) for the barcode modules
+                generator.Parameters.Barcode.XDimension.Pixels = 4f;
+
+                // Save the barcode image to a memory stream in PNG format
+                using (var ms = new MemoryStream())
                 {
-                    // Save the barcode as PNG (BarCodeImageFormat resides in Aspose.BarCode.Generation)
                     generator.Save(ms, BarCodeImageFormat.Png);
+
+                    // Convert the image bytes to a Base64 string and output it
+                    string base64 = Convert.ToBase64String(ms.ToArray());
+                    Console.WriteLine(base64);
                 }
-
-                // Convert the PNG bytes to a Base64 string
-                string base64 = Convert.ToBase64String(ms.ToArray());
-
-                // Output the Base64 string (simulating a REST response body)
-                Console.WriteLine(base64);
             }
         }
+        catch (Exception ex)
+        {
+            // Log any unexpected errors
+            Console.WriteLine($"Error: {ex.Message}");
+        }
+    }
+
+    // DTO representing the expected JSON payload for Mailmark barcode generation
+    private class MailmarkRequest
+    {
+        public string UPUCountryID { get; set; }
+        public string InformationTypeID { get; set; }
+        public string VersionID { get; set; }
+        public string Class { get; set; }
+        public int SupplyChainID { get; set; }
+        public int ItemID { get; set; }
+        public string DestinationPostCodeAndDPS { get; set; }
+        public string RTSFlag { get; set; }
+        public string ReturnToSenderPostCode { get; set; }
+        public string CustomerContent { get; set; }
+        public string DataMatrixType { get; set; }
     }
 }

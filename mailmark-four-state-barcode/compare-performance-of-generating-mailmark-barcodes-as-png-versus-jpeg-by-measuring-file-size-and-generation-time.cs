@@ -1,105 +1,80 @@
-// Title: Mailmark Barcode Generation: PNG vs JPEG Performance Comparison
-// Description: Demonstrates generating Mailmark barcodes as PNG and JPEG images, measuring file size and generation time for each format.
-// Category-Description: Shows how to use Aspose.BarCode's ComplexBarcodeGenerator to create Mailmark barcodes, covering image format selection, stream handling, and performance measurement. This example belongs to the barcode generation and image export category, where developers often need to compare output formats for size and speed.
+// Title: Mailmark Barcode Generation Performance: PNG vs JPEG
+// Description: Demonstrates generating a Mailmark 2D barcode as PNG and JPEG, measuring generation time and file size to compare performance.
+// Category-Description: This example belongs to the Aspose.BarCode performance testing category, showcasing how to use ComplexBarcodeGenerator and Mailmark2DCodetext to create postal Mailmark barcodes. Developers often need to evaluate output formats (PNG, JPEG) for size and speed when integrating barcode generation into high‑throughput mailing systems.
 // Prompt: Compare performance of generating Mailmark barcodes as PNG versus JPEG by measuring file size and generation time.
-// Tags: mailmark, barcode, performance, png, jpeg, imageformat, complexbarcodegenerator, aspose.barcode
+// Tags: mailmark, barcode, performance, png, jpeg, file size, generation time, aspose.barcode, complexbarcodegenerator
 
 using System;
 using System.IO;
 using System.Diagnostics;
-using Aspose.BarCode.ComplexBarcode;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode.ComplexBarcode;
 
 /// <summary>
-/// Generates a series of Mailmark barcodes in PNG and JPEG formats,
-/// then reports file size and generation time for each format.
+/// Generates a Mailmark 2D barcode in PNG and JPEG formats,
+/// then reports the generation time and resulting file sizes.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates output directory, generates barcodes,
-    /// saves them as PNG and JPEG, and prints performance metrics.
+    /// Entry point of the example. Creates temporary files, generates the barcode,
+    /// measures performance, and writes results to the console.
     /// </summary>
     static void Main()
     {
-        // Ensure the output directory exists
-        string outputDir = "MailmarkOutput";
-        if (!Directory.Exists(outputDir))
+        // Create a unique temporary directory for the output files
+        string tempDir = Path.Combine(Path.GetTempPath(), "MailmarkPerf_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+
+        // Define output file paths for PNG and JPEG images
+        string pngPath = Path.Combine(tempDir, "mailmark.png");
+        string jpegPath = Path.Combine(tempDir, "mailmark.jpg");
+
+        // Prepare Mailmark 2D codetext with required fields
+        Mailmark2DCodetext mailmark = new Mailmark2DCodetext();
+        mailmark.UPUCountryID = "JGB ";
+        mailmark.InformationTypeID = "0";
+        mailmark.VersionID = "1";
+        mailmark.Class = "1";
+        mailmark.SupplyChainID = 123;
+        mailmark.ItemID = 1234;
+        mailmark.DestinationPostCodeAndDPS = "EF61AH8T ";
+        mailmark.RTSFlag = "0";
+        mailmark.ReturnToSenderPostCode = " ";
+        mailmark.CustomerContent = "CUSTOM";
+        mailmark.DataMatrixType = Mailmark2DType.Type_7;
+
+        // -------------------- Generate PNG --------------------
+        Stopwatch swPng = new Stopwatch();
+        swPng.Start();
+        using (ComplexBarcodeGenerator generator = new ComplexBarcodeGenerator(mailmark))
         {
-            Directory.CreateDirectory(outputDir);
+            // Set module size (pixel dimension) for the barcode
+            generator.Parameters.Barcode.XDimension.Pixels = 4;
+            // Save the barcode as a PNG image
+            generator.Save(pngPath, BarCodeImageFormat.Png);
         }
+        swPng.Stop();
 
-        // Number of barcode samples to generate
-        int sampleCount = 5;
-
-        for (int i = 0; i < sampleCount; i++)
+        // -------------------- Generate JPEG --------------------
+        Stopwatch swJpeg = new Stopwatch();
+        swJpeg.Start();
+        using (ComplexBarcodeGenerator generator = new ComplexBarcodeGenerator(mailmark))
         {
-            // Prepare Mailmark codetext with unique ItemID for each sample
-            var mailmark = new MailmarkCodetext
-            {
-                Format = 4,                     // 4‑state Mailmark
-                VersionID = 1,
-                Class = "0",
-                SupplychainID = 384224,
-                ItemID = 16563762 + i,          // vary ItemID to keep records unique
-                DestinationPostCodePlusDPS = "EF61AH8T " // trailing space is required
-            };
-
-            // ---------- PNG generation ----------
-            string pngPath = Path.Combine(outputDir, $"mailmark_{i}_png.png");
-            long pngSize;
-            double pngMs;
-
-            using (var generator = new ComplexBarcodeGenerator(mailmark))
-            using (var pngStream = new MemoryStream())
-            {
-                // Measure time to render PNG
-                var sw = Stopwatch.StartNew();
-                generator.Save(pngStream, BarCodeImageFormat.Png);
-                sw.Stop();
-                pngMs = sw.Elapsed.TotalMilliseconds;
-
-                // Write PNG stream to file
-                pngStream.Position = 0;
-                using (var file = new FileStream(pngPath, FileMode.Create, FileAccess.Write))
-                {
-                    pngStream.CopyTo(file);
-                }
-            }
-
-            // Retrieve PNG file size
-            pngSize = new FileInfo(pngPath).Length;
-
-            // ---------- JPEG generation ----------
-            string jpegPath = Path.Combine(outputDir, $"mailmark_{i}_jpeg.jpg");
-            long jpegSize;
-            double jpegMs;
-
-            using (var generator = new ComplexBarcodeGenerator(mailmark))
-            using (var jpegStream = new MemoryStream())
-            {
-                // Measure time to render JPEG
-                var sw = Stopwatch.StartNew();
-                generator.Save(jpegStream, BarCodeImageFormat.Jpeg);
-                sw.Stop();
-                jpegMs = sw.Elapsed.TotalMilliseconds;
-
-                // Write JPEG stream to file
-                jpegStream.Position = 0;
-                using (var file = new FileStream(jpegPath, FileMode.Create, FileAccess.Write))
-                {
-                    jpegStream.CopyTo(file);
-                }
-            }
-
-            // Retrieve JPEG file size
-            jpegSize = new FileInfo(jpegPath).Length;
-
-            // Output comparison results for the current record
-            Console.WriteLine($"Record {i}: PNG - {pngSize} bytes, {pngMs:F2} ms; JPEG - {jpegSize} bytes, {jpegMs:F2} ms");
+            // Reuse the same module size for consistency
+            generator.Parameters.Barcode.XDimension.Pixels = 4;
+            // Save the barcode as a JPEG image
+            generator.Save(jpegPath, BarCodeImageFormat.Jpeg);
         }
+        swJpeg.Stop();
 
-        // Indicate that the performance comparison has finished
-        Console.WriteLine("Performance comparison completed.");
+        // Retrieve file sizes for both generated images
+        long pngSize = new FileInfo(pngPath).Length;
+        long jpegSize = new FileInfo(jpegPath).Length;
+
+        // Output performance results to the console
+        Console.WriteLine($"PNG  - Time: {swPng.ElapsedMilliseconds} ms, Size: {pngSize} bytes");
+        Console.WriteLine($"JPEG - Time: {swJpeg.ElapsedMilliseconds} ms, Size: {jpegSize} bytes");
     }
 }
