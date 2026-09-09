@@ -1,63 +1,88 @@
-// Title: Decode Code39 barcodes while ignoring whitespace
-// Description: Demonstrates configuring BarCodeReader to strip spaces from decoded Code39 text, useful when scanning barcodes that contain unintended whitespace.
-// Category-Description: This example belongs to the Aspose.BarCode recognition category, illustrating how to use BarCodeReader with DecodeType.Code39 and adjust QualitySettings to tolerate minor barcode imperfections. Developers often need to preprocess decoded strings, such as removing whitespace, to match expected data formats in inventory or tracking systems.
+// Title: Ignore whitespace when decoding Code39 barcodes with BarCodeReader
+// Description: Demonstrates how to configure BarCodeReader to strip whitespace-like characters while decoding Code39 barcodes generated with spaces.
+// Category-Description: This example belongs to the Aspose.BarCode reading and decoding category. It showcases the use of BarCodeReader and BarcodeGenerator classes to create a Code39 barcode, then read it with and without whitespace stripping. Developers often need to handle barcodes that contain spaces or other non‑data characters; setting the StripFNC property enables ignoring such characters during recognition, a common requirement in inventory and logistics applications.
 // Prompt: Set BarCodeReader to ignore white space when decoding Code39 barcodes in scanned images.
-// Tags: code39, whitespace, barcode reader, decoding, aspose.barcode, recognition
+// Tags: code39, barcode, whitespace, stripfnc, decoding, aspose.barcode, csharp
 
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Shows how to generate a Code39 barcode, read it, and ignore whitespace in the decoded result.
+/// Example program that generates a Code39 barcode containing a space and
+/// demonstrates how to read it with and without whitespace stripping using
+/// Aspose.BarCode's <see cref="BarCodeReader"/>.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a Code39 barcode containing spaces,
-    /// reads it with BarCodeReader, and outputs the original and whitespace‑removed text.
+    /// Entry point of the example. Generates a barcode, reads it twice (default
+    /// and with <c>StripFNC</c> enabled), and cleans up temporary files.
     /// </summary>
-    static void Main()
+    /// <param name="args">Command‑line arguments (not used).</param>
+    static void Main(string[] args)
     {
-        // Sample Code39 text containing spaces
-        const string originalCodeText = "A B C";
+        // Create a unique temporary folder for the barcode image
+        string tempFolder = Path.Combine(Path.GetTempPath(), "Code39Demo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
+        string imagePath = Path.Combine(tempFolder, "code39.png");
 
-        // Generate a Code39 barcode image in memory
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code39, originalCodeText))
+        // Generate a Code39 barcode that includes a whitespace character in the text
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code39, "ABC 123"))
         {
-            // Save barcode to a memory stream as PNG
-            using (var ms = new MemoryStream())
+            // Set the X‑dimension (module width) to 2 pixels for better visibility
+            generator.Parameters.Barcode.XDimension.Pixels = 2f;
+            // Save the barcode as a PNG image
+            generator.Save(imagePath, BarCodeImageFormat.Png);
+        }
+
+        // Verify that the image was created successfully
+        if (!File.Exists(imagePath))
+        {
+            Console.WriteLine("Failed to create barcode image.");
+            return;
+        }
+
+        // --------------------------------------------------------------------
+        // Read the barcode without stripping whitespace (default behavior)
+        // --------------------------------------------------------------------
+        Console.WriteLine("Reading without StripFNC (default):");
+        using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.Code39))
+        {
+            foreach (BarCodeResult result in reader.ReadBarCodes())
             {
-                generator.Save(ms, BarCodeImageFormat.Png);
-                ms.Position = 0; // Reset stream position for reading
-
-                // Load the image from the memory stream
-                using (var bitmap = new Bitmap(ms))
-                {
-                    // Initialize BarCodeReader for Code39
-                    using (var reader = new BarCodeReader(bitmap, DecodeType.Code39))
-                    {
-                        // Allow recognition of barcodes with minor issues (e.g., unexpected spaces)
-                        reader.QualitySettings.AllowIncorrectBarcodes = true;
-
-                        // Read all detected barcodes
-                        foreach (var result in reader.ReadBarCodes())
-                        {
-                            // Original decoded text (may contain spaces)
-                            string decoded = result.CodeText ?? string.Empty;
-
-                            // Ignore whitespace by removing all space characters
-                            string cleaned = decoded.Replace(" ", string.Empty);
-
-                            Console.WriteLine($"Original decoded text: \"{decoded}\"");
-                            Console.WriteLine($"Whitespace ignored text: \"{cleaned}\"");
-                        }
-                    }
-                }
+                Console.WriteLine($"CodeType: {result.CodeTypeName}");
+                Console.WriteLine($"CodeText: {result.CodeText}");
             }
+        }
+
+        // --------------------------------------------------------------------
+        // Read the barcode with StripFNC = true to ignore whitespace-like characters
+        // --------------------------------------------------------------------
+        Console.WriteLine("\nReading with StripFNC = true (ignore whitespace):");
+        using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.Code39))
+        {
+            // Enable stripping of FNC characters, which also removes spaces for Code39
+            reader.BarcodeSettings.StripFNC = true;
+            foreach (BarCodeResult result in reader.ReadBarCodes())
+            {
+                Console.WriteLine($"CodeType: {result.CodeTypeName}");
+                Console.WriteLine($"CodeText: {result.CodeText}");
+            }
+        }
+
+        // Cleanup temporary files (optional)
+        try
+        {
+            File.Delete(imagePath);
+            Directory.Delete(tempFolder);
+        }
+        catch
+        {
+            // Ignore any errors that occur during cleanup
         }
     }
 }

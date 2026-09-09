@@ -1,8 +1,8 @@
-// Title: Read PDF417 Barcode Linked State Metadata from Image
-// Description: Generates a PDF417 barcode image (simulating an AWS S3 download) and reads its linked state metadata using Aspose.BarCode.
-// Category-Description: This example demonstrates Aspose.BarCode generation and recognition workflows, focusing on PDF417 symbology. It showcases the BarcodeGenerator for creating barcodes and BarCodeReader for extracting data, including extended metadata. Developers working with barcode imaging, document processing, or inventory systems often need to generate barcodes, store them (e.g., in cloud storage), and later decode them to retrieve embedded information.
+// Title: Read PDF417 linked state from a generated barcode image
+// Description: Demonstrates generating a PDF417 barcode with linked state enabled, saving it locally, and reading the linked state metadata using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator for creating PDF417 barcodes and BarCodeReader for extracting extended PDF417 metadata such as the linked state. Developers working with PDF417 symbology often need to encode linked data and later verify it, making this pattern useful for inventory, shipping, or document tracking solutions.
 // Prompt: Download image from AWS S3 bucket and read PDF417 linked state metadata.
-// Tags: pdf417, barcode, read, metadata, aspose.barcode, generation, recognition
+// Tags: pdf417, linked state, barcode generation, barcode recognition, aspose.barcode, image processing
 
 using System;
 using System.IO;
@@ -11,65 +11,79 @@ using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates how to generate a PDF417 barcode image, simulate its retrieval from AWS S3,
-/// and read linked state metadata using Aspose.BarCode APIs.
+/// Demonstrates generating a PDF417 barcode with linked state and reading its metadata.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a barcode, verifies its existence,
-    /// and reads the barcode along with any linked state metadata.
+    /// Entry point. Generates a barcode, optionally downloads it from S3, and reads linked state metadata.
     /// </summary>
     static void Main()
     {
-        // Define the local path for the sample barcode image.
-        string barcodePath = "pdf417.png";
+        // Prepare a temporary working directory for the barcode image
+        string workDir = Path.Combine(Path.GetTempPath(), "Pdf417Linked_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(workDir);
 
-        // ------------------------------------------------------------
-        // Step 1: Generate a sample PDF417 barcode image locally.
-        // ------------------------------------------------------------
-        // In a real scenario the image would be downloaded from AWS S3.
-        // Since AWS SDK is not available in the runner, we use a local file as a substitute.
-        // The following code creates a PDF417 barcode with sample text.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Pdf417, "Sample PDF417 Text"))
+        // Define the full path where the generated barcode image will be saved
+        string barcodePath = Path.Combine(workDir, "linkedPdf417.png");
+
+        // Generate a PDF417 barcode with the linked state enabled
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Pdf417, "SampleLinkedState"))
         {
-            // Save the generated barcode image to the specified path.
+            // Set barcode visual parameters
+            generator.Parameters.Barcode.XDimension.Pixels = 2f;
+            // Enable the linked state flag for PDF417
+            generator.Parameters.Barcode.Pdf417.IsLinked = true;
+            // Save the barcode as a PNG image
             generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        // Verify that the barcode image was successfully created.
+        // In a real environment you could download the image from AWS S3 like this:
+        // (Amazon S3 SDK is not available in the snippet runner, so this code is commented out)
+        /*
+        using (var s3Client = new AmazonS3Client("accessKey", "secretKey", RegionEndpoint.USEast1))
+        {
+            var request = new GetObjectRequest
+            {
+                BucketName = "your-bucket-name",
+                Key = "path/to/linkedPdf417.png"
+            };
+            using (var response = s3Client.GetObjectAsync(request).Result)
+            using (var responseStream = response.ResponseStream)
+            using (var fileStream = new FileStream(barcodePath, FileMode.Create, FileAccess.Write))
+            {
+                responseStream.CopyTo(fileStream);
+            }
+        }
+        */
+
+        // Verify that the barcode image was created before attempting to read it
         if (!File.Exists(barcodePath))
         {
-            Console.WriteLine($"Error: Barcode image '{barcodePath}' was not found.");
+            Console.WriteLine("Barcode image not found: " + barcodePath);
             return;
         }
 
-        // ------------------------------------------------------------
-        // Step 2: Read the PDF417 barcode and output linked state metadata.
-        // ------------------------------------------------------------
-        // The BarCodeReader reads the barcode from the image file.
-        using (var reader = new BarCodeReader(barcodePath, DecodeType.Pdf417))
+        // Read the barcode image and output linked state metadata
+        using (BarCodeReader reader = new BarCodeReader(barcodePath, DecodeType.Pdf417))
         {
-            // Iterate through detected barcodes (there should be only one in this example).
-            foreach (var result in reader.ReadBarCodes())
+            foreach (BarCodeResult result in reader.ReadBarCodes())
             {
-                Console.WriteLine($"Detected Barcode Type: {result.CodeType}");
+                Console.WriteLine($"CodeType: {result.CodeTypeName}");
                 Console.WriteLine($"CodeText: {result.CodeText}");
-
-                // Linked state metadata (if present) can be accessed via the extended PDF417 parameters.
-                // The exact property name may vary; typically it is something like:
-                // result.Extended.Pdf417.LinkedStateMetadata
-                // Uncomment and adjust the following line if the property exists in your version:
-                // Console.WriteLine($"Linked State Metadata: {result.Extended.Pdf417.LinkedStateMetadata}");
-
-                // Placeholder indicating where metadata extraction would occur.
-                Console.WriteLine("Linked State Metadata extraction placeholder.");
+                Console.WriteLine($"IsLinked: {result.Extended.Pdf417.IsLinked}");
             }
         }
 
-        // ------------------------------------------------------------
-        // Note: In a production environment, replace the local file handling
-        // with actual AWS S3 download logic (e.g., using AmazonS3Client).
-        // ------------------------------------------------------------
+        // Clean up temporary files (optional)
+        try
+        {
+            File.Delete(barcodePath);
+            Directory.Delete(workDir);
+        }
+        catch
+        {
+            // Ignored - cleanup failure should not affect program outcome
+        }
     }
 }

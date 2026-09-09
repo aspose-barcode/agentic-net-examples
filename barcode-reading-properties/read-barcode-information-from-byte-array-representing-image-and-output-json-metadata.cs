@@ -1,71 +1,83 @@
-// Title: Read barcode from byte array and output JSON metadata
-// Description: Demonstrates generating a barcode image, converting it to a byte array, reading the barcode from that array, and serializing the detection results to JSON.
-// Category-Description: This example belongs to the Aspose.BarCode reading and serialization category. It shows how to use BarcodeGenerator to create barcodes, BarCodeReader to decode them from streams, and System.Text.Json to produce structured JSON output. Developers often need to process barcode images received as byte arrays (e.g., from databases or web services) and extract metadata for logging, analytics, or further processing.
+// Title: Read barcode from image byte array and output JSON metadata
+// Description: This example generates a QR barcode, converts it to a byte array, reads the barcode from the image, and serializes the detection metadata to JSON.
+// Category-Description: Demonstrates Aspose.BarCode generation and recognition APIs. It shows how to create a barcode image, work with image data in memory, use BarCodeReader to detect all supported symbologies, and extract region, angle, and point information. Developers often need these steps for automated scanning, image processing pipelines, or integrating barcode data into web services.
 // Prompt: Read barcode information from a byte array representing an image and output JSON metadata.
-// Tags: code128, barcode, read, json, aspose.barcode, aspose.drawing, serialization
+// Tags: barcode, qr, read, json, aspose.barcode, generation, recognition, bytearray
 
 using System;
-using System.Collections.Generic;
 using System.IO;
+using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates a barcode, reads it from a byte array,
-/// and outputs the detection metadata as formatted JSON.
+/// Demonstrates reading barcode information from an in‑memory image and outputting JSON metadata.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a sample barcode, reads it from memory,
-    /// collects detection details, and prints them as JSON.
+    /// Entry point. Generates a QR code, reads it from a byte array, and prints JSON metadata to the console.
     /// </summary>
-    /// <param name="args">Command‑line arguments (not used).</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Generate a sample Code128 barcode and store it in a memory stream.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
+        // Generate a sample QR barcode and obtain its image as a byte array.
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "SampleText"))
         {
-            using (var memoryStream = new MemoryStream())
+            // Set the X dimension (module size) of the QR code.
+            generator.Parameters.Barcode.XDimension.Pixels = 4f;
+
+            // Save the generated barcode to a memory stream in PNG format.
+            using (var ms = new MemoryStream())
             {
-                // Save the barcode image as PNG into the memory stream.
-                generator.Save(memoryStream, BarCodeImageFormat.Png);
-                // Convert the stream contents to a byte array.
-                byte[] imageBytes = memoryStream.ToArray();
+                generator.Save(ms, BarCodeImageFormat.Png);
+                byte[] imageBytes = ms.ToArray();
 
-                // Initialize a barcode reader to decode all supported types from the byte array.
-                using (var reader = new BarCodeReader(new MemoryStream(imageBytes), DecodeType.AllSupportedTypes))
+                // Create a bitmap from the byte array for recognition.
+                using (var bitmap = new Bitmap(new MemoryStream(imageBytes)))
                 {
-                    var barcodeInfos = new List<object>();
-
-                    // Iterate over each detected barcode and collect its metadata.
-                    foreach (var result in reader.ReadBarCodes())
+                    // Initialize a reader that can decode all supported barcode types.
+                    using (var reader = new BarCodeReader(bitmap, DecodeType.AllSupportedTypes))
                     {
-                        var rect = result.Region.Rectangle;
-                        var info = new
-                        {
-                            CodeType = result.CodeTypeName,
-                            CodeText = result.CodeText,
-                            Confidence = result.Confidence,
-                            ReadingQuality = result.ReadingQuality,
-                            Region = new
-                            {
-                                X = rect.X,
-                                Y = rect.Y,
-                                Width = rect.Width,
-                                Height = rect.Height
-                            }
-                        };
-                        barcodeInfos.Add(info);
-                    }
+                        // Read all barcodes found in the image.
+                        BarCodeResult[] results = reader.ReadBarCodes();
+                        var metadataList = new List<object>();
 
-                    // Serialize the collected metadata to indented JSON and output it.
-                    string json = JsonSerializer.Serialize(
-                        barcodeInfos,
-                        new JsonSerializerOptions { WriteIndented = true });
-                    Console.WriteLine(json);
+                        // Process each detection result.
+                        foreach (var result in results)
+                        {
+                            var rect = result.Region.Rectangle;
+                            var points = result.Region.Points
+                                .Select(p => new { X = p.X, Y = p.Y })
+                                .ToArray();
+
+                            // Build an anonymous object containing relevant metadata.
+                            var metadata = new
+                            {
+                                CodeText = result.CodeText,
+                                CodeTypeName = result.CodeTypeName,
+                                Region = new
+                                {
+                                    X = rect.X,
+                                    Y = rect.Y,
+                                    Width = rect.Width,
+                                    Height = rect.Height
+                                },
+                                Angle = result.Region.Angle,
+                                Points = points
+                            };
+
+                            metadataList.Add(metadata);
+                        }
+
+                        // Serialize the metadata collection to formatted JSON.
+                        string json = JsonSerializer.Serialize(metadataList, new JsonSerializerOptions { WriteIndented = true });
+                        Console.WriteLine(json);
+                    }
                 }
             }
         }

@@ -1,8 +1,8 @@
-// Title: Capture barcode region as rectangle and convert to absolute pixel coordinates
-// Description: Demonstrates generating a Code128 barcode, reading it, and extracting the barcode region as pixel-based rectangle values.
-// Category-Description: This example belongs to the Aspose.BarCode image processing category, illustrating how to generate a barcode image with BarcodeGenerator, recognize it using BarCodeReader, and retrieve the Region.Rectangle for each detected barcode. Developers commonly use these APIs to locate barcodes within images, perform layout calculations, or integrate with UI components that require exact pixel positions.
-// Prompt: Capture barcode region as a rectangle object and convert coordinates to absolute pixel values.
-// Tags: code128, region-capture, pixel-coordinates, barcode-generation, barcode-recognition, aspose.barcode, aspose.drawing
+// Title: Capture Barcode Region and Convert to Pixel Coordinates
+// Description: Demonstrates how to generate a QR barcode, read it, obtain the barcode region in points, and convert those coordinates to absolute pixel values based on image resolution.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes, BarCodeReader for detecting them, and Aspose.Drawing.Rectangle for handling region data. Typical scenarios include extracting barcode locations for cropping, overlaying graphics, or aligning UI elements. Developers working with barcode imaging often need to translate region coordinates from points to pixels to integrate with pixel‑based workflows.
+/// Prompt: Capture barcode region as a rectangle object and convert coordinates to absolute pixel values.
+/// Tags: barcode, qr, region, coordinates, pixel, generation, recognition, aspose.barcode, aspose.drawing
 
 using System;
 using System.IO;
@@ -12,43 +12,68 @@ using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates barcode generation, recognition, and extraction of the barcode region as pixel coordinates.
+/// Example program that generates a QR barcode, reads it back, and converts the detected region
+/// from point units to absolute pixel values using the image's DPI.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a Code128 barcode, reads it, and prints the detected region in absolute pixel values.
+    /// Entry point of the example. Executes the barcode generation, detection, and coordinate conversion.
     /// </summary>
     static void Main()
     {
-        // Create a simple Code128 barcode image in memory
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
+        // Create a unique temporary folder to store the generated image.
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeRegionDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
+
+        // Define the full path for the barcode image file.
+        string barcodePath = Path.Combine(tempFolder, "barcode.png");
+
+        // Generate a sample QR barcode and save it as a PNG file.
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "123456789"))
         {
-            // Generate the barcode bitmap (Aspose.Drawing.Bitmap)
-            using (var bitmap = generator.GenerateBarCodeImage())
+            generator.Save(barcodePath, BarCodeImageFormat.Png);
+        }
+
+        // Load the saved image to retrieve its resolution (DPI).
+        using (Bitmap bitmap = new Bitmap(barcodePath))
+        {
+            float dpiX = bitmap.HorizontalResolution;
+            float dpiY = bitmap.VerticalResolution;
+
+            // Initialize a barcode reader for QR codes.
+            using (BarCodeReader reader = new BarCodeReader(barcodePath, DecodeType.QR))
             {
-                // Initialize the reader with the generated bitmap
-                using (var reader = new BarCodeReader(bitmap))
+                // Iterate through all detected barcodes in the image.
+                foreach (BarCodeResult result in reader.ReadBarCodes())
                 {
-                    // Read all barcodes found in the image
-                    foreach (var result in reader.ReadBarCodes())
-                    {
-                        // Obtain the region rectangle (coordinates are in pixels)
-                        var rect = result.Region.Rectangle;
+                    // Obtain the region rectangle (coordinates are expressed in points).
+                    Rectangle rect = result.Region.Rectangle;
 
-                        // Convert to absolute integer pixel values
-                        int x = (int)Math.Round((double)rect.X);
-                        int y = (int)Math.Round((double)rect.Y);
-                        int width = (int)Math.Round((double)rect.Width);
-                        int height = (int)Math.Round((double)rect.Height);
+                    // Convert the rectangle's point coordinates to absolute pixel values.
+                    int pixelX = (int)Math.Round((double)rect.X * dpiX / 72.0);
+                    int pixelY = (int)Math.Round((double)rect.Y * dpiY / 72.0);
+                    int pixelWidth = (int)Math.Round((double)rect.Width * dpiX / 72.0);
+                    int pixelHeight = (int)Math.Round((double)rect.Height * dpiY / 72.0);
 
-                        // Output detection details
-                        Console.WriteLine($"Detected barcode type: {result.CodeTypeName}");
-                        Console.WriteLine($"Code text: {result.CodeText}");
-                        Console.WriteLine($"Region (pixels) - X:{x}, Y:{y}, Width:{width}, Height:{height}");
-                    }
+                    // Output barcode details and both point and pixel region information.
+                    Console.WriteLine($"Code Type: {result.CodeTypeName}");
+                    Console.WriteLine($"Code Text: {result.CodeText}");
+                    Console.WriteLine($"Region (points) - X:{rect.X}, Y:{rect.Y}, Width:{rect.Width}, Height:{rect.Height}");
+                    Console.WriteLine($"Region (pixels) - X:{pixelX}, Y:{pixelY}, Width:{pixelWidth}, Height:{pixelHeight}");
+                    Console.WriteLine($"Angle: {result.Region.Angle}");
                 }
             }
+        }
+
+        // Clean up temporary files (optional). Errors during deletion are ignored.
+        try
+        {
+            Directory.Delete(tempFolder, true);
+        }
+        catch
+        {
+            // Suppress any exceptions thrown while attempting to delete the temporary folder.
         }
     }
 }

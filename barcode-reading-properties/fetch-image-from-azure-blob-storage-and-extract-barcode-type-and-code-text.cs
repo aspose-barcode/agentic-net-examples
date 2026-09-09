@@ -1,58 +1,83 @@
-// Title: Extract barcode information from an image stored in Azure Blob Storage
-// Description: Demonstrates how to download an image from Azure Blob storage (illustrated as a placeholder) and use Aspose.BarCode to recognize barcode type and text.
-// Category-Description: This example belongs to the Aspose.BarCode recognition category, showcasing the BarCodeReader class for decoding various symbologies from image streams. Typical use cases include processing scanned documents, inventory images, or any media retrieved from cloud storage. Developers often need to integrate Azure Blob retrieval with barcode extraction for automated workflows.
+// Title: Extract barcode from Azure Blob image using Aspose.BarCode
+// Description: Demonstrates downloading an image from Azure Blob storage (code commented) and using Aspose.BarCode to detect and read any barcode present in the image.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes and BarCodeReader for decoding them. Typical scenarios include processing images stored in cloud storage, extracting product codes, or validating QR codes in automated workflows. Developers often need to combine Azure Blob SDK with Aspose.BarCode APIs to retrieve images and perform fast, reliable barcode recognition.
 // Prompt: Fetch image from Azure Blob storage and extract barcode type and code text.
-// Tags: barcode recognition, azure blob storage, decode type, image processing, aspose.barcode
+// Tags: barcode, azure blob, extraction, recognition, aspose.barcode, qrcode, decode, .net
 
 using System;
 using System.IO;
 using Aspose.BarCode;
+using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Sample program that demonstrates how to obtain an image from Azure Blob storage
-/// (shown as a commented placeholder) and extract barcode information using Aspose.BarCode.
+/// Sample program that generates a QR code if missing, optionally downloads an image from Azure Blob storage,
+/// and reads all supported barcodes using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Reads an image, creates a BarCodeReader,
-    /// and prints detected barcode types and their corresponding text values.
+    /// Entry point. Generates a sample barcode image, optionally replaces it with a blob download,
+    /// and prints detected barcode type and text to the console.
     /// </summary>
     static void Main()
     {
-        // NOTE: In a real environment you would download the image from Azure Blob Storage.
-        // The Azure SDK is not available in the snippet runner, so the code is shown as a comment.
-        /*
-        // Azure Blob Storage example (requires Azure.Storage.Blobs NuGet package)
+        // Define a temporary file path for the barcode image
+        string imagePath = Path.Combine(Path.GetTempPath(), "sample_barcode.png");
+
+        // If the image does not exist locally, generate a sample QR code image
+        if (!File.Exists(imagePath))
+        {
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "SampleBarcodeText"))
+            {
+                // Set the module size (pixel dimension) for better readability
+                generator.Parameters.Barcode.XDimension.Pixels = 4;
+                // Save the generated QR code as a PNG file
+                generator.Save(imagePath, BarCodeImageFormat.Png);
+            }
+        }
+
+        // -----------------------------------------------------------------
+        // Azure Blob Storage download (commented out – SDK not available here)
+        // -----------------------------------------------------------------
         // string connectionString = "<your_connection_string>";
-        // string containerName = "<your_container_name>";
+        // string containerName = "<your_container>";
         // string blobName = "<your_blob_name>";
-        // var blobClient = new BlobClient(connectionString, containerName, blobName);
-        // using var memoryStream = new MemoryStream();
-        // blobClient.DownloadTo(memoryStream);
-        // memoryStream.Position = 0;
-        // ProcessImageStream(memoryStream);
-        */
+        // using (var blobClient = new BlobClient(connectionString, containerName, blobName))
+        // {
+        //     using (MemoryStream ms = new MemoryStream())
+        //     {
+        //         blobClient.DownloadTo(ms);
+        //         ms.Position = 0;
+        //         // Save to local file for processing
+        //         using (FileStream fs = new FileStream(imagePath, FileMode.Create, FileAccess.Write))
+        //         {
+        //             ms.CopyTo(fs);
+        //         }
+        //     }
+        // }
 
-        // Local fallback image for the runnable example
-        string imagePath = "sample.png";
-
-        // Verify that the image file exists before attempting to read it
+        // Ensure the image file exists before attempting to read it
         if (!File.Exists(imagePath))
         {
             Console.WriteLine($"Image file not found: {imagePath}");
             return;
         }
 
-        // Initialize BarCodeReader to scan all supported barcode types in the image file
+        // Use Aspose.BarCode to read all supported barcode types from the image
         using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
         {
-            // Iterate through all detected barcodes and output their type and text
-            foreach (var result in reader.ReadBarCodes())
+            bool anyFound = false;
+            foreach (BarCodeResult result in reader.ReadBarCodes())
             {
-                Console.WriteLine($"BarCode Type: {result.CodeTypeName}");
-                Console.WriteLine($"BarCode CodeText: {result.CodeText}");
+                anyFound = true;
+                Console.WriteLine($"Barcode type: {result.CodeTypeName}");
+                Console.WriteLine($"Barcode data: {result.CodeText}");
+            }
+
+            if (!anyFound)
+            {
+                Console.WriteLine("No barcodes detected in the image.");
             }
         }
     }

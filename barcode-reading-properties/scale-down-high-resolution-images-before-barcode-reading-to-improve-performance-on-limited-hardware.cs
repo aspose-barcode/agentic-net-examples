@@ -1,103 +1,109 @@
-// Title: Scale Down High‑Resolution Barcode Image for Faster Reading
-// Description: Demonstrates generating a high‑resolution barcode, scaling it down, and reading the barcode to improve performance on limited hardware.
-// Category-Description: This example belongs to the Aspose.BarCode image preprocessing category. It shows how to use BarcodeGenerator, Image manipulation classes from Aspose.Drawing, and BarCodeReader to downscale images before recognition. Developers often need to reduce image size to speed up barcode scanning on devices with constrained resources.
-// Prompt: Scale down high‑resolution images before barcode reading to improve performance on limited hardware.
-// Tags: barcode, scaling, image preprocessing, code128, reading, generation, aspose.barcode, aspose.drawing
+// Title: Scale down high‑resolution barcode image before reading
+// Description: Demonstrates generating a high‑resolution Code128 barcode, scaling it down to reduce size, and then reading the barcode from the scaled image.
+// Category-Description: This example belongs to the Aspose.BarCode image processing category, showcasing how to use BarcodeGenerator for barcode creation, System.Drawing for image scaling, and BarCodeReader for barcode recognition. Typical use cases include optimizing performance on devices with limited resources by reducing image resolution before decoding. Developers often need to balance image quality with processing speed, and this snippet provides a clear pattern for that workflow.
+/// Prompt: Scale down high‑resolution images before barcode reading to improve performance on limited hardware.
+/// Tags: code128, scaling, png, barcode generation, barcode recognition
 
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
-using Aspose.Drawing.Drawing2D;
 
 /// <summary>
-/// Example program that creates a high‑resolution barcode, scales the image down,
-/// and reads the barcode from the scaled image to demonstrate performance‑optimizing preprocessing.
+/// Demonstrates generating a high‑resolution barcode, scaling the image down,
+/// and reading the barcode from the scaled image to improve performance on limited hardware.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a barcode, downscales it, reads it, and cleans up temporary files.
+    /// Entry point of the demo. Creates a temporary folder, generates a barcode,
+    /// scales the image, reads the barcode, and cleans up temporary files.
     /// </summary>
     static void Main()
     {
-        // Paths for the generated high‑resolution and scaled images
-        const string highResPath = "highres.png";
-        const string scaledPath = "scaled.png";
+        // Create a temporary working folder for demo files
+        string workFolder = Path.Combine(Path.GetTempPath(), "BarcodeScaleDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(workFolder);
 
-        // -------------------------------------------------
-        // 1. Generate a high‑resolution barcode image
-        // -------------------------------------------------
+        // Define file paths for the original and scaled images
+        string originalPath = Path.Combine(workFolder, "original.png");
+        string scaledPath = Path.Combine(workFolder, "scaled.png");
+
+        // Generate a high‑resolution Code128 barcode image
         using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            // Increase resolution to simulate a high‑resolution source (300 DPI)
-            generator.Parameters.Resolution = 300f;
-            // Save the barcode as a PNG file
-            generator.Save(highResPath, BarCodeImageFormat.Png);
+            // Set larger dimensions (points) to increase image resolution
+            generator.Parameters.ImageWidth.Point = 800f;
+            generator.Parameters.ImageHeight.Point = 300f;
+            generator.Save(originalPath, BarCodeImageFormat.Png);
         }
 
-        // Verify the high‑resolution file was created successfully
-        if (!File.Exists(highResPath))
+        // Verify that the original image was created successfully
+        if (!File.Exists(originalPath))
         {
-            Console.WriteLine($"Failed to create {highResPath}");
+            Console.WriteLine("Failed to create the original barcode image.");
             return;
         }
 
-        // -------------------------------------------------
-        // 2. Downscale the image to improve recognition speed
-        // -------------------------------------------------
-        using (var originalImage = Image.FromFile(highResPath))
+        // Load the original image for scaling
+        using (Bitmap original = (Bitmap)Image.FromFile(originalPath))
         {
-            // Calculate target dimensions (50 % of original size)
-            int targetWidth = originalImage.Width / 2;
-            int targetHeight = originalImage.Height / 2;
+            // Calculate scaled dimensions (e.g., 25% of the original size)
+            int newWidth = original.Width / 4;
+            int newHeight = original.Height / 4;
+            if (newWidth == 0) newWidth = 1;
+            if (newHeight == 0) newHeight = 1;
 
-            using (var scaledBitmap = new Bitmap(targetWidth, targetHeight))
+            // Create a new bitmap with the scaled dimensions
+            using (Bitmap scaled = new Bitmap(newWidth, newHeight))
             {
-                using (var graphics = Graphics.FromImage(scaledBitmap))
+                // Draw the original image onto the scaled bitmap
+                using (Graphics g = Graphics.FromImage(scaled))
                 {
-                    // Use high‑quality interpolation for better visual fidelity
-                    graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
-                    // Draw the original image onto the scaled bitmap
-                    graphics.DrawImage(originalImage, 0, 0, targetWidth, targetHeight);
+                    g.DrawImage(original, 0, 0, newWidth, newHeight);
                 }
 
-                // Save the downscaled image as PNG
-                scaledBitmap.Save(scaledPath, ImageFormat.Png);
+                // Save the scaled image to disk
+                scaled.Save(scaledPath, ImageFormat.Png);
             }
         }
 
-        // Verify the scaled file was created successfully
+        // Verify that the scaled image was saved successfully
         if (!File.Exists(scaledPath))
         {
-            Console.WriteLine($"Failed to create {scaledPath}");
+            Console.WriteLine("Failed to create the scaled barcode image.");
             return;
         }
 
-        // -------------------------------------------------
-        // 3. Read the barcode from the scaled image
-        // -------------------------------------------------
-        using (var reader = new BarCodeReader(scaledPath, DecodeType.Code128))
+        // Read and decode the barcode from the scaled image
+        using (var reader = new BarCodeReader(scaledPath, DecodeType.AllSupportedTypes))
         {
-            foreach (var result in reader.ReadBarCodes())
+            var barcodes = reader.ReadBarCodes();
+            if (barcodes.Length == 0)
             {
-                Console.WriteLine($"Detected barcode type: {result.CodeType}");
-                Console.WriteLine($"Decoded text: {result.CodeText}");
+                Console.WriteLine("No barcode detected in the scaled image.");
+            }
+            else
+            {
+                foreach (var result in barcodes)
+                {
+                    Console.WriteLine($"Detected Type: {result.CodeTypeName}, Text: {result.CodeText}");
+                }
             }
         }
 
-        // Cleanup: optional removal of temporary files (best‑effort)
+        // Optional cleanup of temporary files and folder
         try
         {
-            File.Delete(highResPath);
+            File.Delete(originalPath);
             File.Delete(scaledPath);
+            Directory.Delete(workFolder);
         }
         catch
         {
-            // Ignored – cleanup failures are non‑critical
+            // Ignored - cleanup not critical for demo
         }
     }
 }

@@ -1,8 +1,8 @@
-// Title: Generate and Read a Code128 Barcode Using Aspose.BarCode
-// Description: This example creates a Code128 barcode image, saves it to disk, then reads and displays the barcode data, demonstrating proper disposal of BarCodeReader.
-// Category-Description: This sample belongs to the Aspose.BarCode generation and recognition category, illustrating how to use BarcodeGenerator for creating barcodes and BarCodeReader for decoding them. Developers commonly need to generate barcodes for labeling and later validate them by reading the encoded information, requiring proper resource management of unmanaged handles.
+// Title: Demonstrate proper disposal of BarCodeReader with using block
+// Description: This example generates a Code128 barcode image, reads it using BarCodeReader, and ensures unmanaged resources are released by disposing the reader within a using statement.
+// Category-Description: Shows how to work with Aspose.BarCode for barcode generation and recognition, focusing on resource management. The example uses BarcodeGenerator, BarCodeReader, and related classes to create, read, and clean up barcode images—common tasks for developers integrating barcode scanning into .NET applications.
 // Prompt: Dispose BarCodeReader instance properly within a using block to release unmanaged resources.
-// Tags: barcode generation, barcode recognition, code128, aspose.barcode, csharp, using, disposal
+// Tags: barcode symbology, generation, recognition, resource management, using, aspose.barcode, code128, png
 
 using System;
 using System.IO;
@@ -11,49 +11,53 @@ using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates generating a Code128 barcode, saving it to a file, and reading it back using Aspose.BarCode.
+/// Example program that generates a Code128 barcode, reads it, and cleans up resources.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a barcode image, reads it, outputs the decoded information, and cleans up.
+    /// Entry point. Generates a barcode image, reads it using BarCodeReader inside a using block, and deletes temporary files.
     /// </summary>
     static void Main()
     {
-        // Define the output file path for the generated barcode image
-        string filePath = "barcode.png";
+        // Create a unique temporary directory for the demo files
+        string tempDir = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        // Define the full path for the barcode image file
+        string imagePath = Path.Combine(tempDir, "code128.png");
 
-        // Generate a Code128 barcode and save it to the specified file
+        // Generate a Code128 barcode image and save it as PNG
         using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
         {
-            generator.Save(filePath);
+            generator.Save(imagePath, BarCodeImageFormat.Png);
         }
 
-        // Verify that the barcode image was successfully created
-        if (!File.Exists(filePath))
+        // Verify that the image file was created successfully
+        if (!File.Exists(imagePath))
         {
-            Console.WriteLine("Barcode image was not created.");
+            Console.WriteLine("Failed to create barcode image.");
             return;
         }
 
-        // Read the barcode from the image using BarCodeReader within a using block to ensure proper disposal
-        using (var reader = new BarCodeReader(filePath, DecodeType.Code128))
+        // Read the barcode from the image using BarCodeReader inside a using block to ensure proper disposal
+        using (var reader = new BarCodeReader(imagePath, DecodeType.Code128))
         {
-            foreach (var result in reader.ReadBarCodes())
+            var results = reader.ReadBarCodes();
+            foreach (var result in results)
             {
-                Console.WriteLine("Detected Type: " + result.CodeTypeName);
-                Console.WriteLine("Detected Text: " + result.CodeText);
+                Console.WriteLine($"Detected {result.CodeTypeName}: {result.CodeText}");
             }
         }
 
-        // Optional cleanup: delete the generated barcode image file
+        // Attempt to delete the temporary image file and directory; ignore any errors
         try
         {
-            File.Delete(filePath);
+            File.Delete(imagePath);
+            Directory.Delete(tempDir, true);
         }
         catch
         {
-            // Suppress any exceptions that occur during file cleanup
+            // Ignored
         }
     }
 }

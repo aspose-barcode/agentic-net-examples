@@ -1,70 +1,70 @@
-// Title: Extract barcodes from password-protected PDF using Aspose.BarCode
-// Description: Demonstrates how to open an encrypted PDF with a password, render each page to an image, and read any barcodes present.
-// Category-Description: This example belongs to the Aspose.BarCode PDF processing category, illustrating the use of Aspose.Pdf.Document, PdfConverter, and Aspose.BarCode.BarCodeRecognition.BarCodeReader to decode barcodes from secured PDF files. Typical scenarios include scanning invoices, tickets, or forms that are password-protected, where developers need to extract barcode data without manual decryption.
+// Title: Extract barcodes from encrypted PDF using Aspose.BarCode
+// Description: Demonstrates opening a password‑protected PDF, converting each page to an image, and reading all supported barcodes with Aspose.BarCodeReader.
+// Category-Description: This example belongs to the Aspose.BarCode for .NET PDF processing collection. It shows how to work with encrypted PDF documents, use Aspose.Pdf to render pages to images, and employ BarCodeReader (DecodeType.AllSupportedTypes) to detect any barcode symbology. Developers often need to batch‑process secured PDFs to extract embedded barcodes for inventory, shipping, or document verification workflows.
 // Prompt: Process encrypted PDF files by providing password to BarCodeReader and extracting barcode data.
-// Tags: pdf, encryption, barcode, decoding, aspnet, aspose.barcode, aspose.pdf
+// Tags: pdf, encryption, barcode, extraction, decode, all-supported-types, aspose.barcode, aspose.pdf
 
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Pdf;
 using Aspose.Pdf.Facades;
+using Aspose.Pdf.Devices;
 
 /// <summary>
-/// Example program that opens an encrypted PDF, renders each page to an image,
-/// and extracts any barcodes using Aspose.BarCode.
+/// Example program that reads an encrypted PDF, converts each page to an image,
+/// and extracts any barcode data using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
+    /// Entry point. Accepts optional command‑line arguments for the PDF path and password.
     /// </summary>
-    /// <param name="args">Command‑line arguments (not used).</param>
+    /// <param name="args">args[0] = PDF file path (default: sample_encrypted.pdf), args[1] = password (default: password)</param>
     static void Main(string[] args)
     {
-        // Path to the encrypted PDF file (adjust as needed)
-        string pdfPath = "encrypted.pdf";
+        // Resolve PDF file path and password from command‑line or use defaults.
+        string pdfPath = args.Length > 0 ? args[0] : "sample_encrypted.pdf";
+        string password = args.Length > 1 ? args[1] : "password";
 
-        // Password for the encrypted PDF (adjust as needed)
-        string password = "myPassword";
-
-        // Verify that the PDF file exists before attempting to open it
+        // Verify that the specified PDF file exists.
         if (!File.Exists(pdfPath))
         {
-            Console.WriteLine($"File not found: {pdfPath}");
+            Console.WriteLine($"PDF file not found: {pdfPath}");
             return;
         }
 
-        // Open the encrypted PDF document using the provided password
-        using (var pdfDocument = new Document(pdfPath, password))
+        // Open the encrypted PDF document using the supplied password.
+        using (Document pdfDoc = new Document(pdfPath, password))
         {
-            // Initialize the PDF converter which will render pages to images
-            using (var pdfConverter = new PdfConverter(pdfDocument))
+            // Initialize a PDF converter to render pages as images.
+            using (PdfConverter pdfConverter = new PdfConverter(pdfDoc))
             {
-                // Enable barcode optimization to improve rendering speed for barcode detection
+                // Enable barcode‑specific optimizations and set image resolution.
                 pdfConverter.RenderingOptions.BarcodeOptimization = true;
+                pdfConverter.Resolution = new Resolution(300);
 
-                // Process each page in the PDF sequentially
-                for (int pageNumber = 1; pageNumber <= pdfDocument.Pages.Count; pageNumber++)
+                // Process each page individually.
+                for (int pageNumber = 1; pageNumber <= pdfDoc.Pages.Count; pageNumber++)
                 {
-                    // Configure the converter to render only the current page
+                    // Configure the converter to work on a single page.
                     pdfConverter.StartPage = pageNumber;
                     pdfConverter.EndPage = pageNumber;
                     pdfConverter.DoConvert();
 
-                    // Capture the rendered page image into a memory stream
-                    using (var imageStream = new MemoryStream())
+                    // Capture the rendered page image into a memory stream.
+                    using (MemoryStream ms = new MemoryStream())
                     {
-                        pdfConverter.GetNextImage(imageStream);
-                        imageStream.Position = 0; // Reset stream position for reading
+                        pdfConverter.GetNextImage(ms);
+                        ms.Position = 0; // Reset stream position for reading.
 
-                        // Create a barcode reader for the image stream, detecting all supported types
-                        using (var reader = new BarCodeReader(imageStream, DecodeType.AllSupportedTypes))
+                        // Use BarCodeReader to detect all supported barcode types in the image.
+                        using (BarCodeReader reader = new BarCodeReader(ms, DecodeType.AllSupportedTypes))
                         {
-                            // Iterate through all detected barcodes on the current page
-                            foreach (var result in reader.ReadBarCodes())
+                            foreach (BarCodeResult result in reader.ReadBarCodes())
                             {
-                                Console.WriteLine($"Page {pageNumber}: Type = {result.CodeTypeName}, Text = {result.CodeText}");
+                                Console.WriteLine($"Page {pageNumber}: Type={result.CodeTypeName}, Data={result.CodeText}");
                             }
                         }
                     }

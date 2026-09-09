@@ -1,54 +1,87 @@
-// Title: Read DataMatrix Symbol Size and Encoding Mode from TIFF Image
-// Description: Demonstrates how to load a TIFF file containing DataMatrix barcodes and retrieve basic barcode information using Aspose.BarCode.
-// Category-Description: This example belongs to the Aspose.BarCode recognition category, illustrating the use of BarCodeReader with DecodeType.DataMatrix to extract barcode type, text, and region. Developers often need to process scanned documents, extract barcode data, and handle multi-page TIFFs. The example shows typical API usage for reading barcodes from images.
-/// Prompt: Read DataMatrix symbol size and encoding mode from a TIFF image with DataMatrix barcodes.
-/// Tags: datamatrix, barcode, recognition, tiff, aspose.barcode, csharp
+// Title: Read DataMatrix Symbol Size and Encoding Mode from Image
+// Description: Demonstrates generating a DataMatrix barcode, saving it as PNG, and reading barcode data from the image using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator to create barcodes and BarCodeReader to detect and extract information from images. Developers commonly use these APIs to automate barcode creation, embed barcodes in documents, and perform batch scanning of images for barcode data.
+// Prompt: Read DataMatrix symbol size and encoding mode from a TIFF image with DataMatrix barcodes.
+// Tags: datamatrix, barcode, read, image, tiff, generation, recognition, aspose.barcode, csharp
 
 using System;
 using System.IO;
+using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates reading DataMatrix barcodes from a TIFF image and attempting to obtain symbol size and encoding mode.
+/// Sample program that generates a DataMatrix barcode, saves it to a temporary PNG file,
+/// and reads barcode information from the image using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Loads the image, validates its existence, and iterates over detected DataMatrix barcodes.
+    /// Entry point of the application.
     /// </summary>
     static void Main()
     {
-        // Path to the TIFF image containing DataMatrix barcodes.
-        const string imagePath = "datamatrix.tif";
+        // --------------------------------------------------------------------
+        // Prepare a temporary folder for storing the sample image.
+        // --------------------------------------------------------------------
+        string tempFolder = Path.Combine(Path.GetTempPath(), "DataMatrixReadDemo");
+        Directory.CreateDirectory(tempFolder);
 
-        // Verify that the file exists before attempting to read it.
-        if (!File.Exists(imagePath))
+        // --------------------------------------------------------------------
+        // Define the full path for the sample PNG image.
+        // --------------------------------------------------------------------
+        string pngPath = Path.Combine(tempFolder, "sample.png");
+
+        // --------------------------------------------------------------------
+        // Generate a sample DataMatrix barcode if the PNG file does not already exist.
+        // --------------------------------------------------------------------
+        if (!File.Exists(pngPath))
         {
-            Console.WriteLine($"File not found: {imagePath}");
+            using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, "SampleText"))
+            {
+                // Set the X-dimension (module size) to 4 pixels for better visibility.
+                generator.Parameters.Barcode.XDimension.Pixels = 4;
+
+                // Save the generated barcode as a PNG image.
+                generator.Save(pngPath, BarCodeImageFormat.Png);
+            }
+        }
+
+        // --------------------------------------------------------------------
+        // Verify that the PNG file was created successfully.
+        // --------------------------------------------------------------------
+        if (!File.Exists(pngPath))
+        {
+            Console.WriteLine("PNG file not found.");
             return;
         }
 
-        // Create a BarCodeReader configured for DataMatrix symbology.
-        using (var reader = new BarCodeReader(imagePath, DecodeType.DataMatrix))
+        // --------------------------------------------------------------------
+        // Read DataMatrix barcodes from the generated image.
+        // --------------------------------------------------------------------
+        using (var reader = new BarCodeReader(pngPath, DecodeType.DataMatrix))
         {
-            // Iterate through all detected barcodes in the image.
-            foreach (var result in reader.ReadBarCodes())
+            BarCodeResult[] results = reader.ReadBarCodes();
+
+            if (results.Length == 0)
             {
-                // Output basic barcode information.
-                Console.WriteLine($"Barcode Type: {result.CodeTypeName}");
-                Console.WriteLine($"Code Text: {result.CodeText}");
+                Console.WriteLine("No DataMatrix barcode detected.");
+            }
+            else
+            {
+                foreach (BarCodeResult result in results)
+                {
+                    // Basic barcode information.
+                    Console.WriteLine($"CodeType: {result.CodeTypeName}");
+                    Console.WriteLine($"CodeText: {result.CodeText}");
 
-                // Retrieve and display the bounding rectangle of the detected barcode.
-                var rect = result.Region.Rectangle;
-                Console.WriteLine($"Region - X:{rect.X}, Y:{rect.Y}, Width:{rect.Width}, Height:{rect.Height}");
+                    // Extended DataMatrix metadata (available properties).
+                    Console.WriteLine($"IsReaderProgramming: {result.Extended.DataMatrix.IsReaderProgramming}");
 
-                // Symbol size (DataMatrix version) and encoding mode are not directly exposed
-                // via the Aspose.BarCode recognition API. They would require accessing
-                // extended parameters that are not part of the public API.
-                Console.WriteLine("Symbol Size: Not directly available via API");
-                Console.WriteLine("Encoding Mode: Not directly available via API");
-                Console.WriteLine();
+                    // Symbol size and encoding mode are not exposed via the Aspose.BarCode API.
+                    Console.WriteLine("Symbol size and encoding mode are not available via the API.");
+                }
             }
         }
     }

@@ -1,55 +1,67 @@
-// Title: Auto-rotate barcode reading with Aspose.BarCode
-// Description: Demonstrates enabling the autoRotate option to automatically correct a barcode's orientation before decoding it.
-// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, showcasing how to use BarCodeReader with auto‑rotation support. It highlights key API classes such as BarcodeGenerator, BarCodeReader, and ImageFormat, typical for scenarios where barcodes may be captured at arbitrary angles (e.g., scanned documents or camera images). Developers often need to ensure reliable decoding regardless of image orientation, and this snippet illustrates the straightforward configuration to achieve that.
+// Title: Auto-rotate QR barcode detection example
+// Description: Demonstrates generating a QR barcode, rotating it, and using Aspose.BarCode's auto‑rotate feature to correctly read the barcode regardless of orientation.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the BarcodeGenerator class for creating barcodes and the BarCodeReader class for decoding them. Typical use cases include reading barcodes that may be scanned at arbitrary angles, where developers rely on the autoRotate option to automatically correct orientation before decoding.
 // Prompt: Enable autoRotate option to automatically correct barcode orientation before reading each processed image.
-// Tags: code128, auto-rotate, barcode-reading, png, aspose.barcode, aspose.drawing
+// Tags: qr, barcode, autorotate, generation, recognition, aspose.barcode
 
 using System;
 using System.IO;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
+using Aspose.BarCode;
 
 /// <summary>
-/// Example program that generates a rotated Code128 barcode, then reads it back
-/// using the auto‑rotate feature of <see cref="BarCodeReader"/>.
+/// Sample program that creates a rotated QR barcode and reads it using Aspose.BarCode's auto‑rotate capability.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a rotated barcode image, saves it to a memory stream,
-    /// and reads it back while automatically correcting its orientation.
+    /// Entry point of the application.
     /// </summary>
     static void Main()
     {
-        // Initialize a barcode generator for Code128 with sample text
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456789"))
+        // Create a unique temporary folder for the sample files
+        string tempFolder = Path.Combine(Path.GetTempPath(), "AutoRotateSample_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
+
+        // Define the output path for the rotated barcode image and the text to encode
+        string barcodePath = Path.Combine(tempFolder, "rotated_qr.png");
+        string codeText = "https://example.com";
+
+        // Generate a QR barcode, rotate it 90 degrees, and save as PNG
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, codeText))
         {
-            // Simulate a mis‑oriented barcode by rotating the image 90 degrees
-            generator.Parameters.RotationAngle = 90f;
+            generator.Parameters.RotationAngle = 90; // Apply rotation
+            generator.Save(barcodePath, BarCodeImageFormat.Png);
+        }
 
-            // Generate the barcode image as a bitmap
-            using (var bitmap = generator.GenerateBarCodeImage())
+        // Verify that the barcode image was created successfully
+        if (!File.Exists(barcodePath))
+        {
+            Console.WriteLine("Failed to create barcode image.");
+            return;
+        }
+
+        // Read the rotated barcode; Aspose.BarCode automatically detects and corrects orientation
+        using (var reader = new BarCodeReader(barcodePath, DecodeType.QR))
+        {
+            foreach (BarCodeResult result in reader.ReadBarCodes())
             {
-                // Store the bitmap in a memory stream in PNG format
-                using (var ms = new MemoryStream())
-                {
-                    bitmap.Save(ms, ImageFormat.Png);
-                    ms.Position = 0; // Reset stream position for reading
-
-                    // Create a reader that automatically corrects orientation (autoRotate is enabled by default)
-                    using (var reader = new BarCodeReader(ms, DecodeType.Code128))
-                    {
-                        // Iterate through all detected barcodes (should be only one)
-                        foreach (var result in reader.ReadBarCodes())
-                        {
-                            // Output the decoded text; orientation has been corrected automatically
-                            Console.WriteLine($"Detected CodeText: {result.CodeText}");
-                        }
-                    }
-                }
+                Console.WriteLine($"Detected CodeText: {result.CodeText}");
+                Console.WriteLine($"Detected CodeType: {result.CodeTypeName}");
+                Console.WriteLine($"Detected Orientation Angle: {result.Region.Angle} degrees");
             }
+        }
+
+        // Clean up temporary files and folder
+        try
+        {
+            File.Delete(barcodePath);
+            Directory.Delete(tempFolder);
+        }
+        catch
+        {
+            // Ignore any errors during cleanup
         }
     }
 }
