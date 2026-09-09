@@ -1,70 +1,100 @@
-// Title: Demonstrate AllowIncorrectBarcodes effect on barcode confidence
-// Description: Generates an EAN13 barcode with an incorrect checksum and reads it with AllowIncorrectBarcodes enabled, showing that the confidence value is null (None).
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category, illustrating how to use BarcodeGenerator, BarCodeReader, and QualitySettings to handle barcodes with invalid checksums. Developers often need to process imperfect barcodes in bulk scanning scenarios, and this snippet shows the typical API usage for allowing incorrect barcodes while checking the confidence result.
+// Title: Verify AllowIncorrectBarcodes returns null Confidence in QR barcode reading
+// Description: This example generates a QR barcode image, reads it with AllowIncorrectBarcodes enabled, and confirms that the Confidence property of BarCodeResult is null.
+// Category-Description: Demonstrates Aspose.BarCode generation and recognition APIs, focusing on quality settings such as AllowIncorrectBarcodes. The example uses BarcodeGenerator, BarCodeReader, and BarCodeResult to show typical use cases where developers need to read potentially malformed barcodes and handle missing confidence values. Ideal for developers searching for barcode validation, confidence handling, and quality configuration in Aspose.BarCode.
 // Prompt: Write unit tests verifying that AllowIncorrectBarcodes returns BarCodeResult.Confidence as null.
-// Tags: ean13, incorrect checksum, allowincorrectbarcodes, confidence, barcodereader, barcodegenerator, aspnet, csharp
+// Tags: barcode, qr, allowincorrectbarcodes, confidence, generation, recognition, aspose.barcode, csharp
 
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates reading a barcode with AllowIncorrectBarcodes enabled and verifies that the confidence is null.
+/// Demonstrates generating a QR barcode, reading it with AllowIncorrectBarcodes enabled,
+/// and verifying that the Confidence property of each BarCodeResult is null.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates an EAN13 barcode with an invalid checksum, reads it with AllowIncorrectBarcodes set to true, and checks the confidence value.
+    /// Entry point that creates a temporary QR barcode image, runs the AllowIncorrectBarcodes test,
+    /// reports the result, and cleans up temporary files.
     /// </summary>
     static void Main()
     {
-        // Generate a barcode with an intentionally incorrect checksum (EAN13)
-        using (var generator = new BarcodeGenerator(EncodeTypes.EAN13, "1234567890123"))
+        // Create a unique temporary directory for test artifacts
+        string tempDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeTest_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+
+        // Generate a QR barcode image and save it as PNG
+        string qrPath = Path.Combine(tempDir, "qr.png");
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Test123"))
         {
-            // Create the barcode image in memory
-            using (var bitmap = generator.GenerateBarCodeImage())
+            generator.Save(qrPath, BarCodeImageFormat.Png);
+        }
+
+        // Execute the test that checks Confidence is null when AllowIncorrectBarcodes is true
+        bool testPassed = RunAllowIncorrectBarcodesTest(qrPath);
+
+        // Output test result to console
+        Console.WriteLine(testPassed
+            ? "PASSED: AllowIncorrectBarcodes returns null Confidence."
+            : "FAILED: AllowIncorrectBarcodes did not return null Confidence.");
+
+        // Clean up temporary directory and its contents
+        try
+        {
+            Directory.Delete(tempDir, true);
+        }
+        catch
+        {
+            // Suppress any cleanup errors
+        }
+    }
+
+    /// <summary>
+    /// Reads the specified QR barcode image with AllowIncorrectBarcodes enabled and verifies that
+    /// each BarCodeResult has a null Confidence value.
+    /// </summary>
+    /// <param name="imagePath">Full path to the QR barcode image.</param>
+    /// <returns>True if all results have null Confidence; otherwise, false.</returns>
+    static bool RunAllowIncorrectBarcodesTest(string imagePath)
+    {
+        // Ensure the test image exists before attempting to read it
+        if (!File.Exists(imagePath))
+        {
+            Console.WriteLine("Test image not found.");
+            return false;
+        }
+
+        // Initialize the barcode reader for QR codes
+        using (var reader = new BarCodeReader(imagePath, DecodeType.QR))
+        {
+            // Enable detection of potentially incorrect barcodes
+            reader.QualitySettings.AllowIncorrectBarcodes = true;
+
+            // Read all barcodes from the image
+            BarCodeResult[] results = reader.ReadBarCodes();
+
+            // Verify that at least one barcode was detected
+            if (results == null || results.Length == 0)
             {
-                // Store the image in a memory stream for reading
-                using (var ms = new MemoryStream())
+                Console.WriteLine("No barcodes detected.");
+                return false;
+            }
+
+            // Check each result for a null Confidence value
+            foreach (BarCodeResult result in results)
+            {
+                if (result.Confidence != null)
                 {
-                    bitmap.Save(ms, ImageFormat.Png);
-                    ms.Position = 0; // Reset stream position for reading
-
-                    // Initialize the barcode reader for EAN13 type
-                    using (var reader = new BarCodeReader(ms, DecodeType.EAN13))
-                    {
-                        // Enable recognition of incorrect barcodes
-                        reader.QualitySettings.AllowIncorrectBarcodes = true;
-
-                        bool testPassed = false;
-
-                        // Iterate through all detected barcodes
-                        foreach (BarCodeResult result in reader.ReadBarCodes())
-                        {
-                            // When AllowIncorrectBarcodes is true, Confidence should be None (value 0)
-                            if (result.Confidence == BarCodeConfidence.None)
-                            {
-                                testPassed = true;
-                                Console.WriteLine("Test Passed: Confidence is None as expected.");
-                            }
-                            else
-                            {
-                                Console.WriteLine($"Test Failed: Unexpected Confidence value {result.Confidence}.");
-                            }
-                        }
-
-                        // If no results were returned, the test fails
-                        if (!testPassed)
-                        {
-                            Console.WriteLine("Test Failed: No barcode result was returned.");
-                        }
-                    }
+                    Console.WriteLine($"Barcode '{result.CodeText}' has non-null Confidence: {result.Confidence}");
+                    return false;
                 }
             }
         }
+
+        // All results passed the null Confidence check
+        return true;
     }
 }

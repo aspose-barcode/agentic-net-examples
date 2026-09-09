@@ -1,63 +1,74 @@
-// Title: Detect Large Barcode Using XDimension Setting
-// Description: Demonstrates setting QualitySettings.XDimension to 6 pixels to detect large barcodes in high‑resolution scans.
-// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, showing how to configure QualitySettings for accurate detection of high‑resolution barcodes. It uses BarCodeReader, QualitySettings, and XDimensionMode to adjust the minimal X‑dimension, a common requirement when scanning large or high‑density barcodes. Developers often need to tweak these settings to improve read reliability in industrial scanning applications.
+// Title: Detect Large Barcodes in High‑Resolution Scans Using XDimension Settings
+// Description: Demonstrates generating a high‑resolution barcode image and configuring QualitySettings to detect large barcodes by setting XDimension mode to Large and MinimalXDimension to 6 pixels.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes and BarCodeReader with QualitySettings for accurate detection in high‑resolution scans. Developers working with barcode imaging often need to adjust XDimension and resolution settings to reliably read large or dense barcodes; this snippet provides a concise reference for those scenarios.
 // Prompt: Set QualitySettings.XDimension to 6 pixels for detecting large barcodes in high‑resolution scans.
-// Tags: barcode symbology, recognition, xdimension, highresolution, aspnet, aspose.barcode, cod128, qualitysettings
+// Tags: barcode symbology, generation, recognition, qualitysettings, xdimension, highresolution, png, csharp
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates a Code128 barcode, saves it to a file,
-/// and then reads it back using custom QualitySettings to detect large barcodes.
+/// Example program that generates a high‑resolution Code128 barcode,
+/// then reads it using QualitySettings configured for large barcodes.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a barcode image, verifies its creation, and reads it with
-    /// XDimension configured to 6 pixels for high‑resolution scans.
+    /// Entry point of the example. Creates a temporary folder, generates a barcode,
+    /// reads it with adjusted XDimension settings, and cleans up resources.
     /// </summary>
     static void Main()
     {
-        const string imagePath = "barcode.png";
+        // --------------------------------------------------------------------
+        // Create a temporary folder for the demo files
+        // --------------------------------------------------------------------
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
+        string imagePath = Path.Combine(tempFolder, "barcode.png");
 
-        // ------------------------------------------------------------
-        // Generate a simple Code128 barcode image and save it to disk.
-        // ------------------------------------------------------------
+        // --------------------------------------------------------------------
+        // Generate a high‑resolution barcode image (300 DPI) and save as PNG
+        // --------------------------------------------------------------------
         using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            generator.Save(imagePath);
+            generator.Parameters.Resolution = 300; // high DPI for better scan quality
+            generator.Save(imagePath, BarCodeImageFormat.Png);
         }
 
-        // ------------------------------------------------------------
-        // Verify that the barcode image was successfully created.
-        // ------------------------------------------------------------
-        if (!File.Exists(imagePath))
+        // --------------------------------------------------------------------
+        // Read the barcode with QualitySettings tuned for large barcodes
+        // --------------------------------------------------------------------
+        using (var reader = new BarCodeReader(imagePath, DecodeType.Code128))
         {
-            Console.WriteLine("Barcode image could not be created.");
-            return;
-        }
+            // Configure XDimension mode to Large and set minimal element size to 6 pixels
+            reader.QualitySettings.XDimension = XDimensionMode.Large;
+            reader.QualitySettings.MinimalXDimension = 6f;
 
-        // ------------------------------------------------------------
-        // Read the barcode using BarCodeReader with custom QualitySettings.
-        // ------------------------------------------------------------
-        using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
-        {
-            // Configure XDimension to detect large barcodes (6 pixels).
-            reader.QualitySettings.XDimension = XDimensionMode.UseMinimalXDimension;
-            reader.QualitySettings.MinimalXDimension = 6f; // pixels
+            // Perform the read operation
+            BarCodeResult[] results = reader.ReadBarCodes();
 
-            // Iterate through all detected barcodes and output their details.
-            foreach (var result in reader.ReadBarCodes())
+            // Output the results to the console
+            Console.WriteLine($"Barcodes read: {results.Length}");
+            foreach (BarCodeResult result in results)
             {
-                Console.WriteLine($"Detected Type: {result.CodeTypeName}");
-                Console.WriteLine($"Code Text: {result.CodeText}");
+                Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
             }
+        }
+
+        // --------------------------------------------------------------------
+        // Optional cleanup of temporary files and folder
+        // --------------------------------------------------------------------
+        try
+        {
+            File.Delete(imagePath);
+            Directory.Delete(tempFolder);
+        }
+        catch
+        {
+            // Ignore any cleanup errors (e.g., file still in use)
         }
     }
 }

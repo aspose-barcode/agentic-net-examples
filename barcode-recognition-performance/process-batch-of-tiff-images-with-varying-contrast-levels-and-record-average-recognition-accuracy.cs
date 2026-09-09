@@ -1,8 +1,8 @@
-// Title: Process batch of TIFF barcodes and compute average confidence
-// Description: Demonstrates generating sample Code128 barcodes as TIFF images, reading them, and calculating the average recognition confidence across the batch.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes, BarCodeReader for decoding, and QualitySettings for performance tuning. Developers often need to process multiple images, adjust image properties, and evaluate recognition reliability, making this pattern useful for batch processing and quality assessment scenarios.
+// Title: Batch TIFF Barcode Generation and Recognition with Accuracy Reporting
+// Description: Demonstrates generating a set of Code128 barcodes as TIFF images, then reading them back to calculate recognition accuracy.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, showcasing how to use BarcodeGenerator to create barcodes, BarCodeReader for decoding, and QualitySettings for performance tuning. Typical use cases include batch processing of scanned documents, quality testing of barcode readability, and automated reporting. Developers often need to generate test images, evaluate decoding success rates, and log results for further analysis.
 // Prompt: Process a batch of TIFF images with varying contrast levels and record average recognition accuracy.
-// Tags: barcode, code128, tiff, batch-processing, confidence, generation, recognition, qualitysettings
+// Tags: code128, generation, recognition, tiff, barcodegenerator, barcodereader, qualitysettings
 
 using System;
 using System.IO;
@@ -10,99 +10,82 @@ using System.Collections.Generic;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates a set of Code128 barcodes saved as TIFF files,
-/// reads them back using Aspose.BarCode, and computes the average confidence of
-/// the recognition results.
+/// Entry point for the batch barcode generation and recognition example.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates sample barcode images (if missing),
-    /// processes each TIFF file, extracts confidence values, and prints the average
-    /// recognition confidence.
+    /// Generates Code128 barcodes as TIFF files, reads them back, and reports average recognition accuracy.
     /// </summary>
     static void Main()
     {
-        // Define the folder where barcode TIFF images will be stored.
-        string folderPath = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
-        if (!Directory.Exists(folderPath))
-        {
-            // Create the folder when it does not exist.
-            Directory.CreateDirectory(folderPath);
-        }
+        // Create a unique temporary folder for the batch
+        string batchFolder = Path.Combine(Path.GetTempPath(), "Batch_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(batchFolder);
 
-        // --------------------------------------------------------------------
-        // Generate sample barcode images (only if they are not already present)
-        // --------------------------------------------------------------------
-        int sampleCount = 5;
-        for (int i = 0; i < sampleCount; i++)
+        // Prepare sample barcode texts
+        List<string> codeTexts = new List<string>
         {
-            string fileName = $"barcode_{i}.tif";
-            string filePath = Path.Combine(folderPath, fileName);
-            if (!File.Exists(filePath))
+            "ABC123",
+            "DEF456",
+            "GHI789",
+            "JKL012",
+            "MNO345"
+        };
+
+        // Generate TIFF images with barcodes
+        List<string> generatedFiles = new List<string>();
+        foreach (string text in codeTexts)
+        {
+            string filePath = Path.Combine(batchFolder, $"barcode_{text}.tiff");
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, text))
             {
-                // Create a new barcode generator for Code128 with a unique value.
-                using (var generator = new BarcodeGenerator(EncodeTypes.Code128, $"CODE{i}"))
-                {
-                    // Set simple black on white colors for high contrast.
-                    generator.Parameters.Barcode.BarColor = Color.Black;
-                    generator.Parameters.BackColor = Color.White;
-
-                    // Save the generated barcode as a TIFF image.
-                    generator.Save(filePath, BarCodeImageFormat.Tiff);
-                }
+                // No explicit size settings; default auto-sizing
+                generator.Save(filePath, BarCodeImageFormat.Tiff);
             }
+            generatedFiles.Add(filePath);
         }
 
-        // --------------------------------------------------------------
-        // Read each TIFF image, decode barcodes, and collect confidence data
-        // --------------------------------------------------------------
-        List<int> confidenceValues = new List<int>();
-        string[] tiffFiles = Directory.GetFiles(folderPath, "*.tif");
-        foreach (string tiffFile in tiffFiles)
+        // Process each TIFF image and record recognition success
+        int successCount = 0;
+        foreach (string file in generatedFiles)
         {
-            if (!File.Exists(tiffFile))
+            if (!File.Exists(file))
             {
-                Console.WriteLine($"File not found: {tiffFile}");
+                Console.WriteLine($"File not found: {file}");
                 continue;
             }
 
-            // Initialize a barcode reader for Code128 barcodes.
-            using (var reader = new BarCodeReader(tiffFile, DecodeType.Code128))
+            try
             {
-                // Apply a high‑performance quality preset to speed up processing.
-                reader.QualitySettings = QualitySettings.HighPerformance;
-
-                // Iterate over all detected barcodes in the image.
-                foreach (var result in reader.ReadBarCodes())
+                using (BarCodeReader reader = new BarCodeReader(file, DecodeType.AllSupportedTypes))
                 {
-                    // BarCodeConfidence enum values can be cast to int (0, 80, 100).
-                    confidenceValues.Add((int)result.Confidence);
+                    // Use a high-performance preset for speed
+                    reader.QualitySettings = QualitySettings.HighPerformance;
+
+                    BarCodeResult[] results = reader.ReadBarCodes();
+                    bool success = results.Length > 0 && !string.IsNullOrEmpty(results[0].CodeText);
+                    if (success) successCount++;
+
+                    Console.WriteLine($"Processed {Path.GetFileName(file)} - Success: {success}");
                 }
             }
-        }
-
-        // ------------------------------
-        // Compute and display the average
-        // ------------------------------
-        if (confidenceValues.Count > 0)
-        {
-            double averageConfidence = 0.0;
-            foreach (int val in confidenceValues)
+            catch (ArgumentException ex)
             {
-                averageConfidence += val;
+                // Skip files that cannot be loaded as images
+                Console.WriteLine($"Skipping file due to load error: {file}. Message: {ex.Message}");
             }
-            averageConfidence /= confidenceValues.Count;
+        }
 
-            Console.WriteLine($"Processed {confidenceValues.Count} barcode results.");
-            Console.WriteLine($"Average recognition confidence: {averageConfidence:F2}");
-        }
-        else
-        {
-            Console.WriteLine("No barcode results were found.");
-        }
+        // Calculate average recognition accuracy
+        double averageAccuracy = (double)successCount / generatedFiles.Count * 100.0;
+        string report = $"Total images: {generatedFiles.Count}, Successful reads: {successCount}, Average accuracy: {averageAccuracy:F2}%{Environment.NewLine}";
+        Console.WriteLine(report);
+
+        // Write report to a log file in the batch folder
+        string logPath = Path.Combine(batchFolder, "RecognitionReport.txt");
+        File.AppendAllText(logPath, report);
     }
 }

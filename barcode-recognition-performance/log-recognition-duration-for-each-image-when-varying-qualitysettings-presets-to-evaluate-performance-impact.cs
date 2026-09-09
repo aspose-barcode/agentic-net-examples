@@ -1,101 +1,96 @@
-// Title: Log barcode recognition duration across QualitySettings presets
-// Description: Generates sample Code128 barcodes, then measures and logs the time taken to recognize each image using different QualitySettings presets.
-// Category-Description: This example belongs to the Aspose.BarCode performance tuning category, demonstrating how to use the BarCodeReader with various QualitySettings (HighPerformance, NormalQuality, HighQuality, MaxQuality) to assess recognition speed. It showcases key API classes such as BarcodeGenerator, BarCodeReader, and QualitySettings, which developers commonly use when optimizing barcode scanning in batch processing or real‑time applications.
+// Title: Barcode Recognition Performance Benchmark Across Quality Settings
+// Description: Demonstrates generating sample barcodes, then measuring recognition time for each image using different QualitySettings presets to assess performance impact.
+// Category-Description: This example belongs to the Aspose.BarCode performance testing category, illustrating how to use BarcodeGenerator for image creation and BarCodeReader with QualitySettings to evaluate recognition speed. Developers often need to benchmark barcode scanning under various quality configurations to choose optimal settings for their applications.
 // Prompt: Log recognition duration for each image when varying QualitySettings presets to evaluate performance impact.
-// Tags: code128, barcode generation, barcode recognition, png, qualitysettings, performance, aspose.barcode, barcodereader, barcodegenerator
+// Tags: barcode, performance, qualitysettings, recognition, generation, csharp, aspose.barcode
 
 using System;
 using System.IO;
 using System.Diagnostics;
-using System.Collections.Generic;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates how to generate barcode images and log recognition duration
-/// while varying <see cref="QualitySettings"/> presets using Aspose.BarCode.
+/// Provides an example that generates barcode images and measures the time required to recognize them
+/// using different <see cref="QualitySettings"/> presets. This helps evaluate the performance impact
+/// of each preset on barcode recognition.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates sample barcodes, then measures
-    /// recognition time for each image under different quality settings.
+    /// Entry point of the example. Generates sample barcodes, runs recognition with various quality
+    /// presets, logs the duration for each operation, and cleans up temporary files.
     /// </summary>
     static void Main()
     {
-        // --------------------------------------------------------------------
-        // Prepare output folder for generated barcode images
-        // --------------------------------------------------------------------
-        string outputFolder = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
-        if (!Directory.Exists(outputFolder))
-        {
-            Directory.CreateDirectory(outputFolder);
-        }
+        // Create a temporary folder for sample barcode images
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodePerf_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
 
-        // --------------------------------------------------------------------
-        // Generate sample barcode images (5 images) using Code128 symbology
-        // --------------------------------------------------------------------
-        List<string> imagePaths = new List<string>();
-        for (int i = 1; i <= 5; i++)
+        // Define sample barcodes to generate
+        var samples = new[]
         {
-            string codeText = $"CODE{i:D3}";
-            string filePath = Path.Combine(outputFolder, $"barcode{i}.png");
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+            new { Encode = EncodeTypes.Code128, Text = "1234567890", File = Path.Combine(tempFolder, "code128.png") },
+            new { Encode = EncodeTypes.QR, Text = "https://example.com", File = Path.Combine(tempFolder, "qr.png") },
+            new { Encode = EncodeTypes.DataMatrix, Text = "DataMatrixTest", File = Path.Combine(tempFolder, "datamatrix.png") }
+        };
+
+        // Generate barcode images and save them as PNG files
+        foreach (var sample in samples)
+        {
+            using (var generator = new BarcodeGenerator(sample.Encode, sample.Text))
             {
                 generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
                 generator.Parameters.BackColor = Aspose.Drawing.Color.White;
-                generator.Save(filePath, BarCodeImageFormat.Png);
+                generator.Save(sample.File, BarCodeImageFormat.Png);
             }
-            imagePaths.Add(filePath);
         }
 
-        // --------------------------------------------------------------------
-        // Define QualitySettings presets to evaluate
-        // --------------------------------------------------------------------
-        var presets = new List<(string Name, QualitySettings Settings)>
+        // Define the quality presets to test during recognition
+        var presets = new[]
         {
-            ("HighPerformance", QualitySettings.HighPerformance),
-            ("NormalQuality", QualitySettings.NormalQuality),
-            ("HighQuality", QualitySettings.HighQuality),
-            ("MaxQuality", QualitySettings.MaxQuality)
+            QualitySettings.NormalQuality,
+            QualitySettings.HighPerformance,
+            QualitySettings.HighQuality,
+            QualitySettings.MaxQuality
         };
 
-        // --------------------------------------------------------------------
-        // Evaluate each preset by measuring recognition duration per image
-        // --------------------------------------------------------------------
+        // Perform recognition for each preset and each image, logging the elapsed time
         foreach (var preset in presets)
         {
-            Console.WriteLine($"--- Evaluating preset: {preset.Name} ---");
-            foreach (string imagePath in imagePaths)
+            foreach (var sample in samples)
             {
-                // Verify that the image file exists before attempting recognition
-                if (!File.Exists(imagePath))
+                if (!File.Exists(sample.File))
                 {
-                    Console.WriteLine($"File not found: {imagePath}");
+                    Console.WriteLine($"File not found: {sample.File}");
                     continue;
                 }
 
-                // Initialize BarCodeReader with all supported decode types
-                using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
+                using (var reader = new BarCodeReader(sample.File, DecodeType.AllSupportedTypes))
                 {
-                    // Apply the current QualitySettings preset
-                    reader.QualitySettings = preset.Settings;
+                    // Apply the current quality setting to the reader
+                    reader.QualitySettings = preset;
 
-                    // Start timing the recognition process
-                    Stopwatch sw = Stopwatch.StartNew();
+                    // Measure recognition duration
+                    var stopwatch = Stopwatch.StartNew();
                     var results = reader.ReadBarCodes();
-                    sw.Stop();
+                    stopwatch.Stop();
 
-                    // Log elapsed time and number of detected barcodes
-                    Console.WriteLine($"{Path.GetFileName(imagePath)}: {sw.ElapsedMilliseconds} ms, Detected {results.Length} barcode(s)");
-                    foreach (var result in results)
-                    {
-                        Console.WriteLine($"  Type: {result.CodeTypeName}, Text: {result.CodeText}");
-                    }
+                    // Output benchmark information
+                    Console.WriteLine($"Preset: {preset} | Image: {Path.GetFileName(sample.File)} | Time: {stopwatch.Elapsed.TotalMilliseconds:F2} ms | Detected: {results.Length}");
                 }
             }
-            Console.WriteLine();
+        }
+
+        // Clean up temporary files and folder
+        try
+        {
+            Directory.Delete(tempFolder, true);
+        }
+        catch
+        {
+            // Ignore any cleanup errors
         }
     }
 }

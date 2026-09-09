@@ -1,91 +1,99 @@
-// Title: QR Code Detection Speed with and without UseMinimalXDimension
-// Description: Demonstrates measuring the time required to detect a QR code when the UseMinimalXDimension setting is disabled versus enabled.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the BarcodeGenerator for creating QR codes and the BarCodeReader for detecting them, focusing on the XDimension quality settings. Developers often need to compare detection performance under different X dimension modes to optimize scanning speed and accuracy in applications such as inventory management, ticketing, and mobile payments.
-/// Prompt: Evaluate QR code detection speed when UseMinimalXDimension is disabled versus enabled.
-/// Tags: qr, detection, performance, minimalxdimension, aspose.barcode, generation, recognition
+// Title: QR Code Detection Speed Comparison with Minimal X Dimension Setting
+// Description: Demonstrates measuring the recognition time of a QR code image using Aspose.BarCode with the XDimension mode set to normal and to UseMinimalXDimension. Shows how enabling the minimal X dimension can affect detection performance.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition performance category. It illustrates how to configure the QualitySettings.XDimension property and optionally MinimalXDimension to benchmark detection speed. Developers working with QR code scanning, performance tuning, or high‑throughput barcode processing can use this pattern to compare different recognition settings and optimize throughput.
+// Prompt: Evaluate QR code detection speed when UseMinimalXDimension is disabled versus enabled.
+// Tags: qr code, detection speed, performance, minimalxdimension, barcoderecognition, aspnet, aspose.barcode, csharp
 
 using System;
 using System.Diagnostics;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Example program that generates a QR code image and measures detection performance
-/// with the UseMinimalXDimension quality setting both disabled and enabled.
+/// Provides a simple benchmark for QR code recognition speed using different XDimension settings.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a QR code, then measures and prints
-    /// detection times for two X dimension modes.
+    /// Entry point of the application. Generates a QR code, then measures recognition time
+    /// with normal XDimension mode and with UseMinimalXDimension enabled.
     /// </summary>
     static void Main()
     {
-        const string imagePath = "qr.png";
-        const string qrText = "Sample QR Code Text for performance test";
+        // Create a unique temporary folder for the test files
+        string tempFolder = Path.Combine(Path.GetTempPath(), "QrSpeedTest_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
 
-        // Generate a QR code image and save it as PNG
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, qrText))
+        // Define the path for the generated QR code image
+        string qrImagePath = Path.Combine(tempFolder, "qr.png");
+
+        // Generate a QR code image containing sample text
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Aspose.BarCode QR Speed Test"))
         {
-            generator.Save(imagePath, BarCodeImageFormat.Png);
+            generator.Save(qrImagePath, BarCodeImageFormat.Png);
         }
 
-        // Measure detection time with UseMinimalXDimension disabled (default Auto mode)
-        long timeWithoutMinimal = MeasureDetectionTime(imagePath, useMinimal: false, out int countWithoutMinimal);
+        // Verify that the QR code image was successfully created
+        if (!File.Exists(qrImagePath))
+        {
+            Console.WriteLine("Failed to generate QR code image.");
+            return;
+        }
 
-        // Measure detection time with UseMinimalXDimension enabled (custom minimal X dimension)
-        long timeWithMinimal = MeasureDetectionTime(imagePath, useMinimal: true, out int countWithMinimal);
+        // Benchmark recognition using normal XDimension mode (minimalX not set)
+        TimeSpan normalTime = MeasureRecognition(qrImagePath, XDimensionMode.Normal, minimalX: null);
 
-        // Output the results
-        Console.WriteLine($"Detection without UseMinimalXDimension: {timeWithoutMinimal} ms, barcodes detected: {countWithoutMinimal}");
-        Console.WriteLine($"Detection with UseMinimalXDimension:    {timeWithMinimal} ms, barcodes detected: {countWithMinimal}");
+        // Benchmark recognition using UseMinimalXDimension mode with a minimal X value of 1.0
+        TimeSpan minimalTime = MeasureRecognition(qrImagePath, XDimensionMode.UseMinimalXDimension, minimalX: 1f);
+
+        // Output the measured times for comparison
+        Console.WriteLine($"Recognition time (Normal XDimension): {normalTime.TotalMilliseconds} ms");
+        Console.WriteLine($"Recognition time (UseMinimalXDimension): {minimalTime.TotalMilliseconds} ms");
     }
 
     /// <summary>
-    /// Measures the time taken to read barcodes from an image using the specified X dimension mode.
+    /// Measures the time required to read barcodes from an image using specified XDimension settings.
     /// </summary>
-    /// <param name="imagePath">Path to the image containing the QR code.</param>
-    /// <param name="useMinimal">If true, enables UseMinimalXDimension mode; otherwise uses Auto mode.</param>
-    /// <param name="detectedCount">Outputs the number of barcodes detected.</param>
-    /// <returns>Elapsed time in milliseconds.</returns>
-    private static long MeasureDetectionTime(string imagePath, bool useMinimal, out int detectedCount)
+    /// <param name="imagePath">Path to the barcode image file.</param>
+    /// <param name="mode">The XDimension mode to apply during recognition.</param>
+    /// <param name="minimalX">Optional minimal X dimension value; used only when applicable.</param>
+    /// <returns>The elapsed time taken to read the barcodes.</returns>
+    static TimeSpan MeasureRecognition(string imagePath, XDimensionMode mode, float? minimalX)
     {
-        detectedCount = 0;
+        // Set the decode type to QR for this test
+        BaseDecodeType decodeType = DecodeType.QR;
+        Stopwatch sw = new Stopwatch();
 
-        // Initialize the barcode reader for QR codes
-        using (var reader = new BarCodeReader(imagePath, DecodeType.QR))
+        // Initialize the barcode reader with the image and decode type
+        using (var reader = new BarCodeReader(imagePath, decodeType))
         {
-            if (useMinimal)
+            // Apply the requested XDimension mode
+            reader.QualitySettings.XDimension = mode;
+
+            // If a minimal X dimension is provided, set it on the quality settings
+            if (minimalX.HasValue)
             {
-                // Enable UseMinimalXDimension mode and set a minimal X dimension value
-                reader.QualitySettings.XDimension = XDimensionMode.UseMinimalXDimension;
-                reader.QualitySettings.MinimalXDimension = 5f;
-            }
-            else
-            {
-                // Use default automatic X dimension detection
-                reader.QualitySettings.XDimension = XDimensionMode.Auto;
+                reader.QualitySettings.MinimalXDimension = minimalX.Value;
             }
 
-            // Start timing the detection process
-            var stopwatch = Stopwatch.StartNew();
-
-            // Perform barcode detection
+            // Start timing, read all barcodes, then stop timing
+            sw.Start();
             var results = reader.ReadBarCodes();
+            sw.Stop();
 
-            // Stop timing
-            stopwatch.Stop();
+            // Output the mode used and the number of barcodes detected
+            Console.WriteLine($"Mode: {mode}, Barcodes read: {results.Length}");
 
-            // Iterate through results to ensure full processing
-            foreach (var result in results)
+            // List each detected barcode's type and text
+            foreach (BarCodeResult result in results)
             {
-                Console.WriteLine($"Detected: {result.CodeTypeName} - {result.CodeText}");
-                detectedCount++;
+                Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
             }
-
-            // Return elapsed time in milliseconds
-            return stopwatch.ElapsedMilliseconds;
         }
+
+        // Return the total elapsed time for the recognition operation
+        return sw.Elapsed;
     }
 }

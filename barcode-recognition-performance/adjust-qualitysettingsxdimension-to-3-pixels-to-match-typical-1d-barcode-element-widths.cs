@@ -1,40 +1,75 @@
-// Title: Generate Code128 Barcode with Custom XDimension
-// Description: Demonstrates how to generate a Code128 barcode image and set the XDimension to 3 pixels for proper 1D element width.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and QualitySettings to control barcode dimensions. Developers often need to customize module width (XDimension) to meet printing standards or scanner requirements. The snippet shows typical steps: creating a generator, disabling auto‑size, setting XDimension, and saving the image.
+// Title: Adjust XDimension for 1D Barcode Generation and Recognition
+// Description: Demonstrates setting XDimension to 3 pixels for a Code128 barcode and configuring the reader's quality settings to match, ensuring accurate detection of typical 1D barcode element widths.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes and BarCodeReader for decoding them. Developers often need to control XDimension to align with printing or scanning requirements, and the QualitySettings API helps fine‑tune recognition parameters for reliable results.
 // Prompt: Adjust QualitySettings.XDimension to 3 pixels to match typical 1D barcode element widths.
-// Tags: barcode, code128, generation, png, xdimension, aspose.barcode, qualitysettings
+// Tags: barcode, code128, generation, recognition, xdimension, qualitysettings, png, aspose.barcode
 
 using System;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that creates a Code128 barcode image with a custom XDimension.
+/// Demonstrates adjusting XDimension for 1D barcode generation and recognition using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates and saves a barcode PNG file.
+    /// Entry point that creates a Code128 barcode with a 3‑pixel XDimension, reads it using matching quality settings, and cleans up temporary files.
     /// </summary>
     static void Main()
     {
-        // Define the output file path for the generated barcode image.
-        const string outputPath = "barcode.png";
+        // Prepare a unique temporary directory for the demo files
+        string tempDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        string barcodePath = Path.Combine(tempDir, "barcode.png");
 
-        // Initialize a BarcodeGenerator for Code128 symbology with sample data.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
+        // Generate a simple Code128 barcode with XDimension set to 3 pixels
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "ASPOSE"))
         {
-            // Disable automatic sizing so the manually set XDimension is respected.
-            generator.Parameters.AutoSizeMode = AutoSizeMode.None;
-
-            // Set the XDimension (module width) to 3 pixels, matching typical 1D barcode element widths.
+            // Typical XDimension for 1D barcodes (3 pixels)
             generator.Parameters.Barcode.XDimension.Pixels = 3f;
-
-            // Save the barcode as a PNG image to the specified path.
-            generator.Save(outputPath, BarCodeImageFormat.Png);
+            generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user where the barcode image has been saved.
-        Console.WriteLine($"Barcode image saved to {outputPath}");
+        // Read the barcode using QualitySettings that match the generated XDimension
+        using (var reader = new BarCodeReader(barcodePath, DecodeType.AllSupportedTypes))
+        {
+            // Configure the reader to use a minimal X dimension of 3 pixels
+            reader.QualitySettings.XDimension = XDimensionMode.UseMinimalXDimension;
+            reader.QualitySettings.MinimalXDimension = 3f;
+
+            // Perform barcode detection
+            BarCodeResult[] results = reader.ReadBarCodes();
+            if (results.Length == 0)
+            {
+                Console.WriteLine("No barcode detected.");
+            }
+            else
+            {
+                foreach (var result in results)
+                {
+                    Console.WriteLine($"CodeText: {result.CodeText}");
+                    Console.WriteLine($"Symbology: {result.CodeTypeName}");
+                    Console.WriteLine($"ReadingQuality: {result.ReadingQuality}");
+                }
+            }
+        }
+
+        // Clean up temporary files and directory
+        try
+        {
+            if (File.Exists(barcodePath))
+                File.Delete(barcodePath);
+            if (Directory.Exists(tempDir))
+                Directory.Delete(tempDir, true);
+        }
+        catch
+        {
+            // Ignore cleanup errors
+        }
     }
 }

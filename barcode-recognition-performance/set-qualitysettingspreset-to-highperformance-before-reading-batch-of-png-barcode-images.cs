@@ -1,69 +1,89 @@
-// Title: High‑Performance Barcode Recognition from PNG Images
-// Description: Demonstrates setting QualitySettings.Preset to HighPerformance before reading a batch of PNG barcode images, improving recognition speed.
-// Category-Description: This example belongs to the Aspose.BarCode image‑processing category, showcasing how to generate barcode images, store them, and efficiently recognize them using the BarCodeReader. It highlights key API classes such as BarcodeGenerator, BarCodeReader, QualitySettings, and DecodeType, which developers commonly use for batch barcode scanning and performance tuning.
+// Title: High-Performance barcode reading from PNG images
+// Description: Demonstrates how to set QualitySettings.Preset to HighPerformance when reading a batch of PNG barcode images, improving processing speed.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category. It shows how to use BarCodeReader with QualitySettings to optimize performance for bulk image processing. Developers commonly need to read many barcodes quickly, and this snippet illustrates configuring the HighPerformance preset, generating sample barcodes, and cleaning up resources.
 // Prompt: Set QualitySettings.Preset to HighPerformance before reading a batch of PNG barcode images.
-// Tags: barcode symbology, generation, recognition, png, qualitysettings, highperformance, aspose.barcode
+// Tags: barcode symbology, performance, png, reading, qualitysettings, aspose.barcode, batch processing
 
 using System;
 using System.IO;
+using System.Collections.Generic;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Generates a small batch of PNG barcode images and reads them using a high‑performance quality preset.
+/// Demonstrates setting QualitySettings to HighPerformance before reading a batch of PNG barcode images.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates sample barcodes, saves them as PNG files, and reads them with
-    /// <see cref="QualitySettings.HighPerformance"/> to demonstrate faster recognition.
+    /// Entry point. Generates sample PNG barcodes, reads them with high‑performance settings, and cleans up.
     /// </summary>
     static void Main()
     {
-        // Define a folder to store sample barcode images
-        string folderPath = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
-        Directory.CreateDirectory(folderPath);
+        // Create a unique temporary folder for the batch
+        string batchFolder = Path.Combine(Path.GetTempPath(), "Batch_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(batchFolder);
 
-        // Generate a small batch of sample PNG barcode images (5 items)
+        // Generate sample PNG barcode images
+        List<string> barcodeFiles = new List<string>();
         for (int i = 1; i <= 5; i++)
         {
-            string fileName = $"barcode{i}.png";
-            string filePath = Path.Combine(folderPath, fileName);
-
-            // Create a barcode generator for Code128 with sample text
-            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, $"Sample{i}"))
+            string codeText = $"Sample{i:D3}";
+            string filePath = Path.Combine(batchFolder, $"barcode_{i}.png");
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
             {
-                // Save the generated barcode as a PNG file
+                // Save each barcode as a PNG file
                 generator.Save(filePath, BarCodeImageFormat.Png);
             }
+            barcodeFiles.Add(filePath);
         }
 
-        // Retrieve all PNG files from the folder
-        string[] pngFiles = Directory.GetFiles(folderPath, "*.png");
-
-        // Process each PNG image in the folder
-        foreach (string pngFile in pngFiles)
+        // Read the generated barcodes with HighPerformance quality preset
+        foreach (string file in barcodeFiles)
         {
-            if (!File.Exists(pngFile))
+            if (!File.Exists(file))
             {
-                Console.WriteLine($"File not found: {pngFile}");
+                Console.WriteLine($"File not found: {file}");
                 continue;
             }
 
-            // Initialize a reader for the image, using all supported decode types
-            using (BarCodeReader reader = new BarCodeReader(pngFile, DecodeType.AllSupportedTypes))
+            try
             {
-                // Apply the high‑performance quality preset before reading
-                reader.QualitySettings = QualitySettings.HighPerformance;
-
-                // Read and output detected barcodes
-                foreach (var result in reader.ReadBarCodes())
+                using (var reader = new BarCodeReader(file, DecodeType.AllSupportedTypes))
                 {
-                    Console.WriteLine($"File: {Path.GetFileName(pngFile)} - Detected CodeText: {result.CodeText}");
+                    // Apply the high‑performance quality setting before reading
+                    reader.QualitySettings = QualitySettings.HighPerformance;
+
+                    // Perform barcode detection
+                    BarCodeResult[] results = reader.ReadBarCodes();
+                    Console.WriteLine($"File: {Path.GetFileName(file)} - Barcodes found: {results.Length}");
+                    foreach (BarCodeResult result in results)
+                    {
+                        Console.WriteLine($"  Type: {result.CodeTypeName}, Text: {result.CodeText}");
+                    }
                 }
             }
+            catch (ArgumentException ex) when (ex.Message.Contains("Image loading failed"))
+            {
+                // Skip files that cannot be loaded as images
+                Console.WriteLine($"Skipping unreadable file: {file}");
+            }
+            catch (Exception ex)
+            {
+                // Log any other processing errors
+                Console.WriteLine($"Error processing file {file}: {ex.Message}");
+            }
+        }
+
+        // Clean up temporary folder
+        try
+        {
+            Directory.Delete(batchFolder, true);
+        }
+        catch
+        {
+            // Ignore cleanup errors
         }
     }
 }

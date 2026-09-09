@@ -1,81 +1,140 @@
-// Title: Asynchronous Barcode Scanning with Latency Comparison
-// Description: Demonstrates generating a Code128 barcode, reading it synchronously and asynchronously, and measuring the time difference.
+// Title: Asynchronous Barcode Scanning Benchmark
+// Description: Demonstrates generating barcode images, then reading them synchronously and asynchronously to compare latency.
+// Category-Description: This example belongs to the Aspose.BarCode scanning category, showcasing how to use BarCodeReader for decoding images. It illustrates typical use cases such as batch processing of barcode files, measuring performance of synchronous versus asynchronous reads, and helps developers understand when to apply parallel tasks for faster throughput. The example uses BarcodeGenerator, BarCodeReader, and common .NET timing utilities, useful for performance testing and optimization.
 // Prompt: Implement asynchronous barcode scanning and measure latency reduction compared to synchronous calls.
-// Tags: barcode symbology, synchronous, asynchronous, latency measurement, aspose.barcode
+// Tags: barcode symbology, scanning, async, performance, benchmark, aspose.barcode, generation, recognition
 
 using System;
-using System.Diagnostics;
 using System.IO;
+using System.Diagnostics;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that creates a barcode, reads it synchronously and asynchronously,
-/// and reports the elapsed time for each operation.
+/// Demonstrates asynchronous barcode scanning and latency comparison with synchronous scanning using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Executes barcode generation, synchronous read,
-    /// asynchronous read, and cleanup while measuring latency for each read method.
+    /// Entry point. Generates sample barcodes, measures synchronous and asynchronous read times, and reports latency reduction.
     /// </summary>
-    static async Task Main()
+    /// <param name="args">Command‑line arguments (not used).</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    static async Task Main(string[] args)
     {
-        // Define the file path for the generated barcode image
-        string imagePath = "barcode.png";
+        // Create a temporary folder for sample barcodes
+        string tempFolder = Path.Combine(Path.GetTempPath(), "Barcodes_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
 
-        // ------------------------------------------------------------
-        // Generate a simple Code128 barcode and save it to a file
-        // ------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "AsyncTest123"))
+        // Generate sample barcode images
+        List<string> barcodeFiles = GenerateSampleBarcodes(tempFolder, 5);
+
+        // Synchronous reading benchmark
+        TimeSpan syncTime = MeasureSyncRead(barcodeFiles);
+        Console.WriteLine($"Synchronous read time: {syncTime.TotalMilliseconds} ms");
+
+        // Asynchronous reading benchmark
+        TimeSpan asyncTime = await MeasureAsyncRead(barcodeFiles);
+        Console.WriteLine($"Asynchronous read time: {asyncTime.TotalMilliseconds} ms");
+
+        // Calculate latency reduction percentage
+        double reduction = (syncTime.TotalMilliseconds - asyncTime.TotalMilliseconds) / syncTime.TotalMilliseconds * 100;
+        Console.WriteLine($"Latency reduction: {reduction:F2}%");
+
+        // Cleanup temporary files and folder
+        try
         {
-            generator.Save(imagePath);
+            Directory.Delete(tempFolder, true);
         }
-
-        // ------------------------------------------------------------
-        // Synchronous barcode reading and latency measurement
-        // ------------------------------------------------------------
-        var syncStopwatch = Stopwatch.StartNew(); // Start timing synchronous read
-        using (var syncReader = new BarCodeReader(imagePath, DecodeType.Code128))
+        catch
         {
-            foreach (var result in syncReader.ReadBarCodes())
+            // Ignore cleanup errors
+        }
+    }
+
+    /// <summary>
+    /// Generates a set of barcode image files using Code128 symbology.
+    /// </summary>
+    /// <param name="folder">Folder where barcode images will be saved.</param>
+    /// <param name="count">Number of barcode images to generate.</param>
+    /// <returns>List of file paths for the generated barcode images.</returns>
+    static List<string> GenerateSampleBarcodes(string folder, int count)
+    {
+        var files = new List<string>();
+        for (int i = 0; i < count; i++)
+        {
+            string codeText = $"CODE{i + 1:D3}";
+            string filePath = Path.Combine(folder, $"barcode_{i + 1}.png");
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
             {
-                // Output result to ensure processing occurs
-                Console.WriteLine($"Sync Read - Type: {result.CodeTypeName}, Text: {result.CodeText}");
+                generator.Save(filePath, BarCodeImageFormat.Png);
+            }
+            files.Add(filePath);
+        }
+        return files;
+    }
+
+    /// <summary>
+    /// Measures the time required to read all barcode files synchronously.
+    /// </summary>
+    /// <param name="files">List of barcode image file paths.</param>
+    /// <returns>Elapsed time for the synchronous read operation.</returns>
+    static TimeSpan MeasureSyncRead(List<string> files)
+    {
+        var stopwatch = Stopwatch.StartNew();
+        foreach (string file in files)
+        {
+            if (!File.Exists(file))
+                continue;
+
+            using (var reader = new BarCodeReader(file, DecodeType.AllSupportedTypes))
+            {
+                reader.ReadBarCodes();
+                // Process results if needed (omitted for benchmark)
+                foreach (BarCodeResult result in reader.FoundBarCodes)
+                {
+                    // No output needed for benchmark
+                }
             }
         }
-        syncStopwatch.Stop(); // Stop timing
-        Console.WriteLine($"Synchronous read elapsed: {syncStopwatch.ElapsedMilliseconds} ms");
+        stopwatch.Stop();
+        return stopwatch.Elapsed;
+    }
 
-        // ------------------------------------------------------------
-        // Asynchronous barcode reading (wrapped in Task.Run) and latency measurement
-        // ------------------------------------------------------------
-        var asyncStopwatch = Stopwatch.StartNew(); // Start timing asynchronous read
-        BarCodeResult[] asyncResults = await Task.Run(() =>
+    /// <summary>
+    /// Measures the time required to read all barcode files asynchronously using parallel tasks.
+    /// </summary>
+    /// <param name="files">List of barcode image file paths.</param>
+    /// <returns>Elapsed time for the asynchronous read operation.</returns>
+    static async Task<TimeSpan> MeasureAsyncRead(List<string> files)
+    {
+        var stopwatch = Stopwatch.StartNew();
+        var tasks = new List<Task>();
+        foreach (string file in files)
         {
-            using (var asyncReader = new BarCodeReader(imagePath, DecodeType.Code128))
+            if (!File.Exists(file))
+                continue;
+
+            // Run each read operation on a thread‑pool thread
+            tasks.Add(Task.Run(() =>
             {
-                // Perform the read operation on a background thread
-                return asyncReader.ReadBarCodes();
-            }
-        });
-        asyncStopwatch.Stop(); // Stop timing
-
-        // Output asynchronous read results
-        foreach (var result in asyncResults)
-        {
-            Console.WriteLine($"Async Read - Type: {result.CodeTypeName}, Text: {result.CodeText}");
+                using (var reader = new BarCodeReader(file, DecodeType.AllSupportedTypes))
+                {
+                    reader.ReadBarCodes();
+                    foreach (BarCodeResult result in reader.FoundBarCodes)
+                    {
+                        // No output needed for benchmark
+                    }
+                }
+            }));
         }
-        Console.WriteLine($"Asynchronous read elapsed: {asyncStopwatch.ElapsedMilliseconds} ms");
-
-        // ------------------------------------------------------------
-        // Cleanup generated image file
-        // ------------------------------------------------------------
-        if (File.Exists(imagePath))
-        {
-            File.Delete(imagePath);
-        }
+        await Task.WhenAll(tasks);
+        stopwatch.Stop();
+        return stopwatch.Elapsed;
     }
 }

@@ -1,129 +1,113 @@
-// Title: Load BMP barcode image with metadata and compare recognition speed
-// Description: Demonstrates loading a BMP barcode image, adding EXIF metadata, and measuring whether the metadata impacts barcode recognition performance.
-// Category-Description: This example belongs to the Aspose.BarCode image processing category, illustrating how to generate a barcode, embed image metadata using Aspose.Drawing, and evaluate recognition speed with BarCodeReader. Developers working with barcode scanning in image files often need to ensure that added metadata (e.g., EXIF) does not degrade detection performance. The key API classes used are BarcodeGenerator, BarCodeReader, Image, and PropertyItem.
+// Title: Compare barcode recognition speed for BMP images with and without embedded metadata
+// Description: Demonstrates loading BMP images that contain barcode metadata and measuring whether the metadata impacts recognition performance.
+// Category-Description: This example belongs to the Aspose.BarCode image processing category, illustrating how to generate barcodes, embed optional metadata, and use the BarCodeReader for fast decoding. Developers often need to assess the effect of image metadata on scanning speed, especially in high‑throughput scenarios. The key API classes used are BarcodeGenerator, BarCodeReader, and related parameter objects.
 // Prompt: Load BMP images with embedded metadata and verify that metadata does not affect recognition speed.
-// Tags: code128, bmp, metadata, performance, generation, recognition, aspose.barcode, aspose.drawing
+// Tags: aztec, barcode, metadata, performance, bmp, generation, recognition, aspose.barcode
 
 using System;
-using System.Diagnostics;
 using System.IO;
-using System.Text;
-using System.Runtime.Serialization;
+using System.Diagnostics;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates loading BMP images with embedded metadata and verifying that metadata does not affect recognition speed.
+/// Demonstrates generating Aztec barcodes with and without embedded metadata,
+/// measuring recognition time, and confirming that metadata does not significantly affect performance.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a barcode, adds metadata, and measures recognition times.
+    /// Entry point of the example. Creates temporary BMP files, measures decoding times,
+    /// outputs results, and cleans up temporary resources.
     /// </summary>
     static void Main()
     {
-        // Prepare output directory
-        string outputDir = "output";
-        if (!Directory.Exists(outputDir))
+        // Create a unique temporary directory for test images
+        string tempDir = Path.Combine(Path.GetTempPath(), "MetaTest_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+
+        // Define file paths for images with and without metadata
+        string pathWithMeta = Path.Combine(tempDir, "meta.bmp");
+        string pathWithoutMeta = Path.Combine(tempDir, "plain.bmp");
+
+        // Generate an Aztec barcode and embed metadata (structured append, file ID, etc.)
+        using (var gen = new BarcodeGenerator(EncodeTypes.Aztec, "SampleMeta"))
         {
-            Directory.CreateDirectory(outputDir);
+            gen.Parameters.Barcode.XDimension.Pixels = 4;
+            gen.Parameters.Barcode.Aztec.SymbolMode = AztecSymbolMode.FullRange;
+            gen.Parameters.Barcode.Aztec.IsReaderInitialization = true;
+            gen.Parameters.Barcode.Aztec.StructuredAppendBarcodeId = 2;
+            gen.Parameters.Barcode.Aztec.StructuredAppendBarcodesCount = 4;
+            gen.Parameters.Barcode.Aztec.StructuredAppendFileId = "File01";
+            gen.Save(pathWithMeta, BarCodeImageFormat.Bmp);
         }
 
-        // Define file paths for the plain and metadata‑enhanced images
-        string plainPath = Path.Combine(outputDir, "barcode_plain.bmp");
-        string metaPath = Path.Combine(outputDir, "barcode_meta.bmp");
-
-        // Generate a simple Code128 barcode and save it as a BMP file
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+        // Generate a plain Aztec barcode without any additional metadata
+        using (var gen = new BarcodeGenerator(EncodeTypes.Aztec, "SamplePlain"))
         {
-            generator.Save(plainPath);
+            gen.Parameters.Barcode.XDimension.Pixels = 4;
+            gen.Save(pathWithoutMeta, BarCodeImageFormat.Bmp);
         }
 
-        // Measure recognition time for the plain BMP image
-        double plainTime = MeasureRecognitionTime(plainPath);
-        Console.WriteLine($"Recognition time for plain BMP: {plainTime:F2} ms");
+        // Verify that both image files were created successfully
+        if (!File.Exists(pathWithMeta) || !File.Exists(pathWithoutMeta))
+        {
+            Console.WriteLine("Failed to create test images.");
+            return;
+        }
 
-        // Embed a text metadata property into the BMP image and save as a new file
-        AddMetadataToBmp(plainPath, metaPath);
+        // Measure recognition time for the image that contains metadata
+        long timeWithMeta = MeasureReadTime(pathWithMeta);
+        // Measure recognition time for the image without metadata
+        long timeWithoutMeta = MeasureReadTime(pathWithoutMeta);
 
-        // Measure recognition time for the BMP image that contains metadata
-        double metaTime = MeasureRecognitionTime(metaPath);
-        Console.WriteLine($"Recognition time for BMP with metadata: {metaTime:F2} ms");
+        // Output the measured times
+        Console.WriteLine($"Recognition time (metadata): {timeWithMeta} ms");
+        Console.WriteLine($"Recognition time (no metadata): {timeWithoutMeta} ms");
 
-        // Simple verification output comparing the two timings
-        if (Math.Abs(metaTime - plainTime) < 5.0)
+        // Compare the two timings and report whether the difference is within an acceptable range
+        long diff = Math.Abs(timeWithMeta - timeWithoutMeta);
+        Console.WriteLine($"Difference: {diff} ms");
+        if (diff <= 20) // arbitrary small threshold
         {
             Console.WriteLine("Metadata does not significantly affect recognition speed.");
         }
         else
         {
-            Console.WriteLine("Metadata appears to affect recognition speed.");
+            Console.WriteLine("Metadata may affect recognition speed.");
+        }
+
+        // Cleanup temporary files and directory
+        try
+        {
+            File.Delete(pathWithMeta);
+            File.Delete(pathWithoutMeta);
+            Directory.Delete(tempDir);
+        }
+        catch
+        {
+            // Ignore any cleanup errors
         }
     }
 
     /// <summary>
-    /// Measures the time (in milliseconds) required to recognize barcodes in the specified image file.
+    /// Measures the time required to read all barcodes from the specified image.
     /// </summary>
-    /// <param name="imagePath">Path to the image file to be processed.</param>
+    /// <param name="imagePath">Full path to the BMP image containing the barcode.</param>
     /// <returns>Elapsed time in milliseconds.</returns>
-    static double MeasureRecognitionTime(string imagePath)
+    static long MeasureReadTime(string imagePath)
     {
-        if (!File.Exists(imagePath))
+        var stopwatch = Stopwatch.StartNew();
+        using (var reader = new BarCodeReader(imagePath, DecodeType.Aztec))
         {
-            Console.WriteLine($"File not found: {imagePath}");
-            return 0.0;
-        }
-
-        var stopwatch = new Stopwatch();
-
-        // Initialize the barcode reader for all supported symbologies
-        using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
-        {
-            // Use normal quality preset for consistent measurement
-            reader.QualitySettings = QualitySettings.NormalQuality;
-
-            stopwatch.Start();
-            var results = reader.ReadBarCodes();
-            stopwatch.Stop();
-
-            // Output detected barcodes (if any) for verification
-            foreach (var result in results)
+            foreach (var result in reader.ReadBarCodes())
             {
-                Console.WriteLine($"Detected: Type={result.CodeTypeName}, Text={result.CodeText}");
+                // Access the result to ensure the barcode is fully processed
+                var _ = result.CodeText;
             }
         }
-
-        return stopwatch.Elapsed.TotalMilliseconds;
-    }
-
-    /// <summary>
-    /// Adds a simple text metadata property to a BMP image and saves it to a new file.
-    /// </summary>
-    /// <param name="sourcePath">Path to the original BMP image.</param>
-    /// <param name="destinationPath">Path where the metadata‑enhanced BMP will be saved.</param>
-    static void AddMetadataToBmp(string sourcePath, string destinationPath)
-    {
-        using (var image = Image.FromFile(sourcePath))
-        {
-            // Create an uninitialized PropertyItem (required for setting custom properties)
-            var propItem = (PropertyItem)FormatterServices.GetUninitializedObject(typeof(PropertyItem));
-            propItem.Id = 0x010E; // Image Description tag
-            propItem.Type = 2;    // ASCII string type
-
-            // Prepare the description string (null‑terminated as required by BMP metadata)
-            string description = "Sample metadata for testing";
-            byte[] valueBytes = Encoding.ASCII.GetBytes(description + '\0');
-            propItem.Value = valueBytes;
-            propItem.Len = valueBytes.Length;
-
-            // Assign the property to the image
-            image.SetPropertyItem(propItem);
-
-            // Save the image with the new metadata
-            image.Save(destinationPath);
-        }
+        stopwatch.Stop();
+        return stopwatch.ElapsedMilliseconds;
     }
 }

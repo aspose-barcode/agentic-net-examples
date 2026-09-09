@@ -1,69 +1,64 @@
 // Title: Configure deconvolution for blurred QR code recognition
-// Description: Demonstrates generating a high‑error‑correction QR code, saving it as JPEG, and using Aspose.BarCode's deconvolution settings to improve detection of blurred images.
-// Category-Description: This example belongs to the Aspose.BarCode image preprocessing and recognition category. It showcases the use of BarcodeGenerator, BarCodeReader, QualitySettings, and DeconvolutionMode to handle low‑quality or blurred barcode images. Developers often need to adjust these settings when scanning QR codes from photographs or scanned documents where blur is present.
+// Description: Demonstrates how to set deconvolution and quality settings on Aspose.BarCode's BarCodeReader to improve detection of a blurred QR code stored in a JPEG image.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, focusing on image preprocessing and quality configuration. It shows usage of BarCodeReader, DecodeType, QualitySettings, DeconvolutionMode, BarcodeQualityMode, and XDimensionMode to handle low‑quality or blurred barcodes. Developers often need to adjust these settings when scanning images captured under poor lighting or motion blur to achieve reliable decoding.
 // Prompt: Configure deconvolution parameters to improve recognition of blurred QR codes in JPEG files.
-// Tags: qr code, deconvolution, image preprocessing, barcode recognition, aspose.barcode, qualitysettings
+// Tags: qr code, deconvolution, barcode recognition, quality settings, aspnet, aspose.barcode, jpeg
 
 using System;
 using System.IO;
 using Aspose.BarCode;
-using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates configuring deconvolution parameters to improve recognition of blurred QR codes in JPEG files.
+/// Demonstrates configuring deconvolution and other quality settings to read a blurred QR code from a JPEG file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a QR code, saves it as JPEG, and reads it using high‑quality deconvolution settings.
+    /// Entry point of the example. Reads a JPEG image, applies quality settings, and outputs detected barcode information.
     /// </summary>
     static void Main()
     {
-        // Path for the sample QR code image
-        string qrImagePath = "qr_sample.jpg";
+        // Define the path to the sample JPEG file containing a blurred QR code
+        string imagePath = Path.Combine(Directory.GetCurrentDirectory(), "blurred_qr.jpg");
 
-        // -------------------------------------------------
-        // 1. Generate a QR code with high error correction level
-        // -------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
+        // Verify that the image file exists before attempting to read it
+        if (!File.Exists(imagePath))
         {
-            // Use the highest error correction to tolerate blur
-            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
-
-            // Save as JPEG (Aspose.BarCode supports JPEG via BarCodeImageFormat)
-            generator.Save(qrImagePath, BarCodeImageFormat.Jpeg);
-        }
-
-        // -------------------------------------------------
-        // 2. Verify the image exists before attempting recognition
-        // -------------------------------------------------
-        if (!File.Exists(qrImagePath))
-        {
-            Console.WriteLine($"File not found: {qrImagePath}");
+            Console.WriteLine($"File not found: {imagePath}");
             return;
         }
 
-        // -------------------------------------------------
-        // 3. Read the QR code using deconvolution to improve
-        //    recognition of blurred images
-        // -------------------------------------------------
-        using (var reader = new BarCodeReader(qrImagePath, DecodeType.QR))
+        // Initialize a BarCodeReader for all supported barcode types (including QR)
+        using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
         {
-            // Apply a high‑quality preset for better detection
-            reader.QualitySettings = QualitySettings.HighQuality;
+            // Configure quality settings to improve recognition of blurred images
+            reader.QualitySettings.Deconvolution = DeconvolutionMode.Slow; // heavy deconvolution for blurred images
+            reader.QualitySettings.BarcodeQuality = BarcodeQualityMode.Low; // optimize for low‑quality barcodes
 
-            // Enable deconvolution (image restoration) – Fast mode is sufficient
-            reader.QualitySettings.Deconvolution = DeconvolutionMode.Fast;
+            // Optional: use minimal XDimension to help with small modules
+            reader.QualitySettings.XDimension = XDimensionMode.UseMinimalXDimension;
+            reader.QualitySettings.MinimalXDimension = 5f;
 
-            // Allow recognition of barcodes with minor errors (optional)
-            reader.QualitySettings.AllowIncorrectBarcodes = true;
+            // Perform barcode recognition
+            BarCodeResult[] results = reader.ReadBarCodes();
 
-            // Perform recognition and output detected text
-            foreach (var result in reader.ReadBarCodes())
+            // Output results
+            if (results.Length == 0)
             {
-                Console.WriteLine($"Detected QR Code Text: {result.CodeText}");
+                Console.WriteLine("No barcode detected.");
+            }
+            else
+            {
+                foreach (var result in results)
+                {
+                    Console.WriteLine($"Code Text: {result.CodeText}");
+                    Console.WriteLine($"Symbology: {result.CodeTypeName}");
+                    Console.WriteLine($"Reading Quality: {result.ReadingQuality}");
+                    var bounds = result.Region.Rectangle;
+                    Console.WriteLine($"Region - X:{bounds.X}, Y:{bounds.Y}, Width:{bounds.Width}, Height:{bounds.Height}, Angle:{result.Region.Angle}");
+                    Console.WriteLine(new string('-', 40));
+                }
             }
         }
     }
