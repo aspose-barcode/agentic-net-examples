@@ -1,8 +1,8 @@
 // Title: Set PDF417 barcode text location below
-// Description: Demonstrates how to generate a PDF417 barcode with the human‑readable text positioned below the symbol using Aspose.BarCode.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on configuring text placement for 2‑D symbologies. It showcases the use of BarcodeGenerator, EncodeTypes, and CodeTextParameters to control the CodeLocation property. Developers often need to adjust human‑readable text positions for scanning applications, documentation, or labeling, and this snippet illustrates the default Below setting for PDF417 barcodes.
+// Description: Demonstrates how to generate a PDF417 barcode with the human‑readable text placed below the symbol using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing the use of BarcodeGenerator, EncodeTypes, and CodeLocation classes. Typical scenarios include creating barcodes for documents, labels, or tickets where the readable text needs to appear beneath the barcode. Developers often need to adjust text placement, dimensions, and other visual properties to meet layout requirements.
 // Prompt: Set barcode text location to below for PDF417 barcodes, using the default TextLocation.Below setting.
-// Tags: pdf417, barcode, textlocation, below, generation, aspose.barcode, png
+// Tags: pdf417, textlocation, below, barcode, generation, png, aspose.barcode
 
 using System;
 using System.IO;
@@ -10,32 +10,37 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generating a PDF417 barcode with the human‑readable text placed below the symbol.
+/// Demonstrates setting the text location to below for a PDF417 barcode using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates the barcode, configures text location, saves the image, and writes the output path.
+    /// Entry point. Generates a PDF417 barcode image with text displayed below the barcode.
     /// </summary>
     static void Main()
     {
-        // Define the output file path for the generated PNG image
-        string outputPath = "pdf417_below.png";
+        // Define a temporary output directory and ensure it exists
+        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
+        Directory.CreateDirectory(outputDir);
 
-        // Initialize a PDF417 barcode generator within a using block to ensure proper disposal
-        using (var generator = new BarcodeGenerator(EncodeTypes.Pdf417))
+        // Full path for the generated PNG file
+        string outputPath = Path.Combine(outputDir, "Pdf417_Below.png");
+
+        // Initialize the barcode generator for PDF417 with sample text
+        using (var generator = new BarcodeGenerator(EncodeTypes.Pdf417, "SampleCodeText"))
         {
-            // Assign the data that will be encoded into the barcode
-            generator.CodeText = "Sample PDF417 Text";
-
-            // Configure the human‑readable text to appear below the barcode (default setting)
+            // Set the human‑readable text location to below the barcode (default value)
             generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.Below;
 
-            // Save the generated barcode as a PNG file at the specified location
+            // Optional: configure additional PDF417 specific settings
+            generator.Parameters.Barcode.Pdf417.Rows = 12;          // Number of rows in the symbol
+            generator.Parameters.Barcode.XDimension.Pixels = 2;    // Module width in pixels
+
+            // Save the generated barcode as a PNG image
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Output the full path of the saved barcode image for verification
-        Console.WriteLine($"Barcode saved to {Path.GetFullPath(outputPath)}");
+        // Inform the user where the barcode image was saved
+        Console.WriteLine($"Barcode saved to: {outputPath}");
     }
 }

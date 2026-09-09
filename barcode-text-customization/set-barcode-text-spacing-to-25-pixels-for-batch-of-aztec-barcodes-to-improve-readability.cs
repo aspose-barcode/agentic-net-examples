@@ -1,57 +1,63 @@
-// Title: Set text spacing for batch Aztec barcodes
-// Description: Demonstrates how to generate multiple Aztec barcodes with a custom human‑readable text spacing of 2.5 pixels, improving readability of the printed codes.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on Aztec symbology and visual customization. It showcases the use of BarcodeGenerator, EncodeTypes, and CodeTextParameters to adjust text layout. Developers often need to tweak text spacing, location, and other rendering options when creating batches of barcodes for labeling or packaging applications.
+// Title: Generate a batch of Aztec barcodes with custom text spacing
+// Description: Demonstrates how to create multiple Aztec barcodes and set the distance between the barcode and its human‑readable text to 2.5 pixels, improving readability.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on Aztec symbology and visual appearance customization. It showcases the use of BarcodeGenerator, EncodeTypes, and CodeTextParameters to adjust text spacing, a common requirement when integrating barcodes into UI or printed media. Developers often need to fine‑tune barcode layout for better scanning and aesthetic purposes.
 // Prompt: Set barcode text spacing to 2.5 pixels for a batch of Aztec barcodes to improve readability.
-// Tags: aztec, barcode, text-spacing, batch, png, aspose.barcode
+// Tags: aztec, barcode, text spacing, generation, png, aspose.barcode, csharp
 
 using System;
 using System.IO;
+using System.Collections.Generic;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Generates a batch of Aztec barcodes with custom text spacing.
+/// Demonstrates batch generation of Aztec barcodes with custom text spacing.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates the output folder, defines sample texts, and saves each barcode image.
+    /// Entry point that creates a temporary folder, generates several Aztec barcodes,
+    /// sets the text spacing to 2.5 pixels, saves them as PNG files, and logs the output.
     /// </summary>
     static void Main()
     {
-        // Prepare output folder for generated barcode images
-        string outputFolder = Path.Combine(Directory.GetCurrentDirectory(), "AztecBarcodes");
-        if (!Directory.Exists(outputFolder))
-        {
-            Directory.CreateDirectory(outputFolder);
-        }
+        // Create a unique temporary folder for the batch
+        string batchFolder = Path.Combine(Path.GetTempPath(), "AztecBatch_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(batchFolder);
 
-        // Sample code texts for the batch of barcodes
-        string[] codeTexts = new string[]
+        // Sample code texts for the Aztec barcodes
+        List<string> codeTexts = new List<string>
         {
-            "ABC123",
-            "HelloWorld",
-            "1234567890",
-            "AztecTest",
-            "Sample5"
+            "Hello",
+            "World",
+            "Aspose",
+            "Aztec",
+            "12345"
         };
 
-        // Iterate through each text value and generate an Aztec barcode
-        for (int i = 0; i < codeTexts.Length; i++)
+        int index = 1;
+        // Iterate over each text value and generate a corresponding barcode image
+        foreach (string text in codeTexts)
         {
-            using (var generator = new BarcodeGenerator(EncodeTypes.Aztec, codeTexts[i]))
+            // Build the full file path for the current barcode image
+            string filePath = Path.Combine(batchFolder, $"Aztec_{index}.png");
+
+            // Initialize the barcode generator with Aztec symbology and the current text
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Aztec, text))
             {
-                // Set human‑readable text spacing to 2.5 pixels
-                generator.Parameters.Barcode.CodeTextParameters.Space.Point = 2.5f;
+                // Set spacing between barcode and text to 2.5 pixels
+                generator.Parameters.Barcode.CodeTextParameters.Space.Pixels = 2.5f;
 
-                // Place the code text below the barcode for better visual separation
-                generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.Below;
-
-                // Build the file path and save the barcode as a PNG image
-                string filePath = Path.Combine(outputFolder, $"Aztec_{i + 1}.png");
-                generator.Save(filePath);
-                Console.WriteLine($"Saved: {filePath}");
+                // Save the barcode image in PNG format
+                generator.Save(filePath, BarCodeImageFormat.Png);
             }
+
+            // Output the location of the generated file
+            Console.WriteLine($"Generated: {filePath}");
+            index++;
         }
+
+        // Indicate that the batch processing has finished
+        Console.WriteLine("Batch generation completed.");
     }
 }

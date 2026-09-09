@@ -1,160 +1,152 @@
-// Title: Serialize and Reload Barcode Text and Caption Settings via JSON
-// Description: Demonstrates how to capture barcode text and caption properties, serialize them to a JSON file, and then recreate the same barcode appearance by deserializing the settings.
-// Category-Description: This example belongs to the Aspose.BarCode generation and serialization category. It shows how to use BarcodeGenerator, its Parameters (including CaptionAbove and CaptionBelow), and .NET System.Text.Json to persist barcode configuration. Typical use cases include saving barcode layouts for later reuse, sharing settings across services, or version‑controlling barcode designs. Developers often need to export and import barcode settings without re‑creating them manually.
+// Title: Serialize and Recreate Barcode Settings with JSON
+// Description: Demonstrates how to capture barcode generation parameters, serialize them to JSON, and reload them to produce an identical barcode image.
+// Category-Description: This example belongs to the Aspose.BarCode generation and serialization category. It shows how to use BarcodeGenerator, EncodeTypes, and related parameter objects to configure a barcode, persist its settings as JSON, and later reconstruct the same visual output. Developers working with dynamic barcode creation, configuration persistence, or automated testing often need to serialize settings for reuse or version control.
 // Prompt: Serialize barcode text and caption settings to JSON, then reload them to recreate identical barcode appearances.
-// Tags: barcode, serialization, json, caption, code128, aspose.barcode, generation
+// Tags: pdf417, serialization, json, aspose.barcode, caption, barcodegeneration
 
 using System;
 using System.IO;
 using System.Text.Json;
+using System.Reflection;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
-namespace BarcodeJsonDemo
+/// <summary>
+/// Simple DTO that holds the subset of barcode settings we want to persist.
+/// </summary>
+class BarcodeSettings
+{
+    public string EncodeTypeName { get; set; }
+    public string CodeText { get; set; }
+    public bool CaptionAboveVisible { get; set; }
+    public string CaptionAboveText { get; set; }
+    public string CaptionAboveFontFamily { get; set; }
+    public float CaptionAboveFontSizePoint { get; set; }
+    public string CaptionAboveTextColor { get; set; }
+}
+
+/// <summary>
+/// Demonstrates serialization of barcode parameters to JSON and recreation of the barcode from those parameters.
+/// </summary>
+class Program
 {
     /// <summary>
-    /// Data transfer object that represents caption visual settings.
+    /// Entry point. Generates an original barcode, saves its settings to JSON, then recreates the barcode from the JSON.
     /// </summary>
-    public class CaptionSettings
+    static void Main()
     {
-        public string Text { get; set; }
-        public string FontFamily { get; set; }
-        public float FontSize { get; set; }
-        public string Alignment { get; set; } // TextAlignment enum name
-        public int TextColorArgb { get; set; }
-    }
+        // Create a unique temporary working directory.
+        string workDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(workDir);
 
-    /// <summary>
-    /// Data transfer object that aggregates barcode text and its caption settings.
-    /// </summary>
-    public class BarcodeSettings
-    {
-        public string CodeText { get; set; }
-        public CaptionSettings CaptionAbove { get; set; }
-        public CaptionSettings CaptionBelow { get; set; }
-    }
+        // Define file paths for the original image, recreated image, and JSON settings.
+        string originalImagePath = Path.Combine(workDir, "original.png");
+        string recreatedImagePath = Path.Combine(workDir, "recreated.png");
+        string jsonPath = Path.Combine(workDir, "settings.json");
 
-    /// <summary>
-    /// Demonstrates serialization of barcode settings to JSON and recreation of the barcode from those settings.
-    /// </summary>
-    class Program
-    {
-        /// <summary>
-        /// Entry point. Generates a barcode, saves its configuration to JSON, then reloads the JSON to produce an identical barcode.
-        /// </summary>
-        static void Main()
+        // -----------------------------------------------------------------
+        // 1. Generate the original barcode with a caption and save it as PNG.
+        // -----------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.Pdf417, "Sample123"))
         {
-            // File paths for the generated images and the JSON settings file
-            const string originalImagePath = "barcodeOriginal.png";
-            const string reloadedImagePath = "barcodeReloaded.png";
-            const string jsonPath = "barcodeSettings.json";
-
-            // -----------------------------------------------------------------
-            // Create original barcode with text and caption settings
-            // -----------------------------------------------------------------
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
-            {
-                // Configure caption displayed above the barcode
-                generator.Parameters.CaptionAbove.Text = "Above Caption";
-                generator.Parameters.CaptionAbove.Font.FamilyName = "Helvetica";
-                generator.Parameters.CaptionAbove.Font.Size.Point = 12f;
-                generator.Parameters.CaptionAbove.Alignment = TextAlignment.Center;
-                generator.Parameters.CaptionAbove.TextColor = Aspose.Drawing.Color.Blue;
-
-                // Configure caption displayed below the barcode
-                generator.Parameters.CaptionBelow.Text = "Below Caption";
-                generator.Parameters.CaptionBelow.Font.FamilyName = "Helvetica";
-                generator.Parameters.CaptionBelow.Font.Size.Point = 10f;
-                generator.Parameters.CaptionBelow.Alignment = TextAlignment.Right;
-                generator.Parameters.CaptionBelow.TextColor = Aspose.Drawing.Color.Green;
-
-                // Save the original barcode image to disk
-                generator.Save(originalImagePath);
-
-                // Capture the current barcode configuration into DTO objects
-                var settings = new BarcodeSettings
-                {
-                    CodeText = generator.CodeText,
-                    CaptionAbove = new CaptionSettings
-                    {
-                        Text = generator.Parameters.CaptionAbove.Text,
-                        FontFamily = generator.Parameters.CaptionAbove.Font.FamilyName,
-                        FontSize = generator.Parameters.CaptionAbove.Font.Size.Point,
-                        Alignment = generator.Parameters.CaptionAbove.Alignment.ToString(),
-                        TextColorArgb = generator.Parameters.CaptionAbove.TextColor.ToArgb()
-                    },
-                    CaptionBelow = new CaptionSettings
-                    {
-                        Text = generator.Parameters.CaptionBelow.Text,
-                        FontFamily = generator.Parameters.CaptionBelow.Font.FamilyName,
-                        FontSize = generator.Parameters.CaptionBelow.Font.Size.Point,
-                        Alignment = generator.Parameters.CaptionBelow.Alignment.ToString(),
-                        TextColorArgb = generator.Parameters.CaptionBelow.TextColor.ToArgb()
-                    }
-                };
-
-                // Serialize the DTO to a formatted JSON string and write it to a file
-                var jsonOptions = new JsonSerializerOptions { WriteIndented = true };
-                string json = JsonSerializer.Serialize(settings, jsonOptions);
-                File.WriteAllText(jsonPath, json);
-            }
-
-            // -----------------------------------------------------------------
-            // Reload settings from JSON and recreate identical barcode
-            // -----------------------------------------------------------------
-            if (!File.Exists(jsonPath))
-            {
-                Console.WriteLine($"JSON file not found: {jsonPath}");
-                return;
-            }
-
-            // Read the JSON content and deserialize it back into DTO objects
-            string jsonContent = File.ReadAllText(jsonPath);
-            var loadedSettings = JsonSerializer.Deserialize<BarcodeSettings>(jsonContent);
-            if (loadedSettings == null)
-            {
-                Console.WriteLine("Failed to deserialize barcode settings.");
-                return;
-            }
-
-            // Use the deserialized settings to generate a new barcode with the same appearance
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, loadedSettings.CodeText))
-            {
-                // Apply the "above" caption if it exists
-                if (loadedSettings.CaptionAbove != null)
-                {
-                    generator.Parameters.CaptionAbove.Text = loadedSettings.CaptionAbove.Text;
-                    generator.Parameters.CaptionAbove.Font.FamilyName = loadedSettings.CaptionAbove.FontFamily;
-                    generator.Parameters.CaptionAbove.Font.Size.Point = loadedSettings.CaptionAbove.FontSize;
-                    if (Enum.TryParse<TextAlignment>(loadedSettings.CaptionAbove.Alignment, out var alignAbove))
-                    {
-                        generator.Parameters.CaptionAbove.Alignment = alignAbove;
-                    }
-                    generator.Parameters.CaptionAbove.TextColor = Aspose.Drawing.Color.FromArgb(loadedSettings.CaptionAbove.TextColorArgb);
-                }
-
-                // Apply the "below" caption if it exists
-                if (loadedSettings.CaptionBelow != null)
-                {
-                    generator.Parameters.CaptionBelow.Text = loadedSettings.CaptionBelow.Text;
-                    generator.Parameters.CaptionBelow.Font.FamilyName = loadedSettings.CaptionBelow.FontFamily;
-                    generator.Parameters.CaptionBelow.Font.Size.Point = loadedSettings.CaptionBelow.FontSize;
-                    if (Enum.TryParse<TextAlignment>(loadedSettings.CaptionBelow.Alignment, out var alignBelow))
-                    {
-                        generator.Parameters.CaptionBelow.Alignment = alignBelow;
-                    }
-                    generator.Parameters.CaptionBelow.TextColor = Aspose.Drawing.Color.FromArgb(loadedSettings.CaptionBelow.TextColorArgb);
-                }
-
-                // Save the regenerated barcode image to disk
-                generator.Save(reloadedImagePath);
-            }
-
-            // Inform the user where the output files are located
-            Console.WriteLine($"Original barcode saved to: {originalImagePath}");
-            Console.WriteLine($"Reloaded barcode saved to: {reloadedImagePath}");
-            Console.WriteLine($"Settings JSON saved to: {jsonPath}");
+            generator.Parameters.CaptionAbove.Visible = true;
+            generator.Parameters.CaptionAbove.Text = "Top Caption";
+            generator.Parameters.CaptionAbove.Font.FamilyName = "Arial";
+            generator.Parameters.CaptionAbove.Font.Size.Point = 14f;
+            generator.Parameters.CaptionAbove.TextColor = Color.Green;
+            generator.Save(originalImagePath, BarCodeImageFormat.Png);
         }
+
+        // ---------------------------------------------------------------
+        // 2. Extract the relevant settings from a fresh generator instance.
+        // ---------------------------------------------------------------
+        BarcodeSettings settings;
+        using (var generator = new BarcodeGenerator(EncodeTypes.Pdf417, "Sample123"))
+        {
+            settings = new BarcodeSettings
+            {
+                EncodeTypeName = nameof(EncodeTypes.Pdf417),
+                CodeText = generator.CodeText,
+                CaptionAboveVisible = generator.Parameters.CaptionAbove.Visible,
+                CaptionAboveText = generator.Parameters.CaptionAbove.Text,
+                CaptionAboveFontFamily = generator.Parameters.CaptionAbove.Font.FamilyName,
+                CaptionAboveFontSizePoint = generator.Parameters.CaptionAbove.Font.Size.Point,
+                CaptionAboveTextColor = GetColorName(generator.Parameters.CaptionAbove.TextColor)
+            };
+        }
+
+        // -------------------------------------------------
+        // 3. Serialize the settings object to a formatted JSON file.
+        // -------------------------------------------------
+        string json = JsonSerializer.Serialize(settings, new JsonSerializerOptions { WriteIndented = true });
+        File.WriteAllText(jsonPath, json);
+
+        // -------------------------------------------------
+        // 4. Read the JSON back and deserialize into a settings object.
+        // -------------------------------------------------
+        string readJson = File.ReadAllText(jsonPath);
+        BarcodeSettings loadedSettings = JsonSerializer.Deserialize<BarcodeSettings>(readJson);
+
+        // -------------------------------------------------
+        // 5. Resolve the encode type (via reflection) and recreate the barcode.
+        // -------------------------------------------------
+        BaseEncodeType encodeType = ResolveEncodeType(loadedSettings.EncodeTypeName) ?? EncodeTypes.Pdf417;
+
+        using (var generator = new BarcodeGenerator(encodeType, loadedSettings.CodeText))
+        {
+            generator.Parameters.CaptionAbove.Visible = loadedSettings.CaptionAboveVisible;
+            generator.Parameters.CaptionAbove.Text = loadedSettings.CaptionAboveText;
+            generator.Parameters.CaptionAbove.Font.FamilyName = loadedSettings.CaptionAboveFontFamily;
+            generator.Parameters.CaptionAbove.Font.Size.Point = loadedSettings.CaptionAboveFontSizePoint;
+            generator.Parameters.CaptionAbove.TextColor = ResolveColor(loadedSettings.CaptionAboveTextColor) ?? Color.Black;
+            generator.Save(recreatedImagePath, BarCodeImageFormat.Png);
+        }
+
+        // -------------------------------------------------
+        // 6. Output the locations of the generated files.
+        // -------------------------------------------------
+        Console.WriteLine($"Original image saved to: {originalImagePath}");
+        Console.WriteLine($"Settings JSON saved to: {jsonPath}");
+        Console.WriteLine($"Recreated image saved to: {recreatedImagePath}");
+    }
+
+    /// <summary>
+    /// Resolves an encode type name (e.g., "Pdf417") to the corresponding <see cref="BaseEncodeType"/> instance.
+    /// </summary>
+    static BaseEncodeType ResolveEncodeType(string name)
+    {
+        if (string.IsNullOrEmpty(name))
+            return null;
+
+        FieldInfo field = typeof(EncodeTypes).GetField(name, BindingFlags.Public | BindingFlags.Static);
+        return field?.GetValue(null) as BaseEncodeType;
+    }
+
+    /// <summary>
+    /// Resolves a static color name (e.g., "Green") to the corresponding <see cref="Color"/> value.
+    /// </summary>
+    static Color? ResolveColor(string name)
+    {
+        if (string.IsNullOrEmpty(name))
+            return null;
+
+        PropertyInfo prop = typeof(Color).GetProperty(name, BindingFlags.Public | BindingFlags.Static);
+        return prop?.GetValue(null) as Color?;
+    }
+
+    /// <summary>
+    /// Returns the name of a known static color that matches the supplied <see cref="Color"/>; falls back to "Black".
+    /// </summary>
+    static string GetColorName(Color color)
+    {
+        // Simple mapping for known static colors
+        if (color.ToArgb() == Color.Black.ToArgb()) return nameof(Color.Black);
+        if (color.ToArgb() == Color.White.ToArgb()) return nameof(Color.White);
+        if (color.ToArgb() == Color.Red.ToArgb()) return nameof(Color.Red);
+        if (color.ToArgb() == Color.Green.ToArgb()) return nameof(Color.Green);
+        if (color.ToArgb() == Color.Blue.ToArgb()) return nameof(Color.Blue);
+        // Fallback
+        return nameof(Color.Black);
     }
 }

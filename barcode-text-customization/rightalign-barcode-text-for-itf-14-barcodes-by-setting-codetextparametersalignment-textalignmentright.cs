@@ -1,41 +1,51 @@
-// Title: Right-align human‑readable text for ITF‑14 barcode
-// Description: Demonstrates how to generate an ITF‑14 barcode and align its human‑readable text to the right.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing the use of BarcodeGenerator, EncodeTypes, and CodeTextParameters to customize barcode appearance. Typical scenarios include creating product packaging barcodes where text positioning matters. Developers often need to control text location, alignment, and output format when generating barcodes programmatically.
+// Title: Right-align text for ITF‑14 barcode using Aspose.BarCode
+// Description: Demonstrates generating an ITF‑14 barcode with the human‑readable text aligned to the right side of the image.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to configure barcode appearance using the BarcodeGenerator class and its Parameters, such as XDimension and CodeTextParameters. Typical use cases include product labeling, packaging, and inventory systems where ITF‑14 barcodes are required. Developers often need to adjust text alignment, size, and image format to meet branding or regulatory guidelines.
 // Prompt: Right-align barcode text for ITF‑14 barcodes by setting CodetextParameters.Alignment = TextAlignment.Right.
-// Tags: itf-14, barcode, text alignment, right align, aspose.barcode, generation, png, csharp
+// Tags: itf-14, barcode, text alignment, right align, aspose.barcode, generation, png, codetextparameters
 
 using System;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates right‑aligning the human‑readable text of an ITF‑14 barcode using Aspose.BarCode.
+/// Generates an ITF‑14 barcode image with right‑aligned human‑readable text.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates an ITF‑14 barcode, sets text location and alignment, and saves it as PNG.
+    /// Entry point of the example. Creates an output folder, configures the barcode generator,
+    /// aligns the code text to the right, saves the image, and writes the file path to the console.
     /// </summary>
     static void Main()
     {
-        // Define a sample ITF‑14 barcode value (14 digits)
-        const string codeText = "12345678901231";
+        // Determine a temporary directory for the output file.
+        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarCodeDemo");
 
-        // Initialize the barcode generator for the ITF‑14 symbology with the provided code text
-        using (var generator = new BarcodeGenerator(EncodeTypes.ITF14, codeText))
+        // Ensure the directory exists.
+        if (!Directory.Exists(outputDir))
         {
-            // Position the human‑readable text below the barcode bars
-            generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.Below;
+            Directory.CreateDirectory(outputDir);
+        }
 
-            // Align the human‑readable text to the right side
+        // Full path for the generated PNG image.
+        string outputPath = Path.Combine(outputDir, "ITF14_RightAlign.png");
+
+        // Initialize the barcode generator for ITF‑14 with sample data.
+        using (var generator = new BarcodeGenerator(EncodeTypes.ITF14, "12345678901231"))
+        {
+            // Set the X‑dimension (module width) in pixels.
+            generator.Parameters.Barcode.XDimension.Pixels = 2;
+
+            // Align the human‑readable text to the right side of the barcode.
             generator.Parameters.Barcode.CodeTextParameters.Alignment = TextAlignment.Right;
 
-            // Specify the output file path and save the barcode as a PNG image
-            const string outputPath = "itf14_right_aligned.png";
-            generator.Save(outputPath);
-
-            // Inform the user where the barcode image was saved
-            Console.WriteLine($"Barcode saved to {outputPath}");
+            // Save the barcode as a PNG image.
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
+
+        // Inform the user where the file was saved.
+        Console.WriteLine($"Barcode saved to: {outputPath}");
     }
 }

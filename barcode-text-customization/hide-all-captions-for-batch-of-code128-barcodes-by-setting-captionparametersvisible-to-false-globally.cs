@@ -1,60 +1,63 @@
-// Title: Hide Captions for Multiple Code128 Barcodes
-// Description: Demonstrates generating a batch of Code128 barcodes and disabling both above and below captions.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to configure global caption visibility using the BarcodeGenerator.Parameters.CaptionAbove and CaptionBelow properties. Typical use cases include creating clean barcode images for packaging, inventory, or point‑of‑sale systems where textual captions are not required. Developers often need to adjust these settings across many barcodes in a single run.
+// Title: Hide Captions for Batch of Code128 Barcodes
+// Description: Demonstrates generating multiple Code128 barcodes while globally disabling the caption text.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to configure CaptionParameters for batch barcode creation. It uses BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes to produce PNG images. Developers often need to hide or customize captions when generating large sets of barcodes for labeling, inventory, or shipping applications.
 // Prompt: Hide all captions for a batch of Code128 barcodes by setting CaptionParameters.Visible to false globally.
-// Tags: code128, barcode, hide-caption, png, aspose.barcode, generation
+// Tags: code128, barcode, caption, hide, batch, generation, png, aspose.barcode
 
 using System;
 using System.IO;
+using System.Collections.Generic;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Generates a series of Code128 barcodes with captions hidden and saves them as PNG files.
+/// Example program that generates a batch of Code128 barcodes with captions hidden.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Creates an output folder, generates barcodes, and writes a completion message.
+    /// Generates Code128 barcodes for a list of texts, disables captions globally, and saves them as PNG files.
     /// </summary>
     static void Main()
     {
-        // Determine and ensure the output directory exists
-        string outputFolder = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
-        if (!Directory.Exists(outputFolder))
-        {
-            Directory.CreateDirectory(outputFolder);
-        }
+        // Create a unique temporary folder for the batch
+        string batchFolder = Path.Combine(Path.GetTempPath(), "Batch_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(batchFolder);
 
-        // Define the set of texts to encode as Code128 barcodes
-        string[] codeTexts = new string[]
+        // Define sample Code128 texts
+        List<string> codeTexts = new List<string>
         {
-            "ABC123",
-            "9876543210",
-            "CODE128TEST",
-            "1234567890",
-            "HELLOWORLD"
+            "CODE128_1",
+            "CODE128_2",
+            "CODE128_3",
+            "CODE128_4",
+            "CODE128_5"
         };
 
-        // Iterate over each text, generate a barcode, hide its captions, and save the image
-        for (int i = 0; i < codeTexts.Length; i++)
-        {
-            string text = codeTexts[i];
-            string filePath = Path.Combine(outputFolder, $"barcode_{i + 1}.png");
+        // Collect paths of generated barcode images
+        List<string> generatedFiles = new List<string>();
 
-            // Create a barcode generator for Code128 with the current text
+        // Iterate over each text, generate a barcode, hide captions, and save the image
+        foreach (string text in codeTexts)
+        {
+            string filePath = Path.Combine(batchFolder, text + ".png");
             using (var generator = new BarcodeGenerator(EncodeTypes.Code128, text))
             {
                 // Hide both above and below captions globally
                 generator.Parameters.CaptionAbove.Visible = false;
                 generator.Parameters.CaptionBelow.Visible = false;
 
-                // Save the generated barcode as a PNG file
+                // Save the barcode image as PNG
                 generator.Save(filePath, BarCodeImageFormat.Png);
             }
+            generatedFiles.Add(filePath);
         }
 
-        // Inform the user about the number of barcodes generated and their location
-        Console.WriteLine($"Generated {codeTexts.Length} Code128 barcodes in '{outputFolder}'.");
+        // Output the list of generated files
+        Console.WriteLine("Generated Code128 barcodes with captions hidden:");
+        foreach (string file in generatedFiles)
+        {
+            Console.WriteLine(file);
+        }
     }
 }
