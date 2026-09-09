@@ -1,74 +1,81 @@
-// Title: AutoSizeMode selection based on image dimensions
-// Description: Demonstrates switching Aspose.BarCode AutoSizeMode between Interpolation and Nearest depending on requested barcode image size.
-// Category-Description: This example belongs to the Aspose.BarCode image generation category, illustrating how to control image scaling using the AutoSizeMode property of BarcodeGenerator. It shows typical use cases such as adjusting rendering quality for large versus small barcodes, using classes like BarcodeGenerator, EncodeTypes, and BarCodeImageFormat. Developers often need to balance performance and visual fidelity when generating barcodes at various dimensions.
+// Title: Switch AutoSizeMode Based on Image Dimensions
+// Description: Demonstrates how to set the AutoSizeMode of Aspose.BarCode's BarcodeGenerator to Interpolation or Nearest depending on the relative width and height of the output image.
+// Category-Description: This example belongs to the Aspose.BarCode image sizing and rendering category. It shows how to work with the BarcodeGenerator, EncodeTypes, and AutoSizeMode classes to control barcode image scaling. Typical use cases include generating barcodes that fit custom image dimensions while preserving readability. Developers often need to adjust AutoSizeMode to balance image quality and size for different display or printing scenarios.
 // Prompt: Develop a function that switches AutoSizeMode between Interpolation and Nearest based on user‑selected image dimensions.
-// Tags: code128, autosizemode, png, barcodegenerator, aspose.barcode, image-scaling
+// Tags: barcode, autosizemode, imagesize, code128, generation, png, aspose.barcode
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates dynamic selection of AutoSizeMode for barcode generation based on image dimensions.
+/// Demonstrates switching AutoSizeMode between Interpolation and Nearest based on image dimensions.
 /// </summary>
 class Program
 {
-    // Determines which AutoSizeMode to use based on the requested image dimensions.
-    // For this example, larger images use Interpolation, smaller ones use Nearest.
-    static AutoSizeMode DetermineAutoSizeMode(float width, float height)
+    /// <summary>
+    /// Entry point. Parses optional width/height arguments, generates a Code128 barcode and saves it as PNG.
+    /// </summary>
+    /// <param name="args">Command‑line arguments: optional width and height.</param>
+    static void Main(string[] args)
     {
-        // Thresholds can be adjusted as needed.
-        if (width > 300f || height > 150f)
-        {
-            return AutoSizeMode.Interpolation;
-        }
-        else
-        {
-            return AutoSizeMode.Nearest;
-        }
-    }
+        // Default dimensions; can be overridden via command‑line arguments.
+        int imageWidth = 300;
+        int imageHeight = 200;
 
-    // Generates a barcode image with the specified dimensions and saves it to the given path.
-    static void GenerateBarcode(string outputPath, float width, float height)
-    {
-        // Ensure the output directory exists.
-        string directory = Path.GetDirectoryName(outputPath);
-        if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+        // If two numeric arguments are supplied, use them as width and height.
+        if (args.Length >= 2 &&
+            int.TryParse(args[0], out int w) &&
+            int.TryParse(args[1], out int h))
         {
-            Directory.CreateDirectory(directory);
+            imageWidth = w;
+            imageHeight = h;
         }
 
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
+        // Create a unique temporary folder for the output file.
+        string outputFolder = Path.Combine(Path.GetTempPath(), "AutoSizeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputFolder);
+        string outputPath = Path.Combine(outputFolder, "barcode.png");
+
+        // Initialize the barcode generator with Code128 symbology and sample text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "SampleText"))
         {
-            // Choose AutoSizeMode based on dimensions.
-            generator.Parameters.AutoSizeMode = DetermineAutoSizeMode(width, height);
+            // Adjust AutoSizeMode according to the chosen dimensions.
+            SetAutoSizeModeBasedOnDimensions(generator, imageWidth, imageHeight);
 
-            // Set the target image size. These unit members must be used.
-            generator.Parameters.ImageWidth.Point = width;
-            generator.Parameters.ImageHeight.Point = height;
-
-            // Optional: set a background and bar color for visibility.
-            generator.Parameters.BackColor = Aspose.Drawing.Color.White;
-            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-
-            // Save the barcode as PNG.
+            // Save the generated barcode as a PNG image.
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
+
+        Console.WriteLine($"Barcode saved to: {outputPath}");
     }
 
     /// <summary>
-    /// Entry point that generates sample barcodes with different sizes to showcase AutoSizeMode switching.
+    /// Configures image size and selects AutoSizeMode based on the relative width and height.
     /// </summary>
-    static void Main()
+    /// <param name="generator">The BarcodeGenerator instance to configure.</param>
+    /// <param name="width">Desired image width in pixels.</param>
+    /// <param name="height">Desired image height in pixels.</param>
+    static void SetAutoSizeModeBasedOnDimensions(BarcodeGenerator generator, int width, int height)
     {
-        // Example 1: Larger dimensions -> Interpolation mode.
-        GenerateBarcode("barcode_large.png", 400f, 200f);
+        // Set explicit image dimensions.
+        generator.Parameters.ImageWidth.Pixels = width;
+        generator.Parameters.ImageHeight.Pixels = height;
 
-        // Example 2: Smaller dimensions -> Nearest mode.
-        GenerateBarcode("barcode_small.png", 200f, 100f);
+        // Choose AutoSizeMode: Interpolation for landscape, Nearest for portrait or square.
+        if (width > height)
+        {
+            generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
+            Console.WriteLine("AutoSizeMode set to Interpolation (width > height).");
+        }
+        else
+        {
+            generator.Parameters.AutoSizeMode = AutoSizeMode.Nearest;
+            Console.WriteLine("AutoSizeMode set to Nearest (width <= height).");
+        }
 
-        Console.WriteLine("Barcodes generated successfully.");
+        // Set a modest XDimension to ensure the barcode is clearly visible.
+        generator.Parameters.Barcode.XDimension.Pixels = 3;
     }
 }

@@ -1,8 +1,8 @@
-// Title: Barcode generation with AutoSizeMode logging
-// Description: Demonstrates generating barcodes with different AutoSizeMode settings and logs the selected mode along with the resulting image dimensions.
-// Category-Description: This example belongs to the Aspose.BarCode image generation category, showcasing how to configure AutoSizeMode, set target image size, and retrieve image dimensions using BarcodeGenerator and related classes. Developers often need to adjust barcode sizing for various output formats and log details for debugging or reporting purposes.
+// Title: Barcode AutoSizeMode Demonstration with Dimension Logging
+// Description: Shows how different AutoSizeMode settings affect the generated DataMatrix barcode image and logs the resulting dimensions.
+// Category-Description: This example belongs to the Aspose.BarCode image generation category, illustrating the use of BarcodeGenerator, AutoSizeMode, and image size parameters. Developers often need to control barcode scaling and retrieve image dimensions for layout or validation purposes. The snippet demonstrates typical API usage for setting AutoSizeMode, adjusting image size, and extracting bitmap dimensions.
 // Prompt: Implement a feature that logs the chosen AutoSizeMode and resulting image dimensions for each generated barcode.
-// Tags: barcode symbology, autosizemode, image generation, logging, aspose.barcode, csharp
+// Tags: barcode, autosizemode, datamatrix, image, png, dimensions, aspose.barcode, generation
 
 using System;
 using System.IO;
@@ -12,62 +12,64 @@ using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates barcode generation with different AutoSizeMode settings and logs details.
+/// Demonstrates generating DataMatrix barcodes with various AutoSizeMode settings and logs image dimensions.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates sample barcodes, logs AutoSizeMode and image size, and saves PNG files.
+    /// Entry point. Generates barcodes, saves them, and writes AutoSizeMode and image size to console.
     /// </summary>
     static void Main()
     {
-        // Ensure the output directory exists
-        string outputDir = "Barcodes";
-        if (!Directory.Exists(outputDir))
-        {
-            Directory.CreateDirectory(outputDir);
-        }
+        // Create a unique temporary directory for the generated barcode images.
+        string tempDir = Path.Combine(Path.GetTempPath(), "BarcodeAutoSizeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
 
-        // Define sample barcodes together with the desired AutoSizeMode for each
-        var samples = new (BaseEncodeType EncodeType, string CodeText, AutoSizeMode Mode)[]
+        // Text to encode in the barcode.
+        string codeText = "ASPOSE";
+
+        // Define the AutoSizeMode options to test.
+        AutoSizeMode[] modes = new AutoSizeMode[]
         {
-            (EncodeTypes.Code128, "1234567890", AutoSizeMode.None),
-            (EncodeTypes.QR, "https://example.com", AutoSizeMode.Interpolation),
-            (EncodeTypes.DataMatrix, "DataMatrix Sample", AutoSizeMode.Interpolation)
+            AutoSizeMode.None,
+            AutoSizeMode.Interpolation,
+            AutoSizeMode.Nearest
         };
 
-        // Process each sample
-        foreach (var sample in samples)
+        // Iterate over each AutoSizeMode, generate a barcode, and log its dimensions.
+        foreach (AutoSizeMode mode in modes)
         {
-            // Create a BarcodeGenerator for the specified symbology and code text
-            using (var generator = new BarcodeGenerator(sample.EncodeType, sample.CodeText))
+            // Initialize the barcode generator for DataMatrix symbology.
+            using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, codeText))
             {
-                // Apply the chosen AutoSizeMode
-                generator.Parameters.AutoSizeMode = sample.Mode;
+                // Apply the current AutoSizeMode.
+                generator.Parameters.AutoSizeMode = mode;
 
-                // If Interpolation mode is selected, set the target image dimensions
-                if (sample.Mode == AutoSizeMode.Interpolation)
+                // For modes other than None, set a target image size.
+                if (mode != AutoSizeMode.None)
                 {
-                    generator.Parameters.ImageWidth.Point = 300f;
-                    generator.Parameters.ImageHeight.Point = 150f;
+                    generator.Parameters.ImageWidth.Pixels = 300f;
+                    generator.Parameters.ImageHeight.Pixels = 300f;
                 }
 
-                // Generate the barcode image as a Bitmap
+                // Set the X-dimension (module size) of the barcode.
+                generator.Parameters.Barcode.XDimension.Pixels = 3f;
+
+                // Save the generated barcode image to a PNG file.
+                string filePath = Path.Combine(tempDir, $"barcode_{mode}.png");
+                generator.Save(filePath, BarCodeImageFormat.Png);
+
+                // Generate the barcode image in memory to retrieve its dimensions.
                 using (Bitmap bitmap = generator.GenerateBarCodeImage())
                 {
-                    // Log the symbology, selected AutoSizeMode, and resulting image size
-                    Console.WriteLine($"Symbology: {sample.EncodeType.TypeName}");
-                    Console.WriteLine($"AutoSizeMode: {generator.Parameters.AutoSizeMode}");
-                    Console.WriteLine($"Image Width: {bitmap.Width}px, Height: {bitmap.Height}px");
-
-                    // Build the output file path and save the image as PNG
-                    string filePath = Path.Combine(outputDir, $"{sample.EncodeType.TypeName}_{sample.Mode}.png");
-                    bitmap.Save(filePath, ImageFormat.Png);
+                    int width = bitmap.Width;
+                    int height = bitmap.Height;
+                    Console.WriteLine($"AutoSizeMode: {mode}, Image dimensions: {width}x{height}");
                 }
             }
         }
 
-        // Indicate that the process has finished
-        Console.WriteLine("Barcode generation completed.");
+        // Optional cleanup: delete the temporary directory and its contents.
+        // Directory.Delete(tempDir, true);
     }
 }

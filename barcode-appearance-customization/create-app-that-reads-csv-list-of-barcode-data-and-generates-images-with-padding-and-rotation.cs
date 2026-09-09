@@ -1,92 +1,115 @@
-// Title: Generate barcode images from CSV with padding and rotation
-// Description: This example reads a CSV file containing barcode data, padding, and rotation values, then creates PNG images using Aspose.BarCode.
-// Category-Description: Demonstrates Aspose.BarCode generation API for batch processing. Shows how to use BarcodeGenerator, set EncodeTypes, configure padding via Parameters.Barcode.Padding, apply rotation with Parameters.RotationAngle, and save images. Useful for developers automating barcode creation from data sources such as CSV files.
+// Title: Generate Barcode Images from CSV with Padding and Rotation
+// Description: Demonstrates reading a CSV file containing barcode parameters, creating barcode images with specified padding and rotation, and saving them to a temporary folder.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use BarcodeGenerator, EncodeTypes, and related parameter classes to produce barcodes. Typical use cases include batch processing of barcode data, applying visual adjustments such as padding and rotation, and exporting images in common formats. Developers often need to read external data sources (e.g., CSV) and programmatically configure barcode appearance for integration into reports, labels, or web services.
 // Prompt: Create an app that reads a CSV list of barcode data and generates images with padding and rotation.
-// Tags: barcode symbology, generation, png, padding, rotation, csv, aspose.barcode
+// Tags: barcode, symbology, generation, padding, rotation, csv, aspose.barcode, png
 
 using System;
 using System.IO;
+using System.Reflection;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Reads a CSV list of barcode specifications and generates PNG images with custom padding and rotation.
+/// Reads barcode specifications from a CSV file, generates corresponding barcode images
+/// with custom padding and rotation, and saves them to a temporary directory.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Processes the CSV file and creates barcode images.
+    /// Application entry point. Executes the CSV processing and barcode generation workflow.
     /// </summary>
     static void Main()
     {
-        // Define the path to the CSV file that holds barcode specifications.
-        string csvPath = "barcodes.csv";
+        // Create a unique temporary folder for the demo output
+        string outputFolder = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputFolder);
 
-        // If the CSV file does not exist, create a sample file with example data.
-        if (!File.Exists(csvPath))
+        // Prepare a sample CSV file (Symbology,CodeText,PadLeft,PadTop,PadRight,PadBottom,Rotation)
+        string csvPath = Path.Combine(outputFolder, "data.csv");
+        string[] csvLines =
         {
-            string[] sampleLines =
-            {
-                // Format: CodeText,OutputFileName,RotationAngle,PaddingPoints
-                "1234567890,code1.png,0,10",
-                "ABCDEF,code2.png,90,15",
-                "HelloWorld,code3.png,180,20"
-            };
-            File.WriteAllLines(csvPath, sampleLines);
-            Console.WriteLine($"Sample CSV created at '{csvPath}'.");
-        }
+            "Code128,ABC123,10,10,10,10,45",
+            "QR,https://example.com,5,5,5,5,90",
+            "DataMatrix,SampleText,15,0,15,0,-30"
+        };
+        File.WriteAllLines(csvPath, csvLines);
 
-        // Read all lines from the CSV file, ignoring empty entries.
+        // Read all lines from the CSV file
         string[] lines = File.ReadAllLines(csvPath);
+        int index = 1;
+
+        // Process each non‑empty line
         foreach (string line in lines)
         {
             if (string.IsNullOrWhiteSpace(line))
-                continue; // Skip blank lines.
+                continue;
 
-            // Expected columns: CodeText, OutputFileName, RotationAngle, PaddingPoints
+            // Split the line into individual columns
             string[] parts = line.Split(',');
-            if (parts.Length < 4)
+            if (parts.Length < 7)
             {
-                Console.WriteLine($"Skipping malformed line: {line}");
-                continue; // Not enough columns; move to the next line.
-            }
-
-            // Extract and trim individual values.
-            string codeText = parts[0].Trim();
-            string outputFile = parts[1].Trim();
-
-            // Parse rotation angle; if invalid, report and skip.
-            if (!float.TryParse(parts[2].Trim(), out float rotation))
-            {
-                Console.WriteLine($"Invalid rotation value on line: {line}");
+                Console.WriteLine($"Skipping line {index}: insufficient columns.");
+                index++;
                 continue;
             }
 
-            // Parse padding value; if invalid, report and skip.
-            if (!float.TryParse(parts[3].Trim(), out float padding))
+            // Extract barcode parameters
+            string symbologyName = parts[0].Trim();
+            string codeText = parts[1].Trim();
+
+            // Parse numeric values for padding and rotation
+            if (!float.TryParse(parts[2].Trim(), out float padLeft) ||
+                !float.TryParse(parts[3].Trim(), out float padTop) ||
+                !float.TryParse(parts[4].Trim(), out float padRight) ||
+                !float.TryParse(parts[5].Trim(), out float padBottom) ||
+                !float.TryParse(parts[6].Trim(), out float rotation))
             {
-                Console.WriteLine($"Invalid padding value on line: {line}");
+                Console.WriteLine($"Skipping line {index}: invalid numeric values.");
+                index++;
                 continue;
             }
 
-            // Generate the barcode using the specified symbology (Code128) and text.
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+            // Resolve symbology name to BaseEncodeType via reflection
+            FieldInfo field = typeof(EncodeTypes).GetField(symbologyName);
+            if (field == null)
             {
-                // Apply uniform padding (in points) to all sides of the barcode.
-                generator.Parameters.Barcode.Padding.Left.Point = padding;
-                generator.Parameters.Barcode.Padding.Top.Point = padding;
-                generator.Parameters.Barcode.Padding.Right.Point = padding;
-                generator.Parameters.Barcode.Padding.Bottom.Point = padding;
-
-                // Set the rotation angle (in degrees) for the barcode image.
-                generator.Parameters.RotationAngle = rotation;
-
-                // Save the generated barcode as a PNG file (default format).
-                generator.Save(outputFile);
-                Console.WriteLine($"Generated '{outputFile}' for code '{codeText}'.");
+                Console.WriteLine($"Skipping line {index}: unknown symbology '{symbologyName}'.");
+                index++;
+                continue;
             }
+
+            BaseEncodeType encodeType = (BaseEncodeType)field.GetValue(null);
+
+            try
+            {
+                // Initialize the barcode generator with the resolved symbology and code text
+                using (var generator = new BarcodeGenerator(encodeType, codeText))
+                {
+                    // Apply padding (specified in points)
+                    generator.Parameters.Barcode.Padding.Left.Point = padLeft;
+                    generator.Parameters.Barcode.Padding.Top.Point = padTop;
+                    generator.Parameters.Barcode.Padding.Right.Point = padRight;
+                    generator.Parameters.Barcode.Padding.Bottom.Point = padBottom;
+
+                    // Apply rotation angle
+                    generator.Parameters.RotationAngle = rotation;
+
+                    // Save the generated barcode as a PNG image
+                    string imagePath = Path.Combine(outputFolder, $"barcode_{index}.png");
+                    generator.Save(imagePath, BarCodeImageFormat.Png);
+                    Console.WriteLine($"Generated barcode {index}: {imagePath}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error generating barcode on line {index}: {ex.Message}");
+            }
+
+            index++;
         }
 
-        Console.WriteLine("Barcode generation completed.");
+        Console.WriteLine($"All barcode images saved to: {outputFolder}");
     }
 }
