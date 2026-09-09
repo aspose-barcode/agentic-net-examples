@@ -1,91 +1,86 @@
-// Title: Barcode Width Conversion Example
-// Description: Demonstrates how to set a barcode image width using different measurement units and retrieve the resulting pixel width.
-// Category-Description: This example belongs to the Aspose.BarCode image generation category, illustrating the use of BarcodeGenerator, AutoSizeMode, and ImageWidth properties. Developers often need to control barcode dimensions in various units (pixels, inches, millimeters, points) for printing, UI layout, or export scenarios. The snippet shows typical unit conversion and pixel retrieval, a common requirement when integrating barcodes into graphics pipelines.
+// Title: Set Barcode Image Width Using Various Units and Retrieve Pixel Width
+// Description: Demonstrates how to assign a barcode image width in different measurement units using Aspose.BarCode and obtain the resulting pixel width.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of the BarcodeGenerator, EncodeTypes, and ImageWidth properties. Developers often need to control barcode dimensions across units such as pixels, millimeters, inches, points, or document units to fit layout requirements. The snippet shows typical usage for setting size, auto‑sizing mode, and converting to pixels, a common task when integrating barcodes into reports or UI elements.
 // Prompt: Develop function accepting size value and unit enum, applying to BarCodeWidth and returning pixel width.
-// Tags: barcode, width, unit conversion, code128, aspose.barcode, imagewidth, pixel, generation
+// Tags: barcode, size, imagewidth, generation, aspose.barcode, code128, units, pixels, millimeters, inches, point, document
 
 using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
-namespace BarcodeWidthExample
+namespace BarcodeSizeExample
 {
-    // Supported units for setting barcode width
+    // Measurement units that can be applied to the barcode image width
     enum SizeUnit
     {
         Pixels,
-        Inches,
         Millimeters,
-        Point
+        Inches,
+        Point,
+        Document
     }
 
     /// <summary>
-    /// Contains methods that demonstrate setting barcode width in various units
-    /// and obtaining the equivalent pixel width using Aspose.BarCode.
+    /// Example program demonstrating barcode width unit conversion.
     /// </summary>
     class Program
     {
         /// <summary>
-        /// Sets the barcode image width according to the provided value and unit,
+        /// Sets the barcode image width using the specified size value and unit,
         /// then returns the calculated width in pixels.
         /// </summary>
-        /// <param name="sizeValue">Numeric size value.</param>
-        /// <param name="unit">Unit of measurement for the size.</param>
+        /// <param name="sizeValue">Numeric value of the desired width.</param>
+        /// <param name="unit">Unit of measurement for the width.</param>
         /// <returns>Width of the barcode image in pixels.</returns>
-        static int GetBarCodePixelWidth(float sizeValue, SizeUnit unit)
+        static float GetPixelWidth(float sizeValue, SizeUnit unit)
         {
-            // Use Code128 as a simple symbology for the example
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128))
+            // Create a barcode generator for Code128 with sample data
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123"))
             {
-                // Enable interpolation mode so ImageWidth controls the output size
-                generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
+                // Use nearest auto‑size mode to let the generator adjust other dimensions
+                generator.Parameters.AutoSizeMode = AutoSizeMode.Nearest;
 
-                // Apply the size to the ImageWidth property using the selected unit
+                // Apply the requested width based on the selected unit
                 switch (unit)
                 {
                     case SizeUnit.Pixels:
                         generator.Parameters.ImageWidth.Pixels = sizeValue;
                         break;
-                    case SizeUnit.Inches:
-                        generator.Parameters.ImageWidth.Inches = sizeValue;
-                        break;
                     case SizeUnit.Millimeters:
                         generator.Parameters.ImageWidth.Millimeters = sizeValue;
+                        break;
+                    case SizeUnit.Inches:
+                        generator.Parameters.ImageWidth.Inches = sizeValue;
                         break;
                     case SizeUnit.Point:
                         generator.Parameters.ImageWidth.Point = sizeValue;
                         break;
-                    default:
-                        throw new ArgumentException("Unsupported size unit.", nameof(unit));
+                    case SizeUnit.Document:
+                        generator.Parameters.ImageWidth.Document = sizeValue;
+                        break;
                 }
 
-                // The ImageWidth property now holds the value in all units.
-                // Return the pixel representation.
-                return (int)generator.Parameters.ImageWidth.Pixels;
+                // Return the width converted to pixels
+                return generator.Parameters.ImageWidth.Pixels;
             }
         }
 
         /// <summary>
-        /// Entry point of the example. Calls <see cref="GetBarCodePixelWidth"/> with
-        /// different units and writes the resulting pixel widths to the console.
+        /// Entry point that prints pixel widths for various unit inputs.
         /// </summary>
         static void Main()
         {
-            // Example usage with pixel unit
-            int widthPx = GetBarCodePixelWidth(200f, SizeUnit.Pixels);
-            Console.WriteLine($"Width set to 200 pixels => {widthPx} pixels");
+            // Example: 2 millimeters converted to pixels
+            float widthPixels = GetPixelWidth(2f, SizeUnit.Millimeters);
+            Console.WriteLine($"Width in pixels (2 mm): {widthPixels}");
 
-            // Example usage with inches unit
-            int widthInches = GetBarCodePixelWidth(2f, SizeUnit.Inches);
-            Console.WriteLine($"Width set to 2 inches => {widthInches} pixels");
+            // Example: 100 pixels (no conversion needed)
+            widthPixels = GetPixelWidth(100f, SizeUnit.Pixels);
+            Console.WriteLine($"Width in pixels (100 px): {widthPixels}");
 
-            // Example usage with millimeters unit
-            int widthMm = GetBarCodePixelWidth(50f, SizeUnit.Millimeters);
-            Console.WriteLine($"Width set to 50 mm => {widthMm} pixels");
-
-            // Example usage with point unit
-            int widthPt = GetBarCodePixelWidth(72f, SizeUnit.Point);
-            Console.WriteLine($"Width set to 72 points => {widthPt} pixels");
+            // Example: 1 inch converted to pixels
+            widthPixels = GetPixelWidth(1f, SizeUnit.Inches);
+            Console.WriteLine($"Width in pixels (1 inch): {widthPixels}");
         }
     }
 }

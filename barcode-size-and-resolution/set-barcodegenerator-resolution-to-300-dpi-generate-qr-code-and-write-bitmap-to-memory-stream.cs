@@ -1,46 +1,38 @@
 // Title: Generate QR Code with 300 DPI Resolution and Save to Memory Stream
-// Description: Demonstrates setting the BarcodeGenerator resolution to 300 dpi, creating a QR code, and writing the resulting bitmap to a memory stream in PNG format.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to configure image resolution, encode data using QR symbology, and output the barcode as a bitmap via the BarcodeGenerator and Bitmap classes. Developers commonly use these APIs to produce high‑resolution barcodes for printing, digital display, or further image processing in .NET applications.
+// Description: Demonstrates how to configure Aspose.BarCode's BarcodeGenerator to produce a QR code at 300 dpi, render it as a PNG image, and write the result into a MemoryStream.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and BarCodeImageFormat to create barcode images. Typical scenarios include generating QR codes for web pages, mobile apps, or printing, where developers need precise control over image resolution and output format. The snippet shows best‑practice steps for setting resolution, saving to a stream, and retrieving image size.
 // Prompt: Set BarcodeGenerator resolution to 300 dpi, generate QR code, and write bitmap to memory stream.
-// Tags: qr code, resolution, bitmap, memory stream, aspose.barcode, generation, png
+// Tags: qr, barcode, generation, resolution, png, memory-stream, aspose.barcode
 
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates a QR code at 300 dpi and writes the image to a memory stream.
+/// Example program that creates a QR code at 300 dpi and writes the PNG image to a memory stream.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Configures the barcode generator, creates a QR code, and saves it as PNG in a memory stream.
+    /// Entry point. Generates the barcode, saves it to a stream, and reports the byte size.
     /// </summary>
     static void Main()
     {
-        // Initialize a QR code generator with the QR symbology
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR))
+        // Initialize the barcode generator for QR code with the desired text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Hello World"))
         {
-            // Set the output image resolution to 300 dots per inch
+            // Set the image resolution to 300 dots per inch.
             generator.Parameters.Resolution = 300f;
 
-            // Define the data to encode in the QR code
-            generator.CodeText = "Hello World";
-
-            // Generate the barcode image as a Bitmap object
-            using (Bitmap bitmap = generator.GenerateBarCodeImage())
+            // Create a memory stream to hold the generated PNG image.
+            using (var memoryStream = new MemoryStream())
             {
-                // Prepare a memory stream to hold the PNG-encoded image
-                using (var memoryStream = new MemoryStream())
-                {
-                    // Save the bitmap into the stream using PNG format
-                    bitmap.Save(memoryStream, ImageFormat.Png);
+                // Save the barcode as a PNG image into the memory stream.
+                generator.Save(memoryStream, BarCodeImageFormat.Png);
 
-                    // Output the size of the generated image (for demonstration purposes)
-                    Console.WriteLine($"QR code image generated. Stream length: {memoryStream.Length} bytes");
-                }
+                // Output the size of the generated PNG image in bytes.
+                Console.WriteLine($"Generated QR code PNG size: {memoryStream.Length} bytes");
             }
         }
     }

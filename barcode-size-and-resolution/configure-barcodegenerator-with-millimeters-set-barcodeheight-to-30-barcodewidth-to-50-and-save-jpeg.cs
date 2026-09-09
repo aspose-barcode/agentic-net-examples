@@ -1,15 +1,16 @@
-// Title: Generate Code128 Barcode with Millimeter Dimensions and Save as JPEG
-// Description: Demonstrates configuring Aspose.BarCode's BarcodeGenerator to use millimeter units, set specific height and width, and save the result as a JPEG image.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to create barcodes with precise physical dimensions using the BarcodeGenerator class. Typical use cases include printing barcodes on labels or packaging where exact size specifications are required. Developers often need to set image size units, adjust dimensions, and export to common image formats.
+// Title: Generate Code128 Barcode with Millimeter Units and Save as JPEG
+// Description: Demonstrates how to configure Aspose.BarCode's BarcodeGenerator to use millimeter measurement units, set specific barcode dimensions, and export the result as a JPEG image.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes. Typical scenarios include creating product labels, inventory tags, or any printable barcode where precise physical dimensions are required. Developers often need to control measurement units, barcode size, and output format for integration with printing workflows.
 // Prompt: Configure BarcodeGenerator with Millimeters, set BarCodeHeight to 30, BarCodeWidth to 50, and save JPEG.
-// Tags: code128, barcode generation, image size, millimeters, jpeg, aspose.barcode
+// Tags: code128, barcode generation, millimeters, dimensions, jpeg, aspose.barcode, image export
 
 using System;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Example program that creates a Code128 barcode, sets its size using millimeter units,
+/// Example program that generates a Code128 barcode, configures its size using millimeter units,
 /// and saves the image as a JPEG file.
 /// </summary>
 class Program
@@ -19,23 +20,28 @@ class Program
     /// </summary>
     static void Main()
     {
-        // Initialize a BarcodeGenerator for the Code128 symbology
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128))
+        // Define the output directory in the system's temporary folder and ensure it exists.
+        string outputDir = Path.Combine(Path.GetTempPath(), "BarcodeOutput");
+        Directory.CreateDirectory(outputDir);
+
+        // Build the full path for the resulting JPEG file.
+        string outputPath = Path.Combine(outputDir, "barcode.jpg");
+
+        // Create a BarcodeGenerator for Code128 with the desired text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
         {
-            // Define the text to encode in the barcode
-            generator.CodeText = "123456";
+            // Set measurement unit to millimeters (default) and specify barcode dimensions.
+            generator.Parameters.Barcode.BarHeight.Millimeters = 30f;   // Height = 30 mm
+            generator.Parameters.ImageWidth.Millimeters = 50f;        // Width  = 50 mm
 
-            // Set the barcode image height to 30 millimeters
-            generator.Parameters.ImageHeight.Millimeters = 30f;
+            // Adjust the image size to the nearest possible dimensions that fit the barcode.
+            generator.Parameters.AutoSizeMode = AutoSizeMode.Nearest;
 
-            // Set the barcode image width to 50 millimeters
-            generator.Parameters.ImageWidth.Millimeters = 50f;
-
-            // Save the generated barcode as a JPEG image file
-            generator.Save("barcode.jpg");
+            // Save the generated barcode as a JPEG image.
+            generator.Save(outputPath, BarCodeImageFormat.Jpeg);
         }
 
-        // Inform the user that the barcode image has been saved
-        Console.WriteLine("Barcode image saved as barcode.jpg");
+        // Inform the user where the barcode image was saved.
+        Console.WriteLine($"Barcode saved to: {outputPath}");
     }
 }

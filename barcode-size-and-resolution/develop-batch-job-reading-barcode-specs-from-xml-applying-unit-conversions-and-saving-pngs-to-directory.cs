@@ -1,107 +1,161 @@
-// Title: Batch Barcode Generation from XML
-// Description: Demonstrates reading barcode specifications from an XML file, applying unit conversions, and saving PNG images.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use BarcodeGenerator, EncodeTypes, and related parameter classes to create barcodes in bulk. Typical use cases include automated creation of product labels, inventory tags, or any scenario where barcode data is defined in external files. Developers often need to parse specifications, apply measurements, and export images in common formats.
+// Title: Batch barcode generation from XML specification
+// Description: Demonstrates reading barcode definitions from an XML file, converting XDimension units, and generating PNG images using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use BarcodeGenerator, EncodeTypes, and XDimension properties for batch processing. Typical use cases include automated creation of multiple barcodes from data sources, unit conversion handling, and saving images to a file system. Developers often need to parse input specifications, map symbology names to EncodeTypes via reflection, and output barcodes in common formats.
 // Prompt: Develop batch job reading barcode specs from XML, applying unit conversions, and saving PNGs to directory.
-// Tags: barcode symbology, batch processing, png output, aspose.barcode, xml parsing
+// Tags: barcode, batch, xml, png, aspose.barcode, generation, unit-conversion, symbology
 
 using System;
 using System.IO;
 using System.Xml.Linq;
+using System.Reflection;
+using System.Collections.Generic;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Reads barcode specifications from an XML file, converts dimensions, and generates PNG images using Aspose.BarCode.
+/// Program that reads barcode specifications from an XML file, applies unit conversions,
+/// and generates PNG images using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the batch barcode generation example.
+    /// Entry point that creates a temporary working folder, generates a sample XML,
+    /// parses barcode entries, and produces PNG files for each valid specification.
     /// </summary>
     static void Main()
     {
-        // Path to the XML file containing barcode specifications.
-        const string xmlPath = "barcodespecs.xml";
+        // Create a unique temporary working folder
+        string workFolder = Path.Combine(Path.GetTempPath(), "BatchBarcodes_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(workFolder);
 
-        // Verify that the specification file exists before proceeding.
-        if (!File.Exists(xmlPath))
+        // Paths for sample XML and output images
+        string xmlPath = Path.Combine(workFolder, "BarcodesSpec.xml");
+        string outputFolder = Path.Combine(workFolder, "Output");
+        Directory.CreateDirectory(outputFolder);
+
+        // Create a sample XML specification file
+        CreateSampleXml(xmlPath);
+
+        // Parse XML and generate barcodes
+        List<string> generatedFiles = new List<string>();
+        XDocument doc = XDocument.Load(xmlPath);
+        IEnumerable<XElement> barcodeElements = doc.Root?.Elements("Barcode") ?? new List<XElement>();
+
+        int index = 1;
+        foreach (XElement elem in barcodeElements)
         {
-            Console.WriteLine($"Specification file not found: {xmlPath}");
-            return;
-        }
+            // Extract required fields from XML
+            string symbologyName = elem.Element("Symbology")?.Value?.Trim() ?? "";
+            string codeText = elem.Element("CodeText")?.Value?.Trim() ?? "";
+            string xDimValueStr = elem.Element("XDimension")?.Value?.Trim() ?? "";
+            string xDimUnit = elem.Element("XDimensionUnit")?.Value?.Trim() ?? "Point";
 
-        // Directory where generated PNG images will be saved.
-        const string outputFolder = "OutputBarcodes";
-
-        // Ensure the output directory exists.
-        if (!Directory.Exists(outputFolder))
-        {
-            Directory.CreateDirectory(outputFolder);
-        }
-
-        // Load the XML document containing barcode definitions.
-        XDocument doc;
-        using (FileStream fs = new FileStream(xmlPath, FileMode.Open, FileAccess.Read))
-        {
-            doc = XDocument.Load(fs);
-        }
-
-        // Conversion factor: 1 millimeter = 2.83465 points (Aspose uses points for dimensions).
-        const float mmToPoints = 2.83465f;
-
-        int index = 0;
-
-        // Iterate over each <Barcode> element in the XML.
-        foreach (XElement barcodeElem in doc.Root.Elements("Barcode"))
-        {
-            index++;
-
-            // Extract required and optional values from the XML.
-            string symbologyName = barcodeElem.Element("Symbology")?.Value?.Trim();
-            string codeText = barcodeElem.Element("CodeText")?.Value?.Trim() ?? string.Empty;
-            string xDimMmStr = barcodeElem.Element("XDimensionMm")?.Value?.Trim();
-
-            // Validate that a symbology name is provided.
-            if (string.IsNullOrEmpty(symbologyName))
+            // Validate required fields
+            if (string.IsNullOrEmpty(symbologyName) || string.IsNullOrEmpty(codeText) || string.IsNullOrEmpty(xDimValueStr))
             {
-                Console.WriteLine($"Barcode #{index}: Symbology name missing, skipping.");
+                Console.WriteLine($"Skipping entry {index}: missing required fields.");
+                index++;
                 continue;
             }
 
-            // Resolve the symbology name to an EncodeTypes field using reflection.
-            var fieldInfo = typeof(EncodeTypes).GetField(symbologyName);
-            if (fieldInfo == null)
+            // Parse XDimension value
+            if (!float.TryParse(xDimValueStr, out float xDimValue))
             {
-                Console.WriteLine($"Barcode #{index}: Unknown symbology '{symbologyName}', skipping.");
+                Console.WriteLine($"Skipping entry {index}: invalid XDimension value.");
+                index++;
                 continue;
             }
 
-            BaseEncodeType encodeType = (BaseEncodeType)fieldInfo.GetValue(null);
-
-            // Create a BarcodeGenerator instance with the resolved type and code text.
-            using (var generator = new BarcodeGenerator(encodeType, codeText))
+            // Resolve symbology name to EncodeTypes enum via reflection
+            FieldInfo field = typeof(EncodeTypes).GetField(symbologyName);
+            if (field == null)
             {
-                // If an XDimension value (in mm) is provided, convert it to points and apply.
-                if (!string.IsNullOrEmpty(xDimMmStr) && float.TryParse(xDimMmStr, out float xDimMm))
+                Console.WriteLine($"Skipping entry {index}: unknown symbology '{symbologyName}'.");
+                index++;
+                continue;
+            }
+
+            BaseEncodeType encodeType = (BaseEncodeType)field.GetValue(null);
+
+            // Create generator and apply settings
+            using (BarcodeGenerator generator = new BarcodeGenerator(encodeType, codeText))
+            {
+                // Apply XDimension based on unit
+                switch (xDimUnit.ToLowerInvariant())
                 {
-                    float xDimPoints = xDimMm * mmToPoints;
-                    generator.Parameters.Barcode.XDimension.Point = xDimPoints;
+                    case "point":
+                    case "points":
+                        generator.Parameters.Barcode.XDimension.Point = xDimValue;
+                        break;
+                    case "pixel":
+                    case "pixels":
+                        generator.Parameters.Barcode.XDimension.Pixels = xDimValue;
+                        break;
+                    case "millimeter":
+                    case "millimeters":
+                        generator.Parameters.Barcode.XDimension.Millimeters = xDimValue;
+                        break;
+                    case "inch":
+                    case "inches":
+                        generator.Parameters.Barcode.XDimension.Inches = xDimValue;
+                        break;
+                    default:
+                        Console.WriteLine($"Entry {index}: unknown XDimension unit '{xDimUnit}', defaulting to Point.");
+                        generator.Parameters.Barcode.XDimension.Point = xDimValue;
+                        break;
                 }
 
-                // Optional: set the barcode foreground color to black.
-                generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-
-                // Build the output file name and path.
+                // Save barcode as PNG
                 string fileName = $"{symbologyName}_{index}.png";
-                string outPath = Path.Combine(outputFolder, fileName);
-
-                // Save the generated barcode as a PNG image.
-                generator.Save(outPath, BarCodeImageFormat.Png);
-                Console.WriteLine($"Barcode #{index} saved to: {outPath}");
+                string filePath = Path.Combine(outputFolder, fileName);
+                try
+                {
+                    generator.Save(filePath, BarCodeImageFormat.Png);
+                    generatedFiles.Add(filePath);
+                    Console.WriteLine($"Generated: {filePath}");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Failed to generate barcode for entry {index}: {ex.Message}");
+                }
             }
+
+            index++;
         }
 
         Console.WriteLine("Batch processing completed.");
+        Console.WriteLine($"Generated {generatedFiles.Count} barcode image(s) in folder: {outputFolder}");
+    }
+
+    /// <summary>
+    /// Creates a sample XML file containing barcode specifications used for the demonstration.
+    /// </summary>
+    /// <param name="path">The file path where the XML document will be saved.</param>
+    static void CreateSampleXml(string path)
+    {
+        XDocument doc = new XDocument(
+            new XElement("Barcodes",
+                new XElement("Barcode",
+                    new XElement("Symbology", "Code128"),
+                    new XElement("CodeText", "ABC123456"),
+                    new XElement("XDimension", "2.0"),
+                    new XElement("XDimensionUnit", "Millimeters")
+                ),
+                new XElement("Barcode",
+                    new XElement("Symbology", "QR"),
+                    new XElement("CodeText", "https://example.com"),
+                    new XElement("XDimension", "3.0"),
+                    new XElement("XDimensionUnit", "Point")
+                ),
+                new XElement("Barcode",
+                    new XElement("Symbology", "DataMatrix"),
+                    new XElement("CodeText", "DataMatrixSample"),
+                    new XElement("XDimension", "1.5"),
+                    new XElement("XDimensionUnit", "Pixel")
+                )
+            )
+        );
+        doc.Save(path);
     }
 }
