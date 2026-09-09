@@ -1,8 +1,8 @@
-// Title: Export Code39 Barcode with Custom Text to SVG
-// Description: Demonstrates generating a Code39 barcode with customized human‑readable text and saving it as an SVG file for scalable vector rendering.
-// Category-Description: This example belongs to the Aspose.BarCode generation and export category. It showcases how to use the BarcodeGenerator class together with EncodeTypes, BarCodeImageFormat, and related parameter objects to customize barcode appearance (text location, alignment, font, colors) and export to a vector format. Developers often need such patterns when creating printable or web‑ready barcodes that must retain crisp quality at any size.
+// Title: Export Code128 barcode with custom text to SVG
+// Description: Demonstrates generating a Code128 barcode with custom display text and saving it as an SVG file for scalable vector rendering.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to use BarcodeGenerator, set barcode parameters such as colors, text location, and font, and export the result to a vector format. Developers working with barcode creation often need to customize appearance and output to SVG for high‑resolution, resolution‑independent graphics in web or print workflows.
 // Prompt: Export barcodes with customized text to SVG format to retain vector‑based alignment for scalable rendering.
-// Tags: barcode, code39, generation, svg, custom-text, aspose.barcode
+// Tags: code128, custom text, svg, barcode generation, aspose.barcode, vector output
 
 using System;
 using System.IO;
@@ -11,52 +11,42 @@ using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Example program that creates a Code39 barcode with customized text and exports it to SVG.
+/// Example program that creates a Code128 barcode with custom text and saves it as an SVG file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates the barcode and saves it as an SVG file.
+    /// Entry point of the application.
     /// </summary>
     static void Main()
     {
-        // Prepare output folder
-        string outputFolder = "Output";
-        if (!Directory.Exists(outputFolder))
-        {
-            Directory.CreateDirectory(outputFolder);
-        }
+        // Define a temporary output directory and SVG file path
+        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeSvgDemo");
+        Directory.CreateDirectory(outputDir);
+        string svgPath = Path.Combine(outputDir, "custom_text_barcode.svg");
 
-        // Path for the SVG file
-        string svgPath = Path.Combine(outputFolder, "custom_code39.svg");
-
-        try
+        // Initialize the barcode generator with Code128 symbology and custom code text
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Custom Text"))
         {
-            // Create a Code39 barcode generator with sample code text
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code39, "123ABC"))
+            // Customize barcode appearance: set bar and background colors
+            generator.Parameters.Barcode.BarColor = Color.Black;
+            generator.Parameters.BackColor = Color.White;
+
+            // Position the human‑readable text below the barcode and set its font
+            generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.Below;
+            generator.Parameters.Barcode.CodeTextParameters.Font.FamilyName = "Helvetica";
+            generator.Parameters.Barcode.CodeTextParameters.Font.Size.Point = 12f;
+
+            // Attempt to save the barcode as an SVG file; handle potential licensing restrictions
+            try
             {
-                // Customize human‑readable text (code text) appearance
-                generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.Below;
-                generator.Parameters.Barcode.CodeTextParameters.Alignment = TextAlignment.Center;
-                generator.Parameters.Barcode.CodeTextParameters.Font.FamilyName = "Helvetica";
-                generator.Parameters.Barcode.CodeTextParameters.Font.Size.Point = 12f;
-
-                // Set barcode colors
-                generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.DarkBlue;
-                generator.Parameters.BackColor = Aspose.Drawing.Color.White;
-
-                // Define module size for vector scalability
-                generator.Parameters.Barcode.XDimension.Point = 2f;
-
-                // Save the barcode as SVG (vector format)
                 generator.Save(svgPath, BarCodeImageFormat.Svg);
-                Console.WriteLine($"Barcode saved to: {svgPath}");
+                Console.WriteLine($"Barcode saved to SVG: {svgPath}");
             }
-        }
-        catch (Exception ex)
-        {
-            // Handle errors such as evaluation license restrictions
-            Console.WriteLine($"Error generating barcode: {ex.Message}");
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to save SVG: {ex.Message}");
+            }
         }
     }
 }

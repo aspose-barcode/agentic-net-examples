@@ -1,10 +1,11 @@
-// Title: Center Top Caption on QR Code using Aspose.BarCode
-// Description: Demonstrates generating a QR code image with a top caption that is horizontally centered. Shows how to configure caption text, alignment, and font size using Aspose.BarCode API.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to work with BarcodeGenerator, EncodeTypes, and CaptionParameters to customize barcode appearance. Developers often need to add readable text above or below barcodes for branding, instructions, or product information; this snippet shows the typical steps for setting caption text, alignment, and styling before saving the image.
+// Title: Center Align Top Caption for QR Code Barcode
+// Description: Demonstrates how to add a top caption to a QR code and align it to the center using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing the use of BarcodeGenerator, EncodeTypes, and CaptionParameters to customize barcode appearance. Typical scenarios include adding descriptive text above barcodes for labeling, packaging, or marketing materials. Developers often need to control caption visibility, text, and alignment to meet branding or regulatory requirements.
 // Prompt: Align top caption to center for QR codes by setting CaptionParameters.Top.Alignment to CaptionAlignment.Center.
-// Tags: qr code, caption alignment, barcode generation, aspose.barcode, png output
+// Tags: qr, caption, alignment, center, barcode, aspose.barcode, png, generation
 
 using System;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
@@ -14,27 +15,33 @@ using Aspose.BarCode.Generation;
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates a QR code, configures a centered top caption, and writes the result to disk.
+    /// Entry point of the example. Creates the output directory, configures the barcode,
+    /// aligns the top caption to the center, and writes the image to disk.
     /// </summary>
     static void Main()
     {
-        // Initialize a QR code generator with the desired data.
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
+        // Define a temporary folder for the generated image
+        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeExample");
+        Directory.CreateDirectory(outputDir);
+
+        // Full path for the resulting PNG file
+        string outputPath = Path.Combine(outputDir, "QrWithCenteredTopCaption.png");
+
+        // Initialize the barcode generator for a QR code with sample data
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Sample QR Code"))
         {
-            // Set the text for the caption that appears above the barcode.
+            // Enable and set the text for the top caption
+            generator.Parameters.CaptionAbove.Visible = true;
             generator.Parameters.CaptionAbove.Text = "Top Caption";
 
-            // Center the top caption horizontally.
+            // Center-align the top caption horizontally
             generator.Parameters.CaptionAbove.Alignment = TextAlignment.Center;
 
-            // Optionally increase the font size for better readability.
-            generator.Parameters.CaptionAbove.Font.Size.Point = 12f;
-
-            // Save the generated barcode with the caption to a PNG file.
-            generator.Save("qr_with_caption.png");
+            // Save the generated barcode image as PNG
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user that the image has been created.
-        Console.WriteLine("QR code with centered top caption generated successfully.");
+        // Inform the user where the image was saved
+        Console.WriteLine($"Barcode image saved to: {outputPath}");
     }
 }

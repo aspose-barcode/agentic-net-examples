@@ -1,47 +1,53 @@
-// Title: Generate Aztec Barcode with Times New Roman Caption Font
-// Description: Creates an Aztec barcode image and sets the caption font to Times New Roman, size 9, demonstrating how to customize barcode captions using Aspose.BarCode.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and the Parameters.Caption* properties to customize barcode appearance. Typical scenarios include branding, adding descriptive text above or below barcodes, and exporting to common image formats. Developers often need to adjust fonts, sizes, and caption content to meet visual guidelines.
+// Title: Set caption font for Aztec barcode generation
+// Description: Demonstrates how to configure the caption font to Times New Roman, size 9, for an Aztec barcode using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and caption parameters. Developers often need to customize barcode appearance, such as fonts and visibility of captions, for branding or documentation purposes. The snippet shows typical steps: creating a generator, setting caption fonts, and saving the image.
 // Prompt: Define caption font as Times New Roman, size 9, for all generated Aztec barcodes to match branding.
-// Tags: aztec, barcode, caption, font, times new roman, size9, generation, png, aspose.barcode, csharp
+// Tags: aztec, caption, font, png, barcodegenerator, encode-types, aspose.barcode
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates how to generate an Aztec barcode and apply a custom caption font using Aspose.BarCode.
+/// Demonstrates setting caption fonts for an Aztec barcode and saving it as PNG.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates an Aztec barcode, sets caption fonts, and saves the image.
+    /// Entry point. Generates an Aztec barcode with custom caption fonts and writes the output path to console.
     /// </summary>
     static void Main()
     {
-        // Define the output file name for the generated barcode image.
-        string outputFile = "aztec.png";
+        // Create a unique temporary directory for the output file
+        string outputDir = Path.Combine(Path.GetTempPath(), "AztecDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputDir);
 
-        // Initialize the barcode generator for the Aztec symbology with sample text.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Aztec, "Sample"))
+        // Define the text to encode and the full path for the resulting image
+        string codeText = "Sample Aztec";
+        string outputPath = Path.Combine(outputDir, "AztecBarcode.png");
+
+        // Initialize the barcode generator for Aztec symbology
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Aztec, codeText))
         {
-            // Configure the caption font for the text displayed above the barcode.
+            // Configure caption fonts: Times New Roman, 9‑point size
             generator.Parameters.CaptionAbove.Font.FamilyName = "Times New Roman";
             generator.Parameters.CaptionAbove.Font.Size.Point = 9f;
-
-            // Configure the caption font for the text displayed below the barcode.
             generator.Parameters.CaptionBelow.Font.FamilyName = "Times New Roman";
             generator.Parameters.CaptionBelow.Font.Size.Point = 9f;
 
-            // Optional: set custom caption texts.
-            generator.Parameters.CaptionAbove.Text = "Aztec Barcode";
-            generator.Parameters.CaptionBelow.Text = "Sample";
+            // Make captions visible and assign sample text to demonstrate the font settings
+            generator.Parameters.CaptionAbove.Visible = true;
+            generator.Parameters.CaptionAbove.Text = "Above Caption";
+            generator.Parameters.CaptionBelow.Visible = true;
+            generator.Parameters.CaptionBelow.Text = "Below Caption";
 
-            // Save the generated barcode image to the specified file.
-            generator.Save(outputFile);
+            // Save the generated barcode as a PNG image
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Output the full path of the saved barcode image for user reference.
-        Console.WriteLine($"Aztec barcode saved to: {Path.GetFullPath(outputFile)}");
+        // Inform the user where the barcode image was saved
+        Console.WriteLine("Aztec barcode generated at: " + outputPath);
     }
 }

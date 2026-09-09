@@ -1,41 +1,46 @@
 // Title: Set bottom caption padding for DataMatrix barcode
-// Description: Demonstrates how to set an 8‑pixel bottom padding for the caption of a DataMatrix barcode and save it as a PNG image.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to customize barcode appearance using the BarcodeGenerator class. It shows configuring caption text and padding, a common requirement when developers need visual separation between the barcode symbol and its descriptive text. Typical use cases include creating printable labels or UI elements where caption spacing improves readability.
+// Description: Demonstrates how to add a bottom caption to a DataMatrix barcode and set its padding to 8 pixels, creating visual separation between the caption and the symbol.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator and its Parameters properties to customize caption visibility, text, and padding. Typical use cases include adding descriptive text below barcodes for printing labels or reports, where developers need to control spacing for readability. The example shows how to work with EncodeTypes, BarCodeImageFormat, and caption padding settings.
 // Prompt: Set bottom caption padding to 8 pixels for DataMatrix barcodes to create visual separation from the symbol.
-// Tags: datamatrix, caption, padding, barcode generation, aspnet, png, aspose.barcode
+// Tags: datamatrix, caption, padding, barcode generation, aspose.barcode, png
 
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates setting bottom caption padding for a DataMatrix barcode and saving it as PNG.
+/// Demonstrates setting bottom caption padding for a DataMatrix barcode using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a DataMatrix barcode with a caption and custom bottom padding, then saves the image.
+    /// Entry point that generates a DataMatrix barcode with a bottom caption and saves it as PNG.
     /// </summary>
     static void Main()
     {
-        // Define the output file name
-        string outputPath = "datamatrix.png";
+        // Define the output directory and ensure it exists
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Output");
+        Directory.CreateDirectory(outputDir);
 
-        // Initialize a DataMatrix barcode generator with the desired text
-        using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, "ABC123"))
+        // Full path for the generated barcode image
+        string outPath = Path.Combine(outputDir, "DataMatrixWithBottomCaption.png");
+
+        // Create a barcode generator for DataMatrix with the desired text
+        using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, "Sample"))
         {
-            // Configure the caption that appears below the barcode symbol
-            generator.Parameters.CaptionBelow.Text = "DataMatrix";
+            // Enable the caption below the barcode and set its text
+            generator.Parameters.CaptionBelow.Visible = true;
+            generator.Parameters.CaptionBelow.Text = "Bottom Caption";
 
-            // Apply an 8‑pixel bottom padding to separate the caption from the symbol
-            generator.Parameters.CaptionBelow.Padding.Bottom.Point = 8f;
+            // Set bottom padding of the caption to 8 pixels for visual separation
+            generator.Parameters.CaptionBelow.Padding.Bottom.Pixels = 8f;
 
-            // Render and save the barcode image in PNG format
-            generator.Save(outputPath, BarCodeImageFormat.Png);
+            // Save the barcode image as PNG
+            generator.Save(outPath, BarCodeImageFormat.Png);
         }
 
-        // Output the full path of the saved image for user reference
-        Console.WriteLine($"Barcode image saved to: {Path.GetFullPath(outputPath)}");
+        // Inform the user where the barcode image was saved
+        Console.WriteLine($"Barcode saved to {outPath}");
     }
 }

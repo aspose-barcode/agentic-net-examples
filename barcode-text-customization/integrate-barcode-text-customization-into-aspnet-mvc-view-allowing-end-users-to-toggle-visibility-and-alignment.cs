@@ -1,62 +1,76 @@
-// Title: Barcode Text Customization in ASP.NET MVC View
-// Description: Demonstrates how to generate a barcode with customizable human‑readable text visibility and alignment, simulating user input from an MVC view.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showing how to use BarcodeGenerator, EncodeTypes, and CodeTextParameters to control text display. Typical use cases include dynamic barcode creation in web applications where end users can choose whether to show the text and its alignment. Developers often need to adjust text location, color, and font for branding or readability, and this snippet illustrates those common tasks.
+// Title: Toggle Barcode Text Visibility and Alignment with Aspose.BarCode
+// Description: Demonstrates how to generate PDF417 barcodes with customizable text visibility and horizontal alignment using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing the use of BarcodeGenerator, EncodeTypes, and CodeTextParameters to control barcode text appearance. Typical scenarios include creating printable labels, receipts, or web‑based barcode images where end users need to show or hide the human‑readable text and align it left, center, or right. Developers often need to adjust text location, alignment, and spacing to meet design requirements.
 // Prompt: Integrate barcode text customization into an ASP.NET MVC view, allowing end users to toggle visibility and alignment.
-// Tags: barcode, text customization, visibility, alignment, aspnet mvc, code128, aspose.barcode, generation, image output
+// Tags: pdf417, barcode, text-visibility, alignment, aspnet-mvc, aspnet, aspnet-mvc-view, aspnet-mvc-example, aspose.barcode, image-output, png
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates barcode generation with customizable human‑readable text settings.
+/// Demonstrates barcode text visibility and alignment customization using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that simulates MVC view inputs and creates a barcode image with the chosen text options.
+    /// Entry point. Generates sample barcodes with different text settings and writes the output folder path.
     /// </summary>
     static void Main()
     {
-        // Simulated user choices that would normally come from an MVC view (e.g., form fields).
-        bool showHumanReadableText = true;                     // Toggle visibility of the text
-        TextAlignment textAlignment = TextAlignment.Center;   // Choose alignment for the text
+        // Note: This console example simulates the logic that would be used in an ASP.NET MVC view.
+        // It creates a temporary folder to store generated barcode images.
 
-        // Barcode data to encode.
+        // Create a unique temporary directory for the demo output.
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
+
+        // Sample barcode data.
         string codeText = "Sample123";
 
-        // Determine output folder and ensure it exists.
-        string outputFolder = Path.Combine(Directory.GetCurrentDirectory(), "Output");
-        if (!Directory.Exists(outputFolder))
+        // Generate a barcode with hidden text (no human‑readable code text).
+        GenerateBarcode(Path.Combine(tempFolder, "Barcode_Hidden.png"), codeText, CodeLocation.None, TextAlignment.Center);
+
+        // Generate a barcode with visible text left‑aligned below the barcode.
+        GenerateBarcode(Path.Combine(tempFolder, "Barcode_Left.png"), codeText, CodeLocation.Below, TextAlignment.Left);
+
+        // Generate a barcode with visible text center‑aligned below the barcode.
+        GenerateBarcode(Path.Combine(tempFolder, "Barcode_Center.png"), codeText, CodeLocation.Below, TextAlignment.Center);
+
+        // Generate a barcode with visible text right‑aligned below the barcode.
+        GenerateBarcode(Path.Combine(tempFolder, "Barcode_Right.png"), codeText, CodeLocation.Below, TextAlignment.Right);
+
+        // Inform the user where the images were saved.
+        Console.WriteLine("Barcodes generated in: " + tempFolder);
+    }
+
+    /// <summary>
+    /// Generates a PDF417 barcode image with specified text visibility and alignment.
+    /// </summary>
+    /// <param name="filePath">Full path where the PNG image will be saved.</param>
+    /// <param name="codeText">The data encoded in the barcode.</param>
+    /// <param name="location">Location of the human‑readable text relative to the barcode.</param>
+    /// <param name="alignment">Horizontal alignment of the text.</param>
+    static void GenerateBarcode(string filePath, string codeText, CodeLocation location, TextAlignment alignment)
+    {
+        // Initialize the barcode generator for PDF417 symbology.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Pdf417, codeText))
         {
-            Directory.CreateDirectory(outputFolder);
+            // Configure PDF417 specific settings.
+            generator.Parameters.Barcode.Pdf417.Rows = 12;
+            generator.Parameters.Barcode.XDimension.Pixels = 2f;
+
+            // Apply text visibility and alignment settings.
+            generator.Parameters.Barcode.CodeTextParameters.Location = location;
+            generator.Parameters.Barcode.CodeTextParameters.Alignment = alignment;
+
+            // Optional: increase spacing between the barcode and the text for better readability.
+            generator.Parameters.Barcode.CodeTextParameters.Space.Point = 5f;
+
+            // Save the generated barcode as a PNG image.
+            generator.Save(filePath, BarCodeImageFormat.Png);
         }
-        string outputPath = Path.Combine(outputFolder, "barcode.png");
-
-        // Generate the barcode using the specified settings.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
-        {
-            // Set human‑readable text visibility based on user choice.
-            generator.Parameters.Barcode.CodeTextParameters.Location = showHumanReadableText
-                ? CodeLocation.Below
-                : CodeLocation.None;
-
-            // Apply the selected text alignment.
-            generator.Parameters.Barcode.CodeTextParameters.Alignment = textAlignment;
-
-            // Optional styling: set text color and font size for demonstration purposes.
-            generator.Parameters.Barcode.CodeTextParameters.Color = Aspose.Drawing.Color.DarkBlue;
-            generator.Parameters.Barcode.CodeTextParameters.Font.Size.Point = 12f;
-
-            // Save the generated barcode image to the output path.
-            generator.Save(outputPath);
-        }
-
-        // Output information to the console for verification.
-        Console.WriteLine($"Barcode image saved to: {outputPath}");
-        Console.WriteLine($"Human‑readable text visible: {showHumanReadableText}");
-        Console.WriteLine($"Text alignment: {textAlignment}");
     }
 }

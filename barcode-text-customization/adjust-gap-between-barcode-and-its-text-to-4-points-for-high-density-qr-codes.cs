@@ -1,44 +1,49 @@
-// Title: Adjust QR Code Text Gap for High‑Density QR Codes
-// Description: Demonstrates how to set the spacing between a QR code and its human‑readable text to 4 points, using Aspose.BarCode for a high‑density QR with error correction level H.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to configure QR code parameters such as error correction level, text location, and text‑barcode gap. It showcases the use of BarcodeGenerator, EncodeTypes, and CodeTextParameters classes—common tasks for developers creating printable or screen‑displayed barcodes with customized appearance.
+// Title: Adjust QR Code Text Gap for High‑Density Barcodes
+// Description: Demonstrates how to set a 4‑point gap between a high‑density QR code and its human‑readable text using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on QR code customization. It showcases the use of BarcodeGenerator, EncodeTypes, QRErrorLevel, and CodeTextParameters to control error correction level, text location, and spacing. Developers often need to fine‑tune QR code appearance for branding or readability, and this snippet provides a concise reference.
 // Prompt: Adjust the gap between barcode and its text to 4 points for high‑density QR codes.
-// Tags: qr, barcode, text-gap, high-density, aspose.barcode, generation, png
+// Tags: qr, gap, barcode, generation, png, aspose.barcode
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Generates a high‑density QR code and sets a 4‑point gap between the barcode and its human‑readable text.
+/// Program demonstrating adjustment of the gap between a QR code and its text.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates a QR code, configures its parameters, and saves it as a PNG file.
+    /// Entry point. Generates a high‑density QR code with a 4‑point text gap and saves it as PNG.
     /// </summary>
     static void Main()
     {
-        // Define the output file path in the current working directory.
-        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "high_density_qr.png");
+        // Create a unique temporary folder for output files
+        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputDir);
 
-        // Initialize the QR code generator with sample text.
+        // Define the full path for the resulting PNG image
+        string outPath = Path.Combine(outputDir, "HighDensityQR.png");
+
+        // Initialize the barcode generator for a QR code containing the specified data
         using (var generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
         {
-            // Set a high error correction level (Level H) to increase data density.
+            // Set a high error correction level (Level H) for better resilience
             generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
 
-            // Position the human‑readable text below the QR code.
-            generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.Below;
-
-            // Adjust the gap (space) between the QR code and its text to 4 points.
+            // Adjust the spacing (gap) between the barcode and the human‑readable text to 4 points
             generator.Parameters.Barcode.CodeTextParameters.Space.Point = 4f;
 
-            // Save the generated QR code image as a PNG file.
-            generator.Save(outputPath, BarCodeImageFormat.Png);
+            // Ensure the text appears below the barcode (explicitly set for clarity)
+            generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.Below;
+
+            // Save the generated barcode image as a PNG file
+            generator.Save(outPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user where the QR code image was saved.
-        Console.WriteLine($"QR code saved to: {outputPath}");
+        // Inform the user where the QR code image has been saved
+        Console.WriteLine($"QR code saved to: {outPath}");
     }
 }

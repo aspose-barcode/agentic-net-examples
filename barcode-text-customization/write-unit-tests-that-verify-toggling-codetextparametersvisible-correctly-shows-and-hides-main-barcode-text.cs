@@ -1,116 +1,72 @@
-// Title: Demonstrate toggling barcode text visibility with CodeTextParameters.Location
-// Description: Shows how to show or hide the human‑readable text of a barcode by setting CodeTextParameters.Location to Below or None, and verifies the behavior with simple assertions.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of the BarcodeGenerator and its Parameters.Barcode.CodeTextParameters API. Developers commonly need to control barcode text visibility for labeling, packaging, or UI display scenarios. The code demonstrates typical use cases such as setting text location, generating an image, and performing lightweight validation without external test frameworks.
+// Title: Toggle barcode codetext visibility using Aspose.BarCode
+// Description: Demonstrates how to show or hide the main barcode text by adjusting CodeTextParameters.Location, and verifies the effect by comparing image file sizes.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to control barcode text visibility with the BarcodeGenerator and its Parameters.Barcode.CodeTextParameters properties. Typical use cases include creating clean barcode images without human‑readable text or displaying the text below the barcode. Developers often need to toggle visibility for UI design, printing, or compliance requirements.
 // Prompt: Write unit tests that verify toggling CodetextParameters.Visible correctly shows and hides the main barcode text.
-// Tags: barcode, code128, codetextparameters, visibility, unit-test, aspose.barcode, generation
+// Tags: pdf417, codetext visibility, barcode generation, aspnet, aspose.barcode, image size verification
 
 using System;
 using System.IO;
-using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
 using Aspose.BarCode;
+using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Contains simple test methods that verify showing and hiding barcode text using Aspose.BarCode.
+/// Demonstrates toggling the visibility of barcode codetext and performs a simple size‑based verification.
 /// </summary>
 class Program
 {
-    // Counter for failed tests
-    static int _failedTests = 0;
-
     /// <summary>
-    /// Entry point. Executes the visibility tests and reports results.
+    /// Entry point that creates two PDF417 barcodes – one with visible codetext and one with hidden codetext – then compares their file sizes.
     /// </summary>
     static void Main()
     {
-        // Run test that ensures barcode text is visible
-        TestShowCodeText();
+        // Create a temporary directory to store generated images
+        string tempDir = Path.Combine(Path.GetTempPath(), "CodetextTest_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
 
-        // Run test that ensures barcode text is hidden
-        TestHideCodeText();
+        // Define file paths for the visible and hidden codetext images
+        string visiblePath = Path.Combine(tempDir, "visible.png");
+        string hiddenPath = Path.Combine(tempDir, "hidden.png");
 
-        // Report overall test outcome
-        if (_failedTests == 0)
+        // Generate barcode with visible codetext (default location: Below)
+        using (var generatorVisible = new BarcodeGenerator(EncodeTypes.Pdf417, "SampleText"))
         {
-            Console.WriteLine("ALL TESTS PASSED");
+            generatorVisible.Parameters.Barcode.Pdf417.Rows = 12;
+            generatorVisible.Parameters.Barcode.XDimension.Pixels = 2;
+            generatorVisible.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.Below;
+            generatorVisible.Save(visiblePath, BarCodeImageFormat.Png);
         }
-        else
+
+        // Generate barcode with hidden codetext (no text displayed)
+        using (var generatorHidden = new BarcodeGenerator(EncodeTypes.Pdf417, "SampleText"))
         {
-            Console.WriteLine($"FAILED: {_failedTests} test(s) failed.");
+            generatorHidden.Parameters.Barcode.Pdf417.Rows = 12;
+            generatorHidden.Parameters.Barcode.XDimension.Pixels = 2;
+            generatorHidden.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.None;
+            generatorHidden.Save(hiddenPath, BarCodeImageFormat.Png);
         }
-    }
 
-    /// <summary>
-    /// Simple assertion helper that logs pass/fail and updates the failure counter.
-    /// </summary>
-    /// <param name="condition">Result of the condition being tested.</param>
-    /// <param name="testName">Name of the test case.</param>
-    static void Assert(bool condition, string testName)
-    {
-        if (!condition)
+        // Simple verification: hidden image should be smaller in file size than visible image
+        long visibleSize = new FileInfo(visiblePath).Length;
+        long hiddenSize = new FileInfo(hiddenPath).Length;
+
+        bool testPassed = hiddenSize < visibleSize;
+
+        Console.WriteLine($"Visible image size: {visibleSize} bytes");
+        Console.WriteLine($"Hidden image size:  {hiddenSize} bytes");
+        Console.WriteLine(testPassed
+            ? "PASSED: Hidden codetext image is smaller, indicating text was hidden."
+            : "FAILED: Hidden codetext image is not smaller than visible image.");
+
+        // Cleanup generated files and temporary directory (optional)
+        try
         {
-            Console.WriteLine($"FAIL: {testName}");
-            _failedTests++;
+            File.Delete(visiblePath);
+            File.Delete(hiddenPath);
+            Directory.Delete(tempDir);
         }
-        else
+        catch
         {
-            Console.WriteLine($"PASS: {testName}");
-        }
-    }
-
-    /// <summary>
-    /// Verifies that setting CodeTextParameters.Location to Below makes the barcode text visible.
-    /// </summary>
-    static void TestShowCodeText()
-    {
-        const string testName = "TestShowCodeText";
-
-        // Create a barcode generator for Code128 with sample data
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "ABC123"))
-        {
-            // Show the human‑readable text by setting location to Below
-            generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.Below;
-
-            // Verify the location property was set correctly
-            bool locationIsBelow = generator.Parameters.Barcode.CodeTextParameters.Location == CodeLocation.Below;
-            Assert(locationIsBelow, testName + " - Location set to Below");
-
-            // Save the barcode to a memory stream to ensure generation succeeds
-            using (var ms = new MemoryStream())
-            {
-                generator.Save(ms, BarCodeImageFormat.Png);
-                // Simple sanity check: the stream should contain data
-                bool hasData = ms.Length > 0;
-                Assert(hasData, testName + " - Image generated");
-            }
-        }
-    }
-
-    /// <summary>
-    /// Verifies that setting CodeTextParameters.Location to None hides the barcode text.
-    /// </summary>
-    static void TestHideCodeText()
-    {
-        const string testName = "TestHideCodeText";
-
-        // Create a barcode generator for Code128 with different sample data
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "XYZ789"))
-        {
-            // Hide the human‑readable text by setting location to None
-            generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.None;
-
-            // Verify the location property was set correctly
-            bool locationIsNone = generator.Parameters.Barcode.CodeTextParameters.Location == CodeLocation.None;
-            Assert(locationIsNone, testName + " - Location set to None");
-
-            // Save the barcode to a memory stream to ensure generation succeeds
-            using (var ms = new MemoryStream())
-            {
-                generator.Save(ms, BarCodeImageFormat.Png);
-                // Simple sanity check: the stream should contain data
-                bool hasData = ms.Length > 0;
-                Assert(hasData, testName + " - Image generated");
-            }
+            // Ignore cleanup errors
         }
     }
 }

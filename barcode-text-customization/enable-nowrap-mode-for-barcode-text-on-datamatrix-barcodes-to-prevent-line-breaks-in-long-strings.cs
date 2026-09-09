@@ -1,8 +1,8 @@
-// Title: Enable NoWrap Mode for DataMatrix Barcode Text
-// Description: Demonstrates how to generate a DataMatrix barcode with long code text and prevent line‑breaks by enabling the NoWrap option.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating how to control human‑readable text rendering for 2‑D symbologies. It uses the BarcodeGenerator class and CodeTextParameters to adjust text location, wrapping, and font. Developers often need to customize barcode captions for readability and layout, especially when dealing with long strings in DataMatrix or QR codes.
-/// Prompt: Enable NoWrap mode for barcode text on DataMatrix barcodes to prevent line breaks in long strings.
-// Tags: datamatrix, no-wrap, text, png, barcodegenerator, codetextparameters
+// Title: DataMatrix barcode NoWrap demonstration
+// Description: Shows how to disable text wrapping for long strings in DataMatrix barcodes using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and CodeTextParameters to control text layout. Developers often need to generate DataMatrix barcodes with long human‑readable text and must prevent automatic line breaks; this snippet demonstrates the NoWrap property for that purpose.
+// Prompt: Enable NoWrap mode for barcode text on DataMatrix barcodes to prevent line breaks in long strings.
+// Tags: datamatrix, nowrap, codetext, barcode generation, aspose.barcode, png
 
 using System;
 using System.IO;
@@ -10,38 +10,47 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates enabling NoWrap mode for DataMatrix barcode text to keep long strings on a single line.
+/// Demonstrates enabling and disabling NoWrap mode for DataMatrix barcode text.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Generates a DataMatrix barcode with a long code text, disables text wrapping, and saves it as a PNG file.
+    /// Entry point. Generates two DataMatrix barcodes: one with default wrapping and one with NoWrap enabled.
     /// </summary>
     static void Main()
     {
-        // Define the output file path for the generated barcode image.
-        string outputPath = "datamatrix.png";
+        // Create a temporary directory to store the generated barcode images
+        string outputDir = Path.Combine(Path.GetTempPath(), "DataMatrixNoWrapDemo");
+        Directory.CreateDirectory(outputDir);
 
-        // Create a long string (200 characters) that would normally cause text wrapping.
-        string codeText = new string('A', 200);
+        // Long text that would normally wrap across multiple lines in the barcode display area
+        string longText = "This is a very long text that would normally wrap into multiple lines in the barcode display area, but we want it in a single line.";
 
-        // Initialize a DataMatrix barcode generator with the long code text.
-        using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, codeText))
+        // -------------------------------------------------
+        // Generate barcode with default wrapping (NoWrap = false)
+        // -------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, longText))
         {
-            // Position the human‑readable text below the barcode symbol.
-            generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.Below;
+            // Explicitly set NoWrap to false (default behavior)
+            generator.Parameters.Barcode.CodeTextParameters.NoWrap = false;
 
-            // Disable automatic line wrapping so the text stays on a single line.
-            generator.Parameters.Barcode.CodeTextParameters.NoWrap = true;
-
-            // Set a readable font size for the caption.
-            generator.Parameters.Barcode.CodeTextParameters.Font.Size.Point = 8f;
-
-            // Save the generated barcode as a PNG image.
-            generator.Save(outputPath, BarCodeImageFormat.Png);
+            // Save the barcode image as PNG
+            generator.Save(Path.Combine(outputDir, "DataMatrixWrap.png"), BarCodeImageFormat.Png);
         }
 
-        // Output the full path of the saved barcode image.
-        Console.WriteLine($"DataMatrix barcode saved to {Path.GetFullPath(outputPath)}");
+        // -------------------------------------------------
+        // Generate barcode with NoWrap mode enabled (NoWrap = true)
+        // -------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, longText))
+        {
+            // Enable NoWrap to keep the entire text on a single line
+            generator.Parameters.Barcode.CodeTextParameters.NoWrap = true;
+
+            // Save the barcode image as PNG
+            generator.Save(Path.Combine(outputDir, "DataMatrixNoWrap.png"), BarCodeImageFormat.Png);
+        }
+
+        // Inform the user where the images have been saved
+        Console.WriteLine($"Barcode images saved to: {outputDir}");
     }
 }
