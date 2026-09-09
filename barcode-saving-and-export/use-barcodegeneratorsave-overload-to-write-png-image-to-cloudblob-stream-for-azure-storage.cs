@@ -1,8 +1,8 @@
-// Title: Generate Code128 barcode PNG and upload to Azure Blob storage (demo)
-// Description: Demonstrates creating a Code128 barcode, saving it as PNG, and showing how to upload the image to Azure Blob storage using a stream.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator and its Save overload to produce image streams. Typical scenarios include generating barcodes on the fly for web services, storing them in cloud storage, or embedding them in documents. Developers often need to convert barcodes to common image formats and write them directly to cloud storage streams such as Azure Blob storage.
+// Title: Save Barcode as PNG to Azure Blob Storage Stream
+// Description: Demonstrates generating a Code128 barcode with Aspose.BarCode and saving it as a PNG image directly to a stream, which can be uploaded to Azure Blob Storage.
+// Category-Description: This example belongs to the Aspose.BarCode generation and output category, illustrating how to use BarcodeGenerator together with BarCodeImageFormat to create barcode images in memory. Developers often need to store generated barcodes in cloud services such as Azure Blob Storage, requiring stream-based Save overloads. The snippet shows typical usage of the generator, file fallback, and a commented Azure upload pattern, useful for web and cloud applications.
 // Prompt: Use BarcodeGenerator.Save overload to write a PNG image to a CloudBlob stream for Azure storage.
-// Tags: code128, barcode generation, png, azure blob, aspnet, aspose.barcode, image stream
+// Tags: barcode, code128, png, azure, blob, storage, aspose.barcode, generation, stream
 
 using System;
 using System.IO;
@@ -10,54 +10,55 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates barcode generation and (commented) Azure Blob upload using Aspose.BarCode.
+/// Example program that generates a Code128 barcode and saves it as a PNG image.
+/// The image is first written to a local temporary file (fallback) and the code
+/// includes a commented pattern for uploading the image to Azure Blob Storage.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a Code128 barcode, saves it as PNG to a stream,
-    /// and illustrates how to upload the stream to Azure Blob storage.
+    /// Entry point of the example. Generates the barcode, saves it locally,
+    /// and provides guidance for uploading to Azure Blob Storage.
     /// </summary>
     static void Main()
     {
-        // Define the data to encode in the barcode.
-        const string codeText = "1234567890";
+        // Define the barcode data to encode.
+        string codeText = "12345678";
+
+        // Determine a temporary file path for a local fallback save.
+        string localPath = Path.Combine(Path.GetTempPath(), "barcode.png");
 
         // Initialize the barcode generator with Code128 symbology.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+        BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, codeText);
+
+        // -----------------------------------------------------------------
+        // Save the generated barcode to a local file stream.
+        // This is useful when Azure SDK is not available or for debugging.
+        // -----------------------------------------------------------------
+        using (FileStream fileStream = new FileStream(localPath, FileMode.Create, FileAccess.Write))
         {
-            // Optional: adjust barcode appearance (e.g., X-dimension).
-            generator.Parameters.Barcode.XDimension.Point = 2f;
-
-            // Create a memory stream to hold the PNG image.
-            using (var memoryStream = new MemoryStream())
-            {
-                // Save the generated barcode image into the memory stream in PNG format.
-                generator.Save(memoryStream, BarCodeImageFormat.Png);
-                memoryStream.Position = 0; // Reset position for subsequent reads.
-
-                // -----------------------------------------------------------------
-                // Azure Blob upload example (requires Azure.Storage.Blobs package)
-                // -----------------------------------------------------------------
-                // The following code shows how to upload the PNG stream to Azure Blob storage.
-                // It is commented out because the Azure SDK is not referenced in this snippet.
-                /*
-                var blobServiceClient = new Azure.Storage.Blobs.BlobServiceClient("<connection_string>");
-                var containerClient = blobServiceClient.GetBlobContainerClient("<container_name>");
-                var blobClient = containerClient.GetBlobClient("barcode.png");
-                blobClient.Upload(memoryStream, overwrite: true);
-                */
-
-                // For demonstration purposes, write the PNG to a local file instead.
-                const string localPath = "barcode.png";
-                using (var fileStream = new FileStream(localPath, FileMode.Create, FileAccess.Write))
-                {
-                    memoryStream.CopyTo(fileStream);
-                }
-
-                Console.WriteLine($"Barcode image saved to local file: {localPath}");
-                // If Azure upload were enabled, the image would be stored in the specified blob container.
-            }
+            // Use the Save overload that accepts a stream and PNG format.
+            generator.Save(fileStream, BarCodeImageFormat.Png);
         }
+
+        Console.WriteLine($"Barcode saved to local file: {localPath}");
+
+        // -----------------------------------------------------------------
+        // Azure Blob Storage upload example (requires Azure.Storage.Blobs package)
+        // The code is commented out to avoid mandatory Azure dependencies.
+        // Uncomment and provide valid connection details to use.
+        // -----------------------------------------------------------------
+        // string connectionString = "<your_connection_string>";
+        // string containerName = "<your_container_name>";
+        // string blobName = "barcode.png";
+        // var blobClient = new BlobClient(connectionString, containerName, blobName);
+        // using (MemoryStream ms = new MemoryStream())
+        // {
+        //     // Save the barcode image to a memory stream.
+        //     generator.Save(ms, BarCodeImageFormat.Png);
+        //     ms.Position = 0; // Reset stream position before upload.
+        //     blobClient.Upload(ms);
+        // }
+        // Console.WriteLine("Barcode uploaded to Azure Blob Storage.");
     }
 }

@@ -1,57 +1,50 @@
-// Title: Generate Code39 barcode with margins and export to SVG
-// Description: Demonstrates creating a Code39 barcode, applying custom margins, and saving it as an SVG file where the viewBox matches the barcode dimensions.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to configure barcode parameters such as padding, colors, and AutoSizeMode using the BarcodeGenerator class. Typical use cases include generating barcodes for web or print with precise layout control. Developers often need to export barcodes to vector formats like SVG while preserving exact sizing for responsive designs.
+// Title: Generate Code128 barcode with custom margins and export to SVG
+// Description: Demonstrates creating a Code128 barcode, applying uniform padding, and saving it as an SVG file where the viewBox matches the barcode dimensions.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to configure barcode parameters such as padding and export options using the BarcodeGenerator class. Typical use cases include creating barcodes for web or print with precise layout control. Developers often need to adjust margins and output formats like SVG for scalable graphics.
 // Prompt: Generate a barcode, set its margins, and export as SVG ensuring the viewBox matches the barcode size.
-// Tags: code39, barcode, margin, svg, autosizemode, aspose.barcode, generation
+// Tags: code128, barcode, margin, svg, export, aspose.barcode, generation
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 
-namespace BarcodeSvgExample
+/// <summary>
+/// Example program that creates a Code128 barcode, sets custom margins, and saves it as an SVG file.
+/// </summary>
+class Program
 {
     /// <summary>
-    /// Provides an entry point that generates a Code39 barcode, applies padding,
-    /// and saves the result as an SVG file with a viewBox that matches the barcode size.
+    /// Entry point of the application.
     /// </summary>
-    class Program
+    static void Main()
     {
-        /// <summary>
-        /// Generates the barcode, configures its appearance, and writes the SVG output.
-        /// </summary>
-        static void Main()
+        // Define the output directory and ensure it exists
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Output");
+        Directory.CreateDirectory(outputDir);
+
+        // Full path for the resulting SVG file
+        string svgPath = Path.Combine(outputDir, "barcode.svg");
+
+        // Initialize the barcode generator with Code128 symbology and the desired text
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            // Define the output SVG file path
-            string outputPath = "barcode.svg";
+            // Configure uniform padding (margins) around the barcode in points
+            generator.Parameters.Barcode.Padding.Left.Point = 10f;
+            generator.Parameters.Barcode.Padding.Top.Point = 10f;
+            generator.Parameters.Barcode.Padding.Right.Point = 10f;
+            generator.Parameters.Barcode.Padding.Bottom.Point = 10f;
 
-            // Initialize a Code39 barcode generator with the sample text "123ABC"
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code39, "123ABC"))
+            try
             {
-                // Configure padding (margins) in points for each side
-                generator.Parameters.Barcode.Padding.Left.Point = 10f;
-                generator.Parameters.Barcode.Padding.Top.Point = 10f;
-                generator.Parameters.Barcode.Padding.Right.Point = 10f;
-                generator.Parameters.Barcode.Padding.Bottom.Point = 10f;
-
-                // Optional: set foreground (barcode) and background colors
-                generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-                generator.Parameters.BackColor = Aspose.Drawing.Color.White;
-
-                // Ensure the SVG viewBox matches the exact barcode size (no auto‑scaling)
-                generator.Parameters.AutoSizeMode = AutoSizeMode.None;
-
-                // Attempt to save the barcode as an SVG file and report the result
-                try
-                {
-                    generator.Save(outputPath, BarCodeImageFormat.Svg);
-                    Console.WriteLine($"Barcode saved to {Path.GetFullPath(outputPath)}");
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Error saving SVG: {ex.Message}");
-                }
+                // Save the barcode as an SVG file; the viewBox will match the barcode size including padding
+                generator.Save(svgPath, BarCodeImageFormat.Svg);
+                Console.WriteLine($"SVG barcode saved to: {svgPath}");
+            }
+            catch (Exception ex)
+            {
+                // Output any errors that occur during the save operation
+                Console.WriteLine($"Error saving SVG: {ex.Message}");
             }
         }
     }

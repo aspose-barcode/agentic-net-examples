@@ -1,68 +1,70 @@
-// Title: Batch generate multiple barcodes and save as SVG files
-// Description: Demonstrates generating several barcodes of different symbologies in a loop and saving each as a separate SVG file for batch processing.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to use the BarcodeGenerator class to create various barcode types (e.g., Code39, Code128, QR, DataMatrix, Aztec) and export them to SVG format. Typical use cases include bulk barcode creation for inventory, shipping labels, or marketing materials. Developers often need to automate barcode production, customize appearance, and handle multiple formats in a single workflow.
+// Title: Batch generation of Code39 barcodes saved as individual SVG files
+// Description: Demonstrates how to generate multiple Code39 barcodes and save each one to a separate SVG file using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, showcasing the use of BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes for batch processing. Developers often need to create large numbers of barcodes for inventory, shipping, or labeling systems, and this pattern illustrates efficient looping and file handling for such scenarios.
 // Prompt: Save multiple barcodes to separate SVG files in a loop for batch processing.
-// Tags: barcode symbology, batch processing, svg, generation, aspose.barcode
+// Tags: code39, barcode generation, batch processing, svg output, aspose.barcode, encode types, barcodegenerator
 
 using System;
 using System.IO;
+using System.Collections.Generic;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates batch generation of different barcode types and saving each as an SVG file.
+/// Demonstrates batch creation of Code39 barcodes saved as separate SVG files.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a set of barcodes and writes them to the file system.
+    /// Entry point. Generates a temporary output directory, iterates over a list of barcode texts,
+    /// creates a <see cref="BarcodeGenerator"/> for each, and saves the result as an SVG file.
     /// </summary>
     static void Main()
     {
-        // Define the output folder for the generated SVG files.
-        string outputFolder = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
-        Directory.CreateDirectory(outputFolder);
+        // Create a unique temporary directory for the generated barcode files
+        string outputDir = Path.Combine(Path.GetTempPath(), "Barcodes_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputDir);
 
-        // Collection of barcode specifications to be generated.
-        var barcodeInfos = new[]
+        // Define the collection of barcode texts to be encoded
+        List<string> codeTexts = new List<string>
         {
-            new { EncodeType = EncodeTypes.Code39, CodeText = "CODE39-1" },
-            new { EncodeType = EncodeTypes.Code128, CodeText = "CODE128-123" },
-            new { EncodeType = EncodeTypes.QR, CodeText = "https://example.com" },
-            new { EncodeType = EncodeTypes.DataMatrix, CodeText = "DM12345" },
-            new { EncodeType = EncodeTypes.Aztec, CodeText = "AZTEC" }
+            "CODE39-1",
+            "CODE39-2",
+            "CODE39-3",
+            "CODE39-4",
+            "CODE39-5"
         };
 
+        // Initialize a counter for naming the output SVG files
         int index = 1;
-        // Iterate over each barcode definition and generate the corresponding SVG file.
-        foreach (var info in barcodeInfos)
+
+        // Loop through each text, generate a barcode, and save it as an SVG file
+        foreach (string text in codeTexts)
         {
-            // Build a unique file name that includes the index and barcode type.
-            string fileName = $"barcode_{index}_{info.EncodeType}.svg";
-            string filePath = Path.Combine(outputFolder, fileName);
+            // Build the full file path for the current barcode image
+            string filePath = Path.Combine(outputDir, $"barcode_{index}.svg");
 
-            // Create and configure the barcode generator for the current barcode.
-            using (var generator = new BarcodeGenerator(info.EncodeType, info.CodeText))
+            // Use a BarcodeGenerator instance to create the barcode with Code39 symbology
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code39, text))
             {
-                // Optional: set the barcode color (default is black).
-                generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-
-                // Attempt to save the barcode as an SVG file.
                 try
                 {
+                    // Save the generated barcode to the specified SVG file
                     generator.Save(filePath, BarCodeImageFormat.Svg);
-                    Console.WriteLine($"Saved {filePath}");
+                    Console.WriteLine($"Saved: {filePath}");
                 }
                 catch (Exception ex)
                 {
-                    // Log any errors that occur during the save operation.
+                    // Log any errors that occur during the save operation
                     Console.WriteLine($"Failed to save {filePath}: {ex.Message}");
                 }
             }
 
+            // Increment the file index for the next barcode
             index++;
         }
 
-        Console.WriteLine("Barcode generation completed.");
+        // Indicate that the batch processing has finished
+        Console.WriteLine("Batch processing completed.");
     }
 }

@@ -1,42 +1,46 @@
-// Title: Export DataMatrix Barcode to JPEG MemoryStream
-// Description: Demonstrates exporting a DataMatrix barcode as a JPEG image into a memory stream, suitable for HTTP response.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to create barcodes using the BarcodeGenerator class, encode data into DataMatrix symbology, and output the result in JPEG format. Developers often need to generate barcode images on-the-fly for web APIs, embed them in HTML responses, or store them in databases. The example highlights key API classes such as BarcodeGenerator, EncodeTypes, and BarCodeImageFormat, providing a template for similar barcode export scenarios.
+// Title: Export DataMatrix barcode to JPEG memory stream
+// Description: Demonstrates generating a DataMatrix barcode and saving it as a JPEG image into a memory stream, suitable for sending in an HTTP response.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to create barcodes using the BarcodeGenerator class, encode data with EncodeTypes, and output images in various formats such as JPEG. Developers often need to generate barcodes on-the-fly for web APIs, embed them in HTML, or return them as binary streams in HTTP responses. The snippet shows the typical workflow of initializing the generator, saving to a MemoryStream, and retrieving the byte array.
 // Prompt: Export a DataMatrix barcode to a memory stream in JPEG format for HTTP response.
-// Tags: datamatrix, export, jpeg, memorystream, barcode generation, aspose.barcode
+// Tags: datamatrix, barcode generation, jpeg, memory stream, http response, aspose.barcode, encode types
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Provides an example of generating a DataMatrix barcode and exporting it as a JPEG image
-/// into a memory stream, which can be used directly in an HTTP response.
+/// Demonstrates exporting a DataMatrix barcode to a JPEG memory stream.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a DataMatrix barcode, saves it as JPEG into a
-    /// memory stream, and writes the resulting byte size to the console.
+    /// Generates the barcode and writes its size and Base64 representation to the console.
     /// </summary>
     static void Main()
     {
-        // Define the text to encode in the barcode.
-        const string codeText = "Hello World";
+        // Text to encode in the DataMatrix barcode
+        string codeText = "DataMatrixSample";
 
-        // Create a memory stream that will hold the JPEG image data.
-        using (var memoryStream = new MemoryStream())
+        // Initialize the barcode generator with DataMatrix symbology and the desired text
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.DataMatrix, codeText))
         {
-            // Initialize the barcode generator with DataMatrix symbology and the sample text.
-            using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, codeText))
+            // Create a memory stream to hold the generated JPEG image
+            using (MemoryStream memoryStream = new MemoryStream())
             {
-                // Save the generated barcode directly into the memory stream in JPEG format.
+                // Save the barcode image to the memory stream in JPEG format
                 generator.Save(memoryStream, BarCodeImageFormat.Jpeg);
-            }
 
-            // Output the size of the generated JPEG image for verification.
-            Console.WriteLine($"Generated DataMatrix JPEG size: {memoryStream.Length} bytes");
+                // Reset the stream position to the beginning for subsequent reads
+                memoryStream.Position = 0;
+
+                // Output the size of the generated JPEG image
+                Console.WriteLine($"Generated JPEG size: {memoryStream.Length} bytes");
+
+                // Convert the image bytes to a Base64 string (useful for embedding in JSON or HTML)
+                string base64 = Convert.ToBase64String(memoryStream.ToArray());
+                Console.WriteLine($"Base64 JPEG: {base64}");
+            }
         }
     }
 }
