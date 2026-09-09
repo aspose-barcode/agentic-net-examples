@@ -1,69 +1,105 @@
-// Title: Extract fields from Mailmark2D barcode codetext
-// Description: Demonstrates constructing a Mailmark2D codetext, decoding it with Aspose.BarCode, and extracting individual fields such as routing and service codes.
-// Category-Description: This example belongs to the Aspose.BarCode ComplexBarcode category, showcasing the Mailmark2D symbology. It uses the Mailmark2DCodetext class to build a codetext string, ComplexCodetextReader to decode it, and then accesses the parsed properties. Developers working with postal automation, logistics, or any scenario that requires reading Mailmark2D barcodes will find this pattern useful for extracting routing, service, and custom data from decoded objects.
-/// Prompt: Extract individual fields such as routing and service code from the decoded Mailmark2DCodetext.
-/// Tags: mailmark2d, barcode, decoding, extraction, aspose.barcode, complexbarcode, csharp
+// Title: Extract fields from a Mailmark2D barcode
+// Description: Demonstrates generating a Mailmark2D barcode, decoding it, and extracting individual data fields such as routing and service codes.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation and recognition category. It showcases the use of Mailmark2DCodetext, ComplexBarcodeGenerator, BarCodeReader, and ComplexCodetextReader to create, read, and parse Mailmark2D barcodes—commonly used in postal automation, mail sorting, and logistics for encoding routing and service information. Developers looking for end‑to‑end barcode handling patterns can reference this snippet for typical workflows.
+// Prompt: Extract individual fields such as routing and service code from the decoded Mailmark2DCodetext.
+// Tags: mailmark2d, barcode, generation, recognition, aspose.barcode, datamatrix, complexbarcode, extraction
 
 using System;
-using Aspose.BarCode.ComplexBarcode;
+using System.IO;
+using System.Text;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode.BarCodeRecognition;
+using Aspose.BarCode.ComplexBarcode;
 
 /// <summary>
-/// Sample program that builds a Mailmark2D codetext, decodes it, and prints each field.
+/// Demonstrates creating a Mailmark2D barcode, decoding it, and extracting its individual fields.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Constructs a Mailmark2D codetext, decodes it, and displays the individual components.
+    /// Entry point of the example. Generates a Mailmark2D barcode, decodes it, and prints each field.
     /// </summary>
     static void Main()
     {
-        // ------------------------------------------------------------
-        // 1. Create a Mailmark2DCodetext instance with known sample values.
-        // ------------------------------------------------------------
-        var mailmark = new Mailmark2DCodetext
+        // Ensure Unicode characters are displayed correctly in the console.
+        Console.OutputEncoding = Encoding.Unicode;
+
+        // Create a unique temporary folder for the generated barcode image.
+        string tempFolder = Path.Combine(Path.GetTempPath(), "Mailmark2D_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
+
+        // Define the full path for the barcode image file.
+        string barcodePath = Path.Combine(tempFolder, "mailmark2d.png");
+
+        // Prepare the Mailmark2D codetext with sample data.
+        var mailmark2D = new Mailmark2DCodetext
         {
-            VersionID = "1",
+            UPUCountryID = "JGB ",
             InformationTypeID = "0",
+            VersionID = "1",
             Class = "1",
+            SupplyChainID = 123,
+            ItemID = 1234,
+            DestinationPostCodeAndDPS = "EF61AH8T ",
             RTSFlag = "0",
-            SupplyChainID = 1234567,
-            ItemID = 7654321,
-            DestinationPostCodeAndDPS = "SW1A1AA00",
-            ReturnToSenderPostCode = "SW1A1AA",
-            UPUCountryID = "GBR",
-            CustomerContent = "SampleContent",
-            CustomerContentEncodeMode = DataMatrixEncodeMode.C40
+            ReturnToSenderPostCode = " QWE2 ",
+            CustomerContent = "CUSTOM",
+            CustomerContentEncodeMode = DataMatrixEncodeMode.C40,
+            DataMatrixType = Mailmark2DType.Type_7
         };
 
-        // ------------------------------------------------------------
-        // 2. Generate the codetext string that would be encoded in the barcode.
-        // ------------------------------------------------------------
-        string constructedCodetext = mailmark.GetConstructedCodetext();
-
-        // ------------------------------------------------------------
-        // 3. Decode the generated codetext back into a Mailmark2DCodetext object.
-        // ------------------------------------------------------------
-        Mailmark2DCodetext decoded = ComplexCodetextReader.TryDecodeMailmark2D(constructedCodetext);
-        if (decoded == null)
+        // Generate the barcode image using ComplexBarcodeGenerator.
+        using (var generator = new ComplexBarcodeGenerator(mailmark2D))
         {
-            Console.WriteLine("Failed to decode Mailmark2D codetext.");
+            generator.Parameters.Barcode.XDimension.Pixels = 4; // Set module size.
+            generator.Save(barcodePath, BarCodeImageFormat.Png);
+        }
+
+        // Verify that the barcode image was successfully created.
+        if (!File.Exists(barcodePath))
+        {
+            Console.WriteLine("Failed to generate barcode image.");
             return;
         }
 
-        // ------------------------------------------------------------
-        // 4. Extract and display each individual field from the decoded object.
-        // ------------------------------------------------------------
-        Console.WriteLine($"VersionID: {decoded.VersionID}");
-        Console.WriteLine($"InformationTypeID: {decoded.InformationTypeID}");
-        Console.WriteLine($"Class: {decoded.Class}");
-        Console.WriteLine($"RTSFlag: {decoded.RTSFlag}");
-        Console.WriteLine($"SupplyChainID: {decoded.SupplyChainID}");
-        Console.WriteLine($"ItemID: {decoded.ItemID}");
-        Console.WriteLine($"DestinationPostCodeAndDPS: {decoded.DestinationPostCodeAndDPS}");
-        Console.WriteLine($"ReturnToSenderPostCode: {decoded.ReturnToSenderPostCode}");
-        Console.WriteLine($"UPUCountryID: {decoded.UPUCountryID}");
-        Console.WriteLine($"CustomerContent: {decoded.CustomerContent}");
-        Console.WriteLine($"CustomerContentEncodeMode: {decoded.CustomerContentEncodeMode}");
+        // Read and decode the barcode from the generated image.
+        using (var reader = new BarCodeReader(barcodePath, DecodeType.DataMatrix))
+        {
+            foreach (BarCodeResult result in reader.ReadBarCodes())
+            {
+                // Attempt to decode the Mailmark2D codetext.
+                Mailmark2DCodetext decoded = ComplexCodetextReader.TryDecodeMailmark2D(result.CodeText);
+                if (decoded == null)
+                {
+                    Console.WriteLine("Unable to decode Mailmark2D codetext.");
+                    continue;
+                }
+
+                // Extract and display individual fields from the decoded codetext.
+                Console.WriteLine($"UPUCountryID: {decoded.UPUCountryID}");
+                Console.WriteLine($"InformationTypeID: {decoded.InformationTypeID}");
+                Console.WriteLine($"VersionID: {decoded.VersionID}");
+                Console.WriteLine($"Class: {decoded.Class}");
+                Console.WriteLine($"SupplyChainID: {decoded.SupplyChainID}");
+                Console.WriteLine($"ItemID: {decoded.ItemID}");
+                Console.WriteLine($"DestinationPostCodeAndDPS: {decoded.DestinationPostCodeAndDPS}");
+                Console.WriteLine($"RTSFlag: {decoded.RTSFlag}");
+                Console.WriteLine($"ReturnToSenderPostCode: {decoded.ReturnToSenderPostCode}");
+                Console.WriteLine($"CustomerContent: {decoded.CustomerContent}");
+                // Additional fields can be accessed similarly.
+            }
+        }
+
+        // Cleanup temporary files (optional).
+        try
+        {
+            File.Delete(barcodePath);
+            Directory.Delete(tempFolder);
+        }
+        catch
+        {
+            // Ignore cleanup errors.
+        }
     }
 }

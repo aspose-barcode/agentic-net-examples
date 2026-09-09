@@ -1,51 +1,66 @@
-// Title: Generate Swiss QR Code as 300 dpi PNG with Custom Dimensions
-// Description: Demonstrates creating a Swiss QR (QR‑Bill) barcode using Aspose.BarCode, configuring 300 dpi resolution and custom image size, then saving it as a PNG for printing.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It showcases the use of ComplexBarcodeGenerator together with SwissQRCodetext to produce payment‑oriented QR codes. Developers commonly need to adjust resolution and image dimensions for high‑quality print output, making this pattern useful for invoicing, billing, and other financial document workflows.
+// Title: Generate MaxiCode Complex Barcode with Custom DPI and Dimensions
+// Description: Demonstrates how to create a MaxiCode complex barcode, set a 300 dpi resolution, and define custom image width and height for printing.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It showcases the use of ComplexBarcodeGenerator together with MaxiCodeCodetextMode3 and related classes to produce high‑resolution barcodes. Typical use cases include printing shipping labels, tickets, or any scenario where precise image size and resolution are required. Developers often need to control DPI, image dimensions, and module size when integrating barcodes into print workflows.
 // Prompt: Configure ComplexBarcodeGenerator to produce a 300 dpi PNG image with custom dimensions for printing.
-// Tags: swissqr, generation, png, complexbarcodegenerator, swissqrcodetext
+// Tags: maxicode, complexbarcode, barcode generation, resolution, png, aspose.barcode, image dimensions
 
 using System;
 using System.IO;
 using Aspose.BarCode;
-using Aspose.BarCode.ComplexBarcode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode.ComplexBarcode;
 
 /// <summary>
-/// Example program that generates a Swiss QR (QR‑Bill) barcode,
-/// sets a 300 dpi resolution and custom image dimensions,
-/// and saves the result as a PNG file.
+/// Example program that generates a MaxiCode complex barcode with custom DPI and image dimensions.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Builds the QR‑Bill data,
-    /// configures the generator, and writes the PNG image to disk.
+    /// Entry point of the application. Builds the MaxiCode codetext, configures the generator,
+    /// and saves the resulting PNG image to a temporary location.
     /// </summary>
     static void Main()
     {
-        // Prepare Swiss QR codetext (complex barcode data) with creditor information and payment details.
-        var swissQr = new SwissQRCodetext();
-        swissQr.Bill.Creditor.Name = "John Doe";
-        swissQr.Bill.Creditor.CountryCode = "CH";
-        swissQr.Bill.Account = "CH9300762011623852957";
-        swissQr.Bill.Amount = 199.95m;
-        swissQr.Bill.Version = SwissQRBill.QrBillStandardVersion.V2_0;
+        // Prepare complex codetext for MaxiCode (structured second message)
+        var secondMessage = new MaxiCodeStructuredSecondMessage();
+        secondMessage.Add("123 Main St");
+        secondMessage.Add("Anytown");
+        secondMessage.Add("CA");
+        secondMessage.Year = 23;
 
-        // Create a ComplexBarcodeGenerator using the prepared Swiss QR codetext.
-        using (var generator = new ComplexBarcodeGenerator(swissQr))
+        // Assemble the full codetext for Mode 3 MaxiCode
+        var codetext = new MaxiCodeCodetextMode3
         {
-            // Set the image resolution to 300 dots per inch for high‑quality printing.
+            PostalCode = "12345",
+            CountryCode = 1,
+            ServiceCategory = 0,
+            SecondMessage = secondMessage
+        };
+
+        // Determine output file path in the system temporary folder
+        string outputPath = Path.Combine(Path.GetTempPath(), "maxicode.png");
+
+        // Generate barcode with custom resolution and dimensions
+        using (var generator = new ComplexBarcodeGenerator(codetext))
+        {
+            // Set image resolution to 300 DPI
             generator.Parameters.Resolution = 300f;
 
-            // Define custom image dimensions in points (e.g., 600 × 400 points).
-            generator.Parameters.ImageWidth.Point = 600f;
-            generator.Parameters.ImageHeight.Point = 400f;
+            // Use nearest auto‑size mode to respect explicitly set dimensions
+            generator.Parameters.AutoSizeMode = AutoSizeMode.Nearest;
 
-            // Save the generated barcode as a PNG file.
-            generator.Save("SwissQR_300dpi.png");
+            // Define custom image width and height (in pixels)
+            generator.Parameters.ImageWidth.Pixels = 600f;
+            generator.Parameters.ImageHeight.Pixels = 400f;
+
+            // Set module (X‑dimension) size for the barcode
+            generator.Parameters.Barcode.XDimension.Pixels = 3f;
+
+            // Save the generated barcode as a PNG file
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user that the image has been created.
-        Console.WriteLine("Barcode image generated: SwissQR_300dpi.png");
+        // Inform the user where the image was saved
+        Console.WriteLine($"Barcode image saved to: {outputPath}");
     }
 }

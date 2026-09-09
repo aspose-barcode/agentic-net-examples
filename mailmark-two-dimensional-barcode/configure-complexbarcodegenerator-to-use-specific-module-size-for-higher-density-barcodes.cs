@@ -1,44 +1,66 @@
-// Title: Generate Swiss QR Code with Custom Module Size
-// Description: Demonstrates creating a Swiss QR bill barcode using Aspose.BarCode and configuring a smaller XDimension for higher density output.
-// Category-Description: This example belongs to the Aspose.BarCode ComplexBarcode generation category, showcasing how to work with the ComplexBarcodeGenerator class to produce Swiss QR bill barcodes. Typical use cases include generating payment QR codes for invoices and financial documents, where developers often need to adjust barcode density, format, and visual parameters. The example highlights key API classes such as SwissQRCodetext, ComplexBarcodeGenerator, and BarCodeImageFormat, providing a reference for developers seeking to customize barcode appearance and export options.
+// Title: Generate a MaxiCode barcode with custom module size for higher density
+// Description: Demonstrates configuring a ComplexBarcodeGenerator to set a specific X-dimension (module size) and resolution, producing a high‑density MaxiCode barcode saved as PNG.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category, illustrating how to use ComplexBarcodeGenerator with MaxiCodeCodetextMode3. It shows key API classes such as ComplexBarcodeGenerator, MaxiCodeCodetextMode3, and MaxiCodeStandardSecondMessage, typical for creating custom‑styled barcodes, adjusting module size, resolution, and colors. Developers often need these techniques when generating dense barcodes for logistics or tracking applications.
 // Prompt: Configure ComplexBarcodeGenerator to use a specific module size for higher density barcodes.
-// Tags: swissqr, barcode, complexbarcode, xdimension, png, aspose.barcode
+// Tags: barcode, complexbarcode, maxicode, module size, resolution, png, csharp, aspose.barcode
 
 using System;
 using System.IO;
-using Aspose.BarCode.ComplexBarcode;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode.ComplexBarcode;
+using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates a Swiss QR bill barcode with a custom module size (XDimension) for higher density.
+/// Demonstrates generating a MaxiCode barcode with a custom module size and resolution using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Builds the Swiss QR codetext, configures the generator, and saves the barcode as a PNG image.
+    /// Entry point. Creates a temporary output folder, configures the barcode generator, and saves the image.
     /// </summary>
     static void Main()
     {
-        // Initialize Swiss QR codetext with required billing fields
-        var swissQr = new SwissQRCodetext();
-        swissQr.Bill.Creditor.Name = "John Doe";
-        swissQr.Bill.Creditor.CountryCode = "CH";
-        swissQr.Bill.Account = "CH9300762011623852957";
-        swissQr.Bill.Amount = 199.95m;
-        swissQr.Bill.Version = SwissQRBill.QrBillStandardVersion.V2_0;
+        // Determine a unique temporary directory for output
+        string outputDir = Path.Combine(Path.GetTempPath(), "ComplexBarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputDir);
 
-        // Create a ComplexBarcodeGenerator instance using the prepared codetext
-        using (var generator = new ComplexBarcodeGenerator(swissQr))
+        // Full path for the resulting PNG file
+        string outputPath = Path.Combine(outputDir, "maxicode.png");
+
+        // Prepare the secondary message for MaxiCode
+        var secondMessage = new MaxiCodeStandardSecondMessage
         {
-            // Adjust the module size (XDimension) to 0.5 points for higher barcode density
-            generator.Parameters.Barcode.XDimension.Point = 0.5f;
+            Message = "Higher density barcode"
+        };
 
-            // Define output file name and save the generated barcode as a PNG image
-            string outputFile = "SwissQR.png";
-            generator.Save(outputFile, BarCodeImageFormat.Png);
+        // Set up MaxiCode codetext with postal code, country, service category, and secondary message
+        var maxiCodeCodetext = new MaxiCodeCodetextMode3
+        {
+            PostalCode = "B1050",
+            CountryCode = 56,
+            ServiceCategory = 999,
+            SecondMessage = secondMessage
+        };
 
-            // Output the full path of the saved image for verification
-            Console.WriteLine($"Barcode saved to {Path.GetFullPath(outputFile)}");
+        // Generate the barcode with custom module size and resolution
+        using (var generator = new ComplexBarcodeGenerator(maxiCodeCodetext))
+        {
+            // Increase module size (X-dimension) for higher density
+            generator.Parameters.Barcode.XDimension.Point = 2f;
+
+            // Increase image resolution
+            generator.Parameters.Resolution = 300f;
+
+            // Set barcode color
+            generator.Parameters.Barcode.BarColor = Color.Black;
+
+            // Save as PNG
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
+
+        // Inform the user where the file was saved
+        Console.WriteLine("Barcode generated at: " + outputPath);
     }
 }

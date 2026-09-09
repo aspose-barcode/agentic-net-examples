@@ -1,74 +1,103 @@
-// Title: Generate and Decode Code128 Barcode with Detailed Logging
-// Description: Demonstrates creating a Code128 barcode, decoding it using Aspose.BarCode, and outputting all available decoding fields.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for barcode creation and BarCodeReader with DecodeType.AllSupportedTypes for decoding. Developers commonly use these APIs to embed barcodes in documents, read them from images, and troubleshoot decoding issues by examining detailed result properties.
+// Title: Generate and Decode a Code128 Barcode with Detailed Logging
+// Description: This example creates a Code128 barcode image, saves it to a temporary folder, then reads and logs comprehensive decoding information for troubleshooting.
+// Category-Description: Demonstrates Aspose.BarCode generation and recognition workflows, covering BarcodeGenerator, BarCodeReader, and detailed result inspection via reflection. Useful for developers needing to create barcodes, decode them, and extract extended metadata for debugging or analytics. Typical use cases include inventory systems, shipping labels, and quality assurance of barcode scans.
 // Prompt: Log detailed decoding information, including field names and values, to assist troubleshooting.
-// Tags: code128, barcode generation, barcode recognition, decoding, logging, aspose.barcode, c#
+// Tags: code128, barcode generation, barcode decoding, detailed logging, aspose.barcode, reflection, c#
 
 using System;
 using System.IO;
+using System.Reflection;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing; // Required for Bitmap if needed
-using Aspose.Drawing.Imaging; // Required for image format enums
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates barcode generation and detailed decoding using Aspose.BarCode.
+/// Demonstrates barcode generation, decoding, and detailed logging using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a Code128 barcode, decodes it, and writes detailed result information to the console.
+    /// Entry point of the example. Generates a Code128 barcode, decodes it, and logs all available information.
     /// </summary>
     static void Main()
     {
-        // Generate a sample Code128 barcode and store it in a memory stream
-        var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890");
-        using (var barcodeStream = new MemoryStream())
+        // Create a unique temporary folder for the barcode image
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
+
+        // Define the full path for the generated barcode image
+        string imagePath = Path.Combine(tempFolder, "sample.png");
+
+        // Generate a Code128 barcode image and save it as PNG
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
         {
-            // Save the generated barcode image as PNG into the stream
-            generator.Save(barcodeStream, BarCodeImageFormat.Png);
-            barcodeStream.Position = 0; // Reset stream position for reading
+            generator.Parameters.Barcode.XDimension.Pixels = 4f;   // Set module width
+            generator.Parameters.Barcode.BarHeight.Pixels = 50f; // Set bar height
+            generator.Save(imagePath, BarCodeImageFormat.Png);
+        }
 
-            // Create a BarCodeReader to decode the barcode from the stream
-            using (var reader = new BarCodeReader(barcodeStream, DecodeType.AllSupportedTypes))
+        // Verify that the image file was created successfully
+        if (!File.Exists(imagePath))
+        {
+            Console.WriteLine($"Failed to create barcode image at {imagePath}");
+            return;
+        }
+
+        // Initialize a reader to decode all supported barcode types from the image
+        using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
+        {
+            // Optional: configure high‑performance quality settings
+            reader.QualitySettings = QualitySettings.HighPerformance;
+
+            // Iterate through all detected barcode results
+            foreach (BarCodeResult result in reader.ReadBarCodes())
             {
-                // Perform recognition and retrieve all detected barcodes
-                BarCodeResult[] results = reader.ReadBarCodes();
+                Console.WriteLine("=== Barcode Result ===");
+                Console.WriteLine($"CodeTypeName: {result.CodeTypeName}");
+                Console.WriteLine($"CodeText: {result.CodeText}");
+                Console.WriteLine($"ReadingQuality: {result.ReadingQuality}");
 
-                // Log detailed information for each detected barcode
-                foreach (BarCodeResult result in results)
+                // Log the region (position and size) of the detected barcode
+                var rect = result.Region.Rectangle;
+                Console.WriteLine($"Region: X={rect.X}, Y={rect.Y}, Width={rect.Width}, Height={rect.Height}");
+                Console.WriteLine($"Angle: {result.Region.Angle}");
+
+                // Use reflection to log any extended properties provided by the result
+                var ext = result.Extended;
+                if (ext != null)
                 {
-                    Console.WriteLine($"Code Type Name   : {result.CodeTypeName}");
-                    Console.WriteLine($"Code Text        : {result.CodeText}");
-                    Console.WriteLine($"Confidence       : {result.Confidence}");
-                    Console.WriteLine($"Reading Quality  : {result.ReadingQuality}");
-
-                    // Region bounds
-                    var rect = result.Region.Rectangle;
-                    Console.WriteLine($"Region X         : {rect.X}");
-                    Console.WriteLine($"Region Y         : {rect.Y}");
-                    Console.WriteLine($"Region Width     : {rect.Width}");
-                    Console.WriteLine($"Region Height    : {rect.Height}");
-
-                    // Orientation angle
-                    Console.WriteLine($"Region Angle     : {result.Region.Angle}");
-
-                    // Corner points of the detected barcode region
-                    var points = result.Region.Points;
-                    for (int i = 0; i < points.Length; i++)
+                    PropertyInfo[] extProps = ext.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance);
+                    foreach (PropertyInfo prop in extProps)
                     {
-                        Console.WriteLine($"Region Point {i} : X={points[i].X}, Y={points[i].Y}");
+                        try
+                        {
+                            object value = prop.GetValue(ext);
+                            if (value != null)
+                            {
+                                Console.WriteLine($"Extended.{prop.Name}: {value}");
+                            }
+                        }
+                        catch
+                        {
+                            // Silently ignore properties that cannot be read
+                        }
                     }
-
-                    Console.WriteLine(new string('-', 40));
-                }
-
-                // If no barcodes were found, inform the user
-                if (results.Length == 0)
-                {
-                    Console.WriteLine("No barcodes were detected in the image.");
                 }
             }
+        }
+
+        // Attempt to clean up the temporary folder and its contents
+        try
+        {
+            if (Directory.Exists(tempFolder))
+            {
+                Directory.Delete(tempFolder, true);
+            }
+        }
+        catch
+        {
+            // Suppress any errors during cleanup to avoid breaking the example flow
         }
     }
 }

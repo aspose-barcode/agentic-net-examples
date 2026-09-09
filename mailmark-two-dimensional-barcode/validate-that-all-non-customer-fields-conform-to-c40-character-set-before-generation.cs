@@ -1,92 +1,88 @@
-// Title: C40 Character Set Validation for Non‑Customer Fields Before Barcode Generation
-// Description: Demonstrates how to validate that all non‑customer data fields contain only characters allowed by the C40 encoding set prior to generating a barcode.
-// Category-Description: This example belongs to the Aspose.BarCode data validation category, illustrating the use of Aspose.BarCode.Generation.BarcodeGenerator and related classes to ensure input data complies with specific character sets (C40) before barcode creation. Developers often need to pre‑validate fields such as product codes or descriptions to avoid encoding errors. The snippet shows typical validation logic, field filtering, and barcode generation with Code128.
+// Title: Validate C40 character set for Mailmark 2D barcode fields
+// Description: Demonstrates how to validate non‑customer fields against the C40 character set before generating a Mailmark 2D barcode using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on complex barcode creation and data validation. It showcases the use of ComplexBarcodeGenerator, Mailmark2DCodetext, and BarCodeImageFormat classes to produce a Mailmark 2D barcode after ensuring required fields meet the C40 character set constraints. Developers working with postal barcodes often need to validate field content before encoding to avoid generation errors.
 // Prompt: Validate that all non‑customer fields conform to the C40 character set before generation.
-// Tags: barcode symbology, validation, c40, code128, png, aspose.barcode, generation
+// Tags: mailmark, c40, validation, barcode generation, aspose.barcode, complexbarcode, png
 
 using System;
 using System.Collections.Generic;
 using System.IO;
+using Aspose.BarCode.ComplexBarcode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates validation of non‑customer fields against the C40 character set and generates a Code128 barcode.
+/// Demonstrates validation of Mailmark 2D barcode fields against the C40 character set
+/// and generation of the barcode image using Aspose.BarCode.
 /// </summary>
 class Program
 {
-    // Allowed characters for C40 encoding: digits, uppercase letters, space and common punctuation.
-    private static readonly HashSet<char> C40AllowedChars = new HashSet<char>
-    {
-        ' ', '!', '"', '#', '$', '%', '&', '\'', '(', ')', '*', '+', ',', '-', '.', '/',
-        ':', ';', '<', '=', '>', '?'
-    };
-
     /// <summary>
-    /// Entry point that validates fields, ensures output directory, and creates a barcode image.
+    /// Entry point. Validates fields, generates barcode if validation passes, and writes output path.
     /// </summary>
     static void Main()
     {
-        // Sample data fields. Fields named "CustomerName" are considered customer fields and are excluded from validation.
-        var fields = new Dictionary<string, string>
+        // Define sample non‑customer fields for a Mailmark 2D barcode
+        var mailmark = new Mailmark2DCodetext
         {
-            { "CustomerName", "Acme Corp" },          // Customer field – skip validation
-            { "ProductCode", "ABC123" },              // Non‑customer field – must be C40 compliant
-            { "Description", "NEW PRODUCT! RELEASE" } // Non‑customer field – must be C40 compliant
+            UPUCountryID = "JGB ",
+            InformationTypeID = "0",
+            VersionID = "1",
+            Class = "1",
+            SupplyChainID = 123,
+            ItemID = 1234
         };
 
-        // Validate non‑customer fields.
-        foreach (var kvp in fields)
+        // Gather string fields that must conform to the C40 character set
+        var fieldsToValidate = new List<(string Name, string Value)>
         {
-            if (IsCustomerField(kvp.Key))
-                continue; // Skip customer fields.
+            ("UPUCountryID", mailmark.UPUCountryID),
+            ("InformationTypeID", mailmark.InformationTypeID),
+            ("VersionID", mailmark.VersionID),
+            ("Class", mailmark.Class)
+        };
 
-            if (!IsC40Compliant(kvp.Value))
+        // Perform validation and report any invalid fields
+        bool allValid = true;
+        foreach (var (name, value) in fieldsToValidate)
+        {
+            if (!IsC40Valid(value))
             {
-                Console.WriteLine($"Field \"{kvp.Key}\" contains characters not allowed in C40 encoding.");
-                // Abort further processing.
-                return;
+                Console.WriteLine($"Field '{name}' contains invalid characters for C40 set: \"{value}\"");
+                allValid = false;
             }
         }
 
-        // All validations passed – generate a barcode.
-        const string barcodeText = "VALIDDATA";
-        const string outputPath = "barcode.png";
-
-        // Ensure the output directory exists.
-        string outputDir = Path.GetDirectoryName(Path.GetFullPath(outputPath));
-        if (!Directory.Exists(outputDir))
+        // Abort generation if validation failed
+        if (!allValid)
         {
-            Directory.CreateDirectory(outputDir);
+            Console.WriteLine("Validation failed. Barcode will not be generated.");
+            return;
         }
 
-        // Create and configure the barcode generator.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, barcodeText))
+        // Generate the Mailmark 2D barcode and save it as a PNG file
+        string outputPath = Path.Combine(Path.GetTempPath(), "Mailmark2D.png");
+        using (var generator = new ComplexBarcodeGenerator(mailmark))
         {
-            // Example of setting a barcode property (XDimension) correctly.
-            generator.Parameters.Barcode.XDimension.Point = 2.5f;
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        Console.WriteLine($"Barcode generated successfully at \"{outputPath}\".");
+        Console.WriteLine($"Barcode generated successfully at: {outputPath}");
     }
 
-    // Determines whether a field name represents a customer field.
-    private static bool IsCustomerField(string fieldName)
+    // C40 character set: digits 0‑9, uppercase A‑Z, space
+    static bool IsC40Valid(string text)
     {
-        // Simple rule: field name contains the word "Customer".
-        return fieldName.IndexOf("Customer", StringComparison.OrdinalIgnoreCase) >= 0;
-    }
+        if (string.IsNullOrEmpty(text))
+            return true;
 
-    // Checks if a string contains only characters allowed in C40 encoding.
-    private static bool IsC40Compliant(string text)
-    {
         foreach (char ch in text)
         {
-            if (char.IsDigit(ch) || (ch >= 'A' && ch <= 'Z') || C40AllowedChars.Contains(ch))
+            if (ch == ' ')
                 continue;
-
-            // Lowercase letters are not part of C40; they must be converted or cause failure.
+            if (ch >= '0' && ch <= '9')
+                continue;
+            if (ch >= 'A' && ch <= 'Z')
+                continue;
             return false;
         }
         return true;

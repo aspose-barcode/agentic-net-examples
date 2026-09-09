@@ -1,8 +1,8 @@
-// Title: DataMatrix Barcode Encoding Comparison – Default vs UTF-8
-// Description: Demonstrates generating a DataMatrix barcode with the default automatic encoding and with an explicit UTF‑8 encoding, then compares image dimensions to assess capacity impact.
-// Category-Description: This example belongs to the Aspose.BarCode encoding and capacity assessment category. It showcases the use of BarcodeGenerator, EncodeTypes, and image handling classes (Bitmap, BarCodeImageFormat) to create barcodes, control text encoding, and evaluate how encoding choices affect barcode size. Developers often need to understand encoding effects when optimizing barcode data density for packaging, inventory, or document workflows.
+// Title: DotCode barcode encoding modes comparison
+// Description: Demonstrates encoding customer information using DotCode barcode with default auto mode and binary mode, and compares resulting image dimensions to illustrate capacity impact.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, focusing on DotCode symbology. It showcases how to use the BarcodeGenerator class with different EncodeMode settings (Auto and Binary) to encode data. Developers often need to evaluate how encoding choices affect barcode size and data capacity, especially when optimizing for space or readability.
 // Prompt: Encode customer information with an alternative encoding and assess its impact on barcode capacity.
-// Tags: datamatrix, barcode, encoding, capacity, aspose.barcode, image, png, c#
+// Tags: dotcode, encoding, png, barcodegenerator, dotcodeencodemode
 
 using System;
 using System.IO;
@@ -13,80 +13,60 @@ using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that creates DataMatrix barcodes using default and explicit UTF‑8 encoding
-/// and compares their image sizes to evaluate encoding impact on barcode capacity.
+/// Example program that generates DotCode barcodes using different encoding modes
+/// and compares the resulting image dimensions to evaluate capacity impact.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates two barcodes, saves them, and prints a size comparison.
+    /// Entry point of the application. Generates barcodes, saves them, and prints image sizes.
     /// </summary>
     static void Main()
     {
-        // Sample customer information to encode
-        string customerInfo = "John Doe, 123 Main St, City, Country";
+        // Prepare a unique temporary output folder for the generated barcode images
+        string outputFolder = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputFolder);
 
-        // File paths for the generated PNG images
-        string defaultPath = "customer_default.png";
-        string altPath = "customer_alt.png";
+        // Sample customer information to encode into the barcode
+        string customerInfo = "CustomerInfo123";
 
-        // ------------------------------------------------------------
-        // Generate barcode using the default (auto‑detected) encoding
-        // ------------------------------------------------------------
-        int defaultWidth, defaultHeight;
-        using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, customerInfo))
+        // ---------- Auto encoding (default) ----------
+        // Generate a DotCode barcode using the default Auto encoding mode
+        string autoPath = Path.Combine(outputFolder, "DotCode_Auto.png");
+        using (BarcodeGenerator autoGen = new BarcodeGenerator(EncodeTypes.DotCode, customerInfo))
         {
-            // Save the barcode image to a PNG file
-            generator.Save(defaultPath, BarCodeImageFormat.Png);
-
-            // Retrieve the image dimensions for capacity comparison
-            using (Bitmap bmp = generator.GenerateBarCodeImage())
-            {
-                defaultWidth = bmp.Width;
-                defaultHeight = bmp.Height;
-            }
+            // No additional settings required for Auto mode
+            autoGen.Save(autoPath, BarCodeImageFormat.Png);
         }
 
-        // ------------------------------------------------------------
-        // Generate barcode using an explicit UTF‑8 encoding via SetCodeText
-        // ------------------------------------------------------------
-        int altWidth, altHeight;
-        using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix))
+        // ---------- Binary encoding ----------
+        // Generate a DotCode barcode using Binary encoding mode for raw byte data
+        string binaryPath = Path.Combine(outputFolder, "DotCode_Binary.png");
+        using (BarcodeGenerator binaryGen = new BarcodeGenerator(EncodeTypes.DotCode))
         {
-            // Encode the same text with explicit UTF‑8 encoding
-            generator.SetCodeText(customerInfo, Encoding.UTF8);
+            // Set the encoding mode to Binary
+            binaryGen.Parameters.Barcode.DotCode.EncodeMode = DotCodeEncodeMode.Binary;
 
-            // Save the barcode image to a PNG file
-            generator.Save(altPath, BarCodeImageFormat.Png);
+            // Convert the customer information string to a UTF-8 byte array
+            byte[] dataBytes = Encoding.UTF8.GetBytes(customerInfo);
 
-            // Retrieve the image dimensions for capacity comparison
-            using (Bitmap bmp = generator.GenerateBarCodeImage())
-            {
-                altWidth = bmp.Width;
-                altHeight = bmp.Height;
-            }
+            // Assign the byte array as the barcode's code text
+            binaryGen.SetCodeText(dataBytes);
+
+            // Save the generated barcode image
+            binaryGen.Save(binaryPath, BarCodeImageFormat.Png);
         }
 
-        // ------------------------------------------------------------
-        // Output comparison results to the console
-        // ------------------------------------------------------------
-        Console.WriteLine("Barcode capacity assessment (image size reflects data capacity):");
-        Console.WriteLine($"Default encoding (auto):   {defaultWidth}x{defaultHeight} pixels");
-        Console.WriteLine($"Alternative UTF-8 encoding: {altWidth}x{altHeight} pixels");
-        Console.WriteLine();
-
-        if (defaultWidth == altWidth && defaultHeight == altHeight)
+        // ---------- Compare image dimensions ----------
+        // Load both generated images to assess the impact of encoding mode on barcode size
+        using (Bitmap autoBmp = new Bitmap(autoPath))
+        using (Bitmap binaryBmp = new Bitmap(binaryPath))
         {
-            Console.WriteLine("Both encodings produced identical image sizes; capacity impact is negligible.");
-        }
-        else
-        {
-            Console.WriteLine("Different image sizes indicate a capacity impact due to encoding differences.");
-            Console.WriteLine("Larger dimensions mean more modules were needed, reducing effective capacity.");
+            Console.WriteLine("Auto encoding image size:  {0}x{1} pixels", autoBmp.Width, autoBmp.Height);
+            Console.WriteLine("Binary encoding image size: {0}x{1} pixels", binaryBmp.Width, binaryBmp.Height);
         }
 
-        // Inform the user where the barcode images have been saved
-        Console.WriteLine($"Default barcode saved to: {Path.GetFullPath(defaultPath)}");
-        Console.WriteLine($"Alternative barcode saved to: {Path.GetFullPath(altPath)}");
+        // Optional cleanup: delete the temporary output folder and its contents
+        // Directory.Delete(outputFolder, true);
     }
 }

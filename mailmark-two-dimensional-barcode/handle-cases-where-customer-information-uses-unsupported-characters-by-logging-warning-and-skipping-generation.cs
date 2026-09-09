@@ -1,98 +1,56 @@
-// Title: Australia Post Barcode Generation with Customer Information Validation
-// Description: Demonstrates generating an Australia Post barcode while validating customer information for unsupported characters and skipping generation when invalid.
-// Category-Description: Shows how to use Aspose.BarCode to create Australia Post barcodes, covering the BarcodeGenerator class, encoding tables, and error handling. Typical use cases include postal services and logistics where customer data must conform to specific symbology rules. Developers often need to validate input, set encoding tables, and manage code‑text errors.
+// Title: Generate Planet Barcodes with Unsupported Character Handling
+// Description: Shows how to generate Planet barcodes while detecting unsupported characters, logging a warning, and skipping those entries.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and generation parameters to create barcode images. Developers often need to validate code text, handle invalid inputs, and produce image files for supported symbologies. The snippet demonstrates typical error handling patterns for barcode creation in .NET applications.
 // Prompt: Handle cases where customer information uses unsupported characters by logging a warning and skipping generation.
-// Tags: barcode, australia post, validation, customer information, aspose.barcode, encoding table, ctable, ntable, other, image output
+// Tags: barcode, planet, error-handling, generation, png, aspnet, aspose.barcode, c#
 
 using System;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates an Australia Post barcode after validating
-/// customer information against the selected interpreting type. If validation fails,
-/// a warning is logged and barcode generation is skipped.
+/// Demonstrates generating Planet barcodes and handling unsupported characters.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Performs validation and generates the barcode image.
+    /// Entry point. Generates barcodes for sample texts, logs warnings for invalid inputs, and saves valid images.
     /// </summary>
     static void Main()
     {
-        // Example customer information that may contain unsupported characters
-        string customerInfo = "ABC$123";
+        // Create a dedicated temporary folder for generated barcode images
+        string outputFolder = Path.Combine(Path.GetTempPath(), "Barcodes_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputFolder);
 
-        // Choose the interpreting type for the customer information field
-        var interpretingType = CustomerInformationInterpretingType.CTable;
+        // Sample code texts: one valid, one containing unsupported characters for the Planet symbology
+        string[] codeTexts = { "1234567", "1234567WRONG" };
 
-        // Validate the customer information against the selected interpreting type
-        if (!IsValidCustomerInfo(customerInfo, interpretingType))
+        // Iterate over each code text and attempt barcode generation
+        foreach (string codeText in codeTexts)
         {
-            // Log a warning and exit without generating the barcode
-            Console.WriteLine($"Warning: Customer information contains characters not allowed for {interpretingType}. Barcode generation skipped.");
-            return;
-        }
-
-        // Combine the mandatory part of the Australia Post code with the customer information
-        string fullCodeText = "5912345678" + customerInfo;
-
-        // Initialize the barcode generator for Australia Post symbology
-        using (var generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, fullCodeText))
-        {
-            // Set the interpreting type (CTable, NTable, or Other)
-            generator.Parameters.Barcode.AustralianPost.EncodingTable = interpretingType;
-
-            // Ensure that code‑text errors do not raise exceptions for this symbology
-            generator.Parameters.Barcode.ThrowExceptionWhenCodeTextIncorrect = false;
-
-            // Generate the barcode image (Aspose.Drawing.Bitmap)
-            using (Aspose.Drawing.Bitmap image = generator.GenerateBarCodeImage())
+            // Build the full file path for the output PNG image
+            string filePath = Path.Combine(outputFolder, $"Planet_{codeText}.png");
+            try
             {
-                // Save the generated image to a file
-                string outputPath = "AustraliaPost.png";
-                image.Save(outputPath);
-                Console.WriteLine($"Barcode saved to {outputPath}");
+                // Initialize the barcode generator with Planet symbology and the current code text
+                using (var generator = new BarcodeGenerator(EncodeTypes.Planet, codeText))
+                {
+                    // Configure the generator to throw an exception when the code text is invalid
+                    generator.Parameters.Barcode.ThrowExceptionWhenCodeTextIncorrect = true;
+
+                    // Save the generated barcode image to the specified file in PNG format
+                    generator.Save(filePath, BarCodeImageFormat.Png);
+                    Console.WriteLine($"Generated barcode saved to: {filePath}");
+                }
+            }
+            catch (Exception ex)
+            {
+                // Log a warning and skip generation for invalid code texts
+                Console.WriteLine($"Warning: Skipping generation for code text \"{codeText}\". Reason: {ex.Message}");
             }
         }
-    }
 
-    // Validates customer information according to the selected interpreting type
-    static bool IsValidCustomerInfo(string info, CustomerInformationInterpretingType type)
-    {
-        switch (type)
-        {
-            case CustomerInformationInterpretingType.CTable:
-                foreach (char c in info)
-                {
-                    // CTable allows letters, digits, space and '#'
-                    if (!(char.IsLetterOrDigit(c) || c == ' ' || c == '#'))
-                        return false;
-                }
-                return true;
-
-            case CustomerInformationInterpretingType.NTable:
-                foreach (char c in info)
-                {
-                    // NTable allows digits only
-                    if (!char.IsDigit(c))
-                        return false;
-                }
-                return true;
-
-            case CustomerInformationInterpretingType.Other:
-                // Other allows only 0‑3 symbols and a maximum length of 3
-                if (info.Length > 3) return false;
-                foreach (char c in info)
-                {
-                    if (c < '0' || c > '3')
-                        return false;
-                }
-                return true;
-
-            default:
-                return false;
-        }
+        Console.WriteLine("Processing completed.");
     }
 }
