@@ -1,82 +1,121 @@
-// Title: Checksum Validation Failure Handling for Optional Checksum Symbologies
-// Description: Demonstrates how to detect and handle checksum validation failures when reading a Code39 barcode generated without a checksum.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category, focusing on checksum validation for optional checksum symbologies such as Code39. It showcases the use of BarcodeGenerator, BarCodeReader, and related settings like IsChecksumEnabled and ChecksumValidation. Developers often need to ensure data integrity by enabling checksum validation during decoding and handling cases where the checksum is missing or incorrect.
+// Title: Checksum Validation Demo for Code39 Barcodes
+// Description: Demonstrates generating a Code39 barcode without a checksum and reading it with different checksum validation settings.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, showcasing how to work with optional checksum symbologies. It uses BarcodeGenerator for creating barcodes and BarCodeReader for decoding, focusing on the ChecksumValidation property. Developers often need to handle checksum failures when enforcing validation, especially for symbologies like Code39 where checksums are optional.
 // Prompt: Implement error handling for checksum failures when ChecksumValidation.On is set for optional checksum symbologies.
-// Tags: barcode symbology, checksum validation, code39, generation, recognition, aspnet, aspose.barcode
+// Tags: barcode symbology, checksum validation, code39, generation, recognition, aspose.barcode
 
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates a Code39 barcode without a checksum,
-/// then attempts to read it with checksum validation enabled to demonstrate error handling.
+/// Demonstrates barcode generation and checksum validation handling using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a barcode, validates its existence,
-    /// reads it with checksum validation turned on, and handles possible checksum failures.
+    /// Entry point of the example.
+    /// Generates a Code39 barcode without checksum, reads it with default and enforced checksum validation,
+    /// and handles possible checksum failures gracefully.
     /// </summary>
     static void Main()
     {
-        // Path where the generated barcode image will be saved
-        string barcodePath = "code39.png";
+        // Create a unique temporary folder for the demo files
+        string tempFolder = Path.Combine(Path.GetTempPath(), "ChecksumDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
+        string barcodePath = Path.Combine(tempFolder, "Code39_NoChecksum.png");
 
-        // ------------------------------------------------------------
-        // Generate a Code39 barcode without an optional checksum
-        // ------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code39, "ABC123"))
+        // Generate a Code39 barcode without checksum (optional checksum disabled)
+        try
         {
-            // Disable checksum generation for this optional checksum symbology
-            generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.No;
-
-            // Save the barcode image to the specified file
-            generator.Save(barcodePath);
+            using (BarcodeGenerator gen = new BarcodeGenerator(EncodeTypes.Code39, "123456"))
+            {
+                gen.Parameters.Barcode.XDimension.Pixels = 2;
+                gen.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.No;
+                gen.Save(barcodePath, BarCodeImageFormat.Png);
+                Console.WriteLine($"Barcode generated at: {barcodePath}");
+            }
         }
-
-        // ------------------------------------------------------------
-        // Verify that the barcode image was successfully created
-        // ------------------------------------------------------------
-        if (!File.Exists(barcodePath))
+        catch (Exception ex)
         {
-            Console.WriteLine($"Failed to create barcode image at '{barcodePath}'.");
+            Console.WriteLine($"Barcode generation failed: {ex.Message}");
             return;
         }
 
-        // ------------------------------------------------------------
-        // Read the barcode with checksum validation enabled
-        // ------------------------------------------------------------
-        using (var reader = new BarCodeReader(barcodePath, DecodeType.Code39))
+        // Verify that the barcode file was created
+        if (!File.Exists(barcodePath))
         {
-            // Turn on checksum validation for optional checksum symbologies
-            reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
+            Console.WriteLine("Generated barcode file not found.");
+            return;
+        }
 
-            // Attempt to decode the barcode(s) in the image
-            BarCodeResult[] results = reader.ReadBarCodes();
-
-            // If no results are returned, checksum validation likely failed
-            if (results == null || results.Length == 0)
+        // Read with ChecksumValidation.Default (checksum ignored) - should succeed
+        Console.WriteLine("\nReading with ChecksumValidation.Default (checksum ignored):");
+        try
+        {
+            using (BarCodeReader reader = new BarCodeReader(barcodePath, DecodeType.Code39))
             {
-                Console.WriteLine("Checksum validation failed: barcode could not be recognized.");
-            }
-            else
-            {
-                // Process each recognized barcode (unexpected when checksum is invalid)
-                foreach (var result in results)
+                reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.Default;
+                bool anyResult = false;
+                foreach (BarCodeResult result in reader.ReadBarCodes())
                 {
-                    Console.WriteLine($"BarCode Type: {result.CodeType}");
-                    Console.WriteLine($"BarCode CodeText: {result.CodeText}");
-
-                    // For 1D barcodes, the detected checksum (if any) is available here
-                    if (result.Extended?.OneD != null)
-                    {
-                        Console.WriteLine($"Detected Checksum: {result.Extended.OneD.CheckSum}");
-                    }
+                    anyResult = true;
+                    Console.WriteLine($"CodeType: {result.CodeTypeName}");
+                    Console.WriteLine($"CodeText: {result.CodeText}");
+                    Console.WriteLine($"1D Value: {result.Extended.OneD.Value}");
+                    Console.WriteLine($"1D CheckSum: {result.Extended.OneD.CheckSum}");
+                }
+                if (!anyResult)
+                {
+                    Console.WriteLine("No barcode detected.");
                 }
             }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Reading failed: {ex.Message}");
+        }
+
+        // Read with ChecksumValidation.On (checksum enforced) - should fail due to missing checksum
+        Console.WriteLine("\nReading with ChecksumValidation.On (checksum enforced):");
+        try
+        {
+            using (BarCodeReader reader = new BarCodeReader(barcodePath, DecodeType.Code39))
+            {
+                reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
+                bool anyResult = false;
+                foreach (BarCodeResult result in reader.ReadBarCodes())
+                {
+                    anyResult = true;
+                    Console.WriteLine($"CodeType: {result.CodeTypeName}");
+                    Console.WriteLine($"CodeText: {result.CodeText}");
+                    Console.WriteLine($"1D Value: {result.Extended.OneD.Value}");
+                    Console.WriteLine($"1D CheckSum: {result.Extended.OneD.CheckSum}");
+                }
+                if (!anyResult)
+                {
+                    // No valid barcode detected because checksum validation failed
+                    Console.WriteLine("Checksum validation failed: no valid barcode detected.");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Reading failed: {ex.Message}");
+        }
+
+        // Cleanup temporary files and folder (optional)
+        try
+        {
+            if (File.Exists(barcodePath))
+                File.Delete(barcodePath);
+            Directory.Delete(tempFolder, true);
+        }
+        catch
+        {
+            // Ignore cleanup errors
         }
     }
 }

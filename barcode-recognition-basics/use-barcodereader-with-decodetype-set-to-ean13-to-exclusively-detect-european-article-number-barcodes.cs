@@ -1,51 +1,85 @@
-// Title: Detect EAN13 barcodes using BarCodeReader
-// Description: Demonstrates generating an EAN13 barcode image and reading it back with DecodeType set to EAN13, ensuring only European Article Number symbology is detected.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category, showcasing the use of BarcodeGenerator for creating barcodes and BarCodeReader with specific DecodeType filtering. Developers often need to generate barcodes for product labeling and then validate or extract them from images, focusing on particular symbologies such as EAN13 for retail applications.
+// Title: Detect EAN13 Barcodes Using BarCodeReader
+// Description: Demonstrates generating an EAN13 barcode image and reading it with BarCodeReader configured to decode only EAN13 symbology.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator to create a PNG image of an EAN13 barcode and BarCodeReader with DecodeType.EAN13 to restrict detection to European Article Number barcodes. Developers working with product labeling, inventory systems, or retail applications frequently need to generate and read EAN13 codes, making these APIs essential for accurate barcode handling.
 // Prompt: Use BarCodeReader with DecodeType set to EAN13 to exclusively detect European Article Number barcodes.
-// Tags: ean13, barcode, generation, recognition, decode, aspose.barcode, csharp
+// Tags: ean13, barcode, decode, reader, generation, png, aspose.barcode
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating an EAN13 barcode image and reading it using <see cref="BarCodeReader"/> with <see cref="DecodeType.EAN13"/>.
+/// Sample program that creates an EAN13 barcode image and reads it using BarCodeReader
+/// with DecodeType set to EAN13, ensuring only European Article Number barcodes are detected.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates an EAN13 barcode, saves it, and reads it back exclusively as EAN13.
+    /// Entry point of the sample. Generates a temporary EAN13 barcode image,
+    /// reads it with a restricted decoder, outputs the results, and cleans up.
     /// </summary>
     static void Main()
     {
-        // Define the output file path for the generated barcode image.
-        string imagePath = "ean13.png";
+        // --------------------------------------------------------------------
+        // Create a temporary folder for the sample barcode image
+        // --------------------------------------------------------------------
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeSample_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
+        string imagePath = Path.Combine(tempFolder, "ean13.png");
 
-        // Create an EAN13 barcode with a valid 13‑digit value (including checksum) and save it as PNG.
-        using (var generator = new BarcodeGenerator(EncodeTypes.EAN13, "1234567890128"))
+        // --------------------------------------------------------------------
+        // Generate an EAN13 barcode image and save it as PNG
+        // --------------------------------------------------------------------
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.EAN13, "1234567890128"))
         {
+            // Set the X-dimension (module width) to 2 pixels for better readability
+            generator.Parameters.Barcode.XDimension.Pixels = 2f;
             generator.Save(imagePath, BarCodeImageFormat.Png);
         }
 
-        // Ensure the barcode image was successfully created before attempting to read it.
+        // --------------------------------------------------------------------
+        // Verify the image file exists before attempting to read it
+        // --------------------------------------------------------------------
         if (!File.Exists(imagePath))
         {
-            Console.WriteLine($"Error: Barcode image '{imagePath}' was not found.");
+            Console.WriteLine("Failed to create barcode image.");
             return;
         }
 
-        // Initialize a reader that is configured to decode only EAN13 symbology.
-        using (var reader = new BarCodeReader(imagePath, DecodeType.EAN13))
+        // --------------------------------------------------------------------
+        // Read the barcode using DecodeType.EAN13 to restrict detection to EAN13 only
+        // --------------------------------------------------------------------
+        using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.EAN13))
         {
-            // Iterate through all detected barcodes (expected to be a single EAN13 entry).
-            foreach (var result in reader.ReadBarCodes())
+            try
             {
-                Console.WriteLine($"Detected Type: {result.CodeTypeName}");
-                Console.WriteLine($"Code Text: {result.CodeText}");
+                foreach (BarCodeResult result in reader.ReadBarCodes())
+                {
+                    Console.WriteLine($"CodeType: {result.CodeTypeName}");
+                    Console.WriteLine($"CodeText: {result.CodeText}");
+                    Console.WriteLine($"Value: {result.Extended.OneD.Value}");
+                    Console.WriteLine($"CheckSum: {result.Extended.OneD.CheckSum}");
+                }
             }
+            catch (ArgumentException ex)
+            {
+                Console.WriteLine($"Error reading barcode: {ex.Message}");
+            }
+        }
+
+        // --------------------------------------------------------------------
+        // Clean up temporary files and folder
+        // --------------------------------------------------------------------
+        try
+        {
+            File.Delete(imagePath);
+            Directory.Delete(tempFolder);
+        }
+        catch
+        {
+            // Ignore cleanup errors
         }
     }
 }

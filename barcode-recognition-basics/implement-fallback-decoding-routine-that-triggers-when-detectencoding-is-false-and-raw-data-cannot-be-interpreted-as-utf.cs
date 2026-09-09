@@ -1,75 +1,93 @@
-// Title: QR Code Generation and Fallback Decoding with Aspose.BarCode
-// Description: Demonstrates creating a QR code containing Cyrillic text, saving it to a memory stream, and decoding it with custom encoding handling, including a fallback when UTF‑8 decoding fails.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes and BarCodeReader for extracting raw byte data. Developers often need to control text encoding, disable automatic detection, and implement fallback strategies for non‑UTF‑8 payloads, especially when handling international characters.
+// Title: QR Code Generation and Fallback Decoding with Custom Encoding
+// Description: Demonstrates generating a QR code using a custom Windows-1253 encoding and reading it with DetectEncoding disabled, applying a fallback decoding routine when the default UTF-8 interpretation fails.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes, BarCodeReader for scanning, and handling encoding issues with DetectEncoding. Developers often need to generate barcodes in non‑UTF8 encodings and reliably decode them across different systems, making fallback strategies essential.
 // Prompt: Implement a fallback decoding routine that triggers when DetectEncoding is false and raw data cannot be interpreted as UTF8.
-// Tags: qr, unicode, encoding, fallback, decoding, aspose.barcode, generation, recognition
+// Tags: qr code, custom encoding, fallback decoding, aspose.barcode, barcode generation, barcode recognition, c#
 
 using System;
 using System.IO;
 using System.Text;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Generates a QR code with Cyrillic text, saves it to a memory stream,
-/// and reads it back using a custom decoding routine that includes a fallback
-/// when UTF‑8 decoding is not possible.
+/// Demonstrates QR code generation with a custom encoding and fallback decoding when automatic encoding detection is disabled.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Performs barcode generation, saves to a stream,
-    /// and reads the barcode with explicit encoding handling.
+    /// Entry point of the example. Generates a QR code, reads it without automatic encoding detection,
+    /// and applies a fallback decoding routine if the decoded text contains replacement characters.
     /// </summary>
     static void Main()
     {
-        // Create a memory stream to hold the generated QR code image.
-        using (var ms = new MemoryStream())
+        // --------------------------------------------------------------------
+        // Prepare a unique temporary folder for the generated barcode image.
+        // --------------------------------------------------------------------
+        string tempFolder = Path.Combine(Path.GetTempPath(), "FallbackDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
+        string imagePath = Path.Combine(tempFolder, "customEncodingQR.png");
+
+        // --------------------------------------------------------------------
+        // Generate a QR code using the Windows-1253 (Greek) encoding.
+        // --------------------------------------------------------------------
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR))
         {
-            // Generate a QR code containing the Cyrillic word "Привет".
-            using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Привет"))
+            generator.Parameters.Barcode.XDimension.Pixels = 4; // Set module size.
+            string text = "AsposeΣΑΩ";
+            Encoding customEncoding = Encoding.GetEncoding(1253);
+            generator.SetCodeText(text, customEncoding); // Apply custom encoding.
+            generator.Save(imagePath, BarCodeImageFormat.Png); // Save as PNG.
+        }
+
+        Console.WriteLine("Barcode generated at: " + imagePath);
+        Console.WriteLine();
+
+        // --------------------------------------------------------------------
+        // Read the barcode with automatic encoding detection turned off.
+        // --------------------------------------------------------------------
+        using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.QR))
+        {
+            reader.BarcodeSettings.DetectEncoding = false; // Disable auto-detection.
+
+            foreach (BarCodeResult result in reader.ReadBarCodes())
             {
-                // Explicitly set the code text encoding to UTF‑8.
-                generator.SetCodeText("Привет", Encoding.UTF8);
-                // Save the QR code as a PNG image into the memory stream.
-                generator.Save(ms, BarCodeImageFormat.Png);
-            }
+                string rawText = result.CodeText;
+                // Determine if fallback decoding is needed (presence of replacement char �).
+                bool needsFallback = rawText != null && rawText.Contains('�');
 
-            // Reset the stream position to the beginning for reading.
-            ms.Position = 0;
-
-            // Initialize a barcode reader for QR codes, disabling automatic encoding detection.
-            using (var reader = new BarCodeReader(ms, DecodeType.QR))
-            {
-                reader.BarcodeSettings.DetectEncoding = false;
-
-                // Iterate over all detected barcodes (there should be only one in this example).
-                foreach (var result in reader.ReadBarCodes())
+                if (needsFallback)
                 {
-                    Console.WriteLine("=== Detected Barcode ===");
-                    Console.WriteLine("Symbology: " + result.CodeTypeName);
-
-                    // Attempt to decode the raw bytes using strict UTF‑8 decoding.
-                    string decodedText;
-                    var strictUtf8 = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
-                    try
-                    {
-                        decodedText = strictUtf8.GetString(result.CodeBytes);
-                        Console.WriteLine("Decoded (UTF-8): " + decodedText);
-                    }
-                    catch (DecoderFallbackException)
-                    {
-                        // Fallback: decode using Windows‑1252 (or any other appropriate fallback encoding).
-                        var fallbackEncoding = Encoding.GetEncoding(1252);
-                        decodedText = fallbackEncoding.GetString(result.CodeBytes);
-                        Console.WriteLine("Decoded (fallback encoding 1252): " + decodedText);
-                    }
-
-                    // Output the raw byte sequence for diagnostic purposes.
-                    Console.WriteLine("Raw bytes: " + BitConverter.ToString(result.CodeBytes));
+                    // Fallback decoding using the known custom encoding (Windows-1253).
+                    string fallbackText = result.GetCodeText(Encoding.GetEncoding(1253));
+                    Console.WriteLine("Fallback decoded text: " + fallbackText);
                 }
+                else
+                {
+                    Console.WriteLine("Decoded text: " + rawText);
+                }
+
+                Console.WriteLine("Code Type: " + result.CodeTypeName);
+                Console.WriteLine("Reading Quality: " + result.ReadingQuality);
+                Console.WriteLine();
             }
+        }
+
+        // --------------------------------------------------------------------
+        // Clean up temporary files (optional).
+        // --------------------------------------------------------------------
+        try
+        {
+            if (File.Exists(imagePath))
+                File.Delete(imagePath);
+            if (Directory.Exists(tempFolder))
+                Directory.Delete(tempFolder);
+        }
+        catch
+        {
+            // Ignore cleanup errors.
         }
     }
 }

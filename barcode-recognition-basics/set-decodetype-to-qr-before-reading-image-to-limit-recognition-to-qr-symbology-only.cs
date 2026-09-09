@@ -1,8 +1,8 @@
 // Title: QR Code Generation and QR-Only Decoding Example
-// Description: Demonstrates generating a QR barcode image and then decoding it while restricting recognition to QR symbology.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator for creating QR codes and BarCodeReader with DecodeType.QR to limit decoding to a specific symbology. Developers often need to generate barcodes and later read them efficiently, especially when only one type of barcode is expected, to improve performance and accuracy.
+// Description: Demonstrates generating a QR code image and reading it back while restricting the decoder to QR symbology only.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator to create QR codes and BarCodeReader to decode them. Developers often need to generate barcodes for data encoding and later scan images, sometimes limiting recognition to specific symbologies for performance or accuracy. The key API classes illustrated are BarcodeGenerator, BarCodeImageFormat, BarCodeReader, DecodeType, and BarCodeResult.
 // Prompt: Set DecodeType to QR before reading an image to limit recognition to QR symbology only.
-// Tags: barcode symbology, qr, generation, decoding, aspose.barcode, decode type
+// Tags: qr, barcode, generation, recognition, decode, aspose.barcode
 
 using System;
 using System.IO;
@@ -11,45 +11,70 @@ using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Generates a QR barcode image and reads it back, limiting the decoding process to QR symbology only.
+/// Generates a QR code image, reads it back using QR‑only decoding, and cleans up temporary files.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates a QR code, saves it as PNG, and then decodes it using QR‑only recognition.
+    /// Entry point of the example. Creates a temporary directory, generates a QR code, decodes it,
+    /// and then removes all temporary artifacts.
     /// </summary>
     static void Main()
     {
-        // Path where the generated QR image will be saved
-        string qrImagePath = "qr.png";
+        // Create a unique temporary folder for the demo files
+        string tempDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
 
-        // ------------------------------------------------------------
-        // Generate a QR barcode image
-        // ------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Hello QR"))
+        // Define the full path for the QR code image
+        string imagePath = Path.Combine(tempDir, "qr.png");
+
+        // -------------------------------------------------
+        // Generate a QR code image and save it as PNG
+        // -------------------------------------------------
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
         {
-            // Save the QR code as a PNG file
-            generator.Save(qrImagePath, BarCodeImageFormat.Png);
+            generator.Save(imagePath, BarCodeImageFormat.Png);
         }
 
-        // Verify that the image file was successfully created
-        if (!File.Exists(qrImagePath))
+        // Verify that the image was created successfully
+        if (!File.Exists(imagePath))
         {
-            Console.WriteLine("Failed to create QR image.");
+            Console.WriteLine("Failed to create barcode image.");
             return;
         }
 
-        // ------------------------------------------------------------
+        // -------------------------------------------------
         // Read the image, limiting recognition to QR symbology only
-        // ------------------------------------------------------------
-        using (var reader = new BarCodeReader(qrImagePath, DecodeType.QR))
+        // -------------------------------------------------
+        using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.QR))
         {
-            // Iterate through all detected barcodes (expected to be one QR code)
-            foreach (var result in reader.ReadBarCodes())
+            BarCodeResult[] results = reader.ReadBarCodes();
+
+            if (results.Length == 0)
             {
-                Console.WriteLine($"Detected Type: {result.CodeTypeName}");
-                Console.WriteLine($"Decoded Text: {result.CodeText}");
+                Console.WriteLine("No QR code detected.");
             }
+            else
+            {
+                foreach (BarCodeResult result in results)
+                {
+                    Console.WriteLine($"Detected Type: {result.CodeTypeName}");
+                    Console.WriteLine($"Code Text: {result.CodeText}");
+                }
+            }
+        }
+
+        // -------------------------------------------------
+        // Cleanup temporary files and directory
+        // -------------------------------------------------
+        try
+        {
+            File.Delete(imagePath);
+            Directory.Delete(tempDir);
+        }
+        catch
+        {
+            // Ignore any errors that occur during cleanup
         }
     }
 }

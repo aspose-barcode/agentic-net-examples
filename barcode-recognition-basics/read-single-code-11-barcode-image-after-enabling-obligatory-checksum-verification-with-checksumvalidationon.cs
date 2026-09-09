@@ -1,8 +1,8 @@
 // Title: Read Code 11 barcode with checksum validation
-// Description: Demonstrates reading a Code 11 barcode image while enforcing checksum verification using Aspose.BarCode.
-// Category-Description: This example belongs to the Aspose.BarCode barcode recognition and generation category. It showcases the use of BarcodeGenerator to create a Code 11 image and BarCodeReader with BarcodeSettings to validate mandatory checksums. Developers commonly need to generate barcodes for testing and then read them with strict checksum enforcement to ensure data integrity in logistics, inventory, and manufacturing systems.
+// Description: Generates a Code 11 barcode image and then reads it while enforcing mandatory checksum verification.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It demonstrates how to use BarcodeGenerator to create a 1‑D barcode, and BarCodeReader with ChecksumValidation.On to validate the checksum during decoding. Developers working with inventory, tracking, or legacy systems often need to ensure data integrity of Code 11 barcodes, making checksum validation a common requirement.
 // Prompt: Read a single Code 11 barcode image after enabling obligatory checksum verification with ChecksumValidation.On.
-// Tags: code11, barcode, read, checksum, aspose.barcode, generation, recognition
+// Tags: code11, barcode, checksum, generation, recognition, csharp, aspose.barcode
 
 using System;
 using System.IO;
@@ -11,55 +11,56 @@ using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Example program that generates (if needed) and reads a Code 11 barcode image
-/// with mandatory checksum validation enabled.
+/// Demonstrates generating a Code 11 barcode image and reading it back with checksum validation enabled.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a Code 11 barcode image if missing, then reads it
-    /// while enforcing checksum verification.
+    /// Entry point of the example. Creates a temporary folder, generates a barcode, and reads it while verifying the checksum.
     /// </summary>
     static void Main()
     {
-        // Path to the barcode image file
-        string imagePath = "code11.png";
+        // Create a unique temporary directory for the demo files
+        string tempDir = Path.Combine(Path.GetTempPath(), "Code11Demo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
 
-        // Generate a Code 11 barcode image if it does not already exist
-        if (!File.Exists(imagePath))
+        // Define the full path for the barcode image
+        string imagePath = Path.Combine(tempDir, "code11.png");
+
+        // -------------------------------------------------
+        // Generate a Code 11 barcode image and save it as PNG
+        // -------------------------------------------------
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code11, "123456"))
         {
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code11, "1234567890"))
-            {
-                // Save the generated barcode to a PNG file
-                generator.Save(imagePath);
-                Console.WriteLine($"Generated barcode image: {imagePath}");
-            }
+            // Set the X-dimension (module width) to 2 pixels for better readability
+            generator.Parameters.Barcode.XDimension.Pixels = 2f;
+
+            // Save the generated barcode to the specified file
+            generator.Save(imagePath, BarCodeImageFormat.Png);
         }
 
-        // Ensure the image file exists before attempting to read it
+        // Verify that the image file was created successfully
         if (!File.Exists(imagePath))
         {
-            Console.WriteLine($"Error: Barcode image file not found at '{imagePath}'.");
+            Console.WriteLine("Failed to create barcode image.");
             return;
         }
 
-        // Create a BarCodeReader for Code 11 with checksum validation enabled
-        using (var reader = new BarCodeReader(imagePath, DecodeType.Code11))
+        // -------------------------------------------------
+        // Read the barcode image with checksum validation turned on
+        // -------------------------------------------------
+        using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.Code11))
         {
-            // Enable obligatory checksum verification
+            // Enable mandatory checksum verification
             reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
 
-            // Iterate through all detected barcodes in the image
-            foreach (var result in reader.ReadBarCodes())
+            // Iterate through all detected barcodes (only one expected)
+            foreach (BarCodeResult result in reader.ReadBarCodes())
             {
-                Console.WriteLine("Detected Code 11 barcode:");
-                Console.WriteLine($"  CodeText: {result.CodeText}");
-
-                // If extended OneD data is available, display the checksum value
-                if (result.Extended?.OneD != null)
-                {
-                    Console.WriteLine($"  CheckSum: {result.Extended.OneD.CheckSum}");
-                }
+                Console.WriteLine($"CodeType: {result.CodeTypeName}");
+                Console.WriteLine($"CodeText: {result.CodeText}");
+                Console.WriteLine($"1D Value: {result.Extended.OneD.Value}");
+                Console.WriteLine($"1D CheckSum: {result.Extended.OneD.CheckSum}");
             }
         }
     }

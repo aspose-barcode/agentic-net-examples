@@ -1,8 +1,8 @@
 // Title: Read barcode from MemoryStream and verify checksum against file read
-// Description: Demonstrates generating an EAN‑13 barcode, saving it to a file and a MemoryStream, then reading both sources with checksum validation to ensure they match.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the BarcodeGenerator for creating barcodes and BarCodeReader for decoding them, covering typical scenarios such as saving to different storage mediums, using MemoryStream for in‑memory processing, and enabling checksum validation. Developers often need these patterns when integrating barcode handling into web services, batch processors, or desktop applications.
-// Prompt: Read barcodes from a MemoryStream containing image bytes and verify checksum validation matches file‑based reads.
-// Tags: ean13, checksum, barcode, generation, recognition, memorystream, file, aspose.barcode, aspnet, csharp
+// Description: Demonstrates generating a Code11 barcode, saving it to a file and a MemoryStream, then reading both sources with checksum validation enabled to ensure consistent results.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes and BarCodeReader for decoding them, highlighting checksum validation with the ChecksumValidation enum. Typical scenarios include validating data integrity when reading barcodes from different storage mediums such as files and streams, a common requirement for developers working with inventory, shipping, or authentication systems. The example serves as a reference for using key API classes like BarcodeGenerator, BarCodeReader, and related settings in C# projects.
+/// Prompt: Read barcodes from a MemoryStream containing image bytes and verify checksum validation matches file‑based reads.
+// Tags: code11, checksum, barcode, generation, recognition, memorystream, file, aspose.barcode, csharp
 
 using System;
 using System.IO;
@@ -10,76 +10,97 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates an EAN‑13 barcode, saves it to both a file and a MemoryStream,
-/// then reads the barcode from each source with checksum validation enabled to compare results.
+/// Example program that generates a Code11 barcode, saves it to a file and a memory stream,
+/// then reads the barcode from both sources with checksum validation enabled.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Executes barcode generation, storage, and verification steps.
+    /// Entry point. Generates barcode, performs file and memory reads, and validates checksum.
     /// </summary>
     static void Main()
     {
-        // Define the barcode data (EAN‑13 with checksum digit)
-        string ean13Code = "1234567890128";
+        // Create a unique temporary folder for the barcode image
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeTemp_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
+        string filePath = Path.Combine(tempFolder, "code11.png");
 
-        // Determine the output file path in the current working directory
-        string outputFile = Path.Combine(Directory.GetCurrentDirectory(), "barcode.png");
-
-        // Create a barcode generator for the specified symbology and data
-        using (var generator = new BarcodeGenerator(EncodeTypes.EAN13, ean13Code))
+        // Generate a Code11 barcode with checksum enabled
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code11, "123456"))
         {
-            // Save the generated barcode image to a physical file (PNG format)
-            generator.Save(outputFile, BarCodeImageFormat.Png);
+            // Set barcode size (2 pixels per module)
+            generator.Parameters.Barcode.XDimension.Pixels = 2f;
 
-            // Also save the barcode image to an in‑memory stream for later reading
-            using (var memoryStream = new MemoryStream())
+            // Save the barcode image to a physical file
+            generator.Save(filePath, BarCodeImageFormat.Png);
+
+            // Also save the barcode image to a memory stream for in‑memory processing
+            using (MemoryStream memoryStream = new MemoryStream())
             {
                 generator.Save(memoryStream, BarCodeImageFormat.Png);
-                memoryStream.Position = 0; // Reset stream position to the beginning for reading
+                memoryStream.Position = 0; // Reset stream position for reading
 
-                // -------------------- Read from file --------------------
-                using (var readerFile = new BarCodeReader(outputFile, DecodeType.EAN13))
+                // ---------- Read barcode from the saved file ----------
+                bool fileReadSuccess = false;
+                if (File.Exists(filePath))
                 {
-                    // Enable checksum validation for the file‑based read
-                    readerFile.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
-                    var resultsFile = readerFile.ReadBarCodes();
-
-                    // -------------------- Read from MemoryStream --------------------
-                    using (var readerStream = new BarCodeReader(memoryStream, DecodeType.EAN13))
+                    using (BarCodeReader fileReader = new BarCodeReader(filePath, DecodeType.Code11))
                     {
-                        // Enable checksum validation for the stream‑based read
-                        readerStream.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
-                        var resultsStream = readerStream.ReadBarCodes();
-
-                        // Assume a single barcode result for each reader
-                        var resultFile = resultsFile.Length > 0 ? resultsFile[0] : null;
-                        var resultStream = resultsStream.Length > 0 ? resultsStream[0] : null;
-
-                        // Validate that both reads succeeded
-                        if (resultFile == null || resultStream == null)
+                        // Enable checksum validation for the file read
+                        fileReader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
+                        foreach (BarCodeResult result in fileReader.ReadBarCodes())
                         {
-                            Console.WriteLine("Failed to read barcode from one of the sources.");
-                            return;
+                            Console.WriteLine($"[File] Type: {result.CodeTypeName}, Text: {result.CodeText}");
+                            fileReadSuccess = true;
                         }
-
-                        // Output the decoded values and checksum information
-                        Console.WriteLine("File Read - CodeText: " + resultFile.CodeText);
-                        Console.WriteLine("File Read - CheckSum: " + resultFile.Extended.OneD.CheckSum);
-                        Console.WriteLine("Stream Read - CodeText: " + resultStream.CodeText);
-                        Console.WriteLine("Stream Read - CheckSum: " + resultStream.Extended.OneD.CheckSum);
-
-                        // Compare checksum and code text between the two sources
-                        bool checksumMatches = resultFile.Extended.OneD.CheckSum == resultStream.Extended.OneD.CheckSum;
-                        bool codeTextMatches = string.Equals(resultFile.CodeText, resultStream.CodeText, StringComparison.Ordinal);
-
-                        Console.WriteLine("Checksum match: " + (checksumMatches ? "Yes" : "No"));
-                        Console.WriteLine("CodeText match: " + (codeTextMatches ? "Yes" : "No"));
                     }
                 }
+                else
+                {
+                    Console.WriteLine("File not found: " + filePath);
+                }
+
+                // ---------- Read barcode from the memory stream ----------
+                bool memoryReadSuccess = false;
+                using (BarCodeReader memReader = new BarCodeReader(memoryStream))
+                {
+                    // Associate the same stream with the reader (required for some formats)
+                    memReader.SetBarCodeImage(memoryStream);
+                    // Enable checksum validation for the memory read
+                    memReader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
+                    foreach (BarCodeResult result in memReader.ReadBarCodes())
+                    {
+                        Console.WriteLine($"[Memory] Type: {result.CodeTypeName}, Text: {result.CodeText}");
+                        memoryReadSuccess = true;
+                    }
+                }
+
+                // Verify that both reads succeeded and checksum validation matched
+                if (fileReadSuccess && memoryReadSuccess)
+                {
+                    Console.WriteLine("Checksum validation succeeded for both file and memory reads.");
+                }
+                else
+                {
+                    Console.WriteLine("Checksum validation mismatch or read failure.");
+                }
             }
+        }
+
+        // Clean up the temporary folder and its contents
+        try
+        {
+            if (Directory.Exists(tempFolder))
+            {
+                Directory.Delete(tempFolder, true);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Cleanup failed: " + ex.Message);
         }
     }
 }

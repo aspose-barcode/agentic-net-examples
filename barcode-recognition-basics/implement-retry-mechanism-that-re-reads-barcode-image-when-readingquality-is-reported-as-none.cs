@@ -1,93 +1,111 @@
-// Title: Retry barcode read on low quality
-// Description: Demonstrates generating a barcode image and reading it with a retry mechanism that re‑reads when the reading quality is reported as None.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It shows how to use BarcodeGenerator to create a barcode, BarCodeReader with DecodeType.AllSupportedTypes to detect barcodes, and QualitySettings to improve detection on retries. Developers often need to handle low‑confidence reads by adjusting quality settings and retrying until acceptable confidence is achieved.
+// Title: Retry barcode reading when quality is None
+// Description: Demonstrates how to retry reading a QR barcode image until a non‑None reading quality is obtained, using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode reading category, illustrating the use of BarCodeReader, DecodeType, and BarCodeResult to detect and evaluate barcode quality. Typical use cases include validating scan reliability in automated workflows where low‑quality reads must be retried. Developers often need to implement retry loops and inspect ReadingQuality to ensure accurate data extraction.
 // Prompt: Implement a retry mechanism that re‑reads a barcode image when ReadingQuality is reported as None.
-// Tags: barcode symbology, generation, recognition, retry, qualitysettings, code128, png, barcodereader, barcodegenerator
+// Tags: qr, barcode, reading, retry, readingquality, aspose.barcode, generation, recognition
 
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates a Code128 barcode image (if missing) and attempts to read it,
-/// retrying with higher quality settings when the reading quality is reported as None.
+/// Demonstrates retrying barcode reading when the reading quality is reported as None.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Implements the retry logic for barcode reading.
+    /// Entry point. Generates a sample QR barcode, then attempts to read it up to three times,
+    /// retrying when the reading quality is None.
     /// </summary>
     static void Main()
     {
-        const string imagePath = "sample_barcode.png";
-        const string codeText = "1234567890";
-        const int maxRetries = 3;
+        // Create a temporary file path for the barcode image
+        string tempImagePath = Path.Combine(Path.GetTempPath(), "barcode_" + Guid.NewGuid().ToString("N") + ".png");
+        GenerateSampleBarcode(tempImagePath);
 
-        // Ensure the barcode image exists; generate it if missing.
-        if (!File.Exists(imagePath))
+        // Verify that the image was created successfully
+        if (!File.Exists(tempImagePath))
         {
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
-            {
-                // Simple generation settings: set X-dimension and save as PNG.
-                generator.Parameters.Barcode.XDimension.Point = 2f;
-                generator.Save(imagePath, BarCodeImageFormat.Png);
-                Console.WriteLine($"Generated barcode image: {imagePath}");
-            }
+            Console.WriteLine("Failed to create barcode image.");
+            return;
         }
 
-        int attempt = 0;
-        bool success = false;
+        const int maxAttempts = 3; // Maximum number of read attempts
+        bool success = false;      // Flag indicating a successful read with acceptable quality
 
-        // Retry loop: attempt to read the barcode up to maxRetries times.
-        while (attempt < maxRetries && !success)
+        // Retry loop: attempt to read the barcode up to maxAttempts times
+        for (int attempt = 1; attempt <= maxAttempts; attempt++)
         {
-            attempt++;
-            Console.WriteLine($"Attempt {attempt} to read barcode...");
-
-            using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
+            // Initialize the reader for the generated image, specifying QR decoding
+            using (var reader = new BarCodeReader(tempImagePath, DecodeType.QR))
             {
-                // On retries, switch to a higher quality preset to improve detection.
-                if (attempt > 1)
-                {
-                    reader.QualitySettings = QualitySettings.HighQuality;
-                }
+                // Read all barcodes found in the image
+                BarCodeResult[] results = reader.ReadBarCodes();
 
-                // Perform the read operation.
-                var results = reader.ReadBarCodes();
-
+                // If no barcodes were detected, log and continue to next attempt
                 if (results.Length == 0)
                 {
-                    Console.WriteLine("No barcodes detected.");
-                    continue; // Proceed to next retry attempt.
+                    Console.WriteLine($"Attempt {attempt}: No barcode detected.");
+                    continue;
                 }
 
-                // Process each detected barcode.
+                // Evaluate each detected barcode result
                 foreach (var result in results)
                 {
-                    // ReadingQuality is a double; 0 indicates BarCodeConfidence.None.
-                    if (result.ReadingQuality == 0.0)
+                    Console.WriteLine($"Attempt {attempt}: CodeType={result.CodeTypeName}, CodeText={result.CodeText}, ReadingQuality={result.ReadingQuality}");
+
+                    // ReadingQuality.None is represented by 0; any other value indicates acceptable quality
+                    if (result.ReadingQuality != 0)
                     {
-                        Console.WriteLine("ReadingQuality is None (0). Will retry if attempts remain.");
-                        // Do not set success; loop will retry if attempts remain.
-                    }
-                    else
-                    {
-                        // Successful read with acceptable quality; output details.
-                        Console.WriteLine($"BarCode Type: {result.CodeTypeName}");
-                        Console.WriteLine($"BarCode CodeText: {result.CodeText}");
-                        Console.WriteLine($"ReadingQuality: {result.ReadingQuality}");
+                        Console.WriteLine("Barcode read with acceptable quality.");
                         success = true;
+                        break;
                     }
                 }
+
+                // If a successful read occurred, exit the retry loop
+                if (success) break;
+
+                // Otherwise, indicate that a retry will occur
+                Console.WriteLine($"Attempt {attempt}: ReadingQuality was None, retrying...");
             }
         }
 
-        // Final status message after all attempts.
+        // Report final outcome if all attempts failed to achieve acceptable quality
         if (!success)
         {
             Console.WriteLine("Failed to read barcode with sufficient quality after retries.");
+        }
+
+        // Clean up the temporary barcode image file
+        try
+        {
+            File.Delete(tempImagePath);
+        }
+        catch
+        {
+            // Suppress any exceptions during cleanup
+        }
+    }
+
+    /// <summary>
+    /// Generates a QR barcode image with the specified text and saves it to the given path.
+    /// </summary>
+    /// <param name="path">The file system path where the barcode image will be saved.</param>
+    private static void GenerateSampleBarcode(string path)
+    {
+        // Initialize the barcode generator with QR symbology and sample text
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Aspose.BarCode.Sample"))
+        {
+            // Optional: configure barcode appearance
+            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
+            generator.Parameters.BackColor = Aspose.Drawing.Color.White;
+            generator.Parameters.Resolution = 300f;
+
+            // Save the generated barcode as a PNG image
+            generator.Save(path, BarCodeImageFormat.Png);
         }
     }
 }

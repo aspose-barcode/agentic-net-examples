@@ -1,62 +1,86 @@
-// Title: Generate Code128 barcode and read with checksum validation off
-// Description: Demonstrates creating a Code128 barcode image and reading it while disabling checksum validation to show false positive detection handling.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category, illustrating the use of BarcodeGenerator for image creation and BarCodeReader with customizable settings such as ChecksumValidation. Developers often need to generate barcodes, save them in various formats, and later decode them while controlling validation behavior to handle imperfect scans or custom checksum requirements.
+// Title: Generate and Read Code11 Barcode with Checksum Validation Options
+// Description: Demonstrates generating a Code11 barcode image using BarcodeGenerator and then reading it twice—once with default checksum validation and once with checksum validation turned off—to illustrate false‑positive detection.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating one‑dimensional barcodes, BarCodeReader for decoding them, and the ChecksumValidation enum to control checksum handling. Typical scenarios include validating barcode data integrity during scanning and troubleshooting checksum‑related issues. Developers often need to toggle checksum validation to compare results or handle legacy barcodes.
 // Prompt: Generate a barcode with BarcodeGenerator, then read it using ChecksumValidation.Off to observe false positive detections.
-// Tags: code128, barcode generation, barcode recognition, checksumvalidation, off, png, aspose.barcode
+// Tags: code11, barcode, generation, recognition, checksumvalidation, off, default, aspose.barcode, png, csharp
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates barcode generation and reading with checksum validation disabled.
+/// Example program that creates a Code11 barcode, saves it as PNG, and reads it with different checksum validation settings.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a Code128 barcode image, then reads it with checksum validation turned off.
+    /// Entry point of the example.
     /// </summary>
     static void Main()
     {
-        // Define the file path where the barcode image will be saved
-        string imagePath = "sample.png";
+        // Create a unique temporary folder to store the generated barcode image
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
 
-        // Create a Code128 barcode containing the specified data and save it as a PNG file
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456789012"))
+        // Define the full path for the PNG image
+        string imagePath = Path.Combine(tempFolder, "code11.png");
+
+        // ------------------------------------------------------------
+        // Generate a Code11 barcode and save it as a PNG file
+        // ------------------------------------------------------------
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code11, "123456"))
         {
-            // Persist the generated barcode image to disk
+            // Set the X-dimension (module width) to 2 pixels for better readability
+            generator.Parameters.Barcode.XDimension.Pixels = 2;
+            // Save the barcode image to the specified path
             generator.Save(imagePath, BarCodeImageFormat.Png);
         }
 
-        // Verify that the image file was successfully created
-        if (!File.Exists(imagePath))
-        {
-            Console.WriteLine($"Failed to create barcode image at {imagePath}");
-            return;
-        }
+        Console.WriteLine("Barcode generated at: " + imagePath);
+        Console.WriteLine();
 
-        // Initialize a barcode reader for the saved image, targeting Code128 symbology
-        using (var reader = new BarCodeReader(imagePath, DecodeType.Code128))
+        // ------------------------------------------------------------
+        // Read the barcode with the default checksum validation setting
+        // ------------------------------------------------------------
+        Console.WriteLine("Reading with ChecksumValidation.Default:");
+        using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.Code11))
         {
-            // Turn off checksum validation to allow detection of barcodes even when checksums are incorrect
-            reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.Off;
+            // Apply the default checksum validation behavior
+            reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.Default;
 
-            // Iterate through all detected barcodes in the image
-            foreach (var result in reader.ReadBarCodes())
+            // Iterate through all detected barcodes (should be one in this case)
+            foreach (BarCodeResult result in reader.ReadBarCodes())
             {
-                // Output basic barcode information
-                Console.WriteLine($"Detected Type: {result.CodeType}");
+                Console.WriteLine($"CodeType: {result.CodeTypeName}");
                 Console.WriteLine($"CodeText: {result.CodeText}");
-
-                // If extended 1D barcode data is available, display value and checksum details
-                if (result.Extended != null && result.Extended.OneD != null)
-                {
-                    Console.WriteLine($"Value: {result.Extended.OneD.Value}");
-                    Console.WriteLine($"Checksum: {result.Extended.OneD.CheckSum}");
-                }
+                Console.WriteLine($"Checksum (OneD): {result.Extended.OneD.CheckSum}");
             }
         }
+
+        Console.WriteLine();
+
+        // ------------------------------------------------------------
+        // Read the same barcode with checksum validation turned off
+        // This may reveal false‑positive detections where the checksum is ignored
+        // ------------------------------------------------------------
+        Console.WriteLine("Reading with ChecksumValidation.Off:");
+        using (BarCodeReader readerOff = new BarCodeReader(imagePath, DecodeType.Code11))
+        {
+            // Disable checksum validation
+            readerOff.BarcodeSettings.ChecksumValidation = ChecksumValidation.Off;
+
+            foreach (BarCodeResult result in readerOff.ReadBarCodes())
+            {
+                Console.WriteLine($"CodeType: {result.CodeTypeName}");
+                Console.WriteLine($"CodeText: {result.CodeText}");
+                Console.WriteLine($"Checksum (OneD): {result.Extended.OneD.CheckSum}");
+            }
+        }
+
+        // Cleanup (optional): delete the temporary folder and its contents
+        // Directory.Delete(tempFolder, true);
     }
 }

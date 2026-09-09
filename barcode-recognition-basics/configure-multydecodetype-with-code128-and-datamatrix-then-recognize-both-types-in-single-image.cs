@@ -1,8 +1,8 @@
-// Title: Multi-Decode of Code128 and DataMatrix in a Single Image
-// Description: Demonstrates generating Code128 and DataMatrix barcodes, combining them into one PNG image, and recognizing both types using MultiDecodeType.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the BarcodeGenerator for creating barcodes, the Bitmap and Graphics classes for image composition, and the BarCodeReader with multiple DecodeType parameters for simultaneous detection. Developers often need to process mixed-symbology images, making multi‑decode a common requirement in inventory, logistics, and retail applications.
+// Title: Multi-Decode Barcode Recognition for Code128 and DataMatrix
+// Description: Demonstrates generating Code128 and DataMatrix barcodes, combining them into a single image, and configuring MultiDecodeType to recognize both symbologies in one scan.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes, Bitmap manipulation for image composition, and BarCodeReader with MultiDecodeType for detecting multiple barcode types in a single image. Developers often need to scan mixed symbology documents, and this pattern illustrates the typical workflow and key API classes (BarcodeGenerator, BarCodeReader, MultiDecodeType) required for such scenarios.
 // Prompt: Configure MultyDecodeType with Code128 and DataMatrix, then recognize both types in a single image.
-// Tags: barcode symbology, multi-decode, png, barcodegenerator, barcodereader, aspnet.barcode, aspnet.drawing
+// Tags: barcode, multidecode, code128, datamatrix, generation, recognition, aspose.barcode
 
 using System;
 using System.IO;
@@ -13,82 +13,83 @@ using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Generates Code128 and DataMatrix barcodes, merges them into a single image,
-/// and reads both barcode types using multi‑decode functionality.
+/// Example program that creates Code128 and DataMatrix barcodes, merges them into one image,
+/// and reads both types using MultiDecodeType.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates two barcodes, combines them, and decodes them.
+    /// Entry point that performs barcode generation, image composition, and multi‑type recognition.
     /// </summary>
     static void Main()
     {
-        // Sample texts for each barcode type
-        const string code128Text = "CODE128_SAMPLE";
-        const string dataMatrixText = "DATAMATRIX_SAMPLE";
+        // Create a unique temporary folder for all generated files
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeMultiDecode_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
 
-        // Generate Code128 barcode and store it in a memory stream
-        using (var code128Stream = new MemoryStream())
+        // Define file paths for the individual barcodes and the combined image
+        string code128Path = Path.Combine(tempFolder, "code128.png");
+        string dataMatrixPath = Path.Combine(tempFolder, "datamatrix.png");
+        string combinedPath = Path.Combine(tempFolder, "combined.png");
+
+        // Generate a Code128 barcode and save it as PNG
+        using (var generator128 = new BarcodeGenerator(EncodeTypes.Code128, "CODE128TEST"))
         {
-            using (var code128Generator = new BarcodeGenerator(EncodeTypes.Code128, code128Text))
+            generator128.Save(code128Path, BarCodeImageFormat.Png);
+        }
+
+        // Generate a DataMatrix barcode and save it as PNG
+        using (var generatorDM = new BarcodeGenerator(EncodeTypes.DataMatrix, "DATAMATRIXTEST"))
+        {
+            generatorDM.Save(dataMatrixPath, BarCodeImageFormat.Png);
+        }
+
+        // Combine the two barcode images side by side into a single bitmap
+        using (var bmp1 = new Bitmap(code128Path))
+        using (var bmp2 = new Bitmap(dataMatrixPath))
+        {
+            int combinedWidth = bmp1.Width + bmp2.Width;
+            int combinedHeight = Math.Max(bmp1.Height, bmp2.Height);
+            using (var combinedBmp = new Bitmap(combinedWidth, combinedHeight))
             {
-                code128Generator.Save(code128Stream, BarCodeImageFormat.Png);
+                using (var graphics = Graphics.FromImage(combinedBmp))
+                {
+                    graphics.Clear(Aspose.Drawing.Color.White);
+                    graphics.DrawImage(bmp1, 0, 0);
+                    graphics.DrawImage(bmp2, bmp1.Width, 0);
+                }
+                combinedBmp.Save(combinedPath, ImageFormat.Png);
             }
-            code128Stream.Position = 0; // Reset stream position for reading
+        }
 
-            // Generate DataMatrix barcode and store it in a separate memory stream
-            using (var dataMatrixStream = new MemoryStream())
+        // Ensure the combined image was created successfully before proceeding
+        if (!File.Exists(combinedPath))
+        {
+            Console.WriteLine("Failed to create combined barcode image.");
+            return;
+        }
+
+        // Configure MultiDecodeType to look for Code128 and DataMatrix symbologies
+        var multiDecode = new MultiDecodeType(DecodeType.Code128, DecodeType.DataMatrix);
+
+        // Read and display all recognized barcodes from the combined image
+        using (var reader = new BarCodeReader(combinedPath, multiDecode))
+        {
+            Console.WriteLine("Recognized barcodes:");
+            foreach (BarCodeResult result in reader.ReadBarCodes())
             {
-                using (var dataMatrixGenerator = new BarcodeGenerator(EncodeTypes.DataMatrix, dataMatrixText))
-                {
-                    dataMatrixGenerator.Save(dataMatrixStream, BarCodeImageFormat.Png);
-                }
-                dataMatrixStream.Position = 0; // Reset stream position for reading
-
-                // Load both barcode images as Bitmap objects
-                using (var code128Bitmap = new Bitmap(code128Stream))
-                using (var dataMatrixBitmap = new Bitmap(dataMatrixStream))
-                {
-                    // Determine dimensions for the combined image (side‑by‑side with a gap)
-                    const int gap = 20;
-                    int combinedWidth = code128Bitmap.Width + dataMatrixBitmap.Width + gap;
-                    int combinedHeight = Math.Max(code128Bitmap.Height, dataMatrixBitmap.Height);
-
-                    // Create a new bitmap to hold the combined image
-                    using (var combinedBitmap = new Bitmap(combinedWidth, combinedHeight))
-                    {
-                        // Draw the two barcodes onto the combined bitmap
-                        using (var graphics = Graphics.FromImage(combinedBitmap))
-                        {
-                            graphics.Clear(Color.White); // Set background to white
-                            graphics.DrawImage(code128Bitmap, 0, (combinedHeight - code128Bitmap.Height) / 2);
-                            graphics.DrawImage(dataMatrixBitmap, code128Bitmap.Width + gap, (combinedHeight - dataMatrixBitmap.Height) / 2);
-                        }
-
-                        // Save the combined image to disk
-                        const string combinedPath = "combined.png";
-                        combinedBitmap.Save(combinedPath, ImageFormat.Png);
-
-                        // Ensure the file was created before attempting to read it
-                        if (!File.Exists(combinedPath))
-                        {
-                            Console.WriteLine("Failed to create the combined barcode image.");
-                            return;
-                        }
-
-                        // Initialize the reader with both DecodeType values (multi‑decode)
-                        using (var reader = new BarCodeReader(combinedPath, DecodeType.Code128, DecodeType.DataMatrix))
-                        {
-                            // Iterate through all detected barcodes and output their details
-                            foreach (var result in reader.ReadBarCodes())
-                            {
-                                Console.WriteLine($"Detected Type: {result.CodeTypeName}");
-                                Console.WriteLine($"Decoded Text: {result.CodeText}");
-                            }
-                        }
-                    }
-                }
+                Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
             }
+        }
+
+        // Optional cleanup of temporary files and folder
+        try
+        {
+            Directory.Delete(tempFolder, true);
+        }
+        catch
+        {
+            // Suppress any errors during cleanup to avoid interrupting the program flow
         }
     }
 }

@@ -1,8 +1,8 @@
-// Title: Retrieve QR Code Confidence and Log to Diagnostics File
-// Description: Demonstrates generating a QR code, reading it, extracting the BarCodeResult.Confidence enumeration, and writing the value to a diagnostics log.
-// Category-Description: This example belongs to the Aspose.BarCode reading and generation category, showcasing how to use BarcodeGenerator, BarCodeReader, and BarCodeResult classes. Typical use cases include validating barcode quality, logging confidence levels for diagnostics, and integrating barcode verification into automated workflows. Developers often need to capture confidence metrics to assess scan reliability and troubleshoot scanning issues.
+// Title: Read QR Code and Log Confidence to Diagnostics File
+// Description: Demonstrates reading a QR code with Aspose.BarCode, extracting the Confidence value, and writing the details to a diagnostics text file.
+// Category-Description: This example belongs to the Aspose.BarCode reading and diagnostics category. It shows how to use BarcodeGenerator to create a QR code, BarCodeReader to decode it, and how to access BarCodeResult properties such as Confidence and ReadingQuality. Developers working with barcode scanning and quality assessment can use these APIs to log scan results for troubleshooting or analytics.
 // Prompt: Retrieve BarCodeResult.Confidence after reading a QR code and log the enumeration to a diagnostics file.
-// Tags: qr, confidence, barcode, reading, generation, diagnostics, logfile, aspose.barcode
+// Tags: qr code, barcode reading, confidence, diagnostics, aspose.barcode, barcodegeneration, barcoderecognition
 
 using System;
 using System.IO;
@@ -11,70 +11,65 @@ using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Example program that generates a QR code, reads it back, extracts the confidence level,
-/// and logs the result to a diagnostics file.
+/// Example program that generates a QR code, reads it back, and logs detailed scan information,
+/// including the confidence enumeration, to a diagnostics file.
 /// </summary>
 class Program
 {
     /// <summary>
     /// Entry point of the application.
-    /// Generates a QR code image, reads the barcode, logs the confidence enumeration,
-    /// and provides console feedback.
+    /// Generates a QR code image, reads it, extracts confidence data, and writes diagnostics.
     /// </summary>
     static void Main()
     {
-        // Define file paths for the QR image and the diagnostics log.
-        string imagePath = "qr.png";
-        string logPath = "diagnostics.txt";
+        // --------------------------------------------------------------------
+        // Prepare temporary folder and file paths for the QR image and diagnostics.
+        // --------------------------------------------------------------------
+        string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
+        string qrImagePath = Path.Combine(tempFolder, "sample_qr.png");
+        string diagnosticsPath = Path.Combine(tempFolder, "diagnostics.txt");
 
-        // Clean up any previous run artifacts to ensure a fresh start.
-        if (File.Exists(imagePath))
+        // --------------------------------------------------------------------
+        // Generate a QR code image using BarcodeGenerator.
+        // --------------------------------------------------------------------
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "Aspose.BarCode Demo"))
         {
-            File.Delete(imagePath);
-        }
-        if (File.Exists(logPath))
-        {
-            File.Delete(logPath);
-        }
-
-        // Generate a QR code containing sample text and save it to disk.
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "Sample QR Code"))
-        {
-            generator.Save(imagePath);
+            generator.Parameters.Barcode.XDimension.Pixels = 4; // Set module size.
+            generator.Save(qrImagePath, BarCodeImageFormat.Png);
         }
 
-        // Verify that the QR code image was successfully created before attempting to read it.
-        if (!File.Exists(imagePath))
+        // --------------------------------------------------------------------
+        // Read the QR code image and retrieve the Confidence value for each result.
+        // --------------------------------------------------------------------
+        if (File.Exists(qrImagePath))
         {
-            Console.WriteLine("Failed to create QR code image.");
-            return;
-        }
-
-        // Initialize a barcode reader for QR codes and process the generated image.
-        using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.QR))
-        {
-            foreach (BarCodeResult result in reader.ReadBarCodes())
+            using (BarCodeReader reader = new BarCodeReader(qrImagePath, DecodeType.QR))
             {
-                // Retrieve the confidence enumeration from the read result.
-                BarCodeConfidence confidence = result.Confidence;
+                foreach (BarCodeResult result in reader.ReadBarCodes())
+                {
+                    // Build a log entry containing all relevant result information.
+                    string logEntry = $"File: {qrImagePath}{Environment.NewLine}" +
+                                      $"CodeType: {result.CodeTypeName}{Environment.NewLine}" +
+                                      $"CodeText: {result.CodeText}{Environment.NewLine}" +
+                                      $"Confidence: {result.Confidence}{Environment.NewLine}" +
+                                      $"ReadingQuality: {result.ReadingQuality}{Environment.NewLine}" +
+                                      $"---{Environment.NewLine}";
 
-                // Build a log entry string containing the confidence value.
-                string logEntry = $"BarCode Confidence: {confidence}";
-
-                // Append the log entry to the diagnostics file.
-                File.AppendAllText(logPath, logEntry + Environment.NewLine);
-
-                // Output the log entry to the console for immediate visibility.
-                Console.WriteLine(logEntry);
+                    // Append the entry to the diagnostics file.
+                    File.AppendAllText(diagnosticsPath, logEntry);
+                }
             }
         }
-
-        // If no barcode was detected, write a warning message to the diagnostics file and console.
-        if (!File.Exists(logPath) || new FileInfo(logPath).Length == 0)
+        else
         {
-            string warning = "No barcode detected or confidence could not be retrieved.";
-            File.AppendAllText(logPath, warning + Environment.NewLine);
-            Console.WriteLine(warning);
+            // Log an error if the QR image could not be found.
+            File.WriteAllText(diagnosticsPath, $"QR image not found at {qrImagePath}{Environment.NewLine}");
         }
+
+        // --------------------------------------------------------------------
+        // Inform the user where the diagnostics file has been written.
+        // --------------------------------------------------------------------
+        Console.WriteLine($"Diagnostics written to: {diagnosticsPath}");
     }
 }

@@ -1,84 +1,79 @@
-// Title: Count Unique Barcodes and Display Their Positions
-// Description: Generates a Code128 barcode image, recognizes all barcodes in the image, counts unique entries, and prints each barcode's text with its location.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It demonstrates how to use BarcodeGenerator to create barcodes and BarCodeReader to detect them, covering typical use cases such as inventory scanning, document processing, and quality control where developers need to extract barcode data and spatial information from images.
+// Title: Count Unique Barcodes and Show Their Positions after Recognition
+// Description: Demonstrates how to generate sample barcodes, recognize them using Aspose.BarCode, count distinct barcode texts, and output each barcode's location within the image.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category. It showcases the use of BarcodeGenerator for creating barcodes, BarCodeReader for decoding, and the FoundBarCodes collection to retrieve detailed results such as code type, text, and region coordinates. Developers often need to process multiple images, identify unique barcodes, and obtain their positions for inventory, tracking, or quality‑control applications.
 // Prompt: Access FoundBarCodes collection after recognition to count unique barcodes and display their positions.
-// Tags: code128, barcode recognition, console output, barcodelibrary, barcodelgeneration, barcoderecognition
+// Tags: barcode symbology, recognition, uniqueness, position, aspose.barcode, csharp, generation, decoding
 
 using System;
 using System.IO;
-using System.Linq;
+using System.Collections.Generic;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates barcode generation, recognition, unique count, and position reporting using Aspose.BarCode.
+/// Example program that generates barcode images, reads them back,
+/// counts unique barcode texts, and prints each barcode's position.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a barcode, reads it, counts unique codes, and prints their positions.
+    /// Entry point of the application.
     /// </summary>
     static void Main()
     {
-        // Define a temporary file path for the generated barcode image.
-        string imagePath = "sample_barcode.png";
+        // Create a temporary folder for sample barcode images
+        string tempFolder = Path.Combine(Path.GetTempPath(), "Barcodes_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
 
-        // Generate a Code128 barcode image with the text "ABC123".
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "ABC123"))
+        // Define sample barcode data (including duplicates to test uniqueness)
+        var samples = new (string Text, BaseEncodeType Type)[]
         {
-            generator.Save(imagePath);
-        }
+            ("ABC123", EncodeTypes.Code128),
+            ("XYZ789", EncodeTypes.QR),
+            ("ABC123", EncodeTypes.DataMatrix)
+        };
 
-        // Verify that the image file was successfully created.
-        if (!File.Exists(imagePath))
+        var imageFiles = new List<string>();
+
+        // Generate barcode images and store their file paths
+        foreach (var sample in samples)
         {
-            Console.WriteLine("Failed to create barcode image.");
-            return;
-        }
-
-        // Initialize a barcode reader to detect all supported barcode types in the image.
-        using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
-        {
-            // Perform the recognition process.
-            reader.ReadBarCodes();
-
-            // Retrieve the collection of detected barcodes.
-            var foundBarCodes = reader.FoundBarCodes;
-            int totalDetected = foundBarCodes?.Length ?? 0;
-            Console.WriteLine($"Total barcodes detected: {totalDetected}");
-
-            // Exit early if no barcodes were found.
-            if (totalDetected == 0)
+            string filePath = Path.Combine(tempFolder, $"{sample.Text}_{Guid.NewGuid().ToString("N")}.png");
+            using (var generator = new BarcodeGenerator(sample.Type, sample.Text))
             {
-                return;
+                generator.Save(filePath, BarCodeImageFormat.Png);
             }
+            imageFiles.Add(filePath);
+        }
 
-            // Determine the number of unique barcodes based on their CodeText values.
-            var uniqueBarCodes = foundBarCodes
-                .GroupBy(r => r.CodeText)
-                .Select(g => g.First())
-                .ToArray();
+        var uniqueBarcodes = new HashSet<string>();
 
-            Console.WriteLine($"Unique barcodes count: {uniqueBarCodes.Length}");
-
-            // Iterate through all detected barcodes and display their text and bounding rectangle.
-            foreach (var result in foundBarCodes)
+        // Recognize barcodes in each image and display their positions
+        foreach (string file in imageFiles)
+        {
+            using (var reader = new BarCodeReader(file, DecodeType.AllSupportedTypes))
             {
-                var rect = result.Region.Rectangle;
-                Console.WriteLine($"CodeText: {result.CodeText}");
-                Console.WriteLine($"Position - X:{rect.X}, Y:{rect.Y}, Width:{rect.Width}, Height:{rect.Height}");
-                Console.WriteLine();
+                // Perform recognition; results are stored in FoundBarCodes
+                reader.ReadBarCodes();
+
+                foreach (BarCodeResult result in reader.FoundBarCodes)
+                {
+                    Console.WriteLine($"File: {Path.GetFileName(file)}");
+                    Console.WriteLine($"Type: {result.CodeTypeName}, Text: {result.CodeText}");
+
+                    // Extract rectangle region and angle information
+                    var rect = result.Region.Rectangle;
+                    Console.WriteLine($"Position: X={rect.X}, Y={rect.Y}, Width={rect.Width}, Height={rect.Height}, Angle={result.Region.Angle}");
+                    Console.WriteLine();
+
+                    // Add barcode text to the set of unique values
+                    uniqueBarcodes.Add(result.CodeText);
+                }
             }
         }
 
-        // Clean up the temporary image file.
-        try
-        {
-            File.Delete(imagePath);
-        }
-        catch
-        {
-            // Suppress any exceptions that occur during cleanup.
-        }
+        // Output the total count of distinct barcode texts found
+        Console.WriteLine($"Unique barcodes count: {uniqueBarcodes.Count}");
     }
 }
