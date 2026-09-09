@@ -38,7 +38,7 @@ Before opening a PR, validate that the example builds and runs against the pinne
 mkdir /tmp/barcode-validate && cd /tmp/barcode-validate
 dotnet new console --framework net10.0
 cp /path/to/your-example.cs Program.cs
-dotnet add package Aspose.BarCode --version 26.7.0
+dotnet add package Aspose.BarCode --version 26.8.0
 dotnet build --nologo /p:WarningLevel=0
 dotnet run --no-build || true   # runtime failure on missing input is OK
 ```

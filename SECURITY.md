@@ -8,8 +8,8 @@ shipped in this repository:
 
 | Version   | Supported         |
 |-----------|-------------------|
-| 26.7.0    | :white_check_mark: |
-| < 26.7.0 | :x:                |
+| 26.8.0    | :white_check_mark: |
+| < 26.8.0 | :x:                |
 
 Only the latest published Aspose.BarCode NuGet is tracked for issues that
 originate in these examples. For vulnerabilities in the Aspose.BarCode for
