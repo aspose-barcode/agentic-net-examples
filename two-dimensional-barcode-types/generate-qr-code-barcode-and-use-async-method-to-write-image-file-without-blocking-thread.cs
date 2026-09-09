@@ -1,72 +1,57 @@
-// Title: Generate QR Code and Save Asynchronously with Aspose.BarCode
-// Description: Demonstrates generating a QR Code barcode using Aspose.BarCode and writing the resulting PNG image to disk asynchronously, avoiding thread blocking.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category. It showcases the use of BarcodeGenerator to create QR Code images, Aspose.Drawing.Bitmap for image handling, and asynchronous file I/O to persist the image without blocking the calling thread. Developers commonly use these APIs to integrate barcode creation into web services, background jobs, or UI applications where responsiveness is critical.
+// Title: Generate QR Code and Save Asynchronously to PNG
+// Description: Demonstrates creating a QR Code barcode with Aspose.BarCode, adjusting its module size, and writing the PNG image to disk using async I/O to avoid blocking the thread.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category. It shows how to use the BarcodeGenerator class with EncodeTypes.QR to produce QR Code symbology, configure visual parameters via the Parameters property, and persist the result in PNG format. Developers often need to generate barcodes on‑the‑fly and write them to storage without blocking, making async file streams a common pattern in high‑throughput or UI‑responsive applications.
 // Prompt: Generate QR Code barcode and use async method to write image file without blocking thread.
-// Tags: qr code, barcode generation, async, png, aspose.barcode, aspose.drawing
+// Tags: qr, barcode, generation, async, png, aspose.barcode
 
 using System;
 using System.IO;
 using System.Threading.Tasks;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that creates a QR Code barcode and saves it to a PNG file asynchronously.
+/// Example program that generates a QR Code barcode and saves it asynchronously as a PNG file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a QR Code and writes it to a temporary file without blocking the thread.
+    /// Entry point. Generates the QR Code and writes it to disk without blocking the calling thread.
     /// </summary>
     /// <param name="args">Command‑line arguments (not used).</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
     static async Task Main(string[] args)
     {
-        // Define the text to encode in the QR Code.
-        string codeText = "Hello Aspose QR Code";
+        // Determine the full path for the output PNG file.
+        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "qr_code.png");
 
-        // Determine a temporary file path for the output PNG image.
-        string outputPath = Path.Combine(Path.GetTempPath(), "qr_code.png");
-
-        // Create a BarcodeGenerator for QR Code symbology.
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR))
+        // Create a BarcodeGenerator for QR Code with the desired text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Sample QR Code"))
         {
-            // Assign the text to be encoded.
-            generator.CodeText = codeText;
+            // Optional: adjust the size of each QR module (pixel dimension).
+            generator.Parameters.Barcode.XDimension.Pixels = 4f;
 
-            // Generate the barcode image as a Bitmap.
-            using (Bitmap bitmap = generator.GenerateBarCodeImage())
+            // Render the barcode into a memory stream in PNG format.
+            using (var memoryStream = new MemoryStream())
             {
-                // Save the bitmap to disk asynchronously.
-                await SaveBitmapAsync(bitmap, outputPath);
+                generator.Save(memoryStream, BarCodeImageFormat.Png);
+                memoryStream.Position = 0; // Reset stream position for reading.
+
+                // Asynchronously copy the memory stream to a file stream.
+                await using (var fileStream = new FileStream(
+                    outputPath,
+                    FileMode.Create,
+                    FileAccess.Write,
+                    FileShare.None,
+                    bufferSize: 81920,
+                    useAsync: true))
+                {
+                    await memoryStream.CopyToAsync(fileStream);
+                }
             }
         }
 
         // Inform the user where the file was saved.
-        Console.WriteLine($"QR code saved to: {outputPath}");
-    }
-
-    // Asynchronously saves a bitmap to a file using a memory stream.
-    private static async Task SaveBitmapAsync(Bitmap bitmap, string filePath)
-    {
-        // Copy the bitmap into a memory stream in PNG format.
-        using (var memoryStream = new MemoryStream())
-        {
-            bitmap.Save(memoryStream, ImageFormat.Png);
-            memoryStream.Position = 0;
-
-            // Open a file stream with async support and write the memory stream contents.
-            using (var fileStream = new FileStream(
-                filePath,
-                FileMode.Create,
-                FileAccess.Write,
-                FileShare.None,
-                bufferSize: 81920,
-                useAsync: true))
-            {
-                await memoryStream.CopyToAsync(fileStream);
-            }
-        }
+        Console.WriteLine($"QR Code saved to: {outputPath}");
     }
 }

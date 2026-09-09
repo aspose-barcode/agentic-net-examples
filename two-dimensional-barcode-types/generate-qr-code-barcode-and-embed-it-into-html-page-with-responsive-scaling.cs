@@ -1,77 +1,69 @@
 // Title: Generate QR Code and embed in responsive HTML page
-// Description: This example creates a QR Code barcode, saves it as a PNG image, and generates an HTML file that displays the image with responsive scaling.
-// Category-Description: Demonstrates Aspose.BarCode generation of QR Code symbology, configuring error correction and module size, and embedding the resulting image into an HTML page. Key API classes include BarcodeGenerator, EncodeTypes, BarCodeImageFormat, and generator parameters. Typical use cases involve creating scannable QR codes for web pages, marketing materials, or mobile apps where responsive display is required. Developers often need to customize barcode appearance and integrate the output into web content.
+// Description: Demonstrates creating a QR Code barcode image using Aspose.BarCode and embedding it into an HTML file that scales responsively.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, showcasing how to use the BarcodeGenerator class with QR symbology, configure parameters like XDimension and error correction level, and save the barcode as an image. Typical use cases include generating QR codes for URLs, product information, or authentication, and integrating them into web pages with responsive design. Developers often need to generate barcode images programmatically and embed them in HTML for cross‑platform display.
 // Prompt: Generate QR Code barcode and embed it into an HTML page with responsive scaling.
-// Tags: qr code, barcode generation, html embedding, responsive, aspose.barcode, png, csharp
+// Tags: qr code, barcode generation, html embedding, responsive design, aspose.barcode, encode types, png output
 
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a QR Code barcode and embedding it into a responsive HTML page.
+/// Demonstrates generating a QR Code barcode image and embedding it into a responsive HTML page.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates the QR Code image, creates an HTML file, and writes output paths to console.
+    /// Entry point. Generates QR code, saves image, creates HTML, and writes output paths.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder for the output files
-        string outputFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(outputFolder);
+        // Define output directory and ensure it exists
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "output");
+        Directory.CreateDirectory(outputDir);
 
-        // Define file paths for the QR image and the HTML page
-        string imagePath = Path.Combine(outputFolder, "qr.png");
-        string htmlPath = Path.Combine(outputFolder, "index.html");
+        // Paths for the QR image and the HTML file
+        string qrImagePath = Path.Combine(outputDir, "qr.png");
+        string htmlPath = Path.Combine(outputDir, "qr.html");
+        string codeText = "https://example.com";
 
-        // Generate a QR Code barcode
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
+        // Generate QR Code barcode with specific parameters
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, codeText))
         {
-            // Set a high error correction level for better readability when the image is scaled
+            // Set module size (XDimension) in pixels
+            generator.Parameters.Barcode.XDimension.Pixels = 4f;
+            // Use high error correction level
             generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
-
-            // Optionally set the module (dot) size
-            generator.Parameters.Barcode.XDimension.Point = 3f;
-
             // Save the barcode as a PNG image
-            generator.Save(imagePath, BarCodeImageFormat.Png);
+            generator.Save(qrImagePath, BarCodeImageFormat.Png);
         }
 
-        // Build an HTML page that displays the QR code responsively
+        // Build HTML content that references the generated QR image and scales responsively
         string htmlContent = $@"<!DOCTYPE html>
 <html>
 <head>
-    <meta charset=""utf-8"">
-    <title>QR Code Demo</title>
-    <style>
-        .qr-img {{
-            max-width: 100%;
-            height: auto;
-            display: block;
-            margin: 0 auto;
-        }}
-        body {{
-            font-family: Arial, Helvetica, sans-serif;
-            text-align: center;
-            padding: 20px;
-        }}
-    </style>
+<meta charset=""UTF-8"">
+<title>QR Code</title>
+<style>
+    .qr-img {{
+        max-width: 100%;
+        height: auto;
+        display: block;
+        margin: 0 auto;
+    }}
+</style>
 </head>
 <body>
-    <h1>Responsive QR Code</h1>
-    <img src=""{Path.GetFileName(imagePath)}"" alt=""QR Code"" class=""qr-img"" />
+<img src=""{Path.GetFileName(qrImagePath)}"" class=""qr-img"" alt=""QR Code""/>
 </body>
 </html>";
 
-        // Write the HTML content to a file
+        // Write the HTML file to disk
         File.WriteAllText(htmlPath, htmlContent);
 
-        // Inform the user where the files were saved
-        Console.WriteLine("QR code image saved to: " + imagePath);
-        Console.WriteLine("HTML page saved to: " + htmlPath);
+        // Output the locations of the generated files
+        Console.WriteLine($"Generated QR code image at: {qrImagePath}");
+        Console.WriteLine($"Generated HTML page at: {htmlPath}");
     }
 }

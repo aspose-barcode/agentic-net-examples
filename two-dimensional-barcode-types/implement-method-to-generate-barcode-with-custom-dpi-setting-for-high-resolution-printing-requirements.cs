@@ -1,71 +1,63 @@
 // Title: Generate high‑resolution barcode with custom DPI
-// Description: Demonstrates creating a Code128 barcode image at a specified DPI for high‑resolution printing.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showing how to configure the Resolution property of BarcodeGenerator to produce high‑resolution images. It covers using BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes, typical for scenarios like printing labels, packaging, or documents where barcode clarity at high DPI is required. Developers often need to adjust DPI to meet printer specifications or quality standards.
+// Description: Demonstrates creating a Code128 barcode image with a specified DPI for high‑resolution printing.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showing how to configure barcode parameters such as module size and image resolution. It uses BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes. Typical use cases include producing print‑ready barcodes for labels, packaging, or documents where high DPI is required. Developers often need to adjust DPI to meet printer specifications or to ensure crisp rendering in high‑quality outputs.
 // Prompt: Implement method to generate barcode with custom DPI setting for high‑resolution printing requirements.
-// Tags: barcode, code128, dpi, high‑resolution, generation, aspose.barcode, image, png
+// Tags: barcode, code128, high resolution, dpi, generation, png, aspose.barcode, aspose.drawing
 
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates a barcode image with a custom DPI setting for high‑resolution output.
+/// Demonstrates generating a high‑resolution Code128 barcode image with a custom DPI setting.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a barcode and saves it to a temporary PNG file.
+    /// Entry point that creates a temporary folder, generates the barcode, and writes the output path.
     /// </summary>
     static void Main()
     {
-        // Define sample data: text to encode, output file path, and desired DPI.
-        string codeText = "1234567890";
-        string outputFile = Path.Combine(Path.GetTempPath(), "barcode_highres.png");
-        float dpi = 300f; // Custom DPI for high‑resolution printing
+        // Create a unique temporary directory for the output file
+        string tempDir = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
 
-        try
-        {
-            // Generate the barcode image with the specified parameters.
-            GenerateBarcode(codeText, outputFile, dpi);
-            Console.WriteLine($"Barcode generated and saved to: {outputFile}");
-        }
-        catch (Exception ex)
-        {
-            // Output any errors that occur during generation.
-            Console.WriteLine($"Error: {ex.Message}");
-        }
+        // Define the full path for the generated PNG image
+        string outputPath = Path.Combine(tempDir, "high_res_barcode.png");
+
+        // Text to encode in the barcode
+        string codeText = "HIGHRES12345";
+
+        // Desired image resolution in DPI for high‑resolution printing
+        float resolutionDpi = 300f;
+
+        // Generate the barcode with the specified parameters
+        GenerateBarcode(codeText, outputPath, resolutionDpi);
+
+        // Inform the user where the barcode image was saved
+        Console.WriteLine($"Barcode saved to: {outputPath}");
     }
 
     /// <summary>
-    /// Generates a barcode image with a custom DPI (resolution) and saves it to the specified path.
+    /// Generates a Code128 barcode image with custom DPI and saves it as PNG.
     /// </summary>
     /// <param name="codeText">The text to encode in the barcode.</param>
-    /// <param name="outputPath">Full file path where the barcode image will be saved.</param>
-    /// <param name="dpi">Desired resolution in dots per inch. Must be greater than 0.</param>
-    static void GenerateBarcode(string codeText, string outputPath, float dpi)
+    /// <param name="outputPath">The file path where the PNG image will be saved.</param>
+    /// <param name="resolutionDpi">The image resolution in dots per inch.</param>
+    static void GenerateBarcode(string codeText, string outputPath, float resolutionDpi)
     {
-        // Validate input parameters.
-        if (string.IsNullOrEmpty(codeText))
-            throw new ArgumentException("Code text cannot be null or empty.", nameof(codeText));
-
-        if (string.IsNullOrEmpty(outputPath))
-            throw new ArgumentException("Output path cannot be null or empty.", nameof(outputPath));
-
-        if (dpi <= 0f)
-            throw new ArgumentOutOfRangeException(nameof(dpi), "DPI must be greater than zero.");
-
-        // Ensure the output directory exists.
-        string directory = Path.GetDirectoryName(outputPath);
-        if (!Directory.Exists(directory))
-            Directory.CreateDirectory(directory);
-
-        // Create the barcode generator with the desired symbology (Code128 in this example).
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+        // Initialize the barcode generator with Code128 symbology and the provided text
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
         {
-            // Set custom resolution (DPI).
-            generator.Parameters.Resolution = dpi;
+            // Optionally set the module size (X dimension) in millimeters
+            generator.Parameters.Barcode.XDimension.Millimeters = 1;
 
-            // Save the barcode image in PNG format.
+            // Apply the custom resolution (DPI) for high‑resolution output
+            generator.Parameters.Resolution = resolutionDpi;
+
+            // Save the generated barcode as a PNG image to the specified path
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
     }

@@ -1,8 +1,8 @@
-// Title: Generate MaxiCode barcode with command‑line parameters
-// Description: Demonstrates creating a MaxiCode barcode image using Aspose.BarCode, allowing mode, output path, and message to be supplied via command‑line arguments.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on complex barcode types such as MaxiCode. It showcases the use of ComplexBarcodeGenerator, IComplexCodetext implementations (MaxiCodeCodetextMode2, MaxiCodeCodetextMode3, MaxiCodeStandardCodetext) and related message classes to produce PNG images. Developers needing to integrate shipping or logistics barcodes into .NET applications can adapt this pattern for various MaxiCode modes and custom data.
+// Title: Generate MaxiCode Barcodes (Mode 2/3) via Command Line
+// Description: Creates a MaxiCode barcode image using Aspose.BarCode, allowing mode, postal code, country code, service category, secondary message type, and content to be specified via command‑line arguments.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It demonstrates how to use the ComplexBarcodeGenerator with MaxiCodeCodetextMode2 and MaxiCodeCodetextMode3 classes to produce MaxiCode symbols. Typical use cases include shipping labels and logistics applications where MaxiCode is required. Developers often need to customize postal information, service categories, and secondary messages, which this sample shows.
 // Prompt: Create a console application that accepts command‑line arguments to produce MaxiCode barcodes with specified modes.
-// Tags: maxicode, barcode, generation, command-line, aspnet, aspose.barcode, complexbarcode, png
+// Tags: maxicode, barcode, generation, command-line, aspose.barcode, complexbarcode, png
 
 using System;
 using System.IO;
@@ -10,114 +10,135 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.ComplexBarcode;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Console application that generates a MaxiCode barcode image based on command‑line arguments.
+/// Demonstrates generating MaxiCode barcodes (Mode 2 or Mode 3) using command‑line arguments.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Parses arguments for mode, output file path, and message, then creates and saves the barcode.
+    /// Entry point. Parses arguments, builds the appropriate MaxiCode codetext, and saves the barcode image.
     /// </summary>
-    /// <param name="args">Command‑line arguments: [mode] [outputPath] [message].</param>
+    /// <param name="args">
+    /// Expected arguments:
+    /// 0 – mode (2 or 3, default 2)
+    /// 1 – output directory (default temporary folder)
+    /// 2 – postal code (default depends on mode)
+    /// 3 – country code (default 56)
+    /// 4 – service category (default 999)
+    /// 5 – secondary message type ("structured" or "unstructured", default "unstructured")
+    /// 6 – secondary message content (default "Second message")
+    /// </param>
     static void Main(string[] args)
     {
-        // Default values for optional parameters
-        int mode = 2; // default MaxiCode mode
-        string outputPath = Path.Combine(Path.GetTempPath(), "maxicode.png");
-        string message = "Sample message";
-
-        // Parse mode argument (first argument)
-        if (args.Length > 0 && int.TryParse(args[0], out int parsedMode))
-        {
+        // -------------------- Parse mode (2 or 3) --------------------
+        int mode = 2;
+        if (args.Length > 0 && int.TryParse(args[0], out int parsedMode) && (parsedMode == 2 || parsedMode == 3))
             mode = parsedMode;
-        }
 
-        // Parse output path argument (second argument)
+        // -------------------- Determine output directory --------------------
+        string outputDir = Path.Combine(Path.GetTempPath(), "MaxiCodeOutput");
         if (args.Length > 1 && !string.IsNullOrWhiteSpace(args[1]))
-        {
-            outputPath = args[1];
-        }
+            outputDir = args[1];
+        Directory.CreateDirectory(outputDir);
 
-        // Parse message argument (third argument)
+        // -------------------- Postal code (mode‑dependent default) --------------------
+        string postalCode = mode == 2 ? "524032140" : "B1050";
         if (args.Length > 2 && !string.IsNullOrWhiteSpace(args[2]))
-        {
-            message = args[2];
-        }
+            postalCode = args[2];
 
-        // Validate that the requested mode is supported (2‑6)
-        if (mode < 2 || mode > 6)
-        {
-            Console.WriteLine("Supported MaxiCode modes are 2, 3, 4, 5, and 6.");
-            return;
-        }
+        // -------------------- Country code --------------------
+        int countryCode = 56;
+        if (args.Length > 3 && int.TryParse(args[3], out int parsedCountry))
+            countryCode = parsedCountry;
 
-        try
-        {
-            // Build the appropriate codetext object based on the selected mode
-            IComplexCodetext codetext;
+        // -------------------- Service category --------------------
+        int serviceCategory = 999;
+        if (args.Length > 4 && int.TryParse(args[4], out int parsedService))
+            serviceCategory = parsedService;
 
-            if (mode == 2)
+        // -------------------- Secondary message type --------------------
+        string secondaryType = "unstructured";
+        if (args.Length > 5 && !string.IsNullOrWhiteSpace(args[5]))
+            secondaryType = args[5].ToLowerInvariant();
+
+        // -------------------- Secondary message content --------------------
+        string messageContent = "Second message";
+        if (args.Length > 6 && !string.IsNullOrWhiteSpace(args[6]))
+            messageContent = args[6];
+
+        // -------------------- Build codetext object based on mode --------------------
+        IComplexCodetext codetext;
+        if (mode == 2)
+        {
+            var ct = new MaxiCodeCodetextMode2
             {
-                // Mode 2 requires postal code, country code, and service category
-                var ct = new MaxiCodeCodetextMode2
+                PostalCode = postalCode,
+                CountryCode = countryCode,
+                ServiceCategory = serviceCategory
+            };
+
+            if (secondaryType == "structured")
+            {
+                var structured = new MaxiCodeStructuredSecondMessage();
+                // Split lines by '|', up to three lines
+                string[] lines = messageContent.Split('|');
+                for (int i = 0; i < Math.Min(lines.Length, 3); i++)
+                    structured.Add(lines[i]);
+                structured.Year = 99;
+                ct.SecondMessage = structured;
+            }
+            else
+            {
+                var standard = new MaxiCodeStandardSecondMessage
                 {
-                    PostalCode = "524032140",
-                    CountryCode = 56,
-                    ServiceCategory = 999
+                    Message = messageContent
                 };
-                // Attach a secondary message
-                var second = new MaxiCodeStandardSecondMessage { Message = message };
-                ct.SecondMessage = second;
-                codetext = ct;
-            }
-            else if (mode == 3)
-            {
-                // Mode 3 uses alphanumeric postal code
-                var ct = new MaxiCodeCodetextMode3
-                {
-                    PostalCode = "B1050",
-                    CountryCode = 56,
-                    ServiceCategory = 999
-                };
-                var second = new MaxiCodeStandardSecondMessage { Message = message };
-                ct.SecondMessage = second;
-                codetext = ct;
-            }
-            else // Modes 4, 5, 6 share the standard codetext structure
-            {
-                var ct = new MaxiCodeStandardCodetext
-                {
-                    Mode = (MaxiCodeMode)mode,
-                    Message = message
-                };
-                codetext = ct;
+                ct.SecondMessage = standard;
             }
 
-            // Generate the barcode image using the complex barcode generator
-            using (var generator = new ComplexBarcodeGenerator(codetext))
-            {
-                using (Bitmap bitmap = generator.GenerateBarCodeImage())
-                {
-                    // Ensure the target directory exists before saving
-                    string dir = Path.GetDirectoryName(outputPath);
-                    if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
-                    {
-                        Directory.CreateDirectory(dir);
-                    }
-
-                    // Save the generated image as PNG
-                    bitmap.Save(outputPath, ImageFormat.Png);
-                }
-            }
-
-            Console.WriteLine($"MaxiCode barcode (mode {mode}) saved to: {outputPath}");
+            codetext = ct;
         }
-        catch (Exception ex)
+        else // mode == 3
         {
-            // Report any errors that occur during generation
-            Console.WriteLine($"Error generating MaxiCode barcode: {ex.Message}");
+            var ct = new MaxiCodeCodetextMode3
+            {
+                PostalCode = postalCode,
+                CountryCode = countryCode,
+                ServiceCategory = serviceCategory
+            };
+
+            if (secondaryType == "structured")
+            {
+                var structured = new MaxiCodeStructuredSecondMessage();
+                string[] lines = messageContent.Split('|');
+                for (int i = 0; i < Math.Min(lines.Length, 3); i++)
+                    structured.Add(lines[i]);
+                structured.Year = 99;
+                ct.SecondMessage = structured;
+            }
+            else
+            {
+                var standard = new MaxiCodeStandardSecondMessage
+                {
+                    Message = messageContent
+                };
+                ct.SecondMessage = standard;
+            }
+
+            codetext = ct;
         }
+
+        // -------------------- Prepare output file path --------------------
+        string fileName = $"MaxiCodeMode{mode}_{secondaryType}.png";
+        string outputPath = Path.Combine(outputDir, fileName);
+
+        // -------------------- Generate and save barcode --------------------
+        using (ComplexBarcodeGenerator generator = new ComplexBarcodeGenerator(codetext))
+        {
+            generator.Save(outputPath, BarCodeImageFormat.Png);
+        }
+
+        Console.WriteLine($"MaxiCode barcode generated: {outputPath}");
     }
 }

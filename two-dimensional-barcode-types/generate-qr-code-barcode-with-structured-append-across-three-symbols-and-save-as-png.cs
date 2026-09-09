@@ -1,59 +1,77 @@
-// Title: Generate QR Code with Structured Append across Multiple Symbols
-// Description: Demonstrates how to create a QR Code barcode split into three structured‑append symbols and save each as a PNG image.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing the use of BarcodeGenerator, EncodeTypes, and QR-specific parameters such as StructuredAppend. Developers often need to split large data across multiple QR symbols for better readability or scanning reliability; this snippet illustrates configuring total count, sequence indicator, and parity byte. It serves as a reference for creating multi‑symbol QR codes in .NET applications.
+// Title: Generate QR Code with Structured Append (3 symbols) and save as PNG
+// Description: Demonstrates how to create a QR Code barcode split across three structured‑append symbols and save each part as a PNG image.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, focusing on QR Code creation with Structured Append. It showcases the use of BarcodeGenerator, EncodeTypes.QR, and QR-specific parameters (StructuredAppend) to split data across multiple symbols. Developers often need this pattern for encoding long messages that exceed a single QR Code capacity, ensuring seamless scanning of sequential parts.
 // Prompt: Generate a QR Code barcode with structured append across three symbols and save as PNG.
-// Tags: qr code, structured append, png, generation, aspose.barcode
+// Tags: qr code, structured append, barcode generation, png, aspose.barcode, encode types
 
 using System;
 using System.IO;
+using System.Text;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
 /// Example program that generates three QR Code symbols using Structured Append
-/// and saves each symbol as a PNG file.
+/// and saves each symbol as a separate PNG file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Creates a temporary folder, encodes data into three QR symbols,
-    /// and writes the resulting PNG images to disk.
+    /// Entry point of the application.
     /// </summary>
     static void Main()
     {
-        // Create a dedicated temporary folder for the generated QR symbols
-        string outputFolder = Path.Combine(Path.GetTempPath(), "QrStructuredAppend_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(outputFolder);
+        // Prepare the output directory where PNG files will be stored.
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Output");
+        Directory.CreateDirectory(outputDir);
 
-        // Data to be encoded (same for all symbols; Structured Append will split it automatically)
-        string data = "This is a sample text that will be split across three QR symbols using Structured Append.";
-
-        // Loop to generate each part of the structured‑append QR code
-        for (int index = 0; index < 3; index++)
+        // Define the three message parts that will be encoded across separate QR symbols.
+        string[] messages = new string[]
         {
-            // Initialize the QR generator with the data to encode
-            using (var generator = new BarcodeGenerator(EncodeTypes.QR, data))
+            "First part of the data",
+            "Second part of the data",
+            "Third part of the data"
+        };
+
+        // Calculate the parity byte required for Structured Append (XOR of all UTF‑16BE bytes).
+        byte parity = 0;
+        foreach (string msg in messages)
+        {
+            foreach (char ch in msg)
             {
-                // Configure Structured Append parameters
-                generator.Parameters.Barcode.QR.StructuredAppend.TotalCount = 3;               // total number of symbols
-                generator.Parameters.Barcode.QR.StructuredAppend.SequenceIndicator = index; // zero‑based index of the current symbol
-                generator.Parameters.Barcode.QR.StructuredAppend.ParityByte = 0;             // optional parity byte (0 = not used)
-
-                // Optional: set error correction level and other QR settings if desired
-                // generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
-
-                // Build the output file name for the current QR part
-                string filePath = Path.Combine(outputFolder, $"qr_part_{index + 1}.png");
-
-                // Save the generated QR symbol as a PNG image
-                generator.Save(filePath, BarCodeImageFormat.Png);
-
-                Console.WriteLine($"Saved QR part {index + 1} to: {filePath}");
+                int val = ch;
+                if (val <= 0xFF)
+                {
+                    parity ^= (byte)val;
+                }
+                else
+                {
+                    parity ^= (byte)val;
+                    parity ^= (byte)(val >> 8);
+                }
             }
         }
 
-        Console.WriteLine("All QR symbols generated successfully.");
+        // Generate each QR Code part with appropriate Structured Append settings.
+        for (int i = 0; i < messages.Length; i++)
+        {
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, messages[i]))
+            {
+                // Set visual size of the QR modules.
+                generator.Parameters.Barcode.XDimension.Pixels = 4;
+
+                // Configure Structured Append parameters.
+                generator.Parameters.Barcode.QR.StructuredAppend.TotalCount = messages.Length;
+                generator.Parameters.Barcode.QR.StructuredAppend.SequenceIndicator = i;
+                generator.Parameters.Barcode.QR.StructuredAppend.ParityByte = parity;
+
+                // Build the file path for the current QR part and save it as PNG.
+                string filePath = Path.Combine(outputDir, $"qr_part_{i + 1}.png");
+                generator.Save(filePath, BarCodeImageFormat.Png);
+                Console.WriteLine($"Saved QR part {i + 1} to: {filePath}");
+            }
+        }
+
+        Console.WriteLine("QR Code generation with Structured Append completed.");
     }
 }

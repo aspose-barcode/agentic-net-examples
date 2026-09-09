@@ -1,8 +1,8 @@
-// Title: Runtime Barcode Symbology Selection from Configuration File
-// Description: Demonstrates how to read a simple configuration file to choose the barcode symbology and code text at runtime, then generate the barcode image.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating dynamic selection of barcode types using EncodeTypes and BarcodeGenerator. Developers often need to switch symbologies based on external settings such as configuration files, user input, or database values. The pattern shown here is common for building flexible barcode creation services.
+// Title: Runtime Barcode Type Switching Based on Configuration File
+// Description: Demonstrates reading a configuration file to select a barcode symbology at runtime and generating the corresponding barcode image.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to use EncodeTypes and BarcodeGenerator to create barcodes dynamically. Developers often need to switch barcode types based on external settings such as configuration files, databases, or user input. The code shows how to resolve a symbology name via reflection, configure basic appearance settings, and save the result in PNG format—common tasks when integrating barcode creation into flexible applications.
 // Prompt: Write documentation example showing how to switch barcode type at runtime based on configuration file.
-// Tags: barcode, symbology, runtime, configuration, generation, aspose.barcode, encode types
+// Tags: barcode symbology, runtime configuration, generation, aspose.barcode, encode types, png output
 
 using System;
 using System.IO;
@@ -11,104 +11,91 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Example program that reads barcode settings from a configuration file,
-/// resolves the requested symbology at runtime, and generates a PNG image.
+/// Example program that reads a barcode configuration file, determines the requested symbology,
+/// and generates a barcode image using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Application entry point. Reads configuration, resolves the barcode type,
-    /// generates the barcode, and writes status information to the console.
+    /// Entry point. Reads configuration, resolves the symbology, and creates the barcode image.
     /// </summary>
     static void Main()
     {
-        // --------------------------------------------------------------------
-        // Load configuration
-        // --------------------------------------------------------------------
-        // Path to the simple configuration file (key=value per line)
-        string configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "barcodeConfig.txt");
+        // Build the full path to the configuration file located in the current directory.
+        string configPath = Path.Combine(Directory.GetCurrentDirectory(), "barcodeConfig.txt");
 
-        // Default values used when the config file is missing or incomplete
-        string symbologyName = "Code128";
-        string codeText = "SampleText";
-
-        if (File.Exists(configPath))
+        // If the configuration file does not exist, create a default one.
+        if (!File.Exists(configPath))
         {
-            try
-            {
-                // Parse each line of the config file
-                foreach (string line in File.ReadAllLines(configPath))
-                {
-                    // Skip empty lines or lines without an '=' separator
-                    if (string.IsNullOrWhiteSpace(line) || !line.Contains("="))
-                        continue;
-
-                    // Split into key and value parts
-                    string[] parts = line.Split(new[] { '=' }, 2);
-                    string key = parts[0].Trim();
-                    string value = parts[1].Trim();
-
-                    // Assign values based on recognized keys
-                    if (key.Equals("Symbology", StringComparison.OrdinalIgnoreCase))
-                        symbologyName = value;
-                    else if (key.Equals("CodeText", StringComparison.OrdinalIgnoreCase))
-                        codeText = value;
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error reading config file: {ex.Message}");
-                Console.WriteLine("Falling back to default settings.");
-            }
-        }
-        else
-        {
-            Console.WriteLine("Config file not found. Using default barcode settings.");
+            // Default: Code128 symbology with sample code text.
+            File.WriteAllText(configPath, "Code128,1234567890");
+            Console.WriteLine($"Configuration file not found. Created default at: {configPath}");
         }
 
-        // --------------------------------------------------------------------
-        // Resolve the requested symbology to a BaseEncodeType instance
-        // --------------------------------------------------------------------
-        BaseEncodeType encodeType = ResolveEncodeType(symbologyName);
+        // Read all lines from the configuration file.
+        string[] lines = File.ReadAllLines(configPath);
+        if (lines.Length == 0)
+        {
+            Console.WriteLine("Configuration file is empty.");
+            return;
+        }
+
+        // Find the first non‑empty line; expected format: Symbology,CodeText
+        string line = null;
+        foreach (var l in lines)
+        {
+            if (!string.IsNullOrWhiteSpace(l))
+            {
+                line = l.Trim();
+                break;
+            }
+        }
+
+        if (line == null)
+        {
+            Console.WriteLine("No valid configuration line found.");
+            return;
+        }
+
+        // Split the line into symbology name and code text.
+        string[] parts = line.Split(new[] { ',' }, 2);
+        if (parts.Length != 2)
+        {
+            Console.WriteLine("Configuration line must contain symbology and code text separated by a comma.");
+            return;
+        }
+
+        string symbologyName = parts[0].Trim();
+        string codeText = parts[1].Trim();
+
+        // Resolve the symbology name to a BaseEncodeType value using reflection.
+        FieldInfo field = typeof(EncodeTypes).GetField(symbologyName);
+        if (field == null)
+        {
+            Console.WriteLine($"Unknown symbology: {symbologyName}");
+            return;
+        }
+
+        BaseEncodeType encodeType = (BaseEncodeType)field.GetValue(null);
         if (encodeType == null)
         {
-            Console.WriteLine($"Unknown symbology '{symbologyName}'. Defaulting to Code128.");
-            encodeType = EncodeTypes.Code128;
+            Console.WriteLine($"Failed to obtain encode type for symbology: {symbologyName}");
+            return;
         }
 
-        // --------------------------------------------------------------------
-        // Generate and save the barcode image
-        // --------------------------------------------------------------------
-        string outputPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "output.png");
+        // Define the output file path for the generated barcode image.
+        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), $"barcode_{symbologyName}.png");
+
+        // Create the barcode generator with the resolved type and provided code text.
         using (var generator = new BarcodeGenerator(encodeType, codeText))
         {
-            generator.Save(outputPath);
+            // Example: set a simple appearance property (module width).
+            generator.Parameters.Barcode.XDimension.Point = 2f;
+
+            // Save the barcode as a PNG image.
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // --------------------------------------------------------------------
-        // Output summary information
-        // --------------------------------------------------------------------
         Console.WriteLine($"Barcode generated: {outputPath}");
-        Console.WriteLine($"Symbology: {encodeType.GetType().Name} ({symbologyName})");
-        Console.WriteLine($"CodeText: {codeText}");
-    }
-
-    /// <summary>
-    /// Uses reflection to map a symbology name (e.g., "Code128") to the corresponding
-    /// static field in <see cref="EncodeTypes"/> and returns its <see cref="BaseEncodeType"/> value.
-    /// </summary>
-    /// <param name="name">The name of the symbology to resolve.</param>
-    /// <returns>The matching <see cref="BaseEncodeType"/>, or null if not found.</returns>
-    private static BaseEncodeType ResolveEncodeType(string name)
-    {
-        if (string.IsNullOrWhiteSpace(name))
-            return null;
-
-        // EncodeTypes fields are static readonly members; locate the field by name
-        FieldInfo field = typeof(EncodeTypes).GetField(name, BindingFlags.Public | BindingFlags.Static);
-        if (field == null)
-            return null;
-
-        return field.GetValue(null) as BaseEncodeType;
     }
 }

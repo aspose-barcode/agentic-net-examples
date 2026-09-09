@@ -1,85 +1,83 @@
-// Title: Generate QR Code PDF Portfolio
-// Description: Creates QR code images for a set of URLs, embeds each on a separate PDF page, and saves the result as a PDF portfolio.
-// Category-Description: This example demonstrates how to use Aspose.BarCode to generate QR Code barcodes and Aspose.Pdf to compose a multi‑page PDF document. It covers barcode generation, image handling via memory streams, and PDF page creation—common tasks for developers building printable or shareable barcode documents.
+// Title: Generate QR Code Barcodes and Assemble Them into a PDF Portfolio
+// Description: This example creates four QR Code images, embeds each on a separate PDF page, and saves the collection as a PDF portfolio.
+// Category-Description: Demonstrates how to use Aspose.BarCode to generate QR Code barcodes and Aspose.Pdf to compose a multi‑page PDF document. Typical scenarios include batch barcode creation for reports, catalogs, or document bundles where each barcode appears on its own page. Developers working with barcode generation and PDF composition frequently need to combine these APIs to produce printable or distributable documents.
 // Prompt: Generate QR Code barcode and create a PDF portfolio containing multiple barcode pages.
-// Tags: qr code, barcode generation, pdf, portfolio, aspose.barcode, aspose.pdf, image, csharp
+// Tags: qr code, barcode generation, pdf, portfolio, aspose.barcode, aspose.pdf, c#
 
 using System;
 using System.IO;
 using System.Collections.Generic;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing.Imaging;
 using Aspose.Pdf;
-using Aspose.Pdf.Text;
 
 /// <summary>
-/// Demonstrates generating QR Code barcodes and assembling them into a PDF portfolio.
+/// Demonstrates QR Code generation and PDF portfolio creation using Aspose.BarCode and Aspose.Pdf.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates QR codes, adds them to a PDF, and saves the file.
+    /// Entry point of the example. Generates QR Code images, adds them to a PDF document, and saves the result.
     /// </summary>
     static void Main()
     {
-        // Define QR code texts (each will become a separate PDF page)
-        List<string> qrTexts = new List<string>
+        // Define a temporary output directory for the generated files.
+        string outputDir = Path.Combine(Path.GetTempPath(), "QrPortfolioDemo");
+        if (!Directory.Exists(outputDir))
         {
-            "https://example.com/page1",
-            "https://example.com/page2",
-            "https://example.com/page3"
-        };
+            Directory.CreateDirectory(outputDir);
+        }
 
-        // Create a new PDF document
+        // Generate QR Code images and keep their streams open for later use.
+        List<MemoryStream> barcodeStreams = new List<MemoryStream>();
+        for (int i = 1; i <= 4; i++)
+        {
+            var ms = new MemoryStream();
+            using (var generator = new BarcodeGenerator(EncodeTypes.QR, $"Sample QR {i}"))
+            {
+                // Set error correction level to Medium (Level M).
+                generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
+                // Save the barcode as a PNG image into the memory stream.
+                generator.Save(ms, BarCodeImageFormat.Png);
+            }
+            ms.Position = 0; // Reset stream position before reading.
+            barcodeStreams.Add(ms);
+        }
+
+        // Create a new PDF document and add each QR Code image as a separate page.
+        string pdfPath = Path.Combine(outputDir, "QrPortfolio.pdf");
         using (var pdfDoc = new Document())
         {
-            // Store barcode image streams for later disposal
-            List<MemoryStream> barcodeStreams = new List<MemoryStream>();
-
-            // Generate a QR code image for each text and add it to the PDF
-            foreach (string text in qrTexts)
+            foreach (var stream in barcodeStreams)
             {
-                // Generate QR code into a memory stream
-                var barcodeStream = new MemoryStream();
-                using (var generator = new BarcodeGenerator(EncodeTypes.QR))
-                {
-                    generator.CodeText = text;
-                    // Use high error correction level for robustness
-                    generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
-                    // Set module size (optional)
-                    generator.Parameters.Barcode.XDimension.Point = 2f;
-                    generator.Save(barcodeStream, BarCodeImageFormat.Png);
-                }
-
-                // Reset stream position before reading
-                barcodeStream.Position = 0;
-                barcodeStreams.Add(barcodeStream);
-
-                // Add a new page to the PDF and place the barcode image
+                // Add a new page to the PDF.
                 var page = pdfDoc.Pages.Add();
+
+                // Configure the image to be placed on the page.
                 var pdfImage = new Aspose.Pdf.Image
                 {
-                    ImageStream = barcodeStream,
+                    ImageStream = stream,
                     FixWidth = 200,
                     FixHeight = 200,
-                    HorizontalAlignment = HorizontalAlignment.Center,
-                    VerticalAlignment = VerticalAlignment.Center,
+                    HorizontalAlignment = Aspose.Pdf.HorizontalAlignment.Center,
+                    VerticalAlignment = Aspose.Pdf.VerticalAlignment.Center,
                     Margin = new MarginInfo { Top = 20 }
                 };
+
+                // Add the image to the page's paragraph collection.
                 page.Paragraphs.Add(pdfImage);
             }
 
-            // Save the assembled PDF portfolio to a temporary location
-            string outputPath = Path.Combine(Path.GetTempPath(), "QrCodePortfolio.pdf");
-            pdfDoc.Save(outputPath);
-            Console.WriteLine($"PDF portfolio created at: {outputPath}");
-
-            // Clean up all memory streams used for barcode images
-            foreach (var ms in barcodeStreams)
-            {
-                ms.Dispose();
-            }
+            // Save the assembled PDF portfolio to disk.
+            pdfDoc.Save(pdfPath);
         }
+
+        // Dispose all memory streams now that the PDF has been saved.
+        foreach (var stream in barcodeStreams)
+        {
+            stream.Dispose();
+        }
+
+        Console.WriteLine($"PDF portfolio created at: {pdfPath}");
     }
 }

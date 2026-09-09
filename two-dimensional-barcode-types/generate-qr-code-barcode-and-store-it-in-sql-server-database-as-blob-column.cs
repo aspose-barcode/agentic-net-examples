@@ -1,68 +1,79 @@
-// Title: Generate QR Code and Store as BLOB in SQL Server
-// Description: This example creates a QR Code barcode, saves it as a PNG file, and demonstrates how to store the barcode image bytes as a BLOB in a SQL Server database.
-// Category-Description: Aspose.BarCode QR Code generation and binary storage examples. Shows how to use BarcodeGenerator with EncodeTypes.QR, configure error correction, save the image to a stream, and insert the byte array into a VARBINARY column using ADO.NET. Useful for developers needing to embed barcodes in databases for later retrieval and printing.
+// Title: Generate QR Code and store as BLOB
+// Description: Demonstrates creating a QR Code image using Aspose.BarCode and saving the resulting PNG bytes as a binary BLOB, which can be persisted to a SQL Server column.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on QR Code creation and binary data handling for database storage. It showcases the BarcodeGenerator class, EncodeTypes enumeration, and image export to a MemoryStream, which are commonly used by developers needing to embed barcodes in databases or other binary storage systems.
 // Prompt: Generate QR Code barcode and store it in SQL Server database as BLOB column.
-// Tags: qr code, barcode generation, sql server, blob storage, aspose.barcode, image format, varbinary
+// Tags: qr code, barcode generation, sql server, blob, aspose.barcode, image export, binary storage
 
 using System;
 using System.IO;
+using System.Text;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates QR Code generation with Aspose.BarCode and how to persist the resulting image bytes as a BLOB.
+/// Demonstrates generating a QR Code barcode and saving its image bytes as a binary BLOB,
+/// suitable for storage in a SQL Server database.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a QR Code, saves it locally, and shows how to store it in a SQL Server BLOB column.
+    /// Entry point. Generates a QR Code, writes the image bytes to a temporary file,
+    /// and includes sample code for inserting the bytes into a SQL Server BLOB column.
     /// </summary>
     static void Main()
     {
-        // Define the content to encode in the QR code.
-        string codeText = "https://example.com";
+        // Define the text to encode in the QR code.
+        string qrText = "Hello, Aspose QR!";
 
-        // Initialize the QR code generator with the desired symbology and content.
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, codeText))
+        // Generate QR code image bytes using the helper method.
+        byte[] barcodeBytes = GenerateQrCode(qrText);
+
+        // Store the bytes locally as a stand‑in for a SQL Server BLOB column.
+        string outputPath = Path.Combine(Path.GetTempPath(), "qr_blob.bin");
+        File.WriteAllBytes(outputPath, barcodeBytes);
+        Console.WriteLine($"QR code image saved as binary blob to: {outputPath}");
+
+        // -----------------------------------------------------------------
+        // Real SQL Server storage (requires System.Data.SqlClient and a
+        // reachable SQL Server instance). This code is commented out because
+        // the execution environment does not provide a database.
+        /*
+        using (var connection = new System.Data.SqlClient.SqlConnection(
+            "Data Source=YOUR_SERVER;Initial Catalog=YOUR_DB;Integrated Security=True"))
         {
-            // Optional: set a high error correction level to improve readability after damage.
-            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
-
-            // Generate the barcode image into a memory stream.
-            using (var memoryStream = new MemoryStream())
+            connection.Open();
+            string insertSql = "INSERT INTO Barcodes (CodeImage) VALUES (@Image)";
+            using (var command = new System.Data.SqlClient.SqlCommand(insertSql, connection))
             {
-                // Save the barcode as PNG into the stream.
-                generator.Save(memoryStream, BarCodeImageFormat.Png);
-                byte[] imageBytes = memoryStream.ToArray();
+                command.Parameters.Add("@Image", System.Data.SqlDbType.VarBinary, barcodeBytes.Length)
+                                  .Value = barcodeBytes;
+                command.ExecuteNonQuery();
+            }
+        }
+        */
+        // -----------------------------------------------------------------
+    }
 
-                // Persist the image to a file for visual verification.
-                File.WriteAllBytes("qr_code.png", imageBytes);
-                Console.WriteLine("QR code image saved to 'qr_code.png'.");
+    /// <summary>
+    /// Generates a QR Code image for the specified text and returns the image bytes in PNG format.
+    /// </summary>
+    /// <param name="text">The text to encode in the QR Code.</param>
+    /// <returns>Byte array containing the PNG image of the generated QR Code.</returns>
+    static byte[] GenerateQrCode(string text)
+    {
+        // Initialize the barcode generator with QR encoding and the provided text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, text))
+        {
+            // Optional: adjust module size (pixel dimension) and error correction level.
+            generator.Parameters.Barcode.XDimension.Pixels = 4f;
+            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
 
-                // Simulate storing the raw bytes in a database BLOB column by writing to a binary file.
-                File.WriteAllBytes("qr_blob.bin", imageBytes);
-                Console.WriteLine("QR code bytes written to 'qr_blob.bin' (simulating DB BLOB storage).");
-
-                // -----------------------------------------------------------------
-                // Real SQL Server storage (requires System.Data.SqlClient and a valid DB)
-                // -----------------------------------------------------------------
-                /*
-                using (var connection = new System.Data.SqlClient.SqlConnection(
-                    "Data Source=YOUR_SERVER;Initial Catalog=YOUR_DATABASE;Integrated Security=True"))
-                {
-                    connection.Open();
-                    using (var command = new System.Data.SqlClient.SqlCommand(
-                        "INSERT INTO Barcodes (Id, ImageData) VALUES (@Id, @Image)", connection))
-                    {
-                        command.Parameters.Add("@Id", System.Data.SqlDbType.Int).Value = 1;
-                        command.Parameters.Add("@Image", System.Data.SqlDbType.VarBinary, -1).Value = imageBytes;
-                        command.ExecuteNonQuery();
-                    }
-                }
-                */
-                // Note: The above database code is commented out because the snippet runner
-                // does not have access to a SQL Server instance. Replace the connection string
-                // and table/column names as appropriate in a real environment.
+            // Save the generated barcode to a memory stream in PNG format.
+            using (var ms = new MemoryStream())
+            {
+                generator.Save(ms, BarCodeImageFormat.Png);
+                // Return the stream contents as a byte array.
+                return ms.ToArray();
             }
         }
     }

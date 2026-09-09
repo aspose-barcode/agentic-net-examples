@@ -1,65 +1,68 @@
-// Title: Generate QR Code with Token Authentication and Save as PNG
-// Description: Demonstrates generating a QR Code barcode using Aspose.BarCode, securing the operation with a simple token check, and saving the image to a temporary file.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating how to create QR Code symbology, configure error correction, customize colors, and implement basic token‑based authentication for secure endpoints. Developers working with barcode creation for web services or APIs often need to validate requests before producing barcode images, and this snippet shows the typical use of BarcodeGenerator, EncodeTypes, and image format classes.
+// Title: Generate QR Code and Validate Token Before Serving Image
+// Description: This example creates a QR Code barcode image, saves it to a temporary file, and demonstrates a simple token‑based authentication check before exposing the image.
+// Category-Description: Shows how to use Aspose.BarCode.Generation.BarcodeGenerator to produce QR Code barcodes, customize appearance, and save as PNG. Typical for scenarios where a server must generate barcodes on‑the‑fly and protect access with token authentication. Developers working with barcode generation, image output, or lightweight security checks will find this pattern useful.
 // Prompt: Generate QR Code barcode and secure endpoint with token authentication before serving image.
-// Tags: qr code, barcode generation, token authentication, png output, aspose.barcode, encode types, error correction
+// Tags: qr code, barcode generation, token authentication, png output, aspose.barcode, aspose.drawing
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that validates a token, generates a QR Code barcode, and saves it as a PNG image.
+/// Demonstrates QR Code generation with Aspose.BarCode and a basic token authentication check.
 /// </summary>
 class Program
 {
-    // Expected token for simple authentication
-    private const string ExpectedToken = "mysecrettoken";
-
     /// <summary>
-    /// Entry point. Validates the provided token, creates a QR Code, and writes it to a temporary file.
+    /// Entry point. Generates QR code, saves it, and validates a supplied token.
     /// </summary>
-    /// <param name="args">Command‑line arguments; the first argument is expected to be the authentication token.</param>
+    /// <param name="args">Command‑line arguments where the first argument is the token.</param>
     static void Main(string[] args)
     {
-        // Retrieve token from command‑line arguments; use a placeholder if not provided
-        string token = args.Length > 0 ? args[0] : "placeholder";
+        // Define the expected token for authentication.
+        const string expectedToken = "secret123";
 
-        // Verify the token matches the expected value
-        if (!string.Equals(token, ExpectedToken, StringComparison.Ordinal))
-        {
-            Console.WriteLine("Unauthorized: invalid token.");
-            return;
-        }
+        // Retrieve the token supplied via command‑line arguments (or use an invalid placeholder).
+        string suppliedToken = args.Length > 0 ? args[0] : "invalid";
 
-        // Token is valid – proceed to generate QR code
-        string qrContent = "https://example.com";
+        // Determine a temporary file path for the generated QR code image.
         string outputPath = Path.Combine(Path.GetTempPath(), "qr.png");
 
-        // Attempt to generate and save the QR code image
-        try
+        // ------------------------------------------------------------
+        // Generate QR Code barcode using Aspose.BarCode
+        // ------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
         {
-            // Initialize the barcode generator for QR Code symbology
-            using (var generator = new BarcodeGenerator(EncodeTypes.QR, qrContent))
-            {
-                // Set high error correction level for better resilience
-                generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
+            // Set QR code module size (pixel dimension).
+            generator.Parameters.Barcode.XDimension.Pixels = 4f;
 
-                // Optional: customize appearance (foreground and background colors)
-                generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-                generator.Parameters.BackColor = Aspose.Drawing.Color.White;
+            // Choose error correction level (Medium).
+            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
 
-                // Save the QR code image as PNG to the specified path
-                generator.Save(outputPath, BarCodeImageFormat.Png);
-            }
+            // Define foreground (barcode) and background colors.
+            generator.Parameters.Barcode.BarColor = Color.Black;
+            generator.Parameters.BackColor = Color.White;
 
-            Console.WriteLine($"QR code generated successfully: {outputPath}");
+            // Save the generated barcode as a PNG image.
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
-        catch (Exception ex)
+
+        // ------------------------------------------------------------
+        // Simulate a secure endpoint: serve image only if token matches
+        // ------------------------------------------------------------
+        if (string.Equals(suppliedToken, expectedToken, StringComparison.Ordinal))
         {
-            // Handle any unexpected errors gracefully
-            Console.WriteLine($"Error generating QR code: {ex.Message}");
+            Console.WriteLine($"Authorized. QR code image saved at: {outputPath}");
         }
+        else
+        {
+            Console.WriteLine("Unauthorized: invalid token.");
+        }
+
+        // Note: In a real web service the image would be returned in the HTTP response.
+        // This console example demonstrates the core barcode generation and token check logic.
     }
 }

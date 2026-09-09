@@ -1,48 +1,39 @@
-// Title: Generate QR Code and Save as JPEG
-// Description: Demonstrates creating a QR Code barcode with automatic version selection and exporting it to a JPEG image file.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating how to use the BarcodeGenerator class with QR Code symbology. It shows typical steps such as setting the encoded text, configuring QR encoding mode, and saving the result in a common image format. Developers working on QR Code creation for web links, product IDs, or marketing materials can use this pattern as a starting point.
+// Title: Generate QR Code with automatic version selection and save as JPEG
+// Description: Demonstrates creating a QR Code barcode using Aspose.BarCode with automatic version selection and exporting it to a JPEG image file.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating how to use the BarcodeGenerator class with EncodeTypes.QR to produce QR Code symbols. It shows typical steps such as configuring barcode parameters, letting the library choose the optimal QR version automatically, and saving the result in a common image format. Developers working on QR Code creation for marketing, authentication, or data encoding scenarios can reference this pattern.
 // Prompt: Generate a QR Code barcode with automatic version selection and export as JPEG.
-// Tags: qr code, barcode generation, jpeg output, aspose.barcode, encode types, qrcode, automatic version
+// Tags: qr code, barcode generation, jpeg output, aspose.barcode, encode types, barcodegenerator
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a QR Code barcode and saving it as a JPEG image.
+/// Example program that generates a QR Code barcode and saves it as a JPEG image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates the QR Code and writes it to a file in the current directory.
+    /// Entry point of the application.
     /// </summary>
     static void Main()
     {
-        // Define the full path for the output JPEG file
-        string outputPath = Path.Combine(Environment.CurrentDirectory, "qr_code.jpg");
+        // Define the output file path in the current directory.
+        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "qr_auto.jpg");
 
-        // Ensure the target directory exists before attempting to save the image
-        string directory = Path.GetDirectoryName(outputPath);
-        if (!Directory.Exists(directory))
+        // Create a BarcodeGenerator for QR Code with the desired text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Hello Aspose QR"))
         {
-            Directory.CreateDirectory(directory);
-        }
+            // Set the X-dimension (module size) in pixels; the QR version is chosen automatically.
+            generator.Parameters.Barcode.XDimension.Pixels = 4f;
 
-        // Initialize the barcode generator for QR Code with default automatic version selection
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR))
-        {
-            // Set the text (URL) that the QR Code will encode
-            generator.CodeText = "https://example.com";
-
-            // Optionally enforce automatic encoding mode (default behavior)
-            generator.Parameters.Barcode.QR.EncodeMode = QREncodeMode.Auto;
-
-            // Save the generated QR Code as a JPEG image to the specified path
+            // Save the generated barcode as a JPEG image.
             generator.Save(outputPath, BarCodeImageFormat.Jpeg);
         }
 
-        // Inform the user where the QR Code image has been saved
+        // Inform the user where the QR Code image was saved.
         Console.WriteLine($"QR Code saved to: {outputPath}");
     }
 }

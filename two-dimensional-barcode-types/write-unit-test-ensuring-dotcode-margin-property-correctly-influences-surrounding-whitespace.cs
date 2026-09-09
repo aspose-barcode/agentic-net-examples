@@ -1,109 +1,101 @@
-// Title: DotCode Barcode Margin Verification Unit Test
-// Description: Demonstrates how to verify that the DotCode barcode generator respects the padding (margin) settings by checking the surrounding whitespace in the generated image.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, focusing on barcode appearance customization. It showcases the use of BarcodeGenerator, EncodeTypes, and image handling classes (Bitmap, MemoryStream) to test padding (margin) effects. Developers often need to ensure that barcode margins are correctly applied for layout and scanning reliability, making such unit‑test patterns valuable in automated validation suites.
+// Title: DotCode Margin Influence Test
+// Description: Demonstrates how the DotCode barcode margin property adds whitespace around the generated image.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator with EncodeTypes.DotCode and configuring padding via Parameters.Barcode.Padding. Developers often need to control surrounding whitespace for layout or printing requirements, and this snippet shows how to verify margin effects.
 // Prompt: Write unit test ensuring DotCode margin property correctly influences surrounding whitespace.
-// Tags: dotcode, barcode, margin, padding, unit-test, aspose.barcode, image-processing
+// Tags: dotcode, margin, padding, barcode, generation, unit-test, aspose.barcode
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Contains a simple unit‑test‑style method that validates the margin (padding) applied to a DotCode barcode.
+/// Demonstrates testing the effect of the DotCode barcode margin on image dimensions.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Executes the DotCode margin verification test.
+    /// Entry point that generates two DotCode barcodes with and without padding,
+    /// compares their dimensions, and reports the test result.
     /// </summary>
     static void Main()
     {
-        // Run the unit test for DotCode margin (padding) handling
-        TestDotCodeMargin();
+        // Create a temporary directory for test output files
+        string tempDir = Path.Combine(Path.GetTempPath(), "DotCodeMarginTest_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+
+        // Define file paths for the barcode images
+        string fileNoMargin = Path.Combine(tempDir, "dotcode_nomargin.png");
+        string fileWithMargin = Path.Combine(tempDir, "dotcode_margin.png");
+
+        // Generate barcode without any padding
+        GenerateDotCode(fileNoMargin, 0);
+
+        // Generate barcode with 20 pixels padding on each side
+        GenerateDotCode(fileWithMargin, 20);
+
+        // Variables to hold image dimensions
+        int widthNoMargin, heightNoMargin;
+        int widthWithMargin, heightWithMargin;
+
+        // Load the image without margin and capture its size
+        using (Bitmap bmp = new Bitmap(fileNoMargin))
+        {
+            widthNoMargin = bmp.Width;
+            heightNoMargin = bmp.Height;
+        }
+
+        // Load the image with margin and capture its size
+        using (Bitmap bmp = new Bitmap(fileWithMargin))
+        {
+            widthWithMargin = bmp.Width;
+            heightWithMargin = bmp.Height;
+        }
+
+        // Verify that the margin added 40 pixels to both width and height (20 left + 20 right, etc.)
+        bool widthOk = widthWithMargin == widthNoMargin + 40;
+        bool heightOk = heightWithMargin == heightNoMargin + 40;
+
+        // Output test result
+        if (widthOk && heightOk)
+        {
+            Console.WriteLine("Test passed: Margin correctly influences surrounding whitespace.");
+        }
+        else
+        {
+            Console.WriteLine("Test failed:");
+            Console.WriteLine($"Expected width {widthNoMargin + 40}, actual {widthWithMargin}");
+            Console.WriteLine($"Expected height {heightNoMargin + 40}, actual {heightWithMargin}");
+        }
+
+        // Cleanup temporary files and directory
+        try { File.Delete(fileNoMargin); } catch { }
+        try { File.Delete(fileWithMargin); } catch { }
+        try { Directory.Delete(tempDir, true); } catch { }
     }
 
     /// <summary>
-    /// Generates a DotCode barcode with explicit padding on all sides, renders it to a PNG image,
-    /// and checks that the surrounding whitespace matches the expected background color.
+    /// Generates a DotCode barcode image with the specified padding.
     /// </summary>
-    static void TestDotCodeMargin()
+    /// <param name="filePath">The full path where the image will be saved.</param>
+    /// <param name="paddingPixels">The padding (margin) in pixels to apply on all sides.</param>
+    static void GenerateDotCode(string filePath, int paddingPixels)
     {
-        // Define padding values (in points) for each side of the barcode
-        const float leftPadding = 10f;
-        const float topPadding = 10f;
-        const float rightPadding = 10f;
-        const float bottomPadding = 10f;
-
-        // Create a DotCode barcode generator with sample text
-        using (var generator = new BarcodeGenerator(EncodeTypes.DotCode, "12345"))
+        // Initialize the barcode generator for DotCode symbology
+        using (BarcodeGenerator gen = new BarcodeGenerator(EncodeTypes.DotCode, "Test"))
         {
-            // Apply explicit padding on each side via the generator's parameters
-            generator.Parameters.Barcode.Padding.Left.Point = leftPadding;
-            generator.Parameters.Barcode.Padding.Top.Point = topPadding;
-            generator.Parameters.Barcode.Padding.Right.Point = rightPadding;
-            generator.Parameters.Barcode.Padding.Bottom.Point = bottomPadding;
+            // Set the module size (X dimension) in pixels
+            gen.Parameters.Barcode.XDimension.Pixels = 5f;
 
-            // Save the generated barcode to a memory stream in PNG format
-            using (var ms = new MemoryStream())
-            {
-                generator.Save(ms, BarCodeImageFormat.Png);
-                ms.Position = 0; // Reset stream position for reading
+            // Apply uniform padding on all four sides
+            gen.Parameters.Barcode.Padding.Left.Pixels = paddingPixels;
+            gen.Parameters.Barcode.Padding.Right.Pixels = paddingPixels;
+            gen.Parameters.Barcode.Padding.Top.Pixels = paddingPixels;
+            gen.Parameters.Barcode.Padding.Bottom.Pixels = paddingPixels;
 
-                // Load the image from the memory stream for pixel inspection
-                using (var bitmap = new Bitmap(ms))
-                {
-                    // Expected background color (default is white)
-                    var expectedBg = Aspose.Drawing.Color.White;
-
-                    int width = bitmap.Width;
-                    int height = bitmap.Height;
-
-                    bool success = true;
-
-                    // Helper local function to verify that a rectangular region consists solely of the expected background color
-                    bool CheckRegion(int startX, int startY, int regionWidth, int regionHeight)
-                    {
-                        for (int y = startY; y < startY + regionHeight; y++)
-                        {
-                            for (int x = startX; x < startX + regionWidth; x++)
-                            {
-                                if (bitmap.GetPixel(x, y).ToArgb() != expectedBg.ToArgb())
-                                    return false;
-                            }
-                        }
-                        return true;
-                    }
-
-                    // Verify left padding region
-                    if (!CheckRegion(0, 0, (int)leftPadding, height))
-                        success = false;
-
-                    // Verify right padding region
-                    if (!CheckRegion(width - (int)rightPadding, 0, (int)rightPadding, height))
-                        success = false;
-
-                    // Verify top padding region
-                    if (!CheckRegion(0, 0, width, (int)topPadding))
-                        success = false;
-
-                    // Verify bottom padding region
-                    if (!CheckRegion(0, height - (int)bottomPadding, width, (int)bottomPadding))
-                        success = false;
-
-                    // Output test result to the console
-                    if (success)
-                    {
-                        Console.WriteLine("PASSED: DotCode margin correctly applied.");
-                    }
-                    else
-                    {
-                        Console.WriteLine("FAILED: DotCode margin not applied as expected.");
-                    }
-                }
-            }
+            // Save the generated barcode as a PNG image
+            gen.Save(filePath, BarCodeImageFormat.Png);
         }
     }
 }

@@ -1,55 +1,57 @@
-// Title: Generate QR Code and Convert to Base64 for ASP.NET MVC
-// Description: This example creates a QR Code barcode, saves it as a PNG in memory, and converts the image to a Base64 string that can be embedded directly in an ASP.NET MVC view.
-// Category-Description: Demonstrates Aspose.BarCode barcode generation for QR symbology, focusing on in‑memory image handling and Base64 encoding. It uses BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes, typical for web scenarios where the barcode image is rendered on the client without writing files. Developers often need to embed barcodes in HTML or MVC views, requiring a data URI format.
+// Title: Generate QR Code and embed as Base64 image in ASP.NET MVC view
+// Description: Demonstrates creating a QR Code barcode with Aspose.BarCode, converting it to a PNG image, encoding the image to a Base64 string, and showing the Razor syntax to embed the result in an MVC view.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating how to use the BarcodeGenerator class to produce QR Code symbology, customize its parameters, and render the barcode as an image. Typical use cases include generating scannable codes for URLs, contact information, or authentication tokens and delivering them to web clients as inline Base64 images. Developers working with ASP.NET MVC often need to embed such images directly in Razor views without storing physical files.
 // Prompt: Generate QR Code barcode and embed it into an ASP.NET MVC view as base64 image source.
-// Tags: qr code, barcode generation, base64, asp.net mvc, aspose.barcode, png, in-memory
+// Tags: qr code, barcode generation, base64, aspnet mvc, razor, png, aspose.barcode, image encoding
 
 using System;
 using System.IO;
-using System.Text;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
-/// <summary>
-/// Demonstrates generating a QR Code barcode and converting it to a Base64 string for embedding in an ASP.NET MVC view.
-/// </summary>
-class Program
+namespace BarcodeConsoleApp
 {
     /// <summary>
-    /// Entry point that creates the QR Code, encodes it as PNG, and outputs the Base64 string.
+    /// Console application that creates a QR Code barcode, converts it to a PNG image,
+    /// encodes the image as a Base64 string, and demonstrates how to embed the result
+    /// in an ASP.NET MVC Razor view.
     /// </summary>
-    static void Main()
+    class Program
     {
-        // Define the data to encode in the QR Code.
-        string codeText = "https://example.com";
-
-        // Variable to hold the resulting Base64 string.
-        string base64Image;
-
-        // Use a memory stream to avoid writing a temporary file to disk.
-        using (var ms = new MemoryStream())
+        /// <summary>
+        /// Entry point of the application.
+        /// </summary>
+        static void Main()
         {
-            // Initialize the barcode generator with QR symbology and the desired text.
-            using (var generator = new BarcodeGenerator(EncodeTypes.QR, codeText))
+            // Initialize a BarcodeGenerator for QR Code with the desired text.
+            using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Hello, World!"))
             {
-                // Optional: set the QR error correction level to improve readability.
-                generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
+                // Set QR Code specific parameters.
+                generator.Parameters.Barcode.XDimension.Pixels = 4f;               // Size of a single module (pixel size).
+                generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM; // Error correction level.
 
-                // Save the generated QR code as a PNG image into the memory stream.
-                generator.Save(ms, BarCodeImageFormat.Png);
+                // Generate the barcode image as a Bitmap.
+                using (Bitmap bitmap = generator.GenerateBarCodeImage())
+                {
+                    // Save the Bitmap to a memory stream in PNG format.
+                    using (var ms = new MemoryStream())
+                    {
+                        bitmap.Save(ms, ImageFormat.Png);
+
+                        // Convert the PNG byte array to a Base64 string.
+                        string base64 = Convert.ToBase64String(ms.ToArray());
+
+                        // Output the Base64 string to the console (for demonstration purposes).
+                        Console.WriteLine("Base64 QR Code image:");
+                        Console.WriteLine(base64);
+
+                        // Example Razor markup for embedding the Base64 image in an MVC view:
+                        // <img src="data:image/png;base64,@Model.QrBase64" alt="QR Code" />
+                    }
+                }
             }
-
-            // Reset the stream position to the beginning before reading its contents.
-            ms.Position = 0;
-
-            // Convert the stream's bytes to a Base64 string.
-            byte[] imageBytes = ms.ToArray();
-            base64Image = Convert.ToBase64String(imageBytes);
         }
-
-        // Output the Base64 string; in an MVC view it can be used as:
-        // <img src="data:image/png;base64,{base64Image}" />
-        Console.WriteLine(base64Image);
     }
 }

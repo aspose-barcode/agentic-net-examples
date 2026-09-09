@@ -1,8 +1,8 @@
-// Title: Generate QR Code and Measure Generation Time
-// Description: Creates a QR Code barcode, saves it as a PNG file, and logs the time taken to generate the image.
-// Category-Description: This example demonstrates basic barcode generation using Aspose.BarCode. It showcases the BarcodeGenerator class with EncodeTypes.QR, configuring QR error correction, and measuring performance via System.Diagnostics.Stopwatch. Typical scenarios include creating QR codes for URLs, product information, or authentication tokens where developers need quick generation and timing metrics.
+// Title: Generate QR Code and measure generation time
+// Description: Demonstrates creating a QR Code barcode using Aspose.BarCode, saving it as PNG, and logging the time taken for generation.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating how to use the BarcodeGenerator class with QR Code symbology. It shows setting barcode parameters such as X‑dimension and error correction level, saving the image, and measuring performance with Stopwatch. Developers working on barcode creation, image output, or performance profiling can reference this pattern.
 // Prompt: Generate a QR Code barcode and log generation time for performance analysis.
-// Tags: qr code, barcode generation, performance analysis, png, aspose.barcode
+// Tags: qr code, barcode generation, performance measurement, aspose.barcode, png output
 
 using System;
 using System.Diagnostics;
@@ -11,40 +11,38 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates how to generate a QR Code barcode, save it as PNG, and log the generation time.
+/// Demonstrates QR Code generation and performance timing using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a QR Code, measures the time taken, and writes the results to the console.
+    /// Entry point that creates a QR Code, saves it, and logs the elapsed time.
     /// </summary>
-    /// <param name="args">Command‑line arguments (not used).</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Define the output file path in the system's temporary folder.
-        string outputPath = Path.Combine(Path.GetTempPath(), "qr_" + Guid.NewGuid().ToString("N") + ".png");
+        // Define the output file path in the temporary directory with a unique name
+        string outputPath = Path.Combine(Path.GetTempPath(), $"qr_{Guid.NewGuid():N}.png");
 
-        // Initialize a QR Code generator using the BarcodeGenerator class.
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR))
+        // Start the stopwatch to measure generation time
+        Stopwatch stopwatch = Stopwatch.StartNew();
+
+        // Initialize the barcode generator with QR symbology and the desired text
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "Hello, Aspose!"))
         {
-            // Set the data that the QR Code will encode.
-            generator.CodeText = "https://example.com";
+            // Set the X dimension (pixel size) of the barcode modules
+            generator.Parameters.Barcode.XDimension.Pixels = 4f;
 
-            // Optional: configure a high error‑correction level for better resilience.
-            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
+            // Configure the QR Code error correction level to Medium (Level M)
+            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
 
-            // Start measuring the time required to generate and save the barcode.
-            Stopwatch sw = Stopwatch.StartNew();
-
-            // Save the generated QR Code as a PNG image to the specified path.
+            // Save the generated barcode as a PNG image to the specified path
             generator.Save(outputPath, BarCodeImageFormat.Png);
-
-            // Stop the timer once the save operation completes.
-            sw.Stop();
-
-            // Output the location of the saved file and the elapsed generation time.
-            Console.WriteLine($"QR Code saved to: {outputPath}");
-            Console.WriteLine($"Generation time: {sw.ElapsedMilliseconds} ms");
         }
+
+        // Stop the stopwatch after generation completes
+        stopwatch.Stop();
+
+        // Output the elapsed time and the location of the saved image
+        Console.WriteLine($"QR Code generated in {stopwatch.ElapsedMilliseconds} ms. Saved to: {outputPath}");
     }
 }

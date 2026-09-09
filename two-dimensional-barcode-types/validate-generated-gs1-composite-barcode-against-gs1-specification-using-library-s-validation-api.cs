@@ -1,8 +1,8 @@
-// Title: Validate GS1 Composite barcode against GS1 specification using Aspose.BarCode
-// Description: Demonstrates generating a GS1 Composite barcode, saving it as an image, and validating its components with the Aspose.BarCode validation API.
-// Category-Description: This example belongs to the Aspose.BarCode generation, recognition, and validation category. It showcases the use of BarcodeGenerator to create a GS1 Composite symbol, BarCodeReader to decode it, and the extended GS1CompositeBar properties to verify compliance with the GS1 specification. Typical use cases include retail product labeling, supply‑chain tracking, and any scenario where combined linear‑and‑2D data must be validated. Developers often need to generate, read, and programmatically validate GS1 barcodes using these core API classes.
+// Title: Validate GS1 Composite barcode generation and verification
+// Description: Demonstrates generating a GS1 Composite barcode, saving it as PNG, and validating the encoded linear and 2D components using Aspose.BarCode's recognition and validation API.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category, focusing on GS1 Composite symbology. It showcases key API classes such as BarcodeGenerator, BarCodeReader, and related parameter objects for configuring GS1 Composite barcodes. Developers commonly use these APIs to create compliant GS1 barcodes for product identification and to verify that generated codes meet GS1 specifications.
 // Prompt: Validate generated GS1 Composite barcode against GS1 specification using the library's validation API.
-// Tags: gs1 composite, barcode generation, barcode validation, image output, aspose.barcode, generation, recognition
+// Tags: gs1, composite, barcode, generation, validation, aspnet, aspose.barcode
 
 using System;
 using System.IO;
@@ -11,109 +11,88 @@ using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates creation and validation of a GS1 Composite barcode using Aspose.BarCode.
+/// Demonstrates generation and validation of a GS1 Composite barcode using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a GS1 Composite barcode, saves it to a temporary file,
-    /// reads it back, and validates that the linear and 2D components match the original data.
+    /// Entry point. Generates a GS1 Composite barcode, saves it, reads it back, and validates the components.
     /// </summary>
     static void Main()
     {
-        // --------------------------------------------------------------------
-        // Prepare a temporary folder for the barcode image
-        // --------------------------------------------------------------------
+        // Prepare a unique temporary folder and file path for the barcode image
         string tempFolder = Path.Combine(Path.GetTempPath(), "Gs1CompositeDemo_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
         string barcodePath = Path.Combine(tempFolder, "gs1composite.png");
 
-        // --------------------------------------------------------------------
-        // Define the GS1 Composite code text (linear part + 2D part separated by '|')
-        // --------------------------------------------------------------------
-        string linearPart = "(01)03212345678906"; // valid 14‑digit GTIN with correct check digit
-        string twoDPart = "(21)A1B2C3D4E5F6G7H8";   // serial number AI
-        string codeText = $"{linearPart}|{twoDPart}";
+        // Define linear and 2D components (both must contain a valid GS1 AI (01) with 14 digits)
+        string linearComponent = "(01)12345678901231";
+        string twoDComponent = "(01)00123456789012";
+        string codeText = $"{linearComponent}|{twoDComponent}";
 
-        // --------------------------------------------------------------------
-        // Generate the barcode image
-        // --------------------------------------------------------------------
+        // Generate the GS1 Composite barcode with specific parameters
         using (var generator = new BarcodeGenerator(EncodeTypes.GS1CompositeBar, codeText))
         {
-            // Set the linear component to GS1 Code128
-            generator.Parameters.Barcode.GS1CompositeBar.LinearComponentType = EncodeTypes.GS1Code128;
-            // Set the 2D component to CC-A (MicroPDF417)
+            // Set X-dimension to 2 pixels for better readability
+            generator.Parameters.Barcode.XDimension.Pixels = 2f;
+
+            // Hide the human‑readable text (not needed for validation)
+            generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.None;
+
+            // Configure the 2D component type and the linear component symbology
             generator.Parameters.Barcode.GS1CompositeBar.TwoDComponentType = TwoDComponentType.CC_A;
+            generator.Parameters.Barcode.GS1CompositeBar.LinearComponentType = EncodeTypes.GS1Code128;
 
-            // Optional visual settings
-            generator.Parameters.Barcode.XDimension.Pixels = 3f;
-            generator.Parameters.Barcode.BarHeight.Pixels = 100f;
-            generator.Parameters.Barcode.Pdf417.AspectRatio = 3f;
+            // Allow non‑GS1 encoding for flexibility (set to false to enforce strict GS1)
+            generator.Parameters.Barcode.GS1CompositeBar.AllowOnlyGS1Encoding = false;
 
-            // Do not throw on minor code‑text issues (e.g., optional AI formatting)
-            generator.Parameters.Barcode.ThrowExceptionWhenCodeTextIncorrect = false;
-
-            // Save the generated barcode to the temporary file
-            generator.Save(barcodePath);
+            // Save the generated barcode as a PNG image
+            generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        // --------------------------------------------------------------------
-        // Verify that the barcode image was successfully created
-        // --------------------------------------------------------------------
+        // Verify that the barcode image file was successfully created
         if (!File.Exists(barcodePath))
         {
-            Console.WriteLine("Failed to create barcode image.");
+            Console.WriteLine("Failed to generate barcode image.");
             return;
         }
 
-        // --------------------------------------------------------------------
-        // Read and validate the barcode using BarCodeReader
-        // --------------------------------------------------------------------
+        // Read and validate the generated barcode using the GS1 Composite decoder
         using (var reader = new BarCodeReader(barcodePath, DecodeType.GS1CompositeBar))
         {
-            // Enable checksum validation for the linear (1D) component
-            reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
-
             bool validationPassed = false;
 
-            // Iterate through all detected barcodes (should be only one)
-            foreach (BarCodeResult result in reader.ReadBarCodes())
+            // Iterate through all recognized barcodes (should be only one)
+            foreach (var result in reader.ReadBarCodes())
             {
-                Console.WriteLine($"Detected CodeText: {result.CodeText}");
-
-                // Access GS1 Composite specific extended parameters
+                // Extract extended GS1 Composite information (linear and 2D components)
                 var ext = result.Extended.GS1CompositeBar;
-                if (ext != null && !ext.IsEmpty)
-                {
-                    Console.WriteLine($"Linear component (1D) CodeText: {ext.OneDCodeText}");
-                    Console.WriteLine($"2D component CodeText: {ext.TwoDCodeText}");
+                string readLinear = ext.OneDCodeText;
+                string readTwoD = ext.TwoDCodeText;
 
-                    // Simple validation: compare with the original components
-                    if (ext.OneDCodeText == linearPart && ext.TwoDCodeText == twoDPart)
-                    {
-                        Console.WriteLine("Validation succeeded: components match original data.");
-                        validationPassed = true;
-                    }
-                    else
-                    {
-                        Console.WriteLine("Validation failed: component data does not match.");
-                    }
+                // Simple validation: compare the read components with the original values
+                if (readLinear == linearComponent && readTwoD == twoDComponent)
+                {
+                    validationPassed = true;
+                    Console.WriteLine("Validation succeeded:");
+                    Console.WriteLine($"Linear component: {readLinear}");
+                    Console.WriteLine($"2D component: {readTwoD}");
                 }
                 else
                 {
-                    Console.WriteLine("Extended GS1 Composite data not available.");
+                    Console.WriteLine("Validation failed:");
+                    Console.WriteLine($"Expected linear: {linearComponent}, read: {readLinear}");
+                    Console.WriteLine($"Expected 2D: {twoDComponent}, read: {readTwoD}");
                 }
             }
 
             if (!validationPassed)
             {
-                Console.WriteLine("Overall validation failed.");
+                Console.WriteLine("No valid GS1 Composite barcode was recognized.");
             }
         }
 
-        // --------------------------------------------------------------------
-        // Clean up temporary files (optional, best‑effort)
-        // --------------------------------------------------------------------
+        // Clean up temporary files (optional)
         try
         {
             File.Delete(barcodePath);
@@ -121,7 +100,7 @@ class Program
         }
         catch
         {
-            // Ignored – cleanup is best‑effort
+            // Ignore any errors during cleanup
         }
     }
 }

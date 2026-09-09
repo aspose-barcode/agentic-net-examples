@@ -1,13 +1,13 @@
-// Title: Enable JPEG compression for Code128 barcode generation
-// Description: Demonstrates how to configure a BarcodeGenerator to produce a compressed JPEG image of a Code128 barcode, reducing file size by adjusting resolution and anti-aliasing.
-// Category-Description: This example belongs to the Aspose.BarCode image output configuration category. It showcases the use of BarcodeGenerator, EncodeTypes, BarCodeImageFormat, and generator.Parameters to control image quality and size. Developers often need to balance readability and file size when exporting barcodes for web or mobile applications, making these settings essential for performance‑critical scenarios.
+// Title: Save Barcode as JPEG with Compression Settings
+// Description: Demonstrates generating a Code128 barcode and saving it as a JPEG image with compression to reduce file size.
+// Category-Description: This example belongs to the Aspose.BarCode image export category, illustrating how to configure barcode generation parameters such as resolution and anti-aliasing before saving to a JPEG format. It uses the BarcodeGenerator class and BarCodeImageFormat enumeration, common tasks for developers needing optimized barcode images for web or mobile applications.
 // Prompt: Provide configuration to enable compression when saving barcode images as JPEG to reduce file size.
-// Tags: code128, image compression, jpeg, barcodegenerator, parameters
+// Tags: barcode, code128, jpeg, compression, image export, aspose.barcode, generation
 
 using System;
 using System.IO;
-using Aspose.BarCode.Generation;
 using Aspose.BarCode;
+using Aspose.BarCode.Generation;
 
 /// <summary>
 /// Generates a Code128 barcode and saves it as a compressed JPEG image.
@@ -15,34 +15,32 @@ using Aspose.BarCode;
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Configures barcode generation settings to reduce JPEG file size.
+    /// Entry point of the example. Creates a temporary directory, generates the barcode,
+    /// configures image parameters, and saves the result as a JPEG file.
     /// </summary>
     static void Main()
     {
-        // Define a temporary output directory and ensure it exists
-        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
+        // Build a unique temporary output folder.
+        string outputDir = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(outputDir);
 
-        // Full path for the resulting compressed JPEG file
-        string outputFile = Path.Combine(outputDir, "code128_compressed.jpg");
+        // Define the full path for the JPEG output file.
+        string outputPath = Path.Combine(outputDir, "barcode.jpg");
 
-        // Initialize the barcode generator for the Code128 symbology
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128))
+        // Initialize the barcode generator with Code128 symbology and the desired data.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "12345678"))
         {
-            // Set the data to be encoded in the barcode
-            generator.CodeText = "1234567890";
-
-            // Lower the image resolution (e.g., 72 DPI) to decrease file size
+            // Set image resolution (dots per inch) to reduce file size.
             generator.Parameters.Resolution = 72f;
 
-            // Turn off anti‑aliasing to further reduce the output size
+            // Disable anti-aliasing to further lower the output size.
             generator.Parameters.UseAntiAlias = false;
 
-            // Save the barcode as a JPEG image using the configured compression settings
-            generator.Save(outputFile, BarCodeImageFormat.Jpeg);
+            // Save the barcode as a JPEG image; default compression is applied.
+            generator.Save(outputPath, BarCodeImageFormat.Jpeg);
         }
 
-        // Inform the user where the barcode image was saved
-        Console.WriteLine($"Barcode saved to: {outputFile}");
+        // Inform the user where the barcode image was saved.
+        Console.WriteLine($"Barcode saved to {outputPath}");
     }
 }

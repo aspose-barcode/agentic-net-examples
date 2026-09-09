@@ -1,8 +1,8 @@
-// Title: Generate barcode image and output as PNG stream
-// Description: Demonstrates creating a barcode using Aspose.BarCode, saving it to a MemoryStream, and optionally writing to a file or Base64 string.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use BarcodeGenerator, EncodeTypes, and image format classes to produce barcode images. Typical use cases include RESTful services that accept input data and return barcode images for labeling, inventory, or ticketing systems. Developers often need to convert the generated image to streams for HTTP responses or further processing.
+// Title: Generate barcode image from symbology name and code text
+// Description: Demonstrates how to create a barcode image using Aspose.BarCode based on a supplied symbology and text, then output the image as a Base64 string (simulating a REST response).
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing the use of BarcodeGenerator, EncodeTypes, and BarCodeImageFormat to produce barcode images. Typical scenarios include web APIs that generate barcodes on‑the‑fly for labels, tickets, or inventory systems. Developers often need to map user‑provided symbology names to EncodeTypes and return the image in a stream or encoded format.
 // Prompt: Develop a RESTful endpoint that accepts multipart/form-data and returns generated barcode image stream.
-// Tags: barcode, generation, png, memorystream, aspnetcore, aspose.barcode, encode-types
+// Tags: barcode, symbology, generation, png, aspose.barcode, aspose.drawing, rest, multipart, image
 
 using System;
 using System.IO;
@@ -10,88 +10,50 @@ using System.Reflection;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Provides methods to generate barcode images using Aspose.BarCode.
+/// Example program that generates a barcode image based on input parameters,
+/// simulating the core logic of a RESTful endpoint.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Generates a barcode image based on the specified symbology name and code text.
-    /// Returns a <see cref="MemoryStream"/> containing the PNG image.
+    /// Entry point that creates a barcode using Aspose.BarCode and writes the image as a Base64 string.
     /// </summary>
-    /// <param name="symbologyName">The name of the barcode symbology (e.g., "Code128").</param>
-    /// <param name="codeText">The text to encode in the barcode.</param>
-    /// <returns>A memory stream with the generated PNG image, or null if the symbology is unknown.</returns>
-    static MemoryStream GenerateBarcode(string symbologyName, string codeText)
+    static void Main()
     {
-        // Resolve symbology name to an EncodeTypes field via reflection.
-        var field = typeof(EncodeTypes).GetField(symbologyName);
+        // Simulated input that would come from a multipart/form-data request
+        string symbologyName = "Code128";
+        string codeText = "Sample123";
+
+        // Resolve symbology name to BaseEncodeType using reflection
+        FieldInfo field = typeof(EncodeTypes).GetField(symbologyName);
         if (field == null)
         {
             Console.WriteLine($"Unknown symbology: {symbologyName}");
-            return null;
+            return;
         }
+        BaseEncodeType encodeType = (BaseEncodeType)field.GetValue(null);
 
-        // Retrieve the corresponding BaseEncodeType value.
-        var encodeType = (BaseEncodeType)field.GetValue(null);
-        var ms = new MemoryStream();
-
-        // Use a using block for BarcodeGenerator (IDisposable) to ensure resources are released.
-        using (var generator = new BarcodeGenerator(encodeType, codeText))
+        // Generate barcode with specified parameters
+        using (BarcodeGenerator generator = new BarcodeGenerator(encodeType, codeText))
         {
-            // Set basic visual parameters.
+            // Set visual appearance
             generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
             generator.Parameters.BackColor = Aspose.Drawing.Color.White;
+            generator.Parameters.Barcode.XDimension.Pixels = 4f;
+            generator.Parameters.Resolution = 300f;
 
-            // Save the barcode directly to the memory stream in PNG format.
-            generator.Save(ms, BarCodeImageFormat.Png);
-        }
-
-        // Reset the stream position so it can be read from the beginning.
-        ms.Position = 0;
-        return ms;
-    }
-
-    /// <summary>
-    /// Entry point of the console demonstration. Generates a barcode based on command‑line arguments
-    /// and writes the image to a file and Base64 output.
-    /// </summary>
-    /// <param name="args">Command‑line arguments: symbology name and code text.</param>
-    static void Main(string[] args)
-    {
-        // In a real RESTful service this would be populated from multipart/form-data.
-        // For this console demo we use command‑line arguments with defaults.
-        string symbology = args.Length > 0 ? args[0] : "Code128";
-        string codeText = args.Length > 1 ? args[1] : "12345";
-
-        using (var barcodeStream = GenerateBarcode(symbology, codeText))
-        {
-            if (barcodeStream == null)
+            // Save barcode to a memory stream in PNG format
+            using (MemoryStream ms = new MemoryStream())
             {
-                // Generation failed; exit with error code.
-                Environment.Exit(1);
+                generator.Save(ms, BarCodeImageFormat.Png);
+                ms.Position = 0;
+
+                // Convert the image stream to Base64 (simulating HTTP response body)
+                string base64 = Convert.ToBase64String(ms.ToArray());
+                Console.WriteLine(base64);
             }
-
-            // Save to a file for verification.
-            const string outputPath = "barcode.png";
-            using (var fileStream = new FileStream(outputPath, FileMode.Create, FileAccess.Write))
-            {
-                barcodeStream.CopyTo(fileStream);
-            }
-
-            Console.WriteLine($"Barcode generated and saved to {outputPath}");
-
-            // Also output Base64 representation (simulating HTTP response body).
-            string base64 = Convert.ToBase64String(barcodeStream.ToArray());
-            Console.WriteLine("Base64 PNG:");
-            Console.WriteLine(base64);
         }
-
-        // Note: In a full ASP.NET Core application this logic would be placed
-        // inside a controller action that reads the multipart request and returns
-        // the image stream as the HTTP response. The console program demonstrates
-        // the core barcode generation logic required for such an endpoint.
     }
 }

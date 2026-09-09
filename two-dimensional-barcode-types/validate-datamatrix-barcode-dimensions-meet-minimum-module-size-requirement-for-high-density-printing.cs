@@ -1,85 +1,66 @@
 // Title: Validate DataMatrix Module Size for High‑Density Printing
-// Description: Demonstrates how to generate a DataMatrix barcode, set its module size, and verify that the size meets a minimum requirement for high‑density printing.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and validation category. It shows how to use BarcodeGenerator, set DataMatrix version, configure XDimension, and perform runtime checks on module dimensions. Developers working with barcode printing, especially high‑resolution output, often need to ensure module sizes meet printer specifications. The code illustrates typical use of EncodeTypes, DataMatrixVersion, BarCodeImageFormat, and image inspection via Aspose.Drawing.
-/// Prompt: Validate DataMatrix barcode dimensions meet minimum module size requirement for high‑density printing.
-/// Tags: datamatrix, module size, validation, high-density printing, barcode generation, aspose.barcode, aspose.drawing, png
+// Description: Demonstrates how to generate a DataMatrix barcode, retrieve its XDimension (module size), and verify it meets a minimum size required for high‑density printing.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and validation category. It shows how to use BarcodeGenerator, EncodeTypes, and BarCodeImageFormat to create a DataMatrix symbol, access barcode parameters such as XDimension, and perform simple validation checks. Developers working with barcode rendering, quality control, or print preparation often need to ensure module dimensions meet printer specifications.
+// Prompt: Validate DataMatrix barcode dimensions meet minimum module size requirement for high‑density printing.
+// Tags: datamatrix, module size, validation, high-density printing, barcode generation, aspose.barcode, c#
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Generates a DataMatrix barcode, saves it as PNG, and validates that its module size
-/// meets a specified minimum for high‑density printing scenarios.
+/// Example program that generates a DataMatrix barcode, reads its module size,
+/// and validates the size against a minimum requirement for high‑density printing.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates the barcode, checks module dimensions,
-    /// and writes the image to a temporary file.
+    /// Entry point of the example. Generates the barcode, saves it, and performs the size validation.
     /// </summary>
     static void Main()
     {
-        // Sample data to encode in the DataMatrix barcode
-        const string codeText = "Hello Aspose!";
+        // Sample data for validation
+        string codeText = "ASPOSE";
+        float minimumModuleSizePoints = 2f; // Minimum XDimension in points
 
-        // Minimum acceptable module size (XDimension) in points for high‑density printing
-        const float minModuleSizePoint = 0.5f; // 0.5 point ≈ 0.176 mm
+        // Prepare a temporary output directory and file path
+        string outputDir = Path.Combine(Path.GetTempPath(), "DataMatrixValidation_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputDir);
+        string imagePath = Path.Combine(outputDir, "datamatrix.png");
 
-        // Destination path for the generated PNG image
-        string outputPath = Path.Combine(Path.GetTempPath(), "DataMatrix.png");
-
-        try
+        // ------------------------------------------------------------
+        // Generate DataMatrix barcode and save it to a PNG file
+        // ------------------------------------------------------------
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.DataMatrix, codeText))
         {
-            // Initialize the barcode generator for DataMatrix with the sample text
-            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.DataMatrix, codeText))
-            {
-                // Select a specific DataMatrix version (e.g., 32x32 modules)
-                generator.Parameters.Barcode.DataMatrix.Version = DataMatrixVersion.ECC200_32x32;
+            // Set a module size (XDimension) for the barcode; this value is for demonstration
+            generator.Parameters.Barcode.XDimension.Point = 1f;
 
-                // Define the module (XDimension) size; 1 point ≈ 0.352 mm
-                generator.Parameters.Barcode.XDimension.Point = 1.0f;
-
-                // Render the barcode to a memory stream in PNG format
-                using (MemoryStream ms = new MemoryStream())
-                {
-                    generator.Save(ms, BarCodeImageFormat.Png);
-                    ms.Position = 0; // Reset stream position for subsequent reading
-
-                    // Optional: Load the image to display its pixel dimensions
-                    using (Bitmap bitmap = new Bitmap(ms))
-                    {
-                        Console.WriteLine($"Generated image size: {bitmap.Width}×{bitmap.Height} pixels");
-                    }
-
-                    // Persist the PNG image to the file system for visual inspection
-                    File.WriteAllBytes(outputPath, ms.ToArray());
-                }
-
-                // Retrieve the actual module size that was set on the generator
-                float actualModuleSize = generator.Parameters.Barcode.XDimension.Point;
-
-                // Compare the actual module size against the minimum requirement
-                if (actualModuleSize < minModuleSizePoint)
-                {
-                    Console.WriteLine($"Warning: Module size ({actualModuleSize} pt) is below the minimum required ({minModuleSizePoint} pt) for high‑density printing.");
-                }
-                else
-                {
-                    Console.WriteLine($"Success: Module size ({actualModuleSize} pt) meets the minimum requirement ({minModuleSizePoint} pt).");
-                }
-            }
-
-            // Inform the user where the barcode image was saved
-            Console.WriteLine($"Barcode image saved to: {outputPath}");
+            // Save the generated barcode image
+            generator.Save(imagePath, BarCodeImageFormat.Png);
         }
-        catch (Exception ex)
+
+        // ------------------------------------------------------------
+        // Load the generated barcode parameters to inspect the XDimension value
+        // ------------------------------------------------------------
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.DataMatrix, codeText))
         {
-            // Output any errors that occur during generation or file operations
-            Console.WriteLine($"Error: {ex.Message}");
+            float actualModuleSize = generator.Parameters.Barcode.XDimension.Point;
+
+            Console.WriteLine($"Generated DataMatrix barcode at: {imagePath}");
+            Console.WriteLine($"Actual module size (XDimension): {actualModuleSize} points");
+
+            // Validate the module size against the minimum requirement
+            if (actualModuleSize < minimumModuleSizePoints)
+            {
+                Console.WriteLine($"Warning: Module size is below the minimum required of {minimumModuleSizePoints} points for high‑density printing.");
+            }
+            else
+            {
+                Console.WriteLine("Module size meets the minimum requirement for high‑density printing.");
+            }
         }
     }
 }

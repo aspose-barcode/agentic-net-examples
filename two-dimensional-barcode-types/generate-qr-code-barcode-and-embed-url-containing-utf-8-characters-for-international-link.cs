@@ -1,59 +1,54 @@
 // Title: Generate QR Code with UTF‑8 URL using Aspose.BarCode
-// Description: Demonstrates how to create a QR Code that encodes an international URL containing UTF‑8 characters and saves it as a PNG image.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, focusing on QR Code creation with ECI (Extended Channel Interpretation) encoding for Unicode support. It showcases the use of BarcodeGenerator, EncodeTypes, and QR‑specific parameters such as EncodeMode, ECIEncoding, and ErrorLevel. Developers commonly need this pattern when embedding multilingual links or data in QR codes for web, marketing, or mobile applications.
+// Description: Demonstrates creating a QR Code that encodes a URL containing international (UTF‑8) characters and saving it as a PNG image.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, focusing on QR Code creation with ECI (Extended Channel Interpretation) encoding. It showcases the use of BarcodeGenerator, EncodeTypes, QREncodeMode, and ECIEncodings classes to produce QR symbols for international links. Developers often need to embed Unicode URLs in QR codes for multilingual web pages, marketing materials, or mobile app deep linking.
 // Prompt: Generate QR Code barcode and embed a URL containing UTF‑8 characters for international link.
-// Tags: qr code, utf-8, barcode generation, png, aspose.barcode, encode types, eci encoding
+// Tags: qr code, barcode generation, utf-8, eci, png, aspose.barcode, encode types
 
 using System;
+using System.IO;
+using System.Text;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates a QR Code containing a UTF‑8 encoded URL
-/// and saves the result as a PNG image using Aspose.BarCode.
+/// Example program that generates a QR Code containing a UTF‑8 URL and saves it as a PNG file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Creates an international URL, generates the QR Code, and writes a confirmation message.
+    /// Entry point. Creates the output folder, configures the QR generator with ECI UTF‑8 encoding,
+    /// writes the QR image to disk, and prints the file location.
     /// </summary>
     static void Main()
     {
-        // Sample international URL containing UTF‑8 characters
-        string url = "https://例子.测试/路径?参数=值";
+        // Prepare a temporary directory for the output image
+        string outputDir = Path.Combine(Path.GetTempPath(), "QrDemo");
+        Directory.CreateDirectory(outputDir);
 
-        // Generate the QR code and save it as PNG
-        GenerateQrCode(url, "qr_utf8.png");
+        // Full path of the PNG file to be created
+        string outputPath = Path.Combine(outputDir, "InternationalUrlQr.png");
 
-        // Inform the user that the image has been saved
-        Console.WriteLine("QR code saved to qr_utf8.png");
-    }
+        // URL that includes UTF‑8 characters (Chinese example domain and path)
+        string url = "https://例子.测试/路径?查询=值";
 
-    /// <summary>
-    /// Generates a QR Code for the specified URL and saves it to the given file path.
-    /// </summary>
-    /// <param name="url">The URL (including UTF‑8 characters) to encode in the QR Code.</param>
-    /// <param name="outputPath">The file path where the PNG image will be saved.</param>
-    static void GenerateQrCode(string url, string outputPath)
-    {
-        // Initialize a QR Code generator with the QR symbology
-        using (Aspose.BarCode.Generation.BarcodeGenerator generator =
-            new Aspose.BarCode.Generation.BarcodeGenerator(EncodeTypes.QR))
+        // Initialize the QR Code generator with the QR symbology
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR))
         {
-            // Assign the text (URL) to be encoded
-            generator.CodeText = url;
-
-            // Enable ECI mode to correctly handle UTF‑8 characters
+            // Enable ECI mode so the QR can carry UTF‑8 data
             generator.Parameters.Barcode.QR.EncodeMode = QREncodeMode.ECI;
             generator.Parameters.Barcode.QR.ECIEncoding = ECIEncodings.UTF8;
 
-            // Optionally set a high error correction level for better resilience
-            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
+            // Optional: increase the size of each QR module for better readability
+            generator.Parameters.Barcode.XDimension.Pixels = 8f;
+
+            // Assign the URL text to the barcode, explicitly using UTF‑8 encoding
+            generator.SetCodeText(url, Encoding.UTF8);
 
             // Save the generated QR Code as a PNG image
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
+
+        // Inform the user where the QR Code image was saved
+        Console.WriteLine($"QR Code saved to: {outputPath}");
     }
 }

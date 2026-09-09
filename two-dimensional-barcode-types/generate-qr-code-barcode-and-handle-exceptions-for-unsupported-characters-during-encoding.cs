@@ -1,83 +1,50 @@
-// Title: Generate QR Code with ECI Encoding and Handle Unsupported Characters
-// Description: Demonstrates generating a QR Code barcode using Aspose.BarCode, first with ISO‑8859‑1 encoding which fails for non‑Latin characters, then with UTF‑8 encoding which succeeds.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on QR Code creation with Extended Channel Interpretation (ECI) encoding. It showcases how to configure the QR encoder, handle encoding exceptions, and produce PNG images. Developers working with international text, custom encodings, or needing robust error handling will find this pattern useful.
+// Title: Generate QR Code and handle unsupported characters
+// Description: Demonstrates creating a QR Code barcode with Aspose.BarCode, setting binary encoding mode, and catching exceptions for characters that cannot be encoded.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on QR Code creation. It showcases the use of BarcodeGenerator, EncodeTypes, QREncodeMode, and exception handling for invalid code text. Developers often need to generate QR codes for URLs, contact info, or custom data and must handle unsupported characters gracefully.
 // Prompt: Generate a QR Code barcode and handle exceptions for unsupported characters during encoding.
-// Tags: qr code, barcode generation, eci encoding, unsupported characters, exception handling, aspose.barcode, png output
+// Tags: qr code, barcode generation, exception handling, binary encode mode, aspose.barcode, png output
 
 using System;
-using System.Text;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that creates QR Code barcodes using different ECI encodings
-/// and demonstrates exception handling for characters unsupported by the chosen encoding.
+/// Demonstrates generating a QR Code barcode and handling encoding exceptions.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a QR Code with ISO‑8859‑1 (expected to fail) and then with UTF‑8 (expected to succeed).
+    /// Entry point. Generates QR code image and writes status to console.
     /// </summary>
     static void Main()
     {
-        // Text containing both Latin and Chinese characters.
-        string codeText = "Hello 世界";
+        // Define the path for the generated PNG file in the temporary directory
+        string outputPath = Path.Combine(Path.GetTempPath(), "qr.png");
 
-        // --------------------------------------------------------------------
-        // Attempt to generate a QR Code using ISO‑8859‑1 encoding.
-        // This encoding cannot represent the Chinese characters, so an exception is expected.
-        // --------------------------------------------------------------------
-        try
+        // Text to encode; includes Unicode characters that may not be supported in binary mode
+        string codeText = "Hello世界";
+
+        // Initialize the barcode generator for QR Code with the specified text
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, codeText))
         {
-            using (var generator = new BarcodeGenerator(EncodeTypes.QR))
+            // Set QR encoding mode to binary to handle raw byte data
+            generator.Parameters.Barcode.QR.EncodeMode = QREncodeMode.Binary;
+
+            // Enable throwing an exception when the code text contains unsupported characters
+            generator.Parameters.Barcode.ThrowExceptionWhenCodeTextIncorrect = true;
+
+            try
             {
-                // Enable ECI mode and set the target encoding to ISO‑8859‑1 (Latin‑1).
-                generator.Parameters.Barcode.QR.EncodeMode = QREncodeMode.ECI;
-                generator.Parameters.Barcode.QR.ECIEncoding = ECIEncodings.ISO_8859_1;
-
-                // Assign the text to be encoded.
-                generator.CodeText = codeText;
-
-                // Save the generated barcode image to a PNG file.
-                generator.Save("qr_unsupported.png");
-                Console.WriteLine("QR code generated successfully (unexpected).");
+                // Attempt to save the QR code as a PNG image
+                generator.Save(outputPath, BarCodeImageFormat.Png);
+                Console.WriteLine($"QR code generated successfully: {outputPath}");
             }
-        }
-        catch (BarCodeException ex)
-        {
-            // Expected failure: characters cannot be encoded with ISO‑8859‑1.
-            Console.WriteLine("Failed to generate QR code due to unsupported characters:");
-            Console.WriteLine(ex.Message);
-        }
-
-        // --------------------------------------------------------------------
-        // Generate the same QR Code using UTF‑8 encoding, which supports all Unicode characters.
-        // This should succeed without exceptions.
-        // --------------------------------------------------------------------
-        try
-        {
-            using (var generator = new BarcodeGenerator(EncodeTypes.QR))
+            catch (Exception ex)
             {
-                // Enable ECI mode and set the target encoding to UTF‑8.
-                generator.Parameters.Barcode.QR.EncodeMode = QREncodeMode.ECI;
-                generator.Parameters.Barcode.QR.ECIEncoding = ECIEncodings.UTF8;
-
-                // Assign the same text.
-                generator.CodeText = codeText;
-
-                // Save the barcode image to a PNG file.
-                generator.Save("qr_utf8.png");
-                Console.WriteLine("QR code generated successfully with UTF-8 encoding.");
+                // Output any errors encountered during generation (e.g., unsupported characters)
+                Console.WriteLine($"Error generating QR code: {ex.Message}");
             }
-        }
-        catch (BarCodeException ex)
-        {
-            // Any unexpected error during UTF‑8 generation will be reported here.
-            Console.WriteLine("Unexpected error during UTF-8 QR generation:");
-            Console.WriteLine(ex.Message);
         }
     }
 }

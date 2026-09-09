@@ -1,8 +1,8 @@
-// Title: Save DataMatrix barcode as PNG with transparent background
-// Description: Demonstrates generating a DataMatrix barcode and saving it as a PNG file with a transparent background, suitable for overlay scenarios.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to configure barcode appearance using the BarcodeGenerator class. It shows setting background transparency and bar color, then exporting to PNG. Developers working with barcode creation for UI overlays, document stamping, or image compositing often need these settings.
+// Title: Generate a DataMatrix barcode with transparent background and save as PNG
+// Description: Demonstrates creating a DataMatrix barcode, setting a transparent background, and saving it as a PNG file suitable for overlay scenarios.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to use BarcodeGenerator with EncodeTypes.DataMatrix, configure visual parameters such as BackColor and BarColor, and export the image in PNG format. Developers often need to produce barcodes with transparent backgrounds for UI overlays, reports, or composite images, and this snippet shows the typical API usage for those cases.
 // Prompt: Save generated DataMatrix barcode as PNG file with transparent background for overlay usage.
-// Tags: datamatrix, png, transparent background, barcode generation, aspose.barcode, aspose.drawing
+// Tags: datamatrix, barcode, generation, transparent background, png, aspose.barcode, aspose.drawing
 
 using System;
 using System.IO;
@@ -11,32 +11,32 @@ using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates creating a DataMatrix barcode and saving it as a PNG with a transparent background.
+/// Entry point for the DataMatrix barcode generation example.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that generates the barcode and writes it to a file.
+    /// Generates a DataMatrix barcode with a transparent background and saves it as a PNG file.
     /// </summary>
     static void Main()
     {
-        // Determine the full path for the output PNG file in the current directory
-        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "datamatrix.png");
+        // Define the full path for the output PNG file.
+        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "DataMatrixTransparent.png");
 
-        // Initialize a DataMatrix barcode generator with the desired text
-        using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, "Sample123"))
+        // Create a BarcodeGenerator for DataMatrix with the desired text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, "SampleDataMatrix"))
         {
-            // Configure the barcode to have a transparent background (useful for overlaying on other images)
+            // Set the background to transparent so the barcode can be overlaid on other images.
             generator.Parameters.BackColor = Color.Transparent;
 
-            // Optionally set the bar (foreground) color; default is black
+            // Optionally ensure the barcode bars are black (default color).
             generator.Parameters.Barcode.BarColor = Color.Black;
 
-            // Save the generated barcode as a PNG file preserving the transparent background
+            // Save the generated barcode as a PNG file.
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user where the barcode image has been saved
+        // Inform the user where the file was saved.
         Console.WriteLine($"DataMatrix barcode saved to: {outputPath}");
     }
 }

@@ -1,73 +1,48 @@
-// Title: Generate QR Code and prepare Docker container for isolated execution
-// Description: Demonstrates creating a QR Code barcode image using Aspose.BarCode and writing a Dockerfile to run the generator in a container.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to use the BarcodeGenerator class with QR symbology, configure error correction, and export the image. It also shows how to automate containerization by creating a Dockerfile that copies the compiled assembly and runs it with the .NET runtime. Developers looking to integrate barcode creation into CI/CD pipelines or isolated environments will find this pattern useful.
+// Title: Generate QR Code barcode using Aspose.BarCode
+// Description: Demonstrates creating a QR Code image with Aspose.BarCode and saving it to a temporary folder.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, showcasing how to configure QR Code parameters such as X‑dimension, error correction level, and version using the BarcodeGenerator class. Typical use cases include generating QR codes for URLs, product information, or authentication tokens in web and mobile applications. Developers often need to produce QR images in various formats (PNG, JPEG, etc.) and store them programmatically.
 // Prompt: Generate QR Code barcode and use Docker container to run generation in isolated environment.
-// Tags: qr code, barcode generation, docker, aspnet, aspose.barcode, image output
+// Tags: qr code, barcode generation, aspnet, aspose.barcode, png, temporary directory
 
 using System;
 using System.IO;
-using System.Reflection;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates QR Code generation with Aspose.BarCode and Dockerfile creation for containerized execution.
+/// Demonstrates QR Code generation with Aspose.BarCode and saves the image to a temporary directory.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates a QR Code image, writes a Dockerfile, and outputs usage instructions.
+    /// Entry point. Generates a QR Code for a sample URL, configures its appearance, and writes the PNG file path to the console.
     /// </summary>
     /// <param name="args">Command‑line arguments (not used).</param>
     static void Main(string[] args)
     {
-        // Define the output file path for the generated QR code image
-        string outputFile = Path.Combine(Directory.GetCurrentDirectory(), "qr.png");
+        // Create a unique temporary folder for output
+        string outputDir = Path.Combine(Path.GetTempPath(), "QrGen_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputDir);
 
-        // Generate QR code using Aspose.BarCode
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR))
+        // Define full file path for the PNG image
+        string filePath = Path.Combine(outputDir, "qr.png");
+
+        // Initialize the barcode generator for QR type with the target data
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
         {
-            // Set the data to encode
-            generator.CodeText = "https://example.com";
+            // Set the size of each QR module (pixel dimension)
+            generator.Parameters.Barcode.XDimension.Pixels = 4f;
 
-            // Configure a high error correction level for better resilience
-            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
+            // Configure QR error correction level (M) and let the library choose the version automatically
+            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
+            generator.Parameters.Barcode.QR.Version = QRVersion.Auto;
 
-            // Save the QR code image to the specified file
-            generator.Save(outputFile);
+            // Save the generated QR code as a PNG file
+            generator.Save(filePath, BarCodeImageFormat.Png);
         }
 
-        Console.WriteLine($"QR code image saved to: {outputFile}");
-
-        // Create a folder to hold Docker context files
-        string dockerFolder = Path.Combine(Directory.GetCurrentDirectory(), "docker");
-        Directory.CreateDirectory(dockerFolder);
-
-        // Path for the Dockerfile within the Docker context folder
-        string dockerfilePath = Path.Combine(dockerFolder, "Dockerfile");
-
-        // Determine the name of the compiled assembly (DLL for framework‑dependent apps)
-        string assemblyName = Path.GetFileName(Assembly.GetEntryAssembly()?.Location ?? "app.dll");
-        if (!assemblyName.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
-        {
-            assemblyName = Path.ChangeExtension(assemblyName, ".dll");
-        }
-
-        // Build Dockerfile content that copies the application and runs it with the .NET runtime
-        string dockerfileContent = $@"# Dockerfile to run the QR code generator in an isolated container
-FROM mcr.microsoft.com/dotnet/runtime:8.0-alpine
-WORKDIR /app
-COPY . .
-ENTRYPOINT [""dotnet"", ""{assemblyName}""]";
-
-        // Write the Dockerfile to the Docker context folder
-        File.WriteAllText(dockerfilePath, dockerfileContent);
-        Console.WriteLine($"Dockerfile written to: {dockerfilePath}");
-
-        // Output instructions for building and running the Docker container
-        Console.WriteLine("To build and run the container:");
-        Console.WriteLine($"  cd {dockerFolder}");
-        Console.WriteLine("  docker build -t barcode-generator .");
-        Console.WriteLine("  docker run --rm -v $(pwd)/output:/app/output barcode-generator");
+        // Output the location of the generated image
+        Console.WriteLine($"QR code saved to: {filePath}");
     }
 }

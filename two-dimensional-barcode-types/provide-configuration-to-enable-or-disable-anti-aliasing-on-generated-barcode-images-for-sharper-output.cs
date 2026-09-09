@@ -1,13 +1,13 @@
-// Title: Demonstrate enabling and disabling anti-aliasing for barcode images
-// Description: Shows how to configure the UseAntiAlias property of Aspose.BarCode to generate barcode PNGs with sharper or pixelated rendering.
-// Category-Description: This example belongs to the Aspose.BarCode image rendering category, illustrating how to control image quality using the BarcodeGenerator.Parameters.UseAntiAlias property. Developers working with barcode generation often need to balance visual clarity and file size, and this snippet demonstrates typical use cases for toggling anti‑aliasing when saving barcodes to PNG format.
+// Title: Enable or disable anti-aliasing for barcode images
+// Description: Demonstrates how to configure the Aspose.BarCode generator to turn anti‑aliasing on or off, producing sharper or more pixel‑perfect barcode PNG files.
+// Category-Description: This example belongs to the Aspose.BarCode image rendering category, illustrating the use of the BarcodeGenerator class and its Parameters property to control rendering options such as anti‑aliasing. Developers creating barcodes for print or screen can adjust this setting to improve visual quality, especially when scaling images. The snippet shows typical usage for Code128 symbology and PNG output, a common scenario in inventory and labeling applications.
 // Prompt: Provide configuration to enable or disable anti‑aliasing on generated barcode images for sharper output.
-// Tags: barcode, anti-aliasing, image rendering, code128, png, aspose.barcode, generation
+// Tags: barcode, anti-aliasing, rendering, code128, png, aspnet, aspose.barcode, image-output
 
 using System;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 
 /// <summary>
 /// Example program that generates Code128 barcodes with anti‑aliasing enabled and disabled.
@@ -15,31 +15,53 @@ using Aspose.Drawing;
 class Program
 {
     /// <summary>
-    /// Entry point. Generates two PNG barcode images demonstrating the effect of the UseAntiAlias setting.
+    /// Entry point. Creates a temporary folder, generates two PNG barcodes (one with anti‑aliasing on, one off),
+    /// and writes the file paths to the console.
     /// </summary>
-    static void Main()
+    /// <param name="args">Command‑line arguments (not used).</param>
+    static void Main(string[] args)
     {
-        // Generate a barcode with anti‑aliasing enabled for smoother edges
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
+        // Create a unique temporary directory for the output images
+        string outputDir = Path.Combine(Path.GetTempPath(), "BarcodeAntiAlias_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputDir);
+
+        // Text to encode in the barcode
+        string codeText = "Sample123";
+
+        // ------------------------------------------------------------
+        // Generate barcode with anti‑aliasing enabled
+        // ------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
         {
-            // Enable anti‑aliasing
+            // Turn on anti‑aliasing for smoother edges
             generator.Parameters.UseAntiAlias = true;
 
-            // Save the image as PNG
-            generator.Save("barcode_anti_alias_enabled.png");
+            // Define the output file path
+            string enabledPath = Path.Combine(outputDir, "barcode_aa_enabled.png");
+
+            // Save the barcode as a PNG image
+            generator.Save(enabledPath, BarCodeImageFormat.Png);
+
+            // Inform the user where the file was saved
+            Console.WriteLine($"Saved with anti-aliasing enabled: {enabledPath}");
         }
 
-        // Generate a barcode with anti‑aliasing disabled for a crisper, pixelated look
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
+        // ------------------------------------------------------------
+        // Generate barcode with anti‑aliasing disabled
+        // ------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
         {
-            // Disable anti‑aliasing
+            // Turn off anti‑aliasing for a crisp, pixel‑perfect image
             generator.Parameters.UseAntiAlias = false;
 
-            // Save the image as PNG
-            generator.Save("barcode_anti_alias_disabled.png");
-        }
+            // Define the output file path
+            string disabledPath = Path.Combine(outputDir, "barcode_aa_disabled.png");
 
-        // Inform the user that the images have been created
-        Console.WriteLine("Barcode images generated with anti‑aliasing enabled and disabled.");
+            // Save the barcode as a PNG image
+            generator.Save(disabledPath, BarCodeImageFormat.Png);
+
+            // Inform the user where the file was saved
+            Console.WriteLine($"Saved with anti-aliasing disabled: {disabledPath}");
+        }
     }
 }

@@ -1,8 +1,8 @@
-// Title: GS1 Composite Barcode Delimiter Split Verification
-// Description: Demonstrates how to generate a GS1 Composite barcode, split its CodeText using the delimiter, and verify the linear and 2D components.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, showcasing the use of BarcodeGenerator, BarCodeReader, and GS1CompositeBar extended parameters. It illustrates typical scenarios where developers need to validate delimiter handling in GS1 Composite symbology, such as splitting linear and 2D parts for inventory or logistics applications.
+// Title: GS1 Composite Barcode Delimiter Handling Test
+// Description: This example generates a GS1 Composite barcode, splits the linear and 2‑dimensional parts using the '|' delimiter, and verifies that the reader correctly returns each component.
+// Category-Description: Demonstrates Aspose.BarCode generation and recognition of GS1 Composite barcodes. It covers the use of BarcodeGenerator with EncodeTypes.GS1CompositeBar, setting linear and 2D component types, and reading the barcode via BarCodeReader to validate delimiter handling. Ideal for developers needing to test GS1 Composite encoding, component extraction, and unit‑test scenarios.
 // Prompt: Create unit test verifying correct delimiter handling when splitting CodeText for GS1 Composite.
-// Tags: gs1-composite, barcode-generation, barcode-recognition, delimiter-handling, aspose-barcode, csharp
+// Tags: barcode, gs1, composite, generation, recognition, unit-test, csharp, aspose.barcode
 
 using System;
 using System.IO;
@@ -11,115 +11,87 @@ using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Example program that generates a GS1 Composite barcode, reads it back,
-/// and verifies that the delimiter correctly separates the linear and 2D parts of the CodeText.
+/// Demonstrates generation and verification of a GS1 Composite barcode,
+/// focusing on correct handling of the delimiter that separates the linear
+/// and 2‑dimensional components of the CodeText.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that runs the GS1 Composite delimiter verification test.
+    /// Entry point of the example. Generates a barcode, reads it back,
+    /// and validates that the linear and 2‑D parts are correctly split.
     /// </summary>
-    /// <param name="args">Command‑line arguments (not used).</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        RunGs1CompositeDelimiterTest();
-    }
+        // Prepare test data: linear and 2‑D components with a delimiter.
+        string linearPart = "(01)12345678901234";
+        string twoDPart = "(21)ABC123";
+        string combinedCodeText = $"{linearPart}|{twoDPart}";
 
-    /// <summary>
-    /// Generates a GS1 Composite barcode, saves it to a temporary file,
-    /// reads it back, and checks that the extended parameters contain the expected split parts.
-    /// </summary>
-    static void RunGs1CompositeDelimiterTest()
-    {
-        // Create a unique temporary folder for the test files
-        string tempFolder = Path.Combine(Path.GetTempPath(), "GS1CompositeTest_" + Guid.NewGuid().ToString("N"));
+        // Create a unique temporary folder for the barcode image.
+        string tempFolder = Path.Combine(Path.GetTempPath(), "Gs1CompositeTest_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
+        string barcodePath = Path.Combine(tempFolder, "gs1composite.png");
 
-        // Expected parts of the GS1 Composite code text
-        const string linearPart = "(01)03212345678906";
-        const string twoDPart = "(21)A1B2C3D4E5F6G7H8";
-        string fullCodeText = $"{linearPart}|{twoDPart}";
+        // Generate the GS1 Composite barcode using the combined CodeText.
+        using (var generator = new BarcodeGenerator(EncodeTypes.GS1CompositeBar, combinedCodeText))
+        {
+            generator.Parameters.Barcode.XDimension.Pixels = 2f;
+            generator.Parameters.Barcode.GS1CompositeBar.LinearComponentType = EncodeTypes.GS1Code128;
+            generator.Parameters.Barcode.GS1CompositeBar.TwoDComponentType = TwoDComponentType.CC_C;
+            generator.Parameters.Barcode.GS1CompositeBar.AllowOnlyGS1Encoding = false;
+            generator.Save(barcodePath, BarCodeImageFormat.Png);
+        }
 
-        string imagePath = Path.Combine(tempFolder, "gs1composite.png");
+        // Verify that the barcode image file was created successfully.
+        if (!File.Exists(barcodePath))
+        {
+            Console.WriteLine("FAILED: Barcode image was not created.");
+            return;
+        }
 
+        // Read the barcode and check that the delimiter split is handled correctly.
+        bool testPassed = false;
+        using (var reader = new BarCodeReader(barcodePath, DecodeType.GS1CompositeBar))
+        {
+            foreach (var result in reader.ReadBarCodes())
+            {
+                string readLinear = result.Extended.GS1CompositeBar.OneDCodeText;
+                string readTwoD = result.Extended.GS1CompositeBar.TwoDCodeText;
+
+                if (readLinear == linearPart && readTwoD == twoDPart)
+                {
+                    testPassed = true;
+                }
+                else
+                {
+                    Console.WriteLine($"DEBUG: Expected Linear='{linearPart}', Got='{readLinear}'");
+                    Console.WriteLine($"DEBUG: Expected 2D='{twoDPart}', Got='{readTwoD}'");
+                }
+            }
+        }
+
+        // Output the test result.
+        if (testPassed)
+        {
+            Console.WriteLine("PASSED: GS1 Composite delimiter handling verified.");
+        }
+        else
+        {
+            Console.WriteLine("FAILED: GS1 Composite delimiter handling verification failed.");
+        }
+
+        // Cleanup temporary files and directories.
         try
         {
-            // ---------- Generate GS1 Composite barcode ----------
-            using (var generator = new BarcodeGenerator(EncodeTypes.GS1CompositeBar, fullCodeText))
-            {
-                // Set component types (optional but makes the barcode valid)
-                generator.Parameters.Barcode.GS1CompositeBar.LinearComponentType = EncodeTypes.GS1Code128;
-                generator.Parameters.Barcode.GS1CompositeBar.TwoDComponentType = TwoDComponentType.CC_A;
-
-                // Save the barcode image
-                generator.Save(imagePath);
-            }
-
-            // Verify that the image was created
-            if (!File.Exists(imagePath))
-            {
-                Console.WriteLine("FAILED: Barcode image was not created.");
-                return;
-            }
-
-            // ---------- Read and validate the barcode ----------
-            using (var reader = new BarCodeReader(imagePath, DecodeType.GS1CompositeBar))
-            {
-                bool testPassed = false;
-
-                foreach (BarCodeResult result in reader.ReadBarCodes())
-                {
-                    // Access GS1 Composite specific extended parameters
-                    var ext = result.Extended.GS1CompositeBar;
-                    if (ext == null)
-                    {
-                        Console.WriteLine("FAILED: Extended parameters for GS1 Composite not available.");
-                        continue;
-                    }
-
-                    // Compare the split parts with the expected values
-                    bool linearMatch = string.Equals(ext.OneDCodeText, linearPart, StringComparison.Ordinal);
-                    bool twoDMatch = string.Equals(ext.TwoDCodeText, twoDPart, StringComparison.Ordinal);
-
-                    if (linearMatch && twoDMatch)
-                    {
-                        testPassed = true;
-                        Console.WriteLine("PASSED: Delimiter correctly split CodeText into linear and 2D parts.");
-                    }
-                    else
-                    {
-                        Console.WriteLine($"FAILED: Split parts do not match.\n  Expected Linear: {linearPart}\n  Actual Linear:   {ext.OneDCodeText}\n  Expected 2D:    {twoDPart}\n  Actual 2D:      {ext.TwoDCodeText}");
-                    }
-                }
-
-                if (!testPassed)
-                {
-                    Console.WriteLine("FAILED: No valid barcode result was found.");
-                }
-            }
+            if (File.Exists(barcodePath))
+                File.Delete(barcodePath);
+            if (Directory.Exists(tempFolder))
+                Directory.Delete(tempFolder, true);
         }
-        catch (Exception ex)
+        catch
         {
-            Console.WriteLine($"FAILED: Exception occurred - {ex.Message}");
-        }
-        finally
-        {
-            // Clean up temporary files
-            try
-            {
-                if (Directory.Exists(tempFolder))
-                {
-                    foreach (string file in Directory.GetFiles(tempFolder))
-                    {
-                        File.Delete(file);
-                    }
-                    Directory.Delete(tempFolder);
-                }
-            }
-            catch
-            {
-                // Suppress any cleanup errors
-            }
+            // Ignored – cleanup failures do not affect test outcome.
         }
     }
 }

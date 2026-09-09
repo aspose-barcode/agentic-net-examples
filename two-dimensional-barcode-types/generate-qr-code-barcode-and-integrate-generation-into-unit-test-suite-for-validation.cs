@@ -1,74 +1,117 @@
-// Title: Generate and Validate QR Code Barcode in a Console Application
-// Description: Demonstrates how to generate a QR Code barcode using Aspose.BarCode, save it as a PNG, and validate it by reading the barcode back.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator for creating QR Code symbology and BarCodeReader for decoding. Typical use cases include automated testing of barcode output, integration into CI pipelines, and validation of generated barcodes in unit tests. Developers often need to generate barcodes programmatically and verify their content without manual inspection.
+// Title: Generate and Validate QR Code Barcode in a Unit Test
+// Description: Demonstrates how to generate a QR Code barcode, save it as PNG, and verify its content by reading it back. Useful for automated test suites.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the BarcodeGenerator and BarCodeReader classes to create and decode QR Code barcodes, a common task when integrating barcode handling into unit tests or CI pipelines. Developers often need to programmatically produce barcodes, persist them, and validate their correctness without manual inspection.
 // Prompt: Generate a QR Code barcode and integrate generation into unit test suite for validation.
-// Tags: qr code,barcode generation,barcode recognition,unit test,aspose.barcode,png output
+// Tags: qr, barcode, generation, recognition, unit-test, aspose.barcode
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing.Imaging;
+using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates a QR Code barcode, saves it to a temporary PNG file,
-/// and validates the generated barcode by reading it back using Aspose.BarCode APIs.
+/// Example program that generates a QR Code barcode, saves it to a temporary file,
+/// reads it back to verify the encoded text, and cleans up resources.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a QR Code, saves it, reads it back,
-    /// and reports whether the decoded text matches the original input.
+    /// Entry point that performs the generation and validation steps.
     /// </summary>
     static void Main()
     {
-        // Sample data to encode into the QR Code
-        const string originalText = "Hello Aspose QR!";
+        // ------------------------------------------------------------
+        // Prepare a unique temporary folder for test artifacts
+        // ------------------------------------------------------------
+        string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeTest_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
 
-        // Determine a temporary file path for the generated PNG image
-        string outputPath = Path.Combine(Path.GetTempPath(), "qr_test.png");
+        // Define output file path and the text to encode
+        string barcodePath = Path.Combine(tempFolder, "qr.png");
+        string originalText = "Hello Aspose QR";
 
         // ------------------------------------------------------------
-        // Generate QR Code and save it as a PNG image
+        // Generate QR Code using BarcodeGenerator
         // ------------------------------------------------------------
         using (var generator = new BarcodeGenerator(EncodeTypes.QR, originalText))
         {
-            // Optional: set the QR Code error correction level to Medium (Level M)
+            // Set module size (pixel dimension) and error correction level
+            generator.Parameters.Barcode.XDimension.Pixels = 4f;
             generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
 
-            // Save the generated barcode to the specified file in PNG format
-            generator.Save(outputPath, BarCodeImageFormat.Png);
+            // Save the generated barcode as a PNG image
+            generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
         // ------------------------------------------------------------
-        // Validate the generated QR Code by reading it back
+        // Verify that the barcode image was created
         // ------------------------------------------------------------
-        bool isValid = false;
-
-        // Ensure the file was created before attempting to read it
-        if (File.Exists(outputPath))
+        if (!File.Exists(barcodePath))
         {
-            // Initialize a barcode reader for QR Code symbology
-            using (var reader = new BarCodeReader(outputPath, DecodeType.QR))
+            Console.WriteLine("FAILED: Barcode image was not created.");
+            return;
+        }
+
+        bool testPassed = false;
+        BaseDecodeType decodeType = DecodeType.QR;
+
+        // ------------------------------------------------------------
+        // Read and decode the QR Code using BarCodeReader
+        // ------------------------------------------------------------
+        using (var reader = new BarCodeReader(barcodePath, decodeType))
+        {
+            try
             {
-                // Iterate through all detected barcodes (should be only one)
-                foreach (var result in reader.ReadBarCodes())
+                var results = reader.ReadBarCodes();
+
+                foreach (var result in results)
                 {
-                    // Compare the decoded text with the original input
-                    if (result.CodeText == originalText)
+                    if (result != null && result.CodeText == originalText)
                     {
-                        isValid = true;
-                        break;
+                        testPassed = true;
+                        Console.WriteLine("PASSED: Decoded text matches original.");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"FAILED: Decoded text mismatch. Expected '{originalText}', got '{result?.CodeText}'.");
                     }
                 }
+
+                if (results.Length == 0)
+                {
+                    Console.WriteLine("FAILED: No barcode detected.");
+                }
+            }
+            catch (ArgumentException ex) when (ex.Message.Contains("Image loading failed"))
+            {
+                Console.WriteLine("FAILED: Unable to load barcode image. " + ex.Message);
             }
         }
 
         // ------------------------------------------------------------
-        // Report the outcome of the validation test
+        // Report overall test result
         // ------------------------------------------------------------
-        Console.WriteLine(isValid
-            ? "PASSED: QR code validated successfully."
-            : "FAILED: QR code validation failed.");
+        if (!testPassed)
+        {
+            Console.WriteLine("FAILED: QR Code validation test failed.");
+        }
+
+        // ------------------------------------------------------------
+        // Cleanup temporary files and directories
+        // ------------------------------------------------------------
+        try
+        {
+            if (File.Exists(barcodePath))
+                File.Delete(barcodePath);
+            if (Directory.Exists(tempFolder))
+                Directory.Delete(tempFolder, true);
+        }
+        catch
+        {
+            // Ignored - cleanup failure should not affect test result
+        }
     }
 }

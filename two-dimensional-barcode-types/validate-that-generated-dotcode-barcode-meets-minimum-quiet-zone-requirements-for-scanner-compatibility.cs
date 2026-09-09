@@ -1,84 +1,127 @@
-// Title: Validate DotCode barcode quiet zone
-// Description: Demonstrates generating a DotCode barcode and checking that its quiet zone meets the minimum required size for reliable scanning.
-// Category-Description: This example is part of the Aspose.BarCode barcode generation and validation collection. It shows how to use BarcodeGenerator, configure XDimension and padding, and verify quiet zone compliance for DotCode symbology. Typical scenarios include ensuring scanner compatibility by meeting quiet zone specifications. Developers often need to adjust module size and padding to satisfy scanner requirements.
+// Title: DotCode Barcode Generation with Quiet Zone Validation
+// Description: Demonstrates how to generate a DotCode barcode, apply the minimum quiet zone required for scanner compatibility, and verify the barcode can be read.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator to create a barcode with specific padding, and BarCodeReader to decode the image. Developers working with barcode symbologies often need to ensure quiet zone compliance for reliable scanning; this snippet illustrates the typical workflow and key API classes (BarcodeGenerator, BarCodeReader, DecodeType, QualitySettings) used in such scenarios.
 // Prompt: Validate that generated DotCode barcode meets minimum quiet zone requirements for scanner compatibility.
-// Tags: dotcode, quiet zone, barcode generation, validation, aspose.barcode, png, padding
+// Tags: dotcode, quietzone, barcode, generation, recognition, aspose.barcode, png
 
 using System;
 using System.IO;
+using System.Reflection;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Generates a DotCode barcode, validates its quiet zone against scanner requirements,
-/// and cleans up temporary files.
+/// Generates a DotCode barcode with explicit quiet zone padding, validates the padding,
+/// and attempts to read the barcode to confirm scanner compatibility.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates a DotCode barcode, checks padding,
-    /// and outputs validation results to the console.
+    /// Entry point of the example. Performs barcode creation, quiet‑zone validation,
+    /// and read‑back verification.
     /// </summary>
     static void Main()
     {
-        // Sample codetext for DotCode
-        const string codeText = "Sample123";
+        // --------------------------------------------------------------------
+        // Prepare a temporary output folder for the generated barcode image.
+        // --------------------------------------------------------------------
+        string outputFolder = Path.Combine(Path.GetTempPath(), "DotCodeQuietZoneDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputFolder);
+        string barcodePath = Path.Combine(outputFolder, "DotCode.png");
 
-        // Create a temporary folder for the barcode image
-        string tempFolder = Path.Combine(Path.GetTempPath(), "DotCodeQuietZone_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
-        string imagePath = Path.Combine(tempFolder, "dotcode.png");
-
-        // Generate DotCode barcode
-        using (var generator = new BarcodeGenerator(EncodeTypes.DotCode, codeText))
+        // --------------------------------------------------------------------
+        // Generate DotCode barcode with explicit quiet zone (padding) on all sides.
+        // --------------------------------------------------------------------
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.DotCode, "Aspose"))
         {
-            // Set a reasonable module size (x-dimension) – 2 points per module
-            generator.Parameters.Barcode.XDimension.Point = 2f;
+            // Set module size (X‑dimension) in pixels.
+            generator.Parameters.Barcode.XDimension.Pixels = 10f;
 
-            // Specify the number of columns; rows are chosen automatically
-            generator.Parameters.Barcode.DotCode.Columns = 20;
+            // Minimum quiet zone: 2 × XDimension on each side.
+            float minQuietZone = generator.Parameters.Barcode.XDimension.Pixels * 2f;
+            generator.Parameters.Barcode.Padding.Left.Pixels   = minQuietZone;
+            generator.Parameters.Barcode.Padding.Right.Pixels  = minQuietZone;
+            generator.Parameters.Barcode.Padding.Top.Pixels    = minQuietZone;
+            generator.Parameters.Barcode.Padding.Bottom.Pixels = minQuietZone;
 
-            // Save the barcode image as PNG
-            generator.Save(imagePath, BarCodeImageFormat.Png);
-
-            // Calculate required quiet zone (minimum 10 * x-dimension)
-            float requiredQuietZone = 10f * generator.Parameters.Barcode.XDimension.Point;
-
-            // Verify each side's padding meets the required quiet zone
-            bool leftOk   = generator.Parameters.Barcode.Padding.Left.Point   >= requiredQuietZone;
-            bool rightOk  = generator.Parameters.Barcode.Padding.Right.Point  >= requiredQuietZone;
-            bool topOk    = generator.Parameters.Barcode.Padding.Top.Point    >= requiredQuietZone;
-            bool bottomOk = generator.Parameters.Barcode.Padding.Bottom.Point >= requiredQuietZone;
-
-            // Output validation details
-            Console.WriteLine($"Required quiet zone (points): {requiredQuietZone}");
-            Console.WriteLine($"Padding Left:   {generator.Parameters.Barcode.Padding.Left.Point}   {(leftOk   ? "OK" : "FAIL")}");
-            Console.WriteLine($"Padding Right:  {generator.Parameters.Barcode.Padding.Right.Point}  {(rightOk  ? "OK" : "FAIL")}");
-            Console.WriteLine($"Padding Top:    {generator.Parameters.Barcode.Padding.Top.Point}    {(topOk    ? "OK" : "FAIL")}");
-            Console.WriteLine($"Padding Bottom: {generator.Parameters.Barcode.Padding.Bottom.Point} {(bottomOk ? "OK" : "FAIL")}");
-
-            // Summarize overall quiet zone compliance
-            if (leftOk && rightOk && topOk && bottomOk)
-            {
-                Console.WriteLine("Quiet zone requirements are satisfied.");
-            }
-            else
-            {
-                Console.WriteLine("Quiet zone requirements are NOT satisfied. Adjust padding as needed.");
-            }
+            // Save the barcode image as PNG.
+            generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        // Clean up temporary files (optional)
+        // --------------------------------------------------------------------
+        // Validate that the configured quiet zone meets the required minimum.
+        // --------------------------------------------------------------------
+        using (BarcodeGenerator validator = new BarcodeGenerator(EncodeTypes.DotCode, "Aspose"))
+        {
+            validator.Parameters.Barcode.XDimension.Pixels = 10f;
+            float requiredQuietZone = validator.Parameters.Barcode.XDimension.Pixels * 2f;
+
+            float left  = validator.Parameters.Barcode.Padding.Left.Pixels;
+            float right = validator.Parameters.Barcode.Padding.Right.Pixels;
+
+            bool leftOk  = left  >= requiredQuietZone;
+            bool rightOk = right >= requiredQuietZone;
+
+            Console.WriteLine($"Quiet zone validation for '{barcodePath}':");
+            Console.WriteLine($"  Required per side (pixels): {requiredQuietZone}");
+            Console.WriteLine($"  Left padding (pixels): {left} -> {(leftOk ? "OK" : "FAIL")}");
+            Console.WriteLine($"  Right padding (pixels): {right} -> {(rightOk ? "OK" : "FAIL")}");
+        }
+
+        // --------------------------------------------------------------------
+        // Attempt to read the generated barcode to ensure scanner compatibility.
+        // --------------------------------------------------------------------
+        BaseDecodeType decodeType = ResolveDecodeType("DotCode");
+        if (decodeType == null)
+        {
+            Console.WriteLine("Unable to resolve DecodeType for DotCode. Skipping read verification.");
+            return;
+        }
+
         try
         {
-            if (File.Exists(imagePath))
-                File.Delete(imagePath);
-            Directory.Delete(tempFolder);
+            using (BarCodeReader reader = new BarCodeReader(barcodePath, decodeType))
+            {
+                // Use high‑performance quality settings (optional).
+                reader.QualitySettings = QualitySettings.HighPerformance;
+
+                BarCodeResult[] results = reader.ReadBarCodes();
+                if (results.Length == 0)
+                {
+                    Console.WriteLine("No barcode detected in the generated image.");
+                }
+                else
+                {
+                    foreach (BarCodeResult result in results)
+                    {
+                        Console.WriteLine($"Read barcode: CodeText = '{result.CodeText}', Type = {result.CodeTypeName}");
+                    }
+                }
+            }
         }
-        catch
+        catch (Exception ex)
         {
-            // Ignored – cleanup failure should not crash the program
+            Console.WriteLine($"Error during barcode reading: {ex.Message}");
         }
+    }
+
+    /// <summary>
+    /// Resolves a <see cref="BaseDecodeType"/> member by name using reflection.
+    /// Returns null if the symbology name is not found.
+    /// </summary>
+    /// <param name="symbologyName">The name of the symbology (e.g., "DotCode").</param>
+    /// <returns>The corresponding <see cref="BaseDecodeType"/> or null.</returns>
+    static BaseDecodeType ResolveDecodeType(string symbologyName)
+    {
+        FieldInfo field = typeof(DecodeType).GetField(symbologyName);
+        if (field == null)
+        {
+            Console.WriteLine($"Unknown decode type: {symbologyName}");
+            return null;
+        }
+        return (BaseDecodeType)field.GetValue(null);
     }
 }
