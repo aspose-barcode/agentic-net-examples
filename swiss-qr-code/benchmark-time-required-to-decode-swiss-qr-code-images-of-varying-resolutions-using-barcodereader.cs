@@ -1,99 +1,96 @@
-// Title: Benchmark decoding Swiss QR Code images at multiple DPI levels
-// Description: Demonstrates generating Swiss QR Code barcodes at different resolutions and measuring the time required to decode them using Aspose.BarCodeReader.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It shows how to create Swiss QR (QR‑Bill) barcodes with the ComplexBarcodeGenerator, adjust image resolution, and use BarCodeReader with DecodeType.QR to read the code. Developers often need to benchmark performance across DPI settings for high‑resolution scanning scenarios, such as payment processing or document verification.
+// Title: Benchmark decoding time for Swiss QR Code images at different XDimensions
+// Description: Demonstrates how to generate Swiss QR Code barcodes with varying XDimension values, decode them using BarCodeReader, and measure the elapsed time for each resolution.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category, showcasing the ComplexBarcodeGenerator for Swiss QR Bill creation and the BarCodeReader for QR decoding. Developers often need to benchmark performance across different barcode sizes or resolutions, and this snippet illustrates typical API usage for such performance testing scenarios.
 // Prompt: Benchmark the time required to decode Swiss QR Code images of varying resolutions using BarCodeReader.
-// Tags: swiss qr, qr code, barcode generation, barcode recognition, performance benchmark, decode, aspose.barcode, complexbarcodegenerator, barcodereader
+// Tags: swiss qr, barcode generation, barcode decoding, performance benchmark, aspnet.barcode, complexbarcodegenerator, barcodereader
 
 using System;
 using System.IO;
 using System.Diagnostics;
+using System.Collections.Generic;
 using Aspose.BarCode;
-using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.BarCode.ComplexBarcode;
+using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Generates Swiss QR Code images at various DPI settings and benchmarks the decoding time using BarCodeReader.
+/// Demonstrates benchmarking of Swiss QR Code decoding across different XDimension settings.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates barcode images, then measures and reports decoding performance.
+    /// Entry point. Generates Swiss QR Code images with varying XDimensions, decodes them, and reports timing results.
     /// </summary>
-    /// <param name="args">Command‑line arguments (not used).</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Prepare output directory for generated barcode images
-        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "SwissQRImages");
-        Directory.CreateDirectory(outputDir);
+        // Create a dedicated temporary folder for generated images
+        string tempDir = Path.Combine(Path.GetTempPath(), "SwissQRBenchmark_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
 
-        // Define the DPI resolutions to test
-        int[] resolutions = new int[] { 72, 150, 300 };
+        // Define XDimension values to simulate different image resolutions
+        float[] xDimensions = new float[] { 1f, 2f, 3f };
+        var imageFiles = new List<string>();
 
-        // --------------------------------------------------------------------
-        // Generate Swiss QR Code images for each DPI setting
-        // --------------------------------------------------------------------
-        foreach (int dpi in resolutions)
+        // Generate Swiss QR Code images for each XDimension
+        foreach (float xDim in xDimensions)
         {
-            string filePath = Path.Combine(outputDir, $"SwissQR_{dpi}dpi.png");
-            GenerateSwissQRImage(filePath, dpi);
-        }
+            string filePath = Path.Combine(tempDir, $"SwissQR_{xDim}.png");
 
-        // --------------------------------------------------------------------
-        // Benchmark decoding each generated image
-        // --------------------------------------------------------------------
-        foreach (int dpi in resolutions)
-        {
-            string filePath = Path.Combine(outputDir, $"SwissQR_{dpi}dpi.png");
+            var swiss = new SwissQRCodetext();
+            swiss.Bill.Creditor.Name = "John Doe";
+            swiss.Bill.Creditor.CountryCode = "CH";
+            swiss.Bill.Account = "CH9300762011623852957";
+            swiss.Bill.Amount = 199.95m;
+            swiss.Bill.Version = SwissQRBill.QrBillStandardVersion.V2_0;
 
-            // Verify that the image file exists before attempting to read it
-            if (!File.Exists(filePath))
+            // Use ComplexBarcodeGenerator to create the barcode image
+            using (var generator = new ComplexBarcodeGenerator(swiss))
             {
-                Console.WriteLine($"File not found: {filePath}");
-                continue;
+                generator.Parameters.Barcode.XDimension.Point = xDim;
+                generator.Save(filePath, BarCodeImageFormat.Png);
             }
 
-            // Start timing the decode operation
+            imageFiles.Add(filePath);
+        }
+
+        // Benchmark decoding time for each generated image
+        var results = new List<(float XDim, long Milliseconds)>();
+        foreach (string file in imageFiles)
+        {
             var stopwatch = Stopwatch.StartNew();
 
-            // Use BarCodeReader to decode the QR code from the image file
-            using (var reader = new BarCodeReader(filePath, DecodeType.QR))
+            // Decode the QR code using BarCodeReader
+            using (var reader = new BarCodeReader(file, DecodeType.QR))
             {
-                var results = reader.ReadBarCodes();
-
-                // Output each decoded result
-                foreach (var result in results)
+                foreach (var result in reader.ReadBarCodes())
                 {
-                    Console.WriteLine($"Decoded ({dpi} DPI): {result.CodeText}");
+                    // Attempt to parse Swiss QR content (result not used further)
+                    var swissResult = ComplexCodetextReader.TryDecodeSwissQR(result.CodeText);
                 }
             }
 
-            // Stop timing and report elapsed milliseconds
             stopwatch.Stop();
-            Console.WriteLine($"Decoding time for {dpi} DPI: {stopwatch.ElapsedMilliseconds} ms");
+
+            // Extract XDimension from the filename for reporting
+            string name = Path.GetFileNameWithoutExtension(file);
+            float xDim = float.Parse(name.Split('_')[1]);
+            results.Add((xDim, stopwatch.ElapsedMilliseconds));
         }
-    }
 
-    /// <summary>
-    /// Generates a Swiss QR Code image with the specified DPI resolution.
-    /// </summary>
-    /// <param name="path">Full file path where the PNG image will be saved.</param>
-    /// <param name="dpi">Resolution (dots per inch) for the generated image.</param>
-    private static void GenerateSwissQRImage(string path, int dpi)
-    {
-        // Create Swiss QR code data (QR‑Bill) with sample creditor information
-        var swissQr = new SwissQRCodetext();
-        swissQr.Bill.Creditor.Name = "John Doe";
-        swissQr.Bill.Creditor.CountryCode = "CH";
-        swissQr.Bill.Account = "CH9300762011623852957";
-        swissQr.Bill.Amount = 199.95m;
-        swissQr.Bill.Version = SwissQRBill.QrBillStandardVersion.V2_0;
-
-        // Generate the barcode image using the specified DPI
-        using (var generator = new ComplexBarcodeGenerator(swissQr))
+        // Output benchmark results to the console
+        Console.WriteLine("Swiss QR Code decoding benchmark (XDimension → time ms):");
+        foreach (var r in results)
         {
-            generator.Parameters.Resolution = dpi;
-            generator.Save(path, BarCodeImageFormat.Png);
+            Console.WriteLine($"XDimension {r.XDim}: {r.Milliseconds} ms");
         }
+
+        // Clean up temporary files and folder
+        foreach (var f in imageFiles)
+        {
+            if (File.Exists(f))
+                File.Delete(f);
+        }
+        if (Directory.Exists(tempDir))
+            Directory.Delete(tempDir);
     }
 }

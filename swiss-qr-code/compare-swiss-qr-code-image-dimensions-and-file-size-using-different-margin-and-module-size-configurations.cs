@@ -1,8 +1,8 @@
-// Title: Swiss QR Code Image Dimension and File Size Comparison
-// Description: Demonstrates how to generate Swiss QR codes with varying padding and module size, then reports the resulting image dimensions and PNG file size.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It showcases the use of ComplexBarcodeGenerator, SwissQRCodetext, and related parameter settings to create Swiss QR Bill barcodes. Typical use cases include generating payment QR codes with custom visual appearance, where developers need to control margins and module dimensions to meet branding or layout requirements. The example illustrates how to retrieve image size information and file size for different configurations, a common task when optimizing barcode rendering for web or print.
-/// Prompt: Compare Swiss QR Code image dimensions and file size using different margin and module size configurations.
-// Tags: swiss qr, barcode, image, file size, padding, module size, aspose.barcode, complexbarcode, png
+// Title: Compare Swiss QR Code dimensions and file size with varying margins and module sizes
+// Description: Demonstrates how to generate Swiss QR Code barcodes with different margin and module size settings, then compares the resulting image dimensions and file sizes.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on complex barcode types such as Swiss QR Code. It showcases the use of ComplexBarcodeGenerator, SwissQRCodetext, and image handling classes to adjust XDimension and padding. Developers often need to fine‑tune visual appearance and file size of generated barcodes for printing or digital distribution, and this snippet provides a clear pattern for experimenting with those parameters.
+// Prompt: Compare Swiss QR Code image dimensions and file size using different margin and module size configurations.
+// Tags: swiss qr code, barcode generation, image dimensions, file size, margin, module size, complexbarcodegenerator, aspose.barcode
 
 using System;
 using System.IO;
@@ -12,73 +12,83 @@ using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that compares Swiss QR Code image dimensions and file sizes
-/// using different margin (padding) and module size configurations.
+/// Generates Swiss QR Code images with different margin and module size configurations,
+/// then outputs their dimensions and file sizes for comparison.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Executes the comparison and writes results to the console.
+    /// Simple container for margin and module size settings.
+    /// </summary>
+    struct Config
+    {
+        public float Margin;
+        public float ModuleSize;
+    }
+
+    /// <summary>
+    /// Entry point of the example. Creates output directory, generates barcodes,
+    /// and prints image dimensions and file sizes for each configuration.
     /// </summary>
     static void Main()
     {
-        // Define a set of configurations to test (padding in points, module size in points)
-        var configurations = new (float Padding, float XDimension)[]
+        // Prepare a unique temporary output folder
+        string outputDir = Path.Combine(Path.GetTempPath(), "SwissQR_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputDir);
+
+        // Define a set of configurations to compare
+        Config[] configs = new Config[]
         {
-            (5f, 2f),
-            (10f, 3f),
-            (15f, 4f)
+            new Config { Margin = 2f, ModuleSize = 2f },
+            new Config { Margin = 5f, ModuleSize = 4f },
+            new Config { Margin = 10f, ModuleSize = 6f }
         };
 
-        // Iterate through each configuration, generate the QR code, and display metrics
-        foreach (var config in configurations)
+        // Iterate over each configuration, generate the barcode, and collect metrics
+        for (int i = 0; i < configs.Length; i++)
         {
-            var result = GenerateSwissQr(config.Padding, config.XDimension);
-            Console.WriteLine($"Padding: {config.Padding}pt, XDimension: {config.XDimension}pt");
-            Console.WriteLine($"  Image Width: {result.Width}px, Height: {result.Height}px");
-            Console.WriteLine($"  File Size: {result.FileSize} bytes");
-            Console.WriteLine();
-        }
-    }
+            Config cfg = configs[i];
 
-    // Generates a Swiss QR code with specified padding and module size.
-    // Returns image width, height and the size of the PNG file in bytes.
-    private static (int Width, int Height, long FileSize) GenerateSwissQr(float paddingPoints, float xDimensionPoints)
-    {
-        // Prepare Swiss QR bill data (mandatory fields)
-        var qrCodeText = new SwissQRCodetext();
-        qrCodeText.Bill.Creditor.Name = "John Doe";
-        qrCodeText.Bill.Creditor.CountryCode = "CH";
-        qrCodeText.Bill.Account = "CH9300762011623852957";
-        qrCodeText.Bill.Amount = 199.95m;
-        qrCodeText.Bill.Version = SwissQRBill.QrBillStandardVersion.V2_0;
-
-        // Create the complex barcode generator with the prepared data
-        using (var generator = new ComplexBarcodeGenerator(qrCodeText))
-        {
-            // Apply uniform padding (margin) on all sides
-            generator.Parameters.Barcode.Padding.Left.Point = paddingPoints;
-            generator.Parameters.Barcode.Padding.Top.Point = paddingPoints;
-            generator.Parameters.Barcode.Padding.Right.Point = paddingPoints;
-            generator.Parameters.Barcode.Padding.Bottom.Point = paddingPoints;
-
-            // Set the module (X) dimension, which controls the size of each QR code square
-            generator.Parameters.Barcode.XDimension.Point = xDimensionPoints;
-
-            // Generate the barcode image as a bitmap to obtain pixel dimensions
-            using (Bitmap bitmap = generator.GenerateBarCodeImage())
+            // Build Swiss QR Code data (Swiss QR Bill version 2.0)
+            var swissQRCode = new SwissQRCodetext();
+            swissQRCode.Bill.Version = SwissQRBill.QrBillStandardVersion.V2_0;
+            swissQRCode.Bill.Account = "CH9300762011623852957";
+            swissQRCode.Bill.Amount = 199.95m;
+            swissQRCode.Bill.Currency = "CHF";
+            swissQRCode.Bill.Creditor = new Address
             {
-                int width = bitmap.Width;
-                int height = bitmap.Height;
+                Name = "John Doe",
+                CountryCode = "CH"
+            };
 
-                // Save the bitmap to a memory stream in PNG format to determine file size
-                using (var ms = new MemoryStream())
-                {
-                    bitmap.Save(ms, ImageFormat.Png);
-                    long size = ms.Length;
-                    return (width, height, size);
-                }
+            // Determine file path for the generated image
+            string filePath = Path.Combine(outputDir, $"SwissQR_{i + 1}.png");
+
+            // Generate the barcode with the current margin and module size settings
+            using (var generator = new ComplexBarcodeGenerator(swissQRCode))
+            {
+                generator.Parameters.Barcode.XDimension.Pixels = cfg.ModuleSize;
+                generator.Parameters.Barcode.Padding.Left.Point = cfg.Margin;
+                generator.Parameters.Barcode.Padding.Top.Point = cfg.Margin;
+                generator.Parameters.Barcode.Padding.Right.Point = cfg.Margin;
+                generator.Parameters.Barcode.Padding.Bottom.Point = cfg.Margin;
+
+                generator.Save(filePath, BarCodeImageFormat.Png);
             }
+
+            // Load the saved image to retrieve its dimensions
+            int width, height;
+            using (Image img = Image.FromFile(filePath))
+            {
+                width = img.Width;
+                height = img.Height;
+            }
+
+            // Get the file size in bytes
+            long fileSize = new FileInfo(filePath).Length;
+
+            // Output the comparison results to the console
+            Console.WriteLine($"Config {i + 1}: Margin={cfg.Margin}, ModuleSize={cfg.ModuleSize} => Width={width}px, Height={height}px, Size={fileSize} bytes");
         }
     }
 }

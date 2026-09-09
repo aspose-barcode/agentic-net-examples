@@ -1,17 +1,18 @@
-// Title: Generate Swiss QR Bill barcode with transparent background using ComplexBarcodeGenerator
-// Description: Creates a Swiss QR bill barcode, sets a transparent background, and saves it as a PNG image suitable for UI overlay.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category, showcasing how to use the ComplexBarcodeGenerator class to produce structured barcodes such as Swiss QR bills. It demonstrates typical tasks like configuring visual parameters (background and bar colors) and exporting to formats that support transparency. Developers working with financial documents, UI components, or custom barcode rendering will find this pattern useful for integrating barcodes into graphics or web pages.
+// Title: Generate MaxiCode barcode with transparent background
+// Description: Demonstrates how to create a MaxiCode barcode using Aspose.BarCode and save it as a PNG with a transparent background, suitable for overlaying on UI components.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on complex barcode types such as MaxiCode. It showcases the use of ComplexBarcodeGenerator, MaxiCodeCodetextMode3, and related parameter settings to customize appearance, including background transparency. Developers working with advanced symbologies and needing image assets for UI integration can refer to this pattern for generating transparent barcode images.
 // Prompt: Configure ComplexBarcodeGenerator to output a barcode image with transparent background for UI component overlay.
-// Tags: swiss qr, complex barcode, transparent background, png, aspose.barcode, generation
+// Tags: maxicode, complex barcode, transparent background, png, aspose.barcode, barcode generation, ui overlay
 
 using System;
 using System.IO;
-using Aspose.BarCode.ComplexBarcode;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode.ComplexBarcode;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a Swiss QR bill barcode with a transparent background using Aspose.BarCode's ComplexBarcodeGenerator.
+/// Demonstrates generating a MaxiCode barcode with a transparent background using Aspose.BarCode.
 /// </summary>
 class Program
 {
@@ -20,31 +21,38 @@ class Program
     /// </summary>
     static void Main()
     {
-        // Prepare Swiss QR bill data (mandatory fields)
-        var swissQr = new SwissQRCodetext();
-        swissQr.Bill.Creditor.Name = "John Doe";
-        swissQr.Bill.Creditor.CountryCode = "CH";
-        swissQr.Bill.Account = "CH9300762011623852957";
-        swissQr.Bill.Amount = 199.95m;
-        swissQr.Bill.Version = SwissQRBill.QrBillStandardVersion.V2_0;
+        // Define the output file path in the temporary directory
+        string outputPath = Path.Combine(Path.GetTempPath(), "maxicode_transparent.png");
 
-        // Generate barcode with transparent background
-        using (var generator = new ComplexBarcodeGenerator(swissQr))
+        // Build the MaxiCode codetext for Mode 3 with a standard second message
+        var maxicode = new MaxiCodeCodetextMode3
         {
-            // Set the image background to transparent
+            PostalCode = "B1050",
+            CountryCode = 56,
+            ServiceCategory = 999
+        };
+
+        // Create and assign the second message
+        var secondMessage = new MaxiCodeStandardSecondMessage
+        {
+            Message = "Second message"
+        };
+        maxicode.SecondMessage = secondMessage;
+
+        // Initialize the complex barcode generator with the prepared codetext
+        using (var generator = new ComplexBarcodeGenerator(maxicode))
+        {
+            // Set the background color to transparent so the image can be overlaid
             generator.Parameters.BackColor = Color.Transparent;
 
-            // Optional: set the barcode (foreground) color to black
+            // Optionally set the bar (foreground) color; default is black
             generator.Parameters.Barcode.BarColor = Color.Black;
 
-            // Define output file path (PNG supports transparency)
-            string outputPath = "transparent_barcode.png";
-
-            // Save the barcode image
+            // Save the generated barcode as a PNG file
             generator.Save(outputPath, BarCodeImageFormat.Png);
-
-            // Inform the user where the file was saved
-            Console.WriteLine($"Barcode saved to {Path.GetFullPath(outputPath)}");
         }
+
+        // Inform the user where the file was saved
+        Console.WriteLine($"Barcode saved to: {outputPath}");
     }
 }

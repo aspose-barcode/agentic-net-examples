@@ -1,101 +1,166 @@
-// Title: Generate Code128 Barcodes for Payment Requests in a Background Service
-// Description: Demonstrates how to create Code128 barcode images for payment identifiers using Aspose.BarCode and save them as PNG files.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing the BarcodeGenerator class for creating barcodes in .NET applications. Typical use cases include encoding transaction IDs, order numbers, or any alphanumeric data for printing or digital distribution. Developers often need to customize appearance, set padding, and output to common image formats such as PNG or JPEG.
+// Title: Generate Swiss QR Code Barcodes for Payment Requests
+// Description: Demonstrates generating Swiss QR Code barcodes from a collection of payment requests and saving each barcode as a PNG image.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing the use of ComplexBarcodeGenerator and SwissQRCodetext to create QR codes for financial documents. Developers often need to produce QR codes for payment processing, invoicing, or banking applications; this snippet illustrates typical setup, parameter configuration, and image output using Aspose.BarCode APIs.
 // Prompt: Integrate barcode generation into a background service that processes payment requests from a message queue.
-// Tags: code128, barcode generation, png, aspose.barcode, background service, payment processing, .net
+// Tags: swissqr, barcode, generation, png, aspose.barcode, complexbarcodegenerator, payment, qr, eci, eciencoding, imageoutput
 
 using System;
-using System.Collections.Generic;
 using System.IO;
-using Aspose.BarCode;
+using System.Collections.Generic;
+using Aspose.BarCode.ComplexBarcode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
-namespace BarcodeBackgroundServiceDemo
+/// <summary>
+/// Entry point for the console application that generates Swiss QR Code barcodes
+/// for a predefined list of payment requests and writes the images to a temporary folder.
+/// </summary>
+class Program
 {
     /// <summary>
-    /// Simple representation of a payment request.
+    /// Main method that orchestrates the creation of QR code barcodes for each payment request.
     /// </summary>
-    public class PaymentRequest
+    static void Main()
     {
-        public string PaymentId { get; set; }
-        public decimal Amount { get; set; }
-        public string Payee { get; set; }
-    }
-
-    /// <summary>
-    /// Demonstrates processing a collection of payment requests and generating a Code128 barcode for each.
-    /// </summary>
-    public class Program
-    {
-        /// <summary>
-        /// Application entry point. Simulates a background service that processes payment requests from a queue
-        /// and generates corresponding barcode images.
-        /// </summary>
-        public static void Main(string[] args)
+        // ------------------------------------------------------------
+        // Simulated payment requests – in a real background service these
+        // would be read from a message queue or other asynchronous source.
+        // ------------------------------------------------------------
+        var payments = new List<PaymentRequest>
         {
-            // Prepare a small set of sample payment requests.
-            var paymentQueue = new List<PaymentRequest>
+            new PaymentRequest
             {
-                new PaymentRequest { PaymentId = "PAY001", Amount = 123.45m, Payee = "Alice" },
-                new PaymentRequest { PaymentId = "PAY002", Amount = 67.89m, Payee = "Bob" },
-                new PaymentRequest { PaymentId = "PAY003", Amount = 250.00m, Payee = "Charlie" },
-                new PaymentRequest { PaymentId = "PAY004", Amount = 99.99m, Payee = "Diana" },
-                new PaymentRequest { PaymentId = "PAY005", Amount = 10.00m, Payee = "Eve" }
-            };
-
-            // Directory where barcode images will be saved.
-            string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
-            if (!Directory.Exists(outputDir))
-            {
-                Directory.CreateDirectory(outputDir);
-            }
-
-            // Process each payment request (simulating a background service).
-            for (int i = 0; i < paymentQueue.Count; i++)
-            {
-                var request = paymentQueue[i];
-                string barcodePath = Path.Combine(outputDir, $"{request.PaymentId}.png");
-                try
+                Account = "CH4431999123000889012",
+                Amount = 1000.25m,
+                Currency = "CHF",
+                Reference = "210000000003139471430009017",
+                Creditor = new Address
                 {
-                    GenerateBarcodeForPayment(request, barcodePath);
-                    Console.WriteLine($"Generated barcode for PaymentId={request.PaymentId} at {barcodePath}");
-                }
-                catch (Exception ex)
+                    Name = "Muster & Söhne",
+                    Street = "Musterstrasse",
+                    HouseNo = "12b",
+                    PostalCode = "8200",
+                    Town = "Zürich",
+                    CountryCode = "CH"
+                },
+                Debtor = new Address
                 {
-                    Console.WriteLine($"Error generating barcode for PaymentId={request.PaymentId}: {ex.Message}");
+                    Name = "Muster AG",
+                    Street = "Musterstrasse",
+                    HouseNo = "1",
+                    PostalCode = "3030",
+                    Town = "Bern",
+                    CountryCode = "CH"
+                }
+            },
+            new PaymentRequest
+            {
+                Account = "CH9300762011623852957",
+                Amount = 250.00m,
+                Currency = "CHF",
+                Reference = "210000000004567890123456789",
+                Creditor = new Address
+                {
+                    Name = "Alpha Corp",
+                    Street = "Alphastrasse",
+                    HouseNo = "5",
+                    PostalCode = "8000",
+                    Town = "Zürich",
+                    CountryCode = "CH"
+                },
+                Debtor = new Address
+                {
+                    Name = "Beta Ltd",
+                    Street = "Betastraße",
+                    HouseNo = "9",
+                    PostalCode = "4000",
+                    Town = "Basel",
+                    CountryCode = "CH"
+                }
+            },
+            new PaymentRequest
+            {
+                Account = "CH5604835012345678009",
+                Amount = 75.50m,
+                Currency = "CHF",
+                Reference = "210000000005987654321098765",
+                Creditor = new Address
+                {
+                    Name = "Gamma GmbH",
+                    Street = "Gammastraße",
+                    HouseNo = "3A",
+                    PostalCode = "6000",
+                    Town = "Luzern",
+                    CountryCode = "CH"
+                },
+                Debtor = new Address
+                {
+                    Name = "Delta Inc",
+                    Street = "Deltaplatz",
+                    HouseNo = "2",
+                    PostalCode = "3000",
+                    Town = "Bern",
+                    CountryCode = "CH"
                 }
             }
+        };
 
-            // Indicate completion.
-            Console.WriteLine("All payment barcodes have been processed.");
-        }
+        // ------------------------------------------------------------
+        // Create a dedicated temporary output folder for the generated PNG files.
+        // ------------------------------------------------------------
+        string outputFolder = Path.Combine(Path.GetTempPath(), "SwissQR_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputFolder);
+        Console.WriteLine($"Output folder: {outputFolder}");
 
-        // Generates a Code128 barcode image for the given payment request and saves it to the specified path.
-        private static void GenerateBarcodeForPayment(PaymentRequest request, string outputPath)
+        int index = 1;
+        foreach (var payment in payments)
         {
-            // Use Code128 symbology; encode the PaymentId as the barcode text.
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, request.PaymentId))
+            // ------------------------------------------------------------
+            // Build Swiss QR Code data structure from the current payment request.
+            // ------------------------------------------------------------
+            var swissQRCode = new SwissQRCodetext();
+            swissQRCode.Bill.Version = SwissQRBill.QrBillStandardVersion.V2_0;
+            swissQRCode.Bill.Account = payment.Account;
+            swissQRCode.Bill.Amount = payment.Amount;
+            swissQRCode.Bill.Currency = payment.Currency;
+            swissQRCode.Bill.Reference = payment.Reference;
+            swissQRCode.Bill.Creditor = payment.Creditor;
+            swissQRCode.Bill.Debtor = payment.Debtor;
+
+            // ------------------------------------------------------------
+            // Generate the barcode image using ComplexBarcodeGenerator.
+            // ------------------------------------------------------------
+            using (var generator = new ComplexBarcodeGenerator(swissQRCode))
             {
-                // Optional visual customizations.
+                // Configure visual appearance and QR encoding settings.
+                generator.Parameters.Barcode.XDimension.Pixels = 4f;
+                generator.Parameters.Barcode.QR.EncodeMode = QREncodeMode.ECI;
+                generator.Parameters.Barcode.QR.ECIEncoding = ECIEncodings.UTF8;
                 generator.Parameters.Barcode.BarColor = Color.Black;
                 generator.Parameters.BackColor = Color.White;
 
-                // Set module size (XDimension) to 2 points.
-                generator.Parameters.Barcode.XDimension.Point = 2f;
-
-                // Add modest padding around the barcode.
-                generator.Parameters.Barcode.Padding.Left.Point = 5f;
-                generator.Parameters.Barcode.Padding.Top.Point = 5f;
-                generator.Parameters.Barcode.Padding.Right.Point = 5f;
-                generator.Parameters.Barcode.Padding.Bottom.Point = 5f;
-
-                // Ensure human‑readable text appears below the barcode.
-                generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.Below;
-
-                // Save the barcode as a PNG file.
-                generator.Save(outputPath, BarCodeImageFormat.Png);
+                // Save the generated barcode as a PNG file.
+                string filePath = Path.Combine(outputFolder, $"SwissQR_{index}.png");
+                generator.Save(filePath, BarCodeImageFormat.Png);
+                Console.WriteLine($"Generated barcode {index}: {filePath}");
             }
+
+            index++;
         }
+
+        Console.WriteLine("All barcodes generated.");
     }
+}
+
+/// <summary>
+/// Represents a payment request containing all necessary data for QR code generation.
+/// </summary>
+class PaymentRequest
+{
+    public string Account { get; set; }
+    public decimal Amount { get; set; }
+    public string Currency { get; set; }
+    public string Reference { get; set; }
+    public Address Creditor { get; set; }
+    public Address Debtor { get; set; }
 }

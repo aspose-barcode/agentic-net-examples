@@ -1,8 +1,8 @@
-// Title: Embed a logo into a Swiss QR Code using ComplexBarcodeGenerator
-// Description: Demonstrates how to generate a Swiss QR Bill QR code and overlay a custom logo at its center while preserving scan reliability.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category, showcasing the use of ComplexBarcodeGenerator, QR error correction settings, and image compositing. Typical use cases include branding QR codes for invoices or payment slips without compromising readability. Developers often need to combine barcode data with graphics, adjust error correction levels, and export to common image formats.
+// Title: Embed Logo in Swiss QR Code using ComplexBarcodeGenerator
+// Description: Demonstrates how to generate a Swiss QR Code with a custom logo placed at its center while preserving scan reliability.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category, showcasing the use of ComplexBarcodeGenerator and related classes such as SwissQRCodetext, Address, and QR error correction settings. Typical use cases include creating payment QR codes with branding elements. Developers often need to embed images or logos into QR codes without compromising readability, and this snippet illustrates that workflow.
 // Prompt: Use ComplexBarcodeGenerator to embed a logo at the center of the Swiss QR Code without affecting scannability.
-// Tags: swissqr, logo, complexbarcodegenerator, qr, png, generation, barcode symbology, image compositing
+// Tags: swiss qr code, logo embedding, complex barcode, barcode generation, aspnet.barcode, qr error correction, png output
 
 using System;
 using System.IO;
@@ -12,74 +12,76 @@ using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Generates a Swiss QR Bill QR code and embeds a custom logo at its center.
+/// Demonstrates embedding a logo into a Swiss QR Code using Aspose.BarCode's ComplexBarcodeGenerator.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Creates the QR code, draws a logo, composites them, and saves as PNG.
+    /// Generates a Swiss QR Code with a centered red square logo and saves it as a PNG file.
     /// </summary>
     static void Main()
     {
-        // Define the output file path for the final image
-        string outputPath = "SwissQR_with_logo.png";
+        // Define the output file path in the temporary directory
+        string outputPath = Path.Combine(Path.GetTempPath(), "SwissQRWithLogo.png");
 
-        // --------------------------------------------------------------------
-        // Prepare Swiss QR Bill data (mandatory fields for a valid QR bill)
-        // --------------------------------------------------------------------
-        var swissQr = new SwissQRCodetext();
-        swissQr.Bill.Creditor.Name = "John Doe";
-        swissQr.Bill.Creditor.CountryCode = "CH";
-        swissQr.Bill.Account = "CH9300762011623852957";
-        swissQr.Bill.Amount = 199.95m;
-        swissQr.Bill.Version = SwissQRBill.QrBillStandardVersion.V2_0;
-
-        // ---------------------------------------------------------------
-        // Create the complex barcode generator with the prepared QR data
-        // ---------------------------------------------------------------
-        using (var generator = new ComplexBarcodeGenerator(swissQr))
+        // Build the Swiss QR Code data structure with payment details
+        var swissQRCode = new SwissQRCodetext();
+        swissQRCode.Bill.Version = SwissQRBill.QrBillStandardVersion.V2_0;
+        swissQRCode.Bill.Account = "CH9300762011623852957";
+        swissQRCode.Bill.Amount = 199.95m;
+        swissQRCode.Bill.Currency = "CHF";
+        swissQRCode.Bill.Reference = "210000000003139471430009017";
+        swissQRCode.Bill.Creditor = new Address
         {
-            // Use the highest error correction level to tolerate the logo overlay
+            Name = "John Doe",
+            Street = "Main Street",
+            HouseNo = "1",
+            PostalCode = "8000",
+            Town = "Zurich",
+            CountryCode = "CH"
+        };
+        swissQRCode.Bill.Debtor = new Address
+        {
+            Name = "Jane Smith",
+            Street = "Second Street",
+            HouseNo = "2",
+            PostalCode = "3000",
+            Town = "Bern",
+            CountryCode = "CH"
+        };
+
+        // Initialize the generator with the Swiss QR Code data
+        using (var generator = new ComplexBarcodeGenerator(swissQRCode))
+        {
+            // Configure barcode appearance: module size and high error correction level
+            generator.Parameters.Barcode.XDimension.Pixels = 4f;
             generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
 
             // Generate the base QR code image
-            using (Bitmap qrBitmap = generator.GenerateBarCodeImage())
+            using (Bitmap barcodeBitmap = generator.GenerateBarCodeImage())
             {
-                // -----------------------------------------------------------
-                // Create a simple logo bitmap (red square with white "A" text)
-                // -----------------------------------------------------------
-                using (Bitmap logoBitmap = new Bitmap(100, 100))
+                // Create a simple red square logo (80x80 pixels)
+                using (Bitmap logo = new Bitmap(80, 80))
                 {
-                    using (Graphics logoGraphics = Graphics.FromImage(logoBitmap))
+                    using (Graphics gLogo = Graphics.FromImage(logo))
                     {
-                        // Fill background with red
-                        logoGraphics.Clear(Color.Red);
-
-                        // Draw a white letter "A" in the center of the logo
-                        using (Font font = new Font("Arial", 48, FontStyle.Bold))
-                        {
-                            var textSize = logoGraphics.MeasureString("A", font);
-                            float textX = (logoBitmap.Width - textSize.Width) / 2f;
-                            float textY = (logoBitmap.Height - textSize.Height) / 2f;
-                            logoGraphics.DrawString("A", font, new SolidBrush(Color.White), textX, textY);
-                        }
+                        gLogo.Clear(Color.Red);
                     }
 
-                    // Calculate the top‑left position to center the logo on the QR code
-                    int posX = (qrBitmap.Width - logoBitmap.Width) / 2;
-                    int posY = (qrBitmap.Height - logoBitmap.Height) / 2;
-
-                    // Composite the logo onto the QR code image
-                    using (Graphics qrGraphics = Graphics.FromImage(qrBitmap))
+                    // Overlay the logo onto the center of the QR code image
+                    using (Graphics g = Graphics.FromImage(barcodeBitmap))
                     {
-                        qrGraphics.DrawImage(logoBitmap, posX, posY, logoBitmap.Width, logoBitmap.Height);
+                        int x = (barcodeBitmap.Width - logo.Width) / 2;
+                        int y = (barcodeBitmap.Height - logo.Height) / 2;
+                        g.DrawImage(logo, x, y, logo.Width, logo.Height);
                     }
                 }
 
-                // Save the composited image as PNG
-                qrBitmap.Save(outputPath, ImageFormat.Png);
-                Console.WriteLine($"Swiss QR Code with embedded logo saved to: {Path.GetFullPath(outputPath)}");
+                // Save the final image with the embedded logo to the specified path
+                barcodeBitmap.Save(outputPath, ImageFormat.Png);
             }
         }
+
+        Console.WriteLine($"Swiss QR Code with embedded logo saved to: {outputPath}");
     }
 }
