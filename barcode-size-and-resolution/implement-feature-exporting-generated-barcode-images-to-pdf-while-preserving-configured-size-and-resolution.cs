@@ -1,8 +1,8 @@
 // Title: Export Barcode Image to PDF with Preserved Size and Resolution
-// Description: Demonstrates generating a Code128 barcode, configuring its dimensions and DPI, and exporting it as a PNG embedded in a PDF while keeping the specified size.
-// Category-Description: This example belongs to the Aspose.BarCode image generation and PDF integration category. It shows how to use BarcodeGenerator to set image size and resolution, save the barcode to a stream, and embed it into an Aspose.Pdf Document. Developers often need to create barcodes for reports, invoices, or shipping labels and export them to PDF with exact dimensions.
+// Description: Generates a Code128 barcode, configures its resolution, converts it to a PNG image, and embeds the image into a PDF while maintaining the original physical dimensions.
+// Category-Description: This example demonstrates how to use Aspose.BarCode to create barcodes and Aspose.Pdf to embed generated images into PDF documents. It covers setting barcode resolution, exporting the image to a stream, calculating size in points, and adding the image to a PDF page. Developers working with barcode generation and PDF reporting often need to preserve exact sizing for print‑ready outputs.
 // Prompt: Implement feature exporting generated barcode images to PDF while preserving configured size and resolution.
-// Tags: barcode, code128, pdf, image export, size, resolution, aspose.barcode, aspose.pdf
+// Tags: barcode symbology, generation, export, pdf, image, resolution, aspose.barcode, aspose.pdf
 
 using System;
 using System.IO;
@@ -11,67 +11,63 @@ using Aspose.BarCode.Generation;
 using Aspose.Pdf;
 
 /// <summary>
-/// Demonstrates generating a barcode, configuring its size and resolution,
-/// and exporting it to a PDF document while preserving those settings.
+/// Demonstrates exporting a generated barcode image to a PDF while preserving its configured size and resolution.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a Code128 barcode, embeds it in a PDF,
-    /// and saves the result to the output folder.
+    /// Entry point of the example. Generates a barcode, saves it as an image, and embeds it into a PDF.
     /// </summary>
     static void Main()
     {
-        // Prepare the output directory where the PDF will be saved.
-        string outputDir = "output";
-        if (!Directory.Exists(outputDir))
+        // Define barcode generation parameters.
+        const int resolution = 300;               // Desired DPI for the barcode image.
+        const string codeText = "1234567890";     // Text to encode in the barcode.
+        const string outputPdf = "BarcodeOutput.pdf"; // Name of the resulting PDF file.
+
+        // Create a barcode generator for Code128 symbology.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
         {
-            Directory.CreateDirectory(outputDir);
-        }
+            // Apply the resolution setting to the generator.
+            generator.Parameters.Resolution = resolution;
 
-        // Define the full path for the resulting PDF file.
-        string pdfPath = Path.Combine(outputDir, "barcode.pdf");
-
-        // Create a barcode generator for Code128 symbology with the desired text.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
-        {
-            // Set the barcode image dimensions in points (1 point = 1/72 inch).
-            generator.Parameters.ImageWidth.Point = 300f;
-            generator.Parameters.ImageHeight.Point = 150f;
-
-            // Set the image resolution in DPI to ensure high-quality rendering.
-            generator.Parameters.Resolution = 300f;
-
-            // Save the generated barcode to a memory stream in PNG format.
-            using (var ms = new MemoryStream())
+            // Generate the barcode image as a bitmap.
+            using (Aspose.Drawing.Bitmap bitmap = generator.GenerateBarCodeImage())
             {
-                generator.Save(ms, BarCodeImageFormat.Png);
-                ms.Position = 0; // Reset stream position for reading.
-
-                // Create a new PDF document and add a page to host the barcode image.
-                using (var pdfDoc = new Document())
+                // Prepare a memory stream to hold the PNG representation.
+                using (var imageStream = new MemoryStream())
                 {
-                    var page = pdfDoc.Pages.Add();
+                    // Save the bitmap to the stream in PNG format.
+                    generator.Save(imageStream, BarCodeImageFormat.Png);
+                    imageStream.Position = 0; // Reset stream position for reading.
 
-                    // Create an Aspose.Pdf.Image object linked to the barcode stream.
-                    var pdfImage = new Aspose.Pdf.Image
+                    // Convert bitmap dimensions from pixels to PDF points (1 point = 1/72 inch).
+                    double widthPoints = (bitmap.Width * 72.0) / resolution;
+                    double heightPoints = (bitmap.Height * 72.0) / resolution;
+
+                    // Create a new PDF document.
+                    using (var pdfDoc = new Document())
                     {
-                        ImageStream = ms,
-                        // Preserve the configured width and height in the PDF.
-                        FixWidth = generator.Parameters.ImageWidth.Point,
-                        FixHeight = generator.Parameters.ImageHeight.Point
-                    };
+                        // Add a page to the document.
+                        var page = pdfDoc.Pages.Add();
 
-                    // Add the image to the page's paragraph collection.
-                    page.Paragraphs.Add(pdfImage);
+                        // Define the rectangle where the image will be placed, preserving size.
+                        var pdfRect = new Rectangle(0, 0, widthPoints, heightPoints);
 
-                    // Save the PDF document to the specified path.
-                    pdfDoc.Save(pdfPath);
+                        // Embed the PNG image into the PDF page.
+                        page.AddImage(imageStream, pdfRect);
+
+                        // Determine the full output path.
+                        string outPath = Path.Combine(Environment.CurrentDirectory, outputPdf);
+
+                        // Save the PDF document to disk.
+                        pdfDoc.Save(outPath);
+
+                        // Inform the user of the successful operation.
+                        Console.WriteLine($"PDF saved to {outPath}");
+                    }
                 }
             }
         }
-
-        // Inform the user where the PDF has been saved.
-        Console.WriteLine($"Barcode PDF saved to: {pdfPath}");
     }
 }

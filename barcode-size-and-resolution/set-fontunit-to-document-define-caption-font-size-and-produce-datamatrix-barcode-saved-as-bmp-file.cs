@@ -1,40 +1,45 @@
-// Title: Generate DataMatrix barcode with caption and save as BMP
-// Description: Demonstrates setting the caption font unit to Document, defining its size, and creating a DataMatrix barcode saved as a BMP image.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on customizing caption appearance using the FontUnit property and saving the result in bitmap format. It showcases the BarcodeGenerator class, EncodeTypes enumeration, and drawing output options, which developers commonly use to embed barcodes with readable captions in documents, reports, or UI elements.
+// Title: Generate DataMatrix barcode with caption and custom font size saved as BMP
+// Description: Demonstrates creating a DataMatrix barcode, adding a visible caption, setting the caption font size using Document units, and saving the image as a BMP file.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use the BarcodeGenerator class with EncodeTypes.DataMatrix. It covers typical tasks such as configuring caption visibility, text, and font sizing—common requirements for product labeling, packaging, and inventory tracking where readable human‑readable text accompanies machine‑readable barcodes.
 // Prompt: Set FontUnit to Document, define caption font size, and produce DataMatrix barcode saved as BMP file.
-// Tags: datamatrix, caption, fontunit, bmp, aspose.barcode, barcode-generation
+// Tags: datamatrix, barcode, caption, fontunit, bmp, aspose.barcode, generation
 
 using System;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 
 /// <summary>
-/// Example program that creates a DataMatrix barcode with a caption,
-/// configures the caption font using Document units, and saves the result as a BMP file.
+/// Example program that generates a DataMatrix barcode with a caption,
+/// sets the caption font size using Document units, and saves the result as a BMP image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates the barcode and writes it to disk.
+    /// Entry point that creates the barcode, configures caption properties, and saves the image.
     /// </summary>
     static void Main()
     {
-        // Initialize a BarcodeGenerator for DataMatrix with the desired data string.
-        using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, "Sample DataMatrix"))
+        // Build the full path for the output BMP file in the current directory.
+        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "DataMatrix.bmp");
+
+        // Create a BarcodeGenerator for the DataMatrix symbology with the desired text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, "ASPOSE"))
         {
-            // Configure the caption that appears above the barcode.
-            // Set the font family to Helvetica.
-            generator.Parameters.CaptionAbove.Font.FamilyName = "Helvetica";
+            // Make the caption appear above the barcode.
+            generator.Parameters.CaptionAbove.Visible = true;
 
-            // Define the font size in points (FontUnit is handled internally by the API).
-            generator.Parameters.CaptionAbove.Font.Size.Point = 12f;
+            // Set the caption text that will be displayed.
+            generator.Parameters.CaptionAbove.Text = "Sample Caption";
 
-            // Assign the caption text to be displayed.
-            generator.Parameters.CaptionAbove.Text = "DataMatrix Barcode";
+            // Define the caption font size using Document units (points relative to the document).
+            generator.Parameters.CaptionAbove.Font.Size.Document = 12f;
 
-            // Save the generated barcode as a BMP image file.
-            generator.Save("datamatrix.bmp");
+            // Save the generated barcode as a BMP image to the specified path.
+            generator.Save(outputPath, BarCodeImageFormat.Bmp);
         }
+
+        // Output the location of the saved barcode image.
+        Console.WriteLine($"Barcode saved to {outputPath}");
     }
 }

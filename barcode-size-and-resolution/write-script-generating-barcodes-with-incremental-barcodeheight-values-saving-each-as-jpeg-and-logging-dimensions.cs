@@ -1,67 +1,67 @@
-// Title: Generating Code128 barcodes with varying heights
-// Description: Demonstrates creating Code128 barcodes with incremental BarCodeHeight values, saving each as a JPEG, and logging the resulting image dimensions.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to control barcode size using the BarHeight property via the BarcodeGenerator and its Parameters. Typical use cases include producing barcodes of different visual sizes for printing or UI display. Developers often need to adjust dimensions, set AutoSizeMode, and export to common image formats using classes like BarcodeGenerator, EncodeTypes, BarCodeImageFormat, and Aspose.Drawing.Image.
+// Title: Generate multiple Code128 barcodes with varying heights
+// Description: Demonstrates how to create a series of Code128 barcodes, each with an incrementally increased BarCodeHeight, and save them as JPEG images while logging their dimensions.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator, BarCodeParameters, and image handling classes. Developers often need to produce barcodes with custom sizing for printing or UI display, and this snippet shows how to adjust BarHeight, generate bitmap images, and persist them in common formats.
 // Prompt: Write script generating barcodes with incremental BarCodeHeight values, saving each as JPEG and logging dimensions.
-// Tags: barcode symbology, generation, jpeg, barheight, aspose.barcode, aspose.drawing
+// Tags: code128, barcodeheight, jpeg, aspose.barcode, generation, image, dimensions
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Program that generates Code128 barcodes with varying heights, saves them as JPEG files,
-/// and outputs the image dimensions to the console.
+/// Example program that generates a set of Code128 barcodes with increasing BarCodeHeight,
+/// saves each barcode as a JPEG file, and writes the image dimensions to the console.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Creates output folder, iterates over predefined heights, generates barcodes,
-    /// saves them, and logs their pixel dimensions.
+    /// Entry point of the application. Creates an output folder, iterates to generate barcodes,
+    /// and logs the saved file paths and dimensions.
     /// </summary>
     static void Main()
     {
-        // Define the output directory for generated barcode images
-        string outputDir = "Barcodes";
+        // Create a unique temporary directory for the generated barcode images.
+        string outputDir = Path.Combine(Path.GetTempPath(), "Barcodes_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputDir);
 
-        // Ensure the output directory exists
-        if (!Directory.Exists(outputDir))
+        // Configuration for the barcode series.
+        int count = 5;                 // Number of barcodes to generate.
+        float startHeight = 10f;       // Initial BarCodeHeight in points.
+        float increment = 10f;         // Increment to apply to BarCodeHeight for each subsequent barcode.
+
+        // Loop to generate each barcode with an increased height.
+        for (int i = 0; i < count; i++)
         {
-            Directory.CreateDirectory(outputDir);
-        }
+            // Calculate the current BarCodeHeight.
+            float height = startHeight + i * increment;
+            // Define the text to encode in the barcode.
+            string codeText = $"Sample{i + 1}";
 
-        // Define incremental BarCodeHeight values (in points)
-        float[] heights = new float[] { 20f, 40f, 60f, 80f, 100f };
-
-        // Process each height value
-        foreach (float height in heights)
-        {
-            // Create a barcode generator for Code128 symbology
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128))
+            // Initialize the barcode generator with Code128 symbology and the specified text.
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
             {
-                // Assign a simple codetext that includes the height value
-                generator.CodeText = $"Sample{height}";
-
-                // Disable automatic sizing to allow manual BarHeight setting
-                generator.Parameters.AutoSizeMode = AutoSizeMode.None;
-
-                // Set the barcode's bar height (in points)
+                // Apply the calculated BarCodeHeight.
                 generator.Parameters.Barcode.BarHeight.Point = height;
 
-                // Build the file path for the JPEG image
-                string filePath = Path.Combine(outputDir, $"barcode_{height}.jpeg");
+                // Generate the barcode image as a bitmap.
+                using (Bitmap bitmap = generator.GenerateBarCodeImage())
+                {
+                    // Build the file path for the JPEG output.
+                    string filePath = Path.Combine(outputDir, $"barcode_{i + 1}.jpg");
+                    // Save the bitmap as a JPEG file.
+                    bitmap.Save(filePath, ImageFormat.Jpeg);
 
-                // Save the generated barcode as a JPEG file
-                generator.Save(filePath, BarCodeImageFormat.Jpeg);
-            }
-
-            // Load the saved JPEG to retrieve its pixel dimensions
-            using (var image = Image.FromFile(Path.Combine(outputDir, $"barcode_{height}.jpeg")))
-            {
-                // Log the file name and its width/height in pixels
-                Console.WriteLine($"Saved barcode_{height}.jpeg - Width: {image.Width}px, Height: {image.Height}px");
+                    // Log the saved file location and image dimensions.
+                    Console.WriteLine($"Saved: {filePath}");
+                    Console.WriteLine($"Dimensions: {bitmap.Width}x{bitmap.Height} (BarHeight={height})");
+                }
             }
         }
+
+        // Final summary of the output location.
+        Console.WriteLine($"All barcodes saved to: {outputDir}");
     }
 }

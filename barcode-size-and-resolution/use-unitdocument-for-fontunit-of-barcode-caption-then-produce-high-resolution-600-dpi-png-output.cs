@@ -1,43 +1,48 @@
-// Title: Generate Code128 barcode with caption using Document unit and 600 dpi PNG output
-// Description: Demonstrates creating a Code128 barcode, adding a caption with FontUnit.Document, and saving it as a high‑resolution 600 dpi PNG image.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to configure barcode parameters such as resolution, caption placement, and font units. It showcases the use of BarcodeGenerator, EncodeTypes, and FontUnit classes, which are commonly needed when developers need precise control over barcode appearance and high‑quality image output for printing or digital media.
+// Title: Generate 600 DPI PNG Barcode with Caption Using Document Font Unit
+// Description: This example creates a Code128 barcode, sets a caption with a document‑based font size, and saves the image as a high‑resolution 600 dpi PNG file.
+// Category-Description: Demonstrates Aspose.BarCode generation features, focusing on barcode image resolution and caption styling. It uses the BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes to produce printable barcodes. Developers often need high‑resolution outputs for labels and packaging, and precise font sizing for captions, making this pattern common in inventory and logistics applications.
 // Prompt: Use Unit.Document for FontUnit of barcode caption, then produce high‑resolution 600 dpi PNG output.
-// Tags: code128, barcode, caption, png, high-resolution, 600dpi, aspose.barcodes, fontunit, document-unit
+// Tags: barcode, code128, generation, png, 600dpi, caption, fontunit, document, aspose.barcode
 
 using System;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 
 /// <summary>
-/// Example program that creates a Code128 barcode with a caption,
-/// sets the caption font size using <c>FontUnit.Document</c>,
-/// and saves the result as a 600 dpi PNG image.
+/// Demonstrates generating a Code128 barcode with a caption using a document‑based font size
+/// and saving it as a 600 dpi PNG image.
 /// </summary>
-class Program
+public class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates the barcode and writes the PNG file.
+    /// Entry point of the example. Creates the barcode, configures caption and resolution,
+    /// then writes the image to disk.
     /// </summary>
-    static void Main()
+    public static void Main()
     {
-        // Initialize a barcode generator for Code128 symbology with sample data.
+        // Define the full path for the output PNG file in the current directory.
+        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "barcode_600dpi.png");
+
+        // Initialize the barcode generator with Code128 symbology and the desired data.
         using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            // Set the output resolution to 600 DPI for high‑quality rendering.
+            // Set the image resolution to 600 DPI for high‑quality output.
             generator.Parameters.Resolution = 600f;
 
-            // Configure a caption that appears above the barcode.
+            // Enable the caption above the barcode and set its text.
+            generator.Parameters.CaptionAbove.Visible = true;
             generator.Parameters.CaptionAbove.Text = "Sample Caption";
 
-            // Specify the caption font size using Document units (points).
+            // Configure the caption font: Helvetica family and size expressed in Document units.
+            generator.Parameters.CaptionAbove.Font.FamilyName = "Helvetica";
             generator.Parameters.CaptionAbove.Font.Size.Document = 12f;
 
-            // Choose a widely available font family for the caption.
-            generator.Parameters.CaptionAbove.Font.FamilyName = "Helvetica";
-
-            // Save the generated barcode as a PNG file with the specified resolution.
-            generator.Save("barcode_600dpi.png");
+            // Save the generated barcode as a PNG image with the specified resolution.
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
+
+        // Inform the user where the barcode image has been saved.
+        Console.WriteLine($"Barcode saved to {outputPath}");
     }
 }

@@ -1,76 +1,98 @@
-// Title: Set barcode image width with validation
-// Description: Demonstrates setting the barcode image width using Aspose.BarCode and validates the width value.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to configure image dimensions via the AutoSizeMode and ImageWidth properties. It shows typical usage of BarcodeGenerator, Parameters, and AutoSizeMode classes for developers needing precise control over barcode size in generated images.
+// Title: Demonstrate setting barcode image width with unit validation
+// Description: Shows how to set the barcode width using different measurement units and handles unsupported units by throwing an exception.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator and its Parameters.ImageWidth properties. Developers often need to control barcode dimensions in pixels, millimeters, inches, points, or document units, and must validate unit inputs to avoid runtime errors. The snippet demonstrates typical usage patterns for setting image size and handling invalid unit specifications.
 // Prompt: Implement error handling for unsupported unit values when setting BarCodeWidth, throwing descriptive exception.
-// Tags: barcode, code128, width, validation, aspose.barcode, generation
+// Tags: barcode, generation, image width, unit validation, exception handling, aspose.barcode, csharp
 
 using System;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates setting barcode width with validation using Aspose.BarCode.
+/// Example program that generates a Code128 barcode and demonstrates width unit handling.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Sets the barcode image width after validating the supplied value.
-    /// Throws <see cref="ArgumentOutOfRangeException"/> if the value is not supported.
-    /// </summary>
-    /// <param name="generator">The <see cref="BarcodeGenerator"/> instance to configure.</param>
-    /// <param name="width">Desired barcode width in points (must be greater than zero).</param>
-    static void SetBarCodeWidth(BarcodeGenerator generator, float width)
-    {
-        // Validate that the width is a positive number.
-        if (width <= 0f)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(width),
-                width,
-                "BarCodeWidth must be a positive value greater than zero.");
-        }
-
-        // When AutoSizeMode is Interpolation, ImageWidth controls the barcode width.
-        generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
-        generator.Parameters.ImageWidth.Point = width;
-    }
-
-    /// <summary>
-    /// Entry point demonstrating valid and invalid width handling.
+    /// Entry point. Generates barcodes with valid and invalid width units, saving results to a temporary folder.
     /// </summary>
     static void Main()
     {
-        // Example 1: generate a barcode with a valid width.
-        try
+        // Create a unique temporary output directory for the generated barcode images
+        string outputDir = Path.Combine(Path.GetTempPath(), "BarcodeExample_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputDir);
+
+        // Initialize a barcode generator for Code128 symbology with sample data
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
         {
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
+            // -----------------------------------------------------------------
+            // Set a supported width using pixels and save the resulting image
+            // -----------------------------------------------------------------
+            try
             {
-                SetBarCodeWidth(generator, 250f); // valid width in points
-                generator.Save("valid_barcode.png");
-                Console.WriteLine("Barcode generated with width 250pt: valid_barcode.png");
+                SetBarcodeWidth(generator, 200f, "Pixels");
+                generator.Save(Path.Combine(outputDir, "Barcode_200px.png"), BarCodeImageFormat.Png);
+                Console.WriteLine("Barcode saved with width 200 pixels.");
             }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error generating barcode with valid width: {ex.Message}");
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error setting supported width: " + ex.Message);
+            }
+
+            // -----------------------------------------------------------------
+            // Attempt to set an unsupported unit (Centimeters) to trigger error handling
+            // -----------------------------------------------------------------
+            try
+            {
+                SetBarcodeWidth(generator, 50f, "Centimeters");
+                generator.Save(Path.Combine(outputDir, "Barcode_InvalidUnit.png"), BarCodeImageFormat.Png);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Caught expected exception: " + ex.Message);
+            }
         }
 
-        // Example 2: attempt to generate a barcode with an invalid (negative) width.
-        try
+        Console.WriteLine("Program completed. Output folder: " + outputDir);
+    }
+
+    /// <summary>
+    /// Configures the barcode image width based on the specified value and unit.
+    /// Throws an exception if the unit is not supported.
+    /// </summary>
+    /// <param name="generator">The BarcodeGenerator instance to configure.</param>
+    /// <param name="value">The numeric width value.</param>
+    /// <param name="unit">The measurement unit (e.g., Pixels, Millimeters, Inches, Point, Document).</param>
+    static void SetBarcodeWidth(BarcodeGenerator generator, float value, string unit)
+    {
+        if (generator == null) throw new ArgumentNullException(nameof(generator));
+        if (string.IsNullOrWhiteSpace(unit)) throw new ArgumentException("Unit must be provided.", nameof(unit));
+
+        // Normalize unit string for case‑insensitive comparison
+        switch (unit.Trim().ToLowerInvariant())
         {
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "ABCDEF"))
-            {
-                SetBarCodeWidth(generator, -50f); // invalid width triggers exception
-                generator.Save("invalid_barcode.png");
-            }
-        }
-        catch (ArgumentOutOfRangeException ex)
-        {
-            Console.WriteLine($"Caught expected exception for unsupported width: {ex.Message}");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Unexpected error: {ex.Message}");
+            case "pixels":
+                generator.Parameters.ImageWidth.Pixels = value;
+                break;
+            case "millimeters":
+                generator.Parameters.ImageWidth.Millimeters = value;
+                break;
+            case "inches":
+                generator.Parameters.ImageWidth.Inches = value;
+                break;
+            case "point":
+                generator.Parameters.ImageWidth.Point = value;
+                break;
+            case "document":
+                generator.Parameters.ImageWidth.Document = value;
+                break;
+            default:
+                // Throw a descriptive exception for unsupported units
+                throw new ArgumentException(
+                    $"Unsupported unit: {unit}. Supported units are: Pixels, Millimeters, Inches, Point, Document.",
+                    nameof(unit));
         }
     }
 }

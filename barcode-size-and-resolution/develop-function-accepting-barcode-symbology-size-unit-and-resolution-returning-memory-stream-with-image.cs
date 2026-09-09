@@ -1,90 +1,99 @@
-// Title: Generate barcode image as PNG in memory stream
-// Description: Demonstrates creating a barcode with a specified symbology, size unit, and resolution, returning the image as a MemoryStream.
-// Category-Description: This example belongs to the Aspose.BarCode image generation category, illustrating how to use BarcodeGenerator, EncodeTypes, and image parameter settings to produce barcode graphics. Developers often need to generate barcodes on the fly for reports, PDFs, or web responses, and this snippet shows the typical workflow for configuring size, resolution, and output format.
+// Title: Generate Barcode Image with Custom Symbology, Size Unit, and Resolution
+// Description: Demonstrates how to create a barcode using Aspose.BarCode by specifying the symbology, X-dimension size unit, and image resolution, returning the result as a PNG memory stream.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing the use of EncodeTypes, BarcodeGenerator, and related parameter settings. Developers often need to produce barcodes with precise dimensions and DPI for printing or digital display, and this snippet illustrates typical API calls for such scenarios.
 // Prompt: Develop function accepting barcode symbology, size unit, and resolution, returning memory stream with image.
-// Tags: barcode, symbology, image generation, memory stream, aspose.barcode, png, resolution, size unit
+// Tags: barcode, symbology, size unit, resolution, memorystream, aspose.barcode, generation, png
 
 using System;
 using System.IO;
+using System.Reflection;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Provides an example of generating a barcode image in memory using Aspose.BarCode.
+/// Demonstrates barcode generation with customizable parameters using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Demonstrates calling <see cref="GenerateBarcode"/> and reports the resulting stream size.
+    /// Entry point that generates a sample barcode and saves it to a file.
     /// </summary>
     static void Main()
     {
-        // Example usage of the GenerateBarcode function
-        using (MemoryStream stream = GenerateBarcode("Code128", "Point", 300f))
-        {
-            // Output the size of the generated PNG image (in bytes)
-            Console.WriteLine($"Generated barcode image size: {stream.Length} bytes");
+        // Define sample input parameters
+        string symbology = "Code128";
+        string sizeUnit = "Pixels";
+        float unitValue = 3f;
+        float resolution = 300f;
 
-            // The stream contains a PNG image; you could write it to a file for verification:
-            // File.WriteAllBytes("barcode.png", stream.ToArray());
+        // Generate the barcode image as a memory stream
+        MemoryStream barcodeStream = GenerateBarcode(symbology, sizeUnit, unitValue, resolution);
+
+        // Determine output file path
+        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "barcode.png");
+
+        // Write the memory stream to a physical PNG file
+        using (FileStream file = new FileStream(outputPath, FileMode.Create, FileAccess.Write))
+        {
+            barcodeStream.CopyTo(file);
         }
+
+        Console.WriteLine($"Barcode image saved to: {outputPath}");
     }
 
     /// <summary>
-    /// Generates a barcode image and returns it as a <see cref="MemoryStream"/>.
+    /// Generates a barcode image based on the specified symbology, size unit, unit value, and resolution.
     /// </summary>
-    /// <param name="symbologyName">Name of the barcode symbology (e.g., "Code128", "QR").</param>
-    /// <param name="sizeUnit">Unit for image dimensions: "Point", "Pixels", or "Millimeters".</param>
-    /// <param name="resolution">Resolution (dpi) for the generated image.</param>
-    /// <returns>MemoryStream containing the PNG image.</returns>
-    static MemoryStream GenerateBarcode(string symbologyName, string sizeUnit, float resolution)
+    /// <param name="symbologyName">Name of the barcode symbology (e.g., "Code128").</param>
+    /// <param name="sizeUnit">Unit for the X-dimension (Pixels, Millimeters, Points, Inches).</param>
+    /// <param name="unitValue">Numeric value for the chosen size unit.</param>
+    /// <param name="resolution">Image resolution in DPI.</param>
+    /// <returns>A <see cref="MemoryStream"/> containing the generated PNG barcode image.</returns>
+    static MemoryStream GenerateBarcode(string symbologyName, string sizeUnit, float unitValue, float resolution)
     {
-        // Resolve the symbology name to a BaseEncodeType using reflection
-        var field = typeof(EncodeTypes).GetField(symbologyName);
+        // Validate input arguments
+        if (string.IsNullOrWhiteSpace(symbologyName))
+            throw new ArgumentException("Symbology name must be provided.", nameof(symbologyName));
+
+        if (string.IsNullOrWhiteSpace(sizeUnit))
+            throw new ArgumentException("Size unit must be provided.", nameof(sizeUnit));
+
+        // Resolve symbology name to the corresponding EncodeTypes enum value via reflection
+        FieldInfo field = typeof(EncodeTypes).GetField(symbologyName);
         if (field == null)
-            throw new ArgumentException($"Unknown symbology: {symbologyName}");
+            throw new ArgumentException($"Unknown symbology: {symbologyName}", nameof(symbologyName));
 
         BaseEncodeType encodeType = (BaseEncodeType)field.GetValue(null);
 
-        // Create the barcode generator with the resolved symbology
-        var generator = new BarcodeGenerator(encodeType);
-        generator.CodeText = "Sample123";
-
-        // Set the desired image resolution (dpi)
-        generator.Parameters.Resolution = resolution;
-
-        // Configure image size using the specified unit (example dimensions: 200 x 100)
-        switch (sizeUnit?.Trim().ToLowerInvariant())
+        // Create a BarcodeGenerator with sample text
+        using (BarcodeGenerator generator = new BarcodeGenerator(encodeType, "Sample"))
         {
-            case "point":
-                generator.Parameters.ImageWidth.Point = 200f;
-                generator.Parameters.ImageHeight.Point = 100f;
-                break;
-            case "pixel":
-            case "pixels":
-                generator.Parameters.ImageWidth.Pixels = 200f;
-                generator.Parameters.ImageHeight.Pixels = 100f;
-                break;
-            case "millimeter":
-            case "millimeters":
-                generator.Parameters.ImageWidth.Millimeters = 50f; // approx 200 points
-                generator.Parameters.ImageHeight.Millimeters = 25f; // approx 100 points
-                break;
-            default:
-                throw new ArgumentException($"Unsupported size unit: {sizeUnit}");
-        }
+            // Apply the X-dimension based on the provided size unit
+            switch (sizeUnit.Trim().ToLowerInvariant())
+            {
+                case "pixels":
+                    generator.Parameters.Barcode.XDimension.Pixels = unitValue;
+                    break;
+                case "millimeters":
+                    generator.Parameters.Barcode.XDimension.Millimeters = unitValue;
+                    break;
+                case "points":
+                    generator.Parameters.Barcode.XDimension.Point = unitValue;
+                    break;
+                case "inches":
+                    generator.Parameters.Barcode.XDimension.Inches = unitValue;
+                    break;
+                default:
+                    throw new ArgumentException($"Unsupported size unit: {sizeUnit}", nameof(sizeUnit));
+            }
 
-        // Disable automatic sizing so the explicit dimensions are used
-        generator.Parameters.AutoSizeMode = AutoSizeMode.None;
+            // Set the image resolution (dots per inch)
+            generator.Parameters.Resolution = resolution;
 
-        // Generate the barcode image and save it to a memory stream in PNG format
-        using (Bitmap bitmap = generator.GenerateBarCodeImage())
-        {
-            var ms = new MemoryStream();
-            bitmap.Save(ms, ImageFormat.Png);
-            ms.Position = 0; // Reset stream position for downstream consumers
+            // Save the barcode to a memory stream in PNG format
+            MemoryStream ms = new MemoryStream();
+            generator.Save(ms, BarCodeImageFormat.Png);
+            ms.Position = 0; // Reset stream position for reading
             return ms;
         }
     }

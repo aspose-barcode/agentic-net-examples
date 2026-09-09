@@ -1,83 +1,92 @@
+// Title: Generate DataMatrix barcodes from CSV with size units and save as PNG
+// Description: This example reads barcode data from a CSV file, sets the X‑dimension using either pixels or millimeters, and saves each barcode as a PNG image.
+// Category-Description: Demonstrates Aspose.BarCode barcode generation using the BarcodeGenerator class. Shows how to configure barcode parameters such as XDimension, choose unit types, and export images in PNG format. Useful for developers needing batch barcode creation from data sources like CSV files.
+// Prompt: Create console utility reading CSV values, assigning size units, and outputting PNG files.
+// Tags: datamatrix, barcode generation, png, csv, xdimension, console
+
 using System;
 using System.IO;
-using System.Globalization;
-using Aspose.BarCode.Generation;
+using System.Collections.Generic;
 using Aspose.BarCode;
-using Aspose.Drawing;
+using Aspose.BarCode.Generation;
 
+/// <summary>
+/// Console utility that reads barcode specifications from a CSV file,
+/// applies size units to the X‑dimension, and generates PNG images for each entry.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the application. Creates a temporary folder, writes sample CSV data,
+    /// processes each line to generate a DataMatrix barcode with the specified size unit,
+    /// and outputs the paths of the generated PNG files.
+    /// </summary>
     static void Main()
     {
-        // Define CSV file path
-        string csvPath = "data.csv";
+        // Create a dedicated temporary folder for output
+        string outputFolder = Path.Combine(Path.GetTempPath(), "Barcodes_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputFolder);
 
-        // If CSV does not exist, create a sample file with a few rows
-        if (!File.Exists(csvPath))
+        // Sample CSV content: CodeText,UnitType,UnitValue
+        string csvPath = Path.Combine(outputFolder, "data.csv");
+        string[] csvLines = new[]
         {
-            using (var writer = new StreamWriter(csvPath))
-            {
-                // Format: CodeText,XDimension(Point),ImageWidth(Point),ImageHeight(Point)
-                writer.WriteLine("ABC123,2.5,300,150");
-                writer.WriteLine("XYZ789,3.0,250,120");
-                writer.WriteLine("123456,1.8,200,100");
-            }
-        }
+            "ABC123,Pixels,3",
+            "XYZ789,Millimeters,2",
+            "HELLO,Pixels,5"
+        };
+        File.WriteAllLines(csvPath, csvLines);
 
-        // Read all lines from CSV
-        string[] lines = File.ReadAllLines(csvPath);
-        int index = 1;
-
-        foreach (string line in lines)
+        // Read and process CSV
+        List<string> createdFiles = new List<string>();
+        foreach (string line in File.ReadAllLines(csvPath))
         {
+            // Skip empty lines
             if (string.IsNullOrWhiteSpace(line))
                 continue;
 
-            // Split CSV fields
+            // Split line into parts: code text, unit type, unit value
             string[] parts = line.Split(',');
-            if (parts.Length < 4)
-            {
-                Console.WriteLine($"Skipping invalid line {index}: {line}");
-                index++;
-                continue;
-            }
+            if (parts.Length != 3)
+                continue; // skip malformed lines
 
             string codeText = parts[0].Trim();
+            string unitType = parts[1].Trim().ToLowerInvariant();
 
-            // Parse numeric values using invariant culture
-            if (!float.TryParse(parts[1].Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out float xDim) ||
-                !float.TryParse(parts[2].Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out float imgWidth) ||
-                !float.TryParse(parts[3].Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out float imgHeight))
+            // Parse unit value; ignore non‑positive or invalid numbers
+            if (!float.TryParse(parts[2].Trim(), out float unitValue) || unitValue <= 0f)
+                continue; // skip invalid unit values
+
+            string outputPath = Path.Combine(outputFolder, $"{codeText}.png");
+
+            // Generate barcode with specified X‑dimension unit
+            using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, codeText))
             {
-                Console.WriteLine($"Skipping line with invalid numbers {index}: {line}");
-                index++;
-                continue;
+                if (unitType == "pixels")
+                {
+                    generator.Parameters.Barcode.XDimension.Pixels = unitValue;
+                }
+                else if (unitType == "millimeters")
+                {
+                    generator.Parameters.Barcode.XDimension.Millimeters = unitValue;
+                }
+                else
+                {
+                    // Unknown unit type, skip this entry
+                    continue;
+                }
+
+                // Save barcode as PNG
+                generator.Save(outputPath, BarCodeImageFormat.Png);
+                createdFiles.Add(outputPath);
             }
-
-            // Create barcode generator for Code128 (as a common 1D symbology)
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
-            {
-                // Assign size units
-                generator.Parameters.Barcode.XDimension.Point = xDim;          // smallest bar width
-                generator.Parameters.ImageWidth.Point = imgWidth;            // overall image width
-                generator.Parameters.ImageHeight.Point = imgHeight;          // overall image height
-
-                // Optional: set colors
-                generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-                generator.Parameters.BackColor = Aspose.Drawing.Color.White;
-
-                // Build output file name
-                string outputFile = $"barcode_{index}.png";
-
-                // Save as PNG
-                generator.Save(outputFile, BarCodeImageFormat.Png);
-
-                Console.WriteLine($"Generated {outputFile} for code '{codeText}'");
-            }
-
-            index++;
         }
 
-        Console.WriteLine("Processing completed.");
+        // Output result summary
+        Console.WriteLine("Generated barcode files:");
+        foreach (string file in createdFiles)
+        {
+            Console.WriteLine(file);
+        }
     }
 }

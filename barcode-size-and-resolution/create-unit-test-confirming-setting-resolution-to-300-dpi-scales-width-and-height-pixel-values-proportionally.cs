@@ -1,80 +1,83 @@
-// Title: Verify barcode image resolution scaling
-// Description: Demonstrates how setting the barcode generator resolution to 300 dpi scales the resulting image dimensions proportionally compared to the default 96 dpi.
-// Category-Description: This example belongs to the Aspose.BarCode image generation category, illustrating the use of BarcodeGenerator, its Parameters.ImageWidth/Height, and Parameters.Resolution properties. Developers often need to control output resolution for high‑quality printing or screen rendering, and this snippet shows the typical workflow of generating, saving, and measuring barcode images at different DPI settings.
+// Title: Verify barcode image scaling with resolution change
+// Description: Demonstrates how changing the resolution of a generated barcode image scales its pixel dimensions proportionally.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator, setting physical module size via XDimension, and adjusting image resolution. Developers often need to control image size for printing or display, and must ensure that resolution changes affect width and height consistently. The snippet shows typical steps for creating a barcode, configuring parameters, and validating scaling behavior.
 // Prompt: Create unit test confirming setting resolution to 300 dpi scales width and height pixel values proportionally.
-// Tags: barcode symbology, resolution, png, barcodegenerator, image
+// Tags: barcode, datamatrix, resolution, scaling, aspose.barcode, generation, unit-test, c#
 
 using System;
-using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates resolution scaling of barcode images using Aspose.BarCode.
+/// Example program that verifies barcode image dimensions scale proportionally when the resolution is changed.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that generates barcode images at 96 dpi and 300 dpi, then verifies proportional scaling of pixel dimensions.
+    /// Generates a barcode image at the specified resolution and returns its pixel dimensions.
     /// </summary>
-    static void Main()
+    /// <param name="resolution">Desired image resolution in DPI.</param>
+    /// <returns>Tuple containing the image width and height in pixels.</returns>
+    static (int Width, int Height) GenerateSize(float resolution)
     {
-        // Define logical size in points (1 point = 1/72 inch)
-        const float logicalWidthPoints = 200f;
-        const float logicalHeightPoints = 100f;
-
-        // Generate first image with default resolution (96 dpi)
-        var size96 = GenerateBarcodeImage(logicalWidthPoints, logicalHeightPoints, 96f);
-
-        // Generate second image with higher resolution (300 dpi)
-        var size300 = GenerateBarcodeImage(logicalWidthPoints, logicalHeightPoints, 300f);
-
-        // Expected scaling factor based on DPI change
-        float expectedFactor = 300f / 96f;
-
-        // Verify that width and height are scaled proportionally within a small tolerance
-        bool widthMatches = Math.Abs((float)size300.width / size96.width - expectedFactor) < 0.01f;
-        bool heightMatches = Math.Abs((float)size300.height / size96.height - expectedFactor) < 0.01f;
-
-        if (widthMatches && heightMatches)
+        // Create a barcode generator for DataMatrix with sample text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, "ASPOSE"))
         {
-            Console.WriteLine("PASSED: Resolution scaling works as expected.");
-        }
-        else
-        {
-            Console.WriteLine("FAILED: Resolution scaling mismatch.");
-            Console.WriteLine($"96dpi size:  {size96.width}x{size96.height}");
-            Console.WriteLine($"300dpi size: {size300.width}x{size300.height}");
+            // Set a fixed physical module size (1 mm per module).
+            generator.Parameters.Barcode.XDimension.Millimeters = 1f;
+
+            // Apply the requested resolution (DPI) to the generator.
+            generator.Parameters.Resolution = resolution;
+
+            // Generate the barcode image in memory.
+            using (Bitmap bitmap = generator.GenerateBarCodeImage())
+            {
+                // Return the image dimensions.
+                return (bitmap.Width, bitmap.Height);
+            }
         }
     }
 
-    // Generates a barcode image with the specified logical size and resolution,
-    // then returns the pixel dimensions of the saved image.
-    static (int width, int height) GenerateBarcodeImage(float widthPoints, float heightPoints, float resolutionDpi)
+    /// <summary>
+    /// Entry point that compares low‑ and high‑resolution barcode images to confirm proportional scaling.
+    /// </summary>
+    static void Main()
     {
-        // Initialize the barcode generator with Code128 symbology and sample text
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Test"))
+        const float lowRes = 96f;   // Baseline resolution (dpi)
+        const float highRes = 300f; // Target resolution (dpi)
+        const float tolerance = 0.01f; // Acceptable deviation (1%)
+
+        // Generate image sizes for both resolutions.
+        var lowSize = GenerateSize(lowRes);
+        var highSize = GenerateSize(highRes);
+
+        // Expected scaling factor based on resolution ratio.
+        float expectedScale = highRes / lowRes;
+
+        // Actual scaling observed in width and height.
+        float actualScaleW = (float)highSize.Width / lowSize.Width;
+        float actualScaleH = (float)highSize.Height / lowSize.Height;
+
+        // Verify that the observed scaling matches the expected factor within tolerance.
+        bool widthOk = Math.Abs(actualScaleW - expectedScale) <= tolerance;
+        bool heightOk = Math.Abs(actualScaleH - expectedScale) <= tolerance;
+
+        // Output diagnostic information.
+        Console.WriteLine($"Low resolution ({lowRes} dpi) size:  {lowSize.Width}x{lowSize.Height} pixels");
+        Console.WriteLine($"High resolution ({highRes} dpi) size: {highSize.Width}x{highSize.Height} pixels");
+        Console.WriteLine($"Expected scale factor: {expectedScale:F4}");
+        Console.WriteLine($"Actual width scale:    {actualScaleW:F4}");
+        Console.WriteLine($"Actual height scale:   {actualScaleH:F4}");
+
+        // Report test result.
+        if (widthOk && heightOk)
         {
-            // Set logical image size in points
-            generator.Parameters.ImageWidth.Point = widthPoints;
-            generator.Parameters.ImageHeight.Point = heightPoints;
-
-            // Apply the desired resolution (DPI)
-            generator.Parameters.Resolution = resolutionDpi;
-
-            // Save the generated barcode to a memory stream in PNG format
-            using (var ms = new MemoryStream())
-            {
-                generator.Save(ms, BarCodeImageFormat.Png);
-                ms.Position = 0;
-
-                // Load the image from the stream to read its pixel dimensions
-                using (var bitmap = (Bitmap)Image.FromStream(ms))
-                {
-                    return (bitmap.Width, bitmap.Height);
-                }
-            }
+            Console.WriteLine("PASSED: Width and height scale proportionally with resolution.");
+        }
+        else
+        {
+            Console.WriteLine("FAILED: Scaling does not match expected proportion.");
         }
     }
 }
