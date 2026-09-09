@@ -1,75 +1,86 @@
-// Title: Unit test for ImportFromXml without SetBarCodeImage
-// Description: Demonstrates a test that verifies ImportFromXml throws an exception when no barcode image has been set.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, focusing on XML import operations. It showcases the use of BarcodeGenerator.ImportFromXml and the requirement to call SetBarCodeImage before generating output. Developers working with barcode creation, configuration via XML, and error handling will find this pattern useful for building robust unit tests.
+// Title: ImportFromXml Exception Test
+// Description: Demonstrates a unit‑style test that verifies ImportFromXml throws when no barcode image is set.
+// Category-Description: This example belongs to the Aspose.BarCode reading and state‑management category. It shows how to generate a barcode, export a BarCodeReader’s state to XML, import that state, and handle the requirement to call SetBarCodeImage before reading. Developers working with barcode recognition often need to persist and restore reader configurations, and must ensure the image source is provided to avoid runtime errors.
 // Prompt: Create a unit test that ensures ImportFromXml throws an exception when called without prior SetBarCodeImage invocation.
-// Tags: barcode, import, xml, generation, aspose.barcode
+// Tags: barcode, importfromxml, exception, unit-test, code128, xml, aspose.barcode, generation, recognition
 
 using System;
 using System.IO;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Contains a simple console‑based unit test that validates the behavior of
-/// <see cref="BarcodeGenerator.ImportFromXml(string)"/> when no barcode image has been
-/// configured via <c>SetBarCodeImage</c>. The test expects an exception to be thrown.
+/// Demonstrates a test that ImportFromXml throws an exception if SetBarCodeImage is not called first.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the test application. Creates a temporary XML file with minimal
-    /// content, attempts to import it, and asserts that an exception occurs because
-    /// the barcode image has not been set beforehand.
+    /// Entry point that runs the test scenario.
     /// </summary>
     static void Main()
     {
-        // --------------------------------------------------------------------
-        // Arrange: create a temporary XML file containing an empty BarcodeGenerator element.
-        // --------------------------------------------------------------------
-        string tempXmlPath = Path.Combine(Path.GetTempPath(), "invalid_barcode.xml");
-        File.WriteAllText(tempXmlPath, "<BarcodeGenerator></BarcodeGenerator>");
+        // Create a unique temporary folder for test artifacts
+        string tempDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeTest_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
 
+        // Define file paths for the generated barcode image and the exported reader state XML
+        string barcodePath = Path.Combine(tempDir, "barcode.png");
+        string xmlPath = Path.Combine(tempDir, "readerState.xml");
+
+        // Generate a simple Code128 barcode image and save it as PNG
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
+        {
+            generator.Save(barcodePath, BarCodeImageFormat.Png);
+        }
+
+        // Initialize a BarCodeReader, set the image and read type, then export its state to XML
+        using (BarCodeReader writer = new BarCodeReader())
+        {
+            writer.SetBarCodeImage(barcodePath);
+            writer.SetBarCodeReadType(DecodeType.Code128);
+            writer.ExportToXml(xmlPath);
+        }
+
+        // Attempt to import the reader state without calling SetBarCodeImage and read barcodes
         bool exceptionThrown = false;
-
         try
         {
-            // ----------------------------------------------------------------
-            // Act: try to import the XML without having called SetBarCodeImage.
-            // According to the API contract, this should raise an exception.
-            // ----------------------------------------------------------------
-            using (BarcodeGenerator generator = BarcodeGenerator.ImportFromXml(tempXmlPath))
+            using (BarCodeReader importedReader = BarCodeReader.ImportFromXml(xmlPath))
             {
-                // If ImportFromXml unexpectedly succeeds, attempt to save an image.
-                // This call will also fail because the required image data is missing.
-                generator.Save("should_not_be_created.png");
+                // Intentionally omit SetBarCodeImage to trigger the expected exception
+                BarCodeResult[] results = importedReader.ReadBarCodes();
+                // If no exception occurs, the test has failed
+                Console.WriteLine("FAILURE: No exception was thrown. Read {0} barcodes.", results?.Length ?? 0);
             }
         }
         catch (Exception ex)
         {
-            // ----------------------------------------------------------------
-            // Assert: an exception was caught as expected.
-            // Record the occurrence and output diagnostic information.
-            // ----------------------------------------------------------------
+            // Expected path: an exception should be thrown
             exceptionThrown = true;
-            Console.WriteLine($"Expected exception caught: {ex.GetType().Name} - {ex.Message}");
-        }
-        finally
-        {
-            // ----------------------------------------------------------------
-            // Cleanup: delete the temporary XML file and any generated image file.
-            // ----------------------------------------------------------------
-            if (File.Exists(tempXmlPath))
-                File.Delete(tempXmlPath);
-
-            if (File.Exists("should_not_be_created.png"))
-                File.Delete("should_not_be_created.png");
+            Console.WriteLine("EXPECTED EXCEPTION: " + ex.Message);
         }
 
-        // --------------------------------------------------------------------
-        // Report the test result.
-        // --------------------------------------------------------------------
+        // Report test outcome based on whether the exception was caught
         if (exceptionThrown)
-            Console.WriteLine("Test passed: ImportFromXml threw an exception as expected.");
+        {
+            Console.WriteLine("TEST PASSED: ImportFromXml without SetBarCodeImage throws an exception as expected.");
+        }
         else
-            Console.WriteLine("Test failed: ImportFromXml did not throw an exception.");
+        {
+            Console.WriteLine("TEST FAILED: No exception was thrown when calling ImportFromXml without SetBarCodeImage.");
+        }
+
+        // Clean up temporary files and directory, ignoring any errors during cleanup
+        try
+        {
+            if (File.Exists(barcodePath)) File.Delete(barcodePath);
+            if (File.Exists(xmlPath)) File.Delete(xmlPath);
+            Directory.Delete(tempDir, true);
+        }
+        catch
+        {
+            // Suppress cleanup exceptions
+        }
     }
 }

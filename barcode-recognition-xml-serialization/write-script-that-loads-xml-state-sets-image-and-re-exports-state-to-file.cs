@@ -1,56 +1,79 @@
-// Title: Load barcode generator XML state, modify, and re-export
-// Description: Demonstrates loading a barcode generator's state from an XML file, updating properties, generating an image, and saving the modified state.
-// Category-Description: This example belongs to the Aspose.BarCode state management category, illustrating how to import and export barcode generator settings using XML. It showcases key API classes such as BarcodeGenerator, its Parameters, and image handling via Aspose.Drawing. Developers use these patterns to persist barcode configurations, apply batch modifications, and regenerate barcodes programmatically.
+// Title: Load Barcode Reader State from XML, Set Image, and Re‑Export State
+// Description: Demonstrates loading a BarCodeReader configuration from an XML state file, assigning a barcode image, and exporting the updated state back to XML.
+// Category-Description: This example belongs to the Aspose.BarCode state management category, showcasing how to persist and reuse BarCodeReader settings using ImportFromXml and ExportToXml. It covers key API classes such as BarCodeReader, BarcodeGenerator, and related settings, which developers commonly use to configure barcode recognition, serialize configurations, and apply them across sessions or environments.
 // Prompt: Write a script that loads an XML state, sets an image, and re‑exports the state to a file.
-// Tags: barcode, xml, state, import, export, image, generation, aspose.barcode
+// Tags: barcode, qr, xml, state, import, export, aspose.barcode, image, reader
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates loading a barcode generator state from XML, modifying it, generating an image, and exporting the updated state.
+/// Example program that generates a QR code, saves a BarCodeReader state to XML,
+/// imports the state, reassigns the image, and re‑exports the state.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Performs the load‑modify‑save workflow.
+    /// Entry point of the example. Performs image generation, state export/import,
+    /// and displays the locations of generated files.
     /// </summary>
     static void Main()
     {
-        // Paths for input XML, generated image, and output XML
-        string inputXmlPath = "barcode_state.xml";
-        string outputImagePath = "generated_barcode.png";
-        string outputXmlPath = "modified_barcode_state.xml";
+        // Prepare a temporary working folder to store all generated files.
+        string workFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(workFolder);
 
-        // Ensure the input XML file exists before proceeding
-        if (!File.Exists(inputXmlPath))
+        // Define file paths for the barcode image and XML state files.
+        string imagePath = Path.Combine(workFolder, "sample.png");
+        string statePath1 = Path.Combine(workFolder, "readerState1.xml");
+        string statePath2 = Path.Combine(workFolder, "readerState2.xml");
+        string outputImagePath = Path.Combine(workFolder, "generated.png");
+
+        // 1. Generate a sample QR code image and save it as PNG.
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "SampleText"))
         {
-            Console.WriteLine($"Input XML file not found: {inputXmlPath}");
-            return;
+            generator.Save(imagePath, BarCodeImageFormat.Png);
         }
 
-        // Import the barcode generator configuration from the XML state file
-        using (BarcodeGenerator generator = BarcodeGenerator.ImportFromXml(inputXmlPath))
+        // 2. Create a BarCodeReader, configure its settings, assign the image,
+        //    set the decode type, and export the current configuration to XML.
+        using (BarCodeReader reader = new BarCodeReader())
         {
-            // Example modification: set a light gray background and change the code text
-            generator.Parameters.BackColor = Color.LightGray;
-            generator.CodeText = "ModifiedCode123";
+            // Example reader settings.
+            reader.BarcodeSettings.StripFNC = true;
+            reader.QualitySettings = QualitySettings.HighPerformance;
+            reader.QualitySettings.XDimension = XDimensionMode.Small;
 
-            // Generate the barcode image based on the modified settings
-            using (var bitmap = generator.GenerateBarCodeImage())
-            {
-                // Save the generated image as a PNG file
-                bitmap.Save(outputImagePath, ImageFormat.Png);
-                Console.WriteLine($"Barcode image saved to: {outputImagePath}");
-            }
+            // Assign the generated image and specify that only QR codes should be read.
+            reader.SetBarCodeImage(imagePath);
+            reader.SetBarCodeReadType(DecodeType.QR);
 
-            // Export the modified generator state back to an XML file
-            generator.ExportToXml(outputXmlPath);
-            Console.WriteLine($"Modified barcode state exported to: {outputXmlPath}");
+            // Export the configured reader state to the first XML file.
+            reader.ExportToXml(statePath1);
         }
+
+        // 3. Import the previously saved state, reassign the image (required after import),
+        //    set the decode type again, and export the updated state to a new XML file.
+        using (BarCodeReader importedReader = BarCodeReader.ImportFromXml(statePath1))
+        {
+            // Image must be set again after importing the state.
+            importedReader.SetBarCodeImage(imagePath);
+            importedReader.SetBarCodeReadType(DecodeType.QR);
+
+            // Optionally, barcode reading could be performed here.
+            // var results = importedReader.ReadBarCodes();
+
+            // Export the re‑imported and updated state to the second XML file.
+            importedReader.ExportToXml(statePath2);
+        }
+
+        // 4. Output the locations of the generated files for verification.
+        Console.WriteLine("Barcode image generated at: " + imagePath);
+        Console.WriteLine("Initial reader state saved at: " + statePath1);
+        Console.WriteLine("Re‑imported reader state saved at: " + statePath2);
     }
 }

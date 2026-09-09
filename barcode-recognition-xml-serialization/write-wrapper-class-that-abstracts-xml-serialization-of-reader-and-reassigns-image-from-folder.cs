@@ -1,8 +1,8 @@
-// Title: XML Serialization Wrapper for BarCodeReader
-// Description: Demonstrates how to load BarCodeReader settings from an XML file, reassign an image from a folder, and read barcodes.
-// Category-Description: This example belongs to the Aspose.BarCode reading and configuration category, showcasing the use of BarCodeReader, BarcodeGenerator, and XML import/export APIs. Developers often need to persist reader settings, reuse them across sessions, and dynamically assign images for batch processing. The snippet serves as a searchable reference for implementing wrapper classes that handle serialization and image management.
+// Title: XML Serialization Wrapper for Aspose.BarCode Reader
+// Description: Demonstrates exporting a BarCodeReader's configuration to XML and reloading it with a new image file.
+// Category-Description: This example belongs to the Aspose.BarCode serialization and decoding category. It showcases the use of BarCodeReader.ExportToXml, BarCodeReader.ImportFromXml, and image reassignment to persist and restore reader settings. Developers working with barcode generation, recognition, and configuration persistence commonly need such patterns to store reader state, share settings across applications, or automate batch processing.
 // Prompt: Write a wrapper class that abstracts XML serialization of the reader and reassigns the image from a folder.
-// Tags: barcode, xml-serialization, reader, image-assignment, aspnet, aspose.barcode, csharp
+// Tags: barcode, xml, serialization, reader, generation, aspose.barcode
 
 using System;
 using System.IO;
@@ -11,120 +11,99 @@ using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Wrapper for Aspose.BarCode <see cref="BarCodeReader"/> that abstracts XML
-/// serialization of the reader settings and reassigns the barcode image from a folder.
+/// Wrapper class that abstracts XML serialization of a <see cref="BarCodeReader"/> and
+/// allows reassigning the barcode image from a specified folder.
 /// </summary>
-class BarcodeReaderWrapper : IDisposable
+class BarcodeReaderXmlWrapper
 {
-    private BarCodeReader _reader;
-
     /// <summary>
-    /// Loads reader configuration from an XML file exported previously by <see cref="BarCodeReader.ExportToXml"/>.
+    /// Exports the current state of the provided <see cref="BarCodeReader"/> to an XML file.
     /// </summary>
-    /// <param name="xmlPath">Full path to the XML configuration file.</param>
-    public void LoadFromXml(string xmlPath)
+    /// <param name="reader">The barcode reader whose settings are to be saved.</param>
+    /// <param name="xmlPath">The file path where the XML representation will be written.</param>
+    public static void ExportReaderState(BarCodeReader reader, string xmlPath)
     {
-        if (!File.Exists(xmlPath))
-            throw new FileNotFoundException($"XML file not found: {xmlPath}");
+        // Validate arguments
+        if (reader == null) throw new ArgumentNullException(nameof(reader));
+        if (string.IsNullOrEmpty(xmlPath)) throw new ArgumentException("XML path is null or empty.", nameof(xmlPath));
 
-        // Import reader settings from XML
-        _reader = BarCodeReader.ImportFromXml(xmlPath);
+        // Perform the export
+        reader.ExportToXml(xmlPath);
     }
 
     /// <summary>
-    /// Assigns the first image matching <paramref name="searchPattern"/> from <paramref name="folderPath"/>
-    /// to the internal <see cref="BarCodeReader"/> instance.
+    /// Imports a <see cref="BarCodeReader"/> state from an XML file and assigns a new image.
     /// </summary>
-    /// <param name="folderPath">Folder containing barcode images.</param>
-    /// <param name="searchPattern">Search pattern for image files (default: "*.png").</param>
-    public void SetImageFromFolder(string folderPath, string searchPattern = "*.png")
+    /// <param name="xmlPath">Path to the XML file containing the saved reader state.</param>
+    /// <param name="imagePath">Path to the barcode image that the reader should process.</param>
+    /// <param name="decodeType">The decode type that matches the barcode symbology.</param>
+    /// <returns>A configured <see cref="BarCodeReader"/> ready for decoding.</returns>
+    public static BarCodeReader ImportReaderState(string xmlPath, string imagePath, BaseDecodeType decodeType)
     {
-        if (!Directory.Exists(folderPath))
-            throw new DirectoryNotFoundException($"Folder not found: {folderPath}");
+        // Ensure the required files exist
+        if (!File.Exists(xmlPath)) throw new FileNotFoundException("XML file not found.", xmlPath);
+        if (!File.Exists(imagePath)) throw new FileNotFoundException("Image file not found.", imagePath);
+        if (decodeType == null) throw new ArgumentNullException(nameof(decodeType));
 
-        string[] files = Directory.GetFiles(folderPath, searchPattern);
-        if (files.Length == 0)
-            throw new FileNotFoundException($"No image files matching pattern '{searchPattern}' found in folder.");
-
-        // Load the first image and assign it to the reader
-        using (Bitmap bmp = new Bitmap(files[0]))
-        {
-            _reader.SetBarCodeImage(bmp);
-        }
-    }
-
-    /// <summary>
-    /// Reads barcodes from the assigned image, writing up to <paramref name="maxCount"/> results to the console.
-    /// </summary>
-    /// <param name="maxCount">Maximum number of barcode results to display (default: 5).</param>
-    public void ReadBarcodes(int maxCount = 5)
-    {
-        if (_reader == null)
-            throw new InvalidOperationException("BarCodeReader is not initialized. Call LoadFromXml first.");
-
-        int count = 0;
-        foreach (var result in _reader.ReadBarCodes())
-        {
-            Console.WriteLine($"Detected Type: {result.CodeTypeName}, Text: {result.CodeText}");
-            count++;
-            if (count >= maxCount)
-                break;
-        }
-
-        if (count == 0)
-            Console.WriteLine("No barcodes detected.");
-    }
-
-    /// <summary>
-    /// Disposes the underlying <see cref="BarCodeReader"/> instance.
-    /// </summary>
-    public void Dispose()
-    {
-        _reader?.Dispose();
+        // Restore the reader from XML and set the new image
+        BarCodeReader reader = BarCodeReader.ImportFromXml(xmlPath);
+        reader.SetBarCodeImage(imagePath);
+        // The decode type is stored in the imported settings; no further action required.
+        return reader;
     }
 }
 
-/// <summary>
-/// Demonstrates generation of a barcode image, exporting reader settings to XML,
-/// and using <see cref="BarcodeReaderWrapper"/> to reload settings and read the barcode.
-/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point that demonstrates generating a barcode, exporting reader settings to XML,
+    /// importing them back, and decoding the barcode image.
+    /// </summary>
     static void Main()
     {
-        // Prepare directory and file paths
-        string baseDir = Directory.GetCurrentDirectory();
-        string imageFolder = Path.Combine(baseDir, "Barcodes");
-        string imagePath = Path.Combine(imageFolder, "sample.png");
-        string xmlPath = Path.Combine(baseDir, "reader.xml");
+        // Create a unique temporary folder for demo files
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeXmlDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
 
-        // Ensure the image folder exists
-        if (!Directory.Exists(imageFolder))
-            Directory.CreateDirectory(imageFolder);
+        // Define paths for the generated image and the XML state file
+        string imagePath = Path.Combine(tempFolder, "sample.png");
+        string xmlPath = Path.Combine(tempFolder, "readerState.xml");
 
-        // 1. Generate a sample barcode image and save it as PNG
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
+        // Generate a sample PDF417 barcode image
+        using (var generator = new BarcodeGenerator(EncodeTypes.Pdf417, "Sample123"))
         {
+            generator.Parameters.Barcode.XDimension.Pixels = 2f;
             generator.Save(imagePath, BarCodeImageFormat.Png);
         }
 
-        // 2. Create a BarCodeReader for the generated image and export its settings to XML
-        using (var reader = new BarCodeReader(imagePath, DecodeType.Code128))
+        // Initialize BarCodeReader, adjust a setting, and export its state to XML
+        using (var reader = new BarCodeReader(imagePath, DecodeType.Pdf417))
         {
-            reader.ExportToXml(xmlPath);
+            reader.BarcodeSettings.StripFNC = true;
+            BarcodeReaderXmlWrapper.ExportReaderState(reader, xmlPath);
         }
 
-        // 3. Use the wrapper to load settings from XML, reassign the image from the folder, and read barcodes
-        using (var wrapper = new BarcodeReaderWrapper())
+        // Import the reader state from XML, reassign the image, and read barcodes
+        using (var importedReader = BarcodeReaderXmlWrapper.ImportReaderState(xmlPath, imagePath, DecodeType.Pdf417))
         {
-            wrapper.LoadFromXml(xmlPath);
-            wrapper.SetImageFromFolder(imageFolder, "*.png");
-            wrapper.ReadBarcodes(3);
+            BarCodeResult[] results = importedReader.ReadBarCodes();
+            Console.WriteLine($"Barcodes read: {results.Length}");
+            foreach (var result in results)
+            {
+                Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
+            }
         }
 
-        // Optional cleanup (commented out)
-        // File.Delete(imagePath);
-        // File.Delete(xmlPath);
-        // Directory.Delete(imageFolder);
+        // Cleanup temporary files (optional)
+        try
+        {
+            if (File.Exists(imagePath)) File.Delete(imagePath);
+            if (File.Exists(xmlPath)) File.Delete(xmlPath);
+            Directory.Delete(tempFolder, true);
+        }
+        catch
+        {
+            // Ignored - cleanup failures should not affect program exit
+        }
     }
 }

@@ -1,144 +1,107 @@
 // Title: Restartable Barcode Scanning Service with XML State Persistence
-// Description: Demonstrates scanning multiple barcode images, outputting results to the console, and persisting processed file information to an XML file so the service can resume after a crash.
-// Category-Description: This example belongs to the Aspose.BarCode scanning and state‑management category. It showcases the use of BarcodeGenerator for creating sample barcodes and BarCodeReader for recognizing them, combined with XML handling to store processed file names. Developers building long‑running or fault‑tolerant barcode processing pipelines often need to track progress and recover gracefully, making this pattern a common reference point.
+// Description: Demonstrates generating a QR barcode, scanning it, exporting the reader's configuration to XML, and restoring the scanner after a simulated restart.
+// Category-Description: This example belongs to the Aspose.BarCode scanning and state management category. It showcases the BarCodeGenerator for creating barcodes, BarCodeReader for decoding, and the ExportToXml/ImportFromXml APIs for persisting reader settings. Developers building long‑running or crash‑resilient scanning services use these patterns to save and restore scanner state without re‑configuring each time.
 // Prompt: Implement a restartable barcode scanning service that saves its state to XML and restores it after a crash.
-// Tags: code128, qr, datamatrix, scanning, state, xml, console, barcodegenerator, barcodereader
+// Tags: barcode, qr, scanning, state, xml, export, import, aspose.barcode, generation, recognition
 
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Xml.Linq;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Provides a console application that generates sample barcode images,
-/// scans them, and maintains a persistent XML state file to allow
-/// restartable processing after unexpected termination.
+/// Sample program that illustrates how to create a QR barcode, read it,
+/// export the reader's configuration to XML, and later restore the reader
+/// from that XML to continue scanning without re‑initialising settings.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates sample barcodes if needed,
-    /// loads previously processed file information, scans remaining images,
-    /// and updates the XML state after each successful scan.
+    /// Entry point of the demo. Executes the generate‑scan‑export‑import workflow.
     /// </summary>
     static void Main()
     {
         // --------------------------------------------------------------------
-        // Prepare folder for sample barcode images
+        // Setup: create a unique temporary folder for all demo artefacts.
         // --------------------------------------------------------------------
-        string imagesFolder = "Barcodes";
-        Directory.CreateDirectory(imagesFolder);
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeServiceDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
+
+        // Paths for the generated barcode image and the exported reader state.
+        string barcodePath = Path.Combine(tempFolder, "sample.png");
+        string statePath   = Path.Combine(tempFolder, "readerState.xml");
 
         // --------------------------------------------------------------------
-        // Generate sample barcode images when the folder is empty
+        // Step 1: Generate a QR barcode containing the text "HelloWorld".
         // --------------------------------------------------------------------
-        string[] sampleFiles = { "code128.png", "qr.png", "datamatrix.png" };
-        if (Directory.GetFiles(imagesFolder, "*.png").Length == 0)
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "HelloWorld"))
         {
-            // Code128 sample
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
+            generator.Save(barcodePath, BarCodeImageFormat.Png);
+        }
+
+        // Verify that the barcode image was successfully created.
+        if (!File.Exists(barcodePath))
+        {
+            Console.WriteLine("Failed to create barcode image.");
+            return;
+        }
+
+        // --------------------------------------------------------------------
+        // Step 2: Perform the initial scan and export the reader's state to XML.
+        // --------------------------------------------------------------------
+        using (var reader = new BarCodeReader(barcodePath, DecodeType.QR))
+        {
+            // Read all barcodes from the image.
+            var results = reader.ReadBarCodes();
+            Console.WriteLine("Initial scan results:");
+            foreach (var result in results)
             {
-                generator.Save(Path.Combine(imagesFolder, sampleFiles[0]));
+                Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
             }
 
-            // QR code sample
-            using (var generator = new BarcodeGenerator(EncodeTypes.QR, "QR Sample"))
-            {
-                generator.Save(Path.Combine(imagesFolder, sampleFiles[1]));
-            }
+            // Persist the current reader configuration (e.g., decoding options) to an XML file.
+            reader.ExportToXml(statePath);
+        }
 
-            // DataMatrix sample
-            using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, "DM Sample"))
+        // Verify that the state file was successfully written.
+        if (!File.Exists(statePath))
+        {
+            Console.WriteLine("Failed to export reader state.");
+            return;
+        }
+
+        // --------------------------------------------------------------------
+        // Step 3: Simulate a service restart by importing the saved state.
+        // --------------------------------------------------------------------
+        using (var restoredReader = BarCodeReader.ImportFromXml(statePath))
+        {
+            // The XML does not contain the image source or decode type, so set them explicitly.
+            restoredReader.SetBarCodeImage(barcodePath);
+            restoredReader.SetBarCodeReadType(DecodeType.QR);
+
+            // Re‑read the barcode using the restored configuration.
+            var restoredResults = restoredReader.ReadBarCodes();
+            Console.WriteLine("Restored scan results after restart:");
+            foreach (var result in restoredResults)
             {
-                generator.Save(Path.Combine(imagesFolder, sampleFiles[2]));
+                Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
             }
         }
 
         // --------------------------------------------------------------------
-        // Load or initialize processing state
+        // Cleanup: delete temporary files and folder (optional).
         // --------------------------------------------------------------------
-        string stateFile = "state.xml";
-        var processed = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-        if (File.Exists(stateFile))
+        try
         {
-            try
-            {
-                XDocument doc = XDocument.Load(stateFile);
-                foreach (var elem in doc.Root.Element("ProcessedFiles").Elements("File"))
-                {
-                    processed.Add(elem.Value);
-                }
-            }
-            catch
-            {
-                // If the state file is corrupted, start with a clean state
-                processed.Clear();
-            }
+            File.Delete(barcodePath);
+            File.Delete(statePath);
+            Directory.Delete(tempFolder);
         }
-
-        // --------------------------------------------------------------------
-        // Scan each barcode image that hasn't been processed yet
-        // --------------------------------------------------------------------
-        string[] imageFiles = Directory.GetFiles(imagesFolder, "*.png");
-
-        foreach (string filePath in imageFiles)
+        catch
         {
-            string fileName = Path.GetFileName(filePath);
-            if (processed.Contains(fileName))
-                continue; // Skip already processed files
-
-            // Read all supported barcodes from the current image
-            using (var reader = new BarCodeReader(filePath, DecodeType.AllSupportedTypes))
-            {
-                foreach (var result in reader.ReadBarCodes())
-                {
-                    Console.WriteLine($"File: {fileName} | Type: {result.CodeTypeName} | Text: {result.CodeText}");
-                }
-            }
-
-            // Record the file as processed and persist the updated state
-            processed.Add(fileName);
-            SaveState(stateFile, processed);
-        }
-
-        Console.WriteLine("Scanning completed.");
-    }
-
-    /// <summary>
-    /// Persists the set of processed file names to an XML state file.
-    /// </summary>
-    /// <param name="statePath">Path to the XML state file.</param>
-    /// <param name="processedFiles">Collection of processed file names.</param>
-    static void SaveState(string statePath, HashSet<string> processedFiles)
-    {
-        var doc = new XDocument(
-            new XElement("State",
-                new XElement("ProcessedFiles",
-                    new List<XElement>(CreateFileElements(processedFiles))
-                )
-            )
-        );
-
-        // Ensure the state file is written atomically
-        using (var stream = new FileStream(statePath, FileMode.Create, FileAccess.Write, FileShare.None))
-        {
-            doc.Save(stream);
-        }
-    }
-
-    /// <summary>
-    /// Generates XML <File> elements for each processed file name.
-    /// </summary>
-    /// <param name="files">Enumerable of file names.</param>
-    /// <returns>IEnumerable of XElement representing each file.</returns>
-    static IEnumerable<XElement> CreateFileElements(IEnumerable<string> files)
-    {
-        foreach (var f in files)
-        {
-            yield return new XElement("File", f);
+            // Suppress any exceptions during cleanup to avoid breaking the demo flow.
         }
     }
 }
