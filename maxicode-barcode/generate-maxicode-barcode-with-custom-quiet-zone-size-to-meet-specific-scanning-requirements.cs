@@ -1,67 +1,49 @@
 // Title: Generate MaxiCode barcode with custom quiet zone
-// Description: Demonstrates creating a MaxiCode barcode and customizing its quiet zone (padding) to meet specific scanning requirements.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, focusing on complex barcode types such as MaxiCode. It showcases the use of ComplexBarcodeGenerator, MaxiCodeCodetextMode3, and related parameter settings to control barcode appearance, including quiet zone and module size. Developers working with shipping, logistics, or inventory systems often need to generate MaxiCode symbols with precise layout constraints for reliable scanning.
-/// Prompt: Generate a MaxiCode barcode with a custom quiet zone size to meet specific scanning requirements.
-// Tags: maxicode, barcode, quiet zone, padding, generation, aspose.barcode, png, complexbarcode
+// Description: Demonstrates creating a MaxiCode barcode and applying custom quiet zone padding to meet specific scanning requirements.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on MaxiCode symbology. It showcases the use of BarcodeGenerator, EncodeTypes, and barcode parameter settings such as XDimension, Padding, and MaxiCode mode. Developers often need to customize barcode size, quiet zones, and output format for integration into packaging, shipping labels, and inventory systems.
+// Prompt: Generate a MaxiCode barcode with a custom quiet zone size to meet specific scanning requirements.
+// Tags: maxicode, barcode, quiet zone, padding, generation, aspnet, aspnetcore, aspose.barcode, png
 
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.ComplexBarcode;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that creates a MaxiCode barcode with a custom quiet zone (padding) and saves it as a PNG image.
+/// Demonstrates generating a MaxiCode barcode with custom quiet zone padding.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates the barcode, applies custom padding, and writes the output file.
+    /// Entry point of the example. Creates a temporary folder, generates the barcode, saves it as PNG, and writes the output path to the console.
     /// </summary>
     static void Main()
     {
-        // Define the output file path
-        string outputPath = "maxicode.png";
+        // Determine a temporary directory for the output file
+        string outputDir = Path.Combine(Path.GetTempPath(), "MaxiCodeExample");
+        Directory.CreateDirectory(outputDir);
+        string outputPath = Path.Combine(outputDir, "maxicode.png");
 
-        // Ensure the output directory exists
-        string outputDir = Path.GetDirectoryName(Path.GetFullPath(outputPath));
-        if (!Directory.Exists(outputDir))
+        // Initialize the barcode generator for MaxiCode with sample text
+        using (var generator = new BarcodeGenerator(EncodeTypes.MaxiCode, "Sample MaxiCode Text"))
         {
-            Directory.CreateDirectory(outputDir);
-        }
+            // Set the module (pixel) size of the barcode
+            generator.Parameters.Barcode.XDimension.Pixels = 10f;
 
-        // Prepare MaxiCode codetext (Mode 3) with a standard second message
-        var maxiCodeData = new MaxiCodeCodetextMode3
-        {
-            PostalCode = "B1050",   // 6‑character alphanumeric postal code
-            CountryCode = 56,       // Country code (e.g., USA = 56)
-            ServiceCategory = 999   // Example service category
-        };
+            // Apply custom quiet zone padding (20 points on each side)
+            generator.Parameters.Barcode.Padding.Left.Point = 20f;
+            generator.Parameters.Barcode.Padding.Top.Point = 20f;
+            generator.Parameters.Barcode.Padding.Right.Point = 20f;
+            generator.Parameters.Barcode.Padding.Bottom.Point = 20f;
 
-        // Create the standard second message
-        var secondMessage = new MaxiCodeStandardSecondMessage
-        {
-            Message = "Sample MaxiCode"
-        };
-        maxiCodeData.SecondMessage = secondMessage;
-
-        // Generate the barcode with custom quiet zone (padding)
-        using (var generator = new ComplexBarcodeGenerator(maxiCodeData))
-        {
-            // Set individual padding values (quiet zone) in points
-            generator.Parameters.Barcode.Padding.Left.Point = 15f;
-            generator.Parameters.Barcode.Padding.Top.Point = 15f;
-            generator.Parameters.Barcode.Padding.Right.Point = 15f;
-            generator.Parameters.Barcode.Padding.Bottom.Point = 15f;
-
-            // Optionally adjust the module size (X dimension) in points
-            generator.Parameters.Barcode.XDimension.Point = 2f;
+            // Optionally set the MaxiCode mode (default is Mode4)
+            generator.Parameters.Barcode.MaxiCode.Mode = MaxiCodeMode.Mode4;
 
             // Save the generated barcode as a PNG image
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user where the file was saved
-        Console.WriteLine($"MaxiCode barcode saved to: {Path.GetFullPath(outputPath)}");
+        // Inform the user where the barcode image was saved
+        Console.WriteLine($"MaxiCode barcode saved to: {outputPath}");
     }
 }

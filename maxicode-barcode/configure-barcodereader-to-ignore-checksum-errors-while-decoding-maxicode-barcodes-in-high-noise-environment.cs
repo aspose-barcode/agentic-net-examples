@@ -1,58 +1,82 @@
-// Title: Decode MaxiCode with checksum validation disabled
-// Description: Demonstrates configuring BarcodeReader to ignore checksum errors when decoding MaxiCode barcodes, useful in noisy environments.
-// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, focusing on reading complex symbologies such as MaxiCode. It showcases key API classes like BarCodeReader, BarcodeSettings, and QualitySettings, illustrating how to adjust checksum validation and quality parameters for high‑noise scenarios. Developers working with barcode scanning in challenging conditions can use this pattern to improve detection reliability.
+// Title: Decode MaxiCode barcode while ignoring checksum errors in noisy conditions
+// Description: Demonstrates configuring Aspose.BarCode's BarCodeReader to bypass checksum validation and use high‑performance settings when decoding MaxiCode barcodes in a high‑noise environment.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, illustrating how to adjust BarCodeReader settings such as ChecksumValidation, QualitySettings, and DeconvolutionMode for robust decoding of MaxiCode symbology. Developers working with barcode scanning in challenging image conditions can learn to disable checksum checks, enable high‑performance mode, and allow incorrect barcodes to improve detection rates.
 // Prompt: Configure BarcodeReader to ignore checksum errors while decoding MaxiCode barcodes in a high‑noise environment.
-// Tags: maxicode, checksum, barcodereader, decoding, qualitysettings, aspnet, csharp
+// Tags: maxicode, checksumvalidation, high-noise, barcodereader, qualitysettings, aspnet.barcode, barcode recognition
 
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.BarCode.ComplexBarcode;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates a MaxiCode barcode and reads it while ignoring checksum errors.
+/// Demonstrates decoding a MaxiCode barcode while ignoring checksum errors and using high‑noise settings.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a MaxiCode (Mode 2) barcode, then reads it with checksum validation turned off.
+    /// Entry point of the demo.
     /// </summary>
     static void Main()
     {
-        // Create a sample MaxiCode (Mode 2) codetext with postal, country, and service information.
-        var maxiCodeData = new MaxiCodeCodetextMode2
-        {
-            PostalCode = "524032140",
-            CountryCode = 56,
-            ServiceCategory = 999,
-            SecondMessage = new MaxiCodeStandardSecondMessage { Message = "Test" }
-        };
+        // Create a temporary folder for the demo
+        string tempFolder = Path.Combine(Path.GetTempPath(), "MaxiCodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
+        string barcodePath = Path.Combine(tempFolder, "maxicode.png");
 
-        // Generate the barcode image into a memory stream (PNG format).
-        using (var generator = new ComplexBarcodeGenerator(maxiCodeData))
-        using (var ms = new MemoryStream())
+        // Generate a simple MaxiCode barcode and save it as PNG
+        using (var generator = new BarcodeGenerator(EncodeTypes.MaxiCode, "123456"))
         {
-            generator.Save(ms, BarCodeImageFormat.Png);
-            ms.Position = 0; // Reset stream position for reading.
+            generator.Save(barcodePath, BarCodeImageFormat.Png);
+        }
 
-            // Initialize the reader for MaxiCode symbology.
-            using (var reader = new BarCodeReader(ms, DecodeType.MaxiCode))
+        // Verify the generated file exists before attempting to read it
+        if (!File.Exists(barcodePath))
+        {
+            Console.WriteLine("Failed to create barcode image.");
+            return;
+        }
+
+        // Read the MaxiCode barcode while ignoring checksum errors and using high‑noise settings
+        using (var reader = new BarCodeReader(barcodePath, DecodeType.MaxiCode))
+        {
+            // Disable checksum validation to ignore checksum errors
+            reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.Off;
+
+            // Configure quality settings for a noisy environment
+            reader.QualitySettings = QualitySettings.HighPerformance;
+            reader.QualitySettings.Deconvolution = DeconvolutionMode.Fast;
+            reader.QualitySettings.AllowIncorrectBarcodes = true;
+
+            // Perform the barcode detection
+            BarCodeResult[] results = reader.ReadBarCodes();
+
+            // Output the results
+            if (results.Length == 0)
             {
-                // Disable checksum validation to tolerate errors in noisy captures.
-                reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.Off;
-
-                // Adjust quality settings to allow incorrect barcodes and speed up processing.
-                reader.QualitySettings.AllowIncorrectBarcodes = true;
-                reader.QualitySettings.Deconvolution = DeconvolutionMode.Fast;
-
-                // Perform recognition and output results.
-                foreach (var result in reader.ReadBarCodes())
+                Console.WriteLine("No barcodes were detected.");
+            }
+            else
+            {
+                foreach (BarCodeResult result in results)
                 {
-                    Console.WriteLine($"Detected type: {result.CodeTypeName}");
-                    Console.WriteLine($"Code text: {result.CodeText}");
+                    Console.WriteLine($"Code Type: {result.CodeTypeName}");
+                    Console.WriteLine($"Code Text: {result.CodeText}");
                 }
             }
+        }
+
+        // Clean up temporary files
+        try
+        {
+            File.Delete(barcodePath);
+            Directory.Delete(tempFolder);
+        }
+        catch
+        {
+            // Ignored - cleanup failure should not affect program outcome
         }
     }
 }

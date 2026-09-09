@@ -1,103 +1,107 @@
-// Title: Validate MaxiCode Mode 3 Input and Generate PNG Barcode
-// Description: Demonstrates how to validate required fields for MaxiCode Mode 3 using Aspose.BarCode's structured codetext classes, then generate a PNG barcode image.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on complex barcode types such as MaxiCode. It showcases the use of ComplexBarcodeGenerator together with MaxiCodeCodetextMode3 and related second‑message classes, a common scenario for developers needing to ensure data integrity before creating shipping or logistics barcodes. Typical use cases include validating postal codes, country codes, and service categories prior to barcode rendering.
+// Title: Validate and Generate MaxiCode Mode 3 Barcode with Structured Second Message
+// Description: Demonstrates how to validate input fields for MaxiCode Mode 3 using structured codetext classes before generating the barcode image.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category, focusing on MaxiCode symbology. It showcases the use of ComplexBarcodeGenerator, MaxiCodeCodetextMode3, and related structured message classes to create a valid MaxiCode barcode. Developers working with shipping, logistics, or inventory systems often need to validate and generate MaxiCode barcodes that include postal codes, country codes, service categories, and structured address information.
 // Prompt: Validate input fields for MaxiCode Mode 3 using the provided structured codetext classes before generation.
-// Tags: maxicode, validation, generation, png, complexbarcodegenerator, maxicodecodetextmode3, maxicodestandardsecondmessage, maxicodestructuredsecondmessage
+// Tags: maxicode, validation, generation, png, complexbarcodegenerator, maxicodecodetextmode3, maxicodestructuredsecondmessage
 
 using System;
 using System.IO;
-using System.Text.RegularExpressions;
-using Aspose.BarCode;
-using Aspose.BarCode.Generation;
 using Aspose.BarCode.ComplexBarcode;
-using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates validation of MaxiCode Mode 3 data and barcode generation using Aspose.BarCode.
+/// Example program that validates MaxiCode Mode 3 codetext fields and generates a barcode image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Validates the fields required for MaxiCode Mode 3.
-    /// Throws <see cref="ArgumentException"/> if any field is invalid.
+    /// Entry point of the application. Prepares data, validates it, and creates a MaxiCode Mode 3 barcode.
     /// </summary>
-    /// <param name="data">The MaxiCode codetext object containing mode‑3 data.</param>
-    static void ValidateMaxiCodeMode3(MaxiCodeCodetextMode3 data)
+    static void Main()
     {
-        if (data == null)
-            throw new ArgumentException("MaxiCode data object cannot be null.");
+        // Prepare a temporary output directory for the generated image
+        string outputDir = Path.Combine(Path.GetTempPath(), "MaxiCodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputDir);
+        string outputPath = Path.Combine(outputDir, "MaxiCodeMode3.png");
 
-        // PostalCode must be exactly 6 alphanumeric characters.
-        if (string.IsNullOrEmpty(data.PostalCode) ||
-            data.PostalCode.Length != 6 ||
-            !Regex.IsMatch(data.PostalCode, @"^[A-Za-z0-9]{6}$"))
+        // Create and populate MaxiCode codetext for Mode 3
+        var maxiCodeCodetext = new MaxiCodeCodetextMode3
         {
-            throw new ArgumentException("PostalCode must be exactly 6 alphanumeric characters for MaxiCode Mode 3.");
+            PostalCode = "B1050",
+            CountryCode = 56,
+            ServiceCategory = 999
+        };
+
+        // Build a structured second message (address lines and year)
+        var structuredSecondMessage = new MaxiCodeStructuredSecondMessage();
+        structuredSecondMessage.Add("634 ALPHA DRIVE");
+        structuredSecondMessage.Add("PITTSBURGH");
+        structuredSecondMessage.Add("PA");
+        structuredSecondMessage.Year = 99;
+        maxiCodeCodetext.SecondMessage = structuredSecondMessage;
+
+        // Validate the populated codetext; abort if validation fails
+        try
+        {
+            ValidateMaxiCodeMode3(maxiCodeCodetext);
+        }
+        catch (ArgumentException ex)
+        {
+            Console.WriteLine("Validation error: " + ex.Message);
+            return;
         }
 
-        // CountryCode must be a three‑digit number (0‑999).
-        if (data.CountryCode < 0 || data.CountryCode > 999)
+        // Generate the barcode image and save it to the output path
+        try
         {
-            throw new ArgumentException("CountryCode must be between 0 and 999.");
+            using (var generator = new ComplexBarcodeGenerator(maxiCodeCodetext))
+            {
+                generator.Save(outputPath);
+            }
+            Console.WriteLine("MaxiCode Mode 3 barcode generated at:");
+            Console.WriteLine(outputPath);
         }
-
-        // ServiceCategory must be a three‑digit number (0‑999).
-        if (data.ServiceCategory < 0 || data.ServiceCategory > 999)
+        catch (Exception ex)
         {
-            throw new ArgumentException("ServiceCategory must be between 0 and 999.");
-        }
-
-        // Optional: if a second message is supplied, ensure it is of a supported type.
-        if (data.SecondMessage != null &&
-            !(data.SecondMessage is MaxiCodeStandardSecondMessage) &&
-            !(data.SecondMessage is MaxiCodeStructuredSecondMessage))
-        {
-            throw new ArgumentException("SecondMessage must be either MaxiCodeStandardSecondMessage or MaxiCodeStructuredSecondMessage.");
+            Console.WriteLine("Barcode generation failed: " + ex.Message);
         }
     }
 
     /// <summary>
-    /// Entry point of the example. Creates sample data, validates it, and generates a MaxiCode Mode 3 PNG barcode.
+    /// Validates the fields of a MaxiCodeCodetextMode3 instance according to MaxiCode specifications.
     /// </summary>
-    static void Main()
+    /// <param name="codetext">The codetext object to validate.</param>
+    static void ValidateMaxiCodeMode3(MaxiCodeCodetextMode3 codetext)
     {
-        // Sample valid data for MaxiCode Mode 3.
-        var maxiCodeData = new MaxiCodeCodetextMode3
-        {
-            PostalCode = "B1050A", // 6 alphanumeric characters
-            CountryCode = 56,      // example country code
-            ServiceCategory = 999 // example service category
-        };
+        if (codetext == null)
+            throw new ArgumentException("Codetext object cannot be null.");
 
-        // Optional: add a standard second message.
-        var secondMessage = new MaxiCodeStandardSecondMessage
-        {
-            Message = "Sample message"
-        };
-        maxiCodeData.SecondMessage = secondMessage;
+        if (string.IsNullOrWhiteSpace(codetext.PostalCode))
+            throw new ArgumentException("PostalCode must be provided.");
 
-        try
-        {
-            // Perform manual validation before generation.
-            ValidateMaxiCodeMode3(maxiCodeData);
+        if (codetext.CountryCode < 0 || codetext.CountryCode > 999)
+            throw new ArgumentException("CountryCode must be between 0 and 999.");
 
-            // Generate the barcode using ComplexBarcodeGenerator.
-            using (var generator = new ComplexBarcodeGenerator(maxiCodeData))
-            {
-                // Save the image to a PNG file in the current directory.
-                string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "maxicode_mode3.png");
-                generator.Save(outputPath, BarCodeImageFormat.Png);
-                Console.WriteLine($"MaxiCode Mode 3 barcode saved to: {outputPath}");
-            }
+        if (codetext.ServiceCategory < 0)
+            throw new ArgumentException("ServiceCategory must be non‑negative.");
+
+        if (codetext.SecondMessage == null)
+            throw new ArgumentException("SecondMessage must be set.");
+
+        // Additional validation for structured second messages
+        if (codetext.SecondMessage is MaxiCodeStructuredSecondMessage structured)
+        {
+            // Example validation: Year must be within 0‑99
+            if (structured.Year < 0 || structured.Year > 99)
+                throw new ArgumentException("Year in structured second message must be between 0 and 99.");
         }
-        catch (ArgumentException ex)
+        else if (codetext.SecondMessage is MaxiCodeStandardSecondMessage standard)
         {
-            Console.WriteLine($"Validation error: {ex.Message}");
+            if (string.IsNullOrWhiteSpace(standard.Message))
+                throw new ArgumentException("Standard second message text must be provided.");
         }
-        catch (Exception ex)
+        else
         {
-            // Catch any unexpected errors from the Aspose library.
-            Console.WriteLine($"An error occurred during barcode generation: {ex.Message}");
+            throw new ArgumentException("Unsupported type of SecondMessage.");
         }
     }
 }

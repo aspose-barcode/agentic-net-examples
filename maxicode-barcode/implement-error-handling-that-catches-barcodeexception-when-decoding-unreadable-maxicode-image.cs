@@ -1,69 +1,98 @@
-// Title: Decode MaxiCode with error handling using Aspose.BarCode
-// Description: Demonstrates how to decode a MaxiCode barcode from an image while handling potential decoding errors.
-// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, showcasing the use of BarCodeReader, DecodeType, and QualitySettings to read MaxiCode symbols. Typical scenarios include processing shipping labels or inventory tags where MaxiCode is common, and developers often need robust error handling for damaged or unreadable images.
+// Title: Decode MaxiCode with error handling for unreadable images
+// Description: Demonstrates generating a MaxiCode barcode, then attempts to decode a corrupted image while handling potential BarcodeException.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes and BarCodeReader for decoding them. Developers often need to generate barcodes for packaging or shipping labels and later validate or read them from scanned images, handling errors when the image is unreadable or corrupted.
 // Prompt: Implement error handling that catches BarcodeException when decoding an unreadable MaxiCode image.
-// Tags: maxicode, barcode decoding, error handling, aspose.barcode, barcodereader, qualitysettings
+// Tags: maxicode, barcode, decoding, error-handling, aspose.barcode, generation, recognition
 
 using System;
 using System.IO;
-using Aspose.BarCode.BarCodeRecognition; // Provides BarCodeReader, DecodeType, QualitySettings
-using Aspose.BarCode.Generation;        // Provides DecodeType enum (static members)
+using Aspose.BarCode;
+using Aspose.BarCode.Generation;
+using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Example program that attempts to read a MaxiCode barcode from an image file
-/// and demonstrates error handling for unreadable or damaged barcodes.
+/// Sample program that generates a MaxiCode barcode, attempts to read a corrupted image,
+/// and demonstrates proper exception handling for unreadable barcode data.
 /// </summary>
-class MaxiCodeDecoder
+class Program
 {
     /// <summary>
-    /// Entry point of the program. Reads the specified image, configures the reader,
-    /// and outputs any detected MaxiCode values while safely handling decoding exceptions.
+    /// Entry point of the application.
     /// </summary>
     static void Main()
     {
-        // Path to the image that may contain an unreadable MaxiCode
-        string imagePath = "unreadable_maxicode.png";
+        // --------------------------------------------------------------------
+        // Create a temporary folder for the sample image
+        // --------------------------------------------------------------------
+        string tempFolder = Path.Combine(Path.GetTempPath(), "MaxiCodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
+        string imagePath = Path.Combine(tempFolder, "maxicode.png");
 
-        // Verify that the file exists before attempting to read it
-        if (!File.Exists(imagePath))
+        // --------------------------------------------------------------------
+        // Generate a valid MaxiCode barcode image and save it to the temporary folder
+        // --------------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.MaxiCode, "Sample MaxiCode"))
         {
-            Console.WriteLine($"File not found: {imagePath}");
-            return;
+            generator.Save(imagePath, BarCodeImageFormat.Png);
         }
 
-        // DecodeType is a static class; store the specific type in a BaseDecodeType variable
-        BaseDecodeType decodeType = DecodeType.MaxiCode;
-
-        // Create the reader and assign the image source
-        using (var reader = new BarCodeReader(imagePath, decodeType))
+        // --------------------------------------------------------------------
+        // Prepare a corrupted image stream (random bytes) to simulate an unreadable barcode
+        // --------------------------------------------------------------------
+        byte[] corruptedData = new byte[10];
+        new Random().NextBytes(corruptedData);
+        using (var corruptedStream = new MemoryStream(corruptedData))
         {
-            // Use the highest quality preset to improve chances of reading a damaged barcode
-            reader.QualitySettings = QualitySettings.MaxQuality;
-
             try
             {
-                // Attempt to read all barcodes in the image
-                BarCodeResult[] results = reader.ReadBarCodes();
+                // Specify the decode type for MaxiCode
+                BaseDecodeType decodeType = DecodeType.MaxiCode;
 
-                if (results.Length == 0)
+                // Attempt to read barcodes from the corrupted stream
+                using (var reader = new BarCodeReader(corruptedStream, decodeType))
                 {
-                    Console.WriteLine("No MaxiCode detected in the image.");
-                }
-                else
-                {
-                    foreach (var result in results)
+                    var results = reader.ReadBarCodes();
+
+                    // Check if any barcodes were detected
+                    if (results.Length == 0)
                     {
-                        Console.WriteLine($"Detected MaxiCode: {result.CodeText}");
-                        // Additional extended parameters can be accessed if needed, e.g.:
-                        // var mode = result.Extended.MaxiCode.Mode;
+                        Console.WriteLine("No barcodes detected.");
+                    }
+                    else
+                    {
+                        foreach (var result in results)
+                        {
+                            Console.WriteLine($"Detected: {result.CodeTypeName} - {result.CodeText}");
+                        }
                     }
                 }
             }
-            // Catch any exception that occurs during decoding (e.g., unreadable image)
+            // Catch specific barcode processing errors
+            catch (BarCodeException ex)
+            {
+                Console.WriteLine($"BarcodeException caught: {ex.Message}");
+            }
+            // Catch any other unexpected errors
             catch (Exception ex)
             {
-                Console.WriteLine($"Error decoding MaxiCode: {ex.Message}");
+                Console.WriteLine($"Unexpected exception: {ex.Message}");
             }
+        }
+
+        // --------------------------------------------------------------------
+        // Clean up temporary files and directories
+        // --------------------------------------------------------------------
+        try
+        {
+            if (File.Exists(imagePath))
+                File.Delete(imagePath);
+            if (Directory.Exists(tempFolder))
+                Directory.Delete(tempFolder, true);
+        }
+        catch
+        {
+            // Ignored: cleanup failures should not interrupt program flow
         }
     }
 }

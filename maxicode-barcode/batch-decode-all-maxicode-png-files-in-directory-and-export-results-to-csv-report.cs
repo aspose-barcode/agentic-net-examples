@@ -1,122 +1,84 @@
-// Title: Batch decode MaxiCode PNG images and generate CSV report
-// Description: Demonstrates how to read multiple MaxiCode barcodes from PNG files in a folder and export the decoded text and type to a CSV file.
-// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category. It showcases the BarCodeReader with DecodeType.MaxiCode, CSV report generation, and optional sample image creation using ComplexBarcodeGenerator. Developers working with bulk barcode processing, reporting, or logistics applications can use this pattern to automate data extraction from MaxiCode symbols.
+// Title: Batch decode MaxiCode PNG files and generate CSV report
+// Description: This example generates sample MaxiCode barcodes, decodes them in bulk, and writes the results to a CSV file. It demonstrates how to use Aspose.BarCode for batch processing and reporting.
+// Category-Description: Shows batch barcode recognition using Aspose.BarCode's BarCodeReader for MaxiCode symbology, combined with barcode generation via BarcodeGenerator. Typical use cases include automated scanning of multiple images and exporting results for analysis or integration. Developers often need to process directories of images, handle errors gracefully, and produce structured reports such as CSV.
 // Prompt: Batch decode all MaxiCode PNG files in a directory and export the results to a CSV report.
-// Tags: maxicode, barcode, decoding, csv, aspose.barcode, csharp
+// Tags: maxicode, batch, decode, csv, report, barcodereader, barcodegenerator, aspose.barcode
 
 using System;
 using System.IO;
 using System.Collections.Generic;
+using System.Linq;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.BarCode.ComplexBarcode;
-using Aspose.Drawing;
 
 /// <summary>
-/// Provides a console application that decodes all MaxiCode PNG images in a specified directory
-/// and writes the results to a CSV report.
+/// Demonstrates batch decoding of MaxiCode PNG files and exporting results to a CSV report.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Scans the input folder, generates sample images if needed, decodes each MaxiCode,
-    /// and writes a CSV file containing file name, decoded text, and barcode type.
+    /// Entry point that creates sample barcodes, decodes them, and writes a CSV report.
     /// </summary>
     static void Main()
     {
-        // Define input and output paths
-        string inputFolder = Path.Combine(Directory.GetCurrentDirectory(), "MaxiCodeImages");
-        string reportPath = Path.Combine(Directory.GetCurrentDirectory(), "MaxiCodeReport.csv");
+        // Create a unique temporary folder for generated files and the report
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BatchMaxiCode_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
 
-        // Ensure the input folder exists
-        if (!Directory.Exists(inputFolder))
+        // Generate sample MaxiCode PNG files
+        List<string> barcodeFiles = new List<string>();
+        for (int i = 1; i <= 5; i++)
         {
-            Directory.CreateDirectory(inputFolder);
-        }
-
-        // Generate a few sample MaxiCode PNG files if the folder is empty
-        string[] sampleFiles = Directory.GetFiles(inputFolder, "*.png");
-        if (sampleFiles.Length == 0)
-        {
-            GenerateSampleMaxiCodeImages(inputFolder);
-        }
-
-        // Prepare CSV header
-        var csvLines = new List<string> { "FileName,CodeText,CodeType" };
-
-        // Process each PNG file in the folder
-        foreach (string filePath in Directory.GetFiles(inputFolder, "*.png"))
-        {
-            if (!File.Exists(filePath))
+            string filePath = Path.Combine(tempFolder, $"maxicode_{i}.png");
+            string codeText = $"Sample{i}";
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.MaxiCode, codeText))
             {
-                // Skip missing files gracefully
+                generator.Save(filePath, BarCodeImageFormat.Png);
+            }
+            barcodeFiles.Add(filePath);
+        }
+
+        // Prepare CSV header row
+        List<string[]> csvRows = new List<string[]>();
+        csvRows.Add(new[] { "FileName", "CodeText" });
+
+        // Decode each generated file and collect results
+        foreach (string file in barcodeFiles)
+        {
+            if (!File.Exists(file))
+            {
+                Console.WriteLine($"File not found: {file}");
                 continue;
             }
 
-            // Decode using MaxiCode decode type
-            using (var reader = new BarCodeReader(filePath, DecodeType.MaxiCode))
+            try
             {
-                foreach (var result in reader.ReadBarCodes())
+                using (BarCodeReader reader = new BarCodeReader(file, DecodeType.MaxiCode))
                 {
-                    // Build CSV line with proper escaping
-                    string line = $"{Path.GetFileName(filePath)},{EscapeCsv(result.CodeText)},{EscapeCsv(result.CodeTypeName)}";
-                    csvLines.Add(line);
+                    foreach (BarCodeResult result in reader.ReadBarCodes())
+                    {
+                        csvRows.Add(new[] { Path.GetFileName(file), result.CodeText });
+                    }
                 }
             }
-        }
-
-        // Write all lines to the CSV report
-        File.WriteAllLines(reportPath, csvLines);
-    }
-
-    // Generates a few sample MaxiCode images (Mode2) for demonstration
-    private static void GenerateSampleMaxiCodeImages(string folder)
-    {
-        // Sample data for three images
-        var samples = new[]
-        {
-            new { FileName = "sample1.png", PostalCode = "524032140", CountryCode = 56, ServiceCategory = 999, Message = "Hello World" },
-            new { FileName = "sample2.png", PostalCode = "524032141", CountryCode = 56, ServiceCategory = 100, Message = "Aspose.BarCode" },
-            new { FileName = "sample3.png", PostalCode = "524032142", CountryCode = 56, ServiceCategory = 200, Message = "MaxiCode Test" }
-        };
-
-        foreach (var s in samples)
-        {
-            // Create MaxiCode codetext (Mode2)
-            var maxiCode = new MaxiCodeCodetextMode2
+            catch (ArgumentException ex)
             {
-                PostalCode = s.PostalCode,
-                CountryCode = s.CountryCode,
-                ServiceCategory = s.ServiceCategory
-            };
-
-            var secondMessage = new MaxiCodeStandardSecondMessage
-            {
-                Message = s.Message
-            };
-            maxiCode.SecondMessage = secondMessage;
-
-            string imagePath = Path.Combine(folder, s.FileName);
-
-            // Generate and save the barcode image
-            using (var generator = new ComplexBarcodeGenerator(maxiCode))
-            {
-                generator.Save(imagePath, BarCodeImageFormat.Png);
+                Console.WriteLine($"Skipping file {Path.GetFileName(file)}: {ex.Message}");
             }
         }
-    }
 
-    // Escapes CSV fields containing commas or quotes
-    private static string EscapeCsv(string field)
-    {
-        if (field == null)
-            return "";
-        if (field.Contains(",") || field.Contains("\"") || field.Contains("\n"))
+        // Write collected data to a CSV report file
+        string reportPath = Path.Combine(tempFolder, "report.csv");
+        using (StreamWriter writer = new StreamWriter(reportPath))
         {
-            string escaped = field.Replace("\"", "\"\"");
-            return $"\"{escaped}\"";
+            foreach (string[] row in csvRows)
+            {
+                string line = string.Join(",", row.Select(v => $"\"{v.Replace("\"", "\"\"")}\""));
+                writer.WriteLine(line);
+            }
         }
-        return field;
+
+        Console.WriteLine($"CSV report generated at: {reportPath}");
     }
 }

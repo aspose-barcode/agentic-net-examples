@@ -1,92 +1,142 @@
-// Title: Decode MaxiCode from byte array and extract primary & secondary messages
-// Description: Demonstrates generating a MaxiCode (Mode 2) image, converting it to a byte array, and using BarCodeReader to decode both the primary postal information and the secondary message.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category, focusing on complex barcode types such as MaxiCode. It showcases the use of ComplexBarcodeGenerator, BarCodeReader, and ComplexCodetextReader to handle encoding and decoding of structured MaxiCode data, a common requirement for shipping and logistics applications where both address and custom messages are embedded.
+// Title: Decode MaxiCode from Byte Array and Retrieve Primary & Secondary Messages
+// Description: Demonstrates how to generate a MaxiCode image, decode it from a byte array, and extract both primary and secondary message data.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode operations category. It showcases the use of ComplexBarcodeGenerator for creating MaxiCode symbols and BarCodeReader with ComplexCodetextReader to decode MaxiCode data. Developers working with shipping, logistics, or inventory systems often need to generate and read MaxiCode symbols, extracting structured secondary information such as address lines and year.
 // Prompt: Configure BarcodeReader to decode MaxiCode images from a byte array and retrieve both primary and secondary messages.
-// Tags: maxicode, barcode, decoding, byte array, primary message, secondary message, aspnet.barcode, complexbarcode, codetext
+// Tags: maxicode, barcode decoding, byte array, aspose.barcode, complex barcode, secondary message
 
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.BarCode.ComplexBarcode;
+using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a MaxiCode barcode, converting it to a byte array,
-/// and decoding it to retrieve both primary (postal) and secondary (custom) messages.
+/// Example program that generates a MaxiCode image, then decodes it from a byte array
+/// to retrieve primary fields (postal code, country code, service category) and secondary
+/// messages (structured or standard).
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example.
+    /// Entry point. Generates a sample MaxiCode, then decodes it.
     /// </summary>
     static void Main()
     {
-        // Create a MaxiCode codetext (Mode 2) with a standard second message
-        var maxiCodeData = new MaxiCodeCodetextMode2
-        {
-            PostalCode = "524032140",   // 9‑digit US postal code
-            CountryCode = 56,           // Example country code
-            ServiceCategory = 999       // Example service category
-        };
-        var secondMessage = new MaxiCodeStandardSecondMessage
-        {
-            Message = "Test message"
-        };
-        maxiCodeData.SecondMessage = secondMessage;
+        // Generate a MaxiCode image and obtain its binary representation.
+        byte[] imageBytes = GenerateSampleMaxiCode();
 
-        // Generate the MaxiCode image into a memory stream
-        using (var generator = new ComplexBarcodeGenerator(maxiCodeData))
+        // Decode the generated image bytes and output the extracted data.
+        DecodeMaxiCode(imageBytes);
+    }
+
+    /// <summary>
+    /// Creates a MaxiCode (Mode 2) with a structured secondary message and returns the PNG bytes.
+    /// </summary>
+    /// <returns>Byte array containing the generated PNG image.</returns>
+    static byte[] GenerateSampleMaxiCode()
+    {
+        // Build a structured secondary message (address lines and year).
+        var structuredMessage = new MaxiCodeStructuredSecondMessage();
+        structuredMessage.Add("634 ALPHA DRIVE");
+        structuredMessage.Add("PITTSBURGH");
+        structuredMessage.Add("PA");
+        structuredMessage.Year = 99;
+
+        // Define the primary fields and attach the secondary message.
+        var codetext = new MaxiCodeCodetextMode2
         {
-            using (var imageStream = new MemoryStream())
+            PostalCode = "524032140",
+            CountryCode = 56,
+            ServiceCategory = 999,
+            SecondMessage = structuredMessage
+        };
+
+        // Generate the MaxiCode using ComplexBarcodeGenerator.
+        using (var generator = new ComplexBarcodeGenerator(codetext))
+        {
+            generator.Parameters.Barcode.MaxiCode.Mode = MaxiCodeMode.Mode2;
+            generator.Parameters.Barcode.XDimension.Pixels = 15f;
+
+            // Save the barcode to a memory stream in PNG format and return the bytes.
+            using (var ms = new MemoryStream())
             {
-                // Save the generated barcode as PNG into the stream
-                generator.Save(imageStream, BarCodeImageFormat.Png);
-                byte[] imageBytes = imageStream.ToArray();
+                generator.Save(ms, BarCodeImageFormat.Png);
+                return ms.ToArray();
+            }
+        }
+    }
 
-                // Decode the image from the byte array
-                using (var inputStream = new MemoryStream(imageBytes))
+    /// <summary>
+    /// Decodes a MaxiCode image supplied as a byte array and prints primary and secondary data.
+    /// </summary>
+    /// <param name="imageData">Byte array containing the MaxiCode image.</param>
+    static void DecodeMaxiCode(byte[] imageData)
+    {
+        // Specify that we want to decode MaxiCode symbology.
+        BaseDecodeType decodeType = DecodeType.MaxiCode;
+
+        // Create a memory stream from the image bytes and initialize the reader.
+        using (var ms = new MemoryStream(imageData))
+        using (var reader = new BarCodeReader(ms, decodeType))
+        {
+            // Iterate through all detected barcodes (should be one in this example).
+            foreach (var result in reader.ReadBarCodes())
+            {
+                // Attempt to parse the complex MaxiCode codetext.
+                var complexCodetext = ComplexCodetextReader.TryDecodeMaxiCode(
+                    result.Extended.MaxiCode.Mode,
+                    result.CodeText);
+
+                // Handle Mode 2 MaxiCode.
+                if (complexCodetext is MaxiCodeCodetextMode2 mode2)
                 {
-                    using (var reader = new BarCodeReader(inputStream, DecodeType.MaxiCode))
+                    Console.WriteLine($"PostalCode: {mode2.PostalCode}");
+                    Console.WriteLine($"CountryCode: {mode2.CountryCode}");
+                    Console.WriteLine($"ServiceCategory: {mode2.ServiceCategory}");
+
+                    // Structured secondary message.
+                    if (mode2.SecondMessage is MaxiCodeStructuredSecondMessage structured)
                     {
-                        // Iterate through all detected barcodes (should be one)
-                        foreach (var result in reader.ReadBarCodes())
+                        Console.WriteLine("Structured Secondary Message:");
+                        foreach (var line in structured.Identifiers)
                         {
-                            // Retrieve the MaxiCode mode from the extended parameters
-                            var mode = result.Extended.MaxiCode.Mode;
-
-                            // Decode the raw codetext into a structured object
-                            var decoded = ComplexCodetextReader.TryDecodeMaxiCode(mode, result.CodeText);
-
-                            // Output primary (postal) and secondary (message) information
-                            if (decoded is MaxiCodeCodetextMode2 m2)
-                            {
-                                Console.WriteLine($"Postal Code: {m2.PostalCode}");
-                                Console.WriteLine($"Country Code: {m2.CountryCode}");
-                                Console.WriteLine($"Service Category: {m2.ServiceCategory}");
-
-                                if (m2.SecondMessage is MaxiCodeStandardSecondMessage stdMsg)
-                                {
-                                    Console.WriteLine($"Second Message: {stdMsg.Message}");
-                                }
-                            }
-                            else if (decoded is MaxiCodeCodetextMode3 m3)
-                            {
-                                Console.WriteLine($"Postal Code: {m3.PostalCode}");
-                                Console.WriteLine($"Country Code: {m3.CountryCode}");
-                                Console.WriteLine($"Service Category: {m3.ServiceCategory}");
-
-                                if (m3.SecondMessage is MaxiCodeStandardSecondMessage stdMsg)
-                                {
-                                    Console.WriteLine($"Second Message: {stdMsg.Message}");
-                                }
-                            }
-                            else
-                            {
-                                Console.WriteLine("Decoded MaxiCode type is not recognized.");
-                            }
+                            Console.WriteLine($"  {line}");
                         }
+                        Console.WriteLine($"Year: {structured.Year}");
                     }
+                    // Unstructured secondary message.
+                    else if (mode2.SecondMessage is MaxiCodeStandardSecondMessage standard)
+                    {
+                        Console.WriteLine($"Unstructured Secondary Message: {standard.Message}");
+                    }
+                }
+                // Handle Mode 3 MaxiCode.
+                else if (complexCodetext is MaxiCodeCodetextMode3 mode3)
+                {
+                    Console.WriteLine($"[Mode3] PostalCode: {mode3.PostalCode}");
+                    Console.WriteLine($"[Mode3] CountryCode: {mode3.CountryCode}");
+                    Console.WriteLine($"[Mode3] ServiceCategory: {mode3.ServiceCategory}");
+
+                    if (mode3.SecondMessage is MaxiCodeStructuredSecondMessage structured)
+                    {
+                        Console.WriteLine("Structured Secondary Message (Mode3):");
+                        foreach (var line in structured.Identifiers)
+                        {
+                            Console.WriteLine($"  {line}");
+                        }
+                        Console.WriteLine($"Year: {structured.Year}");
+                    }
+                    else if (mode3.SecondMessage is MaxiCodeStandardSecondMessage standard)
+                    {
+                        Console.WriteLine($"Unstructured Secondary Message (Mode3): {standard.Message}");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("Decoded MaxiCode is not in Mode 2 or 3.");
                 }
             }
         }
