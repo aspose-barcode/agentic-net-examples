@@ -1,12 +1,14 @@
-// Title: Background worker barcode reading with processor settings
-// Description: Demonstrates generating sample barcode images, configuring Aspose.BarCode processor settings for multi‑core usage, and reading the barcodes asynchronously using a BackgroundWorker.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases key API classes such as BarcodeGenerator, BarCodeReader, and ProcessorSettings, illustrating typical scenarios where developers need to generate barcodes, optimize recognition performance across CPU cores, and process images in a background thread for responsive applications.
+// Title: Read barcodes from video frames using a background worker and processor settings
+// Description: Demonstrates how to generate sample barcode images, configure Aspose.BarCode processor settings for multi‑core usage, and read the barcodes asynchronously with a BackgroundWorker.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, showcasing the use of BarCodeReader with ProcessorSettings for optimal core utilization. It illustrates typical scenarios such as processing video streams or large image batches where developers need high‑performance, multi‑threaded barcode decoding using classes like BarCodeReader, BarcodeGenerator, and BackgroundWorker.
 // Prompt: Create a background worker that reads barcodes from a video stream using ProcessorSettings for optimal core usage.
-// Tags: code128, qr, generation, reading, png, barcodegenerator, barcodereader, backgroundworker
+// Tags: barcode, qr, recognition, backgroundworker, multithreading, processorsettings, aspnet, aspose.barcode
 
 using System;
 using System.IO;
+using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Threading;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
@@ -14,100 +16,88 @@ using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating sample barcodes, configuring multi‑core processor settings,
-/// and reading the barcodes asynchronously using a BackgroundWorker.
+/// Demonstrates reading barcodes from a simulated video stream using a background worker and processor settings for optimal core usage.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Sets processor settings, creates sample barcodes, runs a background
-    /// worker to read them, and cleans up temporary files.
+    /// Entry point of the example. Generates sample QR code frames, configures processor settings, and processes the frames asynchronously.
     /// </summary>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Enable use of all CPU cores for barcode processing
-        BarCodeReader.ProcessorSettings.UseAllCores = true;
-        // Allow additional threads proportional to processor count for better throughput
-        BarCodeReader.ProcessorSettings.MaxAdditionalAllowedThreads = Environment.ProcessorCount * 2;
-
-        // Create a temporary folder to store generated barcode images
-        string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeSample");
+        // Create a unique temporary folder for sample barcode images
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeVideo_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
-        GenerateSampleBarcodes(tempFolder);
 
-        // Set up a BackgroundWorker to process the images without blocking the main thread
-        using (var worker = new BackgroundWorker())
+        // Generate sample barcode images (simulating video frames)
+        List<string> frameFiles = new List<string>();
+        for (int i = 1; i <= 5; i++)
         {
-            var completedEvent = new ManualResetEventSlim(false);
-
-            // Define the work to be performed in the background thread
-            worker.DoWork += (sender, e) => ProcessImages(tempFolder);
-            // Signal completion when the background work finishes
-            worker.RunWorkerCompleted += (sender, e) => completedEvent.Set();
-
-            // Start the background operation
-            worker.RunWorkerAsync();
-
-            // Wait for the background worker to finish, but limit wait time to avoid hanging
-            if (!completedEvent.Wait(TimeSpan.FromSeconds(30)))
+            string codeText = "Frame" + i;
+            string filePath = Path.Combine(tempFolder, $"frame_{i}.png");
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, codeText))
             {
-                Console.WriteLine("Processing timed out.");
+                generator.Save(filePath, BarCodeImageFormat.Png);
             }
+            frameFiles.Add(filePath);
         }
 
-        // Attempt to delete the temporary folder and its contents; ignore any errors in CI environments
+        // Configure processor settings for optimal core usage
+        BarCodeReader.ProcessorSettings.UseAllCores = true;
+        BarCodeReader.ProcessorSettings.MaxAdditionalAllowedThreads = Environment.ProcessorCount * 2;
+
+        // Set up a background worker to read barcodes from the generated frames
+        using (BackgroundWorker worker = new BackgroundWorker())
+        {
+            // Signal when processing is complete
+            ManualResetEventSlim completedEvent = new ManualResetEventSlim(false);
+
+            // Define the work to be performed on a background thread
+            worker.DoWork += (sender, e) =>
+            {
+                List<string> files = (List<string>)e.Argument;
+                foreach (string file in files)
+                {
+                    try
+                    {
+                        // Read all supported barcodes from the current frame
+                        using (BarCodeReader reader = new BarCodeReader(file, DecodeType.AllSupportedTypes))
+                        {
+                            BarCodeResult[] results = reader.ReadBarCodes();
+                            foreach (BarCodeResult result in results)
+                            {
+                                Console.WriteLine($"File {Path.GetFileName(file)}: {result.CodeTypeName} - {result.CodeText}");
+                            }
+                        }
+                    }
+                    catch (ArgumentException ex)
+                    {
+                        // Handle cases where the file cannot be processed
+                        Console.WriteLine($"Failed to read {Path.GetFileName(file)}: {ex.Message}");
+                    }
+                }
+            };
+
+            // Notify when the background work has finished
+            worker.RunWorkerCompleted += (sender, e) =>
+            {
+                completedEvent.Set();
+            };
+
+            // Start processing the list of frame files
+            worker.RunWorkerAsync(frameFiles);
+            // Wait for the background worker to signal completion
+            completedEvent.Wait();
+        }
+
+        // Clean up temporary files
         try
         {
             Directory.Delete(tempFolder, true);
         }
         catch
         {
-            // Suppress cleanup exceptions
-        }
-    }
-
-    // Generates a few barcode images for demonstration purposes
-    private static void GenerateSampleBarcodes(string folder)
-    {
-        const int sampleCount = 5;
-        for (int i = 0; i < sampleCount; i++)
-        {
-            string text = $"Sample{i}";
-            string filePath = Path.Combine(folder, $"barcode{i}.png");
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, text))
-            {
-                // Simple generation; default settings are sufficient
-                generator.Save(filePath);
-            }
-        }
-    }
-
-    // Reads barcodes from all PNG files in the specified folder
-    private static void ProcessImages(string folder)
-    {
-        string[] files = Directory.GetFiles(folder, "*.png");
-        // Iterate over each image file
-        for (int i = 0; i < files.Length; i++)
-        {
-            string file = files[i];
-            try
-            {
-                // Initialize the reader for Code128 and QR symbologies
-                using (var reader = new BarCodeReader(file, DecodeType.Code128, DecodeType.QR))
-                {
-                    // Apply a high‑performance quality preset
-                    reader.QualitySettings = QualitySettings.HighPerformance;
-                    // Read and output each detected barcode
-                    foreach (var result in reader.ReadBarCodes())
-                    {
-                        Console.WriteLine($"File: {Path.GetFileName(file)} | Type: {result.CodeTypeName} | Text: {result.CodeText}");
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error processing '{Path.GetFileName(file)}': {ex.Message}");
-            }
+            // Ignored - cleanup failure should not affect program exit
         }
     }
 }

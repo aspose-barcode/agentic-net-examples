@@ -1,83 +1,90 @@
-// Title: Multithreaded barcode scanning using Aspose.BarCode default settings
-// Description: Demonstrates generating sample Code128 barcodes, saving them as PNG files, and scanning them concurrently with Parallel.ForEach using the default ProcessorSettings.
-// Category-Description: This example belongs to the Aspose.BarCode image processing and recognition category. It showcases the use of BarcodeGenerator for creating barcodes and BarCodeReader with default ProcessorSettings for decoding. Typical use cases include batch processing of scanned documents, automated inventory systems, and high‑throughput barcode validation where developers need to read multiple images in parallel.
+// Title: Multithreaded Barcode Scanning with Aspose.BarCode
+// Description: Demonstrates scanning multiple barcode images in parallel using Aspose.BarCode's default ProcessorSettings.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category. It showcases the use of BarCodeReader, DecodeType, and ProcessorSettings to read various symbologies from image files concurrently. Developers often need to process large batches of barcode images efficiently; parallel processing with the default settings provides a simple yet performant solution.
 // Prompt: Create a multithreaded barcode scanner that processes image files in parallel using default ProcessorSettings.
-// Tags: barcode, multithreading, parallel, code128, png, generation, recognition, aspnet, aspose.barcode, processorsettings
+// Tags: barcode, recognition, multithreading, parallel, aspose.barcode, processorsettings, symbology
 
 using System;
 using System.IO;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates generating barcode images and scanning them in parallel using Aspose.BarCode.
+/// Sample program that generates several barcode images and scans them concurrently.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates sample barcodes, saves them as PNG files,
-    /// and processes the images concurrently to read barcode data.
+    /// Entry point. Generates sample barcodes, scans them in parallel, and reports the results.
     /// </summary>
     /// <param name="args">Command‑line arguments (not used).</param>
     static void Main(string[] args)
     {
-        // --------------------------------------------------------------------
-        // Prepare a folder for sample barcode images
-        // --------------------------------------------------------------------
-        string folderPath = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
-        Directory.CreateDirectory(folderPath);
+        // Create a unique temporary folder for generated barcode images.
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeBatch_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
 
-        // --------------------------------------------------------------------
-        // Define sample texts to encode as Code128 barcodes
-        // --------------------------------------------------------------------
-        string[] sampleTexts = { "ABC123", "XYZ789", "123456", "HELLO", "WORLD" };
-
-        // --------------------------------------------------------------------
-        // Generate barcode images (PNG) using default generator settings
-        // --------------------------------------------------------------------
-        for (int i = 0; i < sampleTexts.Length; i++)
+        // Define sample barcode data: symbology, text, and output file name.
+        var samples = new List<(BaseEncodeType encode, string text, string fileName)>
         {
-            string filePath = Path.Combine(folderPath, $"barcode_{i}.png");
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, sampleTexts[i]))
+            (EncodeTypes.Code128, "ABC123", "code128.png"),
+            (EncodeTypes.QR, "https://example.com", "qr.png"),
+            (EncodeTypes.Pdf417, "PDF417 Sample Text", "pdf417.png"),
+            (EncodeTypes.DataMatrix, "DM12345", "datamatrix.png"),
+            (EncodeTypes.Aztec, "AztecText", "aztec.png")
+        };
+
+        var files = new List<string>();
+
+        // Generate barcode images and collect their file paths.
+        foreach (var sample in samples)
+        {
+            string filePath = Path.Combine(tempFolder, sample.fileName);
+            using (var generator = new BarcodeGenerator(sample.encode, sample.text))
             {
                 generator.Save(filePath, BarCodeImageFormat.Png);
             }
+            files.Add(filePath);
         }
 
-        // --------------------------------------------------------------------
-        // Retrieve all PNG files in the folder for processing
-        // --------------------------------------------------------------------
-        string[] imageFiles = Directory.GetFiles(folderPath, "*.png");
+        // Measure the time taken to process all images in parallel.
+        var stopwatch = Stopwatch.StartNew();
 
-        // --------------------------------------------------------------------
-        // Process images in parallel using default ProcessorSettings
-        // --------------------------------------------------------------------
-        Parallel.ForEach(imageFiles, file =>
+        // Scan each image concurrently using the default ProcessorSettings.
+        Parallel.ForEach(files, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount }, file =>
         {
-            // Verify the file still exists (it may have been removed concurrently)
-            if (!File.Exists(file))
+            try
             {
-                Console.WriteLine($"File not found: {file}");
-                return;
-            }
-
-            // Create a reader instance for each file
-            using (var reader = new BarCodeReader())
-            {
-                // Use all supported decode types (default ProcessorSettings are applied automatically)
-                reader.BarCodeReadType = DecodeType.AllSupportedTypes;
-
-                // Load the image for recognition
-                reader.SetBarCodeImage(file);
-
-                // Read and output all detected barcodes
-                foreach (var result in reader.ReadBarCodes())
+                using (var reader = new BarCodeReader(file, DecodeType.AllSupportedTypes))
                 {
-                    Console.WriteLine($"File: {Path.GetFileName(file)} | Type: {result.CodeTypeName} | Text: {result.CodeText}");
+                    var results = reader.ReadBarCodes();
+                    foreach (var result in results)
+                    {
+                        Console.WriteLine($"{Path.GetFileName(file)}: {result.CodeTypeName} - {result.CodeText}");
+                    }
                 }
             }
+            catch (ArgumentException ex)
+            {
+                Console.WriteLine($"Failed to read {Path.GetFileName(file)}: {ex.Message}");
+            }
         });
+
+        stopwatch.Stop();
+        Console.WriteLine($"Processed {files.Count} images in {stopwatch.ElapsedMilliseconds} ms.");
+
+        // Clean up temporary files and folder.
+        try
+        {
+            Directory.Delete(tempFolder, true);
+        }
+        catch
+        {
+            // Suppress any cleanup errors (e.g., file locks).
+        }
     }
 }

@@ -1,95 +1,90 @@
-// Title: Demonstrate ProcessorSettings.UseAllCores with barcode recognition
-// Description: Shows how to generate a Code128 barcode, then read it while toggling ProcessorSettings.UseAllCores to observe core usage behavior.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It illustrates the use of BarcodeGenerator, BarCodeReader, and the ProcessorSettings class to control multithreading during barcode processing. Developers often need to optimize performance on multi‑core or hyper‑threaded systems, and this snippet demonstrates typical configuration patterns for such scenarios.
+// Title: Barcode Recognition Core Utilization Test
+// Description: Demonstrates generating a PDF417 barcode image and reading it while toggling ProcessorSettings.UseAllCores to verify core usage.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes and BarCodeReader with ProcessorSettings to control multithreading. Developers often need to benchmark or validate how barcode processing utilizes CPU cores, especially when optimizing performance on hyper‑threaded systems.
 // Prompt: Write a test confirming ProcessorSettings.UseAllCores respects the system's hyper‑threading configuration.
-// Tags: barcode symbology, generation, recognition, processor settings, multithreading, csharp, aspose.barcode
+// Tags: pdf417, barcode, generation, recognition, multithreading, processorsettings, useallcores, aspose.barcode
 
 using System;
 using System.IO;
-using Aspose.BarCode;
+using System.Diagnostics;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.BarCode.Common;
+using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates a Code128 barcode, then reads it using Aspose.BarCode
-/// while toggling <c>ProcessorSettings.UseAllCores</c> to demonstrate core usage behavior.
+/// Contains the entry point for the barcode core‑utilization demonstration.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a barcode image, runs recognition with different <c>ProcessorSettings</c>,
-    /// and outputs the found barcode counts.
+    /// Generates a PDF417 barcode, runs recognition tests with different core settings,
+    /// and cleans up temporary files.
     /// </summary>
-    /// <param name="args">Command‑line arguments (not used).</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Create a temporary folder for the barcode image
-        string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeTest");
+        // Create a unique temporary folder for test artifacts
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeTest_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
-        string barcodePath = Path.Combine(tempFolder, "test.png");
 
-        // Generate a simple Code128 barcode and save it to the temporary folder
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "Test123"))
+        // Define the full path for the generated barcode image
+        string imagePath = Path.Combine(tempFolder, "sample.png");
+
+        // Generate a PDF417 barcode image and save it as PNG
+        using (var generator = new BarcodeGenerator(EncodeTypes.Pdf417, "AsposeTest"))
         {
-            generator.Save(barcodePath);
+            generator.Save(imagePath, BarCodeImageFormat.Png);
         }
 
-        // Verify that the barcode image was successfully created
-        if (!File.Exists(barcodePath))
-        {
-            Console.WriteLine("Failed to create barcode image.");
-            return;
-        }
+        // Run recognition test using a single core (UseAllCores = false)
+        RunRecognitionTest(imagePath, useAllCores: false, coreCount: 1);
 
-        // ------------------------------------------------------------
-        // Test 1: Enable UseAllCores to allow the reader to use all logical processors
-        // ------------------------------------------------------------
-        BarCodeReader.ProcessorSettings.UseAllCores = true;
-        Console.WriteLine($"ProcessorSettings.UseAllCores set to: {BarCodeReader.ProcessorSettings.UseAllCores}");
-        Console.WriteLine($"Logical processor count (including hyper‑threading): {Environment.ProcessorCount}");
+        // Run recognition test using all available cores (UseAllCores = true)
+        RunRecognitionTest(imagePath, useAllCores: true, coreCount: null);
 
-        int foundCountAllCores = ReadBarcodes(barcodePath);
-        Console.WriteLine($"FoundCount with UseAllCores=true: {foundCountAllCores}");
-        Console.WriteLine();
-
-        // ------------------------------------------------------------
-        // Test 2: Disable UseAllCores and limit the number of cores used
-        // ------------------------------------------------------------
-        BarCodeReader.ProcessorSettings.UseAllCores = false;
-        BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount = Math.Max(1, Environment.ProcessorCount / 2);
-        Console.WriteLine($"ProcessorSettings.UseAllCores set to: {BarCodeReader.ProcessorSettings.UseAllCores}");
-        Console.WriteLine($"ProcessorSettings.UseOnlyThisCoresCount set to: {BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount}");
-
-        int foundCountLimitedCores = ReadBarcodes(barcodePath);
-        Console.WriteLine($"FoundCount with limited cores: {foundCountLimitedCores}");
-
-        // Clean up temporary files and folder
+        // Attempt to delete the generated files and folder; ignore any errors
         try
         {
-            File.Delete(barcodePath);
-            Directory.Delete(tempFolder);
+            if (File.Exists(imagePath))
+                File.Delete(imagePath);
+            Directory.Delete(tempFolder, true);
         }
         catch
         {
-            // Ignored - cleanup failure should not affect test result
+            // Cleanup failures are non‑critical for the test outcome
         }
     }
 
     /// <summary>
-    /// Reads barcodes from the specified image file and returns the number of barcodes found.
+    /// Executes a barcode recognition test with specified processor settings.
     /// </summary>
-    /// <param name="imagePath">Path to the image containing barcodes.</param>
-    /// <returns>The count of detected barcodes.</returns>
-    static int ReadBarcodes(string imagePath)
+    /// <param name="imagePath">Path to the barcode image file.</param>
+    /// <param name="useAllCores">Whether to enable UseAllCores.</param>
+    /// <param name="coreCount">
+    /// Desired core count when UseAllCores is false; if null, defaults to the system's processor count.
+    /// </param>
+    static void RunRecognitionTest(string imagePath, bool useAllCores, int? coreCount)
     {
-        using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.Code128))
-        {
-            // Perform recognition
-            reader.ReadBarCodes();
+        // Configure the static ProcessorSettings for the BarCodeReader
+        BarCodeReader.ProcessorSettings.UseAllCores = useAllCores;
+        if (coreCount.HasValue)
+            BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount = coreCount.Value;
+        else
+            BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount = Environment.ProcessorCount;
 
-            // Return the count of detected barcodes
-            return reader.FoundCount;
+        // Perform barcode reading and measure execution time
+        using (var reader = new BarCodeReader(imagePath, DecodeType.Pdf417))
+        {
+            Stopwatch watch = Stopwatch.StartNew();
+            BarCodeResult[] results = reader.ReadBarCodes();
+            watch.Stop();
+
+            // Output test results
+            Console.WriteLine($"UseAllCores={useAllCores}, CoresUsed={BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount}");
+            Console.WriteLine($"Found {results.Length} barcode(s) in {watch.ElapsedMilliseconds} ms");
+            foreach (BarCodeResult result in results)
+            {
+                Console.WriteLine($"Type: {result.CodeTypeName}, Text: {result.CodeText}");
+            }
         }
     }
 }

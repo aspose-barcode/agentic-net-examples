@@ -1,59 +1,69 @@
-// Title: Using Aspose.BarCode to generate and recognize a Code128 barcode with multi‑core processing
-// Description: Demonstrates creating a Code128 barcode image, saving it, and then recognizing it while configuring the processor to utilize all CPU cores.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It shows how to use BarcodeGenerator to create barcodes and BarCodeReader with ProcessorSettings to perform high‑performance recognition. Developers often need to generate barcodes for labeling and then read them in batch scenarios, where enabling multi‑core processing improves throughput.
+// Title: Barcode Generation and Multi-Core Recognition Example
+// Description: Demonstrates generating a Code128 barcode image and recognizing it using all CPU cores for faster processing.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes and BarCodeReader with ProcessorSettings to enable multi‑core processing. Typical use cases include high‑throughput scanning applications where performance is critical, and developers often need to configure processor settings, select decode types, and handle image I/O.
 // Prompt: Configure ProcessorSettings.UseAllCores true to allocate all CPU cores automatically for barcode recognition.
-// Tags: code128, barcode-generation, barcode-recognition, multithreading, useallcores, aspose-barcodes, png
+// Tags: barcode generation, barcode recognition, multithreading, useallcores, code128, aspose.barcode, image processing
 
 using System;
 using System.IO;
+using System.Diagnostics;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates a Code128 barcode, saves it as PNG,
-/// configures the recognition processor to use all CPU cores, reads the barcode,
-/// and cleans up the temporary image file.
+/// Demonstrates creating a barcode image and recognizing it using all available CPU cores.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Executes barcode generation, multi‑core recognition,
-    /// and cleanup operations.
+    /// Entry point of the example. Generates a barcode, configures multi‑core processing,
+    /// reads the barcode, outputs results, and cleans up temporary files.
     /// </summary>
     static void Main()
     {
-        // Define the temporary file path for the generated barcode image.
-        string imagePath = "sample.png";
+        // Create a temporary folder for the sample barcode image
+        string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
+        string barcodePath = Path.Combine(tempFolder, "sample.png");
 
-        // Generate a simple Code128 barcode and save it as a PNG file.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "12345"))
+        // Generate a simple Code128 barcode and save it as PNG
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
         {
-            // Set barcode foreground and background colors (optional).
-            generator.Parameters.Barcode.BarColor = Color.Black;
-            generator.Parameters.BackColor = Color.White;
-
-            // Save the barcode image to the specified path.
-            generator.Save(imagePath, BarCodeImageFormat.Png);
+            generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        // Enable multi‑core processing for barcode recognition to improve performance.
+        // Enable processor settings to use all available CPU cores for recognition
         BarCodeReader.ProcessorSettings.UseAllCores = true;
 
-        // Read and display barcode information from the saved image.
-        using (var reader = new BarCodeReader(imagePath))
+        // Read the generated barcode using all supported decode types
+        using (var reader = new BarCodeReader(barcodePath, DecodeType.AllSupportedTypes))
         {
-            foreach (var result in reader.ReadBarCodes())
+            Stopwatch watch = Stopwatch.StartNew(); // Start timing the recognition process
+            var results = reader.ReadBarCodes();     // Perform barcode recognition
+            watch.Stop();                            // Stop timing
+
+            // Output the number of barcodes found and the elapsed time
+            Console.WriteLine($"Barcodes found: {results.Length}");
+            Console.WriteLine($"Recognition time: {watch.ElapsedMilliseconds} ms");
+
+            // List each recognized barcode's type and text
+            foreach (var result in results)
             {
-                Console.WriteLine($"Detected Type: {result.CodeTypeName}");
-                Console.WriteLine($"Detected Text: {result.CodeText}");
+                Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
             }
         }
 
-        // Delete the temporary image file to clean up resources.
-        if (File.Exists(imagePath))
+        // Clean up temporary files and directory
+        try
         {
-            File.Delete(imagePath);
+            if (File.Exists(barcodePath))
+                File.Delete(barcodePath);
+            if (Directory.Exists(tempFolder))
+                Directory.Delete(tempFolder, true);
+        }
+        catch
+        {
+            // Ignored - cleanup failure should not affect program exit
         }
     }
 }

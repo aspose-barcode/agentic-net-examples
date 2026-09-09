@@ -1,8 +1,8 @@
-// Title: Dynamic AustraliaPost Customer Information Interpreting Type
-// Description: Demonstrates how to switch the AustraliaPostSettings.CustomerInformationInterpretingType at runtime based on a command‑line argument and generate/recognize the barcode.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category, focusing on Australia Post symbology. It shows usage of BarcodeGenerator, BarCodeReader, and the AustraliaPost settings such as EncodingTable and CustomerInformationInterpretingType. Developers often need to create or read Australia Post barcodes with different customer information tables (CTable, NTable, Other) depending on business rules.
+// Title: Dynamic Australia Post Customer Information Interpreting Type Example
+// Description: Demonstrates how to set the AustraliaPostSettings.CustomerInformationInterpretingType at runtime based on a command‑line argument, then generate and read a barcode using that setting.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category, focusing on Australia Post symbology. It shows how to work with EncodeTypes.AustraliaPost, configure the AustralianPost.EncodingTable, and adjust the CustomerInformationInterpretingType for both encoding and decoding. Developers often need to switch interpreting modes (CTable, DTable, etc.) dynamically depending on business rules or user input.
 // Prompt: Write code that switches AustraliaPostSettings.CustomerInformationInterpretingType at runtime based on user selection.
-// Tags: barcode symbology, australia post, customer information, interpreting type, runtime selection, aspose.barcode, generation, recognition
+// Tags: barcode symbology, australia post, interpreting type, runtime selection, aspose.barcode, generation, recognition
 
 using System;
 using System.IO;
@@ -12,73 +12,59 @@ using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
 /// Demonstrates runtime selection of Australia Post customer information interpreting type,
-/// barcode generation, and recognition using Aspose.BarCode.
+/// barcode generation, and subsequent recognition using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Parses a command‑line argument to choose the interpreting type,
-    /// builds a valid Australia Post codetext, and calls the generation/reading routine.
+    /// Entry point. Parses an optional command‑line argument to select the interpreting type,
+    /// generates an Australia Post barcode, saves it, and reads it back using the same setting.
     /// </summary>
-    /// <param name="args">Command‑line arguments; first argument selects the interpreting type.</param>
+    /// <param name="args">Command‑line arguments; first argument may be a CustomerInformationInterpretingType value.</param>
     static void Main(string[] args)
     {
-        // Determine interpreting type from command‑line argument or default to CTable
-        string typeArg = args.Length > 0 ? args[0] : "CTable";
-        CustomerInformationInterpretingType interpretingType = typeArg switch
+        // Determine interpreting type from first argument or default to CTable
+        CustomerInformationInterpretingType interpretingType = CustomerInformationInterpretingType.CTable;
+        if (args.Length > 0)
         {
-            "CTable" => CustomerInformationInterpretingType.CTable,
-            "NTable" => CustomerInformationInterpretingType.NTable,
-            "Other" => CustomerInformationInterpretingType.Other,
-            _ => CustomerInformationInterpretingType.CTable
-        };
-
-        // Build a valid AustraliaPost codetext for the selected type
-        // FCC 59 allows up to 5 CTable chars or 10 NTable digits or 4 symbols (0‑3) for Other.
-        string fcc = "59";
-        string dpid = "01234567"; // 8‑digit DPID
-        string customerInfo = interpretingType switch
-        {
-            CustomerInformationInterpretingType.CTable => "ABCD",   // letters allowed, <=5 chars
-            CustomerInformationInterpretingType.NTable => "1234",   // digits only
-            CustomerInformationInterpretingType.Other => "0123",   // symbols 0‑3 only
-            _ => ""
-        };
-        string codeText = fcc + dpid + customerInfo;
-
-        string outputPath = "AustraliaPostBarcode.png";
-
-        GenerateAndReadBarcode(codeText, interpretingType, outputPath);
-    }
-
-    static void GenerateAndReadBarcode(string codeText, CustomerInformationInterpretingType type, string outputPath)
-    {
-        // Generate barcode image with the specified interpreting type
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, codeText))
-        {
-            generator.Parameters.Barcode.AustralianPost.EncodingTable = type;
-
-            using (MemoryStream ms = new MemoryStream())
+            if (Enum.TryParse<CustomerInformationInterpretingType>(args[0], true, out var parsed))
             {
-                // Save barcode as PNG into the memory stream
-                generator.Save(ms, BarCodeImageFormat.Png);
-                // Write the image to a file for visual verification (optional)
-                File.WriteAllBytes(outputPath, ms.ToArray());
+                interpretingType = parsed;
+            }
+            else
+            {
+                Console.WriteLine($"Invalid interpreting type '{args[0]}', using default CTable.");
+            }
+        }
 
-                // Reset stream position for reading
-                ms.Position = 0;
+        // Prepare a unique temporary output directory and file path
+        string outputDir = Path.Combine(Path.GetTempPath(), "AustraliaPostDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputDir);
+        string barcodePath = Path.Combine(outputDir, "AustraliaPost.png");
 
-                // Recognize the barcode using the same interpreting type
-                using (BarCodeReader reader = new BarCodeReader(ms, DecodeType.AustraliaPost))
-                {
-                    reader.BarcodeSettings.AustraliaPost.CustomerInformationInterpretingType = type;
+        // Sample code text (FCC 59 + 8‑digit DPID, no customer info) – valid for all interpreting types
+        string codeText = "5901234567";
 
-                    foreach (BarCodeResult result in reader.ReadBarCodes())
-                    {
-                        Console.WriteLine($"Interpreting Type: {type}");
-                        Console.WriteLine($"Decoded CodeText: {result.CodeText}");
-                    }
-                }
+        // Generate barcode with the selected interpreting type
+        using (var generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, codeText))
+        {
+            generator.Parameters.Barcode.XDimension.Pixels = 4f;
+            generator.Parameters.Barcode.BarHeight.Pixels = 50f;
+            generator.Parameters.Barcode.AustralianPost.EncodingTable = interpretingType;
+            generator.Save(barcodePath, BarCodeImageFormat.Png);
+        }
+
+        Console.WriteLine($"Barcode saved to: {barcodePath}");
+        Console.WriteLine($"Interpreting type used for generation: {interpretingType}");
+
+        // Read barcode using the same interpreting type
+        using (var reader = new BarCodeReader(barcodePath, DecodeType.AustraliaPost))
+        {
+            reader.BarcodeSettings.AustraliaPost.CustomerInformationInterpretingType = interpretingType;
+            foreach (BarCodeResult result in reader.ReadBarCodes())
+            {
+                Console.WriteLine($"CodeType: {result.CodeTypeName}");
+                Console.WriteLine($"CodeText: {result.CodeText}");
             }
         }
     }

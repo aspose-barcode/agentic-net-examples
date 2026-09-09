@@ -1,103 +1,98 @@
-// Title: Read batch of TIFF images with Australia Post NTable interpretation
-// Description: Demonstrates how to generate Australia Post barcodes saved as TIFF files and then read them using the NTable customer information interpreting type.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes, BarCodeReader for decoding them, and the AustraliaPostSettings.CustomerInformationInterpretingType property to control how customer information is interpreted. Typical use cases include batch processing of shipping labels or postal barcodes where specific interpreting tables (e.g., NTable) are required. Developers often need to generate barcode images in various formats and then read them back for validation or data extraction.
+// Title: Read a batch of TIFF images with Australia Post NTable interpretation
+// Description: Demonstrates generating Australia Post barcodes in TIFF format and then reading them while applying the NTable customer information interpreting type.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the BarcodeGenerator class for creating barcodes, the BarCodeReader class for decoding them, and the AustraliaPostSettings.CustomerInformationInterpretingType enumeration for controlling how customer information is interpreted. Typical use cases include bulk processing of postal barcodes, automated verification of Australia Post items, and integration into logistics workflows where NTable interpretation is required.
 // Prompt: Create a sample that reads a batch of TIFF images applying AustraliaPostSettings.CustomerInformationInterpretingType.NTable.
-// Tags: barcode, australia post, ntable, tiff, generation, recognition, aspose.barcode
+// Tags: barcode, australia post, tiff, batch, generation, recognition, ntable, aspose.barcode
 
 using System;
 using System.IO;
+using System.Collections.Generic;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Sample program that generates Australia Post barcodes as TIFF files,
-/// then reads them back applying the NTable customer information interpreting type.
+/// Sample program that generates a batch of Australia Post barcodes in TIFF format
+/// and reads them back using the NTable customer information interpreting type.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the sample. Generates sample TIFF images if they do not exist,
-    /// then iterates through each file, reading barcodes with NTable interpretation.
+    /// Entry point of the sample. Generates barcode images, reads them with NTable settings,
+    /// and outputs the decoded information to the console.
     /// </summary>
     static void Main()
     {
-        // Define the folder that will contain the sample TIFF images
-        string inputFolder = Path.Combine(Directory.GetCurrentDirectory(), "InputImages");
-        if (!Directory.Exists(inputFolder))
-        {
-            // Create the folder when it does not exist
-            Directory.CreateDirectory(inputFolder);
-        }
+        // Create a dedicated temporary folder for the sample files
+        string batchFolder = Path.Combine(Path.GetTempPath(), "Batch_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(batchFolder);
 
-        // Sample data to encode into Australia Post barcodes
-        string[] sampleTexts = new[] { "1100000000", "4501234567", "5901234567" };
-
-        // Generate TIFF images for each sample text if they are missing
-        for (int i = 0; i < sampleTexts.Length; i++)
+        // Prepare sample Australia Post barcode texts (FCC=62, NTable customer info = digits)
+        var codeTexts = new List<string>
         {
-            string filePath = Path.Combine(inputFolder, $"sample{i + 1}.tif");
-            if (!File.Exists(filePath))
+            "62012345670123", // FCC 62 + DPID 01234567 + customer info 0123
+            "62012345670234",
+            "62012345670345"
+        };
+
+        var generatedFiles = new List<string>();
+
+        // -----------------------------------------------------------------
+        // Generate barcode images in TIFF format using NTable encoding
+        // -----------------------------------------------------------------
+        for (int i = 0; i < codeTexts.Count; i++)
+        {
+            string filePath = Path.Combine(batchFolder, $"AustraliaPost_{i}.tif");
+            using (var generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, codeTexts[i]))
             {
-                GenerateAustraliaPostTiff(sampleTexts[i], filePath);
+                // Set the customer information interpreting type to NTable for generation
+                generator.Parameters.Barcode.AustralianPost.EncodingTable = CustomerInformationInterpretingType.NTable;
+                // Save the barcode as a TIFF image
+                generator.Save(filePath, BarCodeImageFormat.Tiff);
             }
+            generatedFiles.Add(filePath);
         }
 
-        // Retrieve all TIFF files from the input folder
-        string[] tiffFiles = Directory.GetFiles(inputFolder, "*.tif");
-        if (tiffFiles.Length == 0)
+        // -----------------------------------------------------------------
+        // Read each generated TIFF image applying NTable interpreting type
+        // -----------------------------------------------------------------
+        foreach (string file in generatedFiles)
         {
-            Console.WriteLine("No TIFF files found in the input folder.");
-            return;
-        }
-
-        // Process each TIFF file individually
-        foreach (string file in tiffFiles)
-        {
-            Console.WriteLine($"Processing file: {Path.GetFileName(file)}");
-            using (var reader = new BarCodeReader(file, DecodeType.AustraliaPost))
+            if (!File.Exists(file))
             {
-                // Set the interpreting type to NTable for customer information
-                reader.BarcodeSettings.AustraliaPost.CustomerInformationInterpretingType = CustomerInformationInterpretingType.NTable;
+                Console.WriteLine($"File not found: {file}");
+                continue;
+            }
 
-                // Read all barcodes present in the image
-                BarCodeResult[] results = reader.ReadBarCodes();
-                if (results.Length == 0)
+            try
+            {
+                using (var reader = new BarCodeReader(file, DecodeType.AustraliaPost))
                 {
-                    Console.WriteLine("  No barcodes detected.");
-                }
-                else
-                {
-                    // Output details of each detected barcode
-                    foreach (var result in results)
+                    // Configure the reader to interpret customer information using NTable
+                    reader.BarcodeSettings.AustraliaPost.CustomerInformationInterpretingType = CustomerInformationInterpretingType.NTable;
+
+                    // Iterate over all detected barcodes in the image
+                    foreach (var result in reader.ReadBarCodes())
                     {
-                        Console.WriteLine($"  Type: {result.CodeType}");
+                        Console.WriteLine($"File: {Path.GetFileName(file)}");
+                        Console.WriteLine($"  CodeType: {result.CodeTypeName}");
                         Console.WriteLine($"  CodeText: {result.CodeText}");
                     }
                 }
             }
-        }
-    }
-
-    // Generates an Australia Post barcode image saved as a TIFF file
-    static void GenerateAustraliaPostTiff(string codeText, string filePath)
-    {
-        using (var generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, codeText))
-        {
-            // Configure the generator to use the NTable interpreting type
-            generator.Parameters.Barcode.AustralianPost.EncodingTable = CustomerInformationInterpretingType.NTable;
-
-            // Create the barcode image in memory
-            using (var bitmap = generator.GenerateBarCodeImage())
+            catch (ArgumentException ex) when (ex.Message.Contains("Image loading failed"))
             {
-                // Save the image to the specified file path in TIFF format
-                using (var stream = new FileStream(filePath, FileMode.Create))
-                {
-                    bitmap.Save(stream, ImageFormat.Tiff);
-                }
+                // Handle cases where the image cannot be loaded (e.g., corrupted file)
+                Console.WriteLine($"Skipping unreadable file: {file}");
+            }
+            catch (Exception ex)
+            {
+                // General error handling for unexpected issues during processing
+                Console.WriteLine($"Error processing file {file}: {ex.Message}");
             }
         }
+
+        // Cleanup (optional). Uncomment the line below to delete the temporary folder after execution.
+        // Directory.Delete(batchFolder, true);
     }
 }

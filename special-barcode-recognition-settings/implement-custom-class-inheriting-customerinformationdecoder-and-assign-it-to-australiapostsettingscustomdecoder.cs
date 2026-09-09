@@ -1,83 +1,96 @@
 // Title: Custom Customer Information Decoder for Australia Post Barcodes
-// Description: Demonstrates implementing a custom CustomerInformationDecoder and assigning it to AustraliaPostSettings to decode the customer information field of an Australia Post barcode.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category, focusing on the Australia Post symbology. It showcases the use of BarcodeGenerator, BarCodeReader, AustraliaPostSettings, and the CustomerInformationDecoder interface to customize decoding of customer‑information fields. Developers working with postal barcodes often need to interpret encoded customer data beyond the default decoding, making custom decoders a common requirement.
+// Description: Demonstrates how to implement a custom CustomerInformationDecoder and assign it to AustraliaPostSettings to decode the customer information field of an Australia Post barcode.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, focusing on Australia Post symbology. It showcases the use of BarcodeGenerator, BarCodeReader, and AustraliaPostSettings to create a barcode, apply a custom decoder (derived from CustomerInformationDecoder), and read the decoded data. Developers working with postal services often need to customize how customer information is interpreted; this pattern provides a reusable approach for such scenarios.
 // Prompt: Implement a custom class inheriting CustomerInformationDecoder and assign it to AustraliaPostSettings.CustomDecoder.
-// Tags: australia post, barcode, custom decoder, customer information, generation, recognition, aspose.barcode
+// Tags: australia post, custom decoder, barcode generation, barcode recognition, png
 
 using System;
+using System.IO;
+using System.Text;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
-namespace AustraliaPostCustomDecoderDemo
+/// <summary>
+/// Custom decoder that reverses the customer information field.
+/// Inherits from <see cref="AustraliaPostCustomerInformationDecoder"/> to integrate with Australia Post settings.
+/// </summary>
+class MyDecoder : AustraliaPostCustomerInformationDecoder
 {
     /// <summary>
-    /// Custom decoder that implements <see cref="AustraliaPostCustomerInformationDecoder"/>
-    /// to provide bespoke decoding of the customer information field.
+    /// Decodes the supplied customer information field.
+    /// This simple implementation returns the reversed string.
     /// </summary>
-    public class CustomCustomerInfoDecoder : AustraliaPostCustomerInformationDecoder
+    /// <param name="customerInformationField">The raw customer information field extracted from the barcode.</param>
+    /// <returns>The decoded string.</returns>
+    public string Decode(string customerInformationField)
     {
-        /// <summary>
-        /// Decodes the raw customer information field.
-        /// </summary>
-        /// <param name="customerInformationField">The raw field extracted from the barcode.</param>
-        /// <returns>A string representing the decoded customer information.</returns>
-        public string Decode(string customerInformationField)
-        {
-            // In a real scenario, implement CTable/NTable decoding logic here.
-            return $"CustomDecoded[{customerInformationField}]";
-        }
+        // Return an empty string if the input is null or empty.
+        if (string.IsNullOrEmpty(customerInformationField))
+            return string.Empty;
+
+        // Build the reversed string using a StringBuilder for efficiency.
+        var sb = new StringBuilder(customerInformationField.Length);
+        for (int i = customerInformationField.Length - 1; i >= 0; i--)
+            sb.Append(customerInformationField[i]);
+
+        return sb.ToString();
     }
+}
 
+/// <summary>
+/// Demonstrates generating an Australia Post barcode, applying a custom decoder,
+/// reading the barcode, and cleaning up temporary files.
+/// </summary>
+class Program
+{
     /// <summary>
-    /// Demonstrates generating an Australia Post barcode, reading it, and using a custom decoder.
+    /// Entry point of the example.
     /// </summary>
-    class Program
+    static void Main()
     {
-        /// <summary>
-        /// Entry point of the demo application.
-        /// </summary>
-        static void Main()
+        // Create a unique temporary folder for demo files.
+        string tempFolder = Path.Combine(Path.GetTempPath(), "AusPostDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
+        string barcodePath = Path.Combine(tempFolder, "auspost.png");
+
+        // Generate an Australia Post barcode with specific dimensions and encoding table.
+        using (var generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, "620123456701234"))
         {
-            // Sample Australia Post barcode with FCC=59, DPID=12345678, customer info "AB".
-            string codeText = "5912345678AB";
+            generator.Parameters.Barcode.XDimension.Pixels = 4f;
+            generator.Parameters.Barcode.BarHeight.Pixels = 50f;
+            generator.Parameters.Barcode.AustralianPost.EncodingTable = CustomerInformationInterpretingType.CTable;
+            generator.Save(barcodePath, BarCodeImageFormat.Png);
+        }
 
-            // Create a barcode generator for the Australia Post symbology and set the encoding table to CTable (allows letters).
-            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, codeText))
+        // Read the barcode using a custom customer information decoder.
+        using (var reader = new BarCodeReader(barcodePath, DecodeType.AustraliaPost))
+        {
+            // Assign the custom decoder to the Australia Post settings.
+            reader.BarcodeSettings.AustraliaPost.CustomerInformationDecoder = new MyDecoder();
+
+            // Ensure the interpreting type matches the generation settings.
+            reader.BarcodeSettings.AustraliaPost.CustomerInformationInterpretingType = CustomerInformationInterpretingType.CTable;
+
+            // Iterate through all detected barcodes and output basic information.
+            foreach (BarCodeResult result in reader.ReadBarCodes())
             {
-                generator.Parameters.Barcode.AustralianPost.EncodingTable = CustomerInformationInterpretingType.CTable;
-
-                // Generate the barcode image.
-                using (Bitmap image = generator.GenerateBarCodeImage())
-                {
-                    // Initialize a reader for Australia Post barcodes.
-                    using (BarCodeReader reader = new BarCodeReader(image, DecodeType.AustraliaPost))
-                    {
-                        // Assign the custom decoder to the Australia Post settings.
-                        reader.BarcodeSettings.AustraliaPost.CustomerInformationDecoder = new CustomCustomerInfoDecoder();
-
-                        // Ensure the interpreting type matches the generator's setting.
-                        reader.BarcodeSettings.AustraliaPost.CustomerInformationInterpretingType = CustomerInformationInterpretingType.CTable;
-
-                        // Read all detected barcodes.
-                        foreach (BarCodeResult result in reader.ReadBarCodes())
-                        {
-                            Console.WriteLine($"Detected Code Type: {result.CodeType}");
-                            Console.WriteLine($"Detected Code Text: {result.CodeText}");
-
-                            // Extract the raw customer information (after FCC(2) + DPID(8)).
-                            string rawCustomerInfo = result.CodeText.Substring(10);
-                            // Use the custom decoder directly.
-                            string decodedInfo = ((AustraliaPostCustomerInformationDecoder)reader.BarcodeSettings.AustraliaPost.CustomerInformationDecoder).Decode(rawCustomerInfo);
-                            Console.WriteLine($"Custom Decoded Customer Info: {decodedInfo}");
-                        }
-                    }
-                }
+                Console.WriteLine($"CodeType: {result.CodeTypeName}");
+                Console.WriteLine($"CodeText: {result.CodeText}");
+                // The custom decoder processes the customer information internally; extended data can be accessed via result.Extended if needed.
             }
+        }
 
-            // Indicate that processing has finished.
-            Console.WriteLine("Processing completed.");
+        // Attempt to delete temporary files and folder; ignore any errors.
+        try
+        {
+            if (File.Exists(barcodePath))
+                File.Delete(barcodePath);
+            Directory.Delete(tempFolder, true);
+        }
+        catch
+        {
+            // Suppress cleanup exceptions.
         }
     }
 }
