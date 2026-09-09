@@ -1,8 +1,8 @@
 // Title: Generate GS1 Code 128 Barcode and Return as Base64 String
-// Description: Creates a GS1 Code 128 barcode image, writes it to a memory stream, and outputs the image as a Base64‑encoded string suitable for API responses.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category. It demonstrates using the BarcodeGenerator class with EncodeTypes.GS1Code128 to produce a barcode, saving it to a MemoryStream in PNG format, and retrieving the raw bytes. Developers often need to generate barcodes on‑the‑fly for web APIs, e‑commerce platforms, or inventory systems, and this pattern shows the typical workflow for image‑based barcode output.
+// Description: This example creates a GS1 Code 128 barcode, saves it as PNG into a memory stream, and outputs the image as a Base64 string suitable for API responses.
+// Category-Description: Demonstrates Aspose.BarCode barcode generation for GS1 Code 128 symbology. It uses BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes to configure barcode dimensions, render to a MemoryStream, and retrieve raw image bytes. Developers building web APIs or services that need to embed barcode images in JSON or XML responses commonly use this pattern.
 // Prompt: Produce a GS1 Code 128 barcode, write image bytes to a MemoryStream, and return as an API response.
-// Tags: gs1, code128, barcode, generation, memory stream, base64, api, aspose.barcode
+// Tags: gs1,code128,barcode,generation,memory stream,base64,api response,aspose.barcode
 
 using System;
 using System.IO;
@@ -10,36 +10,40 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generating a GS1 Code 128 barcode and returning it as a Base64 string.
+/// Example program that generates a GS1 Code 128 barcode,
+/// writes the PNG image to a memory stream, and prints the Base64 representation.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates the barcode, writes it to a memory stream, and prints the Base64 image.
+    /// Entry point of the example. Generates the barcode and outputs its Base64 string.
     /// </summary>
     static void Main()
     {
-        // Sample GS1 Code 128 codetext: AI (01) with a 14‑digit GTIN
-        const string gs1CodeText = "(01)01234567890123";
+        // Define the GS1 Code 128 data (including Application Identifier (01) for GTIN).
+        string codeText = "(01)12345678901231";
 
-        // Initialize the barcode generator with GS1 Code 128 symbology and the sample text
-        using (var generator = new BarcodeGenerator(EncodeTypes.GS1Code128, gs1CodeText))
+        // Create a memory stream to hold the generated barcode image.
+        using (MemoryStream memoryStream = new MemoryStream())
         {
-            // Create a memory stream to hold the generated image
-            using (var ms = new MemoryStream())
+            // Initialize the barcode generator with GS1 Code 128 symbology and the data.
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.GS1Code128, codeText))
             {
-                // Save the barcode image as PNG into the stream
-                generator.Save(ms, BarCodeImageFormat.Png);
+                // Set the X-dimension (module width) to 2 pixels for better readability.
+                generator.Parameters.Barcode.XDimension.Pixels = 2f;
 
-                // Reset the stream position to the beginning for reading
-                ms.Position = 0;
-
-                // Convert the image bytes to a Base64 string (simulating an API response)
-                string base64Image = Convert.ToBase64String(ms.ToArray());
-
-                // Output the Base64 string to the console
-                Console.WriteLine(base64Image);
+                // Save the barcode as a PNG image into the memory stream.
+                generator.Save(memoryStream, BarCodeImageFormat.Png);
             }
+
+            // Retrieve the image bytes from the memory stream.
+            byte[] imageBytes = memoryStream.ToArray();
+
+            // Convert the image bytes to a Base64 string for easy transmission in API responses.
+            string base64 = Convert.ToBase64String(imageBytes);
+
+            // Output the Base64 string to the console (or return it from an API endpoint).
+            Console.WriteLine(base64);
         }
     }
 }

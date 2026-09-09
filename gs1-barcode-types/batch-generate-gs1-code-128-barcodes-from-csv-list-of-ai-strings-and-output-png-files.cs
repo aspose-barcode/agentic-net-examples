@@ -1,8 +1,8 @@
 // Title: Batch generate GS1 Code 128 barcodes from CSV and save as PNG
-// Description: Demonstrates reading a CSV file of GS1 AI strings, generating a GS1 Code 128 barcode for each entry, and saving the images as PNG files.
-// Category-Description: This example belongs to the barcode generation category of Aspose.BarCode for .NET. It shows how to use the BarcodeGenerator class with EncodeTypes.GS1Code128 to create barcodes from data sources, configure visual parameters, and export to image formats. Developers often need to batch‑process data files to produce barcodes for labeling, inventory, or shipping applications.
+// Description: Demonstrates how to read a CSV file containing GS1 Code 128 AI strings, generate barcodes using Aspose.BarCode, and save each as a PNG image in a temporary folder.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing the use of BarcodeGenerator with EncodeTypes.GS1Code128. It illustrates typical batch processing scenarios where developers need to create multiple barcodes from data sources such as CSV files, configure barcode parameters (e.g., X‑Dimension), and output images in common formats like PNG. Ideal for inventory, logistics, and retail applications that require automated barcode creation.
 // Prompt: Batch generate GS1 Code 128 barcodes from a CSV list of AI strings and output PNG files.
-// Tags: gs1code128, batch, png, aspose.barcode, generation
+// Tags: barcode, gs1code128, csv, batch, png, generation, aspose.barcode
 
 using System;
 using System.IO;
@@ -10,72 +10,69 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Generates GS1 Code 128 barcodes from a list of AI strings stored in a CSV file
-/// and saves each barcode as a PNG image in an output folder.
+/// Provides a console application that reads GS1 Code 128 AI strings from a CSV file,
+/// generates corresponding barcodes, and saves each barcode as a PNG image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Application entry point. Handles CSV input, creates sample data if needed,
-    /// configures barcode generation settings, and writes PNG files.
+    /// Entry point of the application. Executes the batch barcode generation workflow.
     /// </summary>
-    /// <param name="args">Optional command‑line argument specifying the CSV file path.</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Determine CSV path (argument or default)
-        string csvPath = args.Length > 0 ? args[0] : "sample.csv";
+        // Create a unique temporary folder for the batch process
+        string batchFolder = Path.Combine(Path.GetTempPath(), "Batch_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(batchFolder);
 
-        // If CSV does not exist, create a small sample file with GS1 AI strings
-        if (!File.Exists(csvPath))
+        // Sample CSV content: each line is a GS1 Code128 AI string
+        string[] csvLines = new[]
         {
-            string[] sampleData = new string[]
-            {
-                "(01)00123456789012",
-                "(01)12345678901231",
-                "(01)00012345678905",
-                "(01)98765432109876",
-                "(01)11111111111111"
-            };
-            File.WriteAllLines(csvPath, sampleData);
-            Console.WriteLine($"Sample CSV created at {Path.GetFullPath(csvPath)}");
-        }
+            "(01)12345678901231(21)ITEM001",
+            "(01)00123456789012(21)ITEM002",
+            "(01)00012345678901(21)ITEM003",
+            "(01)98765432109876(21)ITEM004",
+            "(01)12345098765432(21)ITEM005"
+        };
 
-        // Prepare output folder for generated barcode images
-        string outputFolder = "Barcodes";
-        if (!Directory.Exists(outputFolder))
-        {
-            Directory.CreateDirectory(outputFolder);
-        }
+        // Write the sample CSV to a file in the batch folder
+        string csvPath = Path.Combine(batchFolder, "input.csv");
+        File.WriteAllLines(csvPath, csvLines);
 
-        // Read each line (AI string) from the CSV file
+        // Read all lines from the CSV file
         string[] lines = File.ReadAllLines(csvPath);
         int index = 1;
+
+        // Process each non‑empty line and generate a barcode image
         foreach (string rawLine in lines)
         {
-            // Trim whitespace and skip empty lines
             string codeText = rawLine.Trim();
             if (string.IsNullOrEmpty(codeText))
                 continue;
 
-            // Build output file name (e.g., barcode_1.png)
-            string outputFile = Path.Combine(outputFolder, $"barcode_{index}.png");
-
-            // Create a barcode generator for GS1 Code 128 with the current AI string
-            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.GS1Code128, codeText))
+            // Determine the output file path for the current barcode
+            string outputPath = Path.Combine(batchFolder, $"barcode_{index}.png");
+            try
             {
-                // Do not throw an exception if the code text has minor format issues
-                generator.Parameters.Barcode.ThrowExceptionWhenCodeTextIncorrect = false;
+                // Initialize the barcode generator with GS1 Code 128 symbology and the AI string
+                using (var generator = new BarcodeGenerator(EncodeTypes.GS1Code128, codeText))
+                {
+                    // Set the X‑Dimension (module width) to 2 pixels for better readability
+                    generator.Parameters.Barcode.XDimension.Pixels = 2f;
 
-                // Optional visual settings: filled bars and X-dimension
-                generator.Parameters.Barcode.FilledBars = true;
-                generator.Parameters.Barcode.XDimension.Point = 2f;
+                    // Save the generated barcode as a PNG image
+                    generator.Save(outputPath, BarCodeImageFormat.Png);
+                }
 
-                // Save the barcode image; the file extension determines the format (PNG)
-                generator.Save(outputFile);
+                Console.WriteLine($"Generated barcode {index}: {outputPath}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to generate barcode for line {index}: {ex.Message}");
             }
 
-            Console.WriteLine($"Generated: {outputFile}");
             index++;
         }
+
+        Console.WriteLine($"Batch processing completed. Files are located in: {batchFolder}");
     }
 }

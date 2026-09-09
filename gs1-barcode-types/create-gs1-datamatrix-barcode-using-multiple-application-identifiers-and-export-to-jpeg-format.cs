@@ -1,46 +1,57 @@
-// Title: Generate GS1 DataMatrix barcode with multiple Application Identifiers and save as JPEG
-// Description: Demonstrates creating a GS1 DataMatrix barcode that encodes several Application Identifiers and exporting the image to JPEG format.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use the BarcodeGenerator class with EncodeTypes.GS1DataMatrix. It illustrates typical use cases such as encoding GS1 Application Identifiers, customizing barcode appearance, and saving the result in common image formats. Developers working with product identification, inventory tracking, or logistics often need to generate GS1 DataMatrix symbols programmatically.
+// Title: Generate a GS1 DataMatrix barcode with multiple Application Identifiers and save as JPEG
+// Description: Demonstrates creating a GS1 DataMatrix barcode that encodes several GS1 Application Identifiers, then exporting the image to JPEG format.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on GS1 symbologies and image output. It showcases the use of EncodeTypes, BarcodeGenerator, and BarCodeImageFormat classes to produce GS1 DataMatrix codes, a common requirement for supply‑chain labeling and product identification. Developers often need to embed multiple AI values and export the result in standard image formats for printing or digital workflows.
 // Prompt: Create a GS1 DataMatrix barcode using multiple Application Identifiers and export to a JPEG format.
-// Tags: gs1 datamatrix, barcode generation, jpeg, aspose.barcodes, aspose.drawing
+// Tags: datamatrix, gs1, barcode, generation, jpeg, aspose.barcode, encode types
 
 using System;
+using System.IO;
+using System.Reflection;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates a GS1 DataMatrix barcode with multiple Application Identifiers and saves it as a JPEG image.
+/// Example program that generates a GS1 DataMatrix barcode containing multiple Application Identifiers
+/// and saves the result as a JPEG image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates the barcode, configures appearance, and writes the JPEG file.
+    /// Entry point. Generates the barcode and writes the output file path to the console.
     /// </summary>
     static void Main()
     {
-        // Define the output file path for the generated JPEG image.
-        string outputPath = "gs1_datamatrix.jpg";
+        // Define the output file path in the current working directory.
+        string outputFile = Path.Combine(Directory.GetCurrentDirectory(), "gs1_datamatrix.jpg");
 
-        // GS1 DataMatrix code text containing multiple Application Identifiers:
-        // (01) – GTIN-14, (10) – Batch/Lot, (21) – Serial Number.
-        string codeText = "(01)01234567890128(10)BATCH123(21)SN001";
-
-        // Initialize the barcode generator for GS1 DataMatrix with the specified code text.
-        using (var generator = new BarcodeGenerator(EncodeTypes.GS1DataMatrix, codeText))
+        // Resolve the GS1 DataMatrix symbology using reflection because the enum value is not directly exposed.
+        const string symbologyName = "GS1DataMatrix";
+        FieldInfo field = typeof(EncodeTypes).GetField(symbologyName);
+        if (field == null)
         {
-            // Adjust the module (X) dimension to control barcode size (optional).
-            generator.Parameters.Barcode.XDimension.Point = 2f;
+            // If the symbology cannot be found, inform the user and exit.
+            Console.WriteLine($"Symbology '{symbologyName}' not found.");
+            return;
+        }
+        // Cast the reflected value to BaseEncodeType for use with BarcodeGenerator.
+        BaseEncodeType encodeType = (BaseEncodeType)field.GetValue(null);
 
-            // Set the barcode foreground (bars) and background colors (optional).
-            generator.Parameters.Barcode.BarColor = Color.Black;
-            generator.Parameters.BackColor = Color.White;
+        // GS1 code text containing multiple Application Identifiers:
+        // (01) – GTIN, (21) – Serial number, (30) – Variable count.
+        string codeText = "(01)12345678901231(21)ASPOSE(30)9876";
 
-            // Save the generated barcode image to the specified path in JPEG format.
-            generator.Save(outputPath, BarCodeImageFormat.Jpeg);
+        // Create the barcode generator with the resolved symbology and code text.
+        using (BarcodeGenerator generator = new BarcodeGenerator(encodeType, codeText))
+        {
+            // Set the module (pixel) size of the DataMatrix.
+            generator.Parameters.Barcode.XDimension.Pixels = 4f;
+
+            // Save the generated barcode as a JPEG image.
+            generator.Save(outputFile, BarCodeImageFormat.Jpeg);
         }
 
-        // Inform the user that the barcode has been saved.
-        Console.WriteLine($"GS1 DataMatrix barcode saved to {outputPath}");
+        // Output the location of the saved image.
+        Console.WriteLine($"GS1 DataMatrix barcode saved to: {outputFile}");
     }
 }

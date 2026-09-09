@@ -1,44 +1,42 @@
 // Title: Generate GS1 Code 128 barcode with custom size and save as JPEG
 // Description: Demonstrates how to create a GS1 Code 128 barcode, set its image dimensions to 200 × 100 pixels, and export it as a JPEG file using Aspose.BarCode.
-// Category-Description: This example belongs to the Aspose.BarCode image generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and AutoSizeMode to control barcode appearance. Typical scenarios include creating barcodes for product labeling, inventory systems, and e‑commerce platforms where specific image sizes and formats are required. Developers often need to adjust dimensions, scaling, and output formats to integrate barcodes into existing graphics pipelines.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes. Typical scenarios include product labeling, inventory tracking, and any application requiring GS1-compliant barcodes with specific image sizing. Developers often need to control barcode dimensions and output formats for integration into web pages, print media, or mobile apps.
 // Prompt: Set barcode size to 200 × 100 pixels for a GS1 Code 128 barcode and export as JPEG.
-// Tags: gs1 code128, barcode size, jpeg export, aspose.barcode, image generation
+// Tags: gs1 code128, barcode generation, image size, jpeg export, aspose.barcode, c#
 
 using System;
-using Aspose.BarCode.Generation;
+using System.IO;
 using Aspose.BarCode;
-using Aspose.Drawing.Imaging;
+using Aspose.BarCode.Generation;
+using Aspose.Drawing;
 
 /// <summary>
 /// Example program that generates a GS1 Code 128 barcode,
-/// customizes its image size, and saves it as a JPEG file.
+/// configures a fixed image size, and saves it as a JPEG file.
 /// </summary>
 class Program
 {
     /// <summary>
     /// Entry point of the application.
-    /// Creates a barcode, configures size, and writes the output image.
     /// </summary>
     static void Main()
     {
-        // Initialize a barcode generator for the GS1 Code 128 symbology
-        using (var generator = new BarcodeGenerator(EncodeTypes.GS1Code128))
-        {
-            // Assign a valid GS1 Code 128 codetext (GTIN‑14 example)
-            generator.CodeText = "(01)12345678901231";
+        // Define the output file path in the current working directory.
+        string outputPath = Path.Combine(Environment.CurrentDirectory, "gs1code128.jpg");
 
-            // Set the desired canvas dimensions: 200 × 100 pixels
+        // Create a barcode generator for GS1 Code 128 with sample data.
+        using (var generator = new BarcodeGenerator(EncodeTypes.GS1Code128, "(01)12345678901231"))
+        {
+            // Configure the barcode image to have a fixed size of 200 × 100 pixels.
+            generator.Parameters.AutoSizeMode = AutoSizeMode.Nearest;
             generator.Parameters.ImageWidth.Pixels = 200f;
             generator.Parameters.ImageHeight.Pixels = 100f;
 
-            // Enable interpolation to scale the barcode to fit the specified canvas
-            generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
-
-            // Save the generated barcode as a JPEG image
-            generator.Save("gs1code128.jpg");
+            // Save the generated barcode as a JPEG image.
+            generator.Save(outputPath, BarCodeImageFormat.Jpeg);
         }
 
-        // Inform the user that the barcode has been created
-        Console.WriteLine("Barcode generated and saved as gs1code128.jpg");
+        // Inform the user where the barcode image was saved.
+        Console.WriteLine($"Barcode saved to: {outputPath}");
     }
 }

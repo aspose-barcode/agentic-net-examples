@@ -1,78 +1,88 @@
-// Title: Batch generate GS1 Code 128 barcodes and package them into a ZIP archive
-// Description: Demonstrates creating multiple GS1‑128 (GS1 Code 128) barcodes from GTIN‑14 values, saving each as a PNG, and compressing all images into a single ZIP file for easy distribution.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use the BarcodeGenerator class with EncodeTypes.GS1Code128. Typical use cases include bulk creation of product barcodes for inventory, labeling, or e‑commerce platforms, where developers need to automate image output and bundle results for downstream processing. The code illustrates setting visual parameters, exporting to PNG, and using .NET's ZipArchive to create a distributable archive.
+// Title: Batch Generation of GS1 Code 128 Barcodes with ZIP Compression
+// Description: Demonstrates how to generate multiple GS1 Code 128 barcodes as PNG images using Aspose.BarCode and package them into a single ZIP file for distribution.
+// Category-Description: This example belongs to the batch barcode creation category of Aspose.BarCode, showcasing the use of BarcodeGenerator, EncodeTypes, and BarCodeImageFormat to produce high‑volume barcode images. Typical scenarios include preparing product identifiers for inventory systems, printing labels in bulk, or delivering barcode assets to partners. Developers often need to automate image generation and archive results efficiently, which this snippet illustrates.
 // Prompt: Batch generate GS1 Code 128 barcodes, compress PNG outputs into a single ZIP archive for distribution.
-// Tags: gs1,code128,barcode,generation,png,zip,compression,aspose.barcode
+// Tags: gs1 code 128, batch generation, png, zip, aspose.barcode, barcodegenerator, encode types
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates batch generation of GS1 Code 128 barcodes and zipping the PNG outputs.
+/// Generates a set of GS1 Code 128 barcodes, saves them as PNG files,
+/// and compresses all images into a single ZIP archive.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates barcodes for a set of GTIN‑14 values, saves them as PNG images,
-    /// and stores them in a ZIP archive.
+    /// Entry point of the example. Creates temporary PNG barcodes and archives them.
     /// </summary>
     static void Main()
     {
-        // Define a collection of sample GTIN‑14 values (14 digits, leading zeros preserved)
-        string[] gtins = new string[]
+        // Create a unique temporary folder for barcode images
+        string tempFolder = Path.Combine(Path.GetTempPath(), "GS1Batch_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
+
+        // Sample GS1 Code 128 data strings
+        List<string> codeTexts = new List<string>
         {
-            "00123456789012",
-            "01234567890123",
-            "12345678901234",
-            "23456789012345",
-            "34567890123456"
+            "(01)12345678901231(21)ITEM001",
+            "(01)98765432109876(21)ITEM002",
+            "(01)55555555555555(21)ITEM003",
+            "(01)11111111111111(21)ITEM004",
+            "(01)22222222222222(21)ITEM005"
         };
 
-        // Target path for the resulting ZIP archive
-        string zipPath = "GS1Code128Barcodes.zip";
+        // Keep track of generated file paths for later zipping
+        List<string> generatedFiles = new List<string>();
 
-        // Create the ZIP archive and add each generated PNG as an entry
-        using (FileStream zipFile = new FileStream(zipPath, FileMode.Create))
-        using (ZipArchive archive = new ZipArchive(zipFile, ZipArchiveMode.Create))
+        // Generate PNG barcodes
+        for (int i = 0; i < codeTexts.Count; i++)
         {
-            int index = 1; // Simple counter for naming entries
-
-            foreach (string gtin in gtins)
+            string filePath = Path.Combine(tempFolder, $"barcode_{i + 1}.png");
+            using (var generator = new BarcodeGenerator(EncodeTypes.GS1Code128, codeTexts[i]))
             {
-                // GS1 Code 128 requires the Application Identifier (01) followed by a 14‑digit GTIN
-                string codeText = $"(01){gtin}";
+                // Set X-dimension to improve readability
+                generator.Parameters.Barcode.XDimension.Pixels = 2f;
+                // Save the barcode as a PNG image
+                generator.Save(filePath, BarCodeImageFormat.Png);
+            }
+            generatedFiles.Add(filePath);
+        }
 
-                // Initialise the barcode generator with the GS1 Code 128 symbology and the prepared text
-                using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.GS1Code128, codeText))
+        // Create ZIP archive containing the generated PNGs
+        string zipPath = Path.Combine(Directory.GetCurrentDirectory(), "GS1Barcodes.zip");
+        using (FileStream zipStream = new FileStream(zipPath, FileMode.Create))
+        using (ZipArchive archive = new ZipArchive(zipStream, ZipArchiveMode.Create))
+        {
+            foreach (string file in generatedFiles)
+            {
+                try
                 {
-                    // Optional visual settings: module size (X‑dimension) and bar height
-                    generator.Parameters.Barcode.XDimension.Point = 2f;
-                    generator.Parameters.Barcode.BarHeight.Point = 50f;
-
-                    // Render the barcode to a memory stream in PNG format
-                    using (MemoryStream ms = new MemoryStream())
-                    {
-                        generator.Save(ms, BarCodeImageFormat.Png);
-                        ms.Position = 0; // Reset stream position before copying
-
-                        // Create a new entry in the ZIP archive for this barcode image
-                        ZipArchiveEntry entry = archive.CreateEntry($"barcode_{index}.png", CompressionLevel.Optimal);
-                        using (Stream entryStream = entry.Open())
-                        {
-                            // Copy the PNG data into the ZIP entry
-                            ms.CopyTo(entryStream);
-                        }
-                    }
+                    // Add each PNG file to the archive using its file name
+                    archive.CreateEntryFromFile(file, Path.GetFileName(file));
                 }
-
-                index++;
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Failed to add {file} to ZIP: {ex.Message}");
+                }
             }
         }
 
-        // Inform the user where the ZIP archive was created
-        Console.WriteLine($"ZIP archive created: {Path.GetFullPath(zipPath)}");
+        Console.WriteLine($"Generated {generatedFiles.Count} barcodes and compressed into: {zipPath}");
+
+        // Cleanup temporary files and folder
+        try
+        {
+            Directory.Delete(tempFolder, true);
+        }
+        catch
+        {
+            // Ignore cleanup errors
+        }
     }
 }

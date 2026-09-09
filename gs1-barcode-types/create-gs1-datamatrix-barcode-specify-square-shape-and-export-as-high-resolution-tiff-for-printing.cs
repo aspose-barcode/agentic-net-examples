@@ -1,14 +1,13 @@
 // Title: Generate GS1 DataMatrix barcode and save as high‑resolution TIFF
-// Description: Demonstrates creating a GS1 DataMatrix barcode with a 14‑digit GTIN, forcing a square shape, and exporting it as a 300 dpi TIFF image suitable for printing.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating how to configure barcode parameters such as resolution, shape, and colors using the BarcodeGenerator class. Typical use cases include producing machine‑readable GS1 DataMatrix symbols for packaging and printing high‑quality images with Aspose.Drawing.Imaging. Developers often need to customize DataMatrix versions, set DPI, and export to formats like TIFF for print workflows.
+// Description: Demonstrates creating a GS1 DataMatrix barcode with a square shape and exporting it as a 300 dpi TIFF image suitable for printing.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to use the BarcodeGenerator class with EncodeTypes.GS1DataMatrix. It shows setting barcode parameters such as resolution and DataMatrix version to produce a square symbol, then saving the result in a high‑resolution TIFF format. Developers working on printing, packaging, or inventory systems often need to generate GS1 DataMatrix barcodes for compliance and readability, and this snippet provides a concise reference.
 // Prompt: Create a GS1 DataMatrix barcode, specify square shape, and export as high‑resolution TIFF for printing.
-// Tags: gs1 datamatrix, barcode generation, tiff, high resolution, aspose.barcodes, aspose.drawing
+// Tags: gs1, datamatrix, barcode, generation, tiff, high-resolution, printing, aspose.barcode
 
 using System;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
 /// Example program that generates a GS1 DataMatrix barcode and saves it as a high‑resolution TIFF image.
@@ -20,30 +19,30 @@ class Program
     /// </summary>
     static void Main()
     {
-        // Define the output file path for the generated TIFF image.
-        string outputPath = "gs1_datamatrix.tif";
+        // Define the output directory and ensure it exists.
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Output");
+        Directory.CreateDirectory(outputDir);
 
-        // GS1 DataMatrix requires a 14‑digit GTIN wrapped in the (01) Application Identifier.
-        string codeText = "(01)00123456789012";
+        // Full path for the resulting TIFF file.
+        string outPath = Path.Combine(outputDir, "GS1DataMatrix.tiff");
 
-        // Initialize the barcode generator for the GS1 DataMatrix symbology with the specified code text.
+        // GS1 DataMatrix payload (example GTIN with AI (01)).
+        string codeText = "(01)12345678901231";
+
+        // Initialize the barcode generator with GS1 DataMatrix symbology.
         using (var generator = new BarcodeGenerator(EncodeTypes.GS1DataMatrix, codeText))
         {
-            // Set a high resolution (e.g., 300 dpi) for print‑quality output.
+            // Set the image resolution to 300 DPI for high‑quality printing.
             generator.Parameters.Resolution = 300f;
 
-            // Force a square shape by selecting a specific DataMatrix version (32 × 32 modules).
+            // Choose a square DataMatrix version (32x32 modules) to enforce a square shape.
             generator.Parameters.Barcode.DataMatrix.Version = DataMatrixVersion.ECC200_32x32;
 
-            // Optional: define foreground (barcode) and background colors.
-            generator.Parameters.Barcode.BarColor = Color.Black;
-            generator.Parameters.BackColor = Color.White;
-
-            // Save the generated barcode as a TIFF image using the specified resolution.
-            generator.Save(outputPath, BarCodeImageFormat.Tiff);
+            // Save the barcode as a TIFF image.
+            generator.Save(outPath, BarCodeImageFormat.Tiff);
         }
 
-        // Inform the user that the barcode image has been saved.
-        Console.WriteLine($"GS1 DataMatrix barcode saved to {outputPath}");
+        // Output the location of the saved barcode image.
+        Console.WriteLine($"Barcode saved to {outPath}");
     }
 }

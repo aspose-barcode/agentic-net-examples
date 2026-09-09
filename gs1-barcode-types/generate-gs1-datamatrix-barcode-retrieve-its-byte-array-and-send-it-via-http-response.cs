@@ -1,61 +1,51 @@
-// Title: Generate GS1 DataMatrix barcode and return as HTTP response
-// Description: Demonstrates how to create a GS1 DataMatrix barcode, extract its PNG byte array, and embed it in an HTTP response.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, showcasing the use of BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes. Typical scenarios include creating machine-readable GS1 symbols for product identification and delivering them via web APIs. Developers often need to generate barcode images on the fly and send them directly to clients without persisting to disk.
+// Title: Generate GS1 DataMatrix barcode and return as PNG byte array
+// Description: Demonstrates creating a GS1 DataMatrix barcode using Aspose.BarCode, extracting the PNG image as a byte array, and preparing it for an HTTP response.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating how to configure barcode parameters, render the symbol to a memory stream, and embed the resulting image in an HttpResponseMessage. Developers working with barcode imaging often need to generate barcodes on the fly and send them over HTTP, using classes such as BarcodeGenerator, BarCodeImageFormat, and HttpResponseMessage.
 // Prompt: Generate a GS1 DataMatrix barcode, retrieve its byte array, and send it via HTTP response.
-// Tags: gs1, datamatrix, barcode, generation, http, response, bytearray, aspose.barcode
+// Tags: gs1datamatrix, barcode generation, png, byte array, http response, aspose.barcode
 
 using System;
 using System.IO;
 using System.Net.Http;
-using System.Net.Http.Headers;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that creates a GS1 DataMatrix barcode, converts it to a PNG byte array,
-/// and packages it into an HTTP response message.
+/// Entry point for the barcode generation example.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
+    /// Generates a GS1 DataMatrix barcode, converts it to a PNG byte array, and wraps it in an HttpResponseMessage.
     /// </summary>
     static void Main()
     {
-        // Define the GS1 DataMatrix payload (AI (01) with a 14‑digit GTIN)
-        string gs1CodeText = "(01)00123456789012";
+        // Define the GS1 DataMatrix content (including Application Identifier 01 for GTIN).
+        string codeText = "(01)12345678901231";
+        byte[] imageBytes;
 
-        // Generate the barcode and capture the PNG image as a byte array
-        byte[] barcodeBytes;
-        using (var generator = new BarcodeGenerator(EncodeTypes.GS1DataMatrix, gs1CodeText))
+        // Initialize the barcode generator with the desired symbology and data.
+        using (var generator = new BarcodeGenerator(EncodeTypes.GS1DataMatrix, codeText))
         {
-            // Optional: increase image resolution for higher quality output
-            generator.Parameters.Resolution = 300;
+            // Adjust the X-dimension (module size) for better readability.
+            generator.Parameters.Barcode.XDimension.Pixels = 8f;
 
+            // Render the barcode to a memory stream in PNG format.
             using (var ms = new MemoryStream())
             {
-                // Save the barcode image to the memory stream in PNG format
                 generator.Save(ms, BarCodeImageFormat.Png);
-                barcodeBytes = ms.ToArray(); // Extract the byte array from the stream
+                // Convert the stream contents to a byte array.
+                imageBytes = ms.ToArray();
             }
         }
 
-        // Build an HTTP response that carries the barcode image
+        // Create an HTTP response message containing the barcode image.
         using (var response = new HttpResponseMessage())
         {
-            // Attach the PNG byte array as the response content
-            response.Content = new ByteArrayContent(barcodeBytes);
-            response.Content.Headers.ContentType = new MediaTypeHeaderValue("image/png");
-            response.StatusCode = System.Net.HttpStatusCode.OK;
-
-            // Output response metadata to the console for demonstration purposes
-            Console.WriteLine("HTTP Response prepared:");
-            Console.WriteLine($"Status Code: {response.StatusCode}");
-            Console.WriteLine($"Content-Type: {response.Content.Headers.ContentType}");
-            Console.WriteLine($"Content Length: {barcodeBytes.Length} bytes");
+            response.Content = new ByteArrayContent(imageBytes);
+            response.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("image/png");
+            Console.WriteLine($"Generated GS1 DataMatrix barcode, byte size: {imageBytes.Length}");
+            // Simulated HTTP response containing the barcode image.
         }
-
-        // End of program
     }
 }

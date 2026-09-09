@@ -1,43 +1,45 @@
-// Title: Generate UPC‑A barcode with DataBar Expanded coupon and custom supplement spacing
-// Description: Demonstrates how to create a UPC‑A barcode that includes a GS1 DataBar Expanded coupon and set the supplement spacing to 50 pixels.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing the use of BarcodeGenerator with EncodeTypes.UpcaGs1DatabarCoupon. It illustrates typical retail scenarios where a UPC‑A barcode is combined with a DataBar Expanded coupon, and developers often need to adjust supplement spacing for proper scanning. The key API classes include BarcodeGenerator, EncodeTypes, and the Barcode parameters hierarchy.
+// Title: Generate UPC‑A DataBar Expanded Coupon barcode with custom supplement spacing
+// Description: Demonstrates how to create a UPC‑A barcode that includes a GS1 DataBar Expanded coupon and set the supplement spacing to 50 pixels. The resulting image is saved as a PNG file.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on UPC‑A and GS1 DataBar symbologies. It showcases the use of BarcodeGenerator, EncodeTypes, and barcode parameter settings such as XDimension and Coupon.SupplementSpace. Developers often need to generate retail barcodes with supplemental data for coupons or promotional offers, and this snippet illustrates the typical API calls required.
 // Prompt: Generate a UPC‑A barcode with a DataBar Expanded coupon and adjust supplement spacing to 50 pixels.
-// Tags: upc-a, databar expanded, supplement spacing, png, barcodegenerator, encode types
+// Tags: upc-a, databar expanded, coupon, supplement spacing, png, aspose.barcode, barcode generation
 
 using System;
-using Aspose.BarCode.Generation;
+using System.IO;
 using Aspose.BarCode;
+using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Example program that generates a UPC‑A barcode containing a GS1 DataBar Expanded coupon
-/// and customizes the supplement spacing before saving it as a PNG image.
+/// Demonstrates generating a UPC‑A barcode with a GS1 DataBar Expanded coupon and custom supplement spacing.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Creates the barcode, configures supplement spacing,
-    /// saves the image, and writes the output path to the console.
+    /// Entry point that creates the barcode and saves it as a PNG file.
     /// </summary>
     static void Main()
     {
-        // Define the output file name for the generated barcode image.
-        string outputPath = "upc_databar_coupon.png";
+        // Determine output directory and ensure it exists
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Output");
+        Directory.CreateDirectory(outputDir);
 
-        // UPC‑A data (12 digits) followed by DataBar Expanded coupon data enclosed in parentheses.
-        // The format complies with GS1 specifications for combined barcode types.
-        string codeText = "514141100906(8110)106141416543213500110000310123196000";
+        // Build full output file path
+        string outputPath = Path.Combine(outputDir, "UpcA_DatabarCoupon.png");
 
-        // Initialize the barcode generator for the UPC‑A with GS1 DataBar Expanded coupon symbology.
-        using (var generator = new BarcodeGenerator(EncodeTypes.UpcaGs1DatabarCoupon, codeText))
+        // Initialize barcode generator with specific symbology and data
+        using (var generator = new BarcodeGenerator(EncodeTypes.UpcaGs1DatabarCoupon, "123456789012(8110)ASPOSE"))
         {
-            // Adjust the spacing between the main barcode and the supplement (coupon) to 50 pixels.
-            generator.Parameters.Barcode.Coupon.SupplementSpace.Point = 50f;
+            // Set barcode module width (X-dimension) in pixels
+            generator.Parameters.Barcode.XDimension.Pixels = 2f;
 
-            // Save the generated barcode as a PNG file to the specified path.
-            generator.Save(outputPath);
+            // Adjust supplement spacing to 50 pixels
+            generator.Parameters.Barcode.Coupon.SupplementSpace.Pixels = 50f;
+
+            // Save barcode image as PNG
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user where the barcode image has been saved.
-        Console.WriteLine($"Barcode image saved to: {outputPath}");
+        // Inform user of saved file location
+        Console.WriteLine($"Barcode saved to {outputPath}");
     }
 }

@@ -1,66 +1,69 @@
-// Title: Batch conversion of AI strings to GS1 DataMatrix PNG files using parallel processing
-// Description: Demonstrates how to generate GS1 DataMatrix barcodes from a list of Application Identifier (AI) strings and save them as PNG images in parallel.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating the use of the BarcodeGenerator class with EncodeTypes.GS1DataMatrix. It shows typical scenarios such as bulk barcode creation for inventory or logistics, where developers need to efficiently produce multiple barcode images with proper file naming. The snippet highlights parallel processing with Parallel.ForEach to speed up large‑scale barcode generation tasks.
+// Title: Parallel batch generation of GS1 DataMatrix barcodes to PNG files
+// Description: This example creates multiple GS1 DataMatrix barcodes from a collection of AI strings and saves each as a PNG image.
+// Category-Description: The sample belongs to the Aspose.BarCode barcode generation category, illustrating how to use BarcodeGenerator with EncodeTypes.GS1DataMatrix, configure parameters such as XDimension, and employ parallel processing for high‑throughput scenarios like inventory labeling or product tracking. Developers often need to generate large numbers of barcodes quickly and store them in common image formats.
 // Prompt: Batch convert a list of AI strings to GS1 DataMatrix PNG files using parallel processing.
-// Tags: gs1datamatrix, barcode generation, parallel processing, png output, aspose.barcode, encode types, bulk conversion
+// Tags: gs1, datamatrix, barcode, generation, parallel, png, aspose.barcode
 
 using System;
-using System.Collections.Generic;
 using System.IO;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Provides an entry point for generating GS1 DataMatrix barcodes from a collection of AI strings
-/// and saving them as PNG files using parallel processing.
+/// Demonstrates parallel batch creation of GS1 DataMatrix barcodes and saving them as PNG files.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Main method that orchestrates the batch barcode generation.
+    /// Entry point. Generates barcodes from predefined AI strings using parallel processing.
     /// </summary>
     static void Main()
     {
-        // Define a sample list of GS1 AI strings (each must contain AI (01) with 14 digits)
-        List<string> aiStrings = new List<string>
+        // Define a list of GS1 DataMatrix code texts (AI (01) must be 14 digits)
+        List<string> codeTexts = new List<string>
         {
-            "(01)00123456789012", // GTIN-12 padded to 14 digits
-            "(01)01234567890123", // GTIN-13 padded to 14 digits
-            "(01)12345678901231", // GTIN-14 with valid check digit
-            "(01)00012345678905", // GTIN-12 padded
-            "(01)00001234567890"  // GTIN-13 padded
+            "(01)12345678901231(21)ABC123",
+            "(01)00123456789012(21)XYZ789",
+            "(01)00012345678901(21)ITEM001",
+            "(01)98765432109876(21)PROD456",
+            "(01)55555555555555(21)CODE999"
         };
 
-        // Prepare the output directory for generated PNG files
-        string outputFolder = Path.Combine(Directory.GetCurrentDirectory(), "GS1DataMatrixOutput");
-        if (!Directory.Exists(outputFolder))
-        {
-            Directory.CreateDirectory(outputFolder);
-        }
+        // Create a unique temporary output folder for the generated PNG files
+        string outputFolder = Path.Combine(Path.GetTempPath(), "GS1Batch_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputFolder);
+        Console.WriteLine($"Output folder: {outputFolder}");
 
-        // Perform barcode generation in parallel to improve performance
-        Parallel.ForEach(aiStrings, (codeText) =>
+        // Process each code text in parallel to maximize throughput
+        Parallel.For(0, codeTexts.Count, i =>
         {
-            // Create a safe file name by stripping characters illegal in file names
-            string safeFileName = codeText.Replace("(", "").Replace(")", "").Replace(" ", "") + ".png";
-            string outputPath = Path.Combine(outputFolder, safeFileName);
+            string text = codeTexts[i];
+            string filePath = Path.Combine(outputFolder, $"barcode_{i + 1}.png");
 
-            // Initialize the barcode generator for GS1 DataMatrix with the current AI string
-            using (var generator = new BarcodeGenerator(EncodeTypes.GS1DataMatrix, codeText))
+            try
             {
-                // Optional: adjust module size if required
-                // generator.Parameters.Barcode.XDimension.Point = 2f;
+                // Initialize the barcode generator for GS1 DataMatrix with the current text
+                using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.GS1DataMatrix, text))
+                {
+                    // Set the X-dimension (module size) to 2 pixels for better readability
+                    generator.Parameters.Barcode.XDimension.Pixels = 2f;
 
-                // Save the generated barcode as a PNG image
-                generator.Save(outputPath, BarCodeImageFormat.Png);
+                    // Save the generated barcode as a PNG image
+                    generator.Save(filePath, BarCodeImageFormat.Png);
+                }
+
+                Console.WriteLine($"Generated: {filePath}");
             }
-
-            // Log the successful generation of the file
-            Console.WriteLine($"Generated {outputPath}");
+            catch (Exception ex)
+            {
+                // Log any errors that occur during barcode generation
+                Console.WriteLine($"Failed to generate barcode for index {i}: {ex.Message}");
+            }
         });
 
-        // Indicate that the batch process has finished
-        Console.WriteLine("Batch conversion completed.");
+        Console.WriteLine("Batch processing completed.");
     }
 }

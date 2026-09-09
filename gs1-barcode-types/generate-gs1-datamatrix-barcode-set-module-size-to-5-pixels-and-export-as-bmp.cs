@@ -1,35 +1,41 @@
-// Title: Generate GS1 DataMatrix Barcode and Export as BMP
-// Description: Demonstrates creating a GS1 DataMatrix barcode with a specific module size and saving it as a BMP image.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use the BarcodeGenerator class with EncodeTypes.GS1DataMatrix. It covers setting barcode parameters such as XDimension (module size) and exporting the result to a bitmap file. Developers working with product identification, inventory systems, or any scenario requiring GS1 DataMatrix symbols will find this pattern useful for creating compliant barcodes programmatically.
+// Title: Generate GS1 DataMatrix barcode with custom module size and BMP output
+// Description: Demonstrates creating a GS1 DataMatrix barcode, setting the module (X‑dimension) size to 5 pixels, and saving the image as a BMP file.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating how to use the BarcodeGenerator class with EncodeTypes.GS1DataMatrix. It shows configuring barcode parameters such as XDimension and exporting the result in BMP format, a common requirement for applications that need high‑resolution, device‑independent barcode images.
 // Prompt: Generate a GS1 DataMatrix barcode, set module size to 5 pixels, and export as BMP.
-// Tags: gs1, datamatrix, barcode, generation, module-size, bmp, aspose.barcode, aspose.barcode.generation
+// Tags: gs1datamatrix, barcode, generation, xdimension, bmp, aspose.barcode
 
 using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Example program that creates a GS1 DataMatrix barcode,
-/// configures its module size, and saves it as a BMP image.
+/// Demonstrates generating a GS1 DataMatrix barcode, configuring its module size,
+/// and saving it as a BMP image using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates the barcode and writes it to disk.
+    /// Entry point of the example. Creates the barcode and writes the output file.
     /// </summary>
-    static void Main()
+    static void Main(string[] args)
     {
-        // Define the GS1 DataMatrix payload: Application Identifier (01) + 14‑digit GTIN
-        string codeText = "(01)00123456789012";
+        // Define the barcode content (GS1 Application Identifier 01 with GTIN)
+        string codeText = "(01)12345678901231";
 
-        // Initialize the barcode generator for GS1 DataMatrix with the specified text
+        // Set the output file path
+        string outputPath = "gs1_datamatrix.bmp";
+
+        // Initialize the generator with GS1 DataMatrix symbology and the specified text
         using (var generator = new BarcodeGenerator(EncodeTypes.GS1DataMatrix, codeText))
         {
-            // Configure the module (X‑dimension) size to 5 pixels
+            // Set the module size (X dimension) to 5 pixels
             generator.Parameters.Barcode.XDimension.Pixels = 5f;
 
-            // Save the generated barcode as a BMP file
-            generator.Save("gs1_datamatrix.bmp");
+            // Save the generated barcode as a BMP image
+            generator.Save(outputPath, BarCodeImageFormat.Bmp);
         }
+
+        // Inform the user that the barcode has been saved
+        Console.WriteLine($"Barcode saved to {outputPath}");
     }
 }

@@ -1,96 +1,69 @@
-// Title: Batch generate GS1 Code 128 barcodes and save as PNG files
-// Description: Demonstrates how to generate multiple GS1 Code 128 barcodes from a list (simulating a database) and save each image to a specified folder, such as a network share.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category. It shows how to use the BarcodeGenerator class with EncodeTypes.GS1Code128, configure basic appearance settings, and output PNG images. Developers often need to batch‑create barcodes from data sources like databases for inventory, shipping, or retail applications, and this pattern illustrates the typical workflow.
+// Title: Batch Generation of GS1 Code 128 Barcodes to Network Share
+// Description: Demonstrates how to generate multiple GS1 Code 128 barcodes from a collection of data and save each image as PNG to a network share (simulated with a temporary folder).
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing the use of BarcodeGenerator with EncodeTypes.GS1Code128. Typical scenarios include creating product identification barcodes from database records and exporting them as image files for printing or distribution. Developers often need to batch‑process records, configure barcode parameters, and store the resulting images on shared storage.
 // Prompt: Batch generate GS1 Code 128 barcodes from a database table, saving each image to a network share.
-// Tags: gs1,code128,barcode,generation,png,aspose.barcode,batch,database,network share
+// Tags: gs1code128, barcode, batch-generation, image-output, png, aspose.barcode, aspose.drawing
 
 using System;
-using System.Collections.Generic;
 using System.IO;
+using System.Collections.Generic;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing;
 
 /// <summary>
-/// Generates GS1 Code 128 barcodes in batch and saves them as PNG files to a target folder.
+/// Example program that batch‑generates GS1 Code 128 barcodes from a set of records
+/// and saves each barcode image to a network‑share‑like folder.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Creates the output directory, validates each code,
-    /// generates the barcode image, and writes it to disk.
+    /// Entry point of the example. Generates barcodes for simulated database records
+    /// and writes PNG files to a temporary directory that mimics a network share.
     /// </summary>
     static void Main()
     {
-        // Define the output folder (replace with actual network share UNC path in production)
-        string outputFolder = @"C:\Barcodes\Output";
+        // Create a unique output folder (simulating a network share location).
+        string outputFolder = Path.Combine(Path.GetTempPath(), "BatchGs1Code128_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputFolder);
+        Console.WriteLine($"Saving barcodes to {outputFolder}");
 
-        // Ensure the output directory exists
-        if (!Directory.Exists(outputFolder))
+        // Simulated database records: each tuple contains an Id and the GS1 Code128 text.
+        List<(int Id, string CodeText)> records = new List<(int, string)>
         {
-            Directory.CreateDirectory(outputFolder);
-        }
-
-        // -----------------------------------------------------------------
-        // In a real scenario, replace the following hard‑coded list with a
-        // database query (e.g., using System.Data.SqlClient) that retrieves
-        // the GS1 Code 128 values to encode.
-        // -----------------------------------------------------------------
-        List<string> gs1Code128Values = new List<string>
-        {
-            // AI (01) – GTIN (14 digits). Example GTIN‑14: 00123456789012
-            "(01)00123456789012",
-            "(01)00123456789013",
-            "(01)00123456789014",
-            "(01)00123456789015",
-            "(01)00123456789016"
+            (1, "(01)12345678901231(21)ABC123"),
+            (2, "(01)98765432109876(21)XYZ789"),
+            (3, "(01)11111111111111(21)ITEM001"),
+            (4, "(01)22222222222222(21)ITEM002"),
+            (5, "(01)33333333333333(21)ITEM003")
         };
-        // -----------------------------------------------------------------
 
-        int index = 1;
-        foreach (string codeText in gs1Code128Values)
+        // Iterate over each record, generate a barcode, and save it as a PNG file.
+        foreach (var rec in records)
         {
-            // Validate that the code text contains a valid (01) AI with 14 digits
-            if (!IsValidGs1Code128(codeText))
+            // Build the file name and full path for the current barcode image.
+            string fileName = $"Barcode_{rec.Id}.png";
+            string filePath = Path.Combine(outputFolder, fileName);
+
+            // Use Aspose.BarCode's BarcodeGenerator to create a GS1 Code 128 barcode.
+            using (var generator = new BarcodeGenerator(EncodeTypes.GS1Code128, rec.CodeText))
             {
-                Console.WriteLine($"Skipping invalid code text: {codeText}");
-                continue;
+                // Set the X‑dimension (module width) to 2 pixels for better readability.
+                generator.Parameters.Barcode.XDimension.Pixels = 2f;
+
+                // Save the generated barcode image to the specified path in PNG format.
+                generator.Save(filePath, BarCodeImageFormat.Png);
             }
 
-            // Build the output file name (e.g., Barcode_0001.png)
-            string fileName = $"Barcode_{index:D4}.png";
-            string outputPath = Path.Combine(outputFolder, fileName);
-
-            // Generate and save the barcode
-            using (var generator = new BarcodeGenerator(EncodeTypes.GS1Code128, codeText))
-            {
-                // Optional: configure appearance
-                generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-                generator.Parameters.BackColor = Aspose.Drawing.Color.White;
-                generator.Parameters.Barcode.XDimension.Point = 2f; // module size
-                generator.Parameters.Barcode.BarHeight.Point = 50f; // bar height
-
-                // Save as PNG
-                generator.Save(outputPath);
-            }
-
-            Console.WriteLine($"Saved barcode {index} to {outputPath}");
-            index++;
+            Console.WriteLine($"Generated {filePath}");
         }
 
-        Console.WriteLine("Barcode generation completed.");
-    }
+        // Placeholder for real database implementation:
+        // using (var connection = new SqlConnection(connectionString))
+        // {
+        //     // Retrieve records and generate barcodes as shown above.
+        // }
 
-    // Simple validation for GS1 Code 128 with AI (01) – ensures 14 digits after the AI
-    static bool IsValidGs1Code128(string codeText)
-    {
-        if (string.IsNullOrEmpty(codeText))
-            return false;
-
-        const string prefix = "(01)";
-        if (!codeText.StartsWith(prefix))
-            return false;
-
-        string digits = codeText.Substring(prefix.Length);
-        return digits.Length == 14 && long.TryParse(digits, out _);
+        Console.WriteLine("Batch generation completed.");
     }
 }

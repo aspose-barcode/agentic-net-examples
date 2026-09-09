@@ -1,81 +1,68 @@
-// Title: Generate UPC‑A DataBar Coupon Barcode and Merge with a Logo
-// Description: Demonstrates how to create a UPC‑A barcode with a GS1 DataBar coupon payload using Aspose.BarCode, then combine it with a simple logo image using Aspose.Drawing graphics.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating the use of BarcodeGenerator with EncodeTypes.UpcaGs1DatabarCoupon, customizing visual parameters, and compositing the result with System.Drawing (Aspose.Drawing) graphics. Typical use cases include creating promotional barcodes that embed coupon data and branding them with a company logo. Developers often need to adjust dimensions, colors, and merge multiple images for printable assets.
+// Title: Generate UPC-A DataBar Coupon barcode with embedded logo
+// Description: Demonstrates creating a UPC‑A barcode with a GS1 DataBar coupon symbology and overlaying a custom logo using System.Drawing.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on combining generated barcodes with graphics. It showcases the BarcodeGenerator class for UPC‑A DataBar coupons, the use of Aspose.Drawing for image manipulation, and typical scenarios where developers need to add branding or logos to barcodes before saving them as PNG files. Such techniques are common in retail and marketing applications where visual identity must accompany machine‑readable codes.
 // Prompt: Generate a UPC‑A barcode with a DataBar coupon, then combine it with a logo using System.Drawing graphics.
-// Tags: barcode, upc-a, databar, coupon, logo, aspose.barcode, aspose.drawing, image composition, png, c#
+// Tags: upc-a, databar, coupon, barcode generation, logo overlay, aspose.barcode, aspose.drawing, png, csharp
 
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates a UPC‑A GS1 DataBar coupon barcode,
-/// creates a placeholder logo, and merges both images side by side.
+/// Example program that creates a UPC‑A DataBar coupon barcode and adds a logo overlay.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates the barcode, builds a logo, combines them,
-    /// and saves the result as a PNG file.
+    /// Entry point. Generates the barcode, draws a simple logo, merges them, and saves the result as PNG.
     /// </summary>
     static void Main()
     {
-        // UPC‑A with DataBar coupon text (example from Aspose documentation)
-        const string barcodeText = "514141100906(8110)106141416543213500110000310123196000";
+        // Prepare output directory and file path
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "output");
+        Directory.CreateDirectory(outputDir);
+        string outputPath = Path.Combine(outputDir, "UpcA_With_Logo.png");
 
-        // Initialize the barcode generator for the specific symbology
-        using (var generator = new BarcodeGenerator(EncodeTypes.UpcaGs1DatabarCoupon, barcodeText))
+        // Initialize barcode generator for UPC‑A GS1 DataBar coupon with sample data
+        using (var generator = new BarcodeGenerator(EncodeTypes.UpcaGs1DatabarCoupon, "123456789012(8110)ASPOSE"))
         {
-            // Optional visual tweaks
-            generator.Parameters.Barcode.XDimension.Point = 2f;          // Module size (width of the smallest bar)
-            generator.Parameters.Barcode.BarHeight.Point = 100f;       // Height of the linear part of the barcode
-            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-            generator.Parameters.BackColor = Aspose.Drawing.Color.White;
+            // Configure barcode appearance
+            generator.Parameters.Barcode.XDimension.Pixels = 2;                 // Width of the smallest bar
+            generator.Parameters.Barcode.Coupon.SupplementSpace.Pixels = 30;   // Space for the supplemental data
 
-            // Generate the barcode image as a bitmap
-            using (Bitmap barcodeBitmap = generator.GenerateBarCodeImage())
+            // Generate the barcode image
+            using (var barcodeImage = generator.GenerateBarCodeImage())
             {
-                // Create a simple placeholder logo (blue square with a white inner rectangle)
-                const int logoSize = 100;
-                using (Bitmap logoBitmap = new Bitmap(logoSize, logoSize))
+                // Create a simple logo bitmap (100x100) with white background and black text
+                using (var logoImage = new Bitmap(100, 100))
                 {
-                    using (Graphics gLogo = Graphics.FromImage(logoBitmap))
+                    using (var gLogo = Graphics.FromImage(logoImage))
                     {
-                        // Fill background with white
-                        gLogo.Clear(Aspose.Drawing.Color.White);
-                        // Draw a blue border rectangle
-                        using (Pen pen = new Pen(Aspose.Drawing.Color.Blue, 3f))
+                        gLogo.Clear(Color.White);
+                        using (var font = new Font("Helvetica", 20f))
+                        using (var brush = new SolidBrush(Color.Black))
                         {
-                            gLogo.DrawRectangle(pen, 5, 5, logoSize - 10, logoSize - 10);
+                            gLogo.DrawString("Logo", font, brush, new PointF(10, 40));
                         }
                     }
 
-                    // Combine barcode and logo side by side
-                    int combinedWidth = barcodeBitmap.Width + logoBitmap.Width;
-                    int combinedHeight = Math.Max(barcodeBitmap.Height, logoBitmap.Height);
-                    using (Bitmap combinedBitmap = new Bitmap(combinedWidth, combinedHeight))
+                    // Overlay the logo onto the barcode image at the bottom‑right corner
+                    using (var g = Graphics.FromImage(barcodeImage))
                     {
-                        using (Graphics g = Graphics.FromImage(combinedBitmap))
-                        {
-                            // Fill the combined image background with white
-                            g.Clear(Aspose.Drawing.Color.White);
-                            // Draw barcode on the left
-                            g.DrawImage(barcodeBitmap, 0, 0);
-                            // Draw logo on the right, vertically centered
-                            int logoY = (combinedHeight - logoBitmap.Height) / 2;
-                            g.DrawImage(logoBitmap, barcodeBitmap.Width, logoY);
-                        }
-
-                        // Save the final combined image as PNG
-                        const string outputPath = "combined.png";
-                        combinedBitmap.Save(outputPath, ImageFormat.Png);
-                        Console.WriteLine($"Combined image saved to: {Path.GetFullPath(outputPath)}");
+                        int x = barcodeImage.Width - logoImage.Width - 10; // 10‑pixel margin from right edge
+                        int y = barcodeImage.Height - logoImage.Height - 10; // 10‑pixel margin from bottom edge
+                        g.DrawImage(logoImage, x, y, logoImage.Width, logoImage.Height);
                     }
+
+                    // Save the combined image as PNG
+                    barcodeImage.Save(outputPath, ImageFormat.Png);
                 }
             }
         }
+
+        // Inform the user where the file was saved
+        Console.WriteLine($"Barcode with logo saved to: {outputPath}");
     }
 }
