@@ -1,110 +1,88 @@
-// Title: Barcode decoding speed benchmark using ProcessorSettings.UseAllCores
-// Description: Demonstrates how to measure the decoding performance of Code128 barcodes when Aspose.BarCode's ProcessorSettings.UseAllCores is enabled versus disabled.
-// Category-Description: This example belongs to the Aspose.BarCode performance tuning category, illustrating the use of BarCodeReader.ProcessorSettings to control multi‑core processing. Developers often need to benchmark decoding speed for different core utilization scenarios, especially when optimizing server‑side barcode processing pipelines. The sample shows image generation, configuration of UseAllCores and UseOnlyThisCoresCount, and timing of the decoding loop.
+// Title: Benchmark decoding speed with ProcessorSettings.UseAllCores true vs false
+// Description: Demonstrates measuring barcode decoding performance when enabling multi‑core processing versus single‑core mode using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode decoding performance category. It showcases the use of BarCodeReader, ProcessorSettings, and common benchmarking techniques to compare single‑core and multi‑core decoding. Developers often need to evaluate throughput for bulk barcode processing, and this snippet provides a reusable pattern for such assessments.
 // Prompt: Write a benchmark comparing decoding speed when ProcessorSettings.UseAllCores is true versus false.
-// Tags: barcode, decoding, benchmark, processorsettings, useallcores, code128, aspose.barcode
+// Tags: barcode, decoding, performance, benchmark, processorsettings, multithreading, aspose.barcode
 
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
-using Aspose.BarCode;
+using System.Diagnostics;
+using System.Collections.Generic;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Provides a simple benchmark that compares barcode decoding speed with
-/// Aspose.BarCode's ProcessorSettings.UseAllCores enabled and disabled.
+/// Provides a simple benchmark that compares barcode decoding speed when
+/// <see cref="BarCodeReader.ProcessorSettings.UseAllCores"/> is enabled versus disabled.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates sample Code128 barcodes, runs the benchmark,
-    /// and outputs the elapsed time for each configuration.
+    /// Entry point of the benchmark application.
+    /// Generates sample barcode images, runs two decoding benchmarks, and cleans up temporary files.
     /// </summary>
-    static void Main()
+    /// <param name="args">Command‑line arguments (not used).</param>
+    static void Main(string[] args)
     {
-        // Prepare a temporary folder for sample barcode images
-        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeBenchmark");
-        if (Directory.Exists(tempFolder))
-            Directory.Delete(tempFolder, true);
-        Directory.CreateDirectory(tempFolder);
+        // --------------------------------------------------------------------
+        // Create a unique temporary folder for generated barcode images.
+        // --------------------------------------------------------------------
+        string tempDir = Path.Combine(Path.GetTempPath(), "Benchmark_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
 
-        // Generate sample barcode images
+        // --------------------------------------------------------------------
+        // Generate a set of sample barcode images (Code128) to be used in the benchmark.
+        // --------------------------------------------------------------------
+        List<string> files = new List<string>();
         int sampleCount = 5;
-        List<string> imagePaths = new List<string>();
         for (int i = 0; i < sampleCount; i++)
         {
-            string text = $"Sample{i + 1}";
-            string filePath = Path.Combine(tempFolder, $"barcode_{i}.png");
-            GenerateBarcodeImage(text, filePath);
-            imagePaths.Add(filePath);
-        }
-
-        // Benchmark with UseAllCores = true
-        long timeAllCores = BenchmarkDecoding(imagePaths, useAllCores: true);
-        Console.WriteLine($"Decoding with UseAllCores = true took {timeAllCores} ms");
-
-        // Benchmark with UseAllCores = false (use half of the cores)
-        BarCodeReader.ProcessorSettings.UseAllCores = false;
-        BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount = Math.Max(1, Environment.ProcessorCount / 2);
-        long timePartialCores = BenchmarkDecoding(imagePaths, useAllCores: false);
-        Console.WriteLine($"Decoding with UseAllCores = false took {timePartialCores} ms");
-
-        // Clean up temporary files
-        Directory.Delete(tempFolder, true);
-    }
-
-    // Generates a Code128 barcode image and saves it to the specified path
-    static void GenerateBarcodeImage(string codeText, string filePath)
-    {
-        // Resolve EncodeTypes.Code128 via reflection (EncodeTypes.TryParse does not exist)
-        var field = typeof(EncodeTypes).GetField("Code128");
-        if (field == null)
-            throw new ArgumentException("Encode type 'Code128' not found.");
-
-        BaseEncodeType encodeType = (BaseEncodeType)field.GetValue(null);
-
-        using (var generator = new BarcodeGenerator(encodeType, codeText))
-        {
-            // Save as PNG
-            generator.Save(filePath, BarCodeImageFormat.Png);
-        }
-    }
-
-    // Measures the time required to decode all images with the specified ProcessorSettings
-    static long BenchmarkDecoding(List<string> imagePaths, bool useAllCores)
-    {
-        // Configure ProcessorSettings
-        BarCodeReader.ProcessorSettings.UseAllCores = useAllCores;
-        if (!useAllCores)
-        {
-            // Example: limit to half of the available cores
-            BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount = Math.Max(1, Environment.ProcessorCount / 2);
-        }
-
-        Stopwatch sw = Stopwatch.StartNew();
-
-        foreach (string path in imagePaths)
-        {
-            if (!File.Exists(path))
-                continue; // Skip missing files gracefully
-
-            using (var reader = new BarCodeReader(path, DecodeType.Code128))
+            string text = $"Sample{i}";
+            string filePath = Path.Combine(tempDir, $"barcode_{i}.png");
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, text))
             {
-                // Perform the decoding; results are not used further
-                var results = reader.ReadBarCodes();
+                generator.Save(filePath, BarCodeImageFormat.Png);
+            }
+            files.Add(filePath);
+        }
 
-                // Iterate results to ensure full processing and avoid compiler optimizations
-                foreach (var result in results)
+        // --------------------------------------------------------------------
+        // Local helper that runs the decoding benchmark for a given core usage setting.
+        // --------------------------------------------------------------------
+        void RunBenchmark(bool useAllCores, string label)
+        {
+            // Configure the processor to use either all cores or a single core.
+            BarCodeReader.ProcessorSettings.UseAllCores = useAllCores;
+
+            Stopwatch sw = Stopwatch.StartNew();
+
+            // Decode each generated barcode image.
+            foreach (var file in files)
+            {
+                using (var reader = new BarCodeReader(file, DecodeType.AllSupportedTypes))
                 {
-                    var _ = result.CodeText; // No-op access
+                    // The results are intentionally ignored; we only measure execution time.
+                    var results = reader.ReadBarCodes();
                 }
             }
+
+            sw.Stop();
+            Console.WriteLine($"{label}: {sw.ElapsedMilliseconds} ms");
         }
 
-        sw.Stop();
-        return sw.ElapsedMilliseconds;
+        // --------------------------------------------------------------------
+        // Execute benchmarks: first single‑core, then multi‑core.
+        // --------------------------------------------------------------------
+        RunBenchmark(false, "Single-core (UseAllCores = false)");
+        RunBenchmark(true, "All-cores (UseAllCores = true)");
+
+        // --------------------------------------------------------------------
+        // Clean up generated files and temporary directory.
+        // --------------------------------------------------------------------
+        foreach (var f in files)
+        {
+            try { File.Delete(f); } catch { }
+        }
+        try { Directory.Delete(tempDir, true); } catch { }
     }
 }

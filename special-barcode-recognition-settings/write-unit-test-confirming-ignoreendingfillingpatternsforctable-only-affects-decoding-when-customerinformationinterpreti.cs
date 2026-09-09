@@ -1,79 +1,107 @@
-// Title: Demonstrate effect of IgnoreEndingFillingPatternsForCTable on Australia Post barcode decoding
-// Description: Shows how the IgnoreEndingFillingPatternsForCTable flag influences decoding of Australia Post barcodes when using CTable interpreting type.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category, focusing on Australia Post symbology. It illustrates using BarcodeGenerator, BarCodeReader, and related settings such as CustomerInformationInterpretingType and IgnoreEndingFillingPatternsForCTable. Developers often need to control how trailing filler patterns are handled during decoding, especially when working with CTable customer information.
+// Title: Australia Post barcode decoding with CTable filler handling
+// Description: Demonstrates how the IgnoreEndingFillingPatternsForCTable setting influences decoding of Australia Post barcodes when using the CTable customer information interpreting type.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category, focusing on Australia Post symbology. It showcases the use of BarcodeGenerator, BarCodeReader, and related settings such as CustomerInformationInterpretingType and IgnoreEndingFillingPatternsForCTable. Developers often need to control filler pattern handling when decoding CTable encoded barcodes, making this pattern useful for testing and validation scenarios.
 // Prompt: Write a unit test confirming IgnoreEndingFillingPatternsForCTable only affects decoding when CustomerInformationInterpretingType is CTable.
-// Tags: australia post, barcode generation, barcode recognition, ctable, ntable, ignoreendingfillingpatterns, unit test, aspnet, aspose.barcode
+// Tags: australia post, ctable, ntable, ignoreendingfillingpatterns, barcode generation, barcode recognition, aspose.barcode, unit test example
 
 using System;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates the impact of the IgnoreEndingFillingPatternsForCTable flag on decoding
-/// Australia Post barcodes with different CustomerInformationInterpretingType settings.
+/// Demonstrates generation and decoding of an Australia Post barcode to verify the effect of
+/// <c>IgnoreEndingFillingPatternsForCTable</c> when using <c>CTable</c> versus <c>NTable</c> interpreting types.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that generates an Australia Post barcode, decodes it under various
-    /// configurations, and prints verification results.
+    /// Entry point that creates a temporary barcode image, decodes it under different settings,
+    /// and outputs the comparison results.
     /// </summary>
     static void Main()
     {
-        // Sample code text for an Australia Post barcode
-        const string codeText = "5912345678AB";
+        // Create a unique temporary directory for the test files
+        string tempDir = Path.Combine(Path.GetTempPath(), "AustraliaPostTest_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        string barcodePath = Path.Combine(tempDir, "AustraliaPostCTable.png");
 
-        // Generate a barcode image using CTable interpreting type
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, codeText))
+        // Generate a barcode encoded with CTable and a filler that would be read as 'z' if not ignored
+        using (BarcodeGenerator gen = new BarcodeGenerator(EncodeTypes.AustraliaPost, "6201234567END"))
         {
-            generator.Parameters.Barcode.AustralianPost.EncodingTable = CustomerInformationInterpretingType.CTable;
+            gen.Parameters.Barcode.XDimension.Pixels = 4;
+            gen.Parameters.Barcode.BarHeight.Pixels = 50;
+            gen.Parameters.Barcode.AustralianPost.EncodingTable = CustomerInformationInterpretingType.CTable;
+            gen.Save(barcodePath, BarCodeImageFormat.Png);
+        }
 
-            using (Bitmap barcodeImage = generator.GenerateBarCodeImage())
-            {
-                // Decode with CTable interpreting type, flag set to false
-                string resultCFalse = Decode(barcodeImage, CustomerInformationInterpretingType.CTable, false);
-                // Decode with CTable interpreting type, flag set to true
-                string resultCTrue = Decode(barcodeImage, CustomerInformationInterpretingType.CTable, true);
+        // Verify that the barcode image was successfully created
+        if (!File.Exists(barcodePath))
+        {
+            Console.WriteLine("FAILED: Barcode image was not created.");
+            return;
+        }
 
-                // Decode with NTable interpreting type, flag set to false
-                string resultNFalse = Decode(barcodeImage, CustomerInformationInterpretingType.NTable, false);
-                // Decode with NTable interpreting type, flag set to true
-                string resultNTrue = Decode(barcodeImage, CustomerInformationInterpretingType.NTable, true);
+        // Decode the barcode under four different configurations
+        // 1. CTable interpreting, ignore filler = false
+        string resultCFalse = ReadBarcode(barcodePath, CustomerInformationInterpretingType.CTable, false);
+        // 2. CTable interpreting, ignore filler = true
+        string resultCTrue = ReadBarcode(barcodePath, CustomerInformationInterpretingType.CTable, true);
+        // 3. NTable interpreting, ignore filler = false
+        string resultNFalse = ReadBarcode(barcodePath, CustomerInformationInterpretingType.NTable, false);
+        // 4. NTable interpreting, ignore filler = true
+        string resultNTrue = ReadBarcode(barcodePath, CustomerInformationInterpretingType.NTable, true);
 
-                // Verify that the flag influences decoding only when interpreting type is CTable
-                bool cTableEffect = resultCFalse != resultCTrue; // should differ
-                bool nTableEffect = resultNFalse == resultNTrue; // should be the same
+        // Determine whether the ignore setting had an effect for each interpreting type
+        bool cTableEffect = !string.Equals(resultCFalse, resultCTrue, StringComparison.Ordinal);
+        bool nTableEffect = !string.Equals(resultNFalse, resultNTrue, StringComparison.Ordinal);
 
-                Console.WriteLine($"CTable flag effect (should differ): {(cTableEffect ? "PASS" : "FAIL")}");
-                Console.WriteLine($"NTable flag effect (should be same): {(nTableEffect ? "PASS" : "FAIL")}");
+        // Output the verification results
+        Console.WriteLine($"CTable effect (should be true): {cTableEffect}");
+        Console.WriteLine($"NTable effect (should be false): {nTableEffect}");
 
-                // Optional: output decoded texts for manual inspection
-                Console.WriteLine($"CTable false:  {resultCFalse ?? "null"}");
-                Console.WriteLine($"CTable true:   {resultCTrue ?? "null"}");
-                Console.WriteLine($"NTable false:  {resultNFalse ?? "null"}");
-                Console.WriteLine($"NTable true:   {resultNTrue ?? "null"}");
-            }
+        Console.WriteLine($"Result CTable IgnoreEnding=false : {resultCFalse}");
+        Console.WriteLine($"Result CTable IgnoreEnding=true  : {resultCTrue}");
+        Console.WriteLine($"Result NTable IgnoreEnding=false : {resultNFalse}");
+        Console.WriteLine($"Result NTable IgnoreEnding=true  : {resultNTrue}");
+
+        // Clean up temporary files and directory
+        try
+        {
+            File.Delete(barcodePath);
+            Directory.Delete(tempDir);
+        }
+        catch
+        {
+            // Ignore cleanup errors
         }
     }
 
-    // Helper method to decode a barcode image with specified settings
-    static string Decode(Bitmap image, CustomerInformationInterpretingType interpretingType, bool ignoreEnding)
+    /// <summary>
+    /// Reads an Australia Post barcode from an image file using the specified interpreting type
+    /// and filler‑ignoring setting.
+    /// </summary>
+    /// <param name="imagePath">Path to the barcode image.</param>
+    /// <param name="interpretingType">The customer information interpreting type (CTable or NTable).</param>
+    /// <param name="ignoreEnding">Whether to ignore ending filling patterns for CTable.</param>
+    /// <returns>The decoded text, or an empty string if decoding fails.</returns>
+    static string ReadBarcode(string imagePath, CustomerInformationInterpretingType interpretingType, bool ignoreEnding)
     {
-        using (BarCodeReader reader = new BarCodeReader(image, DecodeType.AustraliaPost))
+        BaseDecodeType decodeType = DecodeType.AustraliaPost;
+        using (BarCodeReader reader = new BarCodeReader(imagePath, decodeType))
         {
-            // Set the interpreting type (CTable or NTable)
+            // Apply the interpreting type and filler‑ignoring option
             reader.BarcodeSettings.AustraliaPost.CustomerInformationInterpretingType = interpretingType;
-            // Set whether to ignore ending filling patterns for CTable
             reader.BarcodeSettings.AustraliaPost.IgnoreEndingFillingPatternsForCTable = ignoreEnding;
 
+            // Perform the read operation
             BarCodeResult[] results = reader.ReadBarCodes();
-            if (results.Length > 0)
+            if (results != null && results.Length > 0)
             {
-                return results[0].CodeText;
+                return results[0].CodeText ?? string.Empty;
             }
-            return null;
+            return string.Empty;
         }
     }
 }

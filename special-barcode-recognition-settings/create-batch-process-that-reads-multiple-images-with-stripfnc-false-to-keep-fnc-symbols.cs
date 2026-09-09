@@ -1,96 +1,98 @@
-// Title: Batch barcode generation and recognition with StripFNC disabled
-// Description: This example creates multiple GS1‑Code128 barcode images that contain FNC symbols, then reads them back while preserving those symbols.
-// Category-Description: Demonstrates Aspose.BarCode generation and recognition in a batch workflow. It uses BarcodeGenerator to encode GS1 data, BarCodeReader with DecodeType.Code128 to decode, and BarcodeSettings.StripFNC to control FNC handling. Typical scenarios include processing large sets of GS1 barcodes where FNC characters must remain intact, such as inventory or logistics applications. Developers often need to generate barcodes, store them as images, and later read them without losing embedded control characters.
+// Title: Batch barcode reading with StripFNC disabled to retain FNC symbols
+// Description: Demonstrates generating multiple Code128 barcode images, then reading them in a batch while keeping FNC characters by setting StripFNC to false.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases how to use BarcodeGenerator to create barcodes, BarCodeReader to decode them, and how to configure BarcodeSettings (StripFNC) for preserving FNC symbols. Typical use cases include batch processing of scanned documents where FNC characters carry meaning, such as inventory systems or shipping labels. Developers often need to generate sample images, read them in bulk, and control decoding options via the API.
 // Prompt: Create a batch process that reads multiple images with StripFNC false to keep FNC symbols.
-// Tags: barcode, gs1code128, stripfnc, batch-processing, generation, recognition, csharp, aspose.barcode
+// Tags: code128, batch, stripfnc, barcode-generation, barcode-recognition, aspose.barcode, png
 
 using System;
 using System.IO;
+using System.Collections.Generic;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates batch generation of GS1‑Code128 barcodes containing FNC characters
-/// and subsequent recognition while preserving those characters (StripFNC = false).
+/// Demonstrates batch generation and reading of Code128 barcodes while preserving FNC symbols.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates sample barcode images, then reads each image back
-    /// with FNC symbols retained.
+    /// Entry point that creates temporary barcode images, reads them with StripFNC disabled, and cleans up.
     /// </summary>
     static void Main()
     {
-        // --------------------------------------------------------------------
-        // Prepare output folder for generated barcode images
-        // --------------------------------------------------------------------
-        string folderPath = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
-        if (!Directory.Exists(folderPath))
-        {
-            Directory.CreateDirectory(folderPath);
-        }
+        // Create a unique temporary folder for the batch
+        string batchFolder = Path.Combine(Path.GetTempPath(), "Batch_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(batchFolder);
 
-        // --------------------------------------------------------------------
-        // Sample GS1 data strings that include FNC (Function) characters
-        // --------------------------------------------------------------------
-        string[] sampleTexts = new[]
-        {
-            "(02)04006664241007(37)1(400)7019590754",
-            "(01)12345678901231(10)ABC123",
-            "(01)98765432109876(21)XYZ789"
-        };
+        // List to hold generated barcode image file paths
+        List<string> barcodeFiles = new List<string>();
 
-        // --------------------------------------------------------------------
-        // Generate a PNG barcode image for each sample text using GS1Code128
-        // --------------------------------------------------------------------
-        for (int i = 0; i < sampleTexts.Length; i++)
+        // Generate sample barcode images
+        for (int i = 1; i <= 3; i++)
         {
-            string filePath = Path.Combine(folderPath, $"barcode_{i + 1}.png");
-            using (var generator = new BarcodeGenerator(EncodeTypes.GS1Code128, sampleTexts[i]))
+            string filePath = Path.Combine(batchFolder, $"Code128Sample{i}.png");
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, $"Sample{i}"))
             {
-                generator.Save(filePath);
+                // Set barcode module size
+                generator.Parameters.Barcode.XDimension.Pixels = 2f;
+                // Save as PNG image
+                generator.Save(filePath, BarCodeImageFormat.Png);
             }
+            barcodeFiles.Add(filePath);
         }
 
-        // --------------------------------------------------------------------
-        // Locate all generated PNG files for batch processing
-        // --------------------------------------------------------------------
-        string[] imageFiles = Directory.GetFiles(folderPath, "*.png");
-        if (imageFiles.Length == 0)
-        {
-            Console.WriteLine("No barcode images found to process.");
-            return;
-        }
+        Console.WriteLine("Batch reading barcodes with StripFNC = false (keep FNC symbols):");
 
-        // --------------------------------------------------------------------
-        // Read each image, ensuring FNC characters are NOT stripped (StripFNC = false)
-        // --------------------------------------------------------------------
-        foreach (string imageFile in imageFiles)
+        // Read each barcode image with StripFNC set to false
+        foreach (string file in barcodeFiles)
         {
-            if (!File.Exists(imageFile))
+            if (!File.Exists(file))
             {
-                Console.WriteLine($"File not found: {imageFile}");
+                Console.WriteLine($"File not found: {file}");
                 continue;
             }
 
-            using (var reader = new BarCodeReader(imageFile, DecodeType.Code128))
+            try
             {
-                // Disable automatic removal of FNC symbols
-                reader.BarcodeSettings.StripFNC = false;
-
-                BarCodeResult[] results = reader.ReadBarCodes();
-                if (results.Length == 0)
+                using (BarCodeReader reader = new BarCodeReader(file, DecodeType.Code128))
                 {
-                    Console.WriteLine($"No barcodes detected in {Path.GetFileName(imageFile)}.");
-                    continue;
-                }
+                    // Preserve FNC symbols during decoding
+                    reader.BarcodeSettings.StripFNC = false;
 
-                Console.WriteLine($"Barcodes in {Path.GetFileName(imageFile)}:");
-                foreach (BarCodeResult result in results)
-                {
-                    Console.WriteLine($"  Type: {result.CodeTypeName}, CodeText: {result.CodeText}");
+                    foreach (BarCodeResult result in reader.ReadBarCodes())
+                    {
+                        Console.WriteLine($"File: {Path.GetFileName(file)}");
+                        Console.WriteLine($"  CodeType: {result.CodeTypeName}");
+                        Console.WriteLine($"  CodeText: {result.CodeText}");
+                    }
                 }
             }
+            catch (ArgumentException ex)
+            {
+                Console.WriteLine($"Skipping file {Path.GetFileName(file)} due to error: {ex.Message}");
+            }
+        }
+
+        // Clean up temporary files (optional)
+        try
+        {
+            foreach (string file in barcodeFiles)
+            {
+                if (File.Exists(file))
+                {
+                    File.Delete(file);
+                }
+            }
+
+            if (Directory.Exists(batchFolder))
+            {
+                Directory.Delete(batchFolder, true);
+            }
+        }
+        catch
+        {
+            // Ignore cleanup errors
         }
     }
 }
