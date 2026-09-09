@@ -1,8 +1,8 @@
-// Title: High‑Resolution Bitmap Source for Accurate Small DataMatrix Detection
-// Description: Demonstrates how to upscale a low‑resolution DataMatrix barcode image to improve recognition of tiny symbols.
-// Category-Description: This example belongs to the Aspose.BarCode image processing and recognition category. It showcases the use of BarcodeGenerator to create a DataMatrix, Aspose.Drawing to manipulate bitmap resolution, and BarCodeReader with QualitySettings to enhance detection. Developers working with low‑resolution barcodes or needing higher detection reliability will find this pattern useful for preprocessing images before recognition.
+// Title: High‑Resolution DataMatrix Barcode Generation and Recognition
+// Description: Demonstrates generating a 600 DPI DataMatrix barcode and recognizing it with quality settings to improve detection of small symbols.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating high‑resolution bitmap barcodes and BarCodeReader with QualitySettings for accurate detection of tiny DataMatrix codes. Developers working with scanning small barcodes, printing high‑quality labels, or needing precise image‑based recognition will find these APIs essential.
 // Prompt: Apply a high‑resolution bitmap source to improve detection accuracy of small‑sized DataMatrix codes.
-// Tags: datamatrix, detection, png, barcodegenerator, barcodereader, imaging, qualitysettings, upscaling
+// Tags: datamatrix, high-resolution, barcode-generation, barcode-recognition, aspose.barcode
 
 using System;
 using System.IO;
@@ -13,68 +13,80 @@ using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Generates a low‑resolution DataMatrix barcode, upscales it, and reads it using high‑performance settings.
+/// Generates a high‑resolution DataMatrix barcode, saves it to a temporary file,
+/// and then reads it back using enhanced quality settings to demonstrate improved
+/// detection of small‑sized codes.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates, upscales, and recognizes a small DataMatrix barcode.
+    /// Entry point of the example. Executes barcode creation, verification, recognition,
+    /// and optional cleanup of temporary resources.
     /// </summary>
     static void Main()
     {
-        // Sample data for a small DataMatrix barcode
-        const string data = "SmallDM";
+        // --------------------------------------------------------------------
+        // Create a temporary directory for the sample files
+        // --------------------------------------------------------------------
+        string tempDir = Path.Combine(Path.GetTempPath(), "DataMatrixSample_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
 
-        // Generate a low‑resolution DataMatrix barcode and keep it in memory
-        using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, data))
+        // Define the output path and the text to encode
+        string barcodePath = Path.Combine(tempDir, "datamatrix.png");
+        string codeText = "ABC123";
+
+        // --------------------------------------------------------------------
+        // Generate a high‑resolution DataMatrix barcode
+        // --------------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, codeText))
         {
-            // Enable automatic sizing using interpolation (no explicit BarHeight needed)
-            generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
+            // Set a high resolution (e.g., 600 DPI) to produce a high‑resolution bitmap
+            generator.Parameters.Resolution = 600f;
 
-            // Set a small XDimension to keep the barcode compact
-            generator.Parameters.Barcode.XDimension.Point = 0.5f;
+            // Optionally increase XDimension for clearer modules
+            generator.Parameters.Barcode.XDimension.Point = 2f;
 
-            // Save the generated barcode to a memory stream in PNG format
-            using (var originalStream = new MemoryStream())
+            // Save the barcode as a PNG image
+            generator.Save(barcodePath, BarCodeImageFormat.Png);
+        }
+
+        // --------------------------------------------------------------------
+        // Verify the generated file exists
+        // --------------------------------------------------------------------
+        if (!File.Exists(barcodePath))
+        {
+            Console.WriteLine("Failed to generate the barcode image.");
+            return;
+        }
+
+        // --------------------------------------------------------------------
+        // Read the barcode using high‑resolution recognition settings
+        // --------------------------------------------------------------------
+        using (var reader = new BarCodeReader(barcodePath, DecodeType.DataMatrix))
+        {
+            // Configure quality settings to improve detection of small barcodes
+            reader.QualitySettings.XDimension = XDimensionMode.Small;
+            reader.QualitySettings.MinimalXDimension = 1f; // 1 pixel minimal element
+
+            // Perform recognition and output results
+            foreach (BarCodeResult result in reader.ReadBarCodes())
             {
-                generator.Save(originalStream, BarCodeImageFormat.Png);
-                originalStream.Position = 0; // Reset stream position for reading
-
-                // Load the generated image into a bitmap for manipulation
-                using (var originalBitmap = new Bitmap(originalStream))
-                {
-                    // Define upscale factor (e.g., 4×) to increase resolution
-                    int scale = 4;
-                    int highResWidth = originalBitmap.Width * scale;
-                    int highResHeight = originalBitmap.Height * scale;
-
-                    // Create a new bitmap with the higher resolution dimensions
-                    using (var highResBitmap = new Bitmap(highResWidth, highResHeight))
-                    {
-                        // Draw the original low‑resolution bitmap onto the larger canvas
-                        using (var graphics = Graphics.FromImage(highResBitmap))
-                        {
-                            graphics.DrawImage(originalBitmap, 0, 0, highResWidth, highResHeight);
-                        }
-
-                        // Recognize the DataMatrix from the upscaled bitmap
-                        using (var reader = new BarCodeReader(highResBitmap, DecodeType.DataMatrix))
-                        {
-                            // Configure quality settings to improve detection of small symbols
-                            reader.QualitySettings = QualitySettings.HighPerformance;
-                            reader.QualitySettings.XDimension = XDimensionMode.UseMinimalXDimension;
-                            reader.QualitySettings.MinimalXDimension = 2f; // Minimum element size in pixels
-
-                            // Iterate through detected barcodes and output their details
-                            foreach (var result in reader.ReadBarCodes())
-                            {
-                                Console.WriteLine($"Detected CodeType: {result.CodeType}");
-                                Console.WriteLine($"Detected CodeText: {result.CodeText}");
-                            }
-                        }
-                    }
-                }
+                Console.WriteLine($"Detected Type: {result.CodeType}");
+                Console.WriteLine($"Decoded Text: {result.CodeText}");
             }
+        }
+
+        // --------------------------------------------------------------------
+        // Clean up temporary files (optional)
+        // --------------------------------------------------------------------
+        try
+        {
+            File.Delete(barcodePath);
+            Directory.Delete(tempDir);
+        }
+        catch
+        {
+            // Ignore cleanup errors
         }
     }
 }

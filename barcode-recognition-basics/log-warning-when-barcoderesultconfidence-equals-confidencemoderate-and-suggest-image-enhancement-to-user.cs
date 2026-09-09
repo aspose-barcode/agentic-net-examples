@@ -1,60 +1,88 @@
-// Title: Barcode Generation, Recognition, and Confidence Warning
-// Description: Demonstrates generating a Code128 barcode, reading it back, and logging a warning when recognition confidence is moderate.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes and BarCodeReader for decoding them. Developers often need to assess recognition confidence and provide guidance for image quality improvement, especially when confidence is moderate.
+// Title: Log warning for moderate barcode confidence and suggest image enhancement
+// Description: Demonstrates generating a QR code, reading it, and logging a warning when the recognition confidence is moderate, advising the user to improve image quality.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator to create barcodes and BarCodeReader to decode them. Developers often need to assess recognition confidence (BarCodeResult.Confidence) and provide guidance for image quality improvement in scenarios such as scanning low‑resolution images or noisy backgrounds.
 // Prompt: Log a warning when BarCodeResult.Confidence equals Confidence.Moderate and suggest image enhancement to the user.
-// Tags: barcode, code128, generation, recognition, confidence, moderate, image enhancement, png, aspose.barcode
+// Tags: barcode, qr, generation, recognition, confidence, warning, image-enhancement, aspose.barcode, aspnet
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Generates a Code128 barcode, saves it as an image, reads it back,
-/// and logs a warning if the recognition confidence is moderate.
+/// Example program that generates a QR barcode, reads it back, and logs a warning
+/// if the detection confidence is moderate, suggesting image enhancement.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example.
+    /// Entry point of the application.
     /// </summary>
     static void Main()
     {
-        // Define the output path for the generated barcode image.
-        string imagePath = "sample_barcode.png";
+        // Create a unique temporary folder for the demo files
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
 
-        // Create a barcode generator for Code128 with the data "12345".
-        // Set a moderate resolution (300 DPI) to improve recognition confidence.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "12345"))
+        // Define the full path for the generated barcode image
+        string barcodePath = Path.Combine(tempFolder, "sample.png");
+
+        // Generate a simple QR barcode image and save it as PNG
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "SampleText"))
         {
-            generator.Parameters.Resolution = 300; // DPI
-            generator.Save(imagePath); // Save the barcode image to the specified path.
+            generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        // Verify that the image file was created before attempting to read it.
-        if (!File.Exists(imagePath))
+        // Verify that the barcode image file was created successfully
+        if (!File.Exists(barcodePath))
         {
-            Console.WriteLine($"Error: Barcode image not found at '{imagePath}'.");
+            Console.WriteLine("Error: Barcode image file was not created.");
+            Cleanup(tempFolder);
             return;
         }
 
-        // Initialize a barcode reader for Code128 and read the saved image.
-        using (var reader = new BarCodeReader(imagePath, DecodeType.Code128))
+        // Set the decode type to QR for reading the generated barcode
+        BaseDecodeType decodeType = DecodeType.QR;
+
+        // Read the barcode from the image and evaluate the confidence level
+        using (var reader = new BarCodeReader(barcodePath, decodeType))
         {
-            // Iterate through all detected barcode results.
             foreach (BarCodeResult result in reader.ReadBarCodes())
             {
-                Console.WriteLine($"Type: {result.CodeTypeName}");
-                Console.WriteLine($"Text: {result.CodeText}");
+                Console.WriteLine($"Code Text: {result.CodeText}");
+                Console.WriteLine($"Code Type: {result.CodeTypeName}");
                 Console.WriteLine($"Confidence: {result.Confidence}");
 
-                // If the confidence level is moderate, log a warning and suggest image enhancement.
+                // Log a warning if the confidence is moderate and suggest image enhancement
                 if (result.Confidence == BarCodeConfidence.Moderate)
                 {
-                    Console.WriteLine("Warning: Barcode confidence is moderate. Consider enhancing the image (e.g., increase resolution, improve lighting).");
+                    Console.WriteLine("Warning: Moderate confidence detected. Consider enhancing the image quality for better recognition.");
                 }
             }
+        }
+
+        // Clean up temporary files and folders
+        Cleanup(tempFolder);
+    }
+
+    /// <summary>
+    /// Deletes the specified folder and its contents, suppressing any exceptions.
+    /// </summary>
+    /// <param name="folderPath">The path of the folder to delete.</param>
+    static void Cleanup(string folderPath)
+    {
+        try
+        {
+            if (Directory.Exists(folderPath))
+            {
+                Directory.Delete(folderPath, true);
+            }
+        }
+        catch
+        {
+            // Suppress any cleanup exceptions
         }
     }
 }

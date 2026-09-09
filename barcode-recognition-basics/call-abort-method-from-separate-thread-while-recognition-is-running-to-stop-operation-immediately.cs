@@ -1,8 +1,8 @@
-// Title: Abort barcode recognition from another thread
-// Description: Demonstrates aborting an ongoing barcode recognition operation using BarCodeReader.Abort from a separate thread.
-// Category-Description: This example belongs to the Aspose.BarCode recognition category, showcasing how to control long‑running barcode scanning tasks. It uses the BarCodeReader class to decode QR codes and the Abort method to stop processing instantly. Developers often need to cancel recognition in responsive UI scenarios or when a timeout occurs, making this pattern essential for robust multithreaded applications.
+// Title: Abort Barcode Recognition from Another Thread
+// Description: Demonstrates how to abort an ongoing barcode recognition operation using the Abort method from a separate thread.
+// Category-Description: This example belongs to the Aspose.BarCode recognition category, showcasing the use of BarCodeReader, DecodeType, and the Abort method to stop processing. Typical scenarios include long-running scans where a user or system needs to cancel the operation promptly. Developers often need to manage recognition lifecycles in multithreaded environments, making this pattern essential for responsive applications.
 // Prompt: Call Abort method from a separate thread while recognition is running to stop the operation immediately.
-// Tags: barcode recognition, abort, multithreading, aspose.barcode, qr, c#
+// Tags: barcode, recognition, abort, multithreading, qr, aspose.barcode, barcodereader
 
 using System;
 using System.IO;
@@ -10,77 +10,82 @@ using System.Threading;
 using System.Threading.Tasks;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates a QR barcode, starts recognition on a separate thread,
-/// and aborts the operation from the main thread using <see cref="BarCodeReader.Abort"/>.
+/// Demonstrates aborting a barcode recognition operation from a separate thread using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Method executed on a background thread to perform barcode recognition.
-    /// It iterates through detected barcodes until the operation is aborted.
-    /// </summary>
-    /// <param name="readerObj">An instance of <see cref="BarCodeReader"/> passed as an object.</param>
-    private static void ThreadRecognize(object readerObj)
-    {
-        var reader = (BarCodeReader)readerObj;
-        try
-        {
-            // Enumerate all detected barcodes; this loop runs until Abort is called.
-            foreach (var result in reader.ReadBarCodes())
-            {
-                Console.WriteLine($"Detected: {result.CodeTypeName} - {result.CodeText}");
-            }
-        }
-        catch (Exception ex)
-        {
-            // Abort throws an exception; capture it to indicate the operation was stopped.
-            Console.WriteLine($"Recognition stopped: {ex.Message}");
-        }
-    }
-
-    /// <summary>
-    /// Entry point of the program. Generates a QR code image, starts recognition on a separate thread,
-    /// aborts the recognition after a short delay, and cleans up resources.
+    /// Entry point of the demo. Generates a QR code, starts recognition on a background thread,
+    /// aborts it shortly after, and cleans up temporary resources.
     /// </summary>
     static void Main()
     {
-        // Generate a temporary QR barcode image.
-        string tempDir = Path.GetTempPath();
-        string imagePath = Path.Combine(tempDir, "sample_qr.png");
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Hello Aspose"))
+        // Create a temporary folder for the barcode image
+        string tempDir = Path.Combine(Path.GetTempPath(), "AbortDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        string imagePath = Path.Combine(tempDir, "barcode.png");
+
+        // Generate a simple QR barcode and save it as PNG
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "Hello World"))
         {
-            generator.Save(imagePath);
+            generator.Save(imagePath, BarCodeImageFormat.Png);
         }
 
-        // Verify that the image was created successfully.
-        if (!File.Exists(imagePath))
+        // Initialize the reader for QR codes and start recognition on a separate thread
+        using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.QR))
         {
-            Console.WriteLine("Failed to create barcode image.");
-            return;
-        }
+            Thread readThread = new Thread(() =>
+            {
+                try
+                {
+                    // Perform the recognition; this call blocks until completed or aborted
+                    reader.ReadBarCodes();
 
-        // Initialize a BarCodeReader for the generated QR image.
-        using (var reader = new BarCodeReader(imagePath, DecodeType.QR))
-        {
-            // Launch the recognition process on a separate thread.
-            Thread recognizeThread = new Thread(ThreadRecognize);
-            recognizeThread.Start(reader);
+                    // Output results if recognition finishes normally
+                    Console.WriteLine($"Reading completed. Found count: {reader.FoundCount}");
+                    foreach (var result in reader.FoundBarCodes)
+                    {
+                        Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
+                    }
+                }
+                catch (RecognitionAbortedException ex)
+                {
+                    // Handle the expected abort scenario
+                    Console.WriteLine($"Recognition aborted: {ex.Message}");
+                }
+                catch (Exception ex)
+                {
+                    // Handle any unexpected errors
+                    Console.WriteLine($"Error during reading: {ex.Message}");
+                }
+            });
 
-            // Allow the recognition to run briefly before aborting.
-            Task.Delay(200).Wait();
+            // Start the background recognition thread
+            readThread.Start();
 
-            Console.WriteLine("Calling Abort...");
-            // Abort the ongoing recognition operation.
+            // Short delay before aborting to ensure the read operation has started
+            Task.Delay(100).Wait();
+
+            // Abort the recognition process from the main thread
             reader.Abort();
 
-            // Wait for the background thread to finish handling the abort.
-            recognizeThread.Join();
-            Console.WriteLine("Recognition thread finished.");
+            // Wait for the background thread to finish handling the abort
+            readThread.Join();
         }
 
-        Console.WriteLine("Program completed.");
+        // Clean up temporary files and directory
+        try
+        {
+            File.Delete(imagePath);
+            Directory.Delete(tempDir, true);
+        }
+        catch
+        {
+            // Ignored: cleanup failures are non‑critical for the demo
+        }
+
+        Console.WriteLine("Demo finished.");
     }
 }

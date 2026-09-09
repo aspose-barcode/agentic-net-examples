@@ -1,79 +1,90 @@
-// Title: Real‑time barcode detection demo using FoundBarCodes
-// Description: Generates sample barcodes, recognizes them, and displays detection details such as type, text, confidence, and region.
-// Category-Description: Demonstrates Aspose.BarCode barcode generation and recognition workflow, focusing on the BarCodeReader class and its FoundBarCodes collection. This example shows how to create barcodes with BarcodeGenerator, decode them with BarCodeReader, and retrieve detailed detection results—common tasks for developers building scanning or verification features. Suitable for search queries about Aspose.BarCode recognition examples.
+// Title: Real‑time barcode detection demo using Aspose.BarCode
+// Description: Generates sample Code128 barcodes and reads them sequentially, showing how the FoundBarCodes collection updates after each read operation.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It demonstrates the use of BarcodeGenerator for creating barcodes and BarCodeReader for detecting them in images. Typical scenarios include scanning documents, processing camera feeds, or updating UI components with detection results. Developers often need to access FoundBarCodes and FoundCount to display real‑time detection information.
 // Prompt: Design a UI component that displays real‑time barcode detection results using FoundBarCodes property updates.
-// Tags: barcode generation, barcode recognition, foundbarcodes, real-time detection, aspose.barcode, csharp
+// Tags: barcode, generation, recognition, code128, foundbarcodes, realtime, aspose.barcode, csharp
 
 using System;
-using System.Collections.Generic;
 using System.IO;
-using Aspose.BarCode;
+using System.Collections.Generic;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating various barcode types, recognizing them, and outputting detailed detection results.
+/// Demonstrates generating barcodes, reading them, and displaying detection results using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the demo. Generates sample barcodes, reads them, and prints detection information.
+    /// Entry point of the application. Generates sample barcodes, reads them, and outputs detection details.
     /// </summary>
     static void Main()
     {
-        // Define a collection of sample barcodes with their symbology and data.
-        var samples = new List<(BaseEncodeType EncodeType, string CodeText)>
-        {
-            (EncodeTypes.Code128, "ABC123456"),
-            (EncodeTypes.QR, "https://example.com"),
-            (EncodeTypes.DataMatrix, "DataMatrixSample"),
-            (EncodeTypes.Pdf417, "PDF417 Sample Text")
-        };
+        // Create a unique temporary folder for storing generated barcode images
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
 
-        // Process each sample: generate, recognize, and display results.
-        foreach (var sample in samples)
+        var barcodeFiles = new List<string>();
+
+        // Generate three sample Code128 barcodes and save them as PNG files
+        for (int i = 0; i < 3; i++)
         {
-            // Generate a barcode image and store it in a memory stream.
-            using (var generator = new BarcodeGenerator(sample.EncodeType, sample.CodeText))
+            string codeText = $"CODE{i + 1}";
+            string filePath = Path.Combine(tempFolder, $"barcode{i + 1}.png");
+
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
             {
-                // Use default generation settings; customize here if needed.
-                using (var ms = new MemoryStream())
+                generator.Save(filePath, BarCodeImageFormat.Png);
+            }
+
+            barcodeFiles.Add(filePath);
+        }
+
+        // Simulate real‑time detection by reading each generated barcode file
+        foreach (string file in barcodeFiles)
+        {
+            if (!File.Exists(file))
+            {
+                Console.WriteLine($"File not found: {file}");
+                continue;
+            }
+
+            using (var reader = new BarCodeReader(file, DecodeType.AllSupportedTypes))
+            {
+                // Perform recognition; this updates FoundBarCodes and FoundCount
+                reader.ReadBarCodes();
+
+                Console.WriteLine($"Processed: {Path.GetFileName(file)}");
+                Console.WriteLine($"FoundCount: {reader.FoundCount}");
+
+                // Iterate over each detected barcode and display its details
+                foreach (BarCodeResult result in reader.FoundBarCodes)
                 {
-                    generator.Save(ms, BarCodeImageFormat.Png);
-                    ms.Position = 0; // Reset stream position for reading.
-
-                    // Initialize a barcode reader to recognize the generated image.
-                    using (var reader = new BarCodeReader())
-                    {
-                        // Configure the reader to detect all supported symbologies.
-                        reader.BarCodeReadType = DecodeType.AllSupportedTypes;
-                        reader.SetBarCodeImage(ms);
-
-                        // Perform the recognition operation.
-                        reader.ReadBarCodes();
-
-                        // Output detection summary for the current sample.
-                        Console.WriteLine($"--- Results for {sample.EncodeType.TypeName} ---");
-                        Console.WriteLine($"FoundCount: {reader.FoundCount}");
-
-                        // Iterate through each detected barcode and display its details.
-                        foreach (var result in reader.FoundBarCodes)
-                        {
-                            Console.WriteLine($"Type: {result.CodeTypeName}");
-                            Console.WriteLine($"Text: {result.CodeText}");
-                            Console.WriteLine($"Confidence: {result.Confidence}");
-                            Console.WriteLine($"ReadingQuality: {result.ReadingQuality}");
-                            var rect = result.Region.Rectangle;
-                            Console.WriteLine($"Region: X={rect.X}, Y={rect.Y}, Width={rect.Width}, Height={rect.Height}");
-                            Console.WriteLine();
-                        }
-                    }
+                    var rect = result.Region.Rectangle;
+                    Console.WriteLine($"  Type: {result.CodeTypeName}");
+                    Console.WriteLine($"  Text: {result.CodeText}");
+                    Console.WriteLine($"  Region: X={rect.X}, Y={rect.Y}, Width={rect.Width}, Height={rect.Height}");
+                    Console.WriteLine($"  Angle: {result.Region.Angle}");
                 }
             }
         }
 
-        // Indicate that the demo has finished executing.
-        Console.WriteLine("Barcode detection demo completed.");
+        // Clean up temporary files and directory
+        try
+        {
+            foreach (string file in barcodeFiles)
+            {
+                if (File.Exists(file))
+                {
+                    File.Delete(file);
+                }
+            }
+            Directory.Delete(tempFolder, true);
+        }
+        catch
+        {
+            // Ignored – cleanup failure should not affect program exit
+        }
     }
 }

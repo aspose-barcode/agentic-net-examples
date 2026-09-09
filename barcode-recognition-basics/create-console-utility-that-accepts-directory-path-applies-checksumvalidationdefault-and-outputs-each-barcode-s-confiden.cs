@@ -1,8 +1,8 @@
-// Title: Barcode Confidence Reader Console Utility
-// Description: Demonstrates reading barcodes from images in a directory, applying default checksum validation, and printing each barcode's confidence level.
-// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, showcasing the use of BarCodeReader, BarcodeSettings, and DecodeType to process multiple image formats. Typical use cases include batch processing of scanned documents, validating barcode integrity, and extracting confidence metrics for quality control. Developers often need to configure checksum validation and iterate over detection results, as illustrated here.
+// Title: Barcode Confidence Level Reader with Checksum Validation
+// Description: Demonstrates reading barcode images from a directory, applying default checksum validation, and printing each barcode's confidence (reading quality).
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It shows how to use BarCodeGenerator to create sample barcodes and BarCodeReader to decode them, configuring ChecksumValidation for reliable results. Developers often need to batch‑process images, validate checksums, and retrieve reading quality for quality‑control or analytics purposes.
 // Prompt: Create a console utility that accepts a directory path, applies ChecksumValidation.Default, and outputs each barcode's confidence level.
-// Tags: barcode, checksumvalidation, confidence, console, aspnet, aspnetcore, aspnet-barcode, aspose.barcode, barcode-recognition, image-processing
+// Tags: barcode, checksumvalidation, reading, confidence, console, aspose.barcode, generation, recognition
 
 using System;
 using System.IO;
@@ -11,110 +11,111 @@ using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Console utility that reads barcodes from image files in a specified directory,
-/// applies default checksum validation, and outputs each barcode's confidence level.
+/// Console utility that reads barcode images from a directory, applies checksum validation,
+/// and outputs each barcode's type, text, and reading quality (confidence level).
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Accepts an optional directory path argument, generates sample barcodes if needed,
-    /// and processes each image file to display barcode information.
+    /// Entry point. Parses the input directory, generates sample barcodes if needed,
+    /// and processes each PNG file to display barcode information.
     /// </summary>
-    /// <param name="args">Command‑line arguments; first argument may be a directory path.</param>
+    /// <param name="args">Command‑line arguments; expects an optional directory path.</param>
     static void Main(string[] args)
     {
-        // Resolve the target folder: use the first argument if provided, otherwise create a temporary folder.
-        string folderPath;
-        if (args.Length > 0 && !string.IsNullOrWhiteSpace(args[0]))
+        // Determine the directory to process: use the provided path if valid,
+        // otherwise create a temporary folder and generate sample barcodes.
+        string inputDir;
+        if (args.Length > 0 && Directory.Exists(args[0]))
         {
-            folderPath = args[0];
+            inputDir = args[0];
         }
         else
         {
-            // Create a temporary folder named "BarcodesSample" in the current working directory.
-            folderPath = Path.Combine(Directory.GetCurrentDirectory(), "BarcodesSample");
-            Directory.CreateDirectory(folderPath);
+            inputDir = Path.Combine(Path.GetTempPath(), "Barcodes_" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(inputDir);
+            GenerateSampleBarcodes(inputDir);
+            Console.WriteLine($"No valid directory provided. Generated sample barcodes in: {inputDir}");
         }
 
-        // Verify that the folder exists before proceeding.
-        if (!Directory.Exists(folderPath))
+        // Retrieve all PNG files in the target directory.
+        string[] files = Directory.GetFiles(inputDir, "*.png");
+        if (files.Length == 0)
         {
-            Console.WriteLine($"Directory does not exist: {folderPath}");
+            Console.WriteLine("No barcode images found in the directory.");
             return;
         }
 
-        // If the folder is empty, generate a few sample barcode images for demonstration.
-        var sampleFiles = Directory.GetFiles(folderPath, "*.png");
-        if (sampleFiles.Length == 0)
+        // Process each file individually.
+        foreach (string file in files)
         {
-            GenerateSampleBarcodes(folderPath);
-        }
-
-        // Define the image file patterns to process (PNG, JPG, BMP).
-        string[] patterns = new[] { "*.png", "*.jpg", "*.bmp" };
-
-        // Iterate over each pattern and process matching files.
-        foreach (var pattern in patterns)
-        {
-            foreach (var filePath in Directory.GetFiles(folderPath, pattern))
+            if (!File.Exists(file))
             {
-                // Guard against missing files (should not happen, but defensive programming).
-                if (!File.Exists(filePath))
+                Console.WriteLine($"File not found: {file}");
+                continue;
+            }
+
+            try
+            {
+                // Initialize the reader for all supported barcode types.
+                using (BarCodeReader reader = new BarCodeReader(file, DecodeType.AllSupportedTypes))
                 {
-                    Console.WriteLine($"File not found: {filePath}");
-                    continue;
-                }
+                    // Apply checksum validation (default behavior).
+                    reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
 
-                // Open the image with BarCodeReader, requesting all supported barcode types.
-                using (var reader = new BarCodeReader(filePath, DecodeType.AllSupportedTypes))
-                {
-                    // Apply the default checksum validation setting.
-                    reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.Default;
+                    // Read all barcodes present in the image.
+                    BarCodeResult[] results = reader.ReadBarCodes();
 
-                    bool anyFound = false;
-
-                    // Enumerate all detected barcodes in the image.
-                    foreach (var result in reader.ReadBarCodes())
+                    if (results.Length == 0)
                     {
-                        anyFound = true;
-                        Console.WriteLine($"File: {Path.GetFileName(filePath)}");
-                        Console.WriteLine($"  Type: {result.CodeTypeName}");
-                        Console.WriteLine($"  CodeText: {result.CodeText}");
-                        Console.WriteLine($"  Confidence: {result.Confidence}");
+                        Console.WriteLine($"No barcode detected in file: {Path.GetFileName(file)}");
                     }
-
-                    // If no barcodes were detected, inform the user.
-                    if (!anyFound)
+                    else
                     {
-                        Console.WriteLine($"No barcode detected in file: {Path.GetFileName(filePath)}");
+                        // Output details for each detected barcode.
+                        foreach (BarCodeResult result in results)
+                        {
+                            Console.WriteLine(
+                                $"File:{Path.GetFileName(file)} " +
+                                $"Type:{result.CodeTypeName} " +
+                                $"Text:{result.CodeText} " +
+                                $"Quality:{result.ReadingQuality}");
+                        }
                     }
                 }
+            }
+            catch (ArgumentException ex)
+            {
+                // Handle cases where the file cannot be processed as a barcode image.
+                Console.WriteLine($"Failed to read file {Path.GetFileName(file)}: {ex.Message}");
             }
         }
     }
 
-    // Generates a few barcode images into the specified folder for demonstration purposes.
+    /// <summary>
+    /// Generates a set of sample barcode images in the specified folder.
+    /// </summary>
+    /// <param name="folder">The directory where sample images will be saved.</param>
     private static void GenerateSampleBarcodes(string folder)
     {
-        // Code128 barcode.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
+        // Define sample barcodes: type, text, and output file name.
+        var samples = new (BaseEncodeType encode, string text, string file)[]
         {
-            string path = Path.Combine(folder, "code128.png");
-            generator.Save(path);
-        }
+            (EncodeTypes.Code39, "123456", "Code39.png"),
+            (EncodeTypes.Code11, "123456", "Code11.png"),
+            (EncodeTypes.Code128, "Aspose123", "Code128.png")
+        };
 
-        // QR code.
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "QR Sample Text"))
+        // Create each barcode image using the generator.
+        foreach (var sample in samples)
         {
-            string path = Path.Combine(folder, "qr.png");
-            generator.Save(path);
-        }
-
-        // EAN13 barcode (requires a valid 12‑digit code; checksum is added automatically).
-        using (var generator = new BarcodeGenerator(EncodeTypes.EAN13, "590123412345"))
-        {
-            string path = Path.Combine(folder, "ean13.png");
-            generator.Save(path);
+            string path = Path.Combine(folder, sample.file);
+            using (BarcodeGenerator generator = new BarcodeGenerator(sample.encode, sample.text))
+            {
+                // Set a modest X‑dimension for better visibility.
+                generator.Parameters.Barcode.XDimension.Pixels = 2f;
+                generator.Save(path, BarCodeImageFormat.Png);
+            }
         }
     }
 }

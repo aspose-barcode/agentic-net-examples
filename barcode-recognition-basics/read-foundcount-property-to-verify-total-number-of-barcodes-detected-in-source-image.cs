@@ -1,53 +1,70 @@
-// Title: Detect and count barcodes in an image using Aspose.BarCode
-// Description: Demonstrates how to generate a barcode image if missing, read it, and use the FoundCount property to report the total number of detected barcodes.
-// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, showcasing the BarCodeReader class for detecting multiple barcode symbologies in an image. Typical use cases include inventory scanning, document processing, and quality control where developers need to verify the presence and count of barcodes. The snippet illustrates generating a sample barcode, reading all supported types, and accessing the FoundCount property.
+// Title: Read FoundCount Property After Barcode Recognition
+// Description: Demonstrates how to generate a Code128 barcode, read it, and use the FoundCount property to determine how many barcodes were detected in the image.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It shows usage of BarcodeGenerator for creating barcodes and BarCodeReader for detecting them, focusing on the FoundCount property. Developers often need to verify detection results when processing scanned images, and this snippet illustrates typical API classes and workflow.
 // Prompt: Read the FoundCount property to verify the total number of barcodes detected in the source image.
-// Tags: barcode detection, foundcount, barcodereader, code128, png, aspnet.barcode
+// Tags: barcode generation, barcode recognition, foundcount, code128, aspose.barcode, c#
 
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates barcode generation, detection, and counting using Aspose.BarCode.
+/// Example program that creates a barcode image, reads it, and reports the number of barcodes found.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a sample barcode if needed, reads the image, and prints the total count of detected barcodes.
+    /// Entry point. Generates a barcode, reads it, and displays detection results.
     /// </summary>
     static void Main()
     {
-        // Path for the sample barcode image
-        const string imagePath = "sample.png";
+        // Create a unique temporary directory for the demo files
+        string tempDir = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
 
-        // Generate a sample barcode image if it does not exist
-        if (!File.Exists(imagePath))
+        // Path for the generated barcode image
+        string barcodePath = Path.Combine(tempDir, "sample.png");
+
+        // Generate a simple Code128 barcode and save it as PNG
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
         {
-            // Create a generator for Code128 symbology with sample text "123456"
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
+            generator.Save(barcodePath, BarCodeImageFormat.Png);
+        }
+
+        // Verify that the image file was successfully created
+        if (!File.Exists(barcodePath))
+        {
+            Console.WriteLine("Failed to create barcode image.");
+            return;
+        }
+
+        // Initialize a reader to detect Code128 barcodes in the generated image
+        using (var reader = new BarCodeReader(barcodePath, DecodeType.Code128))
+        {
+            // Perform the recognition process
+            reader.ReadBarCodes();
+
+            // Output the total number of barcodes detected (FoundCount)
+            Console.WriteLine($"FoundCount: {reader.FoundCount}");
+
+            // List each detected barcode with its type and text
+            foreach (BarCodeResult result in reader.FoundBarCodes)
             {
-                // Save the generated barcode as a PNG file
-                generator.Save(imagePath, BarCodeImageFormat.Png);
+                Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
             }
         }
 
-        // Initialize a reader that will detect all supported barcode types in the image
-        using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
+        // Clean up temporary files and directory
+        try
         {
-            // Perform the recognition and retrieve all detected barcode results
-            var results = reader.ReadBarCodes();
-
-            // Output the total number of detected barcodes using the FoundCount property
-            Console.WriteLine($"Total barcodes detected: {reader.FoundCount}");
-
-            // List each detected barcode's type and decoded text
-            foreach (var result in results)
-            {
-                Console.WriteLine($"Type: {result.CodeTypeName}, Text: {result.CodeText}");
-            }
+            File.Delete(barcodePath);
+            Directory.Delete(tempDir);
+        }
+        catch
+        {
+            // Ignore any errors during cleanup
         }
     }
 }

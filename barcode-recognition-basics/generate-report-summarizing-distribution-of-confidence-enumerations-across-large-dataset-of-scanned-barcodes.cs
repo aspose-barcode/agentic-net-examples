@@ -1,60 +1,59 @@
 // Title: Barcode Confidence Distribution Report
-// Description: Generates sample barcodes, scans them, and reports the distribution of confidence levels across the scanned results.
-// Category-Description: This example demonstrates Aspose.BarCode's generation and recognition APIs, focusing on creating barcodes, reading them, and analyzing the BarCodeConfidence enumeration. It showcases typical use cases such as batch processing of barcode images, confidence assessment for quality control, and reporting. Developers working with barcode scanning pipelines often need to aggregate confidence metrics to evaluate scanner performance and data reliability.
+// Description: Generates a set of barcode images, reads them back using Aspose.BarCode, and reports the count of each confidence level detected.
+// Category-Description: This example demonstrates the combined use of Aspose.BarCode generation and recognition APIs. It showcases BarcodeGenerator for creating barcodes, BarCodeReader for decoding them, and the BarCodeConfidence enumeration for assessing read quality. Typical scenarios include batch processing of scanned barcodes, quality analysis, and reporting confidence metrics in inventory or logistics systems. Developers often need to generate test data, evaluate recognition reliability, and produce summary reports.
 // Prompt: Generate a report summarizing the distribution of Confidence enumerations across a large dataset of scanned barcodes.
 // Tags: barcode symbology, generation, recognition, confidence, report, aspose.barcode, csharp
 
 using System;
-using System.Collections.Generic;
 using System.IO;
+using System.Collections.Generic;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates how to generate a set of barcodes, read them back,
-/// and produce a summary of the confidence levels reported by the Aspose.BarCode recognizer.
+/// Demonstrates how to generate barcodes, read them back, and summarize the distribution of confidence levels.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates sample barcodes, scans them,
-    /// and prints the distribution of <see cref="BarCodeConfidence"/> values.
+    /// Entry point of the example. Generates sample barcodes, reads them, and prints a confidence distribution report.
     /// </summary>
     static void Main()
     {
-        // --------------------------------------------------------------------
-        // Prepare output folder for generated barcode images
-        // --------------------------------------------------------------------
-        string outputFolder = "Barcodes";
-        Directory.CreateDirectory(outputFolder);
+        // Create a unique temporary folder for generated barcode images
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeBatch_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
 
-        // --------------------------------------------------------------------
-        // Define a small set of sample barcodes (type, text, file name)
-        // --------------------------------------------------------------------
-        var samples = new List<(BaseEncodeType Type, string Text, string FileName)>
+        // Define the barcode specifications to be generated (type, text, output file name)
+        var specs = new List<(BaseEncodeType encode, string text, string fileName)>
         {
-            (EncodeTypes.Code128, "Sample123", "code128.png"),   // typically Moderate confidence
-            (EncodeTypes.QR, "SampleQR", "qr.png"),             // typically Strong confidence
-            (EncodeTypes.DataMatrix, "DM12345", "datamatrix.png") // confidence may vary
+            (EncodeTypes.Code128, "Sample128", "code128.png"),
+            (EncodeTypes.QR, "SampleQR", "qr.png"),
+            (EncodeTypes.DataMatrix, "SampleDM", "datamatrix.png"),
+            (EncodeTypes.Aztec, "SampleAztec", "aztec.png"),
+            (EncodeTypes.Pdf417, "SamplePdf417", "pdf417.png")
         };
 
-        // --------------------------------------------------------------------
-        // Generate barcode images using default settings
-        // --------------------------------------------------------------------
-        foreach (var sample in samples)
+        // Store full paths of generated files for later processing
+        var generatedFiles = new List<string>();
+
+        // -----------------------------------------------------------------
+        // Generate barcode images using BarcodeGenerator and save as PNG
+        // -----------------------------------------------------------------
+        foreach (var spec in specs)
         {
-            string filePath = Path.Combine(outputFolder, sample.FileName);
-            using (var generator = new BarcodeGenerator(sample.Type, sample.Text))
+            string filePath = Path.Combine(tempFolder, spec.fileName);
+            using (var generator = new BarcodeGenerator(spec.encode, spec.text))
             {
-                // Save the generated barcode as PNG
+                // No additional parameters needed for this demonstration
                 generator.Save(filePath, BarCodeImageFormat.Png);
             }
+            generatedFiles.Add(filePath);
         }
 
-        // --------------------------------------------------------------------
-        // Initialize a dictionary to count each confidence level
-        // --------------------------------------------------------------------
+        // Initialize counters for each possible confidence level
         var confidenceCounts = new Dictionary<BarCodeConfidence, int>
         {
             { BarCodeConfidence.None, 0 },
@@ -62,38 +61,68 @@ class Program
             { BarCodeConfidence.Strong, 0 }
         };
 
-        // --------------------------------------------------------------------
-        // Read each generated image and collect confidence values
-        // --------------------------------------------------------------------
-        foreach (var sample in samples)
+        // ---------------------------------------------------------------
+        // Read each generated barcode and tally the confidence enumeration
+        // ---------------------------------------------------------------
+        foreach (string file in generatedFiles)
         {
-            string filePath = Path.Combine(outputFolder, sample.FileName);
-            if (!File.Exists(filePath))
+            if (!File.Exists(file))
             {
-                Console.WriteLine($"Warning: File not found - {filePath}");
+                Console.WriteLine($"File not found: {file}");
                 continue;
             }
 
-            using (var reader = new BarCodeReader(filePath, DecodeType.AllSupportedTypes))
+            try
             {
-                foreach (var result in reader.ReadBarCodes())
+                using (var reader = new BarCodeReader(file, DecodeType.AllSupportedTypes))
                 {
-                    BarCodeConfidence conf = result.Confidence;
-                    if (confidenceCounts.ContainsKey(conf))
-                        confidenceCounts[conf]++;
-                    else
-                        confidenceCounts[conf] = 1;
+                    BarCodeResult[] results = reader.ReadBarCodes();
+                    foreach (BarCodeResult result in results)
+                    {
+                        BarCodeConfidence conf = result.Confidence;
+                        if (confidenceCounts.ContainsKey(conf))
+                        {
+                            confidenceCounts[conf]++;
+                        }
+                        else
+                        {
+                            confidenceCounts[conf] = 1;
+                        }
+                    }
                 }
+            }
+            catch (ArgumentException ex)
+            {
+                Console.WriteLine($"Skipping file due to load error: {file}. Message: {ex.Message}");
             }
         }
 
-        // --------------------------------------------------------------------
-        // Output summary of confidence distribution
-        // --------------------------------------------------------------------
-        Console.WriteLine("Barcode Confidence Distribution:");
+        // ------------------------------
+        // Output the confidence report
+        // ------------------------------
+        Console.WriteLine("Confidence Distribution Report:");
         foreach (var kvp in confidenceCounts)
         {
             Console.WriteLine($"{kvp.Key}: {kvp.Value}");
+        }
+
+        // -------------------------------------------------
+        // Clean up temporary files and folder (optional)
+        // -------------------------------------------------
+        try
+        {
+            foreach (string file in generatedFiles)
+            {
+                if (File.Exists(file))
+                {
+                    File.Delete(file);
+                }
+            }
+            Directory.Delete(tempFolder, true);
+        }
+        catch
+        {
+            // Ignored – cleanup failures should not affect program exit
         }
     }
 }

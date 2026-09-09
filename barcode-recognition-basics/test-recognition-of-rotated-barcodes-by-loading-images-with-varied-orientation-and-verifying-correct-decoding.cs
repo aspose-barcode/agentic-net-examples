@@ -1,140 +1,123 @@
-// Title: Rotated barcode generation and recognition example
-// Description: Demonstrates creating Code128 barcodes, rotating them at various angles, and verifying that Aspose.BarCode can correctly decode each orientation.
-// Category-Description: This example belongs to the Aspose.BarCode image processing and recognition category, showcasing the use of BarcodeGenerator for barcode creation, Bitmap manipulation for rotation, and BarCodeReader for decoding. Typical use cases include handling scanned barcodes that may be rotated, ensuring robust recognition in real‑world applications. Developers often need to rotate images, adjust quality settings, and validate decoded values.
+// Title: Rotated QR Code Recognition Demo
+// Description: Demonstrates generating a QR barcode, creating rotated versions, and verifying that Aspose.BarCode can correctly decode them regardless of orientation.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, illustrating how to work with image rotation and orientation detection. It uses BarcodeGenerator for encoding, BarCodeReader for decoding, and image manipulation classes to rotate images. Developers often need to ensure reliable barcode scanning from images captured at arbitrary angles, such as in mobile scanning or document processing scenarios.
 // Prompt: Test recognition of rotated barcodes by loading images with varied orientation and verifying correct decoding.
-// Tags: barcode, rotation, code128, generation, recognition, aspose.barcode, bitmap, qualitysettings
+// Tags: qr, barcode, rotation, recognition, aspose.barcode, image-processing, decode, orientation
 
 using System;
 using System.IO;
 using System.Collections.Generic;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating Code128 barcodes, rotating them, and recognizing the rotated images.
+/// Example program that generates a QR barcode, creates rotated copies,
+/// and validates that the Aspose.BarCode reader correctly decodes each orientation.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates rotated barcode images, saves them, and validates recognition.
+    /// Entry point of the application.
     /// </summary>
     static void Main()
     {
-        // Define folder for generated barcode images
-        string folder = Path.Combine(Directory.GetCurrentDirectory(), "RotatedBarcodes");
-        if (!Directory.Exists(folder))
+        // --------------------------------------------------------------------
+        // Create a unique temporary folder to store generated images.
+        // --------------------------------------------------------------------
+        string tempFolder = Path.Combine(Path.GetTempPath(), "RotatedBarcodes_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
+
+        // Paths for the original barcode image and its rotated variants.
+        string originalPath = Path.Combine(tempFolder, "barcode_original.png");
+        var rotatedPaths = new List<string>();
+
+        // --------------------------------------------------------------------
+        // Generate a QR barcode image and save it as PNG.
+        // --------------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Test123"))
         {
-            Directory.CreateDirectory(folder);
+            generator.Save(originalPath, BarCodeImageFormat.Png);
         }
 
-        // Text to encode in the barcode
-        const string barcodeText = "Test123";
+        // Define the rotation angles to apply (in degrees).
+        int[] angles = { 0, 90, 180, 270 };
 
-        // Rotation angles to apply (in degrees)
-        int[] angles = new int[] { 0, 90, 180, 270 };
-
-        // -----------------------------------------------------------------
-        // Generate barcode images and rotate them according to the angles
-        // -----------------------------------------------------------------
+        // --------------------------------------------------------------------
+        // Create rotated images for each specified angle.
+        // --------------------------------------------------------------------
         foreach (int angle in angles)
         {
-            string filePath = Path.Combine(folder, $"barcode_{angle}.png");
-
-            // Create a barcode generator for Code128
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, barcodeText))
+            string rotatedPath = Path.Combine(tempFolder, $"barcode_{angle}.png");
+            using (Image img = Image.FromFile(originalPath))
             {
-                // Set module size (optional, improves readability)
-                generator.Parameters.Barcode.XDimension.Point = 2f;
-
-                // Save the generated barcode to a memory stream
-                using (var ms = new MemoryStream())
+                using (Bitmap bmp = new Bitmap(img))
                 {
-                    generator.Save(ms, BarCodeImageFormat.Png);
-                    ms.Position = 0;
-
-                    // Load the image from the stream for rotation
-                    using (var bitmap = new Bitmap(ms))
+                    // Map the angle to the corresponding RotateFlipType.
+                    RotateFlipType rotateFlip = angle switch
                     {
-                        // Apply rotation if required
-                        if (angle != 0)
-                        {
-                            bitmap.RotateFlip(GetRotateFlipType(angle));
-                        }
-
-                        // Persist the (rotated) image to disk
-                        bitmap.Save(filePath, ImageFormat.Png);
-                    }
+                        0 => RotateFlipType.RotateNoneFlipNone,
+                        90 => RotateFlipType.Rotate90FlipNone,
+                        180 => RotateFlipType.Rotate180FlipNone,
+                        270 => RotateFlipType.Rotate270FlipNone,
+                        _ => RotateFlipType.RotateNoneFlipNone
+                    };
+                    // Apply rotation.
+                    bmp.RotateFlip(rotateFlip);
+                    // Save the rotated image.
+                    bmp.Save(rotatedPath, ImageFormat.Png);
                 }
             }
-
-            Console.WriteLine($"Generated barcode image at angle {angle} degrees: {filePath}");
+            rotatedPaths.Add(rotatedPath);
         }
 
-        Console.WriteLine();
-        Console.WriteLine("=== Barcode Recognition of Rotated Images ===");
-
-        // -----------------------------------------------------------------
-        // Recognize each rotated image and verify the decoded text matches
-        // -----------------------------------------------------------------
-        foreach (int angle in angles)
+        // --------------------------------------------------------------------
+        // Read and verify each rotated barcode image.
+        // --------------------------------------------------------------------
+        foreach (string filePath in rotatedPaths)
         {
-            string filePath = Path.Combine(folder, $"barcode_{angle}.png");
-
             if (!File.Exists(filePath))
             {
-                Console.WriteLine($"Warning: File not found - {filePath}");
+                Console.WriteLine($"File not found: {filePath}");
                 continue;
             }
 
-            // Initialize the barcode reader for Code128
-            using (var reader = new BarCodeReader(filePath, DecodeType.Code128))
+            try
             {
-                // Use normal quality preset for balanced performance
-                reader.QualitySettings = QualitySettings.NormalQuality;
-
-                bool decoded = false;
-                foreach (var result in reader.ReadBarCodes())
+                using (var reader = new BarCodeReader(filePath, DecodeType.QR))
                 {
-                    decoded = true;
-                    Console.WriteLine($"Angle {angle}° - Detected Type: {result.CodeTypeName}, Text: {result.CodeText}");
-                    if (result.CodeText != barcodeText)
+                    BarCodeResult[] results = reader.ReadBarCodes();
+                    if (results.Length > 0 && !string.IsNullOrEmpty(results[0].CodeText))
                     {
-                        Console.WriteLine($"  Mismatch! Expected '{barcodeText}'");
+                        Console.WriteLine($"File: {Path.GetFileName(filePath)}");
+                        Console.WriteLine($"  Decoded Text : {results[0].CodeText}");
+                        Console.WriteLine($"  Detected Type: {results[0].CodeTypeName}");
+                        Console.WriteLine($"  Orientation  : {results[0].Region.Angle} degrees");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"File: {Path.GetFileName(filePath)} - No barcode detected.");
                     }
                 }
-
-                if (!decoded)
-                {
-                    Console.WriteLine($"Angle {angle}° - No barcode detected.");
-                }
+            }
+            catch (ArgumentException ex)
+            {
+                Console.WriteLine($"Error reading file {Path.GetFileName(filePath)}: {ex.Message}");
             }
         }
 
-        Console.WriteLine();
-        Console.WriteLine("Processing completed.");
-    }
-
-    /// <summary>
-    /// Maps a rotation angle (0, 90, 180, 270) to the corresponding RotateFlipType.
-    /// </summary>
-    /// <param name="angle">Rotation angle in degrees.</param>
-    /// <returns>Corresponding RotateFlipType value.</returns>
-    private static RotateFlipType GetRotateFlipType(int angle)
-    {
-        switch (angle)
+        // --------------------------------------------------------------------
+        // Cleanup temporary files and folder.
+        // --------------------------------------------------------------------
+        try
         {
-            case 90:
-                return RotateFlipType.Rotate90FlipNone;
-            case 180:
-                return RotateFlipType.Rotate180FlipNone;
-            case 270:
-                return RotateFlipType.Rotate270FlipNone;
-            case 0:
-                return RotateFlipType.RotateNoneFlipNone;
-            default:
-                throw new ArgumentException("Unsupported rotation angle. Use 0, 90, 180, or 270.");
+            Directory.Delete(tempFolder, true);
+        }
+        catch
+        {
+            // Ignore cleanup errors.
         }
     }
 }

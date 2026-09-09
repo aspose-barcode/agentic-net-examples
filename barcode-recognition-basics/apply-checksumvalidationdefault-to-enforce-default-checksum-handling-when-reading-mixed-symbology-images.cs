@@ -1,8 +1,8 @@
-// Title: Enforce default checksum validation when reading mixed‑symbology barcodes
-// Description: Demonstrates generating Code128 and EAN13 barcodes, then reading them with ChecksumValidation.Default to ensure proper checksum handling.
-// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, showcasing how to configure checksum validation using the BarCodeReader and BarcodeSettings classes. Developers often need to read mixed‑symbology images while applying default checksum rules to filter out invalid codes. Typical use cases include inventory systems, point‑of‑sale scanners, and batch processing of barcode images.
+// Title: Checksum Validation with Mixed Symbology Barcodes
+// Description: Demonstrates reading mixed‑symbology barcode images using ChecksumValidation.Default to enforce default checksum handling.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, showcasing how to configure checksum validation when decoding various symbologies. It uses BarCodeReader, BarcodeGenerator, and related settings—common tasks for developers who need reliable barcode data extraction across different barcode types.
 // Prompt: Apply ChecksumValidation.Default to enforce default checksum handling when reading mixed‑symbology images.
-// Tags: barcode, checksumvalidation, default, mixed-symbology, generation, recognition, aspose.barcode, csharp
+// Tags: barcode symbology, checksum validation, mixed symbology, read, aspose.barcode, generation, recognition
 
 using System;
 using System.IO;
@@ -11,49 +11,83 @@ using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Provides an example of generating barcodes and reading them with default checksum validation.
+/// Demonstrates applying ChecksumValidation.Default when reading mixed‑symbology barcodes.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates sample barcodes, saves them, and reads them applying default checksum validation.
+    /// Entry point of the example.
+    /// Generates sample Code11 and Code39 barcodes, reads them with default checksum validation, and outputs results.
     /// </summary>
     static void Main()
     {
-        // Prepare the output directory for generated barcode images
-        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
-        Directory.CreateDirectory(outputDir);
+        // Create a unique temporary folder for generated barcode images
+        string tempFolder = Path.Combine(Path.GetTempPath(), "MixedChecksumDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
 
-        // Generate a Code128 barcode and save it as PNG
-        string code128Path = Path.Combine(outputDir, "code128.png");
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+        // Define file paths for the sample barcode images
+        string code11Path = Path.Combine(tempFolder, "Code11.png");
+        string code39Path = Path.Combine(tempFolder, "Code39.png");
+
+        // Generate a Code11 barcode (checksum is mandatory for this symbology)
+        using (BarcodeGenerator gen = new BarcodeGenerator(EncodeTypes.Code11, "123456"))
         {
-            generator.Save(code128Path);
+            gen.Parameters.Barcode.XDimension.Pixels = 2;
+            gen.Save(code11Path, BarCodeImageFormat.Png);
         }
 
-        // Generate an EAN13 barcode (including checksum digit) and save it as PNG
-        string ean13Path = Path.Combine(outputDir, "ean13.png");
-        using (var generator = new BarcodeGenerator(EncodeTypes.EAN13, "1234567890128"))
+        // Generate a Code39 barcode (checksum is optional; enable it for demonstration)
+        using (BarcodeGenerator gen = new BarcodeGenerator(EncodeTypes.Code39, "ABC123"))
         {
-            generator.Save(ean13Path);
+            gen.Parameters.Barcode.XDimension.Pixels = 2;
+            gen.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
+            gen.Save(code39Path, BarCodeImageFormat.Png);
         }
 
-        // Iterate over all generated PNG files and read them with default checksum validation
-        foreach (string filePath in Directory.GetFiles(outputDir, "*.png"))
+        // Collect the generated barcode file paths
+        var barcodeFiles = new[] { code11Path, code39Path };
+
+        Console.WriteLine("Reading barcodes with ChecksumValidation.Default:");
+        foreach (string file in barcodeFiles)
         {
-            using (var reader = new BarCodeReader(filePath, DecodeType.AllSupportedTypes))
+            // Verify that the file exists before attempting to read it
+            if (!File.Exists(file))
             {
-                // Enforce default checksum handling for each read operation
+                Console.WriteLine($"File not found: {file}");
+                continue;
+            }
+
+            // Initialize the reader for all supported barcode types
+            using (BarCodeReader reader = new BarCodeReader(file, DecodeType.AllSupportedTypes))
+            {
+                // Apply the default checksum validation policy
                 reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.Default;
 
-                // Output each detected barcode's type and text
-                foreach (var result in reader.ReadBarCodes())
+                // Iterate through all detected barcodes in the image
+                foreach (BarCodeResult result in reader.ReadBarCodes())
                 {
-                    Console.WriteLine($"File: {Path.GetFileName(filePath)}");
-                    Console.WriteLine($"  Type: {result.CodeTypeName}");
+                    Console.WriteLine($"File: {Path.GetFileName(file)}");
+                    Console.WriteLine($"  CodeType: {result.CodeTypeName}");
                     Console.WriteLine($"  CodeText: {result.CodeText}");
+
+                    // For 1D barcodes, additional extended information may be available
+                    if (result.Extended?.OneD != null)
+                    {
+                        Console.WriteLine($"  1D Value: {result.Extended.OneD.Value}");
+                        Console.WriteLine($"  1D CheckSum: {result.Extended.OneD.CheckSum}");
+                    }
                 }
             }
+        }
+
+        // Optional cleanup of the temporary folder
+        try
+        {
+            Directory.Delete(tempFolder, true);
+        }
+        catch
+        {
+            // Suppress any errors that occur during cleanup
         }
     }
 }

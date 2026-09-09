@@ -1,79 +1,89 @@
-// Title: Barcode Generation and Recognition with Performance Metrics
-// Description: Demonstrates creating a Code128 barcode, saving it as an image, and recognizing it while logging processing time and count of detected barcodes.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of core API classes such as BarcodeGenerator for creating barcodes, BarCodeReader for decoding, and DecodeType for specifying supported symbologies. Typical scenarios include automated testing, batch processing, and performance monitoring where developers need to generate barcodes, read them back, and capture detailed metrics.
+// Title: Log barcode recognition metrics with Aspose.BarCode
+// Description: Demonstrates generating a QR code, recognizing it, and logging processing time and found count for performance monitoring.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator to create barcodes and BarCodeReader to decode them. Typical scenarios include performance monitoring, batch processing, and quality tuning where developers need detailed metrics such as execution time and detected barcode count.
 // Prompt: Log detailed recognition metrics, including processing time and found count, for performance monitoring purposes.
-// Tags: code128, generation, recognition, performance, aspose.barcode, barcodegenerator, barcodereader, decodeType, barcoderesult
+// Tags: qr, barcode, recognition, performance, metrics, aspose.barcode, generation, reading
 
 using System;
-using System.Diagnostics;
 using System.IO;
+using System.Diagnostics;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates a Code128 barcode, saves it to a file,
-/// reads it back, and logs detailed recognition metrics for performance monitoring.
+/// Demonstrates barcode generation, recognition, and logging of performance metrics using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
+    /// Entry point. Generates a QR code, reads it, and outputs processing time and found count.
     /// </summary>
     static void Main()
     {
-        // Define the output image path for the generated barcode
-        string imagePath = "sample.png";
+        // Create a unique temporary folder for the demo files
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
 
-        // Remove any existing file with the same name to ensure a clean run
-        if (File.Exists(imagePath))
+        // Define the full path for the generated barcode image
+        string imagePath = Path.Combine(tempFolder, "sample.png");
+
+        // Generate a sample QR barcode image and save it as PNG
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "Hello World"))
         {
-            File.Delete(imagePath);
+            generator.Save(imagePath, BarCodeImageFormat.Png);
         }
 
-        // Create a BarcodeGenerator for Code128 symbology with sample text
-        var generator = new BarcodeGenerator(EncodeTypes.Code128, "Test123");
-        // Save the generated barcode image to the specified path
-        generator.Save(imagePath);
-
-        // Verify that the barcode image was successfully created
+        // Verify that the image was created successfully
         if (!File.Exists(imagePath))
         {
-            Console.WriteLine("Failed to create the barcode image.");
+            Console.WriteLine("Failed to generate barcode image.");
             return;
         }
 
-        // Initialize a Stopwatch to measure recognition duration
-        var stopwatch = new Stopwatch();
-
-        // Open a BarCodeReader for all supported barcode types on the generated image
-        using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
+        // Initialize the barcode reader for all supported types
+        using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
         {
-            // Start timing before the recognition process
-            stopwatch.Start();
+            // Optional: set a quality preset for faster processing
+            reader.QualitySettings = QualitySettings.HighPerformance;
 
-            // Perform barcode detection and retrieve results
-            BarCodeResult[] results = reader.ReadBarCodes();
-
-            // Stop timing after recognition completes
-            stopwatch.Stop();
-
-            // Output processing time and total number of barcodes detected
-            Console.WriteLine($"Processing Time (ms): {stopwatch.ElapsedMilliseconds}");
-            Console.WriteLine($"Barcodes Detected: {reader.FoundCount}");
-
-            // Iterate through each detected barcode and display detailed information
-            foreach (var result in results)
+            // Start timing the recognition process
+            Stopwatch sw = Stopwatch.StartNew();
+            try
             {
-                Console.WriteLine("----- Barcode -----");
-                Console.WriteLine($"Type: {result.CodeTypeName}");
-                Console.WriteLine($"Text: {result.CodeText}");
-                Console.WriteLine($"Confidence: {result.Confidence}");
-                Console.WriteLine($"Reading Quality: {result.ReadingQuality}");
-                var rect = result.Region.Rectangle;
-                Console.WriteLine($"Region - X:{rect.X}, Y:{rect.Y}, Width:{rect.Width}, Height:{rect.Height}");
-                Console.WriteLine($"Angle: {result.Region.Angle}");
+                // Perform barcode recognition
+                BarCodeResult[] results = reader.ReadBarCodes();
+                sw.Stop();
+
+                // Log performance metrics
+                Console.WriteLine($"Processing time: {sw.ElapsedMilliseconds} ms");
+                Console.WriteLine($"Found count: {reader.FoundCount}");
+
+                // Output details of each recognized barcode
+                foreach (BarCodeResult result in results)
+                {
+                    Console.WriteLine($"Type: {result.CodeTypeName}, Text: {result.CodeText}");
+                }
             }
+            catch (RecognitionAbortedException ex)
+            {
+                // Handle aborted recognition and log the elapsed time provided by the exception
+                sw.Stop();
+                Console.WriteLine($"Recognition aborted after {ex.ExecutionTime} ms");
+            }
+        }
+
+        // Clean up temporary files and folder
+        try
+        {
+            File.Delete(imagePath);
+            Directory.Delete(tempFolder);
+        }
+        catch
+        {
+            // Ignore any errors during cleanup
         }
     }
 }

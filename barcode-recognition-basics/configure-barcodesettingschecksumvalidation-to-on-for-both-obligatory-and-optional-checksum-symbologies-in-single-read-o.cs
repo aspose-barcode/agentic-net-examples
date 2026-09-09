@@ -1,10 +1,11 @@
 // Title: Barcode checksum validation for multiple symbologies in a single read
-// Description: Demonstrates enabling checksum validation for both mandatory and optional checksum symbologies while reading multiple barcodes in one image.
-// Category-Description: This example belongs to the Aspose.BarCode reading and validation category. It shows how to use BarCodeReader with BarcodeSettings.ChecksumValidation to enforce checksum checks across all supported symbologies, a common requirement when processing 1D barcodes such as EAN13 (mandatory checksum) and Code39 (optional checksum). Developers often need to validate data integrity in batch scanning scenarios, and this snippet illustrates the typical API usage for combined image generation and validation.
+// Description: This example generates Code11 (mandatory checksum) and Code39 (optional checksum) barcodes, merges them into one image, and reads both barcodes in a single operation with checksum validation turned on.
+// Category-Description: Demonstrates Aspose.BarCode generation and recognition APIs, focusing on BarcodeGenerator, BarCodeReader, and the ChecksumValidation setting. Useful for developers who need to validate mandatory and optional checksum symbologies during batch scanning or combined image processing. Typical scenarios include inventory systems, document automation, and quality control where multiple barcode types are read together.
 // Prompt: Configure BarcodeSettings.ChecksumValidation to On for both obligatory and optional checksum symbologies in a single read operation.
-// Tags: barcode symbology, checksum validation, read operation, aspose.barcode, generation, recognition
+// Tags: barcode symbology, checksum validation, read operation, generation, aspose.barcode, .net
 
 using System;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
@@ -12,54 +13,103 @@ using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates two barcodes, combines them into a single image,
-/// and reads them back with checksum validation enabled for both mandatory and optional checksum symbologies.
+/// Demonstrates generating barcodes with different checksum requirements,
+/// combining them into a single image, and reading them with checksum validation enabled.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates EAN13 and Code39 barcodes, merges them, and reads them with checksum validation turned on.
+    /// Entry point of the example. Generates, combines, reads, and cleans up barcode images.
     /// </summary>
     static void Main()
     {
-        // Generate an EAN13 barcode (checksum is mandatory)
-        using (var eanGenerator = new BarcodeGenerator(EncodeTypes.EAN13, "1234567890128"))
-        using (var eanImage = eanGenerator.GenerateBarCodeImage())
-        // Generate a Code39 barcode (checksum is optional)
-        using (var code39Generator = new BarcodeGenerator(EncodeTypes.Code39, "CODE39"))
-        using (var code39Image = code39Generator.GenerateBarCodeImage())
-        // Combine both images side by side into a single bitmap
-        using (var combined = new Bitmap(eanImage.Width + code39Image.Width,
-                                         Math.Max(eanImage.Height, code39Image.Height)))
+        // Create a unique temporary folder for all generated files
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeChecksumDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
+
+        // Define file paths for the individual and combined barcode images
+        string code11Path = Path.Combine(tempFolder, "code11.png");
+        string code39Path = Path.Combine(tempFolder, "code39.png");
+        string combinedPath = Path.Combine(tempFolder, "combined.png");
+
+        // -------------------------------------------------
+        // Generate Code11 barcode (checksum is obligatory)
+        // -------------------------------------------------
+        using (var gen11 = new BarcodeGenerator(EncodeTypes.Code11, "123456"))
         {
-            // Draw the two barcode images onto the combined bitmap
-            using (var graphics = Graphics.FromImage(combined))
+            gen11.Parameters.Barcode.XDimension.Pixels = 2f; // Set module size
+            gen11.Save(code11Path, BarCodeImageFormat.Png);
+        }
+
+        // -------------------------------------------------
+        // Generate Code39 barcode (checksum is optional) and enable it
+        // -------------------------------------------------
+        using (var gen39 = new BarcodeGenerator(EncodeTypes.Code39, "123456"))
+        {
+            gen39.Parameters.Barcode.XDimension.Pixels = 2f; // Set module size
+            gen39.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes; // Enable optional checksum
+            gen39.Save(code39Path, BarCodeImageFormat.Png);
+        }
+
+        // Verify that both barcode images were created successfully
+        if (!File.Exists(code11Path) || !File.Exists(code39Path))
+        {
+            Console.WriteLine("Failed to generate barcode images.");
+            return;
+        }
+
+        // -------------------------------------------------
+        // Combine the two barcode images side by side
+        // -------------------------------------------------
+        using (var bmp11 = new Bitmap(code11Path))
+        using (var bmp39 = new Bitmap(code39Path))
+        {
+            int spacing = 20; // Space between images
+            int combinedWidth = bmp11.Width + bmp39.Width + spacing;
+            int combinedHeight = Math.Max(bmp11.Height, bmp39.Height);
+
+            using (var combinedBmp = new Bitmap(combinedWidth, combinedHeight))
+            using (var graphics = Graphics.FromImage(combinedBmp))
             {
-                graphics.DrawImage(eanImage, 0, 0);
-                graphics.DrawImage(code39Image, eanImage.Width, 0);
+                graphics.Clear(Aspose.Drawing.Color.White);
+                graphics.DrawImage(bmp11, 0, 0, bmp11.Width, bmp11.Height);
+                graphics.DrawImage(bmp39, bmp11.Width + spacing, 0, bmp39.Width, bmp39.Height);
+                combinedBmp.Save(combinedPath, ImageFormat.Png);
             }
+        }
 
-            // Read both barcodes in a single operation with checksum validation enabled
-            using (var reader = new BarCodeReader(combined, DecodeType.AllSupportedTypes))
+        // -------------------------------------------------
+        // Read both barcodes from the combined image with checksum validation turned on
+        // -------------------------------------------------
+        if (!File.Exists(combinedPath))
+        {
+            Console.WriteLine("Combined image not found.");
+            return;
+        }
+
+        using (var reader = new BarCodeReader(combinedPath, DecodeType.AllSupportedTypes))
+        {
+            // Enable checksum validation for all supported symbologies
+            reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
+
+            foreach (BarCodeResult result in reader.ReadBarCodes())
             {
-                // Enable checksum validation for all symbologies (mandatory and optional)
-                reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
-
-                // Iterate through all detected barcodes
-                foreach (var result in reader.ReadBarCodes())
-                {
-                    Console.WriteLine($"Detected Type: {result.CodeTypeName}");
-                    Console.WriteLine($"Code Text: {result.CodeText}");
-
-                    // For 1D barcodes, also output the checksum if available
-                    if (result.Extended?.OneD != null)
-                    {
-                        Console.WriteLine($"Checksum: {result.Extended.OneD.CheckSum}");
-                    }
-
-                    Console.WriteLine();
-                }
+                Console.WriteLine($"CodeType: {result.CodeTypeName}");
+                Console.WriteLine($"CodeText: {result.CodeText}");
+                Console.WriteLine();
             }
+        }
+
+        // -------------------------------------------------
+        // Cleanup temporary files and folder (optional)
+        // -------------------------------------------------
+        try
+        {
+            Directory.Delete(tempFolder, true);
+        }
+        catch
+        {
+            // Ignore any errors during cleanup
         }
     }
 }
