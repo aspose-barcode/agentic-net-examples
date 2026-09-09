@@ -1,44 +1,49 @@
-// Title: Serialize barcode generation settings to XML in memory
-// Description: Demonstrates exporting Aspose.BarCode generation settings to a MemoryStream as XML, useful for persisting or transmitting configuration.
-// Category-Description: This example belongs to the Aspose.BarCode configuration serialization category, illustrating how to use BarcodeGenerator and its ExportToXml method to capture generation parameters. Developers often need to save or share barcode settings across services, and this pattern shows the typical API usage with MemoryStream for in‑memory handling.
+// Title: Export barcode generation settings to XML using a MemoryStream
+// Description: Demonstrates how to serialize Aspose.BarCode generation settings to an in‑memory XML representation.
+// Category-Description: This example belongs to the Aspose.BarCode configuration serialization category. It shows how to use BarcodeGenerator, its Parameters, and the ExportToXml(Stream) method to capture settings without writing to disk. Developers often need to store or transmit barcode configuration as XML for later reuse, auditing, or integration with other systems.
 // Prompt: Serialize barcode generation settings to a MemoryStream by calling ExportToXml(Stream) method directly.
-// Tags: barcode, serialization, xml, memorystream, aspnet, aspnetcore, aspose.barcode, code128, generation
+// Tags: barcode, qrcode, export, xml, memorystream, aspose.barcode, generation
 
 using System;
 using System.IO;
+using System.Text;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates exporting barcode generation settings to an in‑memory XML representation.
+/// Example program that creates a QR barcode generator, modifies a setting,
+/// and exports the generator's configuration to an XML string using a MemoryStream.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates a Code128 barcode generator, configures parameters, and exports its settings to XML via a MemoryStream.
+    /// Entry point of the example. Performs the barcode generation settings export.
     /// </summary>
     static void Main()
     {
-        // Initialize a barcode generator for Code128 with sample text.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
+        // Initialize a BarcodeGenerator with QR symbology and sample text.
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "SampleText"))
         {
-            // Set specific generation parameters (X dimension and bar height).
-            generator.Parameters.Barcode.XDimension.Point = 2f;
-            generator.Parameters.Barcode.BarHeight.Point = 40f;
+            // Adjust the X dimension (module size) of the barcode.
+            generator.Parameters.Barcode.XDimension.Pixels = 4f;
 
-            // Export the generator's configuration to a MemoryStream as XML.
-            using (var memoryStream = new MemoryStream())
+            // Create an in‑memory stream to hold the exported XML.
+            using (MemoryStream ms = new MemoryStream())
             {
-                bool success = generator.ExportToXml(memoryStream);
-                Console.WriteLine($"Export to XML successful: {success}");
+                // Serialize the generator's settings directly into the MemoryStream.
+                generator.ExportToXml(ms);
 
-                // Rewind the stream to the beginning to read the XML content.
-                memoryStream.Position = 0;
-                using (var reader = new StreamReader(memoryStream))
+                // Reset the stream position to the beginning for reading.
+                ms.Position = 0;
+
+                // Read the XML content from the stream using a StreamReader.
+                using (StreamReader reader = new StreamReader(ms, Encoding.UTF8, true, 1024, leaveOpen: true))
                 {
-                    string xmlContent = reader.ReadToEnd();
-                    Console.WriteLine("Exported XML:");
-                    Console.WriteLine(xmlContent);
+                    string xml = reader.ReadToEnd();
+
+                    // Output the exported XML to the console.
+                    Console.WriteLine("Exported Barcode Generation Settings (XML):");
+                    Console.WriteLine(xml);
                 }
             }
         }

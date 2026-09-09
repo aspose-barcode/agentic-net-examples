@@ -1,8 +1,8 @@
-// Title: Export BarcodeGenerator configuration to XML
-// Description: Demonstrates exporting a configured BarcodeGenerator's state to an XML file using the ExportToXml(string) overload.
-// Category-Description: This example belongs to the Aspose.BarCode generation and configuration category. It showcases how to set up barcode parameters with the BarcodeGenerator class, adjust visual properties, and persist the configuration to an XML file via ExportToXml. Developers often need to save and reuse barcode settings across applications or environments, making XML export a common practice for configuration management.
+// Title: Export BarcodeGenerator Configuration to XML
+// Description: Demonstrates exporting a configured BarcodeGenerator's state to an XML file and generating a barcode image for verification.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to configure a BarcodeGenerator, export its settings using ExportToXml(string), and save a barcode image. It highlights key API classes such as BarcodeGenerator, EncodeTypes, and BarCodeImageFormat, which developers commonly use for creating, customizing, and persisting barcode configurations in .NET applications.
 // Prompt: Export a configured BarcodeGenerator state to an XML file using ExportToXml(string) overload.
-// Tags: code128, export, xml, aspose.barcode, bargenerator, configuration
+// Tags: barcode symbology, export, xml, configuration, aspose.barcode, generation
 
 using System;
 using System.IO;
@@ -11,36 +11,44 @@ using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Example program that configures a BarcodeGenerator and exports its state to an XML file.
+/// Demonstrates exporting a configured BarcodeGenerator state to XML and creating a barcode image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Sets up barcode parameters and saves them to an XML configuration file.
+    /// Entry point that creates a temporary folder, configures a BarcodeGenerator, exports its settings to XML,
+    /// saves a barcode image, and writes the output paths to the console.
     /// </summary>
     static void Main()
     {
-        // Define the output path for the exported XML configuration.
-        string xmlPath = "barcode_config.xml";
+        // Create a unique temporary folder for output files
+        string outputFolder = Path.Combine(Path.GetTempPath(), "BarcodeGenXmlDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputFolder);
 
-        // Initialize a BarcodeGenerator for Code128 symbology with sample text.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123ABC"))
+        // Define paths for the generated XML configuration and barcode image
+        string xmlPath = Path.Combine(outputFolder, "generatorConfig.xml");
+        string imagePath = Path.Combine(outputFolder, "barcode.png");
+
+        // Configure the BarcodeGenerator and export its state
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            // ----- Configure barcode visual and functional parameters -----
-            generator.Parameters.Barcode.XDimension.Point = 2f;                     // Module size (width of the smallest bar)
-            generator.Parameters.Barcode.BarHeight.Point = 50f;                    // Height of the barcode bars
-            generator.Parameters.Barcode.FilledBars = true;                        // Use filled bars instead of outlines
-            generator.Parameters.Barcode.ThrowExceptionWhenCodeTextIncorrect = false; // Suppress exceptions for invalid text
-            generator.Parameters.Barcode.CodeTextParameters.Font.Size.Point = 10f; // Font size for human‑readable text
-            generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.Below; // Position of the code text
-            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;    // Color of the bars
-            generator.Parameters.BackColor = Aspose.Drawing.Color.White;           // Background color of the image
+            // Set barcode visual properties
+            generator.Parameters.Barcode.XDimension.Pixels = 2f;
+            generator.Parameters.Barcode.BarColor = Color.Green;
+            generator.Parameters.Barcode.CodeTextParameters.Font.FamilyName = "Helvetica";
+            generator.Parameters.Barcode.CodeTextParameters.Font.Size.Pixels = 12f;
 
-            // ----- Export the configured generator state to an XML file -----
-            bool success = generator.ExportToXml(xmlPath);
+            // Export the current configuration to an XML file
+            generator.ExportToXml(xmlPath);
 
-            // Output the result of the export operation.
-            Console.WriteLine($"Export to XML {(success ? "succeeded" : "failed")}. File: {Path.GetFullPath(xmlPath)}");
+            // Generate and save a barcode image to verify the configuration
+            generator.Save(imagePath, BarCodeImageFormat.Png);
         }
+
+        // Output the locations of the generated files
+        Console.WriteLine("Barcode generator state exported to XML:");
+        Console.WriteLine(xmlPath);
+        Console.WriteLine("Generated barcode image:");
+        Console.WriteLine(imagePath);
     }
 }
