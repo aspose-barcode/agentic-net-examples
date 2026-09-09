@@ -1,8 +1,8 @@
-// Title: Set Caption Color to Purple for UPC-A Barcode
-// Description: Demonstrates how to generate a UPC‑A barcode and set its caption color to purple using Color.FromName.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to customize barcode appearance. It showcases the BarcodeGenerator class, its Parameters property, and the use of System.Drawing.Color for styling captions. Developers often need to modify caption text and colors when integrating barcodes into product packaging, labels, or UI displays.
+// Title: Set caption color to Purple for a UPC-A barcode using Aspose.BarCode
+// Description: Demonstrates how to generate a UPC-A barcode and customize its caption color using Color.FromName.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and caption parameters. Developers often need to modify barcode appearance such as caption visibility, text, and color for branding or UI integration. The snippet shows typical steps: create generator, set caption properties, and save the image.
 // Prompt: Use Color.FromName to set caption color to "Purple" for a UPC-A barcode.
-// Tags: upc-a, set-caption-color, png, barcodegenerator, parameters, color
+// Tags: upc-a, barcode, caption, color, aspnet, aspose.barcode, generation, png
 
 using System;
 using System.IO;
@@ -10,33 +10,37 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
-/// <summary>
-/// Generates a UPC‑A barcode, sets a custom caption with a purple color, and saves it as a PNG image.
-/// </summary>
-class Program
+namespace BarcodeCaptionColorExample
 {
     /// <summary>
-    /// Entry point of the example. Creates the barcode, applies caption styling, and writes the image to disk.
+    /// Demonstrates generating a UPC-A barcode with a purple caption using Aspose.BarCode.
     /// </summary>
-    static void Main()
+    class Program
     {
-        // Define the output file name
-        string outputPath = "upc_a.png";
-
-        // Initialize the barcode generator for UPC‑A with a valid 12‑digit value (including check digit)
-        using (var generator = new BarcodeGenerator(EncodeTypes.UPCA, "012345678905"))
+        /// <summary>
+        /// Entry point. Generates the barcode, sets caption properties, and saves as PNG.
+        /// </summary>
+        static void Main()
         {
-            // Set the caption text that appears above the barcode
-            generator.Parameters.CaptionAbove.Text = "Sample UPC‑A";
+            // Determine output file path in the current directory
+            string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "upc_a_caption.png");
 
-            // Apply the purple color to the caption using Color.FromName
-            generator.Parameters.CaptionAbove.TextColor = Color.FromName("Purple");
+            // Create a barcode generator for UPC-A symbology with the specified data
+            using (var generator = new BarcodeGenerator(EncodeTypes.UPCA, "123456789012"))
+            {
+                // Enable the caption above the barcode
+                generator.Parameters.CaptionAbove.Visible = true;
+                // Set the caption text
+                generator.Parameters.CaptionAbove.Text = "Sample Caption";
+                // Set the caption text color to purple using Color.FromName
+                generator.Parameters.CaptionAbove.TextColor = Color.FromName("Purple");
 
-            // Save the generated barcode as a PNG file
-            generator.Save(outputPath, BarCodeImageFormat.Png);
+                // Save the generated barcode as a PNG image
+                generator.Save(outputPath, BarCodeImageFormat.Png);
+            }
+
+            // Inform the user where the barcode image was saved
+            Console.WriteLine($"Barcode saved to {outputPath}");
         }
-
-        // Output the full path of the saved barcode image
-        Console.WriteLine($"Barcode saved to: {Path.GetFullPath(outputPath)}");
     }
 }

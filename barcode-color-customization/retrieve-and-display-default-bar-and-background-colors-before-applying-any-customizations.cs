@@ -1,8 +1,8 @@
-// Title: Retrieve Default Barcode Bar and Background Colors
+// Title: Retrieve default barcode and background colors
 // Description: Demonstrates how to obtain the default bar and background colors from an Aspose.BarCode generator before any customizations are applied.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing the use of BarcodeGenerator, its Parameters, and color properties. Developers often need to query default visual settings (bar color, background color) to ensure consistency or to base custom themes on them. Typical use cases include preparing barcode images for reports, labels, or UI previews where default styling information is required.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of the BarcodeGenerator class and its Parameters property to inspect default visual settings. Developers often need to query default colors to ensure consistency or to base custom color schemes on the original values. Typical use cases include UI previews, logging default configurations, or resetting colors after temporary changes.
 // Prompt: Retrieve and display the default bar and background colors before applying any customizations.
-// Tags: barcode, symbology, color, default, generation, png, aspose.barcode, aspose.drawing
+// Tags: barcode, default colors, code128, aspnet, aspose.barcode, generation, colors
 
 using System;
 using Aspose.BarCode;
@@ -10,33 +10,29 @@ using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Example program that retrieves and displays the default bar and background colors
-/// of a barcode generator before any customizations are applied.
+/// Example program that shows how to read the default bar and background colors
+/// from a BarcodeGenerator instance before any visual customizations are made.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates a BarcodeGenerator, reads default colors,
-    /// prints them to the console, and saves a sample barcode image.
+    /// Entry point of the example. Creates a BarcodeGenerator, retrieves the default
+    /// colors, and writes them to the console.
     /// </summary>
     static void Main()
     {
-        // Initialize a barcode generator with the Code128 symbology.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128))
+        // Initialize a BarcodeGenerator with the Code128 symbology and sample text.
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample"))
         {
-            // Retrieve the generator's default bar (foreground) color.
-            Aspose.Drawing.Color defaultBarColor = generator.Parameters.Barcode.BarColor;
+            // Access the default bar (foreground) color from the generator's parameters.
+            Color defaultBarColor = generator.Parameters.Barcode.BarColor;
 
-            // Retrieve the generator's default background color.
-            Aspose.Drawing.Color defaultBackColor = generator.Parameters.BackColor;
+            // Access the default background color from the generator's parameters.
+            Color defaultBackColor = generator.Parameters.BackColor;
 
-            // Output the default colors to the console.
+            // Output the retrieved default colors to the console.
             Console.WriteLine($"Default Bar Color: {defaultBarColor}");
             Console.WriteLine($"Default Background Color: {defaultBackColor}");
-
-            // Optionally generate a sample barcode image to verify the defaults.
-            // The image is saved as "default_barcode.png" in the working directory.
-            generator.Save("default_barcode.png");
         }
     }
 }

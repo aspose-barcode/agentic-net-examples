@@ -1,40 +1,43 @@
-// Title: Apply custom text color to a barcode (Code128)
-// Description: Demonstrates how to set a custom color for the human‑readable text of a barcode while keeping bar and background colors at their defaults.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and CodeTextParameters to customize barcode appearance. Developers often need to modify text color for branding or visual integration while preserving standard bar colors. The snippet shows typical steps for creating, customizing, and saving a barcode image.
+// Title: Apply custom text color to a barcode using Aspose.BarCode
+// Description: Demonstrates how to set a custom color for the barcode's human‑readable text while keeping the bar and background colors at their default values.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to customize visual aspects of generated barcodes. It highlights the use of BarcodeGenerator, EncodeTypes, and Color settings to meet common requirements such as branding or visual emphasis. Developers often need to adjust text, bar, or background colors for integration into UI designs or printed materials.
 // Prompt: Apply a custom text color to a barcode while leaving bar and background colors at defaults.
-// Tags: barcode, code128, text color, png, aspose.barcode, generation, colortext
+// Tags: barcode symbology, color customization, code128, png, aspose.barcode, generation
 
 using System;
+using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
-namespace BarcodeExample
+/// <summary>
+/// Demonstrates applying a custom text color to a barcode while leaving bar and background colors at defaults.
+/// </summary>
+class Program
 {
     /// <summary>
-    /// Generates a Code128 barcode with a custom text color while leaving bar and background colors at their defaults.
+    /// Generates a Code128 barcode with green text and saves it as a PNG file.
     /// </summary>
-    class Program
+    static void Main()
     {
-        /// <summary>
-        /// Entry point of the example. Creates the barcode, applies the text color, saves the image, and writes the output path to the console.
-        /// </summary>
-        static void Main()
+        // Create a unique temporary directory for the output image.
+        string tempDir = Path.Combine(Path.GetTempPath(), "BarcodeColorDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+
+        // Define the full path for the generated PNG file.
+        string outputPath = Path.Combine(tempDir, "customTextColor.png");
+
+        // Initialize the barcode generator with Code128 symbology and sample data.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
         {
-            // Define the output file name and location
-            string outputPath = "custom_text_color_barcode.png";
+            // Set a custom color (green) for the human‑readable text; bar and background colors stay default.
+            generator.Parameters.Barcode.CodeTextParameters.Color = Color.Green;
 
-            // Initialize the barcode generator for Code128 with the desired data
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
-            {
-                // Set a custom color (blue) for the human‑readable text only
-                generator.Parameters.Barcode.CodeTextParameters.Color = Color.Blue;
-
-                // Save the barcode image; bar and background colors remain unchanged (defaults)
-                generator.Save(outputPath);
-            }
-
-            // Inform the user where the barcode image was saved
-            Console.WriteLine($"Barcode saved to {outputPath}");
+            // Save the barcode image to the specified path in PNG format.
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
+
+        // Inform the user where the barcode image was saved.
+        Console.WriteLine("Barcode image saved to: " + outputPath);
     }
 }

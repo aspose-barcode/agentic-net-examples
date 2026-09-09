@@ -1,39 +1,46 @@
-// Title: Generate Code39 barcode with red and blue bars using Aspose.BarCode
-// Description: Demonstrates how to create a Code39 barcode, set its bar color to red, save it, then change the color to blue and save again.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating how to customize barcode appearance using the BarcodeGenerator class and its Parameters.Barcode properties. Typical use cases include generating barcodes with specific color schemes for branding or visual distinction. Developers often need to modify bar colors, sizes, and formats before saving to image files.
+// Title: Generate Code39 barcodes with red and blue bars
+// Description: Demonstrates how to create a Code39 barcode using Aspose.BarCode, first with red bars then with blue bars, and save each as PNG files.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and BarCodeImageFormat to customize barcode appearance. Developers often need to change visual properties such as bar color for branding or UI requirements, and this snippet shows the typical workflow for generating and saving barcodes with different colors.
 // Prompt: Use the same BarcodeGenerator to produce a red‑bar Code39 barcode, then change to blue‑bar and save again.
-// Tags: code39, barcode generation, color customization, png, aspose.barcode, aspose.drawing
+// Tags: barcode symbology, code39, color customization, image generation, aspnet, aspose.barcode, png
 
 using System;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a Code39 barcode with different bar colors and saving them as PNG images.
+/// Demonstrates generating Code39 barcodes with different bar colors using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates a barcode, changes its bar color, and saves the images.
+    /// Entry point. Generates a red-bar Code39 barcode, then changes to blue bars and saves both images.
     /// </summary>
     static void Main()
     {
-        // Initialize a BarcodeGenerator for Code39 with the sample text "123ABC"
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code39, "123ABC"))
-        {
-            // Set the bar (foreground) color to red
-            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Red;
-            // Save the red barcode as a PNG file
-            generator.Save("code39_red.png");
+        // Determine the directory where the executable is running.
+        string outputDir = Directory.GetCurrentDirectory();
 
-            // Change the bar color to blue
-            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Blue;
-            // Save the blue barcode as a PNG file
-            generator.Save("code39_blue.png");
+        // Build full file paths for the red and blue barcode images.
+        string redPath = Path.Combine(outputDir, "Code39_Red.png");
+        string bluePath = Path.Combine(outputDir, "Code39_Blue.png");
+
+        // Create a BarcodeGenerator for Code39 with the data "12345".
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code39, "12345"))
+        {
+            // Set bar color to red and save the image.
+            generator.Parameters.Barcode.BarColor = Color.Red;
+            generator.Save(redPath, BarCodeImageFormat.Png);
+
+            // Change bar color to blue and save the second image.
+            generator.Parameters.Barcode.BarColor = Color.Blue;
+            generator.Save(bluePath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user that the barcode images have been generated
-        Console.WriteLine("Red and blue Code39 barcodes have been generated.");
+        // Output the locations of the saved files.
+        Console.WriteLine($"Saved red barcode to: {redPath}");
+        Console.WriteLine($"Saved blue barcode to: {bluePath}");
     }
 }
