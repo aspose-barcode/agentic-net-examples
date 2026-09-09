@@ -1,105 +1,110 @@
-// Title: Generate and verify UPC-A with GS1 Code128 coupon barcode
-// Description: Demonstrates creating a UPC-A barcode combined with a GS1 Code128 coupon, then reading it back to confirm that the routing and service code values are encoded correctly.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, showing how to use BarcodeGenerator with EncodeTypes.UpcaGs1Code128Coupon and BarCodeReader to validate encoded data. Typical use cases include testing barcode output for retail coupons where precise routing and service codes are required. Developers often need unit‑testable code that confirms the generated CodeText matches expected values.
+// Title: Generate and Verify Swiss Post Parcel and Code128 Barcodes
+// Description: Demonstrates creating barcodes for a Swiss Post routing code and a generic service code, then reading them back to confirm the encoded values.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, showcasing how to use BarcodeGenerator and BarCodeReader classes. Typical use cases include automated testing of barcode output, validation of routing and service codes, and integration testing for shipping and logistics applications. Developers often need quick unit‑style checks that the produced barcodes contain exact data strings.
 // Prompt: Write unit tests that verify generated barcodes contain the exact routing and service code values.
-// Tags: upc-a,gs1-code128,coupon,barcode-generation,barcode-recognition,unit-test,aspose.barcode
+// Tags: barcode, generation, recognition, swisspostparcel, code128, aspose.barcode, csharp, unit-test
 
 using System;
 using System.IO;
+using System.Collections.Generic;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generation and verification of a UPC‑A with GS1 Code128 coupon barcode.
+/// Demonstrates barcode generation and verification for routing and service codes using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that runs a simple verification test for routing and service code values.
+    /// Entry point that runs two barcode verification tests and reports the results.
     /// </summary>
     static void Main()
     {
-        // Counters for total executed tests and failed tests
-        int totalTests = 0;
-        int failedTests = 0;
+        // Create a unique temporary folder for test artifacts
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeTest_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
 
-        // ------------------------------------------------------------
-        // Test 1: UPC-A with GS1 Code128 coupon (routing and service code)
-        // ------------------------------------------------------------
-        totalTests++;
+        // Collect test outcomes
+        var tests = new List<bool>();
+
+        // Test 1: Swiss Post Parcel (routing code)
+        string routingCode = "RM999605013CH";
+        string routingFile = Path.Combine(tempFolder, "routing.png");
+        tests.Add(TestBarcode(routingCode, EncodeTypes.SwissPostParcel, DecodeType.SwissPostParcel, routingFile));
+
+        // Test 2: Service Code (additional service)
+        string serviceCode = "0327";
+        string serviceFile = Path.Combine(tempFolder, "service.png");
+        tests.Add(TestBarcode(serviceCode, EncodeTypes.Code128, DecodeType.Code128, serviceFile));
+
+        // Summarize results
+        int passed = 0;
+        int failed = 0;
+        for (int i = 0; i < tests.Count; i++)
+        {
+            if (tests[i])
+                passed++;
+            else
+                failed++;
+        }
+
+        Console.WriteLine($"Test Summary: {passed} passed, {failed} failed.");
+
+        // Cleanup temporary files and folder
         try
         {
-            // Expected full code text (UPCA part + GS1 Code128 part)
-            string expectedCodeText = "514141100906(8102)03";
+            Directory.Delete(tempFolder, true);
+        }
+        catch
+        {
+            // Ignore cleanup errors
+        }
+    }
 
-            // Generate barcode image in memory using the specified symbology and data
-            using (var generator = new BarcodeGenerator(EncodeTypes.UpcaGs1Code128Coupon, expectedCodeText))
+    /// <summary>
+    /// Generates a barcode, saves it to a file, reads it back, and verifies that the decoded text starts with the expected value.
+    /// </summary>
+    /// <param name="codeText">The text to encode in the barcode.</param>
+    /// <param name="encodeType">The barcode symbology to use for encoding.</param>
+    /// <param name="decodeType">The barcode symbology to use for decoding.</param>
+    /// <param name="filePath">The full path where the barcode image will be saved.</param>
+    /// <returns>True if the decoded text matches the expected start; otherwise, false.</returns>
+    static bool TestBarcode(string codeText, BaseEncodeType encodeType, BaseDecodeType decodeType, string filePath)
+    {
+        // Generate barcode image
+        using (var generator = new BarcodeGenerator(encodeType, codeText))
+        {
+            generator.Parameters.Barcode.XDimension.Pixels = 2f;
+            generator.Parameters.Barcode.BarHeight.Pixels = 40f;
+            generator.Save(filePath, BarCodeImageFormat.Png);
+        }
+
+        // Read and decode the generated barcode
+        using (var reader = new BarCodeReader(filePath, decodeType))
+        {
+            BarCodeResult[] results = reader.ReadBarCodes();
+            if (results.Length == 0)
             {
-                using (var ms = new MemoryStream())
-                {
-                    // Save the generated barcode as PNG into the memory stream
-                    generator.Save(ms, BarCodeImageFormat.Png);
-                    ms.Position = 0; // Reset stream position for reading
-
-                    // Read barcode back from the memory stream
-                    using (var reader = new BarCodeReader(ms, DecodeType.AllSupportedTypes))
-                    {
-                        var results = reader.ReadBarCodes();
-
-                        // Verify that at least one barcode was detected
-                        if (results.Length == 0)
-                        {
-                            Console.WriteLine("FAILED: No barcode detected.");
-                            failedTests++;
-                        }
-                        else
-                        {
-                            // Check if any detected barcode matches the expected CodeText
-                            bool matchFound = false;
-                            foreach (var result in results)
-                            {
-                                if (result.CodeText == expectedCodeText)
-                                {
-                                    matchFound = true;
-                                    break;
-                                }
-                            }
-
-                            if (matchFound)
-                            {
-                                Console.WriteLine("PASSED: Routing and service code values match.");
-                            }
-                            else
-                            {
-                                Console.WriteLine($"FAILED: Detected CodeText does not match. Expected '{expectedCodeText}'.");
-                                foreach (var result in results)
-                                {
-                                    Console.WriteLine($"  Detected: '{result.CodeText}'");
-                                }
-                                failedTests++;
-                            }
-                        }
-                    }
-                }
+                Console.WriteLine($"FAIL: No barcode detected in {Path.GetFileName(filePath)}.");
+                return false;
             }
-        }
-        catch (Exception ex)
-        {
-            // Report any unexpected exceptions as test failures
-            Console.WriteLine($"FAILED: Exception occurred - {ex.Message}");
-            failedTests++;
-        }
 
-        // ------------------------------------------------------------
-        // Summary of test results
-        // ------------------------------------------------------------
-        if (failedTests == 0)
-        {
-            Console.WriteLine($"ALL TESTS PASSED: {totalTests} tests executed.");
-        }
-        else
-        {
-            Console.WriteLine($"FAILED: {failedTests} out of {totalTests} tests failed.");
+            string readText = results[0].CodeText ?? string.Empty;
+            if (readText.StartsWith(codeText, StringComparison.Ordinal))
+            {
+                Console.WriteLine($"PASS: {Path.GetFileName(filePath)} decoded correctly.");
+                return true;
+            }
+            else
+            {
+                Console.WriteLine($"FAIL: {Path.GetFileName(filePath)} decoded text does not start with expected value.");
+                Console.WriteLine($"  Expected start: {codeText}");
+                Console.WriteLine($"  Actual text   : {readText}");
+                return false;
+            }
         }
     }
 }

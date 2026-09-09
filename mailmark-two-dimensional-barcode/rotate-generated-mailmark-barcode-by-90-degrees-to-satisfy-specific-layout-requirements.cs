@@ -1,46 +1,57 @@
-// Title: Rotate Mailmark barcode by 90 degrees
-// Description: Demonstrates generating a Mailmark barcode using Aspose.BarCode and rotating the image 90 degrees for layout requirements.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on complex barcode types such as Mailmark. It showcases the use of ComplexBarcodeGenerator and MailmarkCodetext classes to create a barcode, adjust rendering parameters like rotation, and save the result as an image. Developers working with postal barcodes or custom layout constraints can refer to this pattern for similar implementations.
+// Title: Rotating a Mailmark barcode by 90 degrees
+// Description: Demonstrates generating a Mailmark 4‑state barcode and rotating it 90° for layout requirements.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category, focusing on Mailmark symbology. It shows how to configure Mailmark parameters, set barcode dimensions, apply rotation, and save the image using ComplexBarcodeGenerator. Developers working with postal barcodes often need to adjust orientation for printing on pre‑designed forms, making this pattern useful for integrating Mailmark into custom workflows.
 // Prompt: Rotate the generated Mailmark barcode by 90 degrees to satisfy specific layout requirements.
-// Tags: mailmark, barcode, rotation, image, aspnet, aspose.barcode, complexbarcodegenerator, csharp
+// Tags: mailmark, barcode, rotation, complexbarcode, generation, png, aspnet.barcode
 
 using System;
+using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.ComplexBarcode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generating and rotating a Mailmark barcode using Aspose.BarCode.
+/// Generates a Mailmark 4‑state barcode, rotates it 90°, and saves as PNG.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates a Mailmark barcode, rotates it 90 degrees, and saves the image.
+    /// Entry point that creates output directory, configures Mailmark data, generates the barcode, and writes the file path to console.
     /// </summary>
     static void Main()
     {
-        // Prepare Mailmark codetext with valid sample data
-        var mailmark = new MailmarkCodetext
+        // Build a unique temporary folder for the output file
+        string outputDir = Path.Combine(Path.GetTempPath(), "MailmarkExample_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputDir);
+
+        // Define the full path for the resulting PNG image
+        string outputPath = Path.Combine(outputDir, "Mailmark4State_Rotated.png");
+
+        // Set up Mailmark specific data fields
+        MailmarkCodetext mailmark = new MailmarkCodetext
         {
-            // 4-state Mailmark format
             Format = 4,
             VersionID = 1,
             Class = "0",
             SupplychainID = 384224,
             ItemID = 16563762,
-            // Trailing space is required for the DestinationPostCodePlusDPS field
             DestinationPostCodePlusDPS = "EF61AH8T "
         };
 
-        // Generate the Mailmark barcode and apply a 90‑degree rotation
-        using (var generator = new ComplexBarcodeGenerator(mailmark))
+        // Generate the barcode using the complex barcode generator
+        using (ComplexBarcodeGenerator generator = new ComplexBarcodeGenerator(mailmark))
         {
-            // RotationAngle is a root Parameters property
+            // Define the module size (pixel dimension) of the barcode
+            generator.Parameters.Barcode.XDimension.Pixels = 4;
+
+            // Rotate the barcode image by 90 degrees
             generator.Parameters.RotationAngle = 90f;
 
-            // Save the rotated barcode image to a PNG file
-            generator.Save("MailmarkRotated.png");
+            // Save the rotated barcode to the specified path
+            generator.Save(outputPath);
         }
 
-        Console.WriteLine("Mailmark barcode generated and rotated successfully.");
+        // Inform the user where the barcode image was saved
+        Console.WriteLine($"Barcode saved to: {outputPath}");
     }
 }

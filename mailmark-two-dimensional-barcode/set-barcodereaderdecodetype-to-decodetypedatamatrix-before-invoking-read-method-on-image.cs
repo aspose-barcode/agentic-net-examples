@@ -1,6 +1,6 @@
 // Title: Read DataMatrix Barcode from Generated Image
-// Description: Generates a DataMatrix barcode, saves it as a PNG file, and then decodes it using BarCodeReader.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator to create a barcode image and BarCodeReader to recognize and decode the barcode. Developers often need to generate barcodes for labeling or tracking and later verify or extract the encoded data, requiring knowledge of setting DecodeType before reading.
+// Description: Generates a DataMatrix barcode, saves it as a PNG file, then reads and prints its content using Aspose.BarCode.
+// Category-Description: This example demonstrates basic barcode generation and recognition with Aspose.BarCode. It showcases the use of BarcodeGenerator for creating a DataMatrix symbol and BarCodeReader for decoding it. Developers working on inventory, tracking, or any application that requires encoding and decoding DataMatrix symbology can refer to this pattern for quick implementation.
 // Prompt: Set BarCodeReader.DecodeType to DecodeType.DataMatrix before invoking the Read method on the image.
 // Tags: datamatrix, barcode, generation, recognition, decode, aspose.barcode
 
@@ -8,53 +8,57 @@ using System;
 using System.IO;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a DataMatrix barcode image and decoding it using Aspose.BarCode.
+/// Demonstrates generating a DataMatrix barcode, saving it as an image, and then reading it back.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a DataMatrix barcode, saves it, and reads it back.
+    /// Entry point of the demo. Generates a barcode, reads it, and cleans up temporary files.
     /// </summary>
     static void Main()
     {
-        // Path where the generated barcode image will be saved
-        string imagePath = "datamatrix.png";
+        // Create a unique temporary folder for the demo files
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
 
-        // ------------------------------------------------------------
-        // Generate a DataMatrix barcode and save it as a PNG file
-        // ------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, "Hello"))
+        // Define the full path for the generated DataMatrix PNG image
+        string imagePath = Path.Combine(tempFolder, "datamatrix.png");
+
+        // Generate a DataMatrix barcode with the text "123456" and save it as PNG
+        using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, "123456"))
         {
-            // Optional: configure additional DataMatrix parameters here
-            // generator.Parameters.Barcode.DataMatrix.Version = DataMatrixVersion.ECC200_10x10;
-
-            // Save the barcode image to the specified path
             generator.Save(imagePath, BarCodeImageFormat.Png);
         }
 
-        // Verify that the image file was created successfully
+        // Verify that the image file was successfully created
         if (!File.Exists(imagePath))
         {
-            Console.WriteLine($"Failed to create barcode image at '{Path.GetFullPath(imagePath)}'.");
+            Console.WriteLine("Failed to create barcode image.");
             return;
         }
 
-        // ------------------------------------------------------------
-        // Read and decode the barcode from the generated image
-        // ------------------------------------------------------------
-        using (var reader = new BarCodeReader(imagePath))
+        // Initialize the reader to decode only DataMatrix barcodes from the image
+        using (var reader = new BarCodeReader(imagePath, DecodeType.DataMatrix))
         {
-            // Set the decode type to DataMatrix before performing the read operation
-            reader.BarCodeReadType = DecodeType.DataMatrix;
-
-            // Iterate through all detected barcodes (expected one in this case)
-            foreach (var result in reader.ReadBarCodes())
+            // Iterate through all detected barcodes and output their type and text
+            foreach (BarCodeResult result in reader.ReadBarCodes())
             {
-                Console.WriteLine($"Detected Type: {result.CodeTypeName}");
-                Console.WriteLine($"Code Text: {result.CodeText}");
+                Console.WriteLine($"{result.CodeTypeName}:{result.CodeText}");
             }
+        }
+
+        // Attempt to delete the temporary image and folder; ignore any errors
+        try
+        {
+            File.Delete(imagePath);
+            Directory.Delete(tempFolder);
+        }
+        catch
+        {
+            // Cleanup failures are non‑critical for this demo
         }
     }
 }

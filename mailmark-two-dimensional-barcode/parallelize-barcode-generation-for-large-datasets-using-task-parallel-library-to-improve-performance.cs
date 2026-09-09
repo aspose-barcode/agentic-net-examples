@@ -1,71 +1,77 @@
-// Title: Parallel Barcode Generation with TPL
-// Description: Demonstrates generating multiple Code128 barcodes concurrently using Aspose.BarCode and the Task Parallel Library to improve throughput for large datasets.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, showcasing how to create barcode images in bulk. It uses the BarcodeGenerator class with EncodeTypes.Code128, configures basic parameters, and saves PNG files. Developers often need to generate many barcodes quickly, and parallelizing the work with TPL is a common technique to reduce processing time.
+// Title: Parallel barcode generation using TPL
+// Description: Demonstrates generating Code128 barcodes in parallel to improve performance for large datasets.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use BarcodeGenerator, EncodeTypes, and BarCodeImageFormat to create image files. Typical use cases include batch processing of inventory items, bulk ticket creation, or any scenario requiring high‑throughput barcode production. Developers often need to parallelize such tasks to fully utilize CPU resources.
 // Prompt: Parallelize barcode generation for large datasets using Task Parallel Library to improve performance.
-// Tags: barcode symbology, generation, parallel, tpl, png, aspose.barcode, code128
+// Tags: code128, barcode generation, parallel processing, png, aspose.barcode, aspose.drawing
 
 using System;
-using System.Collections.Generic;
 using System.IO;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates parallel generation of Code128 barcodes using Aspose.BarCode and TPL.
+/// Entry point for the parallel barcode generation example.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates barcodes for a sample list in parallel and saves them as PNG files.
+    /// Generates barcodes for a sample list of codes in parallel and saves them as PNG files.
     /// </summary>
     static void Main()
     {
-        // Prepare a small sample dataset of code texts.
-        var codeTexts = new List<string>
+        // Create a temporary folder for generated barcodes
+        string outputFolder = Path.Combine(Path.GetTempPath(), "Barcodes_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputFolder);
+        Console.WriteLine($"Output folder: {outputFolder}");
+
+        // Sample dataset of code texts to be encoded
+        List<string> codeTexts = new List<string>
         {
-            "12345",
-            "ABCDE",
-            "987654321",
-            "CODE128",
-            "Test123"
+            "Item001",
+            "Item002",
+            "Item003",
+            "Item004",
+            "Item005",
+            "Item006",
+            "Item007",
+            "Item008",
+            "Item009",
+            "Item010"
         };
 
-        // Create output folder for the generated barcode images.
-        var outputFolder = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
-        Directory.CreateDirectory(outputFolder);
+        // Configure parallel execution options (use all logical processors)
+        ParallelOptions options = new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount };
 
-        // Parallelize barcode generation using the Task Parallel Library.
-        var tasks = new List<Task>();
-        for (int i = 0; i < codeTexts.Count; i++)
+        // Parallel generation using TPL
+        Parallel.ForEach(codeTexts, options, codeText =>
         {
-            int index = i; // Capture loop variable for the task closure.
-            tasks.Add(Task.Run(() =>
+            string filePath = Path.Combine(outputFolder, $"{codeText}.png");
+            try
             {
-                // Each barcode generation uses its own BarcodeGenerator instance.
-                using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeTexts[index]))
+                // Initialize the barcode generator for Code128 symbology
+                using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
                 {
-                    // Optional: set barcode appearance parameters.
-                    generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
+                    // Set common barcode parameters
                     generator.Parameters.Barcode.XDimension.Point = 2f;
+                    generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
+                    generator.Parameters.BackColor = Aspose.Drawing.Color.White;
+                    generator.Parameters.Resolution = 300f;
 
-                    // Define the output file path for this barcode.
-                    var outputPath = Path.Combine(outputFolder, $"barcode_{index + 1}.png");
-
-                    // Save the barcode image in PNG format.
-                    generator.Save(outputPath, BarCodeImageFormat.Png);
+                    // Save the generated barcode as a PNG image
+                    generator.Save(filePath, BarCodeImageFormat.Png);
                 }
 
-                // Log progress to the console.
-                Console.WriteLine($"Generated barcode {index + 1} for text '{codeTexts[index]}'");
-            }));
-        }
+                Console.WriteLine($"Generated: {filePath}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error generating barcode for '{codeText}': {ex.Message}");
+            }
+        });
 
-        // Wait for all barcode generation tasks to complete.
-        Task.WaitAll(tasks.ToArray());
-
-        // Indicate that the process has finished.
-        Console.WriteLine("All barcodes have been generated.");
+        Console.WriteLine("Barcode generation completed.");
     }
 }
