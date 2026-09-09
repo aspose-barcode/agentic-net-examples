@@ -1,40 +1,45 @@
-// Title: Generate a Code128 barcode with a custom top caption
-// Description: Demonstrates how to create a Code128 barcode and place a custom text caption above the bars using Aspose.BarCode.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator and its Parameters to customize barcode appearance. Typical use cases include adding descriptive labels, product information, or branding above barcodes. Developers often need to adjust caption visibility, alignment, font, and color to meet design requirements.
+// Title: Create Code128 barcode with text positioned above the bars
+// Description: Demonstrates generating a Code128 barcode and placing the human‑readable text above the barcode symbols.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use the BarcodeGenerator class with EncodeTypes, CodeLocation, and BarCodeImageFormat to customize barcode appearance. Typical use cases include creating printable labels, inventory tags, or product packaging where text placement is required. Developers often need to adjust text location, spacing, and output format when integrating barcode creation into .NET applications.
 // Prompt: Create a barcode with custom text positioned above the bars (top placement).
-// Tags: code128, barcode symbology, caption, top placement, png, barcodegenerator, generation
+// Tags: code128, text placement, barcode generation, png, aspose.barcode, barcode symbology
 
 using System;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates creating a Code128 barcode with a caption positioned above the bars.
+/// Example program that generates a Code128 barcode with the code text displayed above the bars.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates the barcode and saves it as a PNG file.
+    /// Entry point of the example. Generates the barcode, saves it as PNG, and writes the output path to the console.
     /// </summary>
     static void Main()
     {
-        // Initialize a BarcodeGenerator for Code128 symbology with the desired code text.
+        // Define a temporary output directory and ensure it exists.
+        string outputDir = Path.Combine(Path.GetTempPath(), "BarcodeExample");
+        Directory.CreateDirectory(outputDir);
+
+        // Full path for the generated barcode image.
+        string outPath = Path.Combine(outputDir, "barcode_top.png");
+
+        // Create a BarcodeGenerator for Code128 with the desired data.
         using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
         {
-            // Configure the caption that will appear above the barcode bars.
-            generator.Parameters.CaptionAbove.Text = "Top Caption";
-            generator.Parameters.CaptionAbove.Visible = true;
-            generator.Parameters.CaptionAbove.Alignment = TextAlignment.Center;
-            generator.Parameters.CaptionAbove.TextColor = Color.Blue;
-            generator.Parameters.CaptionAbove.Font.FamilyName = "Helvetica";
-            generator.Parameters.CaptionAbove.Font.Size.Point = 12f;
+            // Position the human‑readable text above the barcode bars.
+            generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.Above;
 
-            // Save the generated barcode image to a PNG file.
-            generator.Save("barcode.png");
+            // Set the spacing between the text and the barcode (5 points).
+            generator.Parameters.Barcode.CodeTextParameters.Space.Point = 5f;
+
+            // Save the barcode image as PNG to the specified path.
+            generator.Save(outPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user that the barcode image has been saved.
-        Console.WriteLine("Barcode image saved as 'barcode.png'.");
+        // Inform the user where the barcode image was saved.
+        Console.WriteLine($"Barcode saved to {outPath}");
     }
 }

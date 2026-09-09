@@ -1,49 +1,29 @@
-// Title: Batch generate Code128 barcodes from identifiers and save as JPEG files
-// Description: Demonstrates how to generate a series of Code128 barcodes using Aspose.BarCode, assigning each record's identifier as the CodeText and storing the images as JPEG files.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating batch creation of barcodes from a data source. It showcases the use of BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes to produce images suitable for printing, labeling, or digital distribution. Developers often need to generate many barcodes programmatically—for inventory, shipping, or ticketing—by iterating over database records or other collections.
+// Title: Batch generate Code128 barcodes and save as JPEG files
+// Description: Demonstrates how to create a series of Code128 barcodes from a collection of identifiers and store each image as a JPEG file.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing the use of BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes. Typical scenarios include bulk barcode creation for inventory, shipping labels, or product catalogs, where developers need to automate image output for many records.
 // Prompt: Batch generate barcodes from a database query, using each record’s identifier as CodeText and saving as JPEG.
-// Tags: barcode symbology, batch generation, jpeg output, aspose.barcode, code128, csharp
+// Tags: code128, barcode generation, jpeg, aspose.barcode, batch, file-output
 
 using System;
 using System.IO;
+using System.Collections.Generic;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates batch barcode generation using Aspose.BarCode.
+/// Provides an entry point for generating a batch of Code128 barcodes and saving them as JPEG images.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates barcodes for a set of identifiers and saves them as JPEG images.
+    /// Generates barcodes for a simulated list of identifiers, saves each as a JPEG file, and writes progress to the console.
     /// </summary>
     static void Main()
     {
-        // Define the output folder for generated barcode images
-        string outputFolder = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
-        if (!Directory.Exists(outputFolder))
-        {
-            // Create the folder if it does not already exist
-            Directory.CreateDirectory(outputFolder);
-        }
-
-        // -----------------------------------------------------------------
-        // NOTE: In a real scenario you would retrieve identifiers from a
-        // database using ADO.NET, Entity Framework, Dapper, etc.
-        // Example (pseudo‑code):
-        //   using (var connection = new SqlConnection(connectionString))
-        //   {
-        //       connection.Open();
-        //       var ids = connection.Query<string>("SELECT Identifier FROM MyTable");
-        //       foreach (var id in ids) { GenerateBarcode(id, outputFolder); }
-        //   }
-        // The required database packages are not available in the snippet runner,
-        // so we substitute with a local sample collection.
-        // -----------------------------------------------------------------
-
-        // Sample identifiers to simulate database records
-        string[] sampleIds = new string[]
+        // Simulated database records: list of identifiers to be encoded as barcodes.
+        List<string> identifiers = new List<string>
         {
             "ID001",
             "ID002",
@@ -52,32 +32,34 @@ class Program
             "ID005"
         };
 
-        // Generate a barcode for each identifier
-        foreach (string id in sampleIds)
+        // Create a unique temporary folder for the generated JPEG barcode images.
+        string outputFolder = Path.Combine(Path.GetTempPath(), "Barcodes_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputFolder);
+        Console.WriteLine("Barcodes will be saved to: " + outputFolder);
+
+        // Iterate over each identifier, generate a barcode, and save it as a JPEG file.
+        for (int i = 0; i < identifiers.Count; i++)
         {
-            GenerateBarcode(id, outputFolder);
+            string codeText = identifiers[i];
+            string fileName = $"barcode_{i + 1}.jpg";
+            string filePath = Path.Combine(outputFolder, fileName);
+
+            // Initialize the barcode generator with Code128 symbology and the current identifier.
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+            {
+                // Optional: set image resolution and suppress exceptions for invalid CodeText.
+                generator.Parameters.Resolution = 300f;
+                generator.Parameters.Barcode.ThrowExceptionWhenCodeTextIncorrect = false;
+
+                // Save the generated barcode image as a JPEG file.
+                generator.Save(filePath, BarCodeImageFormat.Jpeg);
+            }
+
+            Console.WriteLine($"Generated barcode for '{codeText}' -> {filePath}");
         }
 
-        Console.WriteLine("Barcode generation completed.");
-    }
-
-    /// <summary>
-    /// Generates a Code128 barcode image for the specified text and saves it as a JPEG file.
-    /// </summary>
-    /// <param name="codeText">The text to encode in the barcode (e.g., a database identifier).</param>
-    /// <param name="outputFolder">The folder where the JPEG image will be saved.</param>
-    static void GenerateBarcode(string codeText, string outputFolder)
-    {
-        // Build the full file path for the JPEG image
-        string filePath = Path.Combine(outputFolder, $"{codeText}.jpg");
-
-        // Create a BarcodeGenerator for Code128 symbology with the given code text
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
-        {
-            // Save the barcode image as JPEG
-            generator.Save(filePath, BarCodeImageFormat.Jpeg);
-        }
-
-        Console.WriteLine($"Saved barcode for '{codeText}' to '{filePath}'.");
+        // Note: In a real scenario, replace the simulated list with a database query,
+        // e.g., using SqlConnection, SqlCommand, and SqlDataReader to fetch identifiers.
+        // The barcode generation logic would remain unchanged.
     }
 }

@@ -1,34 +1,43 @@
-// Title: Apply semi‑transparent background color to QR code barcode
-// Description: Demonstrates how to set a custom ARGB background color on a QR code using Aspose.BarCode and save it as a PNG image.
-// Category-Description: This example belongs to the Aspose.BarCode image generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and drawing parameters to customize barcode appearance. Typical use cases include branding, UI overlays, and visual emphasis where developers need to modify background colors, transparency, or other visual properties before exporting the barcode.
+// Title: Apply Semi-Transparent Background Color to a Barcode Image
+// Description: Demonstrates how to generate a Code128 barcode with a custom semi‑transparent background using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode image generation category, showcasing how to customize visual aspects of generated barcodes. It uses the BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes to create and save barcode images. Developers often need to adjust colors, backgrounds, and output formats to match branding or UI requirements, and this snippet illustrates those common tasks.
 // Prompt: Apply a custom background color using ARGB value (255,255,255,0) to create a semi‑transparent effect.
-// Tags: qr code, background color, png, aspose.barcode, aspose.drawing
+// Tags: barcode, code128, background color, argb, semi-transparent, png, aspose.barcode, generation
 
 using System;
+using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates applying a semi‑transparent background color to a QR code and saving it as a PNG file.
+/// Generates a Code128 barcode with a semi‑transparent background and saves it as a PNG file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a QR code with a custom ARGB background and writes the image to disk.
+    /// Entry point of the example. Creates the barcode, applies custom colors, and writes the image to disk.
     /// </summary>
     static void Main()
     {
-        // Initialize a QR code generator with the desired text.
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Sample Text"))
+        // Define the full path for the output PNG file.
+        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "barcode.png");
+
+        // Initialize the barcode generator with Code128 symbology and the desired text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
         {
-            // Set the background color to semi‑transparent white (ARGB 255,255,255,0).
+            // Set a semi‑transparent background using ARGB (alpha=255, red=255, green=255, blue=0).
             generator.Parameters.BackColor = Color.FromArgb(255, 255, 255, 0);
 
-            // Export the barcode as a PNG image file.
-            generator.Save("barcode.png");
+            // Set the barcode bars to solid black.
+            generator.Parameters.Barcode.BarColor = Color.Black;
+
+            // Save the generated barcode as a PNG image to the specified path.
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user that the file has been created.
-        Console.WriteLine("Barcode image saved to barcode.png");
+        // Inform the user where the barcode image was saved.
+        Console.WriteLine($"Barcode saved to: {outputPath}");
     }
 }

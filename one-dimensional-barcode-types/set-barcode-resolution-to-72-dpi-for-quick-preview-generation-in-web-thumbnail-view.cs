@@ -1,35 +1,42 @@
-// Title: Generate a low‑resolution barcode thumbnail (72 DPI) using Aspose.BarCode
-// Description: Demonstrates how to create a Code128 barcode image with a resolution of 72 DPI, suitable for quick preview thumbnails in web applications.
-// Category-Description: This example belongs to the Aspose.BarCode image generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and resolution settings. Developers often need to produce low‑resolution barcode images for thumbnails, previews, or email attachments, where speed and file size are more important than print quality. The snippet shows the typical workflow of configuring barcode parameters and saving the result.
+// Title: Generate low‑resolution barcode preview (72 DPI)
+// Description: Creates a Code128 barcode image at 72 DPI, suitable for quick thumbnail previews in web applications.
+// Category-Description: Demonstrates how to use Aspose.BarCode to generate barcode images with custom resolution. This example belongs to the image generation category, highlighting the BarcodeGenerator class, EncodeTypes enumeration, and resolution settings. Developers often need low‑resolution previews for fast rendering in web UI or email attachments.
 // Prompt: Set barcode resolution to 72 DPI for quick preview generation in a web thumbnail view.
-// Tags: barcode, code128, resolution, thumbnail, preview, aspose.barcode, image generation, png
+// Tags: code128, resolution, preview, png, aspose.barcode, image generation
 
 using System;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 
 /// <summary>
-/// Example program that creates a Code128 barcode image with a low resolution (72 DPI) for use as a web thumbnail.
+/// Example program that generates a low‑resolution barcode image for quick preview purposes.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates the barcode and saves it as a PNG file.
+    /// Generates a Code128 barcode at 72 DPI and saves it as a PNG file.
     /// </summary>
-    static void Main()
+    /// <param name="args">Command‑line arguments (not used).</param>
+    static void Main(string[] args)
     {
-        // Initialize a barcode generator for the Code128 symbology.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128))
-        {
-            // Define the data to encode in the barcode.
-            generator.CodeText = "123456";
+        // Determine a temporary file path for the output image.
+        string outputPath = Path.Combine(Path.GetTempPath(), "barcode_preview.png");
 
-            // Configure the image resolution to 72 DPI to keep the file lightweight for quick previews.
+        // Create a barcode generator for Code128 with the desired text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
+        {
+            // Set low resolution (72 DPI) for fast preview generation.
             generator.Parameters.Resolution = 72f;
 
-            // Render the barcode and write it to a PNG file.
-            generator.Save("barcode_thumbnail.png");
+            // Optionally adjust the X dimension to improve visibility at low resolution.
+            generator.Parameters.Barcode.XDimension.Pixels = 2f;
+
+            // Save the generated barcode as a PNG image.
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
+
+        // Inform the user where the image was saved.
+        Console.WriteLine($"Barcode image saved to: {outputPath}");
     }
 }

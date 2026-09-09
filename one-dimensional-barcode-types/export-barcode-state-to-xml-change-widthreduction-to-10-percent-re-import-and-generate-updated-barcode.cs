@@ -1,65 +1,96 @@
 // Title: Export Barcode State to XML, Modify Width Reduction, and Regenerate Barcode
-// Description: Demonstrates exporting a barcode generator's state to an XML file, adjusting the BarWidthReduction property, and creating an updated barcode image.
-// Category-Description: This example belongs to the Aspose.BarCode generation and state management category. It shows how to use BarcodeGenerator to save a barcode image, export its configuration to XML, modify parameters such as BarWidthReduction, re-import the configuration, and generate a new barcode. Developers working with barcode customization, persistence, and batch processing commonly use the BarcodeGenerator, EncodeTypes, and related parameter classes to store and reuse barcode settings.
+// Description: Demonstrates exporting a barcode generator's configuration to XML, adjusting the BarWidthReduction to 10 percent, re‑importing the modified settings, and creating an updated barcode image.
+// Category-Description: This example belongs to the Aspose.BarCode configuration management category. It shows how to use BarcodeGenerator.ExportToXml and BarcodeGenerator.ImportFromXml to persist and modify barcode settings such as BarWidthReduction. Developers working with barcode generation often need to store configurations, edit them programmatically or manually, and regenerate barcodes without recreating the generator from scratch. The key API classes are BarcodeGenerator, BarCodeImageFormat, and System.Xml.Linq for XML manipulation.
 // Prompt: Export barcode state to XML, change WidthReduction to 10 percent, re‑import, and generate updated barcode.
-// Tags: barcode, code128, xml, export, import, widthreduction, generation, aspose.barcode
+// Tags: barcode, export, import, xml, widthreduction, code128, png, aspose.barcode, configuration
 
 using System;
 using System.IO;
+using System.Linq;
+using System.Xml.Linq;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Example program that demonstrates exporting a barcode's configuration to XML,
-/// modifying the BarWidthReduction setting, and regenerating the barcode image.
+/// Demonstrates exporting a barcode generator's state to XML, modifying the bar width reduction,
+/// re‑importing the configuration, and generating an updated barcode image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates an initial barcode, saves its state,
-    /// updates the width reduction, and saves the updated barcode.
+    /// Entry point that creates an initial barcode, saves its configuration, updates the BarWidthReduction,
+    /// and produces both original and updated barcode images.
     /// </summary>
     static void Main()
     {
-        // Define file paths for the original image, XML state, and updated image.
-        string originalImagePath = "barcode_original.png";
-        string xmlPath = "barcode_state.xml";
-        string updatedImagePath = "barcode_updated.png";
+        // Prepare a unique temporary output directory
+        string outputDir = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputDir);
 
-        // ------------------------------------------------------------
-        // Step 1: Generate a barcode, save the image, and export its state to XML.
-        // ------------------------------------------------------------
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
+        // Define file paths for XML state and PNG images
+        string xmlPath = Path.Combine(outputDir, "generator.xml");
+        string originalPath = Path.Combine(outputDir, "original.png");
+        string updatedPath = Path.Combine(outputDir, "updated.png");
+
+        // --------------------------------------------------------------------
+        // Create the initial barcode, save the image, and export its state to XML
+        // --------------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
         {
-            // Save the original barcode image to disk.
-            generator.Save(originalImagePath);
+            // Set X-dimension (module width) to 2 points
+            generator.Parameters.Barcode.XDimension.Point = 2f;
 
-            // Export the generator's configuration (state) to an XML file.
-            bool exported = generator.ExportToXml(xmlPath);
-            Console.WriteLine($"Exported to XML: {exported}");
+            // Save the original barcode image as PNG
+            generator.Save(originalPath, BarCodeImageFormat.Png);
+
+            // Export the generator's configuration to an XML file
+            generator.ExportToXml(xmlPath);
         }
 
-        // ------------------------------------------------------------
-        // Step 2: Verify the XML file exists before attempting import.
-        // ------------------------------------------------------------
-        if (!File.Exists(xmlPath))
+        // ---------------------------------------------------------------
+        // Load the exported XML and modify the BarWidthReduction to 10%
+        // ---------------------------------------------------------------
+        if (File.Exists(xmlPath))
         {
-            Console.WriteLine("XML file not found. Exiting.");
+            XDocument doc = XDocument.Load(xmlPath);
+
+            // Try to find an existing <BarWidthReduction> element
+            var reductionElement = doc.Descendants("BarWidthReduction").FirstOrDefault();
+            if (reductionElement != null)
+            {
+                reductionElement.Value = "10";
+            }
+            else
+            {
+                // If the element is missing, add it under the <Barcode> node
+                var barcodeElement = doc.Descendants("Barcode").FirstOrDefault();
+                if (barcodeElement != null)
+                {
+                    barcodeElement.Add(new XElement("BarWidthReduction", "10"));
+                }
+            }
+
+            // Save the modified XML back to disk
+            doc.Save(xmlPath);
+        }
+        else
+        {
+            Console.WriteLine("Exported XML file not found.");
             return;
         }
 
-        // ------------------------------------------------------------
-        // Step 3: Import the barcode generator from the XML, modify the
-        // BarWidthReduction property, and save the updated barcode image.
-        // ------------------------------------------------------------
-        using (BarcodeGenerator importedGenerator = BarcodeGenerator.ImportFromXml(xmlPath))
+        // ---------------------------------------------------------------
+        // Import the modified configuration and generate the updated barcode
+        // ---------------------------------------------------------------
+        using (var generator = BarcodeGenerator.ImportFromXml(xmlPath))
         {
-            // Set BarWidthReduction to 10 points (approximately 10 percent of the bar width).
-            importedGenerator.Parameters.Barcode.BarWidthReduction.Point = 10f;
-
-            // Save the updated barcode image to disk.
-            importedGenerator.Save(updatedImagePath);
-            Console.WriteLine($"Updated barcode saved to: {updatedImagePath}");
+            // Save the updated barcode image as PNG
+            generator.Save(updatedPath, BarCodeImageFormat.Png);
         }
+
+        // Output the locations of the generated files
+        Console.WriteLine($"Original barcode saved to: {originalPath}");
+        Console.WriteLine($"Updated barcode saved to: {updatedPath}");
+        Console.WriteLine($"Modified XML saved to: {xmlPath}");
     }
 }

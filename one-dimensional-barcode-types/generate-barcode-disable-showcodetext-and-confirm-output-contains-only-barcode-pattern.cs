@@ -1,8 +1,8 @@
-// Title: Generate Code128 barcode without human‑readable text and save as PNG
-// Description: Demonstrates creating a Code128 barcode, disabling the displayed code text, and saving the result as a PNG image.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to configure barcode appearance using BarcodeGenerator and its Parameters. Developers commonly use these APIs to customize symbology, hide or position human‑readable text, and export barcodes in various image formats for integration into documents, labels, or web applications.
+// Title: Generate Code128 barcode without human‑readable text
+// Description: Creates a Code128 barcode image, disables the display of the code text, and saves it as a PNG file.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to use the BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes to produce barcode images. Typical use cases include creating barcodes for product labeling, inventory tracking, and document automation where developers often need to hide the human‑readable code text for aesthetic or security reasons. The snippet serves as a reference for developers searching for barcode generation patterns in C#.
 // Prompt: Generate a barcode, disable ShowCodeText, and confirm output contains only the barcode pattern.
-// Tags: code128, hidecodetext, png, barcodegenerator, aspose.barcode
+// Tags: code128, barcode generation, hide codetext, png, aspose.barcode, barcodegenerator
 
 using System;
 using System.IO;
@@ -10,35 +10,35 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
-namespace BarcodeSample
+/// <summary>
+/// Demonstrates generating a Code128 barcode image with the human‑readable text hidden.
+/// </summary>
+class Program
 {
     /// <summary>
-    /// Provides a simple console application that generates a Code128 barcode,
-    /// disables the human‑readable text, and saves the image as a PNG file.
+    /// Entry point. Generates the barcode, disables code text, saves PNG, and writes output path.
     /// </summary>
-    class Program
+    static void Main()
     {
-        /// <summary>
-        /// Entry point of the application. Creates the barcode, configures visual settings,
-        /// and writes the output file to the current directory.
-        /// </summary>
-        static void Main()
+        // Create a unique temporary directory for the output file.
+        string tempDir = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+
+        // Define the full path for the generated PNG image.
+        string outputPath = Path.Combine(tempDir, "barcode.png");
+
+        // Initialize the barcode generator for Code128 with the desired data.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
         {
-            // Initialize a BarcodeGenerator for Code128 with the desired code text ("12345").
-            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "12345"))
-            {
-                // Hide the human‑readable text by setting its location to None (equivalent to disabling ShowCodeText).
-                generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.None;
+            // Disable the human‑readable code text by setting its location to None.
+            generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.None;
 
-                // Determine the full path for the output PNG file in the current working directory.
-                string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "barcode.png");
-
-                // Save the generated barcode image to the specified path in PNG format.
-                generator.Save(outputPath, BarCodeImageFormat.Png);
-            }
-
-            // Inform the user that the barcode has been generated without the code text.
-            Console.WriteLine("Barcode generated and saved to 'barcode.png' with ShowCodeText disabled.");
+            // Save the barcode image as PNG to the specified path.
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
+
+        // Inform the user where the barcode image was saved.
+        Console.WriteLine($"Barcode generated at: {outputPath}");
+        Console.WriteLine("Human‑readable text disabled (CodeLocation.None).");
     }
 }

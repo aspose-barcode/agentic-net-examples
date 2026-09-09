@@ -1,60 +1,46 @@
-// Title: Generate Continuous DataBar Omnidirectional Barcodes as JPEG Images
-// Description: Demonstrates how to create multiple DataBar Omnidirectional barcodes with a fixed bar height and save them as JPEG files using Aspose.BarCode.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating the use of the BarcodeGenerator class with EncodeTypes.DatabarOmniDirectional. Developers commonly generate DataBar symbols for retail and inventory applications, adjusting parameters such as bar height, X‑dimension, and output image format. The snippet shows typical steps: setting up the generator, configuring barcode parameters, and saving the image.
+// Title: Generate DataBar Omnidirectional barcode as JPEG
+// Description: Demonstrates creating a continuous DataBar Omnidirectional barcode with a 50‑pixel bar height and saving it as a JPEG image.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to use the BarcodeGenerator class with EncodeTypes.DatabarOmniDirectional. Typical use cases include encoding GS1 data for retail, inventory, or logistics applications where high‑density, omnidirectional barcodes are required. Developers often need to set dimensions such as X‑dimension and bar height before exporting to common image formats like JPEG.
 // Prompt: Produce continuous DataBar Omnidirectional barcodes with bar height 50 pixels, output JPEG.
-// Tags: databar, omnidirectional, barcode, generation, jpeg, aspose.barcode, c#
+// Tags: databars, omnidirectional, barcode, generation, jpeg, aspose.barcode
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates a series of DataBar Omnidirectional barcodes
-/// and saves each as a JPEG image.
+/// Example program that generates a DataBar Omnidirectional barcode and saves it as a JPEG file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Creates an output folder, generates five
-    /// barcodes with a fixed height, and writes them to JPEG files.
+    /// Entry point of the application. Creates output directory, generates the barcode, and saves it.
     /// </summary>
-    static void Main()
+    /// <param name="args">Command‑line arguments (not used).</param>
+    static void Main(string[] args)
     {
-        // Define the output directory for generated barcode images
-        string outputDir = "Barcodes";
+        // Define the output directory relative to the current working directory.
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Output");
+        // Ensure the directory exists.
+        Directory.CreateDirectory(outputDir);
 
-        // Ensure the output directory exists
-        if (!Directory.Exists(outputDir))
+        // Build the full file path for the resulting JPEG image.
+        string filePath = Path.Combine(outputDir, "DataBarOmniDirectional.jpg");
+
+        // Initialize the barcode generator with the desired symbology and data.
+        using (var generator = new BarcodeGenerator(EncodeTypes.DatabarOmniDirectional, "(01)12345678901231"))
         {
-            Directory.CreateDirectory(outputDir);
+            // Set the X‑dimension (module width) in pixels.
+            generator.Parameters.Barcode.XDimension.Pixels = 2;
+            // Set the bar height to 50 pixels as required.
+            generator.Parameters.Barcode.BarHeight.Pixels = 50;
+
+            // Save the generated barcode image as a JPEG file.
+            generator.Save(filePath, BarCodeImageFormat.Jpeg);
         }
 
-        // Loop to generate 5 distinct DataBar Omnidirectional barcodes
-        for (int i = 0; i < 5; i++)
-        {
-            // Sample GTIN code text for DataBar symbology; the last digit varies per iteration
-            string codeText = $"(01)1234567890123{i}";
-
-            // Initialize the barcode generator with the desired symbology and text
-            using (var generator = new BarcodeGenerator(EncodeTypes.DatabarOmniDirectional, codeText))
-            {
-                // Set the bar height to 50 pixels (AutoSizeMode is None by default)
-                generator.Parameters.Barcode.BarHeight.Pixels = 50f;
-
-                // Optionally adjust the X-dimension for better visual scaling
-                generator.Parameters.Barcode.XDimension.Pixels = 2f;
-
-                // Build the full file path for the JPEG output
-                string filePath = Path.Combine(outputDir, $"databar_omni_{i}.jpg");
-
-                // Save the generated barcode image as a JPEG file
-                generator.Save(filePath, BarCodeImageFormat.Jpeg);
-            }
-        }
-
-        // Inform the user that the process completed successfully
-        Console.WriteLine("Barcode images generated successfully.");
+        // Inform the user where the barcode image has been saved.
+        Console.WriteLine($"Barcode saved to: {filePath}");
     }
 }

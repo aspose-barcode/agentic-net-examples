@@ -1,41 +1,43 @@
-// Title: Render Barcode to File Stream Using Aspose.BarCode
-// Description: Demonstrates how to generate a Code128 barcode and save it directly to a file stream in PNG format.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and BarCodeImageFormat to create barcode images. Typical use cases include generating barcodes on the fly for reports, labels, or web applications, where developers need to write the image to a stream for further processing or storage.
+// Title: Render barcode to a file stream using Aspose.BarCode Save method
+// Description: Demonstrates how to generate a Code128 barcode and write it directly to a file stream, then close the stream to release resources.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator to create barcodes and the Save method to output images to streams. Typical use cases include server‑side barcode creation for web services, batch processing, or saving to custom storage. Developers often need to work with FileStream, MemoryStream, or other streams to integrate barcode images into file systems, databases, or HTTP responses.
 // Prompt: Render barcode directly to a file stream using Save method, then close the stream to release resources.
-// Tags: code128, barcode generation, file stream, png, aspose.barcode, save method
+// Tags: barcode generation, code128, save to stream, png, aspose.barcode, file stream
 
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
-namespace BarcodeStreamExample
+/// <summary>
+/// Demonstrates rendering a Code128 barcode directly to a file stream using Aspose.BarCode.
+/// </summary>
+class Program
 {
     /// <summary>
-    /// Provides an entry point that generates a Code128 barcode and writes it to a PNG file via a stream.
+    /// Entry point that creates a temporary directory, generates a barcode, saves it to a file via a stream, and outputs the file path.
     /// </summary>
-    class Program
+    static void Main()
     {
-        /// <summary>
-        /// Generates a barcode image and saves it directly to a file stream.
-        /// </summary>
-        static void Main()
+        // Create a unique temporary directory for the demo
+        string tempDir = Path.Combine(Path.GetTempPath(), "BarcodeStreamDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+
+        // Build full file path for the PNG barcode image
+        string filePath = Path.Combine(tempDir, "barcode.png");
+
+        // Open a FileStream for writing the barcode image
+        using (FileStream stream = new FileStream(filePath, FileMode.Create, FileAccess.Write))
         {
-            // Define the output file path for the generated barcode image.
-            string outputPath = "barcode.png";
-
-            // Initialize a BarcodeGenerator with Code128 symbology and sample text.
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123ABC"))
+            // Initialize BarcodeGenerator with Code128 symbology and data
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "12345678"))
             {
-                // Create a FileStream for writing the barcode image to the specified file.
-                using (var fileStream = new FileStream(outputPath, FileMode.Create, FileAccess.Write))
-                {
-                    // Save the barcode directly to the stream in PNG format.
-                    generator.Save(fileStream, BarCodeImageFormat.Png);
-                } // The FileStream is disposed and closed here.
-            } // The BarcodeGenerator is disposed here.
+                // Save the generated barcode to the stream in PNG format
+                generator.Save(stream, BarCodeImageFormat.Png);
+            } // BarcodeGenerator disposed here, releasing internal resources
+        } // FileStream disposed here, closing the stream and releasing the file handle
 
-            // Output the full path of the saved barcode image for verification.
-            Console.WriteLine($"Barcode image saved to: {Path.GetFullPath(outputPath)}");
-        }
+        // Output the location of the saved barcode file
+        Console.WriteLine($"Barcode saved to stream and file: {filePath}");
     }
 }

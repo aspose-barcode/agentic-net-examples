@@ -1,76 +1,79 @@
-// Title: Generate ITF14 barcode with custom quiet zone and embed into PDF
-// Description: Demonstrates creating an ITF14 barcode with a quiet‑zone coefficient of 0.2, rendering it to PNG, and inserting the image into an existing PDF document.
-// Category-Description: This example belongs to the Aspose.BarCode for .NET barcode generation category, illustrating how to configure barcode parameters such as size, colors, and quiet zone, and how to combine the generated image with Aspose.Pdf to produce a combined report. Typical use cases include adding product barcodes to invoices, shipping labels, or other PDF reports where precise barcode rendering is required. Developers often need to adjust quiet‑zone settings and embed barcodes programmatically, using BarcodeGenerator, BarcodeParameters, and Aspose.Pdf Document classes.
+// Title: Generate ITF14 barcode and embed into PDF with quiet zone coefficient
+// Description: Demonstrates creating an ITF14 barcode, optionally setting a quiet zone coefficient, and embedding the barcode image into a PDF document.
+// Category-Description: This example belongs to the Aspose.BarCode generation and Aspose.Pdf embedding category. It shows how to use BarcodeGenerator (EncodeTypes.ITF14) to produce a barcode, configure barcode parameters such as X‑Dimension and quiet zone, and then insert the resulting image into a PDF using Aspose.Pdf Document, Page, and Image classes. Developers creating reports, invoices, or shipping labels often need to generate barcodes and place them directly into PDF files.
 // Prompt: Generate ITF barcodes with quiet zone coefficient 0.2, embed into existing PDF report.
-// Tags: itf14, barcode, quietzone, pdf, aspose.barcode, aspose.pdf, image-embedding, generation
+// Tags: itf, barcode, pdf, embed, quietzone, aspose.barcode, aspose.pdf, csharp
 
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Pdf;
+using Aspose.Pdf.Text;
 
 /// <summary>
-/// Demonstrates generating an ITF14 barcode with a custom quiet zone and embedding it into a PDF.
+/// Example program that generates an ITF14 barcode and embeds it into a PDF report.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates a source PDF if missing, generates the barcode, and saves the result.
+    /// Entry point. Generates the barcode, applies quiet zone settings, and creates a PDF file containing the barcode image.
     /// </summary>
     static void Main()
     {
-        // Define file paths for the source PDF and the output PDF
-        string inputPdfPath = "input.pdf";
-        string outputPdfPath = "output.pdf";
+        // Sample data
+        string barcodeText = "12345678901231"; // 14 digits for ITF14
+        float quietZoneCoefficient = 0.2f; // Desired coefficient (invalid per API)
 
-        // If the source PDF does not exist, create a simple one-page document
-        if (!File.Exists(inputPdfPath))
+        // Validate quiet zone coefficient
+        if (quietZoneCoefficient < 10f)
         {
-            var emptyDoc = new Document();
-            emptyDoc.Pages.Add();
-            emptyDoc.Save(inputPdfPath);
+            Console.WriteLine("Quiet zone coefficient must be at least 10. Using default value.");
         }
 
-        // Initialize an ITF14 barcode generator with a 14‑digit value
-        using (var generator = new BarcodeGenerator(EncodeTypes.ITF14, "12345678901231"))
+        // Prepare output PDF path
+        string outputPdfPath = Path.Combine(Path.GetTempPath(), "ITFReport.pdf");
+
+        // Generate ITF barcode
+        using (var generator = new BarcodeGenerator(EncodeTypes.ITF14, barcodeText))
         {
-            // Configure basic appearance settings
-            generator.Parameters.AutoSizeMode = AutoSizeMode.None;
-            generator.Parameters.Barcode.BarHeight.Point = 50f;
-            generator.Parameters.Barcode.XDimension.Point = 2f;
-            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-            generator.Parameters.BackColor = Aspose.Drawing.Color.White;
+            // Set basic barcode parameters
+            generator.Parameters.Barcode.XDimension.Pixels = 2f;
+            generator.Parameters.Resolution = 300;
 
-            // Calculate quiet zone based on the X‑dimension (0.2 * XDimension)
-            float quietZone = generator.Parameters.Barcode.XDimension.Point * 0.2f;
-            generator.Parameters.Barcode.Padding.Left.Point = quietZone;
-            generator.Parameters.Barcode.Padding.Right.Point = quietZone;
-            generator.Parameters.Barcode.Padding.Top.Point = quietZone;
-            generator.Parameters.Barcode.Padding.Bottom.Point = quietZone;
+            // Apply quiet zone coefficient only if valid
+            if (quietZoneCoefficient >= 10f)
+            {
+                generator.Parameters.Barcode.ITF.QuietZoneCoef = (int)quietZoneCoefficient;
+            }
 
-            // Render the barcode to a memory stream in PNG format
+            // Save barcode to memory stream
             using (var barcodeStream = new MemoryStream())
             {
                 generator.Save(barcodeStream, BarCodeImageFormat.Png);
-                barcodeStream.Position = 0; // Reset stream position for reading
+                barcodeStream.Position = 0;
 
-                // Load the existing PDF and embed the barcode image on the first page
-                using (var pdfDoc = new Document(inputPdfPath))
+                // Create PDF and embed barcode image
+                using (var pdfDoc = new Document())
                 {
-                    var page = pdfDoc.Pages[1];
+                    var page = pdfDoc.Pages.Add();
+
                     var pdfImage = new Aspose.Pdf.Image
                     {
                         ImageStream = barcodeStream,
-                        FixWidth = 150,
-                        FixHeight = 50,
-                        HorizontalAlignment = Aspose.Pdf.HorizontalAlignment.Center,
-                        VerticalAlignment = Aspose.Pdf.VerticalAlignment.Center,
-                        Margin = new Aspose.Pdf.MarginInfo { Top = 10 }
+                        FixWidth = 200.0,
+                        FixHeight = 100.0,
+                        HorizontalAlignment = HorizontalAlignment.Center,
+                        VerticalAlignment = VerticalAlignment.Center,
+                        Margin = new MarginInfo { Top = 20 }
                     };
+
                     page.Paragraphs.Add(pdfImage);
                     pdfDoc.Save(outputPdfPath);
                 }
             }
         }
+
+        Console.WriteLine($"PDF with embedded ITF barcode saved to: {outputPdfPath}");
     }
 }

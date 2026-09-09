@@ -1,14 +1,15 @@
-// Title: Generate Code128 barcode with dark red bars and verify PNG output
-// Description: This example creates a Code128 barcode, sets the bar color to dark red, saves it as a PNG file, and programmatically checks that the saved image contains the expected color.
-// Category-Description: Demonstrates Aspose.BarCode generation features such as customizing barcode appearance (foreground color) and exporting to PNG. It uses BarcodeGenerator, EncodeTypes, BarCodeImageFormat, and Aspose.Drawing classes to create and verify the image. Ideal for developers needing to apply branding colors to barcodes and ensure visual correctness in automated pipelines.
+// Title: Generate Code128 Barcode with Dark Red Bars and Verify PNG Color
+// Description: This example creates a Code128 barcode, sets the bar color to dark red, saves it as a PNG, and checks that the saved image contains the expected color.
+// Category-Description: Demonstrates Aspose.BarCode image generation and color manipulation. It uses BarcodeGenerator, BarcodeParameters, and Aspose.Drawing to produce a barcode image, then reads the PNG with Bitmap to verify pixel colors. Developers working with barcode rendering, custom colors, and image validation can reference this pattern for testing visual output.
 // Prompt: Create a barcode, set ForeColor to dark red, and verify color appears correctly in saved PNG.
-// Tags: barcode, code128, colormodification, png, aspose.barcode, generation, verification, csharp
+// Tags: barcode, code128, color, png, verification, aspose.barcode, aspose.drawing, image-generation
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
 /// Demonstrates creating a barcode with a custom foreground color and verifying the saved image.
@@ -16,59 +17,54 @@ using Aspose.Drawing;
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a Code128 barcode, applies a dark red bar color,
-    /// saves it as PNG, and validates that the color appears in the output file.
+    /// Entry point of the example. Generates a barcode, saves it as PNG, and validates the bar color.
     /// </summary>
     static void Main()
     {
-        // Define the output file path for the generated barcode image.
-        string outputPath = "barcode.png";
+        // Prepare an output directory in the temporary folder.
+        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
+        Directory.CreateDirectory(outputDir);
+        string filePath = Path.Combine(outputDir, "barcode.png");
 
-        // Create a barcode generator for Code128 with sample text.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123ABC"))
+        // Create a Code128 barcode with dark red bars and save it as PNG.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
         {
-            // Set the foreground (bars) color to dark red.
-            generator.Parameters.Barcode.BarColor = Color.FromArgb(139, 0, 0); // DarkRed
-
-            // Save the barcode as a PNG image.
-            generator.Save(outputPath, BarCodeImageFormat.Png);
+            // Set the barcode's foreground (bar) color to dark red (RGB 139,0,0).
+            generator.Parameters.Barcode.BarColor = Color.FromArgb(139, 0, 0);
+            generator.Save(filePath, BarCodeImageFormat.Png);
         }
 
-        // Verify that the saved image file exists.
-        if (!File.Exists(outputPath))
+        // Ensure the image file was created successfully.
+        if (!File.Exists(filePath))
         {
             Console.WriteLine("Failed to create barcode image.");
             return;
         }
 
-        bool colorFound = false;
-
-        // Load the saved PNG and scan its pixels to locate a dark red bar.
-        using (var bitmap = new Bitmap(outputPath))
+        // Load the saved PNG to verify that the dark red color is present.
+        using (var bitmap = new Bitmap(filePath))
         {
-            // Iterate over each pixel until a matching color is found.
-            for (int y = 0; y < bitmap.Height && !colorFound; y++)
+            Color expected = Color.FromArgb(139, 0, 0);
+            bool matchFound = false;
+
+            // Scan each pixel until a matching dark red pixel is found.
+            for (int y = 0; y < bitmap.Height && !matchFound; y++)
             {
-                for (int x = 0; x < bitmap.Width && !colorFound; x++)
+                for (int x = 0; x < bitmap.Width && !matchFound; x++)
                 {
                     Color pixel = bitmap.GetPixel(x, y);
-
-                    // Skip background pixels (assumed white).
-                    if (pixel.ToArgb() != Color.White.ToArgb())
+                    // Skip white background pixels; check for the expected color.
+                    if (!pixel.Equals(Color.White) && pixel.ToArgb() == expected.ToArgb())
                     {
-                        // Check if the pixel matches the expected dark red color.
-                        if (pixel.ToArgb() == Color.FromArgb(139, 0, 0).ToArgb())
-                        {
-                            colorFound = true;
-                        }
+                        matchFound = true;
                     }
                 }
             }
-        }
 
-        // Output the verification result.
-        Console.WriteLine(colorFound
-            ? "Color verification passed: dark red bars detected."
-            : "Color verification failed: dark red bars not detected.");
+            // Output verification result.
+            Console.WriteLine(matchFound
+                ? "Barcode color verified as dark red."
+                : "Barcode color verification failed.");
+        }
     }
 }

@@ -1,44 +1,59 @@
-// Title: Generate Code128 barcode and obtain raw PNG byte array
-// Description: Demonstrates creating a Code128 barcode with Aspose.BarCode, saving it to a memory stream in PNG format, and extracting the raw byte array for network transmission.
-// Category-Description: This example belongs to the Aspose.BarCode image generation category, illustrating how to use BarcodeGenerator and related parameter classes to customize barcode appearance, render the image to a stream, and retrieve binary data. Developers working with barcode creation for web services, APIs, or file storage commonly need to generate barcodes on‑the‑fly and send the resulting bytes over the network. The snippet showcases key classes such as BarcodeGenerator, EncodeTypes, BarCodeImageFormat, and the Parameters property for visual tweaks.
+// Title: Generate DataMatrix barcode from binary data and obtain raw PNG byte array
+// Description: Demonstrates how to use Aspose.BarCode's BarcodeGenerator to encode binary data into a DataMatrix barcode and retrieve the resulting image as a raw byte array for transmission.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and BarCodeImageFormat to create 2‑D barcodes. Typical scenarios include encoding binary payloads for inventory, authentication, or data‑exchange applications where the generated image must be sent over a network or stored without writing to disk. Developers often need to obtain the image bytes directly for APIs, web services, or custom transport layers.
 // Prompt: Use BarCodeBuilder to create a barcode and retrieve the raw byte array for network transmission.
-// Tags: barcode, code128, generation, png, bytearray, network, aspose.barcode, barcodegenerator
+// Tags: datamatrix, binary, barcode generation, raw byte array, network transmission, aspnet, aspose.barcode, csharp
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates barcode generation and raw byte extraction using Aspose.BarCode.
+/// Demonstrates generating a DataMatrix barcode from binary data and extracting the image bytes.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a Code128 barcode, saves it as PNG to a memory stream,
-    /// and obtains the byte array for further processing or transmission.
+    /// Entry point that creates the barcode, saves it to a memory stream, and outputs the byte array length.
     /// </summary>
     static void Main()
     {
-        // Initialize a barcode generator for Code128 with the desired text
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "123ABC"))
+        // Check if the legacy BarCodeBuilder type exists (it may not be present in newer versions)
+        Type builderType = Type.GetType("Aspose.BarCode.Generation.BarCodeBuilder, Aspose.BarCode");
+        if (builderType != null)
         {
-            // Optional: customize the barcode's foreground and background colors
-            generator.Parameters.Barcode.BarColor = Color.Black;
-            generator.Parameters.BackColor = Color.White;
+            Console.WriteLine("BarCodeBuilder type found, but this example uses BarcodeGenerator for compatibility.");
+        }
+        else
+        {
+            Console.WriteLine("BarCodeBuilder type not found; using BarcodeGenerator instead.");
+        }
 
-            // Create a memory stream to hold the generated PNG image
-            using (MemoryStream ms = new MemoryStream())
+        // Sample binary data to encode into the barcode
+        byte[] dataToEncode = new byte[] { 0x01, 0x02, 0x03, 0x04, 0xFF, 0x00 };
+
+        // Create a BarcodeGenerator configured for DataMatrix, which supports binary encoding
+        using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix))
+        {
+            // Assign the binary payload to the barcode
+            generator.SetCodeText(dataToEncode);
+            // Set the DataMatrix encoding mode to Binary to handle raw bytes
+            generator.Parameters.Barcode.DataMatrix.EncodeMode = DataMatrixEncodeMode.Binary;
+            // Define the size of each module (pixel) in the generated image
+            generator.Parameters.Barcode.XDimension.Pixels = 8f;
+            // Optional human‑readable text displayed alongside the barcode
+            generator.Parameters.Barcode.CodeTextParameters.TwoDDisplayText = "Binary data";
+
+            // Save the generated barcode image to a memory stream in PNG format
+            using (var ms = new MemoryStream())
             {
-                // Save the barcode image into the memory stream in PNG format
                 generator.Save(ms, BarCodeImageFormat.Png);
+                // Retrieve the raw image bytes for further processing or network transmission
+                byte[] rawBytes = ms.ToArray();
 
-                // Convert the stream contents to a raw byte array for transmission
-                byte[] barcodeBytes = ms.ToArray();
-
-                // Example usage: display the size of the generated byte array
-                Console.WriteLine($"Generated barcode byte array length: {barcodeBytes.Length}");
+                Console.WriteLine($"Generated barcode image byte array length: {rawBytes.Length}");
+                // Example placeholder: transmit rawBytes over a network here
             }
         }
     }

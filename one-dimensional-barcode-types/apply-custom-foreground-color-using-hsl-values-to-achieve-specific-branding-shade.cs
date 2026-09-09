@@ -1,102 +1,110 @@
-// Title: Apply Custom HSL Foreground Color to a Code128 Barcode
-// Description: Demonstrates how to convert HSL values to an Aspose.Drawing.Color and apply it as the foreground bar color of a Code128 barcode, then save the image as PNG.
-// Category-Description: This example belongs to the barcode appearance customization category of Aspose.BarCode. It shows how to use the BarcodeGenerator class together with the Parameters.Barcode.BarColor property to modify bar colors, and how to set background colors. Developers often need to match corporate branding by applying specific colors using standard color models such as HSL.
+// Title: Apply custom foreground color to barcode using HSL values
+// Description: Demonstrates how to generate a Code128 barcode and set its foreground color using HSL values to match a branding shade.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showing how to customize barcode appearance with the BarcodeGenerator class. It covers setting the BarColor property, converting HSL to RGB, and saving the image. Developers often need to match corporate branding or design guidelines when creating barcodes for print or digital media.
 // Prompt: Apply a custom foreground color using HSL values to achieve a specific branding shade.
-// Tags: code128, color, png, barcodegenerator, parameters
+// Tags: barcode, code128, color, hsl, branding, aspose.barcode, generation, png, custom color
 
 using System;
-using Aspose.BarCode;
+using System.IO;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
-/// <summary>
-/// Demonstrates applying a custom foreground color defined by HSL values to a barcode.
-/// </summary>
-class Program
+namespace CustomBarcodeColorExample
 {
     /// <summary>
-    /// Converts HSL (Hue 0‑360, Saturation 0‑1, Lightness 0‑1) to an Aspose.Drawing.Color.
+    /// Demonstrates applying a custom foreground color to a barcode using HSL values.
     /// </summary>
-    /// <param name="hue">Hue component in degrees.</param>
-    /// <param name="saturation">Saturation component (0‑1).</param>
-    /// <param name="lightness">Lightness component (0‑1).</param>
-    /// <returns>Corresponding Color instance.</returns>
-    static Color ColorFromHsl(float hue, float saturation, float lightness)
+    class Program
     {
-        // Normalize hue to the range [0,360)
-        hue = hue % 360f;
-        if (hue < 0) hue += 360f;
-
-        float c = (1f - Math.Abs(2f * lightness - 1f)) * saturation;
-        float hPrime = hue / 60f;
-        float x = c * (1f - Math.Abs(hPrime % 2f - 1f));
-
-        float r1 = 0, g1 = 0, b1 = 0;
-        if (0 <= hPrime && hPrime < 1)
+        /// <summary>
+        /// Entry point. Generates a Code128 barcode with a branding color and saves it as PNG.
+        /// </summary>
+        static void Main()
         {
-            r1 = c; g1 = x; b1 = 0;
+            // Define the barcode data and symbology
+            string codeText = "1234567890";
+            BaseEncodeType encodeType = EncodeTypes.Code128;
+
+            // Branding color expressed in HSL (example: hue 210°, saturation 0.75, lightness 0.4)
+            float hue = 210f;          // 0‑360 degrees
+            float saturation = 0.75f;  // 0‑1 range
+            float lightness = 0.40f;   // 0‑1 range
+
+            // Convert HSL to an Aspose.Drawing.Color (RGB)
+            Color brandingColor = ColorFromHsl(hue, saturation, lightness);
+
+            // Determine a temporary file path for the output PNG
+            string outputPath = Path.Combine(Path.GetTempPath(), "custom_barcode.png");
+
+            // Create the barcode generator with the specified symbology and data
+            using (var generator = new BarcodeGenerator(encodeType, codeText))
+            {
+                // Apply the custom foreground color
+                generator.Parameters.Barcode.BarColor = brandingColor;
+
+                // Generate the barcode image and save it as PNG
+                using (Bitmap bitmap = generator.GenerateBarCodeImage())
+                {
+                    bitmap.Save(outputPath, ImageFormat.Png);
+                }
+            }
+
+            // Inform the user where the file was saved
+            Console.WriteLine($"Barcode saved to: {outputPath}");
         }
-        else if (1 <= hPrime && hPrime < 2)
+
+        // Converts HSL values to an Aspose.Drawing.Color (RGB)
+        private static Color ColorFromHsl(float h, float s, float l)
         {
-            r1 = x; g1 = c; b1 = 0;
-        }
-        else if (2 <= hPrime && hPrime < 3)
-        {
-            r1 = 0; g1 = c; b1 = x;
-        }
-        else if (3 <= hPrime && hPrime < 4)
-        {
-            r1 = 0; g1 = x; b1 = c;
-        }
-        else if (4 <= hPrime && hPrime < 5)
-        {
-            r1 = x; g1 = 0; b1 = c;
-        }
-        else if (5 <= hPrime && hPrime < 6)
-        {
-            r1 = c; g1 = 0; b1 = x;
-        }
+            // Normalize hue to [0,360)
+            h = h % 360f;
+            if (h < 0) h += 360f;
 
-        float m = lightness - c / 2f;
-        int r = (int)Math.Round((r1 + m) * 255f);
-        int g = (int)Math.Round((g1 + m) * 255f);
-        int b = (int)Math.Round((b1 + m) * 255f);
+            // Clamp saturation and lightness to [0,1]
+            s = Math.Clamp(s, 0f, 1f);
+            l = Math.Clamp(l, 0f, 1f);
 
-        // Clamp RGB values to valid byte range
-        r = Math.Clamp(r, 0, 255);
-        g = Math.Clamp(g, 0, 255);
-        b = Math.Clamp(b, 0, 255);
+            // Compute chroma
+            float c = (1f - Math.Abs(2f * l - 1f)) * s;
+            float hPrime = h / 60f;
+            float x = c * (1f - Math.Abs(hPrime % 2f - 1f));
 
-        return Color.FromArgb(r, g, b);
-    }
+            // Determine intermediate RGB values
+            float r1 = 0f, g1 = 0f, b1 = 0f;
+            if (0f <= hPrime && hPrime < 1f)
+            {
+                r1 = c; g1 = x; b1 = 0f;
+            }
+            else if (1f <= hPrime && hPrime < 2f)
+            {
+                r1 = x; g1 = c; b1 = 0f;
+            }
+            else if (2f <= hPrime && hPrime < 3f)
+            {
+                r1 = 0f; g1 = c; b1 = x;
+            }
+            else if (3f <= hPrime && hPrime < 4f)
+            {
+                r1 = 0f; g1 = x; b1 = c;
+            }
+            else if (4f <= hPrime && hPrime < 5f)
+            {
+                r1 = x; g1 = 0f; b1 = c;
+            }
+            else if (5f <= hPrime && hPrime < 6f)
+            {
+                r1 = c; g1 = 0f; b1 = x;
+            }
 
-    /// <summary>
-    /// Generates a Code128 barcode with a custom HSL foreground color and saves it as a PNG file.
-    /// </summary>
-    static void Main()
-    {
-        // Define branding shade using HSL (example: hue=210°, saturation=0.75, lightness=0.4)
-        float hue = 210f;          // degrees
-        float saturation = 0.75f;  // 0..1
-        float lightness = 0.40f;   // 0..1
+            // Add match value to shift from chroma to lightness
+            float m = l - c / 2f;
+            int r = (int)Math.Round((r1 + m) * 255f);
+            int g = (int)Math.Round((g1 + m) * 255f);
+            int b = (int)Math.Round((b1 + m) * 255f);
 
-        // Convert HSL to a Color object usable by Aspose.BarCode
-        Color brandingColor = ColorFromHsl(hue, saturation, lightness);
-
-        // Initialize a Code128 barcode generator with sample text
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "BRAND123"))
-        {
-            // Apply the custom foreground (bar) color
-            generator.Parameters.Barcode.BarColor = brandingColor;
-
-            // Optional: set a white background for contrast
-            generator.Parameters.BackColor = Color.White;
-
-            // Define output path and save the barcode image as PNG
-            string outputPath = "custom_color_barcode.png";
-            generator.Save(outputPath, BarCodeImageFormat.Png);
-
-            Console.WriteLine($"Barcode saved to {outputPath} with custom color (HSL {hue}, {saturation}, {lightness}).");
+            // Return the final ARGB color (fully opaque)
+            return Color.FromArgb(255, r, g, b);
         }
     }
 }

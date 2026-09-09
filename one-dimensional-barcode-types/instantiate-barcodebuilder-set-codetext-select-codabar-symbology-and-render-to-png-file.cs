@@ -1,36 +1,72 @@
-// Title: Generate Codabar Barcode and Save as PNG
-// Description: Demonstrates how to create a Codabar barcode using Aspose.BarCode, set the code text, and save the image as a PNG file.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of the BarcodeGenerator class with EncodeTypes to produce barcodes. Typical scenarios include creating shipping labels, inventory tags, or any application requiring Codabar symbology. Developers often need to set the encoded text, choose a symbology, and export the result to common image formats such as PNG.
+// Title: Generate Codabar barcode and save as PNG
+// Description: Demonstrates creating a Codabar barcode with Aspose.BarCode, setting the code text, and saving the image as a PNG file.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating how to use BarCodeBuilder (via reflection) and BarcodeGenerator to produce barcodes. It covers key API classes such as BarCodeBuilder, BarcodeGenerator, EncodeTypes, and BarCodeImageFormat, which developers commonly use for creating various symbologies and exporting them to image formats.
 // Prompt: Instantiate BarCodeBuilder, set CodeText, select Codabar symbology, and render to PNG file.
-// Tags: barcode, codabar, generation, png, aspose.barcode, barcodegenerator, encodetypes
+// Tags: barcode, codabar, generation, png, aspose.barcode, barcodelibrary, imageoutput
 
 using System;
+using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Example program that generates a Codabar barcode and saves it as a PNG image.
+/// Demonstrates generating a Codabar barcode and saving it as a PNG file using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Creates a BarcodeGenerator, configures it, and writes the barcode to disk.
+    /// Entry point of the example. Creates the output path, attempts to use BarCodeBuilder via reflection,
+    /// falls back to BarcodeGenerator if necessary, and writes the resulting image file.
     /// </summary>
     static void Main()
     {
-        // Define the output file path for the generated PNG image
-        string outputPath = "codabar.png";
+        // Define the output file path in the current directory
+        string outputFile = Path.Combine(Directory.GetCurrentDirectory(), "codabar.png");
 
-        // Initialize the barcode generator with the Codabar symbology
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Codabar))
+        // Try to locate BarCodeBuilder type via reflection (optional, may not be present)
+        Type builderType = Type.GetType("Aspose.BarCode.BarCodeBuilder, Aspose.BarCode");
+        if (builderType != null)
         {
-            // Assign the text that will be encoded in the barcode
-            generator.CodeText = "A123456A";
+            try
+            {
+                // Create an instance of BarCodeBuilder
+                object builder = Activator.CreateInstance(builderType);
 
-            // Save the generated barcode image to the specified path in PNG format
-            generator.Save(outputPath);
+                // Set the barcode text (CodeText property)
+                var codeTextProp = builderType.GetProperty("CodeText");
+                if (codeTextProp != null && codeTextProp.CanWrite)
+                {
+                    codeTextProp.SetValue(builder, "-12345-");
+                }
+
+                // Set the symbology to Codabar (BarcodeType or Symbology property)
+                var symProp = builderType.GetProperty("BarcodeType") ?? builderType.GetProperty("Symbology");
+                if (symProp != null && symProp.CanWrite)
+                {
+                    symProp.SetValue(builder, EncodeTypes.Codabar);
+                }
+
+                // Invoke the Save method to write the PNG file
+                var saveMethod = builderType.GetMethod("Save", new Type[] { typeof(string), typeof(BarCodeImageFormat) });
+                if (saveMethod != null)
+                {
+                    saveMethod.Invoke(builder, new object[] { outputFile, BarCodeImageFormat.Png });
+                    Console.WriteLine($"Barcode generated using BarCodeBuilder at: {outputFile}");
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                // Log any reflection errors and fall back to the generator approach
+                Console.WriteLine($"Error using BarCodeBuilder: {ex.Message}");
+            }
         }
 
-        // Inform the user that the barcode has been successfully saved
-        Console.WriteLine($"Barcode saved to {outputPath}");
+        // Fallback: use BarcodeGenerator directly to create the Codabar barcode
+        using (var generator = new BarcodeGenerator(EncodeTypes.Codabar, "-12345-"))
+        {
+            generator.Save(outputFile, BarCodeImageFormat.Png);
+        }
+        Console.WriteLine($"Barcode generated using BarcodeGenerator at: {outputFile}");
     }
 }

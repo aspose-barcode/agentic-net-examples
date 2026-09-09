@@ -1,62 +1,47 @@
-// Title: Automatic barcode size adjustment based on CodeText length
-// Description: Demonstrates how to generate Code128 barcodes where the image dimensions automatically adapt to the length of the supplied CodeText.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and AutoSizeMode for dynamic sizing. Developers often need to create barcodes of varying lengths without manually calculating dimensions, and this pattern shows typical usage for generating PNG images in batch.
+// Title: Automatic Barcode Size Adjustment Based on Code Text Length
+// Description: Demonstrates how Aspose.BarCode automatically adjusts barcode dimensions according to the length of the CodeText without manual size settings.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator with EncodeTypes.Code128. It shows typical use cases where developers need barcodes that automatically scale to fit varying data lengths, avoiding manual width/height configuration. The example highlights key classes such as BarcodeGenerator, EncodeTypes, and BarCodeImageFormat, useful for generating PNG barcodes in batch.
 // Prompt: Enable automatic size adjustment so dimensions adapt based on the length of CodeText.
-// Tags: barcode, code128, autosize, dynamic sizing, png, aspose.barcode, generation
+// Tags: barcode, code128, autosize, generation, png, aspnet, aspose.barcode
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates automatic size adjustment for Code128 barcodes based on the length of the CodeText.
+/// Generates a set of Code128 barcodes where each barcode's size automatically adapts to the length of its CodeText.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a set of barcodes with varying text lengths, saving each as a PNG file.
+    /// Entry point of the example. Creates temporary output folder, generates barcodes for predefined texts,
+    /// and saves them as PNG files with dimensions adjusted automatically.
     /// </summary>
     static void Main()
     {
-        // Define a collection of sample code texts with different lengths
-        string[] codeTexts = new[]
-        {
-            "A1",
-            "ABC123",
-            "LongerCodeTextExample12345",
-            "EvenLongerCodeTextExampleThatExceedsTypicalLengths1234567890"
-        };
+        // Build a unique temporary directory for the demo output
+        string outputDir = Path.Combine(Path.GetTempPath(), "AutoSizeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputDir);
 
-        // Ensure the output directory exists before saving images
-        string outputDir = "Barcodes";
-        if (!Directory.Exists(outputDir))
-        {
-            Directory.CreateDirectory(outputDir);
-        }
+        // Sample CodeText values of varying lengths
+        string[] codeTexts = { "A", "ABC123", "LongerCodeTextExample12345" };
 
-        // Iterate over each sample text and generate a corresponding barcode
-        foreach (var text in codeTexts)
+        // Iterate over each text, generate a barcode, and save it
+        foreach (string text in codeTexts)
         {
-            // Initialize the generator for Code128, which supports alphanumeric strings
+            // File name includes the length of the text for easy identification
+            string filePath = Path.Combine(outputDir, $"barcode_{text.Length}.png");
+
+            // Initialize generator with Code128 symbology and the current text
             using (var generator = new BarcodeGenerator(EncodeTypes.Code128, text))
             {
-                // Set AutoSizeMode to None to keep the default automatic sizing behavior explicit
-                generator.Parameters.AutoSizeMode = AutoSizeMode.None;
-
-                // Optionally reduce the X-dimension to keep the overall image size reasonable
-                generator.Parameters.Barcode.XDimension.Point = 2f;
-
-                // Build a filename that reflects the length of the code text
-                string fileName = Path.Combine(outputDir, $"barcode_{text.Length}.png");
-
-                // Save the generated barcode as a PNG image
-                generator.Save(fileName, BarCodeImageFormat.Png);
-
-                // Output a simple status message to the console
-                Console.WriteLine($"Generated barcode for text length {text.Length}: {fileName}");
+                // No explicit size settings; dimensions adapt automatically to CodeText length
+                generator.Save(filePath, BarCodeImageFormat.Png);
             }
+
+            // Output the location of the generated barcode
+            Console.WriteLine($"Generated barcode for \"{text}\" at {filePath}");
         }
     }
 }

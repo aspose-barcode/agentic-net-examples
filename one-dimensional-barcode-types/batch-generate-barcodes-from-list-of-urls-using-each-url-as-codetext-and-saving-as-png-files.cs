@@ -1,8 +1,8 @@
-// Title: Batch QR Code Generation from URL List
+// Title: Batch QR Code generation from URL list
 // Description: Demonstrates how to generate QR code barcodes for a collection of URLs and save each as a PNG file.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing bulk creation of barcodes using the BarcodeGenerator class with EncodeTypes.QR. Typical scenarios include encoding URLs for marketing materials, inventory tracking, or mobile scanning applications. Developers often need to iterate over data sets, configure code text, and export images in common formats such as PNG.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showing how to use the BarcodeGenerator class with EncodeTypes.QR to create QR code images. Typical use cases include bulk creation of QR codes for marketing, inventory, or link sharing. Developers often need to loop through data sources, configure output settings, and store the resulting images in a file system.
 // Prompt: Batch generate barcodes from a list of URLs, using each URL as CodeText and saving as PNG files.
-// Tags: qr-code, barcode-generation, batch-processing, png, aspose.barcode, csharp
+// Tags: qr code, barcode generation, batch processing, png output, aspose.barcode, encode types, file saving
 
 using System;
 using System.Collections.Generic;
@@ -12,61 +12,52 @@ using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Generates QR code barcodes for a predefined list of URLs and saves each barcode as a PNG file.
+/// Example program that generates QR code barcodes for a list of URLs
+/// and saves each barcode as a PNG file in a temporary folder.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Iterates through a list of URLs, creates a QR code for each,
-    /// and writes the resulting image to the file system.
+    /// Entry point of the application. Iterates over a predefined list of URLs,
+    /// creates a QR code for each, and writes the image to disk.
     /// </summary>
     static void Main()
     {
         // Define a sample collection of URLs to be encoded as QR codes.
         List<string> urls = new List<string>
         {
-            "https://example.com/page1",
-            "https://example.com/page2",
-            "https://example.com/page3",
-            "https://example.com/page4",
-            "https://example.com/page5"
+            "https://example.com",
+            "https://openai.com",
+            "https://github.com",
+            "https://dotnet.microsoft.com",
+            "https://aspose.com"
         };
 
-        // Determine the output directory relative to the current working folder.
-        string outputFolder = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
+        // Build a unique temporary output directory for the generated barcode images.
+        string outputFolder = Path.Combine(Path.GetTempPath(), "Barcodes_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputFolder);
+        Console.WriteLine($"Saving barcodes to: {outputFolder}");
 
-        // Ensure the output directory exists; create it if it does not.
-        if (!Directory.Exists(outputFolder))
+        // Iterate through the URL list, generating and saving a QR code for each entry.
+        for (int i = 0; i < urls.Count; i++)
         {
-            Directory.CreateDirectory(outputFolder);
-        }
+            string url = urls[i];
+            string fileName = $"barcode_{i + 1}.png";
+            string filePath = Path.Combine(outputFolder, fileName);
 
-        int index = 1; // Counter used to generate unique file names.
-
-        // Process each URL in the list.
-        foreach (string url in urls)
-        {
-            // Initialize a QR code generator for the current URL.
-            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR))
+            // Create a BarcodeGenerator configured for QR encoding with the current URL as the code text.
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, url))
             {
-                // Assign the URL as the code text to be encoded.
-                generator.CodeText = url;
+                // Optional: customize appearance (e.g., pixel size) if required.
+                // generator.Parameters.Barcode.XDimension.Pixels = 4f;
 
-                // Construct a safe file name using the index counter.
-                string safeFileName = $"barcode_{index}.png";
-                string filePath = Path.Combine(outputFolder, safeFileName);
-
-                // Save the generated QR code as a PNG image.
+                // Save the generated barcode image as a PNG file.
                 generator.Save(filePath, BarCodeImageFormat.Png);
-
-                // Log the successful creation of the barcode file.
-                Console.WriteLine($"Saved barcode for '{url}' to '{filePath}'");
             }
 
-            index++; // Increment the file name counter for the next barcode.
+            Console.WriteLine($"Generated barcode for \"{url}\" -> {filePath}");
         }
 
-        // Indicate that the batch processing has finished.
-        Console.WriteLine("Barcode generation completed.");
+        Console.WriteLine("Batch barcode generation completed.");
     }
 }

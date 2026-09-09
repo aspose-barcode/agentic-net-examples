@@ -1,95 +1,115 @@
-// Title: DataBar Barcode Image Caching Example
-// Description: Demonstrates generating DataBar Expanded and Limited barcodes and caching the resulting PNG images in memory to avoid redundant generation.
-// Category-Description: Shows how to use Aspose.BarCode's BarcodeGenerator with EncodeTypes to create DataBar symbologies, configure barcode parameters, and implement a simple in‑memory cache for high‑traffic scenarios. This example belongs to the barcode generation and image handling category, illustrating typical use of BarcodeGenerator, EncodeTypes, and BarCodeImageFormat for web applications that need fast repeated barcode rendering.
+// Title: DataBar barcode generation with in‑memory caching
+// Description: Demonstrates generating DataBar barcodes using Aspose.BarCode and caching the resulting PNG images in memory to avoid redundant processing.
+// Category-Description: This example belongs to the Aspose.BarCode image generation category, showcasing how to use BarcodeGenerator, encoding types, and image saving APIs. Developers often need to generate barcodes repeatedly in high‑traffic web scenarios, so caching the byte arrays improves performance and reduces CPU load. The snippet illustrates typical use of BaseEncodeType, BarCodeImageFormat, and in‑memory streams for reusable barcode assets.
 // Prompt: Implement caching for generated DataBar barcode images to improve high‑traffic web performance.
-// Tags: databar, barcode generation, caching, png, aspose.barcode, encode types, web performance
+// Tags: databar, barcode, caching, image generation, aspnet, aspose.barcode, png, memorycache
 
 using System;
-using System.IO;
 using System.Collections.Generic;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating DataBar barcodes and caching the PNG image bytes in memory.
+/// Provides an in‑memory cache for barcode image byte arrays to avoid regenerating identical barcodes.
+/// </summary>
+class BarcodeCache
+{
+    // Internal dictionary storing barcode image bytes keyed by a combination of encode type and text.
+    private readonly Dictionary<string, byte[]> _cache = new Dictionary<string, byte[]>();
+
+    /// <summary>
+    /// Retrieves a cached barcode image or generates it if not present.
+    /// </summary>
+    /// <param name="encodeType">The barcode symbology to use.</param>
+    /// <param name="codeText">The text to encode in the barcode.</param>
+    /// <returns>Byte array containing the PNG image of the barcode.</returns>
+    public byte[] GetOrAdd(BaseEncodeType encodeType, string codeText)
+    {
+        // Build a unique key for the requested barcode.
+        string key = $"{encodeType}_{codeText}";
+
+        // Return cached data if it exists.
+        if (_cache.TryGetValue(key, out byte[] cached))
+        {
+            Console.WriteLine($"Cache hit for {key}");
+            return cached;
+        }
+
+        // Generate a new barcode image, store it in the cache, and return it.
+        Console.WriteLine($"Generating barcode for {key}");
+        byte[] data = GenerateBarcodeBytes(encodeType, codeText);
+        _cache[key] = data;
+        return data;
+    }
+
+    // Generates a PNG image for the specified barcode and returns its bytes.
+    private byte[] GenerateBarcodeBytes(BaseEncodeType encodeType, string codeText)
+    {
+        using (var ms = new MemoryStream())
+        {
+            using (var generator = new BarcodeGenerator(encodeType, codeText))
+            {
+                // Example settings for DataBar barcodes.
+                generator.Parameters.Barcode.XDimension.Pixels = 2f;
+                generator.Parameters.Barcode.BarHeight.Pixels = 30f;
+
+                // Save the barcode image to the memory stream in PNG format.
+                generator.Save(ms, BarCodeImageFormat.Png);
+            }
+
+            // Return the image data as a byte array.
+            return ms.ToArray();
+        }
+    }
+}
+
+/// <summary>
+/// Demonstrates usage of <see cref="BarcodeCache"/> by generating several DataBar barcodes and saving them to disk.
 /// </summary>
 class Program
 {
-    // Simple in‑memory cache: key = symbology|codetext, value = PNG bytes
-    private static readonly Dictionary<string, byte[]> _cache = new Dictionary<string, byte[]>(StringComparer.OrdinalIgnoreCase);
-
     /// <summary>
-    /// Entry point of the example. Generates barcodes for a set of symbologies and code texts,
-    /// writes image sizes to the console, and saves the PNG files to disk.
+    /// Entry point of the demo application.
     /// </summary>
     static void Main()
     {
-        // Example usage: generate DataBar Expanded and Limited barcodes
-        string[] symbologies = { "DatabarExpanded", "DatabarLimited" };
-        string[] codeTexts = { "(01)12345678901231", "(01)08888888888888" };
+        // Create a temporary folder to store generated barcode images.
+        string outputFolder = Path.Combine(Path.GetTempPath(), "BarcodeCacheDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputFolder);
+        Console.WriteLine($"Images will be saved to: {outputFolder}");
 
-        foreach (var sym in symbologies)
+        // Instantiate the barcode cache.
+        var cache = new BarcodeCache();
+
+        // Define a set of sample DataBar barcode requests.
+        var requests = new List<(BaseEncodeType encode, string text)>
         {
-            foreach (var text in codeTexts)
+            (EncodeTypes.DatabarOmniDirectional, "(01)12345678901231"),
+            (EncodeTypes.DatabarStackedOmniDirectional, "(01)12345678901231"),
+            (EncodeTypes.DatabarTruncated, "(01)12345678901231"),
+            (EncodeTypes.DatabarLimited, "(01)08888888888888"),
+            (EncodeTypes.DatabarExpanded, "(01)12345678901231(10)ABC123")
+        };
+
+        int index = 1;
+        // Process each request, using the cache to avoid duplicate generation.
+        foreach (var req in requests)
+        {
+            byte[] imageBytes = cache.GetOrAdd(req.encode, req.text);
+            string filePath = Path.Combine(outputFolder, $"barcode_{index}.png");
+
+            // Write the image bytes to a file.
+            using (var fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write))
             {
-                // Retrieve barcode image bytes, using cache when possible
-                byte[] imageBytes = GetBarcodeImage(sym, text);
-
-                // Output image size for demonstration purposes
-                Console.WriteLine($"{sym} | {text} => Image bytes: {imageBytes.Length}");
-
-                // Save the image to a file (in a real web app this would be sent to the client)
-                string fileName = $"{sym}_{text.Replace('(', '_').Replace(')', '_')}.png";
-                File.WriteAllBytes(fileName, imageBytes);
+                fileStream.Write(imageBytes, 0, imageBytes.Length);
             }
-        }
-    }
 
-    // Returns PNG image bytes for the requested barcode, using cache when possible
-    private static byte[] GetBarcodeImage(string symbologyName, string codeText)
-    {
-        string cacheKey = $"{symbologyName}|{codeText}";
-
-        // Check if the image is already cached
-        if (_cache.TryGetValue(cacheKey, out byte[] cachedBytes))
-        {
-            // Cache hit
-            Console.WriteLine($"Cache hit for key: {cacheKey}");
-            return cachedBytes;
+            Console.WriteLine($"Saved barcode #{index} to {filePath}");
+            index++;
         }
 
-        // Resolve symbology name to BaseEncodeType via reflection
-        var field = typeof(EncodeTypes).GetField(symbologyName);
-        if (field == null)
-        {
-            Console.WriteLine($"Unknown symbology: {symbologyName}");
-            return Array.Empty<byte>();
-        }
-        BaseEncodeType encodeType = (BaseEncodeType)field.GetValue(null);
-
-        // Create generator and configure basic parameters
-        using (var generator = new BarcodeGenerator(encodeType, codeText))
-        {
-            // Set XDimension and padding for consistent size
-            generator.Parameters.Barcode.XDimension.Point = 2f;
-            generator.Parameters.Barcode.Padding.Left.Point = 5f;
-            generator.Parameters.Barcode.Padding.Top.Point = 5f;
-            generator.Parameters.Barcode.Padding.Right.Point = 5f;
-            generator.Parameters.Barcode.Padding.Bottom.Point = 5f;
-
-            // Generate image into a memory stream as PNG
-            using (var ms = new MemoryStream())
-            {
-                generator.Save(ms, BarCodeImageFormat.Png);
-                byte[] imageBytes = ms.ToArray();
-
-                // Store in cache for future requests
-                _cache[cacheKey] = imageBytes;
-                Console.WriteLine($"Cache miss – generated and cached key: {cacheKey}");
-                return imageBytes;
-            }
-        }
+        Console.WriteLine("Demo completed.");
     }
 }

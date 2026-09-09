@@ -1,81 +1,80 @@
-// Title: Generate Codabar Barcodes and Package into a ZIP Archive
-// Description: Demonstrates iterating over product codes, creating Codabar barcode images with Aspose.BarCode, and storing each PNG in a ZIP file.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing the use of BarcodeGenerator, EncodeTypes, and barcode parameters to produce images. Typical use cases include batch barcode creation for inventory, shipping labels, or product catalogs, where developers need to automate image generation and archive the results. The code also illustrates combining .NET's System.IO.Compression to create ZIP archives of the generated files.
+// Title: Generate Codabar barcodes for product codes and package them into a zip file
+// Description: Demonstrates how to create Codabar barcode images from a list of product identifiers and store each PNG image in a zip archive.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator with EncodeTypes.Codabar, configuring optional parameters, and saving images in PNG format. Typical use cases include batch barcode creation for inventory, retail, or logistics systems where multiple barcodes need to be generated and delivered as a single archive. Developers often need to combine barcode generation with .NET compression APIs to automate distribution of barcode assets.
 // Prompt: Iterate through a list of product codes, generate Codabar barcodes, and store each in a zip archive.
-// Tags: codabar, barcode generation, zip archive, png, aspose.barcode, csharp
+// Tags: codabar, barcode generation, zip archive, png, aspose.barcode, batch processing
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that creates Codabar barcode images for a set of product codes
-/// and packages the resulting PNG files into a ZIP archive.
+/// Program that generates Codabar barcodes for a set of product codes and saves them into a zip archive.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates barcodes, saves them to memory streams, and adds them to a ZIP file.
+    /// Entry point. Generates barcodes, writes them as PNG images into a zip file, and outputs the archive location.
     /// </summary>
     static void Main()
     {
-        // Define a sample list of product codes to encode as Codabar barcodes
-        string[] productCodes = new string[]
+        // Define a list of product codes to be encoded as Codabar barcodes.
+        var productCodes = new List<string>
         {
-            "A12345",
-            "B67890",
-            "C24680",
-            "D13579",
-            "E11223"
+            "A12345B",
+            "C67890D",
+            "A11111A"
         };
 
-        // Target ZIP file name
-        string zipPath = "CodabarBarcodes.zip";
+        // Determine the full path for the output zip archive.
+        string zipPath = Path.Combine(Directory.GetCurrentDirectory(), "CodabarBarcodes.zip");
 
-        // Remove any existing ZIP file to ensure a fresh archive
+        // Ensure any existing archive with the same name is removed before creating a new one.
         if (File.Exists(zipPath))
         {
             File.Delete(zipPath);
         }
 
-        // Create a new ZIP archive and add each generated barcode image as an entry
-        using (FileStream zipFileStream = new FileStream(zipPath, FileMode.Create))
-        using (ZipArchive archive = new ZipArchive(zipFileStream, ZipArchiveMode.Create))
+        // Create a file stream for the zip archive and open a ZipArchive in update mode.
+        using (FileStream zipFile = new FileStream(zipPath, FileMode.Create))
         {
-            // Iterate through each product code
-            foreach (string code in productCodes)
+            using (ZipArchive archive = new ZipArchive(zipFile, ZipArchiveMode.Update))
             {
-                // Generate a Codabar barcode for the current product code
-                using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Codabar, code))
+                // Iterate over each product code, generate a barcode, and add it to the archive.
+                foreach (string code in productCodes)
                 {
-                    // Configure Codabar-specific parameters
-                    generator.Parameters.Barcode.Codabar.StartSymbol = CodabarSymbol.A;
-                    generator.Parameters.Barcode.Codabar.StopSymbol = CodabarSymbol.A;
-                    generator.Parameters.Barcode.ThrowExceptionWhenCodeTextIncorrect = false;
-                    generator.Parameters.Barcode.FilledBars = false;
-
-                    // Save the barcode image to a memory stream in PNG format
-                    using (MemoryStream imageStream = new MemoryStream())
+                    // Initialize the barcode generator for Codabar symbology with the current code.
+                    using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Codabar, code))
                     {
-                        generator.Save(imageStream, BarCodeImageFormat.Png);
-                        imageStream.Position = 0; // Reset stream position for reading
+                        // Optional: configure start/stop symbols if needed.
+                        // generator.Parameters.Barcode.Codabar.StartSymbol = CodabarSymbol.A;
+                        // generator.Parameters.Barcode.Codabar.StopSymbol = CodabarSymbol.A;
 
-                        // Create a new entry in the ZIP archive for this barcode image
-                        ZipArchiveEntry entry = archive.CreateEntry($"{code}.png");
-                        using (Stream entryStream = entry.Open())
+                        // Save the generated barcode image to a memory stream in PNG format.
+                        using (MemoryStream ms = new MemoryStream())
                         {
-                            // Copy the image data into the ZIP entry
-                            imageStream.CopyTo(entryStream);
+                            generator.Save(ms, BarCodeImageFormat.Png);
+                            ms.Position = 0; // Reset stream position for reading.
+
+                            // Create a new entry in the zip archive for the current barcode image.
+                            ZipArchiveEntry entry = archive.CreateEntry($"{code}.png", CompressionLevel.Optimal);
+                            using (Stream entryStream = entry.Open())
+                            {
+                                // Copy the PNG data from the memory stream into the zip entry.
+                                ms.CopyTo(entryStream);
+                            }
                         }
                     }
                 }
             }
         }
 
-        Console.WriteLine($"Barcode images have been saved to '{zipPath}'.");
+        // Inform the user where the zip archive has been created.
+        Console.WriteLine($"Zip archive created at: {zipPath}");
     }
 }

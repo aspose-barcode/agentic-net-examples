@@ -1,69 +1,68 @@
-// Title: Adjust ITF-14 Quiet Zone Coefficient and Export as JPEG
-// Description: Demonstrates how to calculate and set the quiet zone coefficient for an ITF‑14 barcode based on a user‑specified margin, then save the result as a JPEG image.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and ITF parameters to customize barcode appearance. Typical use cases include fine‑tuning quiet zones for printing requirements or meeting specific scanner specifications. Developers often need to adjust module size, quiet zone, and output format when integrating barcodes into documents or labels.
+// Title: Adjust ITF14 Barcode Quiet Zone Coefficient and Save as JPEG
+// Description: Demonstrates how to modify the quiet zone coefficient of an ITF14 barcode and export the result as a JPEG image.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to configure barcode parameters such as XDimension and ITF quiet zone. It uses the BarcodeGenerator class to create barcodes, a common task for developers needing custom barcode layouts for packaging, inventory, or labeling solutions. Typical use cases include adjusting visual spacing, size, and output format for downstream printing or digital distribution.
 // Prompt: Create function adjusting ITF quiet zone coefficient based on user margin, return JPEG image.
-// Tags: itf, quiet zone, barcode generation, jpeg, aspose.barcode, c#
+// Tags: itf14, quietzone, barcode, generation, jpeg, aspose.barcode, imageoutput
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Provides an example of adjusting the quiet zone coefficient for an ITF‑14 barcode
-/// and exporting the generated barcode as a JPEG image.
+/// Example program that adjusts the quiet zone coefficient of an ITF14 barcode and saves it as a JPEG image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Adjusts the ITF quiet zone coefficient based on the provided margin (in points)
-    /// and returns the generated barcode image as a JPEG byte array.
-    /// </summary>
-    /// <param name="marginPoints">The desired quiet zone margin expressed in points.</param>
-    /// <returns>Byte array containing the JPEG image of the generated barcode.</returns>
-    static byte[] AdjustITFQuietZone(float marginPoints)
-    {
-        // Sample ITF-14 barcode requires exactly 14 digits.
-        const string sampleCode = "12345678901231";
-
-        // Create the barcode generator for ITF-14.
-        using (var generator = new BarcodeGenerator(EncodeTypes.ITF14, sampleCode))
-        {
-            // Set a reasonable XDimension (module size) in points.
-            generator.Parameters.Barcode.XDimension.Point = 2f;
-
-            // Calculate the quiet zone coefficient.
-            // QuietZoneCoef = ceil(margin / XDimension). Minimum allowed value is 10.
-            int coef = (int)Math.Ceiling(marginPoints / generator.Parameters.Barcode.XDimension.Point);
-            if (coef < 10)
-                coef = 10;
-
-            // Apply the calculated coefficient to the ITF parameters.
-            generator.Parameters.Barcode.ITF.QuietZoneCoef = coef;
-
-            // Save the barcode to a memory stream as JPEG.
-            using (var ms = new MemoryStream())
-            {
-                generator.Save(ms, BarCodeImageFormat.Jpeg);
-                return ms.ToArray();
-            }
-        }
-    }
-
-    /// <summary>
-    /// Entry point of the program. Demonstrates usage of <see cref="AdjustITFQuietZone"/>
-    /// and writes the resulting JPEG image to disk.
+    /// Entry point. Generates a barcode with a custom quiet zone and writes the JPEG to disk.
     /// </summary>
     static void Main()
     {
-        // Example usage: set a margin of 30 points.
-        float userMargin = 30f;
-        byte[] jpegData = AdjustITFQuietZone(userMargin);
+        // Sample margin; in a real scenario this could come from command‑line arguments or configuration
+        int margin = 20;
 
-        // Write the JPEG image to a file for verification.
-        const string outputPath = "ITF_QuietZoneAdjusted.jpg";
+        // Generate the barcode image bytes with the specified quiet zone coefficient
+        byte[] jpegData = AdjustITFQuietZone(margin);
+
+        // Determine the output file path in the current working directory
+        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "ITFQuietZone.jpg");
+
+        // Write the JPEG data to disk
         File.WriteAllBytes(outputPath, jpegData);
-        Console.WriteLine($"Barcode image saved to {outputPath}");
+
+        // Inform the user where the file was saved
+        Console.WriteLine($"ITF barcode with QuietZoneCoef={margin} saved to {outputPath}");
+    }
+
+    /// <summary>
+    /// Creates an ITF14 barcode, sets a custom quiet zone coefficient, and returns the image as a JPEG byte array.
+    /// </summary>
+    /// <param name="quietZoneCoef">The quiet zone coefficient; must be at least 10.</param>
+    /// <returns>Byte array containing the JPEG representation of the barcode.</returns>
+    static byte[] AdjustITFQuietZone(int quietZoneCoef)
+    {
+        // Validate the quiet zone coefficient to avoid runtime errors
+        if (quietZoneCoef < 10)
+            throw new ArgumentOutOfRangeException(nameof(quietZoneCoef), "Quiet zone coefficient must be at least 10.");
+
+        // Initialize the barcode generator for ITF14 with sample data
+        using (var generator = new BarcodeGenerator(EncodeTypes.ITF14, "12345678901231"))
+        {
+            // Set XDimension for a reasonable barcode size (2 pixels per module)
+            generator.Parameters.Barcode.XDimension.Pixels = 2f;
+
+            // Apply the custom quiet zone coefficient
+            generator.Parameters.Barcode.ITF.QuietZoneCoef = quietZoneCoef;
+
+            // Render the barcode into a memory stream as JPEG
+            using (var ms = new MemoryStream())
+            {
+                generator.Save(ms, BarCodeImageFormat.Jpeg);
+                return ms.ToArray(); // Return the JPEG data
+            }
+        }
     }
 }
