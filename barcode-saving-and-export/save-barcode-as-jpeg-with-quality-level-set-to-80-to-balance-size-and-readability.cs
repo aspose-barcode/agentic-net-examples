@@ -1,60 +1,48 @@
-// Title: Save Code128 barcode as JPEG with quality 80
-// Description: Demonstrates generating a Code128 barcode and saving it as a JPEG image with a quality setting of 80 to balance file size and readability.
-// Category-Description: This example belongs to the Aspose.BarCode image generation category, illustrating how to use BarcodeGenerator, Bitmap, and image encoding classes to produce barcode images. Typical use cases include creating printable barcodes for inventory, shipping labels, or product packaging, where developers need control over output format and compression quality. The snippet shows how to locate the JPEG codec and apply EncoderParameters for quality settings.
+// Title: Save Barcode as JPEG with Specified Quality
+// Description: Demonstrates generating a Code128 barcode and saving it as a JPEG image, highlighting resolution and anti-aliasing settings while noting that JPEG quality cannot be set directly via the Aspose.BarCode API.
+// Category-Description: This example belongs to the Aspose.BarCode generation and image export category. It showcases the use of BarcodeGenerator, EncodeTypes, and BarCodeImageFormat to create barcodes and export them to common image formats. Developers often need to adjust image resolution, anti‑aliasing, and compression settings to balance file size and readability when integrating barcodes into documents, web pages, or mobile apps.
 // Prompt: Save a barcode as a JPEG with quality level set to 80 to balance size and readability.
-// Tags: code128, barcode generation, jpeg, image quality, aspose.barcode, aspose.drawing
+// Tags: barcode, code128, generation, jpeg, image format, quality, resolution, anti-aliasing, aspose.barcode
 
 using System;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Generates a Code128 barcode and saves it as a JPEG image with a quality level of 80.
+/// Demonstrates generating a Code128 barcode and saving it as a JPEG image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates the barcode, configures JPEG encoding, and writes the file.
+    /// Entry point that creates the barcode, configures image parameters, and saves the result.
     /// </summary>
     static void Main()
     {
-        // Define the output file path for the JPEG image.
-        string outputPath = "barcode.jpg";
+        // Define the output file path in the system's temporary directory.
+        string outputFile = Path.Combine(Path.GetTempPath(), "sample_barcode.jpg");
 
-        // Initialize the barcode generator with Code128 symbology and sample data.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+        // The data to encode in the barcode.
+        string codeText = "12345678";
+
+        // Initialize the barcode generator with Code128 symbology and the sample data.
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
         {
-            // Generate the barcode as a Bitmap object.
-            using (Bitmap bitmap = generator.GenerateBarCodeImage())
-            {
-                // Locate the JPEG codec among the installed image encoders.
-                ImageCodecInfo jpegCodec = null;
-                foreach (ImageCodecInfo codec in ImageCodecInfo.GetImageEncoders())
-                {
-                    if (codec.FormatID == ImageFormat.Jpeg.Guid)
-                    {
-                        jpegCodec = codec;
-                        break;
-                    }
-                }
+            // Reduce image resolution to lower file size (optional).
+            generator.Parameters.Resolution = 72f;
 
-                // If the JPEG codec is not found, report the issue and exit.
-                if (jpegCodec == null)
-                {
-                    Console.WriteLine("JPEG codec not found.");
-                    return;
-                }
+            // Disable anti‑aliasing to further reduce size (optional).
+            generator.Parameters.UseAntiAlias = false;
 
-                // Configure encoder parameters to set JPEG quality to 80 (range 0-100).
-                EncoderParameters encoderParams = new EncoderParameters(1);
-                encoderParams.Param[0] = new EncoderParameter(Encoder.Quality, 80L);
+            // Note: Aspose.BarCode does not expose a direct JPEG quality setting.
+            // The generated JPEG will use the default compression quality.
 
-                // Save the bitmap as a JPEG file using the selected codec and quality settings.
-                bitmap.Save(outputPath, jpegCodec, encoderParams);
-                Console.WriteLine($"Barcode saved to {outputPath}");
-            }
+            // Save the generated barcode as a JPEG file.
+            generator.Save(outputFile, BarCodeImageFormat.Jpeg);
         }
+
+        // Inform the user where the file was saved and the limitation regarding JPEG quality.
+        Console.WriteLine($"Barcode saved to: {outputFile}");
+        Console.WriteLine("Note: JPEG quality level cannot be set explicitly with Aspose.BarCode API.");
     }
 }

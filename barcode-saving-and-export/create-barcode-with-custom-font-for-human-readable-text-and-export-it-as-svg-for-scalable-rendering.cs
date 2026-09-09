@@ -1,8 +1,8 @@
-// Title: Create Code39 barcode with custom font and export as SVG
-// Description: Demonstrates how to generate a Code39 barcode, apply a custom font to the human‑readable text, and save it as an SVG file for scalable rendering.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes. Typical use cases include creating barcodes with styled captions and exporting them to vector formats for web or print. Developers often need to customize appearance and choose scalable output formats like SVG.
+// Title: Generate Code39 Barcode with Custom Font and Save as SVG
+// Description: Demonstrates creating a Code39 barcode, applying a custom Helvetica font to the human‑readable text, and exporting the result as an SVG file for scalable rendering.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to customize barcode appearance using the BarcodeGenerator class. It covers setting manual font parameters for the human‑readable text and saving the barcode in SVG format, a common requirement for web and print scenarios where vector graphics are needed. Developers working with barcode creation, visual customization, and vector output will find this pattern useful.
 // Prompt: Create a barcode with custom font for human‑readable text and export it as SVG for scalable rendering.
-// Tags: code39, custom font, svg, barcode generation, aspose.barcode, vector output
+// Tags: code39, barcode, custom-font, svg, generation, aspose.barcode
 
 using System;
 using System.IO;
@@ -11,49 +11,46 @@ using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates creating a Code39 barcode with a custom font for the human‑readable text and exporting it as an SVG file.
+/// Example program that generates a Code39 barcode with a custom font for the human‑readable text
+/// and saves it as an SVG file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates the barcode and saves it to disk.
+    /// Entry point of the application.
     /// </summary>
     static void Main()
     {
-        // Define the output file path for the SVG image
-        string outputPath = "barcode.svg";
+        // Define a temporary output directory and ensure it exists
+        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
+        Directory.CreateDirectory(outputDir);
 
-        // Resolve the full directory path and ensure it exists
-        string outputDir = Path.GetDirectoryName(Path.GetFullPath(outputPath));
-        if (!Directory.Exists(outputDir))
+        // Full path for the resulting SVG file
+        string outputPath = Path.Combine(outputDir, "barcode.svg");
+
+        // Initialize the barcode generator with Code39 symbology and the desired value
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code39, "12345"))
         {
-            Directory.CreateDirectory(outputDir);
-        }
-
-        // Initialize a BarcodeGenerator for Code39 with the desired data
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code39, "12345"))
-        {
-            // Set the barcode's foreground (bars) and background colors
-            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-            generator.Parameters.BackColor = Aspose.Drawing.Color.White;
-
-            // Customize the font of the human‑readable (code text) portion
+            // ----- Customize human‑readable text appearance -----
+            // Use manual font mode to specify a custom font
+            generator.Parameters.Barcode.CodeTextParameters.FontMode = FontMode.Manual;
+            // Set the font family to Helvetica
             generator.Parameters.Barcode.CodeTextParameters.Font.FamilyName = "Helvetica";
+            // Set the font size to 12 points
             generator.Parameters.Barcode.CodeTextParameters.Font.Size.Point = 12f;
+            // Position the text below the barcode
+            generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.Below;
 
-            // Optionally adjust the module (X) dimension for finer control over size
-            generator.Parameters.Barcode.XDimension.Point = 2f;
-
-            // Attempt to save the barcode as an SVG file; handle evaluation‑license restrictions
             try
             {
+                // Save the barcode as an SVG file for scalable rendering
                 generator.Save(outputPath, BarCodeImageFormat.Svg);
-                Console.WriteLine($"Barcode saved to {outputPath}");
+                Console.WriteLine($"Barcode saved to: {outputPath}");
             }
-            catch (Exception ex) when (ex.Message.Contains("evaluation"))
+            catch (Exception ex)
             {
-                Console.WriteLine("SVG export requires a full license for this symbology.");
-                Console.WriteLine(ex.Message);
+                // Output any errors that occur during the save operation
+                Console.WriteLine($"Error saving SVG: {ex.Message}");
             }
         }
     }

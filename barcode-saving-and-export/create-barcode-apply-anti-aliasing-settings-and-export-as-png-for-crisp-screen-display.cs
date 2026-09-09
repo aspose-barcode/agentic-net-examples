@@ -1,46 +1,46 @@
-// Title: Generate a Code128 barcode with anti‑aliasing and save as PNG
-// Description: Demonstrates creating a Code128 barcode, enabling anti‑aliasing and high resolution for a crisp PNG image suitable for screen display.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to configure rendering options such as anti‑aliasing, resolution, and colors using the BarcodeGenerator class. Typical use cases include producing high‑quality barcodes for web pages, mobile apps, or UI components where visual clarity is essential. Developers often need to adjust these settings to meet design guidelines and ensure readability across devices.
+// Title: Generate a Code128 barcode with anti-aliasing and export as PNG
+// Description: Demonstrates creating a Code128 barcode, enabling anti‑aliasing, setting a high resolution, and saving it as a PNG image for clear on‑screen display.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to configure rendering options such as anti‑aliasing, resolution, and module size using the BarcodeGenerator class. Typical use cases include producing high‑quality barcodes for web pages, mobile apps, or any UI where crisp visual quality is required. Developers often need to adjust these settings to meet branding guidelines or improve scan reliability on screens.
 // Prompt: Create a barcode, apply anti‑aliasing settings, and export as PNG for crisp screen display.
-// Tags: code128, anti-aliasing, png, barcode generation, aspose.barcode
+// Tags: barcode, code128, anti-aliasing, png, generation, aspnet, aspose.barcode
 
 using System;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 
 /// <summary>
-/// Example program that creates a Code128 barcode, applies anti‑aliasing,
-/// sets a high resolution, and saves the result as a PNG image.
+/// Entry point for the barcode generation example.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates the barcode and writes it to disk.
+    /// Generates a Code128 barcode with anti‑aliasing, high resolution, and saves it as a PNG file.
     /// </summary>
     static void Main()
     {
-        // Define the output file path for the generated PNG image.
-        string outputPath = "barcode.png";
+        // Determine output file path in the current directory
+        string outputPath = Path.Combine(Environment.CurrentDirectory, "barcode.png");
+        // Text to encode in the barcode
+        string codeText = "ASPOSE123";
 
-        // Initialize the BarcodeGenerator with Code128 symbology and sample data.
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+        // Initialize the barcode generator with Code128 symbology and the desired text
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
         {
-            // Enable anti‑aliasing to smooth edges and improve visual quality.
+            // Enable anti‑aliasing for smoother on‑screen rendering
             generator.Parameters.UseAntiAlias = true;
 
-            // Set a higher resolution (dots per inch) for a sharper image on screens.
+            // Set a higher resolution (300 DPI) for crisp display
             generator.Parameters.Resolution = 300f;
 
-            // Optional: Define foreground (barcode) and background colors.
-            generator.Parameters.Barcode.BarColor = Color.Black;
-            generator.Parameters.BackColor = Color.White;
+            // Optional: adjust the module (X) dimension in pixels
+            generator.Parameters.Barcode.XDimension.Pixels = 2f;
 
-            // Save the configured barcode as a PNG file.
+            // Save the generated barcode as a PNG image
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user where the barcode image has been saved.
-        Console.WriteLine($"Barcode saved to {outputPath}");
+        // Inform the user where the file was saved
+        Console.WriteLine($"Barcode saved to: {outputPath}");
     }
 }

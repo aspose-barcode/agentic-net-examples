@@ -1,8 +1,8 @@
-// Title: Generate Code128 barcode, add custom text with GDI+, save as PNG
-// Description: Demonstrates creating a Code128 barcode using Aspose.BarCode, converting it to a Bitmap, drawing extra text with GDI+, and saving the result as a PNG file.
-// Category-Description: This example belongs to the Aspose.BarCode generation and image manipulation category. It showcases the use of BarcodeGenerator, BarCodeImageFormat, and Aspose.Drawing classes to produce a barcode image, modify it with GDI+ graphics, and export it. Developers often need to embed additional information or branding onto barcode images, and this pattern illustrates the typical workflow for such customizations.
+// Title: Generate Code128 barcode, add custom text with GDI+, and save as PNG
+// Description: Demonstrates creating a Code128 barcode using Aspose.BarCode, drawing extra text onto the generated bitmap with GDI+, and persisting the result as a PNG file.
+// Category-Description: This example belongs to the Aspose.BarCode image generation category, illustrating how to combine barcode creation (BarcodeGenerator) with System.Drawing (Aspose.Drawing) graphics operations. Developers often need to augment barcode images with labels, instructions, or branding; this snippet shows the typical workflow of generating a bitmap, using Graphics to draw, and saving the final image.
 // Prompt: Generate a barcode, obtain a Bitmap, draw additional text with GDI+, then save as PNG.
-// Tags: code128, barcode generation, png, aspose.barcodes, aspose.drawing, gdi+, bitmap, text overlay
+// Tags: code128, barcode, generation, gdi+, drawing, png, aspose.barcode, aspose.drawing
 
 using System;
 using System.IO;
@@ -12,54 +12,53 @@ using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that creates a Code128 barcode, adds custom text using GDI+, and saves the result as a PNG image.
+/// Demonstrates barcode generation, custom drawing, and PNG output.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
+    /// Entry point. Generates a Code128 barcode, adds extra text, and saves the image.
     /// </summary>
-    static void Main()
+    static void Main(string[] args)
     {
-        // Define the output file path for the final image.
-        string outputPath = "barcode_with_text.png";
-
-        // Initialize a barcode generator for Code128 with the desired code text.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+        // Determine output file path in temporary folder
+        string outputPath = Path.Combine(Path.GetTempPath(), "barcode_with_text.png");
+        // Ensure the directory exists
+        string outputDir = Path.GetDirectoryName(outputPath);
+        if (!Directory.Exists(outputDir))
         {
-            // Set the module (X) dimension to control barcode size.
-            generator.Parameters.Barcode.XDimension.Point = 2f;
+            Directory.CreateDirectory(outputDir);
+        }
 
-            // Save the generated barcode to a memory stream in PNG format.
-            using (var ms = new MemoryStream())
+        // Create a barcode generator for Code128 with the data "12345678"
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "12345678"))
+        {
+            // Generate the barcode as a bitmap
+            using (Bitmap bitmap = generator.GenerateBarCodeImage())
             {
-                generator.Save(ms, BarCodeImageFormat.Png);
-                ms.Position = 0; // Reset stream position for reading.
-
-                // Load the barcode image from the memory stream as a Bitmap.
-                using (var barcodeImage = (Bitmap)Image.FromStream(ms))
+                // Obtain a Graphics object to draw on the bitmap
+                using (Graphics graphics = Graphics.FromImage(bitmap))
                 {
-                    // Create a Graphics object to draw on the bitmap.
-                    using (var graphics = Graphics.FromImage(barcodeImage))
+                    // Define font and brush for the additional text
+                    using (Font font = new Font("Helvetica", 12f))
+                    using (SolidBrush brush = new SolidBrush(Color.Black))
                     {
-                        string extraText = "Sample Text";
-
-                        // Define the font and brush for the overlay text.
-                        using (var font = new Font("Arial", 12f))
-                        using (var brush = new SolidBrush(Color.Black))
-                        {
-                            // Calculate position near the bottom‑right corner.
-                            var position = new PointF(barcodeImage.Width - 100f, barcodeImage.Height - 20f);
-                            graphics.DrawString(extraText, font, brush, position);
-                        }
+                        // Position the text near the bottom-left corner
+                        float x = 10f;
+                        float y = bitmap.Height - 30f;
+                        graphics.DrawString("Additional Text", font, brush, x, y);
                     }
+                }
 
-                    // Save the modified bitmap (barcode + text) as a PNG file.
-                    barcodeImage.Save(outputPath, ImageFormat.Png);
+                // Save the modified bitmap to a PNG file
+                using (FileStream fs = new FileStream(outputPath, FileMode.Create, FileAccess.Write))
+                {
+                    bitmap.Save(fs, ImageFormat.Png);
                 }
             }
         }
 
+        // Inform the user where the file was saved
         Console.WriteLine($"Barcode image saved to: {outputPath}");
     }
 }
