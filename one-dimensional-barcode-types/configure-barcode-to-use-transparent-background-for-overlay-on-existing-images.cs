@@ -1,68 +1,75 @@
-// Title: Overlay Barcode with Transparent Background on an Image
-// Description: Demonstrates generating a Code128 barcode with a transparent background and drawing it onto an existing PNG image.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to create barcodes with custom visual properties and combine them with existing graphics using Aspose.Drawing. It highlights the use of BarcodeGenerator, setting Parameters.BackColor to transparent, and drawing the generated bitmap onto another image—common tasks for developers who need to embed barcodes into product photos, marketing materials, or UI overlays.
+// Title: Generate barcode with transparent background and overlay on an image
+// Description: Demonstrates creating a Code128 barcode with a transparent background and drawing it onto an existing PNG image.
+// Category-Description: This example belongs to the Aspose.BarCode image manipulation category, illustrating how to use BarcodeGenerator, set background transparency, and combine generated barcodes with other graphics. Typical use cases include overlaying barcodes on product photos, documents, or UI elements where the underlying image must remain visible. Developers often need to adjust colors, positions, and save the result in common image formats.
 // Prompt: Configure barcode to use a transparent background for overlay on existing images.
-// Tags: barcode, code128, transparent background, overlay, image, aspose.barcode, aspose.drawing, png, generation
+// Tags: barcode, code128, transparent background, image overlay, aspose.barcode, aspose.drawing, png
 
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that creates a Code128 barcode with a transparent background
-/// and overlays it onto an existing image.
+/// Example program that creates a barcode with a transparent background
+/// and draws it onto an existing image, saving the combined result.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates the barcode, draws it onto the background image,
-    /// and saves the combined result.
+    /// Entry point of the application.
     /// </summary>
     static void Main()
     {
-        // Paths for the background image and the resulting image
-        string backgroundPath = "background.png";
-        string outputPath = "output.png";
+        // Define file paths for the source image and the final combined image.
+        string baseImagePath = "base.png";
+        string outputImagePath = "combined.png";
 
-        // Verify that the background image exists
-        if (!File.Exists(backgroundPath))
+        // If the base image does not exist, create a simple placeholder image.
+        if (!File.Exists(baseImagePath))
         {
-            Console.WriteLine("Background image not found: " + backgroundPath);
-            return;
+            using (Bitmap baseBmp = new Bitmap(300, 200))
+            {
+                using (Graphics g = Graphics.FromImage(baseBmp))
+                {
+                    // Fill the placeholder with a light gray background.
+                    g.Clear(Aspose.Drawing.Color.LightGray);
+                }
+                // Save the placeholder as a PNG file.
+                baseBmp.Save(baseImagePath, ImageFormat.Png);
+            }
         }
 
-        // Load the background image
-        using (Bitmap background = (Bitmap)Image.FromFile(backgroundPath))
+        // Load the existing base image into a Bitmap object.
+        using (Bitmap baseImage = (Bitmap)Image.FromFile(baseImagePath))
         {
-            // Create a barcode generator for Code128 with sample text
+            // Initialize the barcode generator for Code128 with the desired text.
             using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
             {
-                // Set the barcode background to transparent so underlying image shows through
-                generator.Parameters.BackColor = Color.Transparent;
+                // Set the barcode background to transparent so the underlying image shows through.
+                generator.Parameters.BackColor = Aspose.Drawing.Color.Transparent;
+                // Optionally set the bar (foreground) color to black.
+                generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
 
-                // Optional: set the bar (foreground) color to black
-                generator.Parameters.Barcode.BarColor = Color.Black;
-
-                // Generate the barcode image as a bitmap
-                using (Bitmap barcode = generator.GenerateBarCodeImage())
+                // Generate the barcode as a Bitmap.
+                using (Bitmap barcodeImage = generator.GenerateBarCodeImage())
                 {
-                    // Draw the barcode onto the background image at position (0,0)
-                    using (Graphics graphics = Graphics.FromImage(background))
+                    // Draw the barcode onto the base image at the specified coordinates.
+                    using (Graphics graphics = Graphics.FromImage(baseImage))
                     {
-                        graphics.DrawImage(barcode, new Point(0, 0));
+                        int posX = 50; // X-coordinate of the barcode's top‑left corner.
+                        int posY = 50; // Y-coordinate of the barcode's top‑left corner.
+                        graphics.DrawImage(barcodeImage, posX, posY, barcodeImage.Width, barcodeImage.Height);
                     }
                 }
             }
 
-            // Save the combined image as PNG to preserve transparency
-            using (FileStream outStream = new FileStream(outputPath, FileMode.Create, FileAccess.Write))
-            {
-                background.Save(outStream, ImageFormat.Png);
-            }
+            // Save the combined image (base + barcode) as a PNG file.
+            baseImage.Save(outputImagePath, ImageFormat.Png);
         }
 
-        Console.WriteLine("Barcode overlay saved to " + outputPath);
+        // Inform the user where the output file was saved.
+        Console.WriteLine("Barcode with transparent background overlaid and saved to: " + Path.GetFullPath(outputImagePath));
     }
 }

@@ -1,69 +1,90 @@
-// Title: Generate 50 Codabar barcodes from CSV and save each as PNG
-// Description: This example reads up to 50 Codabar values from a CSV file (creating a sample file if missing) and generates individual PNG images for each barcode.
-// Category-Description: Demonstrates Aspose.BarCode barcode generation using the BarcodeGenerator class with EncodeTypes.Codabar. Typical scenarios include batch creation of barcode images from data sources such as CSV files for inventory, shipping, or point‑of‑sale systems. Developers often need to configure start/stop symbols, choose image formats, and handle file I/O efficiently.
+// Title: Generate 50 Codabar barcodes from CSV and save as PNG images
+// Description: This example reads up to 50 Codabar codes from a CSV file (creating the file if missing) and generates individual PNG barcode images.
+// Category-Description: Demonstrates Aspose.BarCode barcode generation for the Codabar symbology. It covers reading data from a CSV source, configuring barcode parameters, and saving each barcode as a separate image file. Developers working with batch barcode creation, inventory labeling, or data export can use this pattern with BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes.
 // Prompt: Generate 50 Codabar barcodes from a CSV file, saving each as an individual PNG image.
-// Tags: codabar, barcode, generation, png, csv, aspose.barcode, encode-types, image-output
+// Tags: codabar, barcode generation, csv, png, aspose.barcode, batch processing
 
 using System;
 using System.IO;
+using System.Collections.Generic;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generating Codabar barcodes from a CSV file and saving each as a PNG image.
+/// Program to generate Codabar barcodes from a CSV file and save each as a PNG image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that reads barcode data, creates Codabar barcodes, and writes PNG files.
+    /// Reads the first column of each non‑empty line from a CSV file and returns the values as a list of strings.
+    /// </summary>
+    /// <param name="path">Full path to the CSV file.</param>
+    /// <returns>List of barcode texts extracted from the file.</returns>
+    static List<string> ReadCodes(string path)
+    {
+        var codes = new List<string>();
+        foreach (var line in File.ReadAllLines(path))
+        {
+            // Skip blank lines
+            if (string.IsNullOrWhiteSpace(line))
+                continue;
+
+            // Split by comma and take the first element as the code
+            var parts = line.Split(',');
+            if (parts.Length > 0)
+                codes.Add(parts[0].Trim());
+        }
+        return codes;
+    }
+
+    /// <summary>
+    /// Entry point. Reads or creates a CSV of codes, generates up to 50 Codabar barcodes, and saves them as PNG files.
     /// </summary>
     static void Main()
     {
-        // Path to the CSV file containing Codabar values (one per line).
-        string csvPath = "codes.csv";
+        // Determine the CSV file location (in the current working directory)
+        string csvPath = Path.Combine(Directory.GetCurrentDirectory(), "codes.csv");
 
-        // If the CSV does not exist, create a sample file with 50 Codabar values.
+        // If the CSV does not exist, create it with 50 sample Codabar codes
         if (!File.Exists(csvPath))
         {
-            using (StreamWriter writer = new StreamWriter(csvPath))
+            using (var writer = new StreamWriter(csvPath))
             {
                 for (int i = 1; i <= 50; i++)
                 {
-                    // Codabar requires start/stop symbols (A, B, C, D). Use 'A' for both.
-                    string code = $"A{i:D5}A";
+                    // Codabar format: start/stop characters 'A' surrounding a zero‑padded number
+                    string data = i.ToString("D4");
+                    string code = $"A{data}A";
                     writer.WriteLine(code);
                 }
             }
         }
 
-        // Read all lines from the CSV file.
-        string[] lines = File.ReadAllLines(csvPath);
+        // Load barcode texts from the CSV file
+        List<string> codes = ReadCodes(csvPath);
+        int count = Math.Min(50, codes.Count); // Ensure we process at most 50 entries
 
-        // Process up to 50 entries (or fewer if the file has less).
-        int count = Math.Min(50, lines.Length);
+        // Prepare the output directory for generated PNG images
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
+        Directory.CreateDirectory(outputDir);
+
+        // Generate each barcode and save it as a PNG file
         for (int i = 0; i < count; i++)
         {
-            string codeText = lines[i].Trim();
+            string codeText = codes[i];
+            string filePath = Path.Combine(outputDir, $"Codabar_{i + 1}.png");
 
-            // Skip empty lines and report them.
-            if (string.IsNullOrEmpty(codeText))
+            // Create a BarcodeGenerator for Codabar with the current code text
+            using (var generator = new BarcodeGenerator(EncodeTypes.Codabar, codeText))
             {
-                Console.WriteLine($"Line {i + 1} is empty. Skipping.");
-                continue;
+                // Set the X dimension (module width) to 2 pixels for better readability
+                generator.Parameters.Barcode.XDimension.Pixels = 2f;
+
+                // Save the generated barcode as a PNG image
+                generator.Save(filePath, BarCodeImageFormat.Png);
             }
 
-            // Create a Codabar barcode generator with the specified code text.
-            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Codabar, codeText))
-            {
-                // Optional: set start/stop symbols explicitly (default is 'A').
-                generator.Parameters.Barcode.Codabar.StartSymbol = CodabarSymbol.A;
-                generator.Parameters.Barcode.Codabar.StopSymbol = CodabarSymbol.A;
-
-                // Save each barcode as an individual PNG file.
-                string outputFile = $"barcode_{i + 1}.png";
-                generator.Save(outputFile, BarCodeImageFormat.Png);
-                Console.WriteLine($"Saved barcode {i + 1} to '{outputFile}'.");
-            }
+            Console.WriteLine($"Saved barcode {i + 1} to {filePath}");
         }
 
         Console.WriteLine("Barcode generation completed.");

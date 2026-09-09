@@ -1,6 +1,6 @@
-// Title: Generate a transparent Code128 barcode and overlay it on a background image
-// Description: Demonstrates how to create a barcode with a transparent background, then composite it onto a PNG background for UI display.
-// Category-Description: This example belongs to the Aspose.BarCode image generation and manipulation category. It showcases the use of BarcodeGenerator, BarcodeParameters, and Aspose.Drawing classes to produce a barcode image, adjust its background transparency, and combine it with another image. Developers often need to embed barcodes into UI graphics or reports where the barcode must blend seamlessly with existing visuals.
+// Title: Generate Transparent Barcode and Composite onto Background Image
+// Description: Demonstrates creating a Code128 barcode with a transparent background, saving it as PNG, and overlaying it onto a custom background image for UI display.
+// Category-Description: This example belongs to the Aspose.BarCode image generation and manipulation category. It showcases the use of BarcodeGenerator, BarcodeParameters, and Aspose.Drawing classes to produce a barcode image, adjust visual properties such as background transparency, and combine it with other graphics. Developers often need to embed barcodes into UI components or reports where a seamless visual integration with existing backgrounds is required.
 // Prompt: Set barcode background to transparent, then composite the generated PNG onto a background image for UI display.
 // Tags: code128, barcode, transparent background, image compositing, png, aspose.barcode, aspose.drawing, generation
 
@@ -12,63 +12,78 @@ using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a transparent Code128 barcode and compositing it onto a background image.
+/// Example program that creates a barcode with a transparent background,
+/// composites it onto a background image, and saves the result.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates placeholder background if missing, generates barcode, and saves the final composited image.
+    /// Entry point of the example. Generates images and writes their file paths to the console.
     /// </summary>
     static void Main()
     {
-        // Define file paths for the background, barcode, and final composited image
-        string backgroundPath = "background.png";
-        string barcodePath = "barcode.png";
-        string finalPath = "final.png";
+        // Create a unique temporary folder for all generated files
+        string tempDir = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
 
-        // Ensure a background image exists; create a simple placeholder if it does not
-        if (!File.Exists(backgroundPath))
+        // Define file paths for background, barcode, and composite images
+        string backgroundPath = Path.Combine(tempDir, "background.png");
+        string barcodePath = Path.Combine(tempDir, "barcode.png");
+        string compositePath = Path.Combine(tempDir, "composite.png");
+
+        // --------------------------------------------------------------------
+        // Create a simple background image (light gray rectangle)
+        // --------------------------------------------------------------------
+        using (Bitmap backgroundBitmap = new Bitmap(400, 200))
         {
-            using (var placeholder = new Bitmap(400, 200))
+            using (Graphics g = Graphics.FromImage(backgroundBitmap))
             {
-                using (var g = Graphics.FromImage(placeholder))
-                {
-                    // Fill the placeholder with a light gray color
-                    g.Clear(Aspose.Drawing.Color.LightGray);
-                }
-                // Save the placeholder as a PNG file
-                placeholder.Save(backgroundPath, ImageFormat.Png);
+                g.Clear(Color.LightGray);
             }
+            backgroundBitmap.Save(backgroundPath, ImageFormat.Png);
         }
 
+        // --------------------------------------------------------------------
         // Generate a Code128 barcode with a transparent background
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+        // --------------------------------------------------------------------
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
             // Set the barcode's background to transparent
-            generator.Parameters.BackColor = Aspose.Drawing.Color.Transparent;
+            generator.Parameters.BackColor = Color.Transparent;
 
-            using (Bitmap barcodeBmp = generator.GenerateBarCodeImage())
+            using (MemoryStream ms = new MemoryStream())
             {
-                // Optionally save the standalone barcode image
-                barcodeBmp.Save(barcodePath, ImageFormat.Png);
+                // Save the barcode image to a memory stream in PNG format
+                generator.Save(ms, BarCodeImageFormat.Png);
+                ms.Position = 0;
 
-                // Load the background image onto which the barcode will be drawn
-                using (Bitmap backgroundBmp = (Bitmap)Image.FromFile(backgroundPath))
+                using (Bitmap barcodeBitmap = new Bitmap(ms))
                 {
-                    // Compute coordinates to center the barcode on the background
-                    int posX = (backgroundBmp.Width - barcodeBmp.Width) / 2;
-                    int posY = (backgroundBmp.Height - barcodeBmp.Height) / 2;
+                    // Persist the barcode image to disk
+                    barcodeBitmap.Save(barcodePath, ImageFormat.Png);
 
-                    // Draw the barcode onto the background at the calculated position
-                    using (Graphics graphics = Graphics.FromImage(backgroundBmp))
+                    // ----------------------------------------------------------------
+                    // Load the background image and composite the barcode onto it
+                    // ----------------------------------------------------------------
+                    using (Bitmap bg = new Bitmap(backgroundPath))
                     {
-                        graphics.DrawImage(barcodeBmp, posX, posY, barcodeBmp.Width, barcodeBmp.Height);
+                        using (Graphics graphics = Graphics.FromImage(bg))
+                        {
+                            // Center the barcode on the background
+                            int x = (bg.Width - barcodeBitmap.Width) / 2;
+                            int y = (bg.Height - barcodeBitmap.Height) / 2;
+                            graphics.DrawImage(barcodeBitmap, x, y);
+                        }
+                        // Save the final composite image
+                        bg.Save(compositePath, ImageFormat.Png);
                     }
-
-                    // Save the final composited image as a PNG file
-                    backgroundBmp.Save(finalPath, ImageFormat.Png);
                 }
             }
         }
+
+        // Output the locations of the generated files
+        Console.WriteLine("Background image: " + backgroundPath);
+        Console.WriteLine("Barcode image (transparent background): " + barcodePath);
+        Console.WriteLine("Composite image: " + compositePath);
     }
 }

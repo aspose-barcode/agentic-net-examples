@@ -1,42 +1,46 @@
-// Title: Create Code128 barcode with right-aligned Calibri text
-// Description: Demonstrates how to generate a Code128 barcode, set the human‑readable text font to Calibri 13 pt, and align the text to the right of the barcode image.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and CodeTextParameters to customize human‑readable text. Typical use cases include branding, product labeling, and custom UI where specific font styling and text placement are required. Developers often need to adjust font family, size, and alignment to match design guidelines.
+// Title: Generate Code128 barcode with right-aligned Calibri text
+// Description: Demonstrates how to create a Code128 barcode, set the human‑readable text to Calibri 13 pt, and align the text to the right of the barcode.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and CodeTextParameters to customize barcode appearance. Typical scenarios include branding, product labeling, and inventory systems where specific font styling and text placement are required. Developers often need to adjust font properties, alignment, and output formats when integrating barcodes into applications.
 // Prompt: Create a barcode with custom text font Calibri, size 13 pt, and align text right of the barcode.
-// Tags: code128, barcode generation, custom font, text alignment, png, aspose.barcode, aspose.barcode.generation, aspose.drawing
+// Tags: code128, barcode generation, png, font, text alignment, aspose.barcode
 
 using System;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a Code128 barcode with custom font and right-aligned text.
+/// Example program that generates a Code128 barcode with custom text styling and alignment.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates the barcode, applies font settings, aligns text, and saves the image.
+    /// Entry point. Generates the barcode, applies font settings, aligns the text, and saves the image as PNG.
     /// </summary>
     static void Main()
     {
-        // Initialize a barcode generator for the Code128 symbology
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128))
-        {
-            // Define the data to encode in the barcode
-            generator.CodeText = "Sample123";
+        // Define the output file path in the temporary folder
+        string outputPath = Path.Combine(Path.GetTempPath(), "custom_barcode.png");
 
-            // Set the human‑readable text font to Calibri, 13 pt
+        // Create a BarcodeGenerator for Code128 with the desired code text
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
+        {
+            // Switch to manual font mode so we can specify a custom font
+            generator.Parameters.Barcode.CodeTextParameters.FontMode = FontMode.Manual;
+
+            // Set the font family to Calibri and size to 13 points
             generator.Parameters.Barcode.CodeTextParameters.Font.FamilyName = "Calibri";
             generator.Parameters.Barcode.CodeTextParameters.Font.Size.Point = 13f;
 
-            // Position the text to the right side of the barcode
+            // Align the human‑readable text to the right side of the barcode
             generator.Parameters.Barcode.CodeTextParameters.Alignment = TextAlignment.Right;
 
-            // Save the generated barcode as a PNG image file
-            generator.Save("custom_barcode.png");
+            // Save the generated barcode as a PNG image
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user that the barcode has been created
-        Console.WriteLine("Barcode generated and saved as 'custom_barcode.png'.");
+        // Inform the user where the barcode image was saved
+        Console.WriteLine($"Barcode saved to: {outputPath}");
     }
 }

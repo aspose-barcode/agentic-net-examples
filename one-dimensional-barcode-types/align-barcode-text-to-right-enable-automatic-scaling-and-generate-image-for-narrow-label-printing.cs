@@ -1,48 +1,52 @@
-// Title: Generate right-aligned Code128 barcode with auto scaling for narrow label printing
-// Description: Demonstrates how to create a Code128 barcode, align its human‑readable text to the right, enable automatic scaling, and output a PNG image sized for narrow label printing.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and various Parameters such as AutoSizeMode, image dimensions, XDimension, and CodeTextParameters. Typical use cases include creating compact barcodes for small labels, receipts, or product tags where precise alignment and scaling are required. Developers often need to adjust image size, resolution, and text alignment to meet printing specifications.
+// Title: Generate Right-Aligned Code128 Barcode with Automatic Scaling for Narrow Labels
+// Description: Demonstrates how to create a Code128 barcode, align its text to the right, enable automatic scaling, and set a narrow X dimension for label printing, then save as PNG.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating common tasks such as configuring barcode text alignment, auto‑size modes, and dimension settings using the BarcodeGenerator class. Developers creating product labels, shipping tags, or narrow‑width barcodes often need to adjust text positioning and scaling to fit limited space. The snippet shows typical usage of EncodeTypes, TextAlignment, AutoSizeMode, and XDimension properties for generating printable barcode images.
 // Prompt: Align barcode text to right, enable automatic scaling, and generate image for narrow label printing.
-// Tags: code128, barcode generation, auto scaling, text alignment, narrow label, png, aspose.barcode, csharp
+// Tags: code128, text alignment, auto scaling, narrow label, png, aspose.barcode, barcode generation
 
 using System;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing; // Required for BarCodeImageFormat enum
+using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates a right‑aligned Code128 barcode with automatic scaling,
-/// sized for a narrow label and saved as a PNG image.
+/// Example program that generates a Code128 barcode with right‑aligned text,
+/// automatic scaling, and a narrow X dimension suitable for label printing.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Creates the barcode, configures scaling, alignment, and image size,
-    /// then saves the result to a file.
+    /// Entry point of the application. Creates the output folder, configures the barcode,
+    /// saves it as a PNG image, and writes the result path to the console.
     /// </summary>
     static void Main()
     {
-        // Initialize a BarcodeGenerator for Code128 with the desired code text.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
+        // Determine a temporary folder for the output image
+        string outputFolder = Path.Combine(Path.GetTempPath(), "BarcodeDemo");
+        Directory.CreateDirectory(outputFolder);
+
+        // Full path for the generated PNG file
+        string outputPath = Path.Combine(outputFolder, "narrow_label.png");
+
+        // Initialize the barcode generator with Code128 symbology and the desired data
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "NARROW"))
         {
-            // Enable automatic scaling using interpolation mode to keep the barcode readable
-            // when the image size changes.
-            generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
-
-            // Set the target image dimensions (in points) suitable for a narrow label.
-            generator.Parameters.ImageWidth.Point = 150f;   // Label width
-            generator.Parameters.ImageHeight.Point = 50f;   // Label height
-
-            // Reduce the module (X) dimension to keep the barcode compact on the small label.
-            generator.Parameters.Barcode.XDimension.Point = 0.5f;
-
-            // Align the human‑readable text to the right side of the barcode.
+            // Align the human‑readable text to the right side of the barcode
             generator.Parameters.Barcode.CodeTextParameters.Alignment = TextAlignment.Right;
 
-            // Increase the resolution to 300 DPI for higher print quality on narrow labels.
-            generator.Parameters.Resolution = 300f;
+            // Enable automatic scaling using interpolation to fit the image dimensions
+            generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
 
-            // Save the generated barcode as a PNG image.
-            generator.Save("narrow_label.png");
+            // Set a narrow X dimension (module width) for high‑density label printing
+            generator.Parameters.Barcode.XDimension.Point = 0.5f;
+
+            // Save the configured barcode as a PNG image
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
+
+        // Inform the user where the image was saved
+        Console.WriteLine($"Barcode image saved to: {outputPath}");
     }
 }

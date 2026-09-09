@@ -1,46 +1,47 @@
 // Title: Generate high‑resolution Code128 barcode and save as JPEG
-// Description: Demonstrates configuring the barcode generator resolution to 300 DPI and exporting the result as a high‑quality JPEG image.
-// Category-Description: This example belongs to the Aspose.BarCode image generation category, illustrating how to adjust rendering parameters such as resolution. It uses the BarcodeGenerator class together with EncodeTypes and BarCodeImageFormat to create barcodes for common use cases like product labeling, inventory tracking, and document embedding. Developers often need to control DPI to meet print‑ready specifications or to ensure clarity on high‑resolution displays.
+// Description: This example creates a Code128 barcode, sets the image resolution to 300 DPI, and saves it as a high‑resolution JPEG file.
+// Category-Description: Demonstrates Aspose.BarCode generation features, focusing on the BarcodeGenerator class, EncodeTypes enumeration, and BarCodeImageFormat options. Typical use cases include creating printable barcodes for labels, invoices, or product packaging where image quality and resolution are critical. Developers often need to control DPI settings and output formats to meet printing standards.
 // Prompt: Configure barcode resolution to 300 DPI and save the generated image as a high‑resolution JPEG.
-// Tags: code128, resolution, jpeg, barcode, generation, aspose.barcode
+// Tags: code128, barcode, resolution, jpeg, generation, aspose.barcode
 
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Example program that creates a Code128 barcode, sets its resolution to 300 DPI,
-/// and saves it as a high‑resolution JPEG image.
+/// Demonstrates generating a high‑resolution barcode image using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
+    /// Entry point that creates the output directory, generates a Code128 barcode at 300 DPI,
+    /// saves it as a JPEG, and writes the output path to the console.
     /// </summary>
     static void Main()
     {
-        // Define the output file path for the generated JPEG image.
-        string outputPath = "high_res_barcode.jpg";
+        // Determine the output directory path relative to the current working directory
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Output");
 
-        // Ensure the target directory exists; create it if necessary.
-        string directory = Path.GetDirectoryName(outputPath);
-        if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+        // Ensure the output directory exists; create it if it does not
+        if (!Directory.Exists(outputDir))
         {
-            Directory.CreateDirectory(directory);
+            Directory.CreateDirectory(outputDir);
         }
 
-        // Initialize a barcode generator for the Code128 symbology with sample data.
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "123456789"))
+        // Build the full file path for the resulting JPEG image
+        string outputPath = Path.Combine(outputDir, "barcode_highres.jpg");
+
+        // Initialize the barcode generator with Code128 symbology and the data to encode
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
         {
-            // Configure the rendering resolution to 300 DPI (float literal required).
+            // Set the image resolution to 300 DPI for high‑quality output
             generator.Parameters.Resolution = 300f;
 
-            // Save the generated barcode as a high‑resolution JPEG image.
+            // Save the generated barcode as a JPEG image at the specified path
             generator.Save(outputPath, BarCodeImageFormat.Jpeg);
         }
 
-        // Output the full path of the saved barcode image.
-        Console.WriteLine($"Barcode saved to: {Path.GetFullPath(outputPath)}");
+        // Inform the user where the barcode image has been saved
+        Console.WriteLine($"Barcode saved to: {outputPath}");
     }
 }

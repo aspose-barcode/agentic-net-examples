@@ -1,61 +1,68 @@
-// Title: Generate multiple Codabar barcodes with alternating start symbols
-// Description: Demonstrates how to create a series of Codabar barcodes, alternating the start/stop symbols between A and B, and save each as a JPEG image.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and Codabar parameters. Typical use cases include batch creation of barcodes for inventory, shipping, or point‑of‑sale systems where different start symbols are required. Developers often need to automate image output in common formats such as JPEG.
+// Title: Generate Codabar Barcodes with Alternating Start Symbols and Save as JPEG
+// Description: Demonstrates how to create multiple Codabar barcodes, alternating the start/stop symbols between A and B, and save each as an individual JPEG image.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, showcasing the use of BarcodeGenerator, EncodeTypes, and Codabar parameters to produce Codabar symbology images. Typical use cases include generating printable barcode labels, inventory tags, or batch barcode files where start/stop symbols vary. Developers often need to configure X-dimension, start/stop symbols, and export to common image formats such as JPEG.
 // Prompt: Generate a series of Codabar barcodes with alternating start symbols A and B, saving each as a separate JPEG.
-// Tags: codabar, generation, jpeg, aspose.barcode, barcodegenerator
+// Tags: codabar, barcode generation, jpeg, aspose.barcode, encode types, image output
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Program that generates a set of Codabar barcodes with alternating start symbols and saves them as JPEG files.
+/// Demonstrates generating Codabar barcodes with alternating start symbols and saving them as JPEG files.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Creates the output folder, generates the barcodes, and writes status messages to the console.
+    /// Entry point of the example. Creates an output directory, generates barcodes, and saves them.
     /// </summary>
     static void Main()
     {
-        // Determine the folder where barcode images will be stored
-        string outputFolder = Path.Combine(Directory.GetCurrentDirectory(), "CodabarBarcodes");
-        if (!Directory.Exists(outputFolder))
+        // Determine output directory path relative to current working directory
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "CodabarOutput");
+
+        // Ensure the output directory exists
+        if (!Directory.Exists(outputDir))
         {
-            // Create the folder if it does not already exist
-            Directory.CreateDirectory(outputFolder);
+            Directory.CreateDirectory(outputDir);
         }
 
-        // Define how many barcode images to generate
-        int count = 6; // example count
+        // Barcode data to encode (Codabar requires start/stop symbols, which are set separately)
+        string codeText = "-12345-";
 
-        // Loop to generate each barcode
+        // Number of barcode images to generate
+        int count = 4;
+
+        // Loop to generate each barcode with alternating start/stop symbols
         for (int i = 0; i < count; i++)
         {
-            // Choose start/stop symbol: A for even indexes, B for odd indexes
+            // Choose start symbol A for even indexes, B for odd indexes; stop symbol matches start
             CodabarSymbol startSymbol = (i % 2 == 0) ? CodabarSymbol.A : CodabarSymbol.B;
+            CodabarSymbol stopSymbol = startSymbol;
 
-            // Initialize a Codabar barcode generator
-            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Codabar))
+            // Initialize the barcode generator with Codabar symbology and the data string
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Codabar, codeText))
             {
-                // Set the data to encode (digits only; start/stop symbols are set via parameters)
-                generator.CodeText = "123456";
+                // Set the X-dimension (module width) in pixels
+                generator.Parameters.Barcode.XDimension.Pixels = 2;
 
                 // Apply the selected start and stop symbols
                 generator.Parameters.Barcode.Codabar.StartSymbol = startSymbol;
-                generator.Parameters.Barcode.Codabar.StopSymbol = startSymbol;
+                generator.Parameters.Barcode.Codabar.StopSymbol = stopSymbol;
 
-                // Build a unique file name that includes the index and start symbol
-                string fileName = $"codabar_{i + 1}_{startSymbol}.jpg";
-                string filePath = Path.Combine(outputFolder, fileName);
+                // Build the output file name reflecting the symbols used
+                string fileName = $"Codabar_Start{startSymbol}_Stop{stopSymbol}.jpg";
+                string filePath = Path.Combine(outputDir, fileName);
 
                 // Save the generated barcode as a JPEG image
                 generator.Save(filePath, BarCodeImageFormat.Jpeg);
-                Console.WriteLine($"Saved {filePath}");
+
+                // Inform the user of the saved file location
+                Console.WriteLine($"Saved: {filePath}");
             }
         }
-
-        Console.WriteLine("Barcode generation completed.");
     }
 }

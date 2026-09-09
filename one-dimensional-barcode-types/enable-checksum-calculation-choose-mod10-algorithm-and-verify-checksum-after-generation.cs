@@ -1,10 +1,11 @@
-// Title: Generate and Verify Codabar Barcode with Mod10 Checksum
-// Description: Demonstrates how to generate a Codabar barcode with checksum enabled using the Mod10 algorithm, save it as an image, and then recognize it while validating the checksum.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It shows how to configure checksum settings on the BarcodeGenerator, use Codabar-specific parameters, and perform checksum validation with BarCodeReader. Developers working with one-dimensional symbologies often need to ensure data integrity by enabling and verifying checksums during both encoding and decoding phases.
+// Title: Codabar Barcode Generation with Mod10 Checksum and Validation
+// Description: Demonstrates how to generate a Codabar barcode with Mod10 checksum enabled, save it as PNG, and then read it back to verify the checksum.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It shows usage of BarcodeGenerator, BarCodeReader, and related parameter classes to configure checksum calculation, generate an image, and validate the checksum during decoding. Developers working with one‑dimensional symbologies often need to enable and verify checksums to ensure data integrity.
 // Prompt: Enable checksum calculation, choose Mod10 algorithm, and verify the checksum after generation.
-// Tags: codabar, checksum, mod10, barcode generation, barcode recognition, aspose.barcode, one-dimensional, csharp
+// Tags: codabar, checksum, mod10, barcode generation, barcode recognition, aspose.barcode, png, c#
 
 using System;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
@@ -12,47 +13,71 @@ using Aspose.Drawing;
 
 /// <summary>
 /// Example program that creates a Codabar barcode with a Mod10 checksum,
-/// saves it to a PNG file, and then reads it back while validating the checksum.
+/// saves it to a temporary PNG file, reads it back, and validates the checksum.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates the barcode, saves it, and verifies the checksum during recognition.
+    /// Entry point of the example. Executes barcode generation, saving, reading, and cleanup.
     /// </summary>
     static void Main()
     {
-        // Initialize a Codabar barcode generator with sample code text.
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Codabar, "A12345B"))
+        // Create a unique temporary directory to store the barcode image.
+        string tempDir = Path.Combine(Path.GetTempPath(), "BarcodeExample_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        string barcodePath = Path.Combine(tempDir, "CodabarMod10.png");
+
+        // Generate a Codabar barcode with Mod10 checksum enabled.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Codabar, "-12345-"))
         {
-            // Enable checksum generation for the barcode.
+            // Set visual parameters.
+            generator.Parameters.Barcode.XDimension.Pixels = 2;
+
+            // Enable checksum calculation.
             generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
 
-            // Select the Mod10 algorithm for Codabar checksum calculation.
+            // Choose Mod10 algorithm for Codabar checksum.
             generator.Parameters.Barcode.Codabar.ChecksumMode = CodabarChecksumMode.Mod10;
 
-            // Allow generation even if the code text is slightly incorrect.
-            generator.Parameters.Barcode.ThrowExceptionWhenCodeTextIncorrect = false;
+            // Save the generated barcode as a PNG image.
+            generator.Save(barcodePath, BarCodeImageFormat.Png);
+        }
 
-            // Generate the barcode image and save it to a file (format inferred from extension).
-            using (Aspose.Drawing.Bitmap image = generator.GenerateBarCodeImage())
+        Console.WriteLine($"Barcode saved to: {barcodePath}");
+
+        // Read the saved barcode image and verify the checksum.
+        using (var reader = new BarCodeReader(barcodePath, DecodeType.Codabar))
+        {
+            // Turn on checksum validation during decoding.
+            reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
+
+            // Iterate through all detected barcodes (should be one in this case).
+            foreach (BarCodeResult result in reader.ReadBarCodes())
             {
-                generator.Save("codabar.png");
-            }
+                Console.WriteLine($"Code Type: {result.CodeTypeName}");
+                Console.WriteLine($"Code Text: {result.CodeText}");
 
-            // Create a reader to recognize the saved barcode and validate its checksum.
-            using (BarCodeReader reader = new BarCodeReader("codabar.png", DecodeType.Codabar))
-            {
-                // Turn on checksum validation during the recognition process.
-                reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
-
-                // Iterate through all recognized barcodes (there should be one).
-                foreach (BarCodeResult result in reader.ReadBarCodes())
+                // Output checksum information if available.
+                if (result.Extended?.OneD != null)
                 {
-                    Console.WriteLine("Recognized CodeText: " + result.CodeText);
-                    // Output the checksum value if it is present in the extended OneD parameters.
-                    Console.WriteLine("Checksum (if any): " + result.Extended.OneD.CheckSum);
+                    Console.WriteLine($"Checksum Value: {result.Extended.OneD.CheckSum}");
+                }
+                else
+                {
+                    Console.WriteLine("Checksum information not available.");
                 }
             }
+        }
+
+        // Clean up temporary files (optional).
+        try
+        {
+            File.Delete(barcodePath);
+            Directory.Delete(tempDir);
+        }
+        catch
+        {
+            // Ignore cleanup errors.
         }
     }
 }

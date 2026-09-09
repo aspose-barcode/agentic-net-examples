@@ -1,78 +1,63 @@
-// Title: Compare barcode image file sizes at different DPI settings
-// Description: Generates a Code128 barcode image at 200 DPI and 300 DPI, saves them as PNG files, and reports their file sizes to illustrate the impact of resolution on output size.
-// Category-Description: This example belongs to the Aspose.BarCode image generation category, demonstrating how to configure the resolution parameter of BarcodeGenerator, save images in PNG format, and perform basic file‑system validation. Developers working with barcode rendering often need to adjust DPI for print quality or file‑size optimization, using classes such as BarcodeGenerator, BarCodeImageFormat, and the Parameters property.
+// Title: Barcode resolution comparison between 200 DPI and 300 DPI
+// Description: Demonstrates how to set barcode image resolution using Aspose.BarCode, generate PNG images at 200 DPI and 300 DPI, and compare their file sizes.
+// Category-Description: This example belongs to the Aspose.BarCode image generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and BarCodeImageFormat to control image resolution. Developers often need to adjust DPI for printing quality or file size optimization, and this snippet shows typical steps for creating barcodes at different resolutions and evaluating the impact on output size.
 // Prompt: Set barcode resolution to 200 DPI, generate image, and compare file size against 300 DPI version.
-// Tags: barcode, code128, resolution, dpi, image generation, file size comparison, aspose.barcode, png
+// Tags: barcode, resolution, dpi, image generation, png, aspose.barcode, code128, file size comparison
 
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode;
 
 /// <summary>
-/// Demonstrates how to generate barcode images at different DPI settings
-/// and compare their resulting file sizes.
+/// Demonstrates setting barcode resolution, generating PNG images at different DPI values,
+/// and comparing the resulting file sizes using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates two PNG barcode images
-    /// (200 DPI and 300 DPI) and prints their file sizes for comparison.
+    /// Entry point of the example. Creates temporary output folder, generates two barcodes
+    /// (200 DPI and 300 DPI), and prints a size comparison to the console.
     /// </summary>
     static void Main()
     {
-        // Define the barcode content and the output file names.
-        string codeText = "123456";
-        string file200 = "barcode_200dpi.png";
-        string file300 = "barcode_300dpi.png";
+        // Create a unique temporary directory for the generated barcode images
+        string outputDir = Path.Combine(Path.GetTempPath(), "BarcodeResolutionDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputDir);
 
-        // ------------------------------------------------------------
-        // Generate a barcode image with a resolution of 200 DPI.
-        // ------------------------------------------------------------
+        // Barcode data and target file paths
+        string codeText = "1234567890";
+        string file200 = Path.Combine(outputDir, "barcode_200dpi.png");
+        string file300 = Path.Combine(outputDir, "barcode_300dpi.png");
+
+        // Generate a 200 DPI barcode image
         using (var generator200 = new BarcodeGenerator(EncodeTypes.Code128, codeText))
         {
-            // Set the resolution (dots per inch) for the image.
-            generator200.Parameters.Resolution = 200f;
-            // Save the generated barcode as a PNG file.
-            generator200.Save(file200, BarCodeImageFormat.Png);
+            generator200.Parameters.Resolution = 200f; // Set resolution to 200 DPI
+            generator200.Save(file200, BarCodeImageFormat.Png); // Save as PNG
         }
 
-        // ------------------------------------------------------------
-        // Generate a barcode image with a resolution of 300 DPI.
-        // ------------------------------------------------------------
+        // Generate a 300 DPI barcode image
         using (var generator300 = new BarcodeGenerator(EncodeTypes.Code128, codeText))
         {
-            generator300.Parameters.Resolution = 300f;
-            generator300.Save(file300, BarCodeImageFormat.Png);
+            generator300.Parameters.Resolution = 300f; // Set resolution to 300 DPI
+            generator300.Save(file300, BarCodeImageFormat.Png); // Save as PNG
         }
 
-        // Verify that both image files were successfully created.
-        if (!File.Exists(file200) || !File.Exists(file300))
-        {
-            Console.WriteLine("Failed to create one or both barcode images.");
-            return;
-        }
-
-        // Retrieve the file sizes (in bytes) for each image.
+        // Retrieve file sizes for both images
         long size200 = new FileInfo(file200).Length;
         long size300 = new FileInfo(file300).Length;
 
-        // Output the file sizes to the console.
+        // Output the sizes to the console
         Console.WriteLine($"200 DPI file size: {size200} bytes");
         Console.WriteLine($"300 DPI file size: {size300} bytes");
 
-        // Compare the sizes and report which image is smaller.
+        // Compare and report which file is larger
         if (size200 < size300)
-        {
-            Console.WriteLine("The 200 DPI image is smaller than the 300 DPI image.");
-        }
+            Console.WriteLine("200 DPI file is smaller than 300 DPI file.");
         else if (size200 > size300)
-        {
-            Console.WriteLine("The 300 DPI image is smaller than the 200 DPI image.");
-        }
+            Console.WriteLine("200 DPI file is larger than 300 DPI file.");
         else
-        {
-            Console.WriteLine("Both images have the same file size.");
-        }
+            Console.WriteLine("Both files have the same size.");
     }
 }

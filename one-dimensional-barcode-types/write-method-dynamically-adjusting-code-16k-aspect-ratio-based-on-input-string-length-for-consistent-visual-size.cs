@@ -1,109 +1,86 @@
-// Title: Dynamic Aspect Ratio Adjustment for Code 16K Barcodes
-// Description: Demonstrates how to calculate and apply a variable aspect ratio to Code 16K barcodes so that the visual size stays consistent across different input lengths.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and barcode parameter settings. It shows a common scenario where developers need to create Code 16K barcodes with a visual size that does not vary dramatically with the length of the encoded data, a frequent requirement in inventory and labeling systems.
+// Title: Dynamic Code 16K barcode aspect ratio based on input length
+// Description: Demonstrates how to compute and apply a suitable aspect ratio for Code 16K barcodes so that barcodes of varying text lengths maintain a consistent visual size.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, focusing on barcode symbology configuration. It shows how to use BarcodeGenerator, EncodeTypes, and the Code16K parameters (AspectRatio, XDimension) to produce PNG images. Developers often need to adjust barcode dimensions dynamically for different data lengths while preserving readability and layout consistency.
 // Prompt: Write method dynamically adjusting Code 16K aspect ratio based on input string length for consistent visual size.
-// Tags: barcode, symbology, code16k, aspectratio, generation, png, aspose.barcode, csharp
+// Tags: barcode, code16k, aspectratio, generation, png, aspose.barcode, csharp
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Generates Code 16K barcodes with a dynamically calculated aspect ratio to keep visual size consistent.
+/// Demonstrates dynamic adjustment of Code 16K barcode aspect ratio based on input string length.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Calculates an aspect ratio that tries to keep the visual size of the barcode
-    /// roughly constant regardless of the length of the encoded text.
-    /// Shorter texts get a larger aspect ratio (taller), longer texts get a smaller one (wider).
+    /// Entry point. Generates Code 16K barcodes for sample strings with computed aspect ratios and saves them as PNG files.
     /// </summary>
-    /// <param name="codeText">The text to encode in the barcode.</param>
-    /// <returns>A float representing the height‑to‑width ratio.</returns>
-    static float CalculateAspectRatio(string codeText)
+    static void Main()
     {
-        const float baseAspect = 1.0f;                     // default height/width ratio
-        // Simple heuristic: inverse proportional to length, with a minimum divisor of 1.
-        float lengthFactor = Math.Max(1, codeText.Length);
-        float ratio = baseAspect * (10f / lengthFactor);   // 10 is an arbitrary scaling constant
-        return ratio;
-    }
-
-    /// <summary>
-    /// Resolves a symbology name to the corresponding EncodeTypes field using reflection.
-    /// </summary>
-    /// <param name="symbologyName">The name of the symbology (e.g., "Code16K").</param>
-    /// <returns>The matching <see cref="BaseEncodeType"/> instance.</returns>
-    static BaseEncodeType ResolveEncodeType(string symbologyName)
-    {
-        var field = typeof(EncodeTypes).GetField(symbologyName);
-        if (field == null)
+        // Sample strings of varying lengths to illustrate aspect‑ratio scaling
+        string[] samples = new string[]
         {
-            throw new ArgumentException($"Unknown symbology: {symbologyName}");
-        }
-        return (BaseEncodeType)field.GetValue(null);
-    }
-
-    /// <summary>
-    /// Generates a Code 16K barcode image with an aspect ratio adjusted for the supplied text.
-    /// </summary>
-    /// <param name="codeText">The text to encode.</param>
-    /// <param name="outputPath">Full file path where the PNG image will be saved.</param>
-    static void GenerateCode16K(string codeText, string outputPath)
-    {
-        // Resolve the Code16K encode type.
-        BaseEncodeType encodeType = ResolveEncodeType("Code16K");
-
-        // Create the barcode generator with the specified text.
-        using (var generator = new BarcodeGenerator(encodeType, codeText))
-        {
-            // Adjust the aspect ratio based on the length of the code text.
-            float aspect = CalculateAspectRatio(codeText);
-            generator.Parameters.Barcode.Code16K.AspectRatio = aspect;
-
-            // Optional: set a modest XDimension so the image is not too small.
-            generator.Parameters.Barcode.XDimension.Point = 2f;
-
-            // Save the barcode as PNG.
-            generator.Save(outputPath, BarCodeImageFormat.Png);
-            Console.WriteLine($"Generated '{outputPath}' with AspectRatio={aspect:F3}");
-        }
-    }
-
-    /// <summary>
-    /// Entry point. Generates a set of Code 16K barcodes with varying text lengths to demonstrate aspect‑ratio adjustment.
-    /// </summary>
-    /// <param name="args">Command‑line arguments (not used).</param>
-    static void Main(string[] args)
-    {
-        // Sample inputs of varying lengths.
-        string[] samples = new[]
-        {
-            "ABC",
+            "A",
+            "ABCDE",
             "ABCDEFGHIJ",
-            "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
-            "12345678901234567890",
-            "LongerSampleTextToTestAspectRatioAdjustment"
+            "ABCDEFGHIJKLMNOPQRSTU"
         };
 
-        // Ensure the output directory exists.
-        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
-        if (!Directory.Exists(outputDir))
+        // Create a temporary output folder for the generated barcode images
+        string outputDir = Path.Combine(Path.GetTempPath(), "Code16KDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputDir);
+
+        // Process each sample string
+        foreach (string text in samples)
         {
-            Directory.CreateDirectory(outputDir);
+            // Compute an appropriate aspect ratio based on the text length
+            float aspect = ComputeAspectRatio(text);
+
+            // Build the output file name (includes the character count for clarity)
+            string filePath = Path.Combine(outputDir, $"Code16K_{text.Length}_chars.png");
+
+            // Generate the barcode with the calculated aspect ratio
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code16K, text))
+            {
+                // Set the X‑dimension (module width) in pixels
+                generator.Parameters.Barcode.XDimension.Pixels = 2;
+
+                // Apply the dynamically computed aspect ratio
+                generator.Parameters.Barcode.Code16K.AspectRatio = aspect;
+
+                // Save the barcode as a PNG image
+                generator.Save(filePath, BarCodeImageFormat.Png);
+            }
+
+            // Inform the user about the generated file
+            Console.WriteLine($"Generated barcode for length {text.Length} with aspect {aspect} -> {filePath}");
         }
 
-        // Generate a barcode for each sample.
-        for (int i = 0; i < samples.Length; i++)
-        {
-            string text = samples[i];
-            string fileName = $"Code16K_{i + 1}.png";
-            string outputPath = Path.Combine(outputDir, fileName);
-            GenerateCode16K(text, outputPath);
-        }
+        // Final summary of the output location
+        Console.WriteLine("All barcodes generated in: " + outputDir);
+    }
 
-        Console.WriteLine("Barcode generation completed.");
+    /// <summary>
+    /// Computes a suitable aspect ratio for a Code 16K barcode based on the length of the input text.
+    /// </summary>
+    /// <param name="codeText">The text to encode in the barcode.</param>
+    /// <returns>A float representing the aspect ratio to apply.</returns>
+    static float ComputeAspectRatio(string codeText)
+    {
+        // Code 16K rows: each row holds up to 5 characters
+        int rows = (codeText.Length + 4) / 5;
+
+        const float baseAspect = 20f; // Base aspect for a single row
+        float aspect = baseAspect / rows;
+
+        // Enforce a minimum recommended aspect ratio to keep the barcode readable
+        if (aspect < 8f)
+            aspect = 8f;
+
+        return aspect;
     }
 }

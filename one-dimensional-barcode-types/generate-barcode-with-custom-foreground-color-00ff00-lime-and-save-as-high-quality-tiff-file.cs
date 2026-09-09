@@ -1,44 +1,40 @@
-// Title: Generate a Code128 barcode with lime foreground color and save as high‑quality TIFF
-// Description: This example creates a Code128 barcode, applies a custom lime (#00FF00) bar color, sets a high resolution, and saves the result as a TIFF file.
-// Category-Description: Aspose.BarCode generation examples showing how to customize barcode appearance and output format. It covers using BarcodeGenerator, setting Parameters such as Resolution and BarColor, and saving to image formats like TIFF. Developers often need to produce high‑resolution barcodes for print media, requiring precise color and DPI control.
+// Title: Generate a Code128 barcode with lime foreground and save as TIFF
+// Description: This example creates a Code128 barcode, applies a custom lime foreground color, and saves the result as a high‑quality TIFF image.
+// Category-Description: Demonstrates Aspose.BarCode barcode generation using the BarcodeGenerator class. It covers setting barcode symbology (EncodeTypes), customizing visual appearance (BarColor), and exporting to a specific image format (BarCodeImageFormat). Typical use cases include creating barcodes for product labeling, inventory tracking, and packaging where color branding and high‑resolution output are required. Developers often need to adjust colors and output formats to match branding guidelines and printing standards.
 // Prompt: Generate a barcode with custom foreground color #00FF00 (lime) and save as a high‑quality TIFF file.
-// Tags: code128, barcode-generation, tiff, aspose.barcode, aspose.drawing
+// Tags: code128, barcode generation, tiff, color, aspose.barcode, barcode symbology, image export
 
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
-namespace BarcodeExample
+/// <summary>
+/// Example program that generates a Code128 barcode with a lime foreground color
+/// and saves it as a TIFF image using Aspose.BarCode.
+/// </summary>
+class Program
 {
     /// <summary>
-    /// Demonstrates generating a Code128 barcode with a custom lime foreground color and saving it as a high‑quality TIFF image.
+    /// Entry point of the application.
     /// </summary>
-    class Program
+    static void Main()
     {
-        /// <summary>
-        /// Entry point of the example. Creates the barcode, configures appearance, and writes the image to disk.
-        /// </summary>
-        static void Main()
+        // Define the full path for the output TIFF file.
+        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "barcode_lime.tiff");
+
+        // Create a BarcodeGenerator for Code128 symbology with the desired text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "12345678"))
         {
-            // Define the output file name
-            string outputFile = "barcode.tiff";
+            // Set the barcode's foreground color to lime (#00FF00).
+            generator.Parameters.Barcode.BarColor = Color.FromArgb(255, 0, 255, 0);
 
-            // Initialize a BarcodeGenerator for Code128 with sample data
-            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
-            {
-                // Configure high resolution (e.g., 300 DPI) for print‑quality output
-                generator.Parameters.Resolution = 300f;
-
-                // Set the bar (foreground) color to lime (#00FF00)
-                generator.Parameters.Barcode.BarColor = Color.FromArgb(0, 255, 0);
-
-                // Save the generated barcode as a TIFF image
-                generator.Save(outputFile, BarCodeImageFormat.Tiff);
-            }
-
-            // Inform the user where the file was saved
-            Console.WriteLine($"Barcode saved to {Path.GetFullPath(outputFile)}");
+            // Save the generated barcode as a high‑quality TIFF image.
+            generator.Save(outputPath, BarCodeImageFormat.Tiff);
         }
+
+        // Output the location of the saved barcode image.
+        Console.WriteLine($"Barcode saved to {outputPath}");
     }
 }

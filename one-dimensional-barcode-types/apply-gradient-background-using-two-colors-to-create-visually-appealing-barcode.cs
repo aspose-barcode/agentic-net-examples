@@ -1,73 +1,83 @@
-// Title: Apply a gradient background to a Code128 barcode image
-// Description: Demonstrates generating a Code128 barcode and overlaying it on a vertical gradient background, then saving as PNG.
-// Category-Description: This example belongs to the Aspose.BarCode image manipulation category, showcasing how to combine barcode generation (BarcodeGenerator) with custom graphics (Bitmap, Graphics) to create visually enhanced barcodes. Typical use cases include branding, marketing materials, and UI elements where a plain barcode needs a styled background. Developers often need to render barcodes onto custom canvases, apply gradients, and export to common image formats.
+// Title: Generate QR Code with Gradient Background
+// Description: Demonstrates how to apply a vertical gradient background to a QR code barcode and save it as a PNG image.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to customize barcode appearance using the BarcodeGenerator class together with System.Drawing (Aspose.Drawing) objects. Typical use cases include branding, visual enhancement, and integrating barcodes into UI designs where background styling is required. Developers often need to combine barcode generation with graphic manipulation to meet design specifications.
 // Prompt: Apply a gradient background using two colors to create a visually appealing barcode.
-// Tags: code128, gradient-background, png, barcodelibrary, bitmap, graphics
+// Tags: qr code, gradient background, barcode generation, aspose.barcode, png output, image processing
 
 using System;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Generates a Code128 barcode and places it on a vertical gradient background.
+/// Example program that creates a QR code barcode with a vertical gradient background
+/// and saves the result as a PNG image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates the barcode, draws a gradient, composites the images, and saves the result.
+    /// Entry point of the application.
+    /// Generates the barcode, applies a gradient, and writes the image to a temporary file.
     /// </summary>
     static void Main()
     {
-        // Define barcode parameters
-        const string codeText = "Gradient123";
-        var encodeType = EncodeTypes.Code128;
+        // Define the output file path in the system temporary folder.
+        string outputPath = Path.Combine(Path.GetTempPath(), "GradientBarcode.png");
 
-        // Create a barcode generator with the specified symbology and text
-        using (var generator = new BarcodeGenerator(encodeType, codeText))
+        // Create a barcode generator for a QR code with the desired text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "GradientDemo"))
         {
-            // Generate the barcode image as a bitmap
-            using (var barcodeImage = generator.GenerateBarCodeImage())
+            // Set the barcode background to transparent so the gradient will be visible.
+            generator.Parameters.BackColor = Color.Transparent;
+
+            // Generate the barcode image as a bitmap.
+            using (Bitmap barcodeBitmap = generator.GenerateBarCodeImage())
             {
-                int width = barcodeImage.Width;
-                int height = barcodeImage.Height;
-
-                // Create a new bitmap that will hold the gradient background
-                using (var gradientBitmap = new Bitmap(width, height))
+                // Create a new bitmap that will hold the gradient and the barcode.
+                using (Bitmap finalBitmap = new Bitmap(barcodeBitmap.Width, barcodeBitmap.Height))
                 {
-                    // Define start and end colors for the vertical gradient
-                    var startColor = Color.LightBlue;
-                    var endColor = Color.LightGreen;
-
-                    // Obtain a Graphics object to draw on the gradient bitmap
-                    using (var graphics = Graphics.FromImage(gradientBitmap))
+                    // Obtain a graphics object for drawing on the final bitmap.
+                    using (Graphics graphics = Graphics.FromImage(finalBitmap))
                     {
-                        // Fill the bitmap line by line to create a smooth vertical gradient
+                        // Define the two colors for the vertical gradient.
+                        Color topColor = Color.FromArgb(255, 255, 200, 200);   // Light red
+                        Color bottomColor = Color.FromArgb(255, 200, 200, 255); // Light blue
+
+                        int height = finalBitmap.Height;
+                        int width = finalBitmap.Width;
+
+                        // Draw the gradient line by line.
                         for (int y = 0; y < height; y++)
                         {
+                            // Calculate the interpolation ratio for the current line.
                             float ratio = (float)y / (height - 1);
-                            int r = (int)(startColor.R + (endColor.R - startColor.R) * ratio);
-                            int g = (int)(startColor.G + (endColor.G - startColor.G) * ratio);
-                            int b = (int)(startColor.B + (endColor.B - startColor.B) * ratio);
-                            var lineColor = Color.FromArgb(r, g, b);
-                            var rect = new Rectangle(0, y, width, 1);
-                            using (var brush = new SolidBrush(lineColor))
+
+                            // Interpolate each RGB component between the top and bottom colors.
+                            int r = (int)(topColor.R + (bottomColor.R - topColor.R) * ratio);
+                            int g = (int)(topColor.G + (bottomColor.G - topColor.G) * ratio);
+                            int b = (int)(topColor.B + (bottomColor.B - topColor.B) * ratio);
+                            Color lineColor = Color.FromArgb(255, r, g, b);
+
+                            // Fill a one‑pixel‑high rectangle with the interpolated color.
+                            using (SolidBrush brush = new SolidBrush(lineColor))
                             {
-                                graphics.FillRectangle(brush, rect);
+                                graphics.FillRectangle(brush, 0, y, width, 1);
                             }
                         }
 
-                        // Draw the generated barcode on top of the gradient background
-                        graphics.DrawImage(barcodeImage, 0, 0);
+                        // Draw the generated barcode on top of the gradient background.
+                        graphics.DrawImage(barcodeBitmap, 0, 0, width, height);
                     }
 
-                    // Save the composited image to a PNG file
-                    const string outputPath = "gradient_barcode.png";
-                    gradientBitmap.Save(outputPath, ImageFormat.Png);
-                    Console.WriteLine($"Barcode with gradient background saved to: {outputPath}");
+                    // Save the composed image as a PNG file.
+                    finalBitmap.Save(outputPath, ImageFormat.Png);
                 }
             }
         }
+
+        // Inform the user where the image was saved.
+        Console.WriteLine($"Gradient barcode saved to: {outputPath}");
     }
 }

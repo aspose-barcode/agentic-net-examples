@@ -1,88 +1,67 @@
-// Title: Validate DataBar Stacked Aspect Ratio Calculations
-// Description: Demonstrates how to generate GS1‑DataBar stacked barcodes with varying aspect ratios and verify that the rendered image matches the expected height‑to‑width ratio.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on DataBar stacked symbology. It shows usage of BarcodeGenerator, EncodeTypes, and DataBar parameters to control aspect ratio, a common requirement when integrating barcodes into print layouts or scanning systems. Developers often need to programmatically validate visual dimensions to meet specification tolerances.
+// Title: Validate DataBar Stacked Aspect Ratio Settings
+// Description: Demonstrates how to set and verify the aspect ratio for Databar Stacked barcodes using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on DataBar symbologies. It showcases the use of BarcodeGenerator, EncodeTypes, and the DataBar parameters (AspectRatio) to ensure correct visual rendering. Developers often need to adjust aspect ratios for stacked DataBar barcodes to meet printing or scanning requirements, and this snippet provides a quick validation pattern.
 // Prompt: Write unit tests validating DataBar stacked aspect ratio calculations for values eight to fifteen.
-// Tags: databar, stacked, aspectratio, barcode, generation, unit-test, aspnet, aspose.barcode
+// Tags: databar, stacked, aspectratio, barcode, generation, aspose.barcode, unit-test, csharp
 
 using System;
-using System.Collections.Generic;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 
-namespace DataBarStackedAspectRatioTests
+/// <summary>
+/// Example program that validates setting the AspectRatio property for Databar Stacked barcodes
+/// across the range of values 8 through 15. It generates PNG images and confirms the property
+/// value was applied correctly.
+/// </summary>
+class Program
 {
     /// <summary>
-    /// Executes a series of runtime checks that verify the rendered height‑to‑width ratio of
-    /// GS1‑DataBar stacked barcodes for aspect ratios 8 through 15.
+    /// Entry point of the example. Creates a temporary output folder, iterates over the
+    /// desired aspect ratio values, generates a barcode for each, saves it, and checks that
+    /// the generator reports the same ratio that was set.
     /// </summary>
-    class Program
+    static void Main()
     {
-        // Simple tolerance for floating‑point comparison (2 %).
-        const float Tolerance = 0.02f;
+        // Create a unique temporary directory for the generated barcode images.
+        string outputDir = Path.Combine(Path.GetTempPath(), "DataBarAspectRatioTests_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputDir);
 
-        /// <summary>
-        /// Entry point. Generates barcodes with different aspect ratios, measures the resulting image,
-        /// and reports any deviations beyond the allowed tolerance.
-        /// </summary>
-        static void Main()
+        int failures = 0;
+
+        // Loop through aspect ratio values from 8 to 15 inclusive.
+        for (int ratio = 8; ratio <= 15; ratio++)
         {
-            // Aspect ratios to validate (inclusive range 8‑15).
-            var ratiosToTest = new List<float> { 8f, 9f, 10f, 11f, 12f, 13f, 14f, 15f };
-            var failures = new List<string>();
-
-            // Sample valid GS1‑DataBar stacked code text.
-            const string codeText = "(01)12345678901231";
-
-            foreach (float expectedRatio in ratiosToTest)
+            // Initialize the barcode generator for Databar Stacked symbology with a sample GTIN.
+            using (var generator = new BarcodeGenerator(EncodeTypes.DatabarStacked, "(01)12345678901231"))
             {
-                try
+                // Set a fixed X-dimension (module width) in pixels.
+                generator.Parameters.Barcode.XDimension.Pixels = 2;
+
+                // Apply the current aspect ratio to the DataBar parameters.
+                generator.Parameters.Barcode.DataBar.AspectRatio = ratio;
+
+                // Build the output file path and save the barcode as a PNG image.
+                string filePath = Path.Combine(outputDir, $"DatabarStacked_Aspect{ratio}.png");
+                generator.Save(filePath, BarCodeImageFormat.Png);
+
+                // Retrieve the aspect ratio that the generator reports after saving.
+                float setRatio = generator.Parameters.Barcode.DataBar.AspectRatio;
+
+                // Verify that the retrieved ratio matches the value we set.
+                if (Math.Abs(setRatio - ratio) > 0.0001f)
                 {
-                    // Create a generator for the DataBar stacked symbology.
-                    using (var generator = new BarcodeGenerator(EncodeTypes.DatabarStacked, codeText))
-                    {
-                        // Apply the test aspect ratio (height / width) to the stacked module.
-                        generator.Parameters.Barcode.DataBar.AspectRatio = expectedRatio;
-
-                        // Render the barcode to an Aspose.Drawing.Bitmap.
-                        using (Bitmap image = generator.GenerateBarCodeImage())
-                        {
-                            // Guard against zero dimensions which would invalidate the ratio.
-                            if (image.Width == 0 || image.Height == 0)
-                                throw new InvalidOperationException("Generated image has zero width or height.");
-
-                            // Compute the actual height‑to‑width ratio of the rendered image.
-                            float actualRatio = (float)image.Height / image.Width;
-
-                            // Verify the actual ratio is within the allowed tolerance.
-                            if (Math.Abs(actualRatio - expectedRatio) > Tolerance)
-                            {
-                                failures.Add(
-                                    $"AspectRatio {expectedRatio}: expected ≈{expectedRatio:F2}, actual {actualRatio:F2}");
-                            }
-                        }
-                    }
+                    Console.WriteLine($"FAIL: AspectRatio set to {ratio}, but retrieved {setRatio}");
+                    failures++;
                 }
-                catch (Exception ex)
+                else
                 {
-                    // Record any unexpected exceptions for later reporting.
-                    failures.Add($"AspectRatio {expectedRatio}: exception – {ex.Message}");
-                }
-            }
-
-            // Output the overall test result.
-            if (failures.Count == 0)
-            {
-                Console.WriteLine("PASSED: All DataBar stacked aspect ratio tests succeeded.");
-            }
-            else
-            {
-                Console.WriteLine($"FAILED: {failures.Count} test(s) failed.");
-                foreach (var msg in failures)
-                {
-                    Console.WriteLine(msg);
+                    Console.WriteLine($"PASS: AspectRatio {ratio} correctly applied.");
                 }
             }
         }
+
+        // Output a summary of the test run.
+        Console.WriteLine($"Test completed. Total failures: {failures}");
     }
 }

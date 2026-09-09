@@ -1,43 +1,52 @@
-// Title: Align barcode text left with auto scaling for narrow column
-// Description: Demonstrates how to left‑align the human‑readable text of a Code128 barcode, enable automatic scaling, and set image dimensions for a narrow column layout.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and barcode parameters such as CodeTextParameters, AutoSizeMode, and image size settings. Typical use cases include creating compact barcodes for reports, invoices, or mobile screens where space is limited. Developers often need to control text alignment and scaling to fit barcodes into constrained layouts.
+// Title: Left-aligned Code128 barcode with automatic scaling for narrow columns
+// Description: Generates a Code128 barcode with text aligned to the left, using automatic scaling to fit a narrow column layout, and saves it as a PNG image.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, demonstrating how to configure barcode text alignment, padding, and X-dimension for compact image output. It uses the BarcodeGenerator class and its Parameters property to adjust visual settings, a common requirement when embedding barcodes in tight UI spaces or printed columns.
 // Prompt: Align barcode text to left, enable automatic scaling, and generate image suitable for narrow column layout.
-// Tags: code128, barcode, text-alignment, autoscaling, narrow-layout, png, aspose.barcode, generation
+// Tags: code128, text alignment, left, automatic scaling, narrow column, png, aspose.barcode, barcode generation
 
 using System;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Generates a Code128 barcode with left‑aligned text, automatic scaling, and a narrow image size.
+/// Demonstrates creating a left‑aligned Code128 barcode with automatic scaling suitable for narrow column layouts.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates, configures, and saves the barcode image.
+    /// Entry point of the example. Generates the barcode, saves it as PNG, and writes the output path to the console.
     /// </summary>
     static void Main()
     {
-        // Initialize a barcode generator for Code128 with sample data
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456789"))
+        // Define a temporary output directory and ensure it exists.
+        string outputDir = Path.Combine(Path.GetTempPath(), "BarcodeDemo");
+        Directory.CreateDirectory(outputDir);
+
+        // Build the full file path for the resulting image.
+        string outputPath = Path.Combine(outputDir, "LeftAlignedBarcode.png");
+
+        // Create a BarcodeGenerator for Code128 with the desired data.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            // Set human‑readable text alignment to the left side of the barcode
+            // Align the human‑readable text to the left side of the barcode.
             generator.Parameters.Barcode.CodeTextParameters.Alignment = TextAlignment.Left;
 
-            // Enable automatic scaling using interpolation to fit a narrow column
-            generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
+            // Set a small X‑dimension to allow the barcode to fit into a narrow space.
+            generator.Parameters.Barcode.XDimension.Point = 0.5f;
 
-            // Define a narrow image width and a suitable height (points)
-            generator.Parameters.ImageWidth.Point = 150f;   // narrow width
-            generator.Parameters.ImageHeight.Point = 50f;   // appropriate height
+            // Apply uniform padding around the barcode to improve readability.
+            generator.Parameters.Barcode.Padding.Left.Point = 1f;
+            generator.Parameters.Barcode.Padding.Top.Point = 1f;
+            generator.Parameters.Barcode.Padding.Right.Point = 1f;
+            generator.Parameters.Barcode.Padding.Bottom.Point = 1f;
 
-            // Generate the barcode image as a bitmap
-            using (Aspose.Drawing.Bitmap image = generator.GenerateBarCodeImage())
-            {
-                // Save the generated image as a PNG file
-                generator.Save("barcode.png");
-            }
+            // Save the generated barcode as a PNG image.
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
+
+        // Inform the user where the barcode image was saved.
+        Console.WriteLine($"Barcode saved to: {outputPath}");
     }
 }
