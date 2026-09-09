@@ -1,85 +1,74 @@
 // Title: Read QR Code version and error correction level from detected barcodes
-// Description: Generates a QR code image, then reads the image to extract each QR code's version and error correction level.
-// Category-Description: This example belongs to the Aspose.BarCode QR code recognition category, demonstrating how to use BarcodeGenerator and BarCodeReader to create QR codes and retrieve extended QR parameters such as version and error correction level. Developers working with QR code generation and decoding often need to access these properties for validation, analytics, or adaptive processing. The example showcases key classes like BarcodeGenerator, BarCodeReader, QRExtendedParameters, and QRErrorLevel.
+// Description: Generates a QR Code with a specific version and error correction level, then reads the image to extract those QR parameters.
+// Category-Description: This example demonstrates Aspose.BarCode generation and recognition for QR codes. It uses BarcodeGenerator to create a QR symbol with defined version and error correction level, and BarCodeReader to decode the image and retrieve extended QR information such as version and error level. Developers working with QR code creation, validation, or metadata extraction commonly use these APIs for tasks like inventory tagging, authentication, or data encoding.
 // Prompt: Read QR Code version and error correction level from each detected QR barcode.
-// Tags: qr,barcode,recognition,generation,version,error-correction,aspose.barcode
+// Tags: qr code, version, error correction level, barcode generation, barcode recognition, aspose.barcode, aspose.barcode.generation, aspose.barcode.recognition
 
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.BarCode;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a QR code, saving it to a file, and then reading the QR code
-/// to obtain its version and error correction level using Aspose.BarCode APIs.
+/// Demonstrates how to generate a QR Code with a specific version and error correction level,
+/// then read the generated image to obtain those QR parameters using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a QR code image, verifies its existence,
-    /// reads the QR code(s) from the image, and outputs version and error correction level.
+    /// Entry point of the sample. Generates a QR Code, reads it back, and outputs version and error level.
     /// </summary>
     static void Main()
     {
-        // Define the output image path for the generated QR code
-        string imagePath = "sample_qr.png";
+        // Create a temporary directory for the sample barcode image
+        string tempDir = Path.Combine(Path.GetTempPath(), "QrSample_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        string barcodePath = Path.Combine(tempDir, "sample_qr.png");
 
-        // Generate a QR code with sample text and a high error correction level
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Sample QR Text"))
+        // Generate a QR Code with specific version (5) and error correction level (H)
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "Sample QR Text"))
         {
-            // Set a specific error correction level (optional, LevelH provides the highest redundancy)
+            // Set QR version and error correction level via generator parameters
+            generator.Parameters.Barcode.QR.Version = QRVersion.Version05;
             generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
 
-            // Save the generated QR code image to the specified path
-            generator.Save(imagePath);
+            // Save the generated barcode image to the temporary path
+            generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        // Ensure the image file was created before attempting to read it
-        if (!File.Exists(imagePath))
+        // Verify the file exists before attempting to read it
+        if (!File.Exists(barcodePath))
         {
-            Console.WriteLine($"File not found: {imagePath}");
+            Console.WriteLine("Failed to create barcode image.");
             return;
         }
 
-        // Initialize a barcode reader configured to decode QR codes from the image
-        using (var reader = new BarCodeReader(imagePath, DecodeType.QR))
+        // Read the QR Code and output its version and error correction level
+        using (BarCodeReader reader = new BarCodeReader(barcodePath, DecodeType.QR))
         {
-            // Iterate through all detected QR barcodes in the image
-            foreach (var result in reader.ReadBarCodes())
+            foreach (BarCodeResult result in reader.ReadBarCodes())
             {
-                // Output the decoded text of the QR code
-                Console.WriteLine($"Detected QR Code Text: {result.CodeText}");
+                Console.WriteLine("Detected QR Code:");
+                Console.WriteLine($"  Code Text: {result.CodeText}");
 
-                // Prepare default values for version and error correction level
-                string version = "N/A";
-                string errorLevel = "N/A";
-
-                // Attempt to retrieve the QR version (1‑40) from extended parameters
-                try
-                {
-                    version = result.Extended.QR.Version.ToString();
-                }
-                catch
-                {
-                    // If the property is unavailable, keep the default "N/A"
-                }
-
-                // Attempt to retrieve the error correction level from extended parameters
-                try
-                {
-                    errorLevel = result.Extended.QR.ErrorLevel.ToString();
-                }
-                catch
-                {
-                    // If the property is unavailable, keep the default "N/A"
-                }
-
-                // Output the extracted QR version and error correction level
-                Console.WriteLine($"QR Version: {version}");
-                Console.WriteLine($"Error Correction Level: {errorLevel}");
-                Console.WriteLine();
+                // Access extended QR parameters for version and error correction level
+                var qrExt = result.Extended.QR;
+                Console.WriteLine($"  Version: {qrExt.Version}");
+                Console.WriteLine($"  Error Level: {qrExt.ErrorLevel}");
             }
+        }
+
+        // Clean up temporary files
+        try
+        {
+            File.Delete(barcodePath);
+            Directory.Delete(tempDir);
+        }
+        catch
+        {
+            // Ignored - cleanup failure should not affect program exit
         }
     }
 }

@@ -1,80 +1,77 @@
-// Title: Retrieve Macro PDF417 fields from a barcode image
-// Description: Demonstrates how to generate a Macro PDF417 barcode, save it, and then read macro fields such as file ID and segment ID from the scanned image.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category, focusing on PDF417 macro symbology. It showcases the use of BarcodeGenerator for creating MacroPdf417 barcodes and BarCodeReader with DecodeType.MacroPdf417 for extracting extended macro parameters. Developers working with document scanning, batch processing, or secure data encoding often need to retrieve macro information to reconstruct multi‑part barcode data.
+// Title: Retrieve PDF417 macro fields from a generated barcode image
+// Description: Demonstrates how to generate a Macro PDF417 barcode, save it as an image, and then read back macro fields such as file ID and segment ID.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator for creating Macro PDF417 barcodes and BarCodeReader for extracting extended macro information. Developers working with PDF417 macro symbology can learn how to set macro parameters, save barcode images, and retrieve metadata like file ID, segment ID, and segment count, which are essential for multi-part document encoding.
 // Prompt: Retrieve PDF417 macro fields such as file ID and segment ID from a scanned document.
-// Tags: pdf417, macro, barcode generation, barcode recognition, c#, aspose.barcode
+// Tags: pdf417, macro, barcode generation, barcode recognition, aspnet, aspose.barcode
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates a Macro PDF417 barcode (if missing) and reads its macro fields
-/// such as File ID, Segment ID, and Segments Count from the scanned image.
+/// Demonstrates generating a Macro PDF417 barcode, saving it to an image, and reading macro fields.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Handles barcode creation, file validation, and macro field extraction.
+    /// Entry point of the example. Generates a barcode, reads macro fields, and cleans up temporary files.
     /// </summary>
     static void Main()
     {
-        // Define the path for the sample barcode image
-        string imagePath = "macropdf417.png";
+        // Create a temporary folder for the demo files
+        string tempFolder = Path.Combine(Path.GetTempPath(), "Pdf417MacroDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
+        string imagePath = Path.Combine(tempFolder, "macro.png");
 
-        // ------------------------------------------------------------
-        // Create a sample Macro PDF417 barcode if the image does not exist
-        // ------------------------------------------------------------
-        if (!File.Exists(imagePath))
+        // Generate a Macro PDF417 barcode with metadata
+        using (var generator = new BarcodeGenerator(EncodeTypes.MacroPdf417, "SampleData"))
         {
-            using (var generator = new BarcodeGenerator(EncodeTypes.MacroPdf417, "SampleData"))
-            {
-                // Set macro-specific fields required for reconstruction
-                generator.Parameters.Barcode.Pdf417.MacroPdf417FileID = 123;
-                generator.Parameters.Barcode.Pdf417.MacroPdf417SegmentID = 1;
-                generator.Parameters.Barcode.Pdf417.MacroPdf417SegmentsCount = 3;
+            // Set barcode visual parameters
+            generator.Parameters.Barcode.XDimension.Pixels = 2f;
+            generator.Parameters.Barcode.Pdf417.Columns = 4;
 
-                // Save the generated barcode image to disk
-                generator.Save(imagePath);
-                Console.WriteLine($"Generated sample barcode at '{Path.GetFullPath(imagePath)}'.");
-            }
+            // Set Macro PDF417 specific fields
+            generator.Parameters.Barcode.Pdf417.MacroPdf417FileID = 12345678;
+            generator.Parameters.Barcode.Pdf417.MacroPdf417SegmentID = 1;
+            generator.Parameters.Barcode.Pdf417.MacroPdf417SegmentsCount = 2;
+
+            // Save the barcode image to file
+            generator.Save(imagePath, BarCodeImageFormat.Png);
         }
 
-        // ------------------------------------------------------------
-        // Verify that the barcode image exists before attempting to read it
-        // ------------------------------------------------------------
+        // Verify the image was created
         if (!File.Exists(imagePath))
         {
-            Console.WriteLine($"Error: File '{imagePath}' not found.");
+            Console.WriteLine("Failed to create barcode image.");
             return;
         }
 
-        // ------------------------------------------------------------
-        // Read the barcode and extract macro information using BarCodeReader
-        // ------------------------------------------------------------
+        // Read the barcode and extract macro fields
         using (var reader = new BarCodeReader(imagePath, DecodeType.MacroPdf417))
         {
             foreach (BarCodeResult result in reader.ReadBarCodes())
             {
-                // Basic barcode details
-                Console.WriteLine($"BarCode Type: {result.CodeTypeName}");
-                Console.WriteLine($"BarCode CodeText: {result.CodeText}");
-
-                // Access extended PDF417 macro parameters, if present
-                var pdf417Ext = result.Extended?.Pdf417;
-                if (pdf417Ext != null)
-                {
-                    Console.WriteLine($"Macro PDF417 File ID: {pdf417Ext.MacroPdf417FileID}");
-                    Console.WriteLine($"Macro PDF417 Segment ID: {pdf417Ext.MacroPdf417SegmentID}");
-                    Console.WriteLine($"Macro PDF417 Segments Count: {pdf417Ext.MacroPdf417SegmentsCount}");
-                }
-                else
-                {
-                    Console.WriteLine("No Macro PDF417 extended parameters found.");
-                }
+                Console.WriteLine("---Macro PDF417 Detected---");
+                Console.WriteLine("CodeText: " + result.CodeText);
+                Console.WriteLine("Pdf417MacroFileID: " + result.Extended.Pdf417.MacroPdf417FileID);
+                Console.WriteLine("Pdf417MacroSegmentID: " + result.Extended.Pdf417.MacroPdf417SegmentID);
+                Console.WriteLine("Pdf417MacroSegmentsCount: " + result.Extended.Pdf417.MacroPdf417SegmentsCount);
             }
+        }
+
+        // Clean up temporary files (optional)
+        try
+        {
+            File.Delete(imagePath);
+            Directory.Delete(tempFolder);
+        }
+        catch
+        {
+            // Ignore cleanup errors
         }
     }
 }

@@ -1,11 +1,12 @@
 // Title: Parallel barcode reading from multiple images
-// Description: Demonstrates generating several barcode images, then reading them concurrently using Aspose.BarCode's parallel processing capabilities.
-// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, showcasing how to use BarCodeReader with ProcessorSettings for multi‑core execution. It illustrates typical use cases such as batch processing of scanned documents, inventory scans, or bulk image analysis where developers need to decode many barcodes efficiently.
+// Description: Demonstrates generating several barcode images, then reading them concurrently using parallel processing, and aggregating the results.
+// Category-Description: This example belongs to the Aspose.BarCode reading and generation category, showcasing how to use BarcodeGenerator, BarCodeReader, and related result classes. Typical use cases include batch processing of scanned documents, high‑throughput barcode scanning, and aggregating results for reporting. Developers often need to handle multiple images efficiently, leveraging .NET parallelism and thread‑safe collections.
 // Prompt: Use parallel processing to read barcodes from multiple images concurrently and aggregate results.
-// Tags: barcode symbology, parallel processing, batch recognition, aspnet, aspose.barcode, csharp
+// Tags: code128,qr,datamatrix,pdf417,aztec,barcode-generation,barcode-reading,parallel-processing,png,barcodegenerator,barcodereader,concurrentdictionary
 
 using System;
 using System.IO;
+using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
 using Aspose.BarCode;
@@ -13,90 +14,95 @@ using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates generating barcode images, reading them in parallel, and aggregating the results.
+/// Demonstrates parallel barcode reading from multiple generated images using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates sample barcodes, processes them concurrently,
-    /// and outputs aggregated recognition results.
+    /// Entry point. Generates sample barcode images, reads them in parallel, and prints aggregated results.
     /// </summary>
     static void Main()
     {
-        // Prepare a temporary folder for sample barcode images
-        string folderPath = Path.Combine(Path.GetTempPath(), "AsposeBarcodesSample");
-        if (!Directory.Exists(folderPath))
-        {
-            Directory.CreateDirectory(folderPath);
-        }
+        // Create a dedicated temporary folder for sample images
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeParallel_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
 
-        // Define sample barcodes to generate (file name, symbology, encoded text)
-        var samples = new (string FileName, BaseEncodeType EncodeType, string CodeText)[]
+        // Define sample barcodes to generate (type and text)
+        var samples = new List<(BaseEncodeType encode, string text)>
         {
-            ("code128.png", EncodeTypes.Code128, "ABC123456"),
-            ("qr.png", EncodeTypes.QR, "https://example.com"),
-            ("ean13.png", EncodeTypes.EAN13, "5901234123457"),
-            ("datamatrix.png", EncodeTypes.DataMatrix, "DataMatrixSample"),
-            ("pdf417.png", EncodeTypes.Pdf417, "PDF417 Sample Text")
+            (EncodeTypes.Code128, "ABC123"),
+            (EncodeTypes.QR, "https://example.com"),
+            (EncodeTypes.DataMatrix, "DM12345"),
+            (EncodeTypes.Pdf417, "PDF417 Sample"),
+            (EncodeTypes.Aztec, "AztecSample")
         };
 
-        // Generate barcode images and save them to the temporary folder
-        foreach (var sample in samples)
+        var filePaths = new List<string>();
+
+        // Generate barcode images and collect their file paths
+        foreach (var (encode, text) in samples)
         {
-            string filePath = Path.Combine(folderPath, sample.FileName);
-            using (var generator = new BarcodeGenerator(sample.EncodeType, sample.CodeText))
+            string filePath = Path.Combine(tempFolder, $"{encode.TypeName}_{Guid.NewGuid().ToString("N")}.png");
+            using (var generator = new BarcodeGenerator(encode, text))
             {
-                // Optional: customize image size, colors, etc., here
-                generator.Save(filePath);
+                // Save each barcode as a PNG image
+                generator.Save(filePath, BarCodeImageFormat.Png);
             }
+            filePaths.Add(filePath);
         }
 
-        // Retrieve all generated PNG files
-        string[] imageFiles = Directory.GetFiles(folderPath, "*.png");
-        if (imageFiles.Length == 0)
+        // Thread‑safe collection for aggregating read results per file
+        var aggregated = new ConcurrentDictionary<string, List<BarCodeResult>>();
+
+        // Parallel barcode reading across all generated images
+        Parallel.ForEach(filePaths, filePath =>
         {
-            Console.WriteLine("No barcode images found.");
-            return;
-        }
-
-        // Configure the barcode reader to utilize all available CPU cores
-        BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount = Environment.ProcessorCount;
-
-        // Thread‑safe collection for storing aggregated recognition results
-        var aggregatedResults = new ConcurrentBag<string>();
-
-        // Parallel processing: read barcodes from each image concurrently
-        Parallel.ForEach(imageFiles, file =>
-        {
-            using (var reader = new BarCodeReader(file, DecodeType.AllSupportedTypes))
+            if (!File.Exists(filePath))
             {
-                foreach (var result in reader.ReadBarCodes())
+                Console.WriteLine($"File not found: {filePath}");
+                return;
+            }
+
+            try
+            {
+                // Initialize reader for all supported barcode types
+                using (var reader = new BarCodeReader(filePath, DecodeType.AllSupportedTypes))
                 {
-                    string entry = $"{Path.GetFileName(file)} | Type: {result.CodeTypeName} | Text: {result.CodeText}";
-                    aggregatedResults.Add(entry);
+                    // Read all barcodes present in the image
+                    BarCodeResult[] results = reader.ReadBarCodes();
+                    var list = new List<BarCodeResult>(results);
+                    // Store results in the concurrent dictionary
+                    aggregated.TryAdd(filePath, list);
                 }
+            }
+            catch (ArgumentException ex)
+            {
+                Console.WriteLine($"Failed to load image {filePath}: {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error processing {filePath}: {ex.Message}");
             }
         });
 
-        // Output the aggregated results to the console
-        Console.WriteLine("Aggregated barcode recognition results:");
-        foreach (var line in aggregatedResults)
+        // Output aggregated results to the console
+        foreach (var kvp in aggregated)
         {
-            Console.WriteLine(line);
+            Console.WriteLine($"File: {kvp.Key}");
+            foreach (var result in kvp.Value)
+            {
+                Console.WriteLine($"  Type: {result.CodeTypeName}, Text: {result.CodeText}, Quality: {result.ReadingQuality}");
+            }
         }
 
-        // Clean up temporary files (optional)
+        // Clean up temporary files and folder
         try
         {
-            foreach (var file in imageFiles)
-            {
-                File.Delete(file);
-            }
-            Directory.Delete(folderPath);
+            Directory.Delete(tempFolder, true);
         }
         catch
         {
-            // Ignore any cleanup errors
+            // Ignored – cleanup failure should not crash the program
         }
     }
 }

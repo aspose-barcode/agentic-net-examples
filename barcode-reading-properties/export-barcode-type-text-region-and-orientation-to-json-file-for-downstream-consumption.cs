@@ -1,8 +1,8 @@
 // Title: Export barcode details to JSON
-// Description: Demonstrates generating barcodes, reading them back, and exporting type, text, region, and orientation to a JSON file for downstream processing.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, showcasing how to use BarcodeGenerator for creating images and BarCodeReader for extracting metadata. Typical use cases include batch barcode creation, automated verification, and integration with downstream systems that consume JSON metadata. Developers often need to serialize barcode properties such as symbology, content, location, and rotation for reporting or further analysis.
+// Description: Demonstrates generating a barcode, reading its properties, and exporting type, text, region, and orientation to a JSON file for downstream use.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It shows how to use BarcodeGenerator to create a barcode image, BarCodeReader to decode and retrieve metadata such as code type, text, region coordinates, and orientation, and then serialize the collected information with System.Text.Json. Developers working with barcode automation often need to produce machine‑readable metadata for further processing, reporting, or integration with other systems.
 // Prompt: Export barcode type, text, region, and orientation to a JSON file for downstream consumption.
-// Tags: barcode symbology generation recognition json serialization aspose.barcode
+// Tags: barcode, generation, recognition, json, export, aspose.barcode, code128, metadata
 
 using System;
 using System.IO;
@@ -10,113 +10,98 @@ using System.Collections.Generic;
 using System.Text.Json;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.BarCode;
+using Aspose.Drawing;
 
-namespace BarcodeExportExample
+/// <summary>
+/// Demonstrates barcode generation, recognition, and exporting metadata to JSON.
+/// </summary>
+class Program
 {
-    // Simple DTO for JSON serialization
-    public class BarcodeInfo
+    /// <summary>
+    /// Entry point. Generates a barcode, reads its metadata, and writes it to a JSON file.
+    /// </summary>
+    static void Main()
+    {
+        // Create a unique temporary folder for the demo files
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
+
+        // Define file paths for the generated barcode image and the output JSON
+        string barcodePath = Path.Combine(tempFolder, "barcode.png");
+        string jsonPath = Path.Combine(tempFolder, "barcodeInfo.json");
+
+        // Generate a sample Code128 barcode and save it as a PNG image
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
+        {
+            // Optional: adjust the X-dimension (module width) for better readability
+            generator.Parameters.Barcode.XDimension.Point = 2f;
+            generator.Save(barcodePath, BarCodeImageFormat.Png);
+        }
+
+        // Prepare a collection to hold barcode information extracted from the image
+        var barcodeInfos = new List<BarcodeInfo>();
+
+        // Verify that the barcode image was created before attempting to read it
+        if (File.Exists(barcodePath))
+        {
+            // Initialize a reader configured for Code128 decoding
+            using (var reader = new BarCodeReader(barcodePath, DecodeType.Code128))
+            {
+                // Iterate through all detected barcodes (single in this example)
+                foreach (var result in reader.ReadBarCodes())
+                {
+                    // Extract the bounding rectangle of the barcode region
+                    var rect = result.Region.Rectangle;
+
+                    // Populate a BarcodeInfo object with the extracted metadata
+                    var info = new BarcodeInfo
+                    {
+                        Type = result.CodeTypeName,
+                        Text = result.CodeText,
+                        Region = new RegionInfo
+                        {
+                            X = rect.X,
+                            Y = rect.Y,
+                            Width = rect.Width,
+                            Height = rect.Height
+                        },
+                        Orientation = result.Region.Angle
+                    };
+
+                    // Add the populated info to the collection
+                    barcodeInfos.Add(info);
+                }
+            }
+        }
+        else
+        {
+            Console.WriteLine($"Barcode image not found at {barcodePath}");
+        }
+
+        // Serialize the collection of barcode information to a formatted JSON string
+        string json = JsonSerializer.Serialize(barcodeInfos, new JsonSerializerOptions { WriteIndented = true });
+
+        // Write the JSON output to the designated file
+        File.WriteAllText(jsonPath, json);
+
+        Console.WriteLine($"Barcode information exported to: {jsonPath}");
+    }
+
+    // Simple DTO representing barcode metadata
+    class BarcodeInfo
     {
         public string Type { get; set; }
         public string Text { get; set; }
-        public RectangleInfo Region { get; set; }
+        public RegionInfo Region { get; set; }
         public double Orientation { get; set; }
     }
 
-    public class RectangleInfo
+    // Simple DTO representing the rectangular region of a barcode
+    class RegionInfo
     {
         public float X { get; set; }
         public float Y { get; set; }
         public float Width { get; set; }
         public float Height { get; set; }
-    }
-
-    /// <summary>
-    /// Demonstrates generating barcodes, reading them, and exporting their metadata to a JSON file.
-    /// </summary>
-    class Program
-    {
-        /// <summary>
-        /// Entry point of the example. Generates sample barcodes, reads them, and writes metadata to JSON.
-        /// </summary>
-        static void Main()
-        {
-            // Define sample barcodes with symbology, text, and rotation angle
-            var samples = new List<(BaseEncodeType encodeType, string codeText, float rotation)>
-            {
-                (EncodeTypes.Code128, "ABC123", 0f),
-                (EncodeTypes.QR, "https://example.com", 45f),
-                (EncodeTypes.DataMatrix, "DataMatrixSample", 90f)
-            };
-
-            var generatedFiles = new List<string>();
-            int index = 0;
-
-            // Generate barcode images based on the sample data
-            foreach (var sample in samples)
-            {
-                string imagePath = $"barcode_{index}.png";
-
-                using (var generator = new BarcodeGenerator(sample.encodeType, sample.codeText))
-                {
-                    // Apply rotation if needed
-                    generator.Parameters.RotationAngle = sample.rotation;
-
-                    // Save the generated barcode image to disk
-                    generator.Save(imagePath);
-                }
-
-                generatedFiles.Add(imagePath);
-                index++;
-            }
-
-            var results = new List<BarcodeInfo>();
-
-            // Read each generated image and extract barcode information
-            foreach (var filePath in generatedFiles)
-            {
-                if (!File.Exists(filePath))
-                {
-                    Console.WriteLine($"File not found: {filePath}");
-                    continue;
-                }
-
-                using (var reader = new BarCodeReader(filePath, DecodeType.AllSupportedTypes))
-                {
-                    foreach (var result in reader.ReadBarCodes())
-                    {
-                        var regionRect = result.Region.Rectangle;
-
-                        // Populate DTO with extracted data
-                        var info = new BarcodeInfo
-                        {
-                            Type = result.CodeTypeName,
-                            Text = result.CodeText,
-                            Region = new RectangleInfo
-                            {
-                                X = regionRect.X,
-                                Y = regionRect.Y,
-                                Width = regionRect.Width,
-                                Height = regionRect.Height
-                            },
-                            Orientation = result.Region.Angle
-                        };
-
-                        results.Add(info);
-                    }
-                }
-            }
-
-            // Serialize the list of barcode information to a formatted JSON string
-            string jsonOutput = JsonSerializer.Serialize(
-                results,
-                new JsonSerializerOptions { WriteIndented = true });
-
-            // Write the JSON output to a file
-            string jsonPath = "barcode_info.json";
-            File.WriteAllText(jsonPath, jsonOutput);
-
-            Console.WriteLine($"Exported barcode information to {jsonPath}");
-        }
     }
 }

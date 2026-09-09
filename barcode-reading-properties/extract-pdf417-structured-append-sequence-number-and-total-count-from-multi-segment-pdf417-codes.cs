@@ -1,100 +1,85 @@
-// Title: Extract PDF417 Structured‑Append Sequence Number and Total Count
-// Description: Demonstrates how to generate multi‑segment PDF417 barcodes with Macro PDF417 properties and read back the sequence number and total segment count.
-// Category-Description: This example belongs to the Aspose.BarCode PDF417 macro (structured‑append) operations collection. It shows usage of BarcodeGenerator for creating Macro PDF417 barcodes and BarCodeReader with DecodeType.MacroPdf417 to retrieve extended PDF417 metadata such as segment ID and segment count. Developers working with large data payloads split across multiple PDF417 symbols can use these APIs to assemble the original data correctly.
+// Title: Extract PDF417 Macro Structured-Append Sequence and Total Count
+// Description: Demonstrates generating multi‑segment PDF417 macro barcodes and reading their structured‑append metadata (segment number and total segment count). Useful for assembling split data across several barcode symbols.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category, focusing on PDF417 macro (structured‑append) operations. It showcases the use of BarcodeGenerator for creating MacroPdf417 symbols and BarCodeReader for extracting extended PDF417 information such as MacroPdf417FileID, SegmentID, and SegmentsCount. Developers working with large data payloads that need to be split across multiple barcodes can refer to this pattern for encoding and decoding macro PDF417 sequences.
 // Prompt: Extract PDF417 structured‑append sequence number and total count from multi‑segment PDF417 codes.
-// Tags: pdf417, structured-append, macro, barcode-generation, barcode-recognition, aspnet, csharp
+// Tags: pdf417, macro, structured-append, barcode-generation, barcode-recognition, aspnet, csharp
 
 using System;
 using System.IO;
+using System.Collections.Generic;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Generates a set of Macro PDF417 barcode segments and then reads each segment
-/// to extract the structured‑append (Macro PDF417) sequence number and total segment count.
+/// Demonstrates generating and reading PDF417 macro barcodes to extract structured‑append sequence information.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates barcode images, saves them to disk,
-    /// and reads back the Macro PDF417 metadata from each image.
+    /// Entry point. Generates a set of PDF417 macro barcodes, reads them, and prints segment metadata.
     /// </summary>
     static void Main()
     {
-        // --------------------------------------------------------------------
-        // Prepare output folder for generated barcode images
-        // --------------------------------------------------------------------
-        string folderPath = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
-        if (!Directory.Exists(folderPath))
+        // Create a unique temporary folder for generated barcodes
+        string tempFolder = Path.Combine(Path.GetTempPath(), "Pdf417Macro_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
+
+        int totalSegments = 3;          // Number of macro segments to generate
+        int macroFileId = 12345678;     // Identifier shared by all segments
+        List<string> barcodeFiles = new List<string>();
+
+        // Generate PDF417 macro barcodes with segment IDs
+        for (int segmentId = 0; segmentId < totalSegments; segmentId++)
         {
-            Directory.CreateDirectory(folderPath);
-        }
-
-        // --------------------------------------------------------------------
-        // Define Macro PDF417 parameters (same file ID for all segments)
-        // --------------------------------------------------------------------
-        int totalSegments = 3;          // total number of segments to generate
-        int fileId = 12345;             // identifier shared by all segments
-
-        // --------------------------------------------------------------------
-        // Generate sample PDF417 segments with Macro PDF417 properties
-        // --------------------------------------------------------------------
-        for (int i = 0; i < totalSegments; i++)
-        {
-            string fileName = Path.Combine(folderPath, $"segment_{i}.png");
-
-            // Create a barcode generator for PDF417 and assign segment‑specific data
-            using (var generator = new BarcodeGenerator(EncodeTypes.Pdf417, $"Segment_{i + 1}"))
+            string filePath = Path.Combine(tempFolder, $"pdf417_{segmentId}.png");
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.MacroPdf417, "Sample Text"))
             {
-                // Set Macro PDF417 (structured‑append) properties
-                generator.Parameters.Barcode.Pdf417.MacroPdf417FileID = fileId;               // common file identifier
-                generator.Parameters.Barcode.Pdf417.MacroPdf417SegmentID = i;               // sequence number (0‑based)
-                generator.Parameters.Barcode.Pdf417.MacroPdf417SegmentsCount = totalSegments; // total segment count
+                // Configure barcode appearance and macro properties
+                generator.Parameters.Barcode.XDimension.Pixels = 2;
+                generator.Parameters.Barcode.Pdf417.Columns = 4;
+                generator.Parameters.Barcode.Pdf417.MacroPdf417FileID = macroFileId;
+                generator.Parameters.Barcode.Pdf417.MacroPdf417SegmentID = segmentId;
+                generator.Parameters.Barcode.Pdf417.MacroPdf417SegmentsCount = totalSegments;
 
-                // Save the generated barcode image to disk
-                generator.Save(fileName);
+                // Save the generated barcode image
+                generator.Save(filePath, BarCodeImageFormat.Png);
             }
+            barcodeFiles.Add(filePath);
         }
 
-        Console.WriteLine("Reading structured‑append information from generated barcodes:");
-
-        // --------------------------------------------------------------------
-        // Read each barcode image and extract Macro PDF417 metadata
-        // --------------------------------------------------------------------
-        for (int i = 0; i < totalSegments; i++)
+        // Read each barcode and output structured-append information
+        foreach (string file in barcodeFiles)
         {
-            string fileName = Path.Combine(folderPath, $"segment_{i}.png");
-
-            // Verify that the image file exists before attempting to read it
-            if (!File.Exists(fileName))
+            if (!File.Exists(file))
             {
-                Console.WriteLine($"File not found: {fileName}");
+                Console.WriteLine($"File not found: {file}");
                 continue;
             }
 
-            // Use BarCodeReader with DecodeType.MacroPdf417 to access extended data
-            using (var reader = new BarCodeReader(fileName, DecodeType.MacroPdf417))
+            try
             {
-                foreach (BarCodeResult result in reader.ReadBarCodes())
+                // Initialize reader for MacroPdf417 type
+                using (BarCodeReader reader = new BarCodeReader(file, DecodeType.MacroPdf417))
                 {
-                    // Extended parameters contain Macro PDF417 metadata, if present
-                    var pdf417Ext = result.Extended?.Pdf417;
-                    if (pdf417Ext != null)
+                    foreach (BarCodeResult result in reader.ReadBarCodes())
                     {
-                        int segmentId = pdf417Ext.MacroPdf417SegmentID;       // sequence number of this segment
-                        int segmentsCount = pdf417Ext.MacroPdf417SegmentsCount; // total number of segments
-
-                        Console.WriteLine($"File: {Path.GetFileName(fileName)}");
-                        Console.WriteLine($"  Segment ID (sequence number): {segmentId}");
-                        Console.WriteLine($"  Total Segments: {segmentsCount}");
-                    }
-                    else
-                    {
-                        Console.WriteLine($"No Macro PDF417 metadata found in {Path.GetFileName(fileName)}");
+                        Console.WriteLine($"File: {Path.GetFileName(file)}");
+                        Console.WriteLine($"  CodeText: {result.CodeText}");
+                        Console.WriteLine($"  MacroFileID: {result.Extended.Pdf417.MacroPdf417FileID}");
+                        Console.WriteLine($"  SegmentID (Sequence Number): {result.Extended.Pdf417.MacroPdf417SegmentID}");
+                        Console.WriteLine($"  SegmentsCount (Total Count): {result.Extended.Pdf417.MacroPdf417SegmentsCount}");
                     }
                 }
             }
+            catch (ArgumentException ex)
+            {
+                Console.WriteLine($"Failed to read barcode from {file}: {ex.Message}");
+            }
         }
+
+        // Cleanup: optional removal of temporary files
+        // Directory.Delete(tempFolder, true);
     }
 }

@@ -1,99 +1,67 @@
-// Title: PDF417 Reader Initialization Flag Demo
-// Description: Demonstrates how to set and read the IsReaderInitialization flag in PDF417 barcodes, indicating scanner initialization instructions.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category, focusing on PDF417 symbology. It shows how to use BarcodeGenerator to embed initialization data via the Pdf417.IsReaderInitialization property and how to retrieve this flag with BarCodeReader and the Extended.Pdf417 API. Developers working with scanner configuration and PDF417 barcodes can use this pattern to embed and detect initialization commands.
+// Title: PDF417 Barcode Reader Initialization Flag Demo
+// Description: Demonstrates how to generate a PDF417 barcode with the IsReaderInitialization flag set and how to read that flag back using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category, focusing on PDF417 symbology. It shows usage of BarcodeGenerator, BarCodeReader, and related parameter classes to embed and detect scanner initialization instructions, a common requirement for automated scanning systems. Developers looking for guidance on PDF417 configuration and flag inspection will find this pattern useful.
 // Prompt: Check PDF417 IsReaderInitialization flag to determine if barcode contains initialization instructions for the scanner.
-// Tags: pdf417, readerinitialization, barcode generation, barcode recognition, aspose.barcode
+// Tags: pdf417, barcode, initialization flag, generation, recognition, aspose.barcode, csharp
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Example program that creates PDF417 barcodes with and without the IsReaderInitialization flag
-/// and then reads the flag back using the barcode recognition API.
+/// Demonstrates generating a PDF417 barcode with the IsReaderInitialization flag and reading it back.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates two barcodes, saves them, and processes each image
-    /// to display the IsReaderInitialization flag value.
+    /// Entry point of the example. Generates a barcode, reads it, displays the flag, and cleans up temporary files.
     /// </summary>
     static void Main()
     {
-        // --------------------------------------------------------------------
-        // Prepare output directory
-        // --------------------------------------------------------------------
-        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "output");
-        if (!Directory.Exists(outputDir))
-        {
-            Directory.CreateDirectory(outputDir);
-        }
+        // Create a unique temporary folder to store the generated barcode image
+        string tempFolder = Path.Combine(Path.GetTempPath(), "Pdf417InitDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
+        string imagePath = Path.Combine(tempFolder, "pdf417.png");
 
-        // --------------------------------------------------------------------
-        // Create a PDF417 barcode with IsReaderInitialization = true
-        // --------------------------------------------------------------------
-        string initPath = Path.Combine(outputDir, "pdf417_init.png");
-        using (var generator = new BarcodeGenerator(EncodeTypes.Pdf417, "INIT"))
+        // Generate a PDF417 barcode with the IsReaderInitialization flag enabled
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Pdf417, "Aspose"))
         {
+            // Set barcode dimensions (pixel size of X-dimension)
+            generator.Parameters.Barcode.XDimension.Pixels = 2;
+            // Enable the initialization flag so the barcode contains scanner instructions
             generator.Parameters.Barcode.Pdf417.IsReaderInitialization = true;
-            generator.Save(initPath, BarCodeImageFormat.Png);
+            // Save the barcode as a PNG image
+            generator.Save(imagePath, BarCodeImageFormat.Png);
         }
 
-        // --------------------------------------------------------------------
-        // Create a PDF417 barcode with IsReaderInitialization = false
-        // --------------------------------------------------------------------
-        string normalPath = Path.Combine(outputDir, "pdf417_normal.png");
-        using (var generator = new BarcodeGenerator(EncodeTypes.Pdf417, "NORMAL"))
+        // Verify that the image file was created successfully
+        if (!File.Exists(imagePath))
         {
-            generator.Parameters.Barcode.Pdf417.IsReaderInitialization = false;
-            generator.Save(normalPath, BarCodeImageFormat.Png);
+            Console.WriteLine("Failed to create barcode image.");
+            return;
         }
 
-        // --------------------------------------------------------------------
-        // Local function to read a barcode image and report the IsReaderInitialization flag
-        // --------------------------------------------------------------------
-        void ProcessImage(string imagePath)
+        // Read the barcode from the image and inspect the IsReaderInitialization flag
+        using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.Pdf417))
         {
-            // Verify that the image file exists before attempting to read it
-            if (!File.Exists(imagePath))
+            foreach (BarCodeResult result in reader.ReadBarCodes())
             {
-                Console.WriteLine($"File not found: {imagePath}");
-                return;
-            }
-
-            // Initialize the barcode reader for PDF417 symbology
-            using (var reader = new BarCodeReader(imagePath, DecodeType.Pdf417))
-            {
-                // Iterate through all detected barcodes in the image
-                foreach (var result in reader.ReadBarCodes())
-                {
-                    // Attempt to retrieve the IsReaderInitialization flag from the extended PDF417 data
-                    bool isInit = false;
-                    try
-                    {
-                        isInit = result.Extended.Pdf417.IsReaderInitialization;
-                    }
-                    catch
-                    {
-                        // If the property is unavailable (e.g., not a PDF417 barcode), treat as false
-                        isInit = false;
-                    }
-
-                    // Output the detection results
-                    Console.WriteLine($"File: {Path.GetFileName(imagePath)}");
-                    Console.WriteLine($"  Detected CodeText: {result.CodeText}");
-                    Console.WriteLine($"  IsReaderInitialization: {isInit}");
-                }
+                Console.WriteLine($"CodeText: {result.CodeText}");
+                Console.WriteLine($"IsReaderInitialization: {result.Extended.Pdf417.IsReaderInitialization}");
             }
         }
 
-        // --------------------------------------------------------------------
-        // Process both generated images
-        // --------------------------------------------------------------------
-        ProcessImage(initPath);
-        ProcessImage(normalPath);
+        // Cleanup temporary files and folder (optional)
+        try
+        {
+            File.Delete(imagePath);
+            Directory.Delete(tempFolder);
+        }
+        catch
+        {
+            // Ignore any errors that occur during cleanup
+        }
     }
 }

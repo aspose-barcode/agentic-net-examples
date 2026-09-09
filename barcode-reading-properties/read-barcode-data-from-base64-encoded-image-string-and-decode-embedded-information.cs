@@ -1,50 +1,71 @@
-// Title: Decode Barcode from Base64 Image
-// Description: Demonstrates generating a Code128 barcode, converting it to a Base64 string, and decoding the embedded information from the image.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes, converting images to Base64, and BarCodeReader for extracting data from any supported symbology. Developers often need to exchange barcode images as text (e.g., JSON payloads) and later decode them without persisting files.
+// Title: Decode QR Code from Base64 Image String
+// Description: Generates a QR code, converts it to a Base64 string, then decodes the string back to an image and reads the embedded barcode data.
+// Category-Description: This example demonstrates Aspose.BarCode generation and recognition APIs. It shows how to create a barcode image with BarcodeGenerator, export it as Base64, and then use BarCodeReader to extract the encoded information. Developers working with QR codes, data exchange via text streams, or image serialization will find this pattern useful for encoding and decoding barcodes in web services, APIs, or storage scenarios.
 // Prompt: Read barcode data from a base64‑encoded image string and decode the embedded information.
-// Tags: code128, decode, png, aspose.barcode, generation, recognition, base64, image
+// Tags: qr, barcode, base64, decode, generation, recognition, aspose.barcode
 
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Example program that generates a barcode, encodes it as Base64, and then decodes the barcode data from the image.
+/// Demonstrates how to generate a QR code, convert it to a Base64 string,
+/// and then decode the barcode from the Base64 image using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a Code128 barcode, converts it to a Base64 string, and reads the barcode back from the image data.
+    /// Entry point of the example. Performs QR code generation, Base64 conversion,
+    /// and barcode decoding without requiring interactive console input.
     /// </summary>
     static void Main()
     {
-        // Generate a sample barcode image and obtain its Base64 representation
+        // ------------------------------------------------------------
+        // 1. Generate a QR code and obtain its Base64 representation.
+        // ------------------------------------------------------------
         string base64Image;
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "HelloWorld"))
+        using (var ms = new MemoryStream())
         {
-            // Save the barcode to a memory stream in PNG format
-            using (var ms = new MemoryStream())
+            // Create a QR code containing the text "Hello Aspose".
+            using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Hello Aspose"))
             {
+                // Set the module size (pixel dimension) for better readability.
+                generator.Parameters.Barcode.XDimension.Pixels = 4;
+
+                // Save the generated barcode image to the memory stream in PNG format.
                 generator.Save(ms, BarCodeImageFormat.Png);
-                // Convert the image bytes to a Base64 string
-                base64Image = Convert.ToBase64String(ms.ToArray());
             }
+
+            // Convert the image bytes to a Base64 string for transport or storage.
+            base64Image = Convert.ToBase64String(ms.ToArray());
         }
 
-        // Decode the Base64 string back to image bytes
+        // Output the Base64 string (optional, for demonstration purposes).
+        Console.WriteLine("Base64 Image:");
+        Console.WriteLine(base64Image);
+        Console.WriteLine();
+
+        // ------------------------------------------------------------
+        // 2. Decode the Base64 string back to an image and read the barcode.
+        // ------------------------------------------------------------
+        // Convert the Base64 string back to a byte array representing the PNG image.
         byte[] imageBytes = Convert.FromBase64String(base64Image);
+
+        // Use a memory stream to feed the image data to the barcode reader.
         using (var imageStream = new MemoryStream(imageBytes))
         {
-            // Create a BarCodeReader to recognize any supported barcode type
-            using (var reader = new BarCodeReader(imageStream, DecodeType.AllSupportedTypes))
+            // Specify that we expect a QR code during decoding.
+            BaseDecodeType decodeType = DecodeType.QR;
+
+            // Initialize the barcode reader with the image stream and decode type.
+            using (var reader = new BarCodeReader(imageStream, decodeType))
             {
-                // Iterate through all detected barcodes and output their type and decoded text
+                // Iterate through all detected barcodes (typically one for this example).
                 foreach (var result in reader.ReadBarCodes())
                 {
-                    Console.WriteLine($"Detected Type: {result.CodeTypeName}");
                     Console.WriteLine($"Decoded Text: {result.CodeText}");
+                    Console.WriteLine($"Symbology   : {result.CodeTypeName}");
                 }
             }
         }
