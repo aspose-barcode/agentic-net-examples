@@ -1,105 +1,136 @@
-// Title: Logging wrapper for Aspose.BarCode XML export/import operations
-// Description: Demonstrates how to wrap ExportToXml and ImportFromXml with logging that records timestamps and file paths.
-// Category-Description: This example belongs to the Aspose.BarCode configuration management category, showcasing how to persist and restore barcode generator settings using XML. It highlights key API classes such as BarcodeGenerator, EncodeTypes, and the ExportToXml/ImportFromXml methods. Developers often need to serialize settings for reuse, versioning, or deployment, and logging these actions aids troubleshooting and audit trails.
+// Title: Logging Wrapper for Barcode XML Export/Import
+// Description: Demonstrates how to wrap Aspose.BarCode ExportToXml and ImportFromXml methods with simple file logging to capture timestamps and file paths.
+// Category-Description: This example belongs to the Aspose.BarCode XML serialization category, showing how to persist and restore BarcodeGenerator and BarCodeReader configurations using ExportToXml/ImportFromXml. It highlights key API classes such as BarcodeGenerator, BarCodeReader, and common use cases like saving settings for later reuse. Developers often need to log these operations for debugging or audit trails.
 // Prompt: Create a logging wrapper around ExportToXml and ImportFromXml to record timestamps and file paths.
-// Tags: barcode, code128, export, import, xml, logging, aspose.barcode, generation
+// Tags: barcode, xml, export, import, logging, aspose.barcode, generator, reader
 
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Provides static methods that wrap Aspose.BarCode XML export and import operations
-/// with simple file-based logging of timestamps and file paths.
-/// </summary>
-class BarcodeXmlLogger
-{
-    // Log file name used for all logging entries.
-    private const string LogFile = "barcode_log.txt";
-
-    /// <summary>
-    /// Exports the specified <see cref="BarcodeGenerator"/> settings to an XML file
-    /// while writing start and end timestamps to the log.
-    /// </summary>
-    /// <param name="generator">The barcode generator whose settings are to be exported.</param>
-    /// <param name="xmlPath">The destination XML file path.</param>
-    /// <returns>True if the export succeeded; otherwise, false.</returns>
-    public static bool ExportToXmlWithLog(BarcodeGenerator generator, string xmlPath)
-    {
-        // Log the start of the export operation.
-        string startMessage = $"{DateTime.Now:o} - ExportToXml started. Path: {xmlPath}{Environment.NewLine}";
-        File.AppendAllText(LogFile, startMessage);
-
-        // Perform the actual export.
-        bool result = generator.ExportToXml(xmlPath);
-
-        // Log the completion status of the export operation.
-        string endMessage = $"{DateTime.Now:o} - ExportToXml completed. Success: {result}{Environment.NewLine}";
-        File.AppendAllText(LogFile, endMessage);
-
-        return result;
-    }
-
-    /// <summary>
-    /// Imports a <see cref="BarcodeGenerator"/> from an XML file while logging timestamps.
-    /// </summary>
-    /// <param name="xmlPath">The source XML file path.</param>
-    /// <returns>A new <see cref="BarcodeGenerator"/> instance created from the XML.</returns>
-    public static BarcodeGenerator ImportFromXmlWithLog(string xmlPath)
-    {
-        // Log the start of the import operation.
-        string startMessage = $"{DateTime.Now:o} - ImportFromXml started. Path: {xmlPath}{Environment.NewLine}";
-        File.AppendAllText(LogFile, startMessage);
-
-        // Perform the actual import.
-        BarcodeGenerator generator = BarcodeGenerator.ImportFromXml(xmlPath);
-
-        // Log the successful creation of the generator.
-        string endMessage = $"{DateTime.Now:o} - ImportFromXml completed. Generator created.{Environment.NewLine}";
-        File.AppendAllText(LogFile, endMessage);
-
-        return generator;
-    }
-}
-
-/// <summary>
-/// Entry point of the example that demonstrates exporting, importing, and saving a barcode
-/// while using the logging wrapper defined in <see cref="BarcodeXmlLogger"/>.
+/// Demonstrates logging of XML export/import operations for Aspose.BarCode objects.
 /// </summary>
 class Program
 {
+    // Path to the log file; set during initialization.
+    static string logFilePath;
+
     /// <summary>
-    /// Main method that orchestrates the barcode generation, XML persistence, and image saving.
+    /// Appends a timestamped message to the log file.
+    /// </summary>
+    /// <param name="message">The message to log.</param>
+    static void Log(string message)
+    {
+        File.AppendAllText(logFilePath, $"{DateTime.Now:O} {message}{Environment.NewLine}");
+    }
+
+    /// <summary>
+    /// Exports a BarcodeGenerator configuration to an XML file and logs the operation.
+    /// </summary>
+    /// <param name="generator">The BarcodeGenerator instance to export.</param>
+    /// <param name="xmlPath">Destination XML file path.</param>
+    static void ExportGeneratorToXml(BarcodeGenerator generator, string xmlPath)
+    {
+        Log($"Exporting BarcodeGenerator to '{xmlPath}'");
+        generator.ExportToXml(xmlPath);
+    }
+
+    /// <summary>
+    /// Imports a BarcodeGenerator configuration from an XML file and logs the operation.
+    /// </summary>
+    /// <param name="xmlPath">Source XML file path.</param>
+    /// <returns>A new BarcodeGenerator instance populated from XML.</returns>
+    static BarcodeGenerator ImportGeneratorFromXml(string xmlPath)
+    {
+        Log($"Importing BarcodeGenerator from '{xmlPath}'");
+        return BarcodeGenerator.ImportFromXml(xmlPath);
+    }
+
+    /// <summary>
+    /// Exports a BarCodeReader configuration to an XML file and logs the operation.
+    /// </summary>
+    /// <param name="reader">The BarCodeReader instance to export.</param>
+    /// <param name="xmlPath">Destination XML file path.</param>
+    static void ExportReaderToXml(BarCodeReader reader, string xmlPath)
+    {
+        Log($"Exporting BarCodeReader to '{xmlPath}'");
+        reader.ExportToXml(xmlPath);
+    }
+
+    /// <summary>
+    /// Imports a BarCodeReader configuration from an XML file and logs the operation.
+    /// </summary>
+    /// <param name="xmlPath">Source XML file path.</param>
+    /// <returns>A new BarCodeReader instance populated from XML.</returns>
+    static BarCodeReader ImportReaderFromXml(string xmlPath)
+    {
+        Log($"Importing BarCodeReader from '{xmlPath}'");
+        return BarCodeReader.ImportFromXml(xmlPath);
+    }
+
+    /// <summary>
+    /// Entry point of the demo. Creates, exports, imports, and uses barcode generator and reader objects while logging each XML operation.
     /// </summary>
     static void Main()
     {
-        // Ensure a clean log file for each run.
-        if (File.Exists("barcode_log.txt"))
+        // Create a temporary working folder for all demo files.
+        string workFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(workFolder);
+        logFilePath = Path.Combine(workFolder, "log.txt");
+
+        // Define file paths for XML configurations and generated images.
+        string generatorXml = Path.Combine(workFolder, "generator.xml");
+        string generatorImg = Path.Combine(workFolder, "generated.png");
+        string generatorImgImported = Path.Combine(workFolder, "generated_imported.png");
+        string readerXml = Path.Combine(workFolder, "reader.xml");
+
+        // ---------- BarcodeGenerator: create, export, import ----------
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
         {
-            File.Delete("barcode_log.txt");
+            // Adjust visual settings.
+            generator.Parameters.Barcode.XDimension.Pixels = 2f;
+
+            // Export configuration to XML and log the action.
+            ExportGeneratorToXml(generator, generatorXml);
+
+            // Save the generated barcode image.
+            generator.Save(generatorImg, BarCodeImageFormat.Png);
         }
 
-        // Create a barcode generator for Code128 with sample data.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123ABC"))
+        // Import the previously exported generator configuration and save a new image.
+        using (var importedGenerator = ImportGeneratorFromXml(generatorXml))
         {
-            // Export generator settings to XML with logging.
-            string xmlPath = "barcode_settings.xml";
-            BarcodeXmlLogger.ExportToXmlWithLog(generator, xmlPath);
+            importedGenerator.Save(generatorImgImported, BarCodeImageFormat.Png);
         }
 
-        // Import generator settings from XML with logging.
-        BarcodeGenerator importedGenerator = BarcodeXmlLogger.ImportFromXmlWithLog("barcode_settings.xml");
-
-        // Save the imported barcode as an image file.
-        using (importedGenerator)
+        // ---------- BarCodeReader: read image, export, import ----------
+        using (var reader = new BarCodeReader(generatorImg, DecodeType.Code128))
         {
-            string imagePath = "imported_barcode.png";
-            importedGenerator.Save(imagePath);
-            Console.WriteLine($"Barcode image saved to {Path.GetFullPath(imagePath)}");
+            // Configure reader settings.
+            reader.BarcodeSettings.StripFNC = true;
+
+            // Export reader configuration to XML and log the action.
+            ExportReaderToXml(reader, readerXml);
         }
 
-        // Indicate that processing has completed.
-        Console.WriteLine("Processing completed.");
+        // Import the reader configuration, set the image and decode type, then read barcodes.
+        using (var importedReader = ImportReaderFromXml(readerXml))
+        {
+            importedReader.SetBarCodeImage(generatorImg);
+            importedReader.SetBarCodeReadType(DecodeType.Code128);
+            var results = importedReader.ReadBarCodes();
+
+            // Output each decoded barcode to the console.
+            foreach (var result in results)
+            {
+                Console.WriteLine($"Read barcode: Type={result.CodeTypeName}, Text={result.CodeText}");
+            }
+        }
+
+        // Inform the user where the demo files are located.
+        Console.WriteLine($"Demo completed. Files are in: {workFolder}");
     }
 }

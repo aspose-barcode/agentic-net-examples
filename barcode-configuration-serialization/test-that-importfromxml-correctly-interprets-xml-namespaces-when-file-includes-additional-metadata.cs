@@ -1,69 +1,107 @@
-// Title: Import barcode settings from XML with namespace handling
-// Description: Demonstrates using Aspose.BarCode's ImportFromXml to generate a barcode from an XML configuration that includes namespaces and extra metadata.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to load barcode settings from an XML file using the BarcodeGenerator class. Typical use cases involve configuring barcodes via external XML files, handling namespaces, and integrating metadata. Developers often need to import settings, generate images, and verify readability in automated workflows.
+// Title: ImportFromXml with PDF417 macro metadata and XML namespace handling
+// Description: Demonstrates exporting a BarcodeGenerator configuration to XML, then importing it back while preserving PDF417 macro metadata.
+// Category-Description: This example belongs to the Aspose.BarCode configuration management category, showcasing how to use BarcodeGenerator, ExportToXml, and ImportFromXml for persisting and restoring barcode settings. Developers often need to serialize barcode configurations, share them across services, or validate import integrity, especially when XML includes additional namespaces.
 // Prompt: Test that ImportFromXml correctly interprets XML namespaces when the file includes additional metadata.
-// Tags: barcode symbology, generation, png, importfromxml, aspose.barcode
+// Tags: pdf417, macro, importfromxml, xml, barcode, generation, aspose.barcode
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Example program that imports barcode generation settings from an XML file,
-/// creates a barcode image, and verifies that the barcode can be read back.
+/// Example program that creates a PDF417 macro barcode, exports its configuration to XML,
+/// imports the configuration back, and verifies that all settings are preserved.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Writes an XML configuration, imports it,
-    /// generates a barcode image, and reads the barcode to confirm correctness.
+    /// Entry point of the example. Performs barcode generation, XML export/import,
+    /// and validation of imported settings.
     /// </summary>
     static void Main()
     {
-        // Define XML configuration with a namespace and extra metadata
-        string xmlContent = @"<?xml version=""1.0"" encoding=""utf-8""?>
-<BarcodeGenerator xmlns=""http://schemas.aspose.com/barcode/2021"">
-  <EncodeType>Code128</EncodeType>
-  <CodeText>Test123</CodeText>
-  <Metadata>
-    <Author>TestUser</Author>
-    <Comment>Sample barcode generated from XML</Comment>
-  </Metadata>
-</BarcodeGenerator>";
+        // Create a unique temporary folder for all generated files
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeXmlTest_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
 
-        // Paths for the temporary XML file and the resulting barcode image
-        string xmlPath = "barcode_config.xml";
-        string imagePath = "imported_barcode.png";
+        // Define file paths for the original image, XML configuration, and imported image
+        string imagePath = Path.Combine(tempFolder, "original.png");
+        string xmlPath = Path.Combine(tempFolder, "generator.xml");
+        string importedImagePath = Path.Combine(tempFolder, "imported.png");
 
-        // Write the XML configuration to a file on disk
-        File.WriteAllText(xmlPath, xmlContent);
-
-        // Import barcode generator settings from the XML file
-        using (BarcodeGenerator generator = BarcodeGenerator.ImportFromXml(xmlPath))
+        // --------------------------------------------------------------------
+        // Generate a PDF417 macro barcode and configure its macro metadata
+        // --------------------------------------------------------------------
+        using (var gen = new BarcodeGenerator(EncodeTypes.MacroPdf417, "Åspóse.Barcóde©"))
         {
-            // Save the generated barcode image in PNG format
-            generator.Save(imagePath, BarCodeImageFormat.Png);
+            // Basic barcode appearance settings
+            gen.Parameters.Barcode.XDimension.Pixels = 2;
+            gen.Parameters.Barcode.Pdf417.Columns = 4;
+
+            // PDF417 macro-specific metadata
+            gen.Parameters.Barcode.Pdf417.MacroPdf417FileID = 12345678;
+            gen.Parameters.Barcode.Pdf417.MacroPdf417SegmentID = 12;
+            gen.Parameters.Barcode.Pdf417.MacroPdf417SegmentsCount = 20;
+            gen.Parameters.Barcode.Pdf417.MacroPdf417FileName = "file01";
+            gen.Parameters.Barcode.Pdf417.MacroPdf417Checksum = 1234;
+            gen.Parameters.Barcode.Pdf417.MacroPdf417FileSize = 400000;
+            gen.Parameters.Barcode.Pdf417.MacroPdf417TimeStamp = new DateTime(2019, 11, 1);
+            gen.Parameters.Barcode.Pdf417.MacroPdf417Addressee = "street";
+            gen.Parameters.Barcode.Pdf417.MacroPdf417Sender = "aspose";
+
+            // Save the generated barcode image
+            gen.Save(imagePath, BarCodeImageFormat.Png);
+
+            // Export the generator's configuration to an XML file
+            gen.ExportToXml(xmlPath);
         }
 
-        // Verify that the barcode image was created and can be decoded
-        if (File.Exists(imagePath))
+        // Verify that the XML file was created successfully
+        if (!File.Exists(xmlPath))
         {
-            // Initialize a reader for Code128 barcodes
-            using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.Code128))
-            {
-                // Iterate through all detected barcodes and output their decoded text
-                foreach (BarCodeResult result in reader.ReadBarCodes())
-                {
-                    Console.WriteLine("Decoded CodeText: " + result.CodeText);
-                }
-            }
+            Console.WriteLine("Exported XML file not found.");
+            return;
         }
-        else
+
+        // --------------------------------------------------------------------
+        // Import the barcode configuration from the XML file and validate settings
+        // --------------------------------------------------------------------
+        using (var importedGen = BarcodeGenerator.ImportFromXml(xmlPath))
         {
-            Console.WriteLine("Failed to generate barcode image.");
+            // Save an image generated from the imported configuration
+            importedGen.Save(importedImagePath, BarCodeImageFormat.Png);
+
+            // Compare each relevant setting to ensure they match the original values
+            bool xDimEqual = Math.Abs(importedGen.Parameters.Barcode.XDimension.Pixels - 2f) < 0.001f;
+            bool columnsEqual = importedGen.Parameters.Barcode.Pdf417.Columns == 4;
+            bool fileIdEqual = importedGen.Parameters.Barcode.Pdf417.MacroPdf417FileID == 12345678;
+            bool segmentIdEqual = importedGen.Parameters.Barcode.Pdf417.MacroPdf417SegmentID == 12;
+            bool segmentsCountEqual = importedGen.Parameters.Barcode.Pdf417.MacroPdf417SegmentsCount == 20;
+            bool fileNameEqual = importedGen.Parameters.Barcode.Pdf417.MacroPdf417FileName == "file01";
+            bool checksumEqual = importedGen.Parameters.Barcode.Pdf417.MacroPdf417Checksum == 1234;
+            bool fileSizeEqual = importedGen.Parameters.Barcode.Pdf417.MacroPdf417FileSize == 400000;
+            bool timeStampEqual = importedGen.Parameters.Barcode.Pdf417.MacroPdf417TimeStamp == new DateTime(2019, 11, 1);
+            bool addresseeEqual = importedGen.Parameters.Barcode.Pdf417.MacroPdf417Addressee == "street";
+            bool senderEqual = importedGen.Parameters.Barcode.Pdf417.MacroPdf417Sender == "aspose";
+
+            // Output verification results
+            Console.WriteLine("ImportFromXml verification results:");
+            Console.WriteLine($"XDimension.Pixels: {(xDimEqual ? "OK" : "Mismatch")}");
+            Console.WriteLine($"Pdf417.Columns: {(columnsEqual ? "OK" : "Mismatch")}");
+            Console.WriteLine($"MacroPdf417FileID: {(fileIdEqual ? "OK" : "Mismatch")}");
+            Console.WriteLine($"MacroPdf417SegmentID: {(segmentIdEqual ? "OK" : "Mismatch")}");
+            Console.WriteLine($"MacroPdf417SegmentsCount: {(segmentsCountEqual ? "OK" : "Mismatch")}");
+            Console.WriteLine($"MacroPdf417FileName: {(fileNameEqual ? "OK" : "Mismatch")}");
+            Console.WriteLine($"MacroPdf417Checksum: {(checksumEqual ? "OK" : "Mismatch")}");
+            Console.WriteLine($"MacroPdf417FileSize: {(fileSizeEqual ? "OK" : "Mismatch")}");
+            Console.WriteLine($"MacroPdf417TimeStamp: {(timeStampEqual ? "OK" : "Mismatch")}");
+            Console.WriteLine($"MacroPdf417Addressee: {(addresseeEqual ? "OK" : "Mismatch")}");
+            Console.WriteLine($"MacroPdf417Sender: {(senderEqual ? "OK" : "Mismatch")}");
         }
+
+        // Optional cleanup: delete the temporary folder and its contents
+        // Directory.Delete(tempFolder, true);
     }
 }

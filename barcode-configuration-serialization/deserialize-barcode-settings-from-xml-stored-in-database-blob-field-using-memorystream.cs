@@ -1,8 +1,8 @@
-// Title: Deserialize barcode settings from XML stored in a database BLOB using MemoryStream
-// Description: Demonstrates how to export barcode generator settings to XML, store them as a BLOB, and later import them back to recreate the barcode.
-// Category-Description: This example belongs to the Aspose.BarCode serialization and deserialization category, showcasing the use of BarcodeGenerator, ExportToXml, and ImportFromXml methods. Developers often need to persist barcode configurations in databases or files and restore them for consistent barcode generation across applications. The snippet illustrates typical workflow for storing settings as XML BLOBs and recreating generators without redefining parameters.
+// Title: Deserialize Barcode Generator Settings from XML BLOB using MemoryStream
+// Description: Demonstrates how to export Aspose.BarCode generator settings to XML, store them as a byte array (simulating a database BLOB), and later import the settings to generate a barcode image.
+// Category-Description: This example belongs to the Aspose.BarCode settings serialization category. It shows how to use the BarcodeGenerator class together with ExportToXml and ImportFromXml methods to persist and restore barcode configuration. Typical use cases include saving barcode settings in a database, sharing configurations across services, or version‑controlling barcode definitions. Developers working with barcode generation often need to serialize settings for later reuse, and this snippet provides a clear pattern for doing so.
 // Prompt: Deserialize barcode settings from XML stored in a database BLOB field using a MemoryStream.
-// Tags: barcode symbology, serialization, deserialization, png, aspose.barcode, memorystream
+// Tags: barcode, symbology, serialization, xml, memorystream, aspose.barcode, import, export, settings, qr, png
 
 using System;
 using System.IO;
@@ -10,40 +10,58 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Program demonstrating deserialization of barcode settings from an XML BLOB.
+/// Example program that serializes barcode generator settings to XML,
+/// stores them as a byte array (simulating a DB BLOB), and deserializes them
+/// to generate a barcode image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Exports a sample barcode configuration to XML, simulates storing it as a BLOB,
-    /// then imports the settings to generate a barcode image.
+    /// Entry point. Executes the export‑to‑XML, storage‑as‑BLOB, and import‑from‑XML workflow.
     /// </summary>
     static void Main()
     {
-        // Create a sample barcode generator with Code128 symbology and sample text.
-        using (var sampleGenerator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
+        // Prepare a temporary directory for output files
+        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputDir);
+
+        // ------------------------------------------------------------
+        // Step 1: Create a barcode generator and export its settings to XML.
+        // The resulting XML is stored in a byte array to simulate a BLOB field.
+        // ------------------------------------------------------------
+        byte[] xmlBlob;
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "SampleText"))
         {
-            // Configure specific barcode parameters.
-            sampleGenerator.Parameters.Barcode.XDimension.Point = 2f;
-            sampleGenerator.Parameters.Barcode.BarHeight.Point = 40f;
+            // Adjust a specific parameter (X‑dimension) before exporting
+            generator.Parameters.Barcode.XDimension.Pixels = 4f;
 
-            // Export the generator's settings to a memory stream (simulating a BLOB in a database).
-            using (var exportStream = new MemoryStream())
+            // Write the XML representation to a memory stream
+            using (var ms = new MemoryStream())
             {
-                sampleGenerator.ExportToXml(exportStream);
-                byte[] dbBlob = exportStream.ToArray(); // Simulated BLOB data.
-
-                // Deserialize the barcode settings from the XML BLOB using a new memory stream.
-                using (var importStream = new MemoryStream(dbBlob))
-                {
-                    using (var importedGenerator = BarcodeGenerator.ImportFromXml(importStream))
-                    {
-                        // Generate and save the barcode image using the imported settings.
-                        importedGenerator.Save("deserialized_barcode.png", BarCodeImageFormat.Png);
-                        Console.WriteLine("Barcode image generated from deserialized settings.");
-                    }
-                }
+                generator.ExportToXml(ms);
+                xmlBlob = ms.ToArray(); // Byte array now represents the stored BLOB
             }
         }
+
+        // ------------------------------------------------------------
+        // Step 2: Retrieve the XML BLOB and deserialize the settings.
+        // ------------------------------------------------------------
+        using (var ms = new MemoryStream(xmlBlob))
+        {
+            // Ensure the stream position is at the beginning
+            ms.Position = 0;
+
+            // Import the generator settings from the XML stream
+            using (var importedGenerator = BarcodeGenerator.ImportFromXml(ms))
+            {
+                // Generate the barcode image using the deserialized configuration
+                string imagePath = Path.Combine(outputDir, "DeserializedBarcode.png");
+                importedGenerator.Save(imagePath, BarCodeImageFormat.Png);
+                Console.WriteLine("Barcode image saved to: " + imagePath);
+            }
+        }
+
+        // Optional clean‑up: delete the temporary directory.
+        // Directory.Delete(outputDir, true);
     }
 }

@@ -1,8 +1,8 @@
-// Title: Barcode generation with XML import and fallback to default configuration
-// Description: Demonstrates loading barcode settings from an XML file and falling back to a default Code128 barcode when the import fails or the file is missing.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to use BarcodeGenerator.ImportFromXml, configure barcode parameters, and handle errors gracefully. Developers often need to load barcode configurations from external files for dynamic generation, and require a reliable fallback to ensure production continuity. The snippet showcases key classes like BarcodeGenerator, EncodeTypes, and AutoSizeMode, useful for creating 1D barcodes in PNG format.
+// Title: Barcode Generation with XML Configuration Fallback
+// Description: Demonstrates importing barcode settings from an XML file and falling back to a default configuration when the import fails.
+// Category-Description: Shows how to use Aspose.BarCode's BarcodeGenerator.ImportFromXml method, handling errors, and creating a BarcodeGenerator with default parameters. This example belongs to the configuration management category of Aspose.BarCode, where developers often need to load barcode settings from external files, provide fallback defaults, and generate images in common formats.
 // Prompt: Implement a fallback mechanism that creates a default barcode configuration if ImportFromXml fails.
-// Tags: barcode symbology, generation, png, importfromxml, fallback, default configuration, aspose.barcode
+// Tags: barcode, fallback, xml, import, default configuration, aspose.barcode, code128, png, generation
 
 using System;
 using System.IO;
@@ -11,66 +11,52 @@ using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates a barcode using configuration loaded from XML,
-/// with a fallback to a default configuration when loading fails.
+/// Demonstrates barcode generation with XML configuration fallback using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Attempts to import barcode settings from an XML file;
-    /// if unsuccessful, creates a default barcode generator and saves the image.
+    /// Entry point. Attempts to load barcode settings from XML, falls back to defaults on error, and saves the image.
     /// </summary>
     static void Main()
     {
-        const string xmlPath = "barcodeConfig.xml";
-        const string outputPath = "barcode.png";
+        // Define a temporary folder to store intermediate files and the final barcode image
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeFallback_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
 
-        BarcodeGenerator generator;
+        // Paths for the output image and the XML configuration file
+        string outputPath = Path.Combine(tempFolder, "barcode.png");
+        string xmlPath = Path.Combine(tempFolder, "config.xml");
 
-        // Check if the XML configuration file exists
-        if (File.Exists(xmlPath))
+        // Create a deliberately malformed XML file to trigger the fallback logic
+        File.WriteAllText(xmlPath, "<InvalidXml>");
+
+        BarcodeGenerator generator = null;
+        try
         {
-            try
-            {
-                // Attempt to import generator settings from the XML file
-                generator = BarcodeGenerator.ImportFromXml(xmlPath);
-                Console.WriteLine("Barcode configuration loaded from XML.");
-            }
-            catch (Exception ex)
-            {
-                // Log the error and fall back to a default configuration
-                Console.WriteLine($"ImportFromXml failed: {ex.Message}");
-                Console.WriteLine("Falling back to default barcode configuration.");
-                generator = CreateDefaultGenerator();
-            }
+            // Attempt to import barcode configuration from the XML file
+            generator = BarcodeGenerator.ImportFromXml(xmlPath);
+            Console.WriteLine("Imported barcode configuration from XML.");
         }
-        else
+        catch (Exception ex)
         {
-            // XML file not found; use the default configuration
-            Console.WriteLine("XML configuration file not found. Using default barcode configuration.");
-            generator = CreateDefaultGenerator();
+            // Log the import failure and switch to a default barcode configuration
+            Console.WriteLine($"ImportFromXml failed: {ex.Message}");
+            Console.WriteLine("Creating default barcode configuration.");
+
+            // Fallback: instantiate a generator with Code128 symbology and a sample value
+            generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890");
+            generator.Parameters.Barcode.BarColor = Color.Blue;
+            generator.Parameters.Barcode.XDimension.Point = 2f;
         }
 
-        // Save the generated barcode image to the specified path
+        // Ensure the generator is properly disposed after use
         using (generator)
         {
-            generator.Save(outputPath);
-            Console.WriteLine($"Barcode saved to '{outputPath}'.");
+            // Save the generated barcode image as PNG
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
-    }
 
-    // Creates a simple default barcode (Code128) with basic settings
-    private static BarcodeGenerator CreateDefaultGenerator()
-    {
-        var gen = new BarcodeGenerator(EncodeTypes.Code128, "Default");
-        // Set common barcode parameters
-        gen.Parameters.Barcode.XDimension.Point = 2f;          // Module size
-        gen.Parameters.Barcode.BarHeight.Point = 40f;         // Bar height for 1D barcodes
-        gen.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-        gen.Parameters.BackColor = Aspose.Drawing.Color.White;
-        gen.Parameters.AutoSizeMode = AutoSizeMode.None;
-        gen.Parameters.Barcode.CodeTextParameters.Font.FamilyName = "Helvetica";
-        gen.Parameters.Barcode.CodeTextParameters.Font.Size.Point = 10f;
-        return gen;
+        Console.WriteLine($"Barcode image saved to: {outputPath}");
     }
 }

@@ -1,107 +1,98 @@
-// Title: Barcode XML Serialization Round‑Trip Image Comparison
-// Description: Demonstrates generating barcodes, exporting settings to XML, re‑importing, and verifying that the resulting images are identical.
-// Category-Description: This example belongs to the Aspose.BarCode serialization category, showcasing how to use BarcodeGenerator, ExportToXml, and ImportFromXml for persisting barcode configurations. Typical use cases include saving barcode settings, transferring them between services, and ensuring visual consistency after deserialization. Developers often need to validate that serialization does not alter the generated output.
+// Title: Barcode generation with XML serialization round‑trip validation
+// Description: Demonstrates creating a Code128 barcode, exporting its generator state to XML, re‑importing it, and verifying that the regenerated image matches the original.
+// Category-Description: Shows Aspose.BarCode generation and serialization techniques. Uses BarcodeGenerator, ExportToXml, ImportFromXml, and image comparison to illustrate typical workflows where barcode settings need to be persisted and restored, such as configuration storage or automated testing. Developers often need to serialize generator state, recreate barcodes, and ensure visual consistency.
 // Prompt: Write unit tests that compare generated barcode images before and after XML serialization round‑trip.
-// Tags: barcode, xml serialization, round-trip, image comparison, code128, qr, datamatrix, aspose.barcode, generation
+// Tags: barcode, code128, xml serialization, image comparison, aspose.barcode, generation, testing
 
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates barcodes, serializes the generator settings to XML,
-/// deserializes them back, and compares the original and round‑trip images for equality.
+/// Example program that generates a barcode, serializes its configuration to XML,
+/// re‑creates the barcode from the XML, and compares the two resulting images.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Iterates over a set of barcode types, performs an XML
-    /// round‑trip of the generator settings, and prints the comparison result.
+    /// Entry point of the example. Performs barcode generation, XML round‑trip,
+    /// image comparison, and optional cleanup.
     /// </summary>
     static void Main()
     {
-        // Define a list of barcode symbologies and sample texts to test.
-        var tests = new List<(BaseEncodeType type, string text)>
+        // Create a unique temporary folder for all test artifacts
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeTest_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
+
+        // Define file paths for the original image, the round‑trip image, and the XML state file
+        string originalImagePath = Path.Combine(tempFolder, "original.png");
+        string roundTripImagePath = Path.Combine(tempFolder, "roundtrip.png");
+        string xmlPath = Path.Combine(tempFolder, "state.xml");
+
+        // --------------------------------------------------------------------
+        // Generate the original barcode and export its generator state to XML
+        // --------------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Test123"))
         {
-            (EncodeTypes.Code128, "Test123"),
-            (EncodeTypes.QR, "https://example.com"),
-            (EncodeTypes.DataMatrix, "DataMatrixSample")
-        };
+            // Apply custom visual settings
+            generator.Parameters.Barcode.XDimension.Point = 0.5f;
+            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
+            generator.Parameters.Resolution = 300f;
 
-        // Process each test case.
-        foreach (var (type, text) in tests)
-        {
-            // ------------------------------------------------------------
-            // Generate the original barcode image.
-            // ------------------------------------------------------------
-            byte[] originalImage;
-            using (var generator = new BarcodeGenerator(type, text))
-            {
-                // Set a deterministic parameter to ensure repeatable output.
-                generator.Parameters.Barcode.XDimension.Point = 2f;
-                originalImage = GetImageBytes(generator);
-            }
+            // Save the barcode image to disk
+            generator.Save(originalImagePath, BarCodeImageFormat.Png);
 
-            // ------------------------------------------------------------
-            // Export the generator settings to XML (in‑memory).
-            // ------------------------------------------------------------
-            byte[] xmlData;
-            using (var generator = new BarcodeGenerator(type, text))
-            {
-                generator.Parameters.Barcode.XDimension.Point = 2f;
-                using (var xmlStream = new MemoryStream())
-                {
-                    generator.ExportToXml(xmlStream);
-                    xmlData = xmlStream.ToArray();
-                }
-            }
-
-            // ------------------------------------------------------------
-            // Import the generator settings from the XML data.
-            // ------------------------------------------------------------
-            BarcodeGenerator importedGenerator;
-            using (var xmlStream = new MemoryStream(xmlData))
-            {
-                importedGenerator = BarcodeGenerator.ImportFromXml(xmlStream);
-            }
-
-            // ------------------------------------------------------------
-            // Generate the barcode image after the XML round‑trip.
-            // ------------------------------------------------------------
-            byte[] roundTripImage;
-            using (importedGenerator)
-            {
-                roundTripImage = GetImageBytes(importedGenerator);
-            }
-
-            // ------------------------------------------------------------
-            // Compare the two images byte‑by‑byte and output the result.
-            // ------------------------------------------------------------
-            bool imagesEqual = originalImage.SequenceEqual(roundTripImage);
-            Console.WriteLine($"{type.TypeName} round‑trip test: {(imagesEqual ? "PASS" : "FAIL")}");
+            // Serialize the generator configuration to an XML file
+            generator.ExportToXml(xmlPath);
         }
-    }
 
-    /// <summary>
-    /// Generates a barcode image using the provided <see cref="BarcodeGenerator"/>
-    /// and returns the image data as a PNG byte array.
-    /// </summary>
-    /// <param name="generator">Configured barcode generator.</param>
-    /// <returns>PNG image bytes.</returns>
-    private static byte[] GetImageBytes(BarcodeGenerator generator)
-    {
-        using (var bitmap = generator.GenerateBarCodeImage())
+        // ---------------------------------------------------------------
+        // Import the barcode generator from the XML and generate a new image
+        // ---------------------------------------------------------------
+        using (var generatorFromXml = BarcodeGenerator.ImportFromXml(xmlPath))
         {
-            using (var ms = new MemoryStream())
-            {
-                bitmap.Save(ms, ImageFormat.Png);
-                return ms.ToArray();
-            }
+            generatorFromXml.Save(roundTripImagePath, BarCodeImageFormat.Png);
+        }
+
+        // -------------------------------------------------
+        // Compare the two images byte by byte for equality
+        // -------------------------------------------------
+        bool imagesEqual = false;
+        if (File.Exists(originalImagePath) && File.Exists(roundTripImagePath))
+        {
+            byte[] originalBytes = File.ReadAllBytes(originalImagePath);
+            byte[] roundTripBytes = File.ReadAllBytes(roundTripImagePath);
+            imagesEqual = originalBytes.SequenceEqual(roundTripBytes);
+        }
+
+        // -----------------
+        // Output test result
+        // -----------------
+        if (imagesEqual)
+        {
+            Console.WriteLine("PASS: Images are identical after XML round‑trip.");
+        }
+        else
+        {
+            Console.WriteLine("FAIL: Images differ after XML round‑trip.");
+        }
+
+        // -----------------
+        // Cleanup (optional)
+        // -----------------
+        try
+        {
+            File.Delete(originalImagePath);
+            File.Delete(roundTripImagePath);
+            File.Delete(xmlPath);
+            Directory.Delete(tempFolder);
+        }
+        catch
+        {
+            // Ignore any errors during cleanup to avoid disrupting the test flow
         }
     }
 }
