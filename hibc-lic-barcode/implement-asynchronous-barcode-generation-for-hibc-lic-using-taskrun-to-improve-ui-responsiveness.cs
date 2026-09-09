@@ -1,65 +1,105 @@
-// Title: Asynchronous HIBC LIC Barcode Generation Example
-// Description: Demonstrates generating a HIBC LIC barcode image asynchronously using Aspose.BarCode and saving it as a PNG file.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It showcases the use of ComplexBarcodeGenerator, EncodeTypes, and related classes to create HIBC symbology barcodes, a common requirement in healthcare and logistics for encoding product information. Developers often need to generate such barcodes on background threads to keep UI responsive.
+// Title: Asynchronous HIBC LIC Barcode Generation and Decoding
+// Description: Demonstrates generating a HIBC QR LIC barcode asynchronously and then decoding it, using Aspose.BarCode's ComplexBarcodeGenerator and BarCodeReader.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode operations collection. It showcases how to work with HIBC LIC symbology by creating a primary data codetext, generating a PNG image, and reading the barcode back. Key API classes include ComplexBarcodeGenerator, BarCodeReader, HIBCLICPrimaryDataCodetext, and related helpers. Developers often need such patterns for batch processing, UI‑responsive barcode creation, and validation of HIBC‑compliant labels.
 // Prompt: Implement asynchronous barcode generation for HIBC LIC using Task.Run to improve UI responsiveness.
-// Tags: barcode, hibc, lic, asynchronous, task.run, png, aspose.barcode, complexbarcode, generation
+// Tags: barcode, hibc, lic, asynchronous, task.run, generation, decoding, aspose.barcode, png
 
 using System;
 using System.IO;
 using System.Threading.Tasks;
-using Aspose.BarCode.ComplexBarcode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode.ComplexBarcode;
+using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Provides an example of generating a HIBC LIC barcode asynchronously.
+/// Provides an example of asynchronous generation and decoding of a HIBC QR LIC barcode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates the barcode asynchronously and writes the output path.
+    /// Entry point of the program. Generates a HIBC LIC barcode image asynchronously,
+    /// writes the output path to the console, and decodes the image if it exists.
     /// </summary>
     /// <param name="args">Command‑line arguments (not used).</param>
-    /// <returns>A task representing the asynchronous operation.</returns>
     static async Task Main(string[] args)
     {
-        // Generate the HIBC LIC barcode asynchronously and wait for completion.
-        string outputPath = await GenerateHibcLicBarcodeAsync();
+        // Define the temporary output file path.
+        string outputPath = Path.Combine(Path.GetTempPath(), "HIBCLICPrimary.png");
 
-        // Inform the user where the barcode image was saved.
-        Console.WriteLine($"Barcode image saved to: {outputPath}");
+        // Generate the barcode image asynchronously.
+        await GenerateHIBCLICBarcodeAsync(outputPath);
+        Console.WriteLine($"Barcode generated at: {outputPath}");
+
+        // If the image was created successfully, decode it asynchronously.
+        if (File.Exists(outputPath))
+        {
+            await DecodeHIBCLICBarcodeAsync(outputPath);
+        }
     }
 
-    // Asynchronously creates a HIBC LIC barcode image and saves it to a PNG file.
-    private static Task<string> GenerateHibcLicBarcodeAsync()
+    /// <summary>
+    /// Generates a HIBC LIC primary data barcode and saves it as a PNG file.
+    /// The operation runs on a background thread via <see cref="Task.Run"/> to keep the UI responsive.
+    /// </summary>
+    /// <param name="outputPath">Full file path where the barcode image will be saved.</param>
+    /// <returns>A task representing the asynchronous generation operation.</returns>
+    private static Task GenerateHIBCLICBarcodeAsync(string outputPath)
     {
         return Task.Run(() =>
         {
-            // Prepare the complex codetext for HIBC LIC (secondary data only).
-            var complexCodetext = new HIBCLICSecondaryAndAdditionalDataCodetext
+            // Create primary data codetext for the HIBC LIC barcode.
+            var complexCodetext = new HIBCLICPrimaryDataCodetext
             {
-                // Use HIBC Code128 LIC symbology.
-                BarcodeType = EncodeTypes.HIBCCode128LIC,
-                // The link character is mandatory; '+' is the default.
-                LinkCharacter = '+',
-                // Populate secondary data (e.g., lot number).
-                Data = new SecondaryAndAdditionalData
+                BarcodeType = EncodeTypes.HIBCQRLIC,
+                Data = new PrimaryData
                 {
-                    LotNumber = "LOT123"
+                    ProductOrCatalogNumber = "12345",
+                    LabelerIdentificationCode = "A999",
+                    UnitOfMeasureID = 1
                 }
             };
 
-            // Define output file path.
-            string fileName = "HibcLicBarcode.png";
-            string outputPath = Path.Combine(Directory.GetCurrentDirectory(), fileName);
-
-            // Generate and save the barcode image.
-            using (var generator = new ComplexBarcodeGenerator(complexCodetext))
+            // Initialize the complex barcode generator with the codetext.
+            using (var gen = new ComplexBarcodeGenerator(complexCodetext))
             {
-                generator.Save(outputPath, BarCodeImageFormat.Png);
-            }
+                // Adjust the X‑dimension (module size) for better readability.
+                gen.Parameters.Barcode.XDimension.Pixels = 10f;
 
-            // Return the full path of the saved image.
-            return outputPath;
+                // Save the generated barcode as a PNG image.
+                gen.Save(outputPath, BarCodeImageFormat.Png);
+            }
+        });
+    }
+
+    /// <summary>
+    /// Decodes a HIBC LIC barcode image and writes the extracted information to the console.
+    /// The decoding runs on a background thread via <see cref="Task.Run"/> to avoid blocking the UI.
+    /// </summary>
+    /// <param name="imagePath">Full file path of the barcode image to decode.</param>
+    /// <returns>A task representing the asynchronous decoding operation.</returns>
+    private static Task DecodeHIBCLICBarcodeAsync(string imagePath)
+    {
+        return Task.Run(() =>
+        {
+            // Initialize the barcode reader for HIBC LIC QR symbology.
+            using (var reader = new BarCodeReader(imagePath, DecodeType.HIBCQRLIC))
+            {
+                // Iterate through all detected barcodes in the image.
+                foreach (var result in reader.ReadBarCodes())
+                {
+                    Console.WriteLine($"Decoded CodeText: {result.CodeText}");
+
+                    // Attempt to parse the complex codetext back into its strongly‑typed representation.
+                    var complex = ComplexCodetextReader.TryDecodeHIBCLIC(result.CodeText);
+                    if (complex is HIBCLICPrimaryDataCodetext primary)
+                    {
+                        Console.WriteLine($"ProductOrCatalogNumber: {primary.Data.ProductOrCatalogNumber}");
+                        Console.WriteLine($"LabelerIdentificationCode: {primary.Data.LabelerIdentificationCode}");
+                        Console.WriteLine($"UnitOfMeasureID: {primary.Data.UnitOfMeasureID}");
+                    }
+                }
+            }
         });
     }
 }

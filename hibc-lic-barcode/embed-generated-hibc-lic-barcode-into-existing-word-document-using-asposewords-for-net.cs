@@ -1,65 +1,77 @@
-// Title: Embed HIBC LIC Barcode into a Word Document using Aspose.Words
-// Description: Demonstrates generating a HIBC LIC barcode with Aspose.BarCode and inserting it into an existing Word document via Aspose.Words.
-// Category-Description: This example belongs to the Aspose.BarCode and Aspose.Words integration category, showcasing how to create complex barcodes (HIBC LIC) using ComplexBarcodeGenerator and embed the resulting image into a Word file with DocumentBuilder. Typical scenarios include adding product identification barcodes to reports, invoices, or label templates. Developers often need to combine barcode generation with document automation, leveraging classes such as HIBCLICPrimaryDataCodetext, ComplexBarcodeGenerator, Document, and DocumentBuilder.
-// Prompt: Embed a generated HIBC LIC barcode into an existing Word document using Aspose.Words for .NET.
-// Tags: hibc, lic, barcode, generation, embedding, word, aspose.barcode, aspose.words, png, csharp
+// Title: Embed HIBC LIC barcode into Word document using Aspose
+// Description: Demonstrates generating a HIBC LIC barcode with Aspose.BarCode and embedding it into a Word document via Aspose.Words. The resulting DOCX can be used for product labeling.
+// Category-Description: This example belongs to the Aspose.BarCode and Aspose.Words integration category, showing how to create complex HIBC barcodes (using ComplexBarcodeGenerator) and insert the generated image into a Word file. Developers working on document automation, labeling, or reporting often need to combine barcode generation with document creation, using classes like ComplexBarcodeGenerator, HIBCLICPrimaryDataCodetext, Document, DocumentBuilder, and image insertion methods. It serves as a reference for typical use cases such as generating product labels, compliance documents, and automated reports that require embedded barcodes.
+/// Prompt: Embed a generated HIBC LIC barcode into an existing Word document using Aspose.Words for .NET.
+/// Tags: hibc lic barcode generation, word document, aspose.words, aspose.barcode, c#, .net
 
 using System;
 using System.IO;
+using Aspose.Words;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.ComplexBarcode;
-using Aspose.Words;
+using Aspose.Drawing;
 
 /// <summary>
-/// Sample program that creates a HIBC LIC barcode and embeds it into a Word document.
+/// Demonstrates embedding a generated HIBC LIC barcode into a Word document.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a barcode, inserts it into a Word file, and saves the result.
+    /// Entry point. Generates the barcode, inserts it into a new Word document, and saves the file.
     /// </summary>
     static void Main()
     {
-        // Define file paths for the source and destination Word documents
-        string inputDocPath = "input.docx";
-        string outputDocPath = "output.docx";
+        // Define the output path for the generated Word document.
+        string outputDocPath = Path.Combine(Path.GetTempPath(), "HIBCLIC_Word.docx");
 
-        // If the input document does not exist, create a minimal Word file with placeholder text
-        if (!File.Exists(inputDocPath))
+        // Create a new empty Word document and a builder to add content.
+        Document doc = new Document();
+        DocumentBuilder builder = new DocumentBuilder(doc);
+        builder.Writeln("Document with HIBC LIC barcode:");
+
+        // Prepare primary data required for the HIBC LIC barcode.
+        var primaryData = new PrimaryData
         {
-            var newDoc = new Document();
-            var newBuilder = new DocumentBuilder(newDoc);
-            newBuilder.Writeln("Sample document with embedded HIBC LIC barcode:");
-            newDoc.Save(inputDocPath);
-        }
+            ProductOrCatalogNumber = "12345",
+            LabelerIdentificationCode = "A999",
+            UnitOfMeasureID = 1
+        };
 
-        // Configure the primary data for the HIBC LIC barcode
+        // Wrap the primary data in a codetext object specifying the barcode type.
         var hibcCodetext = new HIBCLICPrimaryDataCodetext
         {
             BarcodeType = EncodeTypes.HIBCCode128LIC,
-            Data = new PrimaryData
-            {
-                ProductOrCatalogNumber = "12345",
-                LabelerIdentificationCode = "A999",
-                UnitOfMeasureID = 1
-            }
+            Data = primaryData
         };
 
-        // Generate the barcode image and store it in a memory stream
+        // Generate the barcode image using the complex barcode generator.
         using (var generator = new ComplexBarcodeGenerator(hibcCodetext))
-        using (var barcodeStream = new MemoryStream())
         {
-            generator.Save(barcodeStream, BarCodeImageFormat.Png);
-            barcodeStream.Position = 0; // Reset stream position for reading
+            // Set image resolution to 300 dpi for high-quality output.
+            generator.Parameters.Resolution = 300;
 
-            // Load the existing Word document, insert the barcode image, and save the updated file
-            var doc = new Document(inputDocPath);
-            var builder = new DocumentBuilder(doc);
-            builder.InsertImage(barcodeStream);
-            doc.Save(outputDocPath);
+            // Create a bitmap of the barcode.
+            using (Bitmap bitmap = generator.GenerateBarCodeImage())
+            {
+                // Save the bitmap to a memory stream in PNG format.
+                using (MemoryStream ms = new MemoryStream())
+                {
+                    generator.Save(ms, BarCodeImageFormat.Png);
+                    byte[] imageBytes = ms.ToArray();
+
+                    // Convert bitmap pixel dimensions to points (1 inch = 72 points) for Word insertion.
+                    float widthPoints = (bitmap.Width * 72f) / generator.Parameters.Resolution;
+                    float heightPoints = (bitmap.Height * 72f) / generator.Parameters.Resolution;
+
+                    // Insert the barcode image into the Word document at the current cursor position.
+                    builder.InsertImage(imageBytes, widthPoints, heightPoints);
+                }
+            }
         }
 
-        Console.WriteLine($"Barcode embedded successfully. Output saved to '{outputDocPath}'.");
+        // Save the populated Word document to the specified path.
+        doc.Save(outputDocPath, Aspose.Words.SaveFormat.Docx);
+        Console.WriteLine($"Word document saved to: {outputDocPath}");
     }
 }

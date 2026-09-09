@@ -1,60 +1,60 @@
-// Title: Adding a Quiet Zone to a DataMatrix HIBC LIC Barcode
-// Description: Demonstrates how to configure a DataMatrix HIBC LIC barcode with a ten‑module quiet zone using Aspose.BarCode.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and barcode parameters such as XDimension and Padding. Typical use cases include creating compliant HIBC‑LIC barcodes for medical device labeling where a specific quiet zone is required. Developers often need to adjust module size, colors, and padding to meet printing standards.
+// Title: Generate HIBC QR LIC barcode with a ten‑module quiet zone
+// Description: Demonstrates how to create a HIBC QR LIC barcode and add a quiet zone of ten modules around it, ensuring compliance with printing standards.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It showcases the use of ComplexBarcodeGenerator and HIBCLICPrimaryDataCodetext to produce HIBC QR LIC barcodes, a common requirement in healthcare and logistics for product identification. Developers often need to adjust module size and padding to meet specific printing guidelines, and this snippet illustrates those typical steps.
 // Prompt: Add a quiet zone of ten modules around a DataMatrix HIBC LIC barcode to meet printing standards.
-// Tags: datamatrix, hibc, quiet zone, png, aspose.barcodes, generation
+// Tags: hibc, qr, lic, quietzone, png, complexbarcode, aspose.barcode
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
+using Aspose.BarCode.ComplexBarcode;
 
 /// <summary>
-/// Program demonstrating adding a quiet zone to a DataMatrix HIBC LIC barcode.
+/// Demonstrates generating a HIBC QR LIC barcode with a ten‑module quiet zone.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates the barcode, applies a ten‑module quiet zone, and saves it as PNG.
+    /// Entry point. Generates the barcode, applies padding, and saves it as a PNG file.
     /// </summary>
     static void Main()
     {
-        // Sample HIBC LIC DataMatrix code text (Labeler ID + Product Number)
-        const string codeText = "A99912345";
+        // Define the output file path in the temporary folder
+        string outputPath = Path.Combine(Path.GetTempPath(), "HIBCLIC_QuietZone.png");
 
-        // Create the barcode generator for HIBC DataMatrix LIC
-        using (var generator = new BarcodeGenerator(EncodeTypes.HIBCDataMatrixLIC, codeText))
+        // Prepare primary data for the HIBC QR LIC barcode
+        HIBCLICPrimaryDataCodetext complexCodetext = new HIBCLICPrimaryDataCodetext
         {
-            // Set module size (XDimension) – 2 points per module
-            generator.Parameters.Barcode.XDimension.Point = 2f;
-
-            // Calculate quiet zone size: 10 modules * XDimension
-            float quietZone = 10f * generator.Parameters.Barcode.XDimension.Point;
-
-            // Apply the quiet zone to all sides of the barcode
-            generator.Parameters.Barcode.Padding.Left.Point = quietZone;
-            generator.Parameters.Barcode.Padding.Top.Point = quietZone;
-            generator.Parameters.Barcode.Padding.Right.Point = quietZone;
-            generator.Parameters.Barcode.Padding.Bottom.Point = quietZone;
-
-            // Optional: set foreground and background colors
-            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-            generator.Parameters.BackColor = Aspose.Drawing.Color.White;
-
-            // Define output file path
-            string outputPath = "hibc_datamatrix.png";
-
-            // Ensure the output directory exists
-            string directory = Path.GetDirectoryName(Path.GetFullPath(outputPath));
-            if (!Directory.Exists(directory))
+            BarcodeType = EncodeTypes.HIBCQRLIC,
+            Data = new PrimaryData
             {
-                Directory.CreateDirectory(directory);
+                ProductOrCatalogNumber = "12345",
+                LabelerIdentificationCode = "A999",
+                UnitOfMeasureID = 1
             }
+        };
 
-            // Save the barcode image as PNG
-            generator.Save(outputPath, BarCodeImageFormat.Png);
-            Console.WriteLine($"Barcode saved to {outputPath}");
+        // Create the barcode generator with the prepared complex codetext
+        using (ComplexBarcodeGenerator gen = new ComplexBarcodeGenerator(complexCodetext))
+        {
+            // Set the module size (XDimension) – 5 pixels per module
+            gen.Parameters.Barcode.XDimension.Pixels = 5f;
+
+            // Calculate quiet zone size: 10 modules * module size
+            float quietZone = 10f * gen.Parameters.Barcode.XDimension.Pixels;
+
+            // Apply equal padding on all sides to create the quiet zone
+            gen.Parameters.Barcode.Padding.Left.Pixels = quietZone;
+            gen.Parameters.Barcode.Padding.Right.Pixels = quietZone;
+            gen.Parameters.Barcode.Padding.Top.Pixels = quietZone;
+            gen.Parameters.Barcode.Padding.Bottom.Pixels = quietZone;
+
+            // Save the generated barcode image as PNG
+            gen.Save(outputPath, BarCodeImageFormat.Png);
         }
+
+        // Inform the user where the barcode image was saved
+        Console.WriteLine($"HIBC QR LIC barcode with quiet zone saved to: {outputPath}");
     }
 }

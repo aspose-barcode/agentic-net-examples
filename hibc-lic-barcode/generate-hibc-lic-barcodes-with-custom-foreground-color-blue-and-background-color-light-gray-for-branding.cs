@@ -1,8 +1,8 @@
-// Title: Generate HIBC LIC Barcodes with Custom Colors
-// Description: Demonstrates creating HIBC Code 128 LIC barcodes with a blue foreground and light‑gray background for branding purposes.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It showcases the use of HIBCLICCombinedCodetext and HIBCLICSecondaryAndAdditionalDataCodetext classes to encode primary, secondary, and additional data for HIBC LIC symbology. Typical use cases include product labeling, inventory tracking, and brand‑consistent barcode rendering. Developers often need to customize colors, output formats, and combine multiple data fields, which this snippet illustrates.
-/// Prompt: Generate HIBC LIC barcodes with custom foreground color (blue) and background color (light gray) for branding.
-/// Tags: hibc, lic, barcode, color, branding, png, aspose.barcode, complexbarcode
+// Title: Generate HIBC QR‑LIC barcode with custom foreground and background colors
+// Description: Demonstrates creating a HIBC QR‑LIC barcode and applying a blue foreground and light‑gray background for branding.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It shows how to use the ComplexBarcodeGenerator together with HIBCLICPrimaryDataCodetext to produce healthcare‑industry barcodes (HIBC). Typical use cases include labeling medical devices, pharmaceuticals, and lab samples where custom colors are required for brand consistency. Developers often need to set barcode symbology, populate primary data fields, and adjust visual appearance via the Parameters API.
+// Prompt: Generate HIBC LIC barcodes with custom foreground color (blue) and background color (light gray) for branding.
+// Tags: hibc, lic, barcode, color, aspose.barcode, complexbarcode, generation, png
 
 using System;
 using System.IO;
@@ -12,90 +12,48 @@ using Aspose.BarCode.ComplexBarcode;
 using Aspose.Drawing;
 
 /// <summary>
-/// Example program that creates HIBC LIC barcodes with custom foreground and background colors.
+/// Example program that generates a HIBC QR‑LIC barcode with custom foreground and background colors.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a combined HIBC LIC barcode and a secondary‑only HIBC LIC barcode,
-    /// applies branding colors, and saves them as PNG files.
+    /// Entry point that creates the output directory, builds the barcode data, applies custom colors, and saves the image.
     /// </summary>
     static void Main()
     {
-        // --------------------------------------------------------------------
-        // Prepare output directory
-        // --------------------------------------------------------------------
-        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Output");
-        if (!Directory.Exists(outputDir))
-        {
-            Directory.CreateDirectory(outputDir);
-        }
+        // Define a temporary folder to store the generated barcode image
+        string outputDir = Path.Combine(Path.GetTempPath(), "HIBCLICDemo");
+        Directory.CreateDirectory(outputDir);
 
-        // --------------------------------------------------------------------
-        // Example 1: Combined HIBC LIC (primary + secondary data)
-        // --------------------------------------------------------------------
-        var combinedCodetext = new HIBCLICCombinedCodetext
+        // Full path for the resulting PNG file
+        string outPath = Path.Combine(outputDir, "HIBCLICPrimary.png");
+
+        // Prepare primary data for the HIBC QR‑LIC barcode
+        HIBCLICPrimaryDataCodetext complexCodetext = new HIBCLICPrimaryDataCodetext
         {
-            BarcodeType = EncodeTypes.HIBCCode128LIC,
-            PrimaryData = new PrimaryData
+            BarcodeType = EncodeTypes.HIBCQRLIC,
+            Data = new PrimaryData
             {
                 ProductOrCatalogNumber = "12345",
                 LabelerIdentificationCode = "A999",
                 UnitOfMeasureID = 1
-            },
-            SecondaryAndAdditionalData = new SecondaryAndAdditionalData
-            {
-                LotNumber = "LOT123",
-                SerialNumber = "SERIAL123",
-                Quantity = 30,
-                ExpiryDate = DateTime.Now.AddMonths(6),
-                ExpiryDateFormat = HIBCLICDateFormat.MMDDYY,
-                DateOfManufacture = DateTime.Now.AddMonths(-2)
             }
         };
 
-        string combinedPath = Path.Combine(outputDir, "HIBC_LIC_Combined.png");
-        using (var generator = new ComplexBarcodeGenerator(combinedCodetext))
+        // Generate the barcode with custom colors using ComplexBarcodeGenerator
+        using (ComplexBarcodeGenerator generator = new ComplexBarcodeGenerator(complexCodetext))
         {
-            // Apply branding colors: blue bars on light gray background
+            // Set the barcode (foreground) color to blue
             generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Blue;
+
+            // Set the background color to light gray
             generator.Parameters.BackColor = Aspose.Drawing.Color.LightGray;
 
-            // Save the barcode image to file
-            generator.Save(combinedPath);
+            // Save the barcode image as PNG
+            generator.Save(outPath, BarCodeImageFormat.Png);
         }
 
-        Console.WriteLine($"Combined HIBC LIC barcode saved to: {combinedPath}");
-
-        // --------------------------------------------------------------------
-        // Example 2: Secondary‑only HIBC LIC (requires LinkCharacter)
-        // --------------------------------------------------------------------
-        var secondaryCodetext = new HIBCLICSecondaryAndAdditionalDataCodetext
-        {
-            BarcodeType = EncodeTypes.HIBCCode128LIC,
-            LinkCharacter = '+', // mandatory for secondary‑only codetext
-            Data = new SecondaryAndAdditionalData
-            {
-                LotNumber = "LOT456",
-                SerialNumber = "SERIAL456",
-                Quantity = 15,
-                ExpiryDate = DateTime.Now.AddMonths(12),
-                ExpiryDateFormat = HIBCLICDateFormat.MMDDYY,
-                DateOfManufacture = DateTime.Now.AddMonths(-1)
-            }
-        };
-
-        string secondaryPath = Path.Combine(outputDir, "HIBC_LIC_Secondary.png");
-        using (var generator = new ComplexBarcodeGenerator(secondaryCodetext))
-        {
-            // Apply the same branding colors
-            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Blue;
-            generator.Parameters.BackColor = Aspose.Drawing.Color.LightGray;
-
-            // Save the barcode image to file
-            generator.Save(secondaryPath);
-        }
-
-        Console.WriteLine($"Secondary‑only HIBC LIC barcode saved to: {secondaryPath}");
+        // Inform the user where the barcode image was saved
+        Console.WriteLine($"HIBC LIC barcode saved to: {outPath}");
     }
 }
