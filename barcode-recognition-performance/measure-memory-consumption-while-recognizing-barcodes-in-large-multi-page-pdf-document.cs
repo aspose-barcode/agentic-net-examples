@@ -1,83 +1,87 @@
-// Title: Measure memory usage while recognizing barcodes in a multi‑page PDF
-// Description: Demonstrates how to load a PDF, render its pages to images, recognize barcodes, and track memory consumption before and after processing.
-// Category-Description: This example belongs to the Aspose.BarCode recognition category, showcasing the use of Document, PngDevice, BarCodeReader, and QualitySettings classes. It illustrates typical scenarios where developers need to process large PDFs, extract barcodes, and monitor resource usage for performance tuning.
+// Title: Measure memory usage during barcode recognition in a multi-page PDF
+// Description: Demonstrates how to load a PDF, convert each page to an image, recognize multiple barcode symbologies, and measure the memory consumed for each page's recognition process.
+// Category-Description: This example belongs to the Aspose.BarCode for .NET barcode recognition category. It shows how to use Aspose.Pdf to render PDF pages, Aspose.BarCode.BarCodeRecognition's BarCodeReader to detect barcodes (PDF417, QR, DataMatrix, Aztec), and .NET's GC.GetTotalMemory to monitor memory consumption. Developers working with large documents can use this pattern to benchmark and optimize memory usage when processing many pages.
 // Prompt: Measure memory consumption while recognizing barcodes in a large multi‑page PDF document.
-// Tags: barcode, recognition, pdf, memory, consumption, aspose.barcode, aspose.pdf
+// Tags: barcode recognition memory pdf aspose.pdf aspose.barcode pdf417 qr datamatrix aztec
 
 using System;
 using System.IO;
-using System.Diagnostics;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Pdf;
+using Aspose.Pdf.Facades;
 using Aspose.Pdf.Devices;
 
 /// <summary>
-/// Demonstrates measuring memory consumption while recognizing barcodes in a large multi‑page PDF document.
+/// Demonstrates measuring memory consumption while recognizing barcodes in a multi‑page PDF document.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Main entry point. Loads a PDF, renders up to four pages to PNG images, reads barcodes, and reports memory usage.
+    /// Entry point. Accepts an optional PDF file path, renders each page to an image, reads barcodes,
+    /// and reports memory used for the recognition of each page.
     /// </summary>
-    static void Main()
+    /// <param name="args">Command‑line arguments; first argument can be the PDF file path.</param>
+    static void Main(string[] args)
     {
-        // Path to the PDF document to be processed
-        const string pdfPath = "sample.pdf";
+        // Determine PDF file path: use first argument if provided, otherwise default to "sample.pdf".
+        string pdfPath = args.Length > 0 ? args[0] : "sample.pdf";
 
-        // Verify that the file exists before proceeding
+        // Verify that the PDF file exists before proceeding.
         if (!File.Exists(pdfPath))
         {
-            Console.WriteLine($"File not found: {pdfPath}");
+            Console.WriteLine($"PDF file not found: {pdfPath}");
             return;
         }
 
-        // Capture memory usage before any processing
-        Process proc = Process.GetCurrentProcess();
-        long memoryBefore = proc.PrivateMemorySize64;
-
-        // Load the PDF document
-        using (Document pdfDocument = new Document(pdfPath))
+        // Load the PDF document.
+        using (var pdfDoc = new Document(pdfPath))
         {
-            // Limit processing to a maximum of 4 pages as per the rules
-            int pagesToProcess = Math.Min(pdfDocument.Pages.Count, 4);
-
-            // Iterate through each page to be processed
-            for (int pageIndex = 1; pageIndex <= pagesToProcess; pageIndex++)
+            // Initialize a PdfConverter to render PDF pages as images.
+            using (var pdfConverter = new PdfConverter(pdfDoc))
             {
-                // Render the current page to a PNG image in memory
-                using (MemoryStream imageStream = new MemoryStream())
+                // Enable barcode optimization for faster rendering of barcode regions.
+                pdfConverter.RenderingOptions.BarcodeOptimization = true;
+                // Set the rendering resolution (DPI).
+                pdfConverter.Resolution = new Resolution(300);
+
+                // Iterate through each page in the PDF.
+                for (int pageNumber = 1; pageNumber <= pdfDoc.Pages.Count; pageNumber++)
                 {
-                    Resolution resolution = new Resolution(300);
-                    PngDevice pngDevice = new PngDevice(resolution);
-                    pngDevice.Process(pdfDocument.Pages[pageIndex], imageStream);
-                    imageStream.Position = 0;
+                    // Configure the converter to process a single page.
+                    pdfConverter.StartPage = pageNumber;
+                    pdfConverter.EndPage = pageNumber;
+                    pdfConverter.DoConvert();
 
-                    // Load the rendered image into an Aspose.Drawing.Bitmap
-                    using (Aspose.Drawing.Bitmap bitmap = new Aspose.Drawing.Bitmap(imageStream))
+                    // Capture the rendered page image into a memory stream.
+                    using (var ms = new MemoryStream())
                     {
-                        // Initialize the barcode reader for all supported symbologies
-                        using (BarCodeReader reader = new BarCodeReader(bitmap, DecodeType.AllSupportedTypes))
-                        {
-                            // Use the highest quality preset to ensure maximum detection
-                            reader.QualitySettings = QualitySettings.MaxQuality;
+                        pdfConverter.GetNextImage(ms);
+                        ms.Position = 0; // Reset stream position for reading.
 
-                            // Iterate over detected barcodes and output their details
+                        // Record memory usage before barcode recognition.
+                        long before = GC.GetTotalMemory(true);
+
+                        // Create a BarCodeReader to detect specified barcode types.
+                        using (var reader = new BarCodeReader(ms,
+                            DecodeType.Pdf417,
+                            DecodeType.QR,
+                            DecodeType.DataMatrix,
+                            DecodeType.Aztec))
+                        {
+                            // Iterate through all detected barcodes on the page.
                             foreach (var result in reader.ReadBarCodes())
                             {
-                                Console.WriteLine($"Page {pageIndex}: Type={result.CodeTypeName}, Text={result.CodeText}");
+                                Console.WriteLine($"Page {pageNumber}: Type={result.CodeTypeName}, Text={result.CodeText}");
                             }
                         }
+
+                        // Record memory usage after barcode recognition.
+                        long after = GC.GetTotalMemory(true);
+                        long used = after - before;
+                        Console.WriteLine($"Page {pageNumber}: Memory used for recognition: {used} bytes");
                     }
                 }
             }
         }
-
-        // Capture memory usage after processing
-        long memoryAfter = proc.PrivateMemorySize64;
-
-        // Report memory consumption statistics
-        Console.WriteLine($"Memory before processing: {memoryBefore / 1024} KB");
-        Console.WriteLine($"Memory after processing : {memoryAfter / 1024} KB");
-        Console.WriteLine($"Memory increase          : {(memoryAfter - memoryBefore) / 1024} KB");
     }
 }

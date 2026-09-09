@@ -1,135 +1,74 @@
-// Title: Evaluate recognition success rate for rotated DataMatrix barcodes
-// Description: Generates DataMatrix barcodes, rotates them at 0°, 45°, and 90°, and measures how often Aspose.BarCode correctly reads the encoded text.
-// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, demonstrating how to create, manipulate, and read DataMatrix symbols using BarcodeGenerator, BarCodeReader, and related imaging classes. Typical use cases include testing scanner robustness against rotated symbols and validating recognition algorithms. Developers often need to generate test images, apply transformations, and programmatically assess decoding success rates.
+// Title: DataMatrix Rotation Recognition Test
+// Description: Generates DataMatrix barcodes rotated at 0°, 45°, and 90°, then evaluates recognition success for each angle.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It demonstrates using BarcodeGenerator to create rotated DataMatrix symbols and BarCodeReader to decode them. Developers often need to test barcode readability under various orientations, especially for automated scanning solutions, and this snippet shows how to measure success rates using key API classes like BarcodeGenerator, BarCodeReader, and related parameters.
 // Prompt: Evaluate recognition success rate for rotated DataMatrix codes at 0°, 45°, and 90° angles.
-// Tags: datamatrix, recognition, rotation, success-rate, aspose.barcodes, barcode-generation, barcode-reader
+// Tags: datamatrix, rotation, recognition, generation, aspose.barcode
 
 using System;
 using System.IO;
-using System.Collections.Generic;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating DataMatrix barcodes, rotating them, and evaluating recognition success rate using Aspose.BarCode.
+/// Demonstrates generating rotated DataMatrix barcodes and measuring recognition success rates.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates images at specified angles, reads them back, and prints the success rate.
+    /// Entry point that creates rotated barcodes, reads them, and reports success statistics.
     /// </summary>
     static void Main()
     {
-        // Text to encode in the DataMatrix barcode
-        const string codeText = "TestDataMatrix123";
+        // Create a unique temporary folder for storing generated barcode images.
+        string tempFolder = Path.Combine(Path.GetTempPath(), "DataMatrixRotationTest_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
 
-        // Directory to store generated barcode images
-        string folder = Path.Combine(Directory.GetCurrentDirectory(), "DataMatrixSamples");
-        if (!Directory.Exists(folder))
-        {
-            Directory.CreateDirectory(folder);
-        }
-
-        // Angles (in degrees) at which the barcode will be rotated for testing
-        int[] angles = new int[] { 0, 45, 90 };
-        var imagePaths = new List<string>();
-
-        // -----------------------------------------------------------------
-        // Generate a barcode for each angle and optionally rotate it
-        // -----------------------------------------------------------------
-        foreach (int angle in angles)
-        {
-            // Create a DataMatrix barcode generator with the specified text
-            using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, codeText))
-            {
-                // Save the generated barcode to a memory stream as PNG
-                using (var ms = new MemoryStream())
-                {
-                    generator.Save(ms, BarCodeImageFormat.Png);
-                    ms.Position = 0;
-
-                    // Load the PNG into a bitmap for further processing
-                    using (var original = new Bitmap(ms))
-                    {
-                        string filePath = Path.Combine(folder, $"DataMatrix_{angle}.png");
-
-                        if (angle == 0)
-                        {
-                            // No rotation needed; save the original bitmap directly
-                            original.Save(filePath, ImageFormat.Png);
-                        }
-                        else
-                        {
-                            // Rotate the bitmap around its center by the specified angle
-                            int width = original.Width;
-                            int height = original.Height;
-                            using (var rotated = new Bitmap(width, height))
-                            {
-                                using (var g = Graphics.FromImage(rotated))
-                                {
-                                    g.Clear(Aspose.Drawing.Color.White);
-                                    g.TranslateTransform(width / 2f, height / 2f);
-                                    g.RotateTransform(angle);
-                                    g.TranslateTransform(-width / 2f, -height / 2f);
-                                    g.DrawImage(original, 0, 0, width, height);
-                                }
-                                rotated.Save(filePath, ImageFormat.Png);
-                            }
-                        }
-
-                        // Keep track of the generated image path for later recognition
-                        imagePaths.Add(filePath);
-                    }
-                }
-            }
-        }
-
-        // -----------------------------------------------------------------
-        // Recognize each generated image and count successful decodings
-        // -----------------------------------------------------------------
+        // Define rotation angles (as text for filenames and as float values for the generator).
+        string[] anglesText = { "0", "45", "90" };
+        float[] angles = { 0f, 45f, 90f };
+        string barcodeText = "Sample123";
         int successCount = 0;
-        foreach (string path in imagePaths)
+
+        // Iterate over each angle, generate a barcode, and attempt to read it back.
+        for (int i = 0; i < angles.Length; i++)
         {
-            if (!File.Exists(path))
+            // Build the file path for the current angle's image.
+            string filePath = Path.Combine(tempFolder, $"DataMatrix_{anglesText[i]}.png");
+
+            // Generate a DataMatrix barcode with the specified rotation.
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.DataMatrix, barcodeText))
             {
-                Console.WriteLine($"File not found: {path}");
+                generator.Parameters.RotationAngle = angles[i];
+                generator.Save(filePath, BarCodeImageFormat.Png);
+            }
+
+            // Verify that the image file was created successfully.
+            if (!File.Exists(filePath))
+            {
+                Console.WriteLine($"File not found: {filePath}");
                 continue;
             }
 
-            // Initialize a barcode reader for DataMatrix symbology
-            using (var reader = new BarCodeReader(path, DecodeType.DataMatrix))
+            bool success = false;
+
+            // Attempt to read the barcode from the generated image.
+            using (BarCodeReader reader = new BarCodeReader(filePath, DecodeType.DataMatrix))
             {
-                var results = reader.ReadBarCodes();
-                bool success = false;
-
-                // Check each decoded result for a match with the original text
-                foreach (var result in results)
+                BarCodeResult[] results = reader.ReadBarCodes();
+                if (results.Length > 0 && !string.IsNullOrEmpty(results[0].CodeText))
                 {
-                    if (!string.IsNullOrEmpty(result.CodeText) && result.CodeText == codeText)
-                    {
-                        success = true;
-                        break;
-                    }
-                }
-
-                if (success)
-                {
-                    successCount++;
-                    Console.WriteLine($"Success: {Path.GetFileName(path)}");
-                }
-                else
-                {
-                    Console.WriteLine($"Failure: {Path.GetFileName(path)}");
+                    success = true;
                 }
             }
+
+            // Output the result for the current angle.
+            Console.WriteLine($"Angle {anglesText[i]}°: {(success ? "Success" : "Failure")}");
+            if (success) successCount++;
         }
 
-        // -----------------------------------------------------------------
-        // Compute and display the overall recognition success rate
-        // -----------------------------------------------------------------
+        // Calculate and display the overall recognition success rate.
         double successRate = (double)successCount / angles.Length * 100.0;
-        Console.WriteLine($"Recognition success rate: {successRate:F2}% ({successCount}/{angles.Length})");
+        Console.WriteLine($"Recognition success rate: {successRate}% ({successCount}/{angles.Length})");
     }
 }

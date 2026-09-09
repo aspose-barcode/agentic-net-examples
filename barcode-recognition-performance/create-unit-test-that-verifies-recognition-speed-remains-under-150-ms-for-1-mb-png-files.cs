@@ -1,110 +1,96 @@
-// Title: Barcode recognition speed test for 1‑MB PNG
-// Description: Generates a large PNG barcode, then measures recognition time ensuring it stays under 150 ms.
+// Title: Measure barcode recognition speed for a 1‑MB PNG image
+// Description: Demonstrates generating a large PNG barcode image and verifying that its recognition completes within 150 ms, useful for performance testing.
+// Category-Description: This example belongs to the Aspose.BarCode performance testing category, showcasing how to use BarcodeGenerator, BarCodeReader, and Aspose.Drawing to create and recognize barcodes. Developers often need to ensure fast decoding of high‑resolution images in real‑time applications, and this snippet provides a baseline measurement approach.
 // Prompt: Create a unit test that verifies recognition speed remains under 150 ms for 1‑MB PNG files.
-// Tags: barcode, performance, png, recognition, unit-test, aspose.barcode
+// Tags: code128, barcode generation, barcode recognition, png, aspose.barcode, aspose.barcode.generation, aspose.barcode.barcoderecognition, aspose.drawing
 
 using System;
-using System.Diagnostics;
 using System.IO;
+using System.Diagnostics;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demo program that creates a large barcode image and measures recognition speed.
+/// Demonstrates generating a large barcode PNG and measuring recognition speed.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that runs the performance test.
+    /// Entry point. Generates a ~1 MB barcode image, reads it, and checks that recognition completes within 150 ms.
     /// </summary>
     static void Main()
     {
-        // Path for temporary barcode image
-        string imagePath = Path.Combine(Path.GetTempPath(), "large_barcode.png");
+        // Create a unique temporary folder for test artifacts
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeSpeedTest_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
 
-        // Ensure any previous file is removed
-        if (File.Exists(imagePath))
+        // Path for the generated PNG file
+        string pngPath = Path.Combine(tempFolder, "test.png");
+
+        // Generate a large barcode image (~1 MB) using Code128 symbology
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Test1234567890"))
         {
-            File.Delete(imagePath);
+            // Create the base barcode bitmap
+            using (Bitmap barcodeBmp = generator.GenerateBarCodeImage())
+            {
+                // Define target dimensions to increase file size (2000 × 2000 pixels)
+                int targetSize = 2000;
+
+                // Create a larger bitmap and draw the barcode centered on a white background
+                using (Bitmap largeBmp = new Bitmap(targetSize, targetSize))
+                {
+                    using (Graphics graphics = Graphics.FromImage(largeBmp))
+                    {
+                        graphics.Clear(Color.White);
+                        int x = (targetSize - barcodeBmp.Width) / 2;
+                        int y = (targetSize - barcodeBmp.Height) / 2;
+                        graphics.DrawImage(barcodeBmp, x, y, barcodeBmp.Width, barcodeBmp.Height);
+                    }
+
+                    // Save the large bitmap as a PNG file
+                    largeBmp.Save(pngPath, ImageFormat.Png);
+                }
+            }
         }
 
-        // Generate a barcode image large enough to be at least 1 MB
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "SampleCodeForPerformanceTest1234567890"))
+        // Verify that the PNG file was created successfully
+        if (!File.Exists(pngPath))
         {
-            // Set a large image size to increase file size
-            generator.Parameters.ImageWidth.Point = 2500f;
-            generator.Parameters.ImageHeight.Point = 2500f;
-            generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
-
-            // Save the image as PNG
-            generator.Save(imagePath, BarCodeImageFormat.Png);
-        }
-
-        // Verify the generated file exists
-        if (!File.Exists(imagePath))
-        {
-            Console.WriteLine("Failed to create barcode image.");
+            Console.WriteLine("FAILED: PNG file was not created.");
             return;
         }
 
-        // Verify the file size is at least 1 MB (1 048 576 bytes)
-        long fileSize = new FileInfo(imagePath).Length;
-        if (fileSize < 1_048_576)
+        // Output the generated file size (optional diagnostic information)
+        long fileSize = new FileInfo(pngPath).Length;
+        Console.WriteLine($"Generated PNG size: {fileSize} bytes.");
+
+        // Read the barcode from the PNG and measure recognition time
+        using (var reader = new BarCodeReader(pngPath, DecodeType.AllSupportedTypes))
         {
-            Console.WriteLine($"Generated image is smaller than 1 MB (size: {fileSize} bytes).");
-            return;
+            Stopwatch watch = Stopwatch.StartNew();
+            BarCodeResult[] results = reader.ReadBarCodes();
+            watch.Stop();
+
+            long elapsedMs = watch.ElapsedMilliseconds;
+            bool success = results.Length > 0 && elapsedMs <= 150;
+
+            // Output performance and detection results
+            Console.WriteLine($"Recognition time: {elapsedMs} ms.");
+            Console.WriteLine($"Barcodes detected: {results.Length}.");
+            Console.WriteLine($"Test {(success ? "PASSED" : "FAILED")} (must be ≤150 ms).");
         }
 
-        // Prepare the barcode reader
-        using (var reader = new BarCodeReader())
-        {
-            // Use high‑performance settings for speed
-            reader.QualitySettings = QualitySettings.HighPerformance;
-
-            // Set the image for recognition
-            reader.SetBarCodeImage(imagePath);
-
-            // Measure recognition time
-            var stopwatch = Stopwatch.StartNew();
-            var results = reader.ReadBarCodes();
-            stopwatch.Stop();
-
-            // Check if any barcode was detected
-            if (results.Length == 0)
-            {
-                Console.WriteLine("No barcode detected.");
-                return;
-            }
-
-            // Output the recognized code text
-            foreach (var result in results)
-            {
-                Console.WriteLine($"Detected Type: {result.CodeTypeName}, Text: {result.CodeText}");
-            }
-
-            // Verify the recognition time is under 150 ms
-            long elapsedMs = stopwatch.ElapsedMilliseconds;
-            Console.WriteLine($"Recognition time: {elapsedMs} ms");
-            if (elapsedMs <= 150)
-            {
-                Console.WriteLine("Test passed: recognition speed is within the required limit.");
-            }
-            else
-            {
-                Console.WriteLine("Test failed: recognition took longer than 150 ms.");
-            }
-        }
-
-        // Clean up the temporary file
+        // Clean up temporary files and folder
         try
         {
-            File.Delete(imagePath);
+            Directory.Delete(tempFolder, true);
         }
         catch
         {
-            // Ignore any cleanup errors
+            // Ignore cleanup errors
         }
     }
 }

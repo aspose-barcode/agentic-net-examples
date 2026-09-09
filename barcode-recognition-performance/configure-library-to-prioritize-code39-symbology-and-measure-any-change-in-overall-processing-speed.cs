@@ -1,9 +1,11 @@
-// Title: Benchmark Code39 vs Code128 Generation Speed
-// Description: Generates a small set of Code39 and Code128 barcodes, measures processing time to compare performance when prioritizing Code39.
+// Title: Barcode Recognition Speed Test with Code39 Prioritization
+// Description: Demonstrates generating barcodes of several symbologies, then measuring the recognition time with and without restricting the reader to Code39. Shows the performance impact of prioritizing a specific symbology.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It uses BarcodeGenerator for creating barcodes, BarCodeReader for decoding, and related classes such as EncodeTypes, DecodeType, and BarCodeImageFormat. Typical use cases include batch processing of mixed‑symbology images, performance tuning, and benchmarking different decoding strategies. Developers often need to restrict decoding to a single symbology to improve speed in high‑throughput scenarios.
 // Prompt: Configure the library to prioritize Code39 symbology and measure any change in overall processing speed.
-// Tags: barcode symbology, generation, performance, aspose.barcode, csharp
+// Tags: barcode symbology, speed measurement, code39, generation, recognition, aspose.barcode
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using Aspose.BarCode;
@@ -12,87 +14,117 @@ using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates how to prioritize the Code39 symbology, generate barcodes,
-/// and compare its processing speed against Code128 using Aspose.BarCode.
+/// Demonstrates barcode generation and recognition speed measurement, focusing on Code39 prioritization.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates barcodes for Code39 and Code128,
-    /// measures the time taken for each, and outputs a simple performance comparison.
+    /// Entry point. Generates sample barcodes, benchmarks recognition with and without Code39 restriction, and outputs timing results.
     /// </summary>
-    /// <param name="args">Command‑line arguments (not used).</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Number of barcodes to generate for each symbology (kept small for quick execution)
-        const int sampleCount = 5;
+        // Create a temporary folder for sample barcodes
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeSpeedTest_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
 
-        // Ensure the output directory exists
-        string outputDir = "Barcodes";
-        if (!Directory.Exists(outputDir))
+        // List to hold paths of generated barcode files
+        List<string> barcodeFiles = new List<string>();
+
+        // Generate a Code39 barcode
+        GenerateBarcode(Path.Combine(tempFolder, "code39.png"), EncodeTypes.Code39, "CODE39");
+        barcodeFiles.Add(Path.Combine(tempFolder, "code39.png"));
+
+        // Generate a Code128 barcode
+        GenerateBarcode(Path.Combine(tempFolder, "code128.png"), EncodeTypes.Code128, "CODE128");
+        barcodeFiles.Add(Path.Combine(tempFolder, "code128.png"));
+
+        // Generate a QR code
+        GenerateBarcode(Path.Combine(tempFolder, "qr.png"), EncodeTypes.QR, "https://example.com");
+        barcodeFiles.Add(Path.Combine(tempFolder, "qr.png"));
+
+        // Benchmark default recognition (no symbology restriction)
+        long defaultTime = MeasureRecognition(barcodeFiles, null);
+
+        // Benchmark recognition with Code39 restriction (prioritize Code39)
+        BaseDecodeType code39Decode = DecodeType.Code39;
+        long code39Time = MeasureRecognition(barcodeFiles, code39Decode);
+
+        // Output timing results
+        Console.WriteLine($"Default recognition time: {defaultTime} ms");
+        Console.WriteLine($"Code39-restricted recognition time: {code39Time} ms");
+
+        // Clean up temporary files and folder
+        try
         {
-            Directory.CreateDirectory(outputDir);
+            Directory.Delete(tempFolder, true);
         }
-
-        // -------------------- Benchmark Code39 --------------------
-        // Start timing for Code39 generation
-        Stopwatch swCode39 = new Stopwatch();
-        swCode39.Start();
-
-        for (int i = 0; i < sampleCount; i++)
+        catch
         {
-            // Prioritize Code39 symbology by explicitly using EncodeTypes.Code39
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code39, $"CODE39_SAMPLE_{i}"))
-            {
-                // Example of a Code39‑specific setting: wide‑narrow ratio
-                generator.Parameters.Barcode.WideNarrowRatio = 3f;
+            // Ignore cleanup errors
+        }
+    }
 
-                // Save the generated barcode image
-                string filePath = Path.Combine(outputDir, $"code39_{i}.png");
-                generator.Save(filePath);
+    /// <summary>
+    /// Generates a barcode image using the specified encoding type and text.
+    /// </summary>
+    /// <param name="filePath">Full path where the image will be saved.</param>
+    /// <param name="encodeType">Symbology to encode.</param>
+    /// <param name="codeText">Text or data to encode.</param>
+    static void GenerateBarcode(string filePath, BaseEncodeType encodeType, string codeText)
+    {
+        using (BarcodeGenerator generator = new BarcodeGenerator(encodeType, codeText))
+        {
+            // Save the generated barcode as a PNG image
+            generator.Save(filePath, BarCodeImageFormat.Png);
+        }
+    }
+
+    /// <summary>
+    /// Measures the time required to recognize barcodes in the provided files.
+    /// </summary>
+    /// <param name="files">List of image file paths to process.</param>
+    /// <param name="decodeType">
+    /// Optional symbology restriction. If null, the reader attempts all supported types.
+    /// </param>
+    /// <returns>Total elapsed time in milliseconds.</returns>
+    static long MeasureRecognition(List<string> files, BaseDecodeType decodeType)
+    {
+        Stopwatch sw = new Stopwatch();
+        sw.Start();
+
+        foreach (string file in files)
+        {
+            if (!File.Exists(file))
+                continue;
+
+            using (BarCodeReader reader = new BarCodeReader(file))
+            {
+                if (decodeType != null)
+                {
+                    // Restrict to a specific symbology to prioritize speed
+                    reader.BarCodeReadType = decodeType;
+                }
+
+                try
+                {
+                    // Read all barcodes from the image
+                    BarCodeResult[] results = reader.ReadBarCodes();
+                    foreach (BarCodeResult result in results)
+                    {
+                        // Placeholder processing – retrieve text and symbology
+                        string text = result.CodeText;
+                        string symbology = result.CodeTypeName;
+                    }
+                }
+                catch (ArgumentException ex) when (ex.Message.Contains("Image loading failed"))
+                {
+                    // Log a warning if the image cannot be loaded
+                    Console.WriteLine($"Warning: Unable to load image {file}");
+                }
             }
         }
 
-        // Stop timing for Code39
-        swCode39.Stop();
-        TimeSpan code39Duration = swCode39.Elapsed;
-
-        // -------------------- Benchmark Code128 (reference) --------------------
-        // Start timing for Code128 generation
-        Stopwatch swCode128 = new Stopwatch();
-        swCode128.Start();
-
-        for (int i = 0; i < sampleCount; i++)
-        {
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, $"CODE128_SAMPLE_{i}"))
-            {
-                // No special settings required for Code128 in this benchmark
-                string filePath = Path.Combine(outputDir, $"code128_{i}.png");
-                generator.Save(filePath);
-            }
-        }
-
-        // Stop timing for Code128
-        swCode128.Stop();
-        TimeSpan code128Duration = swCode128.Elapsed;
-
-        // -------------------- Output Results --------------------
-        Console.WriteLine($"Generated {sampleCount} Code39 barcodes in {code39Duration.TotalMilliseconds} ms.");
-        Console.WriteLine($"Generated {sampleCount} Code128 barcodes in {code128Duration.TotalMilliseconds} ms.");
-
-        // Simple comparison of processing times
-        double speedDifference = code128Duration.TotalMilliseconds - code39Duration.TotalMilliseconds;
-        if (speedDifference > 0)
-        {
-            Console.WriteLine($"Code39 was faster by {speedDifference} ms.");
-        }
-        else if (speedDifference < 0)
-        {
-            Console.WriteLine($"Code128 was faster by {-speedDifference} ms.");
-        }
-        else
-        {
-            Console.WriteLine("Both symbologies took the same amount of time.");
-        }
+        sw.Stop();
+        return sw.ElapsedMilliseconds;
     }
 }

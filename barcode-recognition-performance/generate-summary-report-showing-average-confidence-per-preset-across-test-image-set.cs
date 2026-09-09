@@ -1,8 +1,8 @@
-// Title: Generate average confidence report for barcode presets
-// Description: This example creates barcode images for several presets, reads them back, and calculates the average confidence score for each preset.
-// Category-Description: Demonstrates Aspose.BarCode generation and recognition workflows, covering BarcodeGenerator, BarCodeReader, and QualitySettings. Useful for developers testing barcode readability across different symbologies and evaluating scanner confidence metrics.
+// Title: Generate average confidence report for barcode recognition presets
+// Description: This example creates sample barcode images, reads them using various quality presets, and calculates the average confidence score for each preset.
+// Category-Description: Demonstrates Aspose.BarCode generation and recognition workflows, focusing on QualitySettings to control recognition performance. It showcases creating barcodes with BarcodeGenerator, reading them with BarCodeReader, and aggregating confidence metrics—common tasks for developers optimizing barcode scanning accuracy and speed.
 // Prompt: Generate a summary report showing average confidence per preset across a test image set.
-// Tags: barcode, generation, recognition, confidence, preset, aspose.barcode, png
+// Tags: barcode symbology, generation, recognition, qualitysettings, confidence, report, csharp
 
 using System;
 using System.IO;
@@ -10,100 +10,114 @@ using System.Collections.Generic;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates barcode images for predefined presets,
-/// reads them back, and reports the average confidence per preset.
+/// Demonstrates how to generate barcodes, recognize them with different quality presets,
+/// and compute the average confidence for each preset.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates barcodes, scans them, and prints average confidence values.
+    /// Entry point of the example. Generates barcodes, evaluates them, and outputs average confidence per preset.
     /// </summary>
     static void Main()
     {
-        // Folder to store generated barcode images
-        string folderPath = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
-        if (!Directory.Exists(folderPath))
-        {
-            Directory.CreateDirectory(folderPath);
-        }
+        // Create a dedicated temporary folder for sample barcode images
+        string tempFolder = Path.Combine(Path.GetTempPath(), "Barcodes_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
 
-        // Define presets: each preset has a name, symbology, and codetext
-        var presets = new List<(string PresetName, BaseEncodeType EncodeType, string CodeText)>
+        // Define the list of barcode symbologies to generate
+        var encodeTypes = new List<BaseEncodeType>
         {
-            ("Preset1", EncodeTypes.Code128, "CODE128_SAMPLE"),
-            ("Preset2", EncodeTypes.QR, "QR_SAMPLE"),
-            ("Preset3", EncodeTypes.DataMatrix, "DM_SAMPLE"),
-            ("Preset4", EncodeTypes.Pdf417, "PDF417_SAMPLE"),
-            ("Preset5", EncodeTypes.Aztec, "AZTEC_SAMPLE")
+            EncodeTypes.Code128,
+            EncodeTypes.QR,
+            EncodeTypes.DataMatrix,
+            EncodeTypes.Aztec
         };
 
-        // Generate barcode images for each preset
-        foreach (var (presetName, encodeType, codeText) in presets)
+        // Generate sample barcode images and collect their file paths
+        var barcodeFiles = new List<string>();
+        int index = 0;
+        foreach (BaseEncodeType encode in encodeTypes)
         {
-            string fileName = $"{presetName}_{encodeType.TypeName}.png";
-            string filePath = Path.Combine(folderPath, fileName);
-
-            using (var generator = new BarcodeGenerator(encodeType, codeText))
+            string filePath = Path.Combine(tempFolder, $"barcode_{index}_{encode.GetType().Name}.png");
+            using (BarcodeGenerator generator = new BarcodeGenerator(encode, $"Sample{index}"))
             {
-                // Use default settings; ensure image is saved as PNG
                 generator.Save(filePath, BarCodeImageFormat.Png);
             }
+            barcodeFiles.Add(filePath);
+            index++;
         }
 
-        // Dictionary to accumulate confidence sums and counts per preset
-        var confidenceData = new Dictionary<string, (float Sum, int Count)>(StringComparer.OrdinalIgnoreCase);
-
-        // Scan generated PNG files
-        string[] imageFiles = Directory.GetFiles(folderPath, "*.png");
-        foreach (string imageFile in imageFiles)
+        // Define recognition quality presets to evaluate
+        var presets = new Dictionary<string, QualitySettings>
         {
-            // Extract preset name from file name (format: PresetName_Symbology.png)
-            string fileName = Path.GetFileNameWithoutExtension(imageFile);
-            int underscoreIndex = fileName.IndexOf('_');
-            if (underscoreIndex <= 0)
-            {
-                Console.WriteLine($"Warning: Unable to determine preset for file '{fileName}'. Skipping.");
-                continue;
-            }
-            string presetName = fileName.Substring(0, underscoreIndex);
+            { "HighPerformance", QualitySettings.HighPerformance },
+            { "NormalQuality", QualitySettings.NormalQuality },
+            { "HighQuality", QualitySettings.HighQuality },
+            { "MaxQuality", QualitySettings.MaxQuality }
+        };
 
-            // Read barcode from image
-            using (var reader = new BarCodeReader(imageFile, DecodeType.AllSupportedTypes))
-            {
-                // Use normal quality preset for reliable results
-                reader.QualitySettings = QualitySettings.NormalQuality;
+        // Output header for the confidence report
+        Console.WriteLine("Average Confidence per Preset:");
 
-                foreach (BarCodeResult result in reader.ReadBarCodes())
+        // Iterate over each preset, read all barcodes, and calculate average confidence
+        foreach (var presetEntry in presets)
+        {
+            string presetName = presetEntry.Key;
+            QualitySettings preset = presetEntry.Value;
+
+            int totalConfidence = 0;
+            int resultCount = 0;
+
+            // Process each generated barcode file
+            foreach (string file in barcodeFiles)
+            {
+                if (!File.Exists(file))
                 {
-                    // Convert confidence enum to numeric value
-                    float confidenceValue = (float)result.Confidence;
+                    Console.WriteLine($"File not found: {file}");
+                    continue;
+                }
 
-                    if (confidenceData.TryGetValue(presetName, out var data))
+                using (BarCodeReader reader = new BarCodeReader(file, DecodeType.AllSupportedTypes))
+                {
+                    // Apply the current quality preset to the reader
+                    reader.QualitySettings = preset;
+                    BarCodeResult[] results = reader.ReadBarCodes();
+
+                    // Accumulate confidence values from all detected barcodes
+                    foreach (BarCodeResult result in results)
                     {
-                        data.Sum += confidenceValue;
-                        data.Count += 1;
-                        confidenceData[presetName] = data;
-                    }
-                    else
-                    {
-                        confidenceData[presetName] = (confidenceValue, 1);
+                        totalConfidence += (int)result.Confidence;
+                        resultCount++;
                     }
                 }
             }
+
+            // Compute and display the average confidence for the current preset
+            double average = resultCount > 0 ? (double)totalConfidence / resultCount : 0.0;
+            Console.WriteLine($"{presetName}: Average Confidence = {average:F2}");
         }
 
-        // Output average confidence per preset
-        Console.WriteLine("Average Confidence per Preset:");
-        foreach (var kvp in confidenceData)
+        // Cleanup temporary barcode files and folder
+        try
         {
-            string preset = kvp.Key;
-            float sum = kvp.Value.Sum;
-            int count = kvp.Value.Count;
-            float average = count > 0 ? sum / count : 0f;
-            Console.WriteLine($"{preset}: {average:F2}");
+            foreach (string file in barcodeFiles)
+            {
+                if (File.Exists(file))
+                {
+                    File.Delete(file);
+                }
+            }
+            if (Directory.Exists(tempFolder))
+            {
+                Directory.Delete(tempFolder, true);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Cleanup error: {ex.Message}");
         }
     }
 }

@@ -1,76 +1,59 @@
-// Title: Diagnostic mode output of raw pixel matrix for barcode detection
-// Description: Demonstrates generating a Code128 barcode, printing its grayscale pixel matrix, and recognizing the barcode.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, showcasing how to use BarcodeGenerator, BarCodeReader, and related parameter classes. Typical use cases include debugging barcode rendering, validating image quality, and extracting raw pixel data for custom analysis. Developers often need to inspect the pixel matrix when troubleshooting detection issues.
+// Title: Barcode Generation with Raw Pixel Matrix Output
+// Description: Generates a Code128 barcode and prints its bitmap pixel matrix, where 1 represents black and 0 represents white, useful for debugging detection algorithms.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, demonstrating how to create a barcode image using BarcodeGenerator, configure colors, and access the underlying bitmap. Developers often need to inspect raw pixel data for custom detection, image processing, or diagnostic purposes. Key API classes include BarcodeGenerator, EncodeTypes, and Aspose.Drawing.Bitmap.
 // Prompt: Develop a diagnostic mode that outputs the raw pixel matrix used for barcode detection when debugging.
-// Tags: barcode symbology, generation, recognition, diagnostic, raw pixel matrix, grayscale, aspose.barcode, code128
+// Tags: barcode symbology, generation, debug, pixel matrix, aspose.barcode, code128, console output
 
 using System;
+using System.Text;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates a Code128 barcode, prints its raw grayscale pixel matrix,
-/// and then performs barcode recognition on the generated image.
+/// Demonstrates barcode generation and outputs the raw pixel matrix for diagnostic purposes.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a barcode, outputs diagnostic pixel data,
-    /// and reads back the barcode information.
+    /// Entry point of the example. Generates a Code128 barcode, prints its dimensions,
+    /// and writes the binary pixel matrix (1 = black, 0 = white) to the console.
     /// </summary>
     static void Main()
     {
-        // Generate a simple Code128 barcode image in memory
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+        // Define the data to encode in the barcode.
+        string codeText = "1234567890";
+
+        // Create a BarcodeGenerator for Code128 with the specified text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
         {
-            // Optional: configure generation parameters for size and scaling
-            generator.Parameters.Barcode.XDimension.Point = 2f;
-            generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
-            generator.Parameters.ImageWidth.Point = 300f;
-            generator.Parameters.ImageHeight.Point = 100f;
+            // Set barcode and background colors for a clear black‑on‑white image.
+            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
+            generator.Parameters.BackColor = Aspose.Drawing.Color.White;
 
-            // Create the barcode image as a Bitmap
-            using (Bitmap barcodeImage = generator.GenerateBarCodeImage())
+            // Generate the barcode as a bitmap image.
+            using (Bitmap bitmap = generator.GenerateBarCodeImage())
             {
-                // Output raw pixel matrix (grayscale intensity) to console for diagnostic purposes
-                Console.WriteLine("Raw pixel matrix (grayscale intensity):");
-                for (int y = 0; y < barcodeImage.Height; y++)
+                int width = bitmap.Width;
+                int height = bitmap.Height;
+
+                // Output image dimensions.
+                Console.WriteLine($"Bitmap size: {width}x{height}");
+                Console.WriteLine("Raw pixel matrix (1 = black, 0 = white):");
+
+                // Iterate over each pixel row to build and display the binary matrix.
+                for (int y = 0; y < height; y++)
                 {
-                    for (int x = 0; x < barcodeImage.Width; x++)
+                    var line = new StringBuilder(width);
+                    for (int x = 0; x < width; x++)
                     {
-                        // Retrieve pixel color and compute average intensity
-                        Color pixel = barcodeImage.GetPixel(x, y);
-                        int intensity = (pixel.R + pixel.G + pixel.B) / 3;
+                        // Retrieve the pixel color at (x, y).
+                        var pixelColor = bitmap.GetPixel(x, y);
 
-                        // Print intensity value, padded for alignment
-                        Console.Write(intensity.ToString().PadLeft(3));
-                        if (x < barcodeImage.Width - 1) Console.Write(" ");
+                        // Append '1' for black pixels, otherwise '0'.
+                        line.Append(pixelColor.ToArgb() == Aspose.Drawing.Color.Black.ToArgb() ? '1' : '0');
                     }
-                    Console.WriteLine();
-                }
-
-                // Perform barcode recognition on the generated image
-                using (var reader = new BarCodeReader())
-                {
-                    // Assign the generated image to the reader
-                    reader.SetBarCodeImage(barcodeImage);
-
-                    // Use all supported barcode types for detection
-                    reader.BarCodeReadType = DecodeType.AllSupportedTypes;
-
-                    // Iterate through detected barcodes and display results
-                    foreach (var result in reader.ReadBarCodes())
-                    {
-                        Console.WriteLine();
-                        Console.WriteLine("Detected Barcode:");
-                        Console.WriteLine("  Type: " + result.CodeTypeName);
-                        Console.WriteLine("  CodeText: " + result.CodeText);
-
-                        // Output the detected region bounds
-                        var bounds = result.Region.Rectangle;
-                        Console.WriteLine($"  Region: X={bounds.X}, Y={bounds.Y}, Width={bounds.Width}, Height={bounds.Height}");
-                    }
+                    // Write the constructed line for the current row.
+                    Console.WriteLine(line.ToString());
                 }
             }
         }

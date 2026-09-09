@@ -1,8 +1,8 @@
-// Title: Barcode recognition performance vs XDimension
-// Description: Demonstrates measuring barcode recognition time across different XDimension values and visualizing results.
-// Category-Description: This example belongs to the Aspose.BarCode performance testing category, illustrating how to use BarcodeGenerator, BarCodeReader, and related parameters to evaluate recognition speed. Developers often need to benchmark barcode settings such as XDimension to optimize scanning performance in high‑throughput applications. The snippet shows generating Code128 barcodes, timing recognition, and presenting results in a table and ASCII graph.
+// Title: Performance measurement of barcode recognition time across XDimension values
+// Description: Demonstrates how to generate Code128 barcodes with varying XDimension settings, recognize them, and record the time taken for each recognition.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes, BarCodeReader for decoding, and common performance‑testing patterns. Developers often need to benchmark barcode parameters such as XDimension to optimize scanning speed in high‑throughput applications.
 // Prompt: Generate performance graphs comparing recognition time versus XDimension values for a sample dataset.
-// Tags: barcode, performance, xdimension, code128, recognition, aspose.barcode, ascii-graph
+// Tags: barcode symbology, performance, recognition, xdimension, code128, aspose.barcode, generation, csv output
 
 using System;
 using System.Collections.Generic;
@@ -11,104 +11,86 @@ using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Example program that measures barcode recognition time for different XDimension values
-/// and displays the results as a table and an ASCII bar graph.
+/// Generates barcodes with different XDimension values, measures recognition time,
+/// and outputs the results in a CSV‑like format for further analysis or graphing.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates barcodes with varying XDimension,
-    /// measures recognition latency, and outputs performance data.
+    /// Entry point of the example. Creates temporary barcode images, records recognition performance,
+    /// prints the data, and cleans up the temporary files.
     /// </summary>
     static void Main()
     {
-        // Sample barcode text (same for all tests)
-        const string sampleText = "1234567890";
+        // Create a dedicated temporary folder for generated barcode images
+        string tempFolder = Path.Combine(Path.GetTempPath(), "PerfXDim_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
 
-        // XDimension values to test (in points)
-        float[] xDimensions = new float[] { 1f, 2f, 3f, 4f, 5f };
+        // Sample XDimension values (points) to test
+        float[] xDimensions = new float[] { 0.5f, 1f, 2f, 3f, 5f };
 
-        // Number of recognition repetitions for averaging
-        const int repetitions = 5;
+        // List to hold performance results: XDimension, elapsed time (ms), and number of barcodes found
+        var results = new List<(float XDim, long TimeMs, int Count)>();
 
-        // Store average recognition time (ms) for each XDimension
-        var results = new List<(float XDim, double AvgTime)>();
-
-        // Iterate over each XDimension value
+        // Iterate over each XDimension value, generate a barcode, and measure recognition time
         foreach (float xDim in xDimensions)
         {
-            // Generate barcode with specific XDimension
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, sampleText))
+            // Build a unique file name for the current XDimension
+            string filePath = Path.Combine(tempFolder, $"barcode_{xDim}.png");
+
+            // Generate a Code128 barcode with the specified XDimension
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
             {
-                // Disable auto‑sizing to apply custom XDimension
-                generator.Parameters.AutoSizeMode = AutoSizeMode.None;
                 generator.Parameters.Barcode.XDimension.Point = xDim;
-
-                // Render barcode to bitmap
-                using (Bitmap bitmap = generator.GenerateBarCodeImage())
-                {
-                    // Warm‑up read (optional, to avoid first‑run overhead)
-                    using (var warmReader = new BarCodeReader(bitmap, DecodeType.Code128))
-                    {
-                        warmReader.ReadBarCodes();
-                    }
-
-                    // Measure recognition time over several repetitions
-                    double totalMs = 0;
-                    for (int i = 0; i < repetitions; i++)
-                    {
-                        using (var reader = new BarCodeReader(bitmap, DecodeType.Code128))
-                        {
-                            var sw = Stopwatch.StartNew();
-                            var detected = reader.ReadBarCodes();
-                            sw.Stop();
-
-                            totalMs += sw.Elapsed.TotalMilliseconds;
-
-                            // Simple validation to ensure detection succeeded
-                            if (detected.Length == 0 || string.IsNullOrEmpty(detected[0].CodeText))
-                            {
-                                Console.WriteLine($"Warning: No barcode detected at XDimension {xDim} on iteration {i + 1}.");
-                            }
-                        }
-                    }
-
-                    // Compute average recognition time for current XDimension
-                    double avgMs = totalMs / repetitions;
-                    results.Add((xDim, avgMs));
-                }
+                generator.Save(filePath, BarCodeImageFormat.Png);
             }
+
+            // Verify that the barcode image was successfully created before attempting recognition
+            if (!File.Exists(filePath))
+            {
+                Console.WriteLine($"Failed to create barcode image at {filePath}");
+                continue;
+            }
+
+            // Start timing the recognition process
+            var stopwatch = Stopwatch.StartNew();
+            int foundCount = 0;
+
+            // Read and decode the barcode from the generated image
+            using (var reader = new BarCodeReader(filePath, DecodeType.Code128))
+            {
+                var barcodes = reader.ReadBarCodes();
+                foundCount = barcodes?.Length ?? 0;
+            }
+
+            // Stop the timer and record the elapsed milliseconds
+            stopwatch.Stop();
+
+            // Store the result for later output
+            results.Add((xDim, stopwatch.ElapsedMilliseconds, foundCount));
         }
 
-        // Output results as a formatted table
-        Console.WriteLine("XDimension (pt) | Avg Recognition Time (ms)");
-        Console.WriteLine("----------------|--------------------------");
+        // Output the collected performance data in CSV format (XDimension,TimeMs,BarcodesFound)
+        Console.WriteLine("XDimension(Point),RecognitionTimeMs,BarcodesFound");
         foreach (var r in results)
         {
-            Console.WriteLine($"{r.XDim,15} | {r.AvgTime,24:F2}");
+            Console.WriteLine($"{r.XDim},{r.TimeMs},{r.Count}");
         }
 
-        // Generate a simple ASCII bar graph to visualize performance
-        Console.WriteLine();
-        Console.WriteLine("Performance Graph (higher bar = longer time)");
-
-        // Determine the maximum average time to scale bars proportionally
-        double maxTime = 0;
-        foreach (var r in results)
+        // Attempt to delete all temporary files and the folder; ignore any cleanup errors
+        try
         {
-            if (r.AvgTime > maxTime) maxTime = r.AvgTime;
+            foreach (var file in Directory.GetFiles(tempFolder))
+            {
+                File.Delete(file);
+            }
+            Directory.Delete(tempFolder);
         }
-
-        // Scale bars to a maximum width of 50 characters
-        const int maxBarWidth = 50;
-        foreach (var r in results)
+        catch
         {
-            int barLength = maxTime > 0 ? (int)Math.Round(r.AvgTime / maxTime * maxBarWidth) : 0;
-            string bar = new string('*', barLength);
-            Console.WriteLine($"{r.XDim,5} pt | {bar}");
+            // Ignored - cleanup failure should not affect program exit
         }
     }
 }

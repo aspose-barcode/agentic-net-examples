@@ -1,8 +1,8 @@
-// Title: Demonstrate barcode generation and reading with AllowIncorrectBarcodes
-// Description: This example generates a Code128 barcode, saves it as PNG, then reads it while allowing potentially incorrect barcodes for debugging.
-// Category-Description: Shows how to use Aspose.BarCode generation and recognition APIs, focusing on QualitySettings.AllowIncorrectBarcodes. Developers working with barcode validation, debugging unreadable barcodes, or handling low‑quality scans can reference this pattern. Key classes include BarcodeGenerator, BarCodeReader, and QualitySettings.
+// Title: Demonstrate QualitySettings.AllowIncorrectBarcodes with QR Code Generation and Recognition
+// Description: Shows how to generate a QR barcode, then read it twice—once with AllowIncorrectBarcodes disabled and once enabled—to illustrate capturing potentially unreadable barcodes during debugging.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It demonstrates using BarcodeGenerator to create a QR code and BarCodeReader with QualitySettings to control the AllowIncorrectBarcodes flag. Developers working with barcode validation, debugging, or error‑tolerant scanning can use these APIs to decide whether to accept imperfect barcodes.
 // Prompt: Enable QualitySettings.AllowIncorrectBarcodes to capture potentially unreadable barcodes during debugging sessions.
-// Tags: barcode generation, barcode recognition, allowincorrectbarcodes, code128, png, aspose.barcode
+// Tags: qr,barcode,allowincorrectbarcodes,debugging,qualitysettings,aspnet,aspose.barcode,generation,recognition
 
 using System;
 using System.IO;
@@ -11,60 +11,63 @@ using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Example program that creates a Code128 barcode image,
-/// reads it back with relaxed quality settings, and cleans up the file.
+/// Demonstrates enabling and disabling QualitySettings.AllowIncorrectBarcodes while reading a QR barcode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a barcode, reads it with
-    /// <c>QualitySettings.AllowIncorrectBarcodes</c> enabled, and outputs the results.
+    /// Entry point of the demo. Generates a QR code, reads it with different AllowIncorrectBarcodes settings,
+    /// and cleans up temporary files.
     /// </summary>
     static void Main()
     {
-        // Define the barcode text to encode.
-        const string codeText = "1234567890";
+        // Create a temporary folder for the demo
+        string tempDir = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        string imagePath = Path.Combine(tempDir, "qr.png");
 
-        // Define the output image file path.
-        const string imagePath = "sample_barcode.png";
-
-        // ------------------------------------------------------------
-        // Generate a Code128 barcode and save it as a PNG image.
-        // ------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+        // Generate a simple QR barcode image
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "SampleText"))
         {
             generator.Save(imagePath, BarCodeImageFormat.Png);
         }
 
-        // ------------------------------------------------------------
-        // Read the generated barcode with relaxed quality settings.
-        // ------------------------------------------------------------
-        using (var reader = new BarCodeReader(imagePath, DecodeType.Code128))
+        // Read the barcode with AllowIncorrectBarcodes disabled
+        Console.WriteLine("AllowIncorrectBarcodes: false");
+        using (var reader = new BarCodeReader(imagePath, DecodeType.QR))
         {
-            // Allow detection of barcodes that may be unreadable or malformed.
-            reader.QualitySettings.AllowIncorrectBarcodes = true;
-
-            // Iterate through all detected barcodes (there should be only one).
-            foreach (var result in reader.ReadBarCodes())
+            // Disable acceptance of potentially incorrect barcodes
+            reader.QualitySettings.AllowIncorrectBarcodes = false;
+            BarCodeResult[] results = reader.ReadBarCodes();
+            Console.WriteLine($"Barcodes read: {results.Length}");
+            foreach (BarCodeResult result in reader.FoundBarCodes)
             {
-                Console.WriteLine($"Detected Type: {result.CodeType}");
-                Console.WriteLine($"Detected Text: {result.CodeText}");
+                Console.WriteLine($"{result.CodeTypeName}:{result.CodeText}");
             }
         }
 
-        // ------------------------------------------------------------
-        // Optional cleanup: delete the generated image file.
-        // ------------------------------------------------------------
-        if (File.Exists(imagePath))
+        // Read the barcode with AllowIncorrectBarcodes enabled
+        Console.WriteLine("AllowIncorrectBarcodes: true");
+        using (var reader = new BarCodeReader(imagePath, DecodeType.QR))
         {
-            try
+            // Enable acceptance of potentially incorrect barcodes
+            reader.QualitySettings.AllowIncorrectBarcodes = true;
+            BarCodeResult[] results = reader.ReadBarCodes();
+            Console.WriteLine($"Barcodes read: {results.Length}");
+            foreach (BarCodeResult result in reader.FoundBarCodes)
             {
-                File.Delete(imagePath);
+                Console.WriteLine($"{result.CodeTypeName}:{result.CodeText}");
             }
-            catch
-            {
-                // Suppress any errors that occur during file deletion.
-            }
+        }
+
+        // Cleanup temporary files
+        try
+        {
+            Directory.Delete(tempDir, true);
+        }
+        catch
+        {
+            // Ignored - cleanup failure should not affect demo execution
         }
     }
 }

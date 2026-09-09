@@ -1,8 +1,8 @@
-// Title: Barcode recognition performance profiling with large images
-// Description: Demonstrates how image size (4000x4000) affects barcode recognition time using the HighPerformance preset.
-// Category-Description: This example belongs to the Aspose.BarCode recognition performance category. It shows how to generate a barcode, embed it in a large image, and measure decoding speed using BarCodeReader with QualitySettings.HighPerformance. Developers often need to evaluate processing time for high‑resolution scans in industrial or retail scenarios, and this snippet illustrates typical API usage such as BarcodeGenerator, BarCodeReader, and QualitySettings.
+// Title: Impact of Large Image Dimensions on Barcode Recognition with HighPerformance Settings
+// Description: Demonstrates generating a 4000x4000 PNG barcode and measuring the recognition time using the HighPerformance quality preset.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating high‑resolution barcodes and BarCodeReader with QualitySettings to profile performance. Developers often need to evaluate how image size affects decoding speed, especially when processing large scans in high‑throughput scenarios.
 // Prompt: Profile the impact of large image dimensions (e.g., 4000x4000) on recognition time with HighPerformance preset.
-// Tags: barcode, performance, highresolution, highperformance, code128, png, aspose.barcode, generation, recognition
+// Tags: code128, performance, highperformance, generation, recognition, png, aspose.barcode
 
 using System;
 using System.Diagnostics;
@@ -10,112 +10,55 @@ using System.IO;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that creates a small barcode, places it on a large 4000x4000 image,
-/// and measures the recognition time using the HighPerformance quality preset.
+/// Example program that generates a large barcode image and measures the time required to recognize it
+/// using the HighPerformance quality preset.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates images, runs recognition, and outputs timing results.
+    /// Entry point of the application. Generates a 4000x4000 barcode, reads it, and outputs timing information.
     /// </summary>
     static void Main()
     {
-        // Define temporary file paths
-        string smallImagePath = "smallBarcode.png";
-        string largeImagePath = "largeBarcode.png";
-
-        // ------------------------------------------------------------
-        // Generate a small barcode image (Code128) and save as PNG
-        // ------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Test123"))
+        // Create a barcode generator for Code128 with sample data
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            generator.Save(smallImagePath, BarCodeImageFormat.Png);
-        }
+            // Configure image size, resolution, and colors
+            generator.Parameters.AutoSizeMode = AutoSizeMode.Nearest;
+            generator.Parameters.ImageWidth.Pixels = 4000f;
+            generator.Parameters.ImageHeight.Pixels = 4000f;
+            generator.Parameters.Resolution = 300f;
+            generator.Parameters.Barcode.BarColor = Color.Black;
+            generator.Parameters.BackColor = Color.White;
 
-        // Verify the small barcode image was created
-        if (!File.Exists(smallImagePath))
-        {
-            Console.WriteLine("Failed to create small barcode image.");
-            return;
-        }
-
-        // ------------------------------------------------------------
-        // Load the small barcode and embed it into a large blank bitmap
-        // ------------------------------------------------------------
-        using (var smallBmp = new Bitmap(smallImagePath))
-        {
-            // Create a large white bitmap (4000x4000) with 24‑bpp RGB format
-            using (var largeBmp = new Bitmap(4000, 4000, PixelFormat.Format24bppRgb))
+            // Save the generated barcode to a memory stream in PNG format
+            using (var imageStream = new MemoryStream())
             {
-                using (var graphics = Graphics.FromImage(largeBmp))
+                generator.Save(imageStream, BarCodeImageFormat.Png);
+                imageStream.Position = 0; // Reset stream position for reading
+
+                // Initialize the barcode reader with all supported decode types
+                using (var reader = new BarCodeReader(imageStream, DecodeType.AllSupportedTypes))
                 {
-                    // Fill background with white
-                    graphics.Clear(Color.White);
+                    // Apply the HighPerformance preset to prioritize speed
+                    reader.QualitySettings = QualitySettings.HighPerformance;
 
-                    // Calculate offsets to center the small barcode
-                    int offsetX = (largeBmp.Width - smallBmp.Width) / 2;
-                    int offsetY = (largeBmp.Height - smallBmp.Height) / 2;
+                    // Measure the time taken to read barcodes
+                    var stopwatch = Stopwatch.StartNew();
+                    BarCodeResult[] results = reader.ReadBarCodes();
+                    stopwatch.Stop();
 
-                    // Draw the small barcode onto the large image
-                    graphics.DrawImage(smallBmp, offsetX, offsetY);
-                }
-
-                // Save the composite large image as PNG
-                largeBmp.Save(largeImagePath, ImageFormat.Png);
-            }
-        }
-
-        // Verify the large image was saved successfully
-        if (!File.Exists(largeImagePath))
-        {
-            Console.WriteLine("Failed to create large barcode image.");
-            return;
-        }
-
-        // ------------------------------------------------------------
-        // Measure barcode recognition time using HighPerformance preset
-        // ------------------------------------------------------------
-        using (var reader = new BarCodeReader(largeImagePath, DecodeType.AllSupportedTypes))
-        {
-            // Apply the HighPerformance quality setting for faster decoding
-            reader.QualitySettings = QualitySettings.HighPerformance;
-
-            // Optional timeout to prevent hangs on problematic images (10 seconds)
-            reader.Timeout = 10000;
-
-            // Start timing
-            var stopwatch = Stopwatch.StartNew();
-
-            // Perform barcode detection
-            var results = reader.ReadBarCodes();
-
-            // Stop timing
-            stopwatch.Stop();
-
-            // Output elapsed time
-            Console.WriteLine($"Recognition time (HighPerformance): {stopwatch.ElapsedMilliseconds} ms");
-
-            // Report detection results
-            if (results.Length == 0)
-            {
-                Console.WriteLine("No barcodes detected.");
-            }
-            else
-            {
-                foreach (var result in results)
-                {
-                    Console.WriteLine($"Detected Type: {result.CodeTypeName}, Text: {result.CodeText}");
+                    // Output performance metrics and detected barcode information
+                    Console.WriteLine($"Recognition time (HighPerformance): {stopwatch.ElapsedMilliseconds} ms");
+                    Console.WriteLine($"Barcodes detected: {results.Length}");
+                    foreach (var result in results)
+                    {
+                        Console.WriteLine($"Type: {result.CodeTypeName}, Text: {result.CodeText}");
+                    }
                 }
             }
         }
-
-        // ------------------------------------------------------------
-        // Clean up temporary files (optional)
-        // ------------------------------------------------------------
-        try { File.Delete(smallImagePath); } catch { }
-        try { File.Delete(largeImagePath); } catch { }
     }
 }

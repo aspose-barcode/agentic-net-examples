@@ -1,8 +1,8 @@
-// Title: Minimal XDimension Filtering for Code128 Barcode Recognition
-// Description: Demonstrates how to generate a Code128 barcode, save it as PNG, and recognize it while filtering sub‑pixel noise using QualitySettings.
-// Category-Description: This example belongs to the Aspose.BarCode image generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes and BarCodeReader with QualitySettings to improve detection accuracy. Developers often need to fine‑tune XDimension settings to handle low‑resolution scans or noisy images, making this pattern common in barcode processing pipelines.
+// Title: Demonstrate using Minimal X Dimension to filter sub‑pixel noise in barcode recognition
+// Description: Shows how to generate a Code128 barcode, then read it with QualitySettings configured to use a minimal X dimension of 1 pixel, which helps eliminate sub‑pixel noise during detection.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition settings category. It illustrates configuring the QualitySettings of BarCodeReader, specifically XDimensionMode.UseMinimalXDimension and MinimalXDimension, which are commonly used to improve detection accuracy for low‑resolution images. Developers working with barcode scanning, image preprocessing, or noise reduction can refer to this pattern when optimizing recognition performance.
 // Prompt: Activate QualitySettings.UseMinimalXDimension and set MinimalXDimension to 1 pixel to filter sub‑pixel noise.
-// Tags: code128, generation, recognition, png, barcodegenerator, barcodereader, qualitysettings, xdimension
+// Tags: barcode, code128, minimalxdimension, noise-filter, qualitysettings, generation, recognition, aspnet, csharp
 
 using System;
 using System.IO;
@@ -11,46 +11,51 @@ using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Generates a Code128 barcode, saves it as an image, and reads it back using minimal XDimension filtering
-/// to suppress sub‑pixel noise during recognition.
+/// Demonstrates generating a Code128 barcode and reading it with minimal X dimension settings to filter sub‑pixel noise.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Executes barcode generation, saves the image, and performs recognition.
+    /// Entry point of the example.
     /// </summary>
     static void Main()
     {
-        // Define the output file path for the generated barcode image.
-        string imagePath = "sample_barcode.png";
+        // Create a unique temporary folder for the demo files
+        string tempDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        string barcodePath = Path.Combine(tempDir, "barcode.png");
 
-        // Generate a simple Code128 barcode with the value "123456" and save it as a PNG file.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
+        // Generate a sample Code128 barcode and save it as PNG
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
         {
-            // Additional image configuration (size, colors, etc.) can be set here if needed.
-            generator.Save(imagePath);
+            generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        // Verify that the barcode image was successfully created.
-        if (!File.Exists(imagePath))
+        // Initialize the barcode reader with the generated image and specify the expected symbology
+        using (var reader = new BarCodeReader(barcodePath, DecodeType.Code128))
         {
-            Console.WriteLine($"Failed to create barcode image at '{imagePath}'.");
-            return;
-        }
-
-        // Initialize a BarCodeReader for the saved image, specifying that we expect a Code128 barcode.
-        using (var reader = new BarCodeReader(imagePath, DecodeType.Code128))
-        {
-            // Activate minimal XDimension filtering to ignore sub‑pixel noise.
+            // Activate minimal X dimension mode and set the minimal dimension to 1 pixel
             reader.QualitySettings.XDimension = XDimensionMode.UseMinimalXDimension;
-            reader.QualitySettings.MinimalXDimension = 1f; // 1 pixel
+            reader.QualitySettings.MinimalXDimension = 1f;
 
-            // Perform barcode recognition and output the results.
-            foreach (var result in reader.ReadBarCodes())
+            // Perform the recognition
+            BarCodeResult[] results = reader.ReadBarCodes();
+            Console.WriteLine($"Barcodes read: {results.Length}");
+            foreach (var result in results)
             {
-                Console.WriteLine($"Detected Type: {result.CodeTypeName}");
-                Console.WriteLine($"Detected Text: {result.CodeText}");
+                Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
             }
+        }
+
+        // Clean up temporary files and folder
+        try
+        {
+            File.Delete(barcodePath);
+            Directory.Delete(tempDir, true);
+        }
+        catch
+        {
+            // Ignore any errors during cleanup
         }
     }
 }

@@ -1,122 +1,136 @@
-// Title: Profiling UseMinimalXDimension Impact on Multi‑Core CPU Utilization
-// Description: Demonstrates how enabling the UseMinimalXDimension setting affects processing time when reading a batch of Code128 barcodes.
-// Category-Description: This example belongs to the Aspose.BarCode performance profiling category, illustrating the use of BarCodeReader.QualitySettings to control X‑dimension detection. Developers often need to benchmark different quality settings to optimize CPU usage during bulk barcode recognition, especially on multi‑core systems. The snippet shows typical usage of BarcodeGenerator for creating test images and BarCodeReader for decoding, helping users compare default and minimal X‑dimension modes.
+// Title: Demonstrate batch barcode recognition with and without UseMinimalXDimension
+// Description: This example generates a set of Code128 barcode images, then processes them in a batch using Aspose.BarCode's multithreaded reader, comparing normal XDimension mode to the UseMinimalXDimension setting.
+// Category-Description: Shows how to use Aspose.BarCode's BarCodeReader with multithreaded processor settings for high‑performance batch decoding. It covers configuring processor cores, adjusting XDimension quality settings, and measuring recognition time—common tasks for developers building bulk barcode scanning solutions. Suitable for searches about Aspose.BarCode batch processing, multithreading, and XDimension optimization.
 // Prompt: Profile the effect of enabling UseMinimalXDimension on multi‑core CPU utilization during batch processing.
-// Tags: barcode symbology, performance, code128, png, useminimalxdimension, qualitysettings, multithreading, aspose.barcode
+// Tags: barcode, code128, batch processing, multithreading, xdimension, useminimalxdimension, aspose.barcode, performance
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates a set of Code128 barcode images,
-/// then measures the processing time of reading them with and without
-/// the <c>UseMinimalXDimension</c> quality setting. Useful for profiling
-/// CPU utilization on multi‑core machines during batch barcode recognition.
+/// Demonstrates batch barcode generation and recognition, comparing normal XDimension mode with UseMinimalXDimension.
 /// </summary>
 class Program
 {
-    // Number of sample barcode images to generate.
-    const int SampleCount = 10;
-
-    // Folder where barcode images are saved.
-    const string OutputFolder = "Barcodes";
-
     /// <summary>
-    /// Entry point of the application. Creates sample barcodes,
-    /// runs two profiling scenarios, and outputs the elapsed times
-    /// along with logical processor count.
+    /// Entry point. Generates sample barcodes, configures multithreaded processing, runs two recognition batches, and cleans up.
     /// </summary>
     static void Main()
     {
-        // Ensure the output directory exists.
-        if (!Directory.Exists(OutputFolder))
+        // Create a temporary folder for the batch
+        string batchFolder = Path.Combine(Path.GetTempPath(), "BarcodeBatch_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(batchFolder);
+
+        // Generate sample barcode images
+        List<string> files = new List<string>();
+        for (int i = 1; i <= 5; i++)
         {
-            Directory.CreateDirectory(OutputFolder);
+            string codeText = "Sample" + i.ToString("D2");
+            string filePath = Path.Combine(batchFolder, $"barcode_{i}.png");
+            GenerateBarcode(filePath, codeText);
+            files.Add(filePath);
         }
 
-        // Generate a batch of barcode images for the test.
-        GenerateBarcodes();
+        // Configure multithreaded processor settings (use all cores)
+        BarCodeReader.ProcessorSettings.UseAllCores = true;
+        BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount = Environment.ProcessorCount;
+        BarCodeReader.ProcessorSettings.MaxAdditionalAllowedThreads = Environment.ProcessorCount * 2;
 
-        // Profile processing time using the default XDimension detection.
-        double timeDefault = ProcessBarcodes(useMinimal: false);
-        Console.WriteLine($"Processing time (default XDimension): {timeDefault:F2} ms");
+        // Run batch without UseMinimalXDimension (default Normal mode)
+        Console.WriteLine("Batch processing with Normal XDimension:");
+        RunBatch(files, useMinimal: false);
 
-        // Profile processing time with UseMinimalXDimension enabled.
-        double timeMinimal = ProcessBarcodes(useMinimal: true);
-        Console.WriteLine($"Processing time (UseMinimalXDimension): {timeMinimal:F2} ms");
+        // Run batch with UseMinimalXDimension enabled
+        Console.WriteLine();
+        Console.WriteLine("Batch processing with UseMinimalXDimension:");
+        RunBatch(files, useMinimal: true);
 
-        // Display the number of logical processors available.
-        Console.WriteLine($"Logical processors: {Environment.ProcessorCount}");
-    }
-
-    /// <summary>
-    /// Generates <c>SampleCount</c> PNG images containing Code128 barcodes.
-    /// Each image uses a consistent XDimension to keep the test conditions uniform.
-    /// </summary>
-    static void GenerateBarcodes()
-    {
-        for (int i = 0; i < SampleCount; i++)
+        // Cleanup temporary folder
+        try
         {
-            // Create a unique text value for each barcode.
-            string codeText = $"Sample{i:D2}";
-            string filePath = Path.Combine(OutputFolder, $"barcode_{i}.png");
-
-            // Initialize the generator with Code128 symbology.
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
-            {
-                // Set a modest XDimension (2 points) for consistency across samples.
-                generator.Parameters.Barcode.XDimension.Point = 2f;
-
-                // Save the generated barcode as a PNG file.
-                generator.Save(filePath, BarCodeImageFormat.Png);
-            }
+            Directory.Delete(batchFolder, true);
+        }
+        catch
+        {
+            // Ignore cleanup errors
         }
     }
 
     /// <summary>
-    /// Reads all PNG barcode files in <c>OutputFolder</c> and measures the elapsed time.
-    /// The <paramref name="useMinimal"/> flag determines whether <c>UseMinimalXDimension</c>
-    /// is applied to the reader's quality settings.
+    /// Generates a Code128 barcode image and saves it to the specified path.
     /// </summary>
-    /// <param name="useMinimal">If true, enables minimal XDimension mode; otherwise uses auto detection.</param>
-    /// <returns>Total processing time in milliseconds.</returns>
-    static double ProcessBarcodes(bool useMinimal)
+    /// <param name="path">File path where the barcode image will be saved.</param>
+    /// <param name="codeText">Text to encode in the barcode.</param>
+    static void GenerateBarcode(string path, string codeText)
     {
-        var stopwatch = new Stopwatch();
-        stopwatch.Start();
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+        {
+            generator.Save(path, BarCodeImageFormat.Png);
+        }
+    }
 
-        // Retrieve all PNG files generated earlier.
-        string[] files = Directory.GetFiles(OutputFolder, "*.png");
+    /// <summary>
+    /// Processes a list of barcode image files, optionally using the minimal XDimension mode, and reports timing.
+    /// </summary>
+    /// <param name="files">Collection of image file paths to decode.</param>
+    /// <param name="useMinimal">If true, enables UseMinimalXDimension; otherwise uses Normal mode.</param>
+    static void RunBatch(List<string> files, bool useMinimal)
+    {
+        Stopwatch watch = Stopwatch.StartNew();
 
+        int totalFound = 0;
         foreach (string file in files)
         {
-            // Initialize a reader for each file, targeting Code128 decoding.
-            using (var reader = new BarCodeReader(file, DecodeType.Code128))
+            // Verify the file exists before attempting to read
+            if (!File.Exists(file))
             {
-                // Configure quality settings based on the profiling scenario.
-                if (useMinimal)
-                {
-                    reader.QualitySettings.XDimension = XDimensionMode.UseMinimalXDimension;
-                    reader.QualitySettings.MinimalXDimension = 5f; // pixels
-                }
-                else
-                {
-                    reader.QualitySettings.XDimension = XDimensionMode.Auto;
-                }
+                Console.WriteLine($"File not found: {file}");
+                continue;
+            }
 
-                // Iterate through all detected barcodes (no further processing needed for profiling).
-                foreach (BarCodeResult result in reader.ReadBarCodes())
+            try
+            {
+                // Initialize reader for Code128 barcodes
+                using (var reader = new BarCodeReader(file, DecodeType.Code128))
                 {
-                    // Intentionally left blank.
+                    // Apply XDimension quality settings based on the flag
+                    if (useMinimal)
+                    {
+                        reader.QualitySettings.XDimension = XDimensionMode.UseMinimalXDimension;
+                        reader.QualitySettings.MinimalXDimension = 1f;
+                    }
+                    else
+                    {
+                        reader.QualitySettings.XDimension = XDimensionMode.Normal;
+                    }
+
+                    // Perform recognition
+                    BarCodeResult[] results = reader.ReadBarCodes();
+                    totalFound += results.Length;
+
+                    // Output each recognized barcode
+                    foreach (BarCodeResult result in results)
+                    {
+                        Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
+                    }
                 }
+            }
+            catch (ArgumentException ex)
+            {
+                // Handle files that cannot be loaded as barcodes
+                Console.WriteLine($"Skipping file due to load error: {ex.Message}");
             }
         }
 
-        stopwatch.Stop();
-        return stopwatch.Elapsed.TotalMilliseconds;
+        watch.Stop();
+        Console.WriteLine($"Total barcodes read: {totalFound}");
+        Console.WriteLine($"Recognition time: {watch.ElapsedMilliseconds} ms");
     }
 }

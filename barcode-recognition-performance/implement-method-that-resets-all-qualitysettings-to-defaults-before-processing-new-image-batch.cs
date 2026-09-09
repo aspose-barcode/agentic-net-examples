@@ -1,91 +1,88 @@
-// Title: Reset QualitySettings to defaults before processing barcode images
-// Description: Demonstrates resetting BarCodeReader QualitySettings to the default NormalQuality preset before reading a batch of barcode images.
-// Category-Description: This example belongs to the Aspose.BarCode image processing category, illustrating how to configure the BarCodeReader's QualitySettings for optimal decoding. It uses key classes such as BarCodeReader, QualitySettings, and BarcodeGenerator, typical for developers who need to batch‑process barcodes with consistent settings. The snippet shows generating sample barcodes, resetting reader settings, and decoding them, a common workflow in inventory or document automation solutions.
+// Title: Reset QualitySettings and Process a Batch of QR Barcodes
+// Description: Demonstrates resetting the BarCodeReader quality settings to defaults before reading a batch of generated QR code images.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It shows how to use BarcodeGenerator to create barcodes, BarCodeReader to decode them, and how to reset QualitySettings (using the NormalQuality preset) between reads. Developers working with image batches often need to ensure consistent decoding performance, making this pattern common for batch processing scenarios.
 // Prompt: Implement a method that resets all QualitySettings to defaults before processing a new image batch.
-// Tags: barcode symbology, reset qualitysettings, batch processing, aspose.barcode, generation, recognition
+// Tags: barcode, qr, qualitysettings, batch processing, generation, recognition, aspose.barcode, csharp
 
 using System;
 using System.IO;
-using Aspose.BarCode;
+using System.Collections.Generic;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates resetting QualitySettings to defaults and batch processing barcode images.
+/// Demonstrates resetting QualitySettings and reading a batch of QR barcodes using Aspose.BarCode.
 /// </summary>
 class Program
 {
-    // Resets the reader's QualitySettings to the default NormalQuality preset.
+    /// <summary>
+    /// Resets the reader's quality settings to the default NormalQuality preset.
+    /// </summary>
+    /// <param name="reader">The BarCodeReader instance whose settings are to be reset.</param>
     static void ResetQualitySettings(BarCodeReader reader)
     {
-        // Assign the NormalQuality preset, which restores default values for all settings.
+        // Apply the default NormalQuality preset
         reader.QualitySettings = QualitySettings.NormalQuality;
-
-        // Explicitly ensure the AllowIncorrectBarcodes flag is set to its default (false).
-        reader.QualitySettings.AllowIncorrectBarcodes = false;
-
-        // Other properties (e.g., BarcodeQuality, InverseImage) revert to their standard defaults
-        // when the preset is applied, so no additional code is required here.
     }
 
     /// <summary>
-    /// Entry point that generates sample barcodes, resets reader settings, and decodes each image.
+    /// Entry point. Generates sample QR barcodes, resets reader quality settings, reads them, and cleans up.
     /// </summary>
     static void Main()
     {
-        // Create a temporary folder to store generated barcode images.
-        string folderPath = Path.Combine(Path.GetTempPath(), "AsposeBarcodeSample");
-        Directory.CreateDirectory(folderPath);
+        // Create a unique temporary folder for the batch
+        string batchFolder = Path.Combine(Path.GetTempPath(), "Batch_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(batchFolder);
 
-        // Define sample texts to encode into barcodes.
-        string[] sampleTexts = { "ABC123", "987XYZ", "Sample001" };
-
-        // Generate barcode images using default generator settings.
-        for (int i = 0; i < sampleTexts.Length; i++)
+        // Generate sample barcode images
+        List<string> barcodeFiles = new List<string>();
+        for (int i = 0; i < 3; i++)
         {
-            string filePath = Path.Combine(folderPath, $"barcode{i + 1}.png");
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, sampleTexts[i]))
-            {
-                // Save the barcode image to the temporary folder.
-                generator.Save(filePath);
-            }
+            BaseEncodeType encodeType = EncodeTypes.QR;
+            string codeText = $"Sample{i}";
+            BarcodeGenerator generator = new BarcodeGenerator(encodeType, codeText);
+            string filePath = Path.Combine(batchFolder, $"barcode{i}.png");
+            generator.Save(filePath, BarCodeImageFormat.Png);
+            barcodeFiles.Add(filePath);
         }
 
-        // Retrieve all generated PNG files for processing.
-        string[] imageFiles = Directory.GetFiles(folderPath, "*.png");
-
-        // Iterate over each image file and decode its barcode.
-        foreach (string imageFile in imageFiles)
+        // Process the batch: read each barcode with reset quality settings
+        foreach (string file in barcodeFiles)
         {
-            // Verify the file exists before attempting to read it.
-            if (!File.Exists(imageFile))
+            if (!File.Exists(file))
             {
-                Console.WriteLine($"File not found: {imageFile}");
+                Console.WriteLine($"File not found: {file}");
                 continue;
             }
 
-            // Initialize a reader for the current image, targeting Code128 barcodes.
-            using (var reader = new BarCodeReader(imageFile, DecodeType.Code128))
+            using (BarCodeReader reader = new BarCodeReader(file, DecodeType.QR))
             {
-                // Reset quality settings to defaults before decoding.
+                // Ensure the reader uses default quality before each read
                 ResetQualitySettings(reader);
-
-                // Read all detected barcodes and output their details.
-                foreach (BarCodeResult result in reader.ReadBarCodes())
+                try
                 {
-                    Console.WriteLine($"File: {Path.GetFileName(imageFile)} | Type: {result.CodeTypeName} | Text: {result.CodeText}");
+                    BarCodeResult[] results = reader.ReadBarCodes();
+                    foreach (BarCodeResult result in results)
+                    {
+                        Console.WriteLine($"File: {Path.GetFileName(file)} | CodeText: {result.CodeText}");
+                    }
+                }
+                catch (ArgumentException ex)
+                {
+                    Console.WriteLine($"Failed to read {Path.GetFileName(file)}: {ex.Message}");
                 }
             }
         }
 
-        // Attempt to clean up the temporary folder; ignore any errors.
+        // Clean up temporary files (optional)
         try
         {
-            Directory.Delete(folderPath, true);
+            Directory.Delete(batchFolder, true);
         }
         catch
         {
-            // Cleanup failure is non‑critical; the OS will eventually reclaim the temporary data.
+            // Ignore cleanup errors
         }
     }
 }

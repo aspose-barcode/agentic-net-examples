@@ -1,92 +1,88 @@
-// Title: Barcode recognition with timeout and logging
-// Description: Demonstrates setting a 200 ms recognition timeout and logging barcodes that exceed the limit.
-// Category-Description: This example belongs to the Aspose.BarCode recognition category, showing how to configure the BarCodeReader timeout, generate sample barcodes, and handle timeout scenarios. It uses BarcodeGenerator, BarCodeReader, and related parameter classes, which developers commonly use for batch scanning and performance tuning.
+// Title: Barcode Recognition with Timeout and Logging
+// Description: Demonstrates generating a Code128 barcode, reading it with a 200 ms timeout, and logging results or timeout events.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes and BarCodeReader for decoding them, highlighting typical scenarios such as setting a recognition timeout, handling timeouts, and logging outcomes. Developers working with barcode scanning, automated data capture, or performance‑critical applications often need these patterns.
 // Prompt: Set a recognition timeout of 200 milliseconds and log any barcodes that exceed the limit.
-// Tags: barcode, recognition, timeout, logging, code128, aspose.barcode, generation, reading
+// Tags: barcode, code128, generation, recognition, timeout, logging, aspose.barcode, .net
 
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Generates sample barcode images, then reads them with a 200 ms timeout,
-/// logging any barcode that exceeds the timeout limit.
+/// Example program that generates a Code128 barcode, attempts to read it with a
+/// 200 ms timeout, and logs the results or any timeout occurrences.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates barcodes, scans them with a timeout,
-    /// and outputs results or timeout notifications to the console.
+    /// Entry point of the application.
     /// </summary>
     static void Main()
     {
-        // ------------------------------------------------------------
-        // Prepare a folder for sample barcode images
-        // ------------------------------------------------------------
-        string folderPath = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
-        if (!Directory.Exists(folderPath))
+        // Create a unique temporary folder for output files
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeTimeoutDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
+
+        // Define the path for the generated barcode image
+        string barcodePath = Path.Combine(tempFolder, "barcode.png");
+
+        // Generate a simple Code128 barcode and save it as PNG
+        BaseEncodeType encodeType = EncodeTypes.Code128;
+        using (BarcodeGenerator generator = new BarcodeGenerator(encodeType, "1234567890"))
         {
-            Directory.CreateDirectory(folderPath);
+            generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        // ------------------------------------------------------------
-        // Generate a few sample barcode images (Code128)
-        // ------------------------------------------------------------
-        string[] sampleTexts = { "1234567890", "ABCDEF", "9876543210" };
-        for (int i = 0; i < sampleTexts.Length; i++)
+        // Prepare a log file and write the start timestamp
+        string logPath = Path.Combine(tempFolder, "log.txt");
+        File.WriteAllText(logPath, $"Barcode generation completed at {DateTime.Now}{Environment.NewLine}");
+
+        // Read the barcode with a timeout of 200 ms
+        using (BarCodeReader reader = new BarCodeReader(barcodePath, DecodeType.Code128))
         {
-            string filePath = Path.Combine(folderPath, $"barcode{i + 1}.png");
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, sampleTexts[i]))
-            {
-                // Optional visual parameters
-                generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-                generator.Parameters.BackColor = Aspose.Drawing.Color.White;
-                generator.Save(filePath);
-            }
-        }
+            reader.Timeout = 200; // milliseconds
 
-        // ------------------------------------------------------------
-        // Scan each image with a recognition timeout of 200 ms
-        // ------------------------------------------------------------
-        string[] imageFiles = Directory.GetFiles(folderPath, "*.png");
-        foreach (string imageFile in imageFiles)
-        {
-            if (!File.Exists(imageFile))
+            try
             {
-                Console.WriteLine($"File not found: {imageFile}");
-                continue;
-            }
+                // Attempt to read barcodes within the timeout period
+                BarCodeResult[] results = reader.ReadBarCodes();
 
-            using (var reader = new BarCodeReader(imageFile))
-            {
-                // Set the timeout (in milliseconds)
-                reader.Timeout = 200;
-
-                try
+                // Log each detected barcode
+                foreach (BarCodeResult result in results)
                 {
-                    bool anyResult = false;
-
-                    // Attempt to read all barcodes in the image
-                    foreach (var result in reader.ReadBarCodes())
-                    {
-                        anyResult = true;
-                        Console.WriteLine($"File: {Path.GetFileName(imageFile)} | Type: {result.CodeTypeName} | Text: {result.CodeText}");
-                    }
-
-                    // If no results were returned, the timeout was exceeded
-                    if (!anyResult)
-                    {
-                        Console.WriteLine($"Timeout exceeded while reading {Path.GetFileName(imageFile)}");
-                    }
+                    string message = $"Found barcode: Type={result.CodeTypeName}, Text={result.CodeText}";
+                    Console.WriteLine(message);
+                    File.AppendAllText(logPath, message + Environment.NewLine);
                 }
-                catch (Exception ex)
+
+                // If no barcodes were found, log that information
+                if (results.Length == 0)
                 {
-                    // Log any unexpected errors (including possible timeout aborts)
-                    Console.WriteLine($"Error processing {Path.GetFileName(imageFile)}: {ex.Message}");
+                    string noResultMsg = "No barcodes were detected within the timeout.";
+                    Console.WriteLine(noResultMsg);
+                    File.AppendAllText(logPath, noResultMsg + Environment.NewLine);
                 }
             }
+            catch (RecognitionAbortedException ex)
+            {
+                // Handle timeout scenario and log execution time
+                string timeoutMsg = $"Recognition timed out after {ex.ExecutionTime} ms.";
+                Console.WriteLine(timeoutMsg);
+                File.AppendAllText(logPath, timeoutMsg + Environment.NewLine);
+            }
+            catch (Exception ex)
+            {
+                // Log any unexpected errors
+                string errorMsg = $"Unexpected error: {ex.Message}";
+                Console.WriteLine(errorMsg);
+                File.AppendAllText(logPath, errorMsg + Environment.NewLine);
+            }
         }
+
+        // Inform the user where the log file is located
+        Console.WriteLine($"Log written to: {logPath}");
     }
 }

@@ -1,76 +1,107 @@
-// Title: Gaussian Blur Removal Before Barcode Detection
-// Description: Demonstrates preprocessing of a barcode image with Gaussian blur removal (deconvolution) to evaluate its effect on detection.
-// Category-Description: This example belongs to the Aspose.BarCode image preprocessing and recognition category. It shows how to generate a sample barcode, then use BarCodeReader with default settings and with high‑quality deconvolution (Fast mode) to compare detection results. Developers working with barcode scanning often need to improve read rates on blurred images, using classes such as BarcodeGenerator, BarCodeReader, QualitySettings, and DeconvolutionMode.
+// Title: Gaussian Blur Removal Impact on Barcode Detection
+// Description: Demonstrates how applying Gaussian blur removal (deconvolution) affects barcode recognition speed and accuracy.
+// Category-Description: This example belongs to the Aspose.BarCode image preprocessing category, showcasing the use of BarCodeReader.QualitySettings.Deconvolution to mitigate blur before detection. Developers often need to compare baseline detection with enhanced preprocessing to optimize performance for blurred images.
 // Prompt: Preprocess input images with Gaussian blur removal before barcode detection to assess performance impact.
-// Tags: barcode symbology, deconvolution, blur removal, image preprocessing, barcode detection, aspose.barcode, code128, qualitysettings
+// Tags: barcode, gaussian blur, deconvolution, performance, preprocessing, aspose.barcode, code128, detection
 
 using System;
 using System.IO;
+using System.Diagnostics;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates a Code128 barcode, then reads it using default settings
-/// and with Gaussian blur removal (deconvolution) enabled to compare detection results.
+/// Generates a Code128 barcode, then reads it twice: once without any preprocessing
+/// and once with Gaussian blur removal (deconvolution). The execution times and
+/// decoded texts are printed for comparison.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
+    /// Entry point of the example. Performs barcode generation, detection with and
+    /// without deconvolution, and outputs the results.
     /// </summary>
     static void Main()
     {
-        // Path for the sample barcode image
-        string barcodePath = "sample_barcode.png";
+        // --------------------------------------------------------------------
+        // Create a unique temporary folder to store the generated barcode image.
+        // --------------------------------------------------------------------
+        string tempDir = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        string barcodePath = Path.Combine(tempDir, "barcode.png");
 
-        // Ensure the barcode image exists; generate it if missing
-        if (!File.Exists(barcodePath))
+        // ---------------------------------------------------------------
+        // Generate a simple Code128 barcode image and save it as PNG.
+        // ---------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
-            {
-                // Configure basic visual appearance
-                generator.Parameters.Barcode.XDimension.Point = 2f;
-                generator.Parameters.Barcode.BarHeight.Point = 40f;
-                generator.Parameters.Barcode.BarColor = Color.Black;
-                generator.Parameters.BackColor = Color.White;
-
-                // Save the generated barcode to a PNG file
-                generator.Save(barcodePath, BarCodeImageFormat.Png);
-                Console.WriteLine($"Generated barcode image: {barcodePath}");
-            }
-        }
-        else
-        {
-            Console.WriteLine($"Using existing barcode image: {barcodePath}");
+            generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        // Local function to read the barcode and output detection results
-        void ReadAndReport(string description, Action<BarCodeReader> configureReader)
-        {
-            // Initialize the reader for all supported barcode types
-            using (var reader = new BarCodeReader(barcodePath, DecodeType.AllSupportedTypes))
-            {
-                // Apply any custom reader configuration (e.g., deconvolution settings)
-                configureReader?.Invoke(reader);
+        // ---------------------------------------------------------------
+        // Read the barcode without any deconvolution (baseline measurement).
+        // ---------------------------------------------------------------
+        long timeWithout;
+        string resultWithout;
+        var sw = new Stopwatch();
+        sw.Start();
 
-                // Iterate through all detected barcodes and report them
-                foreach (var result in reader.ReadBarCodes())
-                {
-                    Console.WriteLine($"{description} - Detected Type: {result.CodeTypeName}, Text: {result.CodeText}");
-                }
+        using (var reader = new BarCodeReader(barcodePath, DecodeType.AllSupportedTypes))
+        {
+            resultWithout = null;
+            foreach (var res in reader.ReadBarCodes())
+            {
+                resultWithout = res.CodeText;
+                break; // Stop after the first successful read.
             }
         }
 
-        // Read barcode with default settings (no preprocessing)
-        ReadAndReport("Default Settings", null);
+        sw.Stop();
+        timeWithout = sw.ElapsedMilliseconds;
 
-        // Read barcode with deconvolution (blur removal) enabled for high-quality detection
-        ReadAndReport("Deconvolution (Fast) Enabled", r =>
+        // ---------------------------------------------------------------
+        // Read the barcode with Gaussian blur removal (Deconvolution mode set to Normal).
+        // ---------------------------------------------------------------
+        long timeWith;
+        string resultWith;
+        sw.Restart();
+
+        using (var reader = new BarCodeReader(barcodePath, DecodeType.AllSupportedTypes))
         {
-            r.QualitySettings = QualitySettings.HighQuality;
-            r.QualitySettings.Deconvolution = DeconvolutionMode.Fast;
-        });
+            // Enable deconvolution to mitigate blur before detection.
+            reader.QualitySettings.Deconvolution = DeconvolutionMode.Normal;
+
+            resultWith = null;
+            foreach (var res in reader.ReadBarCodes())
+            {
+                resultWith = res.CodeText;
+                break; // Stop after the first successful read.
+            }
+        }
+
+        sw.Stop();
+        timeWith = sw.ElapsedMilliseconds;
+
+        // ---------------------------------------------------------------
+        // Output the comparison results to the console.
+        // ---------------------------------------------------------------
+        Console.WriteLine($"Without deconvolution: Text = '{resultWithout ?? "null"}', Time = {timeWithout} ms");
+        Console.WriteLine($"With deconvolution (Normal): Text = '{resultWith ?? "null"}', Time = {timeWith} ms");
+
+        // ---------------------------------------------------------------
+        // Clean up temporary files and directory.
+        // ---------------------------------------------------------------
+        try
+        {
+            if (File.Exists(barcodePath))
+                File.Delete(barcodePath);
+            if (Directory.Exists(tempDir))
+                Directory.Delete(tempDir, true);
+        }
+        catch
+        {
+            // Ignored - cleanup failure should not affect program exit.
+        }
     }
 }

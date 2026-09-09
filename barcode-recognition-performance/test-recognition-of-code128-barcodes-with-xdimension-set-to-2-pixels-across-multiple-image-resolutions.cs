@@ -1,86 +1,85 @@
-// Title: Code128 Barcode Generation and Recognition with Variable DPI and XDimension
-// Description: Demonstrates generating a Code128 barcode with XDimension set to 2 pixels at several DPI settings, then recognizing it to verify the encoded text.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes and BarCodeReader for decoding them. Developers often need to adjust XDimension and image resolution to meet printing or scanning requirements, making this pattern common in inventory, shipping, and retail applications.
+// Title: Code128 Barcode Generation and Recognition with XDimension = 2 Pixels at Multiple Resolutions
+// Description: Demonstrates generating Code128 barcodes with an XDimension of 2 pixels, saving them at various DPI settings, and then recognizing them using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator, BarCodeReader, and related parameter classes to create and read barcodes. Developers often need to adjust XDimension and image resolution for optimal scanning across devices, making this pattern useful for testing and quality assurance.
 // Prompt: Test recognition of Code128 barcodes with XDimension set to 2 pixels across multiple image resolutions.
-// Tags: code128, barcode generation, barcode recognition, png, xdimension, resolution, aspnet.barcode, aspnet.barcode.generator, aspnet.barcode.reader
+// Tags: code128, barcode generation, barcode recognition, xdimension, resolution, aspose.barcode, png, c#
 
 using System;
 using System.IO;
+using System.Collections.Generic;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Generates Code128 barcodes at multiple DPI settings with a fixed XDimension,
-/// saves them as PNG files, and then reads them back to verify successful recognition.
+/// Demonstrates generating Code128 barcodes with a specific XDimension and recognizing them across multiple image resolutions.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Executes barcode creation, saving, and recognition loops.
+    /// Entry point that creates temporary barcodes, saves them, reads them back, and cleans up resources.
     /// </summary>
     static void Main()
     {
-        // Text to encode in the barcode
-        const string codeText = "CODE128TEST";
+        // Create a unique temporary folder for generated images
+        string tempFolder = Path.Combine(Path.GetTempPath(), "Code128XDimTest_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
 
-        // Array of DPI values to test (low, medium, high resolution)
-        int[] resolutions = { 96, 150, 300 };
+        // Define test parameters
+        string codeText = "Test123";
+        float[] resolutions = new float[] { 72f, 150f, 300f };
+        List<string> generatedFiles = new List<string>();
 
-        // Prepare output directory for generated barcode images
-        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
-        if (!Directory.Exists(outputDir))
+        try
         {
-            Directory.CreateDirectory(outputDir);
-        }
-
-        // Iterate over each DPI setting
-        foreach (int dpi in resolutions)
-        {
-            // Build file name that includes the DPI value
-            string filePath = Path.Combine(outputDir, $"code128_{dpi}dpi.png");
-
-            // ---------- Barcode Generation ----------
-            // Create a generator for Code128 with the specified text
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+            // Generate barcodes at different resolutions with XDimension = 2 pixels
+            foreach (float dpi in resolutions)
             {
-                // Set module size to 2 pixels (XDimension) and image resolution
-                generator.Parameters.Barcode.XDimension.Pixels = 2f;
-                generator.Parameters.Resolution = dpi;
-
-                // Save the generated barcode as a PNG image
-                generator.Save(filePath, BarCodeImageFormat.Png);
-            }
-
-            // Verify that the image file was successfully created
-            if (!File.Exists(filePath))
-            {
-                Console.WriteLine($"Failed to create barcode image at {filePath}");
-                continue;
-            }
-
-            // ---------- Barcode Recognition ----------
-            // Initialize a reader for Code128 barcodes from the saved image
-            using (var reader = new BarCodeReader(filePath, DecodeType.Code128))
-            {
-                // Optional: adjust XDimension handling for low‑resolution images
-                // reader.QualitySettings.XDimension = XDimensionMode.UseMinimalXDimension;
-
-                // Perform the recognition
-                var results = reader.ReadBarCodes();
-
-                // Output recognition results
-                if (results.Length == 0)
+                string filePath = Path.Combine(tempFolder, $"code128_{dpi}.png");
+                using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
                 {
-                    Console.WriteLine($"Resolution {dpi} DPI: No barcode detected.");
+                    // Set XDimension to 2 pixels (point unit)
+                    generator.Parameters.Barcode.XDimension.Point = 2f;
+                    // Set image resolution (DPI)
+                    generator.Parameters.Resolution = dpi;
+                    // Save barcode image as PNG
+                    generator.Save(filePath, BarCodeImageFormat.Png);
+                }
+
+                // Verify file creation and record the path
+                if (File.Exists(filePath))
+                {
+                    generatedFiles.Add(filePath);
+                    Console.WriteLine($"Generated barcode at {dpi} DPI: {filePath}");
                 }
                 else
                 {
-                    foreach (var result in results)
+                    Console.WriteLine($"Failed to generate barcode at {dpi} DPI.");
+                }
+            }
+
+            // Recognize each generated barcode
+            foreach (string file in generatedFiles)
+            {
+                using (var reader = new BarCodeReader(file, DecodeType.Code128))
+                {
+                    BarCodeResult[] results = reader.ReadBarCodes();
+                    Console.WriteLine($"Reading '{Path.GetFileName(file)}': {results.Length} barcode(s) detected.");
+                    foreach (BarCodeResult result in results)
                     {
-                        Console.WriteLine($"Resolution {dpi} DPI: Detected CodeText = {result.CodeText}");
+                        Console.WriteLine($"  Type: {result.CodeTypeName}, Text: {result.CodeText}");
                     }
                 }
             }
+        }
+        finally
+        {
+            // Clean up temporary files and folder
+            foreach (string file in generatedFiles)
+            {
+                try { File.Delete(file); } catch { }
+            }
+            try { Directory.Delete(tempFolder, true); } catch { }
         }
     }
 }
