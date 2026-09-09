@@ -1,54 +1,38 @@
-// Title: Barcode generation from JSON payload in a console demo
-// Description: Demonstrates how to deserialize a JSON request, map its properties to Aspose.BarCode settings, and generate a PNG barcode image.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and rendering options. Developers often need to create barcodes dynamically from client data in web APIs or services, and this snippet shows the typical workflow of parsing input, configuring parameters, and producing an image.
+// Title: Generate Barcode from JSON Payload Demo
+// Description: Demonstrates deserializing a JSON request containing barcode data, resolving the symbology, and generating a PNG barcode image using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use the BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes to create barcodes programmatically. Typical use cases include generating barcodes for invoices, shipping labels, or embedding them in web API responses. Developers often need to convert user‑provided data into visual barcode formats for downstream processing or display.
 // Prompt: Integrate barcode generation into a web API endpoint that receives JSON payload and returns the barcode image.
-// Tags: barcode, generation, json, deserialization, aspose.barcode, aspnet core, api, png, image
+// Tags: barcode, symbology, generation, png, aspose.barcode, json, csharp
 
 using System;
 using System.IO;
 using System.Text.Json;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates barcode generation based on a JSON request payload.
+/// Demonstrates barcode generation from a JSON payload using Aspose.BarCode.
 /// </summary>
 class Program
 {
-    // Model representing the expected JSON payload
-    public class BarcodeRequest
-    {
-        public string Symbology { get; set; }
-        public string CodeText { get; set; }
-        public float? XDimension { get; set; }
-        public float? BarHeight { get; set; }
-        public string BarColor { get; set; }
-    }
-
     /// <summary>
-    /// Entry point that simulates receiving a JSON payload, creates a barcode, and outputs the image.
+    /// Entry point that simulates receiving a JSON request, generates a barcode, and outputs the image as a Base64 string.
     /// </summary>
     static void Main()
     {
-        // Simulated incoming JSON request
-        string json = @"{
-            ""Symbology"": ""Code128"",
-            ""CodeText"": ""123ABC"",
-            ""XDimension"": 2.0,
-            ""BarHeight"": 50.0,
-            ""BarColor"": ""Blue""
-        }";
+        // Simulated JSON payload representing a web API request
+        string json = "{\"codeText\":\"1234567890\",\"symbology\":\"Code128\"}";
+        Console.WriteLine("Input JSON: " + json);
 
-        // Deserialize the JSON payload
-        BarcodeRequest request = JsonSerializer.Deserialize<BarcodeRequest>(json);
-        if (request == null)
+        // Deserialize JSON into a strongly‑typed request object
+        BarcodeRequest? request = JsonSerializer.Deserialize<BarcodeRequest>(json);
+        if (request == null || string.IsNullOrEmpty(request.CodeText) || string.IsNullOrEmpty(request.Symbology))
         {
             Console.WriteLine("Invalid request payload.");
             return;
         }
 
-        // Resolve the symbology name to a BaseEncodeType using reflection
+        // Resolve symbology name to BaseEncodeType using reflection
         var field = typeof(EncodeTypes).GetField(request.Symbology);
         if (field == null)
         {
@@ -57,40 +41,31 @@ class Program
         }
         BaseEncodeType encodeType = (BaseEncodeType)field.GetValue(null);
 
-        // Create the barcode generator with the resolved type and provided code text
-        using (var generator = new BarcodeGenerator(encodeType, request.CodeText ?? string.Empty))
+        // Generate barcode image with the specified symbology and text
+        using (var generator = new BarcodeGenerator(encodeType, request.CodeText))
         {
-            // Apply optional parameters if they are present
-            if (request.XDimension.HasValue)
-                generator.Parameters.Barcode.XDimension.Point = request.XDimension.Value;
+            generator.Parameters.Resolution = 300f; // optional high resolution
 
-            if (request.BarHeight.HasValue && request.BarHeight.Value > 0)
-                generator.Parameters.Barcode.BarHeight.Point = request.BarHeight.Value;
-
-            if (!string.IsNullOrEmpty(request.BarColor))
-            {
-                // Map color name to Aspose.Drawing.Color static property (e.g., Color.Blue)
-                var colorProp = typeof(Color).GetProperty(request.BarColor);
-                if (colorProp != null)
-                {
-                    generator.Parameters.Barcode.BarColor = (Color)colorProp.GetValue(null);
-                }
-            }
-
-            // Generate the barcode image into a memory stream as PNG
+            // Save the barcode to a memory stream in PNG format
             using (var ms = new MemoryStream())
             {
                 generator.Save(ms, BarCodeImageFormat.Png);
-                ms.Position = 0;
+                byte[] imageBytes = ms.ToArray();
 
-                // Output the image as a Base64 string (simulating an HTTP response body)
-                string base64 = Convert.ToBase64String(ms.ToArray());
-                Console.WriteLine("Barcode image (Base64 PNG):");
+                // Convert the PNG bytes to a Base64 string for easy transport
+                string base64 = Convert.ToBase64String(imageBytes);
+                Console.WriteLine("Generated barcode image (Base64 PNG):");
                 Console.WriteLine(base64);
-
-                // Also write the image to a file for local verification
-                File.WriteAllBytes("output.png", ms.ToArray());
             }
         }
+    }
+
+    /// <summary>
+    /// Represents the expected JSON payload for barcode generation.
+    /// </summary>
+    class BarcodeRequest
+    {
+        public string CodeText { get; set; } = "";
+        public string Symbology { get; set; } = "";
     }
 }

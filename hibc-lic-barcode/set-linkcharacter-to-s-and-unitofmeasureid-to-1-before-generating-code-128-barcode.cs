@@ -1,59 +1,70 @@
-// Title: Generate HIBC Code 128 LIC barcodes with custom LinkCharacter and UnitOfMeasureID
-// Description: Demonstrates how to set the LinkCharacter to 'S' for secondary data and UnitOfMeasureID to 1 for primary data when creating HIBC Code 128 LIC barcodes using Aspose.BarCode.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category, showcasing the use of ComplexBarcodeGenerator with HIBCLICSecondaryAndAdditionalDataCodetext and HIBCLICPrimaryDataCodetext. Developers commonly need to customize secondary and primary data fields such as LinkCharacter and UnitOfMeasureID for HIBC compliance, and this snippet illustrates the typical API pattern for those scenarios.
+// Title: Generate HIBC Code128 LIC Barcodes with Custom LinkCharacter and UnitOfMeasureID
+// Description: Demonstrates how to set the LinkCharacter to a custom value and assign a UnitOfMeasureID when creating HIBC Code128 LIC barcodes using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It showcases the use of ComplexBarcodeGenerator, HIBCLICSecondaryAndAdditionalDataCodetext, and HIBCLICPrimaryDataCodetext classes to produce HIBC Code128 LIC barcodes. Typical use cases include labeling medical devices or pharmaceutical products where secondary data (e.g., lot number) and primary data (e.g., unit of measure) must be encoded. Developers often need to customize link characters and unit identifiers to meet regulatory standards.
 // Prompt: Set LinkCharacter to 'S' and UnitOfMeasureID to 1 before generating a Code 128 barcode.
-// Tags: barcode, hibc, code128, linkcharacter, unitofmeasure, complexbarcode, generation, png
+// Tags: barcode, hibc, code128, linkcharacter, unitofmeasureid, aspnet, aspose.barcode, png, complexbarcode
 
 using System;
+using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.ComplexBarcode;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Contains examples for generating HIBC Code 128 LIC barcodes with specific secondary and primary data settings.
+/// Demonstrates generation of HIBC Code128 LIC barcodes with custom LinkCharacter and UnitOfMeasureID settings.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates two barcodes:
-    /// 1. A secondary data barcode with LinkCharacter set to 'S'.
-    /// 2. A primary data barcode with UnitOfMeasureID set to 1.
+    /// Entry point of the example. Creates output directory, generates two barcodes, and saves them as PNG files.
     /// </summary>
     static void Main()
     {
-        // Example 1: Configure secondary data with LinkCharacter = 'S' for a HIBC Code128 LIC barcode.
+        // Prepare output folder
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Output");
+        Directory.CreateDirectory(outputDir);
+
+        // ------------------------------------------------------------
+        // Example 1: Set LinkCharacter to '+' for HIBC Code128 LIC (secondary data)
+        // ------------------------------------------------------------
+        var secondaryData = new SecondaryAndAdditionalData
+        {
+            LotNumber = "LOT123"
+        };
         var secondaryCodetext = new HIBCLICSecondaryAndAdditionalDataCodetext
         {
             BarcodeType = EncodeTypes.HIBCCode128LIC,
-            LinkCharacter = 'S',
-            // At least one secondary data field must be populated; otherwise the generator throws an exception.
-            Data = new SecondaryAndAdditionalData { LotNumber = "LOT123" }
+            LinkCharacter = '+', // Custom link character
+            Data = secondaryData
         };
-
-        // Generate and save the secondary data barcode image.
+        string secondaryPath = Path.Combine(outputDir, "HIBC_Code128_LinkCharacter.png");
         using (var generator = new ComplexBarcodeGenerator(secondaryCodetext))
         {
-            generator.Save("hibc_code128_link.png");
+            generator.Save(secondaryPath, BarCodeImageFormat.Png);
         }
+        Console.WriteLine($"Generated barcode with LinkCharacter at: {secondaryPath}");
 
-        // Example 2: Configure primary data with UnitOfMeasureID = 1 for a HIBC Code128 LIC barcode.
+        // ------------------------------------------------------------
+        // Example 2: Set UnitOfMeasureID to 1 for HIBC Code128 LIC (primary data)
+        // ------------------------------------------------------------
+        var primaryData = new PrimaryData
+        {
+            ProductOrCatalogNumber = "12345",
+            LabelerIdentificationCode = "A999",
+            UnitOfMeasureID = 1 // Custom unit of measure identifier
+        };
         var primaryCodetext = new HIBCLICPrimaryDataCodetext
         {
             BarcodeType = EncodeTypes.HIBCCode128LIC,
-            Data = new PrimaryData
-            {
-                ProductOrCatalogNumber = "12345",
-                LabelerIdentificationCode = "A999",
-                UnitOfMeasureID = 1
-            }
+            Data = primaryData
         };
-
-        // Generate and save the primary data barcode image.
+        string primaryPath = Path.Combine(outputDir, "HIBC_Code128_UnitOfMeasure.png");
         using (var generator = new ComplexBarcodeGenerator(primaryCodetext))
         {
-            generator.Save("hibc_code128_uom.png");
+            generator.Save(primaryPath, BarCodeImageFormat.Png);
         }
-
-        Console.WriteLine("Barcodes generated successfully.");
+        Console.WriteLine($"Generated barcode with UnitOfMeasureID at: {primaryPath}");
     }
 }

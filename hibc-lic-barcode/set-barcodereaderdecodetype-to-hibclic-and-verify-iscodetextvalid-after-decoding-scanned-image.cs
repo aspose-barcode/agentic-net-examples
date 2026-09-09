@@ -1,66 +1,88 @@
-// Title: Decode HIBC Code128 LIC barcode and validate decoded text
-// Description: Demonstrates generating a HIBC LIC barcode, decoding it with BarCodeReader using the HIBCCode128LIC decode type, and checking that the decoded text is present.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the ComplexBarcodeGenerator for creating HIBC (Health Industry Bar Code) LIC (Labeler Identification Code) barcodes and the BarCodeReader for decoding them. Developers working with medical or pharmaceutical labeling often need to generate HIBC barcodes, scan them from images, and verify the extracted data using classes such as HIBCLICPrimaryDataCodetext, ComplexBarcodeGenerator, BarCodeReader, and DecodeType.
+// Title: Demonstrate HIBCLIC barcode generation and validation using Aspose.BarCode
+// Description: This example creates a HIBCLIC barcode image, decodes it with the HIBC QRLIC decode type, and checks if the decoded text is non‑empty as a simple validity test.
+// Category-Description: Shows how to work with Aspose.BarCode's ComplexBarcodeGenerator and BarCodeReader for HIBCLIC symbology. The example covers creating primary and secondary data, saving the barcode as PNG, reading it back with a specific DecodeType, and performing a basic validation of the decoded text. Developers dealing with healthcare barcodes often need to generate and verify HIBCLIC codes using these core API classes.
 // Prompt: Set BarCodeReader.DecodeType to HIBCLIC and verify IsCodeTextValid after decoding a scanned image.
-// Tags: hibc, lic, barcode, decode, validation, aspose.barcode, complexbarcode, generation, recognition
+// Tags: hibc, decode, validation, png, complexbarcode, barcodereader
 
 using System;
 using System.IO;
-using Aspose.BarCode.ComplexBarcode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.BarCode.ComplexBarcode;
+using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates a HIBC Code128 LIC barcode, decodes it,
-/// and simulates validation of the decoded text.
+/// Example program that generates a HIBCLIC barcode, reads it back, and validates the decoded text.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a barcode, reads it back,
-    /// and prints the decoded text along with a simple validity check.
+    /// Entry point of the example. Generates a barcode, decodes it, and outputs validation results.
     /// </summary>
     static void Main()
     {
-        // Create HIBC LIC primary data codetext (Code128 variant)
-        var hibcCodetext = new HIBCLICPrimaryDataCodetext
+        // Create a temporary directory to store the generated barcode image
+        string tempDir = Path.Combine(Path.GetTempPath(), "HIBCLICDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        string imagePath = Path.Combine(tempDir, "hibclic.png");
+
+        // Prepare primary data required for HIBCLIC
+        var primaryData = new PrimaryData
         {
-            BarcodeType = EncodeTypes.HIBCCode128LIC,
-            Data = new PrimaryData
-            {
-                ProductOrCatalogNumber = "12345",
-                LabelerIdentificationCode = "A999",
-                UnitOfMeasureID = 1
-            }
+            ProductOrCatalogNumber = "12345",
+            LabelerIdentificationCode = "A999",
+            UnitOfMeasureID = 1
         };
 
-        // Generate the barcode image into a memory stream
-        using (var barcodeStream = new MemoryStream())
+        // Prepare secondary data with the required link character
+        var secondaryCodetext = new HIBCLICSecondaryAndAdditionalDataCodetext
         {
-            // Use ComplexBarcodeGenerator to create the barcode
-            using (var generator = new ComplexBarcodeGenerator(hibcCodetext))
+            Data = new SecondaryAndAdditionalData { LotNumber = "LOT123" },
+            LinkCharacter = '+'
+        };
+
+        // Combine primary and secondary data into a single codetext object
+        var combinedCodetext = new HIBCLICCombinedCodetext
+        {
+            PrimaryData = primaryData,
+            SecondaryAndAdditionalData = secondaryCodetext.Data
+        };
+
+        // Generate the barcode image and save it as PNG
+        using (var generator = new ComplexBarcodeGenerator(combinedCodetext))
+        {
+            generator.Save(imagePath, BarCodeImageFormat.Png);
+        }
+
+        // Verify that the image file was created successfully
+        if (!File.Exists(imagePath))
+        {
+            Console.WriteLine("Failed to create barcode image.");
+            return;
+        }
+
+        // Read the barcode using the HIBC QRLIC decode type
+        using (var reader = new BarCodeReader(imagePath, DecodeType.HIBCQRLIC))
+        {
+            foreach (BarCodeResult result in reader.ReadBarCodes())
             {
-                generator.Save(barcodeStream, BarCodeImageFormat.Png);
+                // Simple validation: consider the code text valid if it is not null or empty
+                bool isValid = !string.IsNullOrEmpty(result.CodeText);
+                Console.WriteLine($"Decoded CodeText: {result.CodeText}");
+                Console.WriteLine($"IsCodeTextValid (simulated): {isValid}");
             }
+        }
 
-            // Reset stream position to the beginning for reading
-            barcodeStream.Position = 0;
-
-            // Create BarCodeReader configured for HIBC Code128 LIC decoding
-            using (var reader = new BarCodeReader(barcodeStream, DecodeType.HIBCCode128LIC))
-            {
-                // Read all barcodes found in the stream
-                var results = reader.ReadBarCodes();
-
-                // Iterate through each detection result
-                foreach (var result in results)
-                {
-                    // Simulate IsCodeTextValid by checking that CodeText is not null or empty
-                    bool isCodeTextValid = !string.IsNullOrEmpty(result.CodeText);
-                    Console.WriteLine($"Decoded Text: {result.CodeText}");
-                    Console.WriteLine($"IsCodeTextValid (simulated): {isCodeTextValid}");
-                }
-            }
+        // Clean up temporary files and directory
+        try
+        {
+            File.Delete(imagePath);
+            Directory.Delete(tempDir);
+        }
+        catch
+        {
+            // Ignore any errors during cleanup
         }
     }
 }

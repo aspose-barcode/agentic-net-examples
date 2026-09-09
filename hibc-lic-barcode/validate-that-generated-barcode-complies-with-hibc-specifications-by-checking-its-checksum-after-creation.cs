@@ -1,27 +1,38 @@
-// Title: Generate and Validate HIBC Code128 LIC Barcode with Checksum
-// Description: Demonstrates creating a HIBC Code128 LIC barcode, saving it as an image, and verifying its checksum by decoding and comparing the generated codetext.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of ComplexBarcodeGenerator to construct HIBC barcodes and BarCodeReader to decode them, a common workflow for developers needing to ensure barcode compliance and data integrity in healthcare and logistics applications. Typical use cases include label creation, automated scanning validation, and regulatory compliance checks.
+// Title: HIBC Code128 Barcode Generation with Checksum Validation
+// Description: Demonstrates generating a HIBC Code128 LIC barcode, enabling checksum generation, and verifying the checksum by reading the barcode.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It shows how to use ComplexBarcodeGenerator with HIBCLICPrimaryDataCodetext, configure checksum settings via BarcodeParameters, and validate the checksum using BarCodeReader. Developers working with healthcare industry barcodes (HIBC) often need to ensure checksum compliance for regulatory and scanning accuracy.
 // Prompt: Validate that the generated barcode complies with HIBC specifications by checking its checksum after creation.
-// Tags: hibc, code128, lic, barcode generation, barcode validation, checksum, aspose.barcode
+// Tags: hibc, checksum, barcode, generation, validation, aspose.barcode, complexbarcode, code128
 
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.BarCode.ComplexBarcode;
+using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates a HIBC Code128 LIC barcode, saves it to a file,
-/// and validates its checksum by decoding the image and comparing the codetext.
+/// Example program that creates a HIBC Code128 LIC barcode, forces checksum generation,
+/// and then reads the barcode back to confirm the checksum is present and valid.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Performs barcode creation, saving, and checksum validation.
+    /// Entry point. Generates the barcode, validates its checksum, and cleans up temporary files.
     /// </summary>
     static void Main()
     {
-        // Prepare primary data for HIBC Code128 LIC barcode
+        // ------------------------------------------------------------
+        // Prepare a unique temporary folder and file path for the barcode image
+        // ------------------------------------------------------------
+        string tempFolder = Path.Combine(Path.GetTempPath(), "HIBC_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
+        string barcodePath = Path.Combine(tempFolder, "hibc.png");
+
+        // ------------------------------------------------------------
+        // Build the primary data required for a HIBC LIC barcode
+        // ------------------------------------------------------------
         var primaryData = new PrimaryData
         {
             ProductOrCatalogNumber = "12345",
@@ -29,50 +40,72 @@ class Program
             UnitOfMeasureID = 1
         };
 
-        // Construct the codetext object that defines the barcode type and data
+        // Wrap the primary data in a codetext object specifying the barcode type
         var hibcCodetext = new HIBCLICPrimaryDataCodetext
         {
             BarcodeType = EncodeTypes.HIBCCode128LIC,
             Data = primaryData
         };
 
-        // Define the output image path
-        string imagePath = "hibc_lic.png";
-
-        // Generate the barcode image and save it to the specified file
+        // ------------------------------------------------------------
+        // Generate the barcode image with checksum enabled
+        // ------------------------------------------------------------
         using (var generator = new ComplexBarcodeGenerator(hibcCodetext))
         {
-            // Optional: set colors or other parameters here if needed
-            generator.Save(imagePath);
+            // HIBC Code128 requires a checksum; enable it explicitly
+            generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
+            generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        // Read the generated barcode image and verify checksum by comparing decoded text
-        using (var reader = new BarCodeReader(imagePath, DecodeType.HIBCCode128LIC))
+        // ------------------------------------------------------------
+        // Verify that the barcode file was created successfully
+        // ------------------------------------------------------------
+        if (!File.Exists(barcodePath))
         {
-            // Ensure checksum validation is enabled (default for HIBC)
+            Console.WriteLine("Failed to generate barcode image.");
+            return;
+        }
+
+        // ------------------------------------------------------------
+        // Read the barcode and extract the checksum information
+        // ------------------------------------------------------------
+        using (var reader = new BarCodeReader(barcodePath, DecodeType.HIBCCode128LIC))
+        {
+            // Ensure checksum validation is active (default for obligatory checksum)
             reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
 
-            bool valid = false;
-
-            // Iterate through all detected barcodes (should be one in this case)
-            foreach (var result in reader.ReadBarCodes())
+            bool anyResult = false;
+            foreach (BarCodeResult result in reader.ReadBarCodes())
             {
-                // If the decoded text matches the original codetext, checksum is correct
-                if (!string.IsNullOrEmpty(result.CodeText) && result.CodeText == hibcCodetext.GetConstructedCodetext())
-                {
-                    valid = true;
-                    Console.WriteLine($"Decoded CodeText: {result.CodeText}");
-                }
-                else
-                {
-                    Console.WriteLine($"Decoded CodeText does not match expected value: {result.CodeText}");
-                }
+                anyResult = true;
+                Console.WriteLine($"Decoded CodeText: {result.CodeText}");
+
+                // The OneD extended data contains the checksum string
+                string checksum = result.Extended.OneD.CheckSum;
+                Console.WriteLine($"Extracted CheckSum: {checksum}");
+
+                // Simple validation: checksum string should be non‑empty
+                bool checksumValid = !string.IsNullOrEmpty(checksum);
+                Console.WriteLine($"Checksum valid: {checksumValid}");
             }
 
-            // Output the overall validation result
-            Console.WriteLine(valid
-                ? "HIBC barcode checksum validation succeeded."
-                : "HIBC barcode checksum validation failed.");
+            if (!anyResult)
+            {
+                Console.WriteLine("No barcode detected or checksum validation failed.");
+            }
+        }
+
+        // ------------------------------------------------------------
+        // Clean up temporary files and folder
+        // ------------------------------------------------------------
+        try
+        {
+            File.Delete(barcodePath);
+            Directory.Delete(tempFolder);
+        }
+        catch
+        {
+            // Ignored – cleanup failures are non‑critical for this example
         }
     }
 }

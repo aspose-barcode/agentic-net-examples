@@ -1,69 +1,95 @@
-// Title: Decode a Base64‑encoded HIBC LIC barcode from a memory stream
-// Description: Demonstrates how to convert a Base64 string containing a HIBC LIC barcode image into a byte array, load it into a MemoryStream, and decode it using Aspose.BarCode without writing any files to disk.
-// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, focusing on in‑memory image processing. It showcases the BarCodeReader class with the DecodeType.HIBCCode128LIC enumeration, a common scenario for applications that receive barcode images via APIs or messaging queues and need to extract data instantly. Developers often use this pattern to avoid I/O overhead when handling barcode images in web services or background jobs.
+// Title: Decode HIBC LIC barcode from Base64 string using memory streams
+// Description: Demonstrates generating a HIBC LIC QR barcode, encoding it to a Base64 string, then decoding it back from memory without writing files.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It shows how to use ComplexBarcodeGenerator to create HIBC LIC barcodes, BarCodeReader for decoding, and memory streams for in‑memory processing. Developers working with healthcare barcodes often need to generate, transmit, and read HIBC codes without persisting images to disk, making this pattern useful for web services and automated pipelines.
 // Prompt: Decode a base64‑encoded HIBC LIC barcode image string using a memory stream without writing to disk.
-// Tags: barcode, hibc, lic, decode, base64, memory stream, aspose.barcode, barcodereader
+// Tags: hibc, lic, barcode, generation, recognition, base64, memorystream, aspnet, csharp
 
 using System;
 using System.IO;
 using Aspose.BarCode;
+using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.BarCode.ComplexBarcode;
 
 /// <summary>
-/// Example program that decodes a HIBC LIC barcode from a Base64‑encoded image using an in‑memory stream.
+/// Example program that generates a HIBC LIC QR barcode, converts it to a Base64 string,
+/// then decodes the string back to an image and reads the barcode data—all using memory streams.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Converts a Base64 string to a byte array, creates a MemoryStream,
-    /// and reads the barcode using Aspose.BarCode's BarCodeReader.
+    /// Entry point of the example. Performs barcode generation, Base64 encoding, decoding, and reading.
     /// </summary>
     static void Main()
     {
-        // Base64‑encoded image of a HIBC LIC barcode.
-        // Replace the placeholder with an actual Base64 string when available.
-        string base64Image = "iVBORw0KGgoAAAANSUhEUgAA...";
-
-        // Validate that the Base64 string is not empty or whitespace.
-        if (string.IsNullOrWhiteSpace(base64Image))
+        // Prepare primary data for the HIBC LIC barcode
+        HIBCLICPrimaryDataCodetext primaryData = new HIBCLICPrimaryDataCodetext
         {
-            Console.WriteLine("No base64 image data provided.");
-            return;
-        }
-
-        byte[] imageBytes;
-        try
-        {
-            // Convert the Base64 string to a byte array.
-            imageBytes = Convert.FromBase64String(base64Image);
-        }
-        catch (FormatException)
-        {
-            // Handle invalid Base64 format.
-            Console.WriteLine("Invalid base64 string.");
-            return;
-        }
-
-        // Load the image bytes into a memory stream to avoid disk I/O.
-        using (var memoryStream = new MemoryStream(imageBytes))
-        {
-            // Initialize the barcode reader for HIBC Code128 LIC symbology.
-            using (var reader = new BarCodeReader(memoryStream, DecodeType.HIBCCode128LIC))
+            BarcodeType = EncodeTypes.HIBCQRLIC,
+            Data = new PrimaryData
             {
-                // Perform the barcode detection.
-                var results = reader.ReadBarCodes();
+                ProductOrCatalogNumber = "12345",
+                LabelerIdentificationCode = "A999",
+                UnitOfMeasureID = 1
+            }
+        };
 
-                // Check if any barcodes were found.
-                if (results.Length == 0)
+        // Generate the barcode image directly into a memory stream
+        using (ComplexBarcodeGenerator generator = new ComplexBarcodeGenerator(primaryData))
+        {
+            // Set barcode visual parameters (e.g., module size)
+            generator.Parameters.Barcode.XDimension.Pixels = 10;
+
+            using (MemoryStream generationStream = new MemoryStream())
+            {
+                // Save the generated barcode as PNG into the stream
+                generator.Save(generationStream, BarCodeImageFormat.Png);
+
+                // Convert the image bytes to a Base64 string for transport or storage
+                string base64Image = Convert.ToBase64String(generationStream.ToArray());
+                Console.WriteLine("Base64-encoded barcode image:");
+                Console.WriteLine(base64Image);
+                Console.WriteLine();
+
+                // Decode the Base64 string back to raw image bytes
+                byte[] imageBytes = Convert.FromBase64String(base64Image);
+                using (MemoryStream decodeStream = new MemoryStream(imageBytes))
                 {
-                    Console.WriteLine("No barcode detected.");
-                }
-                else
-                {
-                    // Output each decoded barcode's text.
-                    foreach (var result in results)
+                    // Initialize a barcode reader for the HIBC LIC QR symbology
+                    using (BarCodeReader reader = new BarCodeReader(decodeStream, DecodeType.HIBCQRLIC))
                     {
-                        Console.WriteLine("Decoded CodeText: " + result.CodeText);
+                        // Iterate through all detected barcodes (should be one in this case)
+                        foreach (BarCodeResult result in reader.ReadBarCodes())
+                        {
+                            // Attempt to parse the complex HIBC LIC codetext
+                            HIBCLICComplexCodetext complex = ComplexCodetextReader.TryDecodeHIBCLIC(result.CodeText);
+                            if (complex is HIBCLICPrimaryDataCodetext primaryResult)
+                            {
+                                // Output primary data fields
+                                Console.WriteLine("Decoded Primary Data:");
+                                Console.WriteLine($"Product or Catalog Number: {primaryResult.Data.ProductOrCatalogNumber}");
+                                Console.WriteLine($"Labeler Identification Code: {primaryResult.Data.LabelerIdentificationCode}");
+                                Console.WriteLine($"Unit of Measure ID: {primaryResult.Data.UnitOfMeasureID}");
+                            }
+                            else if (complex is HIBCLICCombinedCodetext combinedResult)
+                            {
+                                // Output combined data fields (primary + secondary/additional)
+                                Console.WriteLine("Decoded Combined Data:");
+                                Console.WriteLine($"Product or Catalog Number: {combinedResult.PrimaryData.ProductOrCatalogNumber}");
+                                Console.WriteLine($"Labeler Identification Code: {combinedResult.PrimaryData.LabelerIdentificationCode}");
+                                Console.WriteLine($"Unit of Measure ID: {combinedResult.PrimaryData.UnitOfMeasureID}");
+                                Console.WriteLine($"Expiry Date: {combinedResult.SecondaryAndAdditionalData.ExpiryDate}");
+                                Console.WriteLine($"Quantity: {combinedResult.SecondaryAndAdditionalData.Quantity}");
+                                Console.WriteLine($"Lot Number: {combinedResult.SecondaryAndAdditionalData.LotNumber}");
+                                Console.WriteLine($"Serial Number: {combinedResult.SecondaryAndAdditionalData.SerialNumber}");
+                                Console.WriteLine($"Date of Manufacture: {combinedResult.SecondaryAndAdditionalData.DateOfManufacture}");
+                            }
+                            else
+                            {
+                                // Handle unexpected codetext formats
+                                Console.WriteLine("Decoded codetext type not recognized.");
+                            }
+                        }
                     }
                 }
             }

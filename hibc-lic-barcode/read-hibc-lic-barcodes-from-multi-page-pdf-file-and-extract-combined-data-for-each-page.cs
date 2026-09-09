@@ -1,79 +1,90 @@
-// Title: Read HIBC LIC Barcodes from Multi‑Page PDF and Combine Page Data
-// Description: Demonstrates how to load a multi‑page PDF, render each page to an image, and use Aspose.BarCode to read HIBC LIC Code128 barcodes, then concatenate the results per page.
-// Category-Description: This example belongs to the Aspose.BarCode for .NET PDF barcode extraction category. It shows how to combine Aspose.Pdf (Document, PdfConverter) with Aspose.BarCode (BarCodeReader, DecodeType) to recognize HIBC LIC barcodes on each page of a PDF. Typical use cases include processing shipping documents, medical labels, or inventory forms where each page may contain one or more HIBC LIC barcodes that need to be aggregated. Developers often need to render PDF pages to images, configure barcode optimization, and collect decoded text for further processing.
+// Title: Read HIBC LIC barcodes from a multi‑page PDF and extract combined data per page
+// Description: Demonstrates how to load a PDF, convert each page to an image, and decode HIBC LIC barcodes, outputting the combined primary and secondary data for each page.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, showing how to use Aspose.Pdf to render PDF pages to images and Aspose.BarCode.BarCodeRecognition to read HIBC LIC (Health Industry Bar Code) complex barcodes. Typical use cases include processing medical or pharmaceutical documents where each page may contain a HIBC LIC label, and developers often need to extract product, lot, expiry, and other data programmatically. The sample uses Document, PdfConverter, BarCodeReader, DecodeType, ComplexCodetextReader, and HIBCLICCombinedCodetext classes.
 // Prompt: Read HIBC LIC barcodes from a multi‑page PDF file and extract combined data for each page.
-// Tags: barcode, hibc, lic, pdf, aspnet, aspnet-core, aspose.barcode, aspose.pdf, barcode-recognition, code128, multi-page
+// Tags: hibc, lic, barcode, pdf, recognition, aspnet, aspnetcore, aspose.barcode, aspose.pdf, complexcodetext, decode
 
 using System;
-using System.Collections.Generic;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Pdf;
+using Aspose.BarCode.ComplexBarcode;
 using Aspose.Pdf.Facades;
 
 /// <summary>
-/// Demonstrates reading HIBC LIC Code128 barcodes from each page of a multi‑page PDF and outputting combined data per page.
+/// Demonstrates reading HIBC LIC barcodes from each page of a PDF and printing combined data.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Loads the PDF, renders pages, reads barcodes, and prints combined results.
+    /// Entry point. Accepts optional PDF path argument, processes each page, and writes barcode data to console.
     /// </summary>
-    static void Main()
+    /// <param name="args">Command‑line arguments; first argument may be the PDF file path.</param>
+    static void Main(string[] args)
     {
-        // Path to the multi‑page PDF containing HIBC LIC barcodes.
-        string pdfPath = "input.pdf";
+        // Determine PDF file path: use first argument if provided, otherwise default to "sample.pdf"
+        string pdfPath = args.Length > 0 ? args[0] : "sample.pdf";
 
-        // Verify that the PDF file exists before attempting to process it.
+        // Verify that the file exists before proceeding
         if (!File.Exists(pdfPath))
         {
             Console.WriteLine($"File not found: {pdfPath}");
             return;
         }
 
-        // Load the PDF document into Aspose.Pdf.
-        using (var pdfDocument = new Document(pdfPath))
+        // Load the PDF document using Aspose.Pdf
+        using (var pdfDocument = new Aspose.Pdf.Document(pdfPath))
         {
-            // Initialize the PDF converter which will render PDF pages to images.
-            var pdfConverter = new PdfConverter(pdfDocument);
-            // Enable barcode optimization to improve recognition speed and accuracy.
-            pdfConverter.RenderingOptions.BarcodeOptimization = true;
-
-            // Iterate through each page in the PDF document.
-            for (int pageNumber = 1; pageNumber <= pdfDocument.Pages.Count; pageNumber++)
+            // Initialize a PdfConverter to render pages as images
+            using (var pdfConverter = new PdfConverter(pdfDocument))
             {
-                // Configure the converter to process only the current page.
-                pdfConverter.StartPage = pageNumber;
-                pdfConverter.EndPage = pageNumber;
-                pdfConverter.DoConvert();
+                // Enable barcode optimization for better image quality
+                pdfConverter.RenderingOptions.BarcodeOptimization = true;
 
-                // Render the current page to an in‑memory image stream.
-                using (var pageImageStream = new MemoryStream())
+                int pageCount = pdfDocument.Pages.Count;
+
+                // Iterate through each page in the PDF
+                for (int pageNumber = 1; pageNumber <= pageCount; pageNumber++)
                 {
-                    pdfConverter.GetNextImage(pageImageStream);
-                    pageImageStream.Position = 0; // Reset stream position for reading.
+                    // Configure the converter to process a single page
+                    pdfConverter.StartPage = pageNumber;
+                    pdfConverter.EndPage = pageNumber;
+                    pdfConverter.DoConvert();
 
-                    // Create a barcode reader for HIBC LIC Code128 barcodes using the rendered image.
-                    using (var reader = new BarCodeReader(pageImageStream, DecodeType.HIBCCode128LIC))
+                    // Store the rendered page image in a memory stream
+                    using (var pageImageStream = new MemoryStream())
                     {
-                        var barcodesOnPage = new List<string>();
+                        pdfConverter.GetNextImage(pageImageStream);
+                        pageImageStream.Position = 0; // Reset stream position for reading
 
-                        // Read all barcodes found on the page and collect their decoded text.
-                        foreach (var result in reader.ReadBarCodes())
+                        // Create a BarCodeReader for HIBC QR LIC type using the page image
+                        using (var reader = new BarCodeReader(pageImageStream, DecodeType.HIBCQRLIC))
                         {
-                            barcodesOnPage.Add(result.CodeText);
-                        }
+                            // Read all barcodes found on the page
+                            foreach (var result in reader.ReadBarCodes())
+                            {
+                                // Attempt to decode the complex HIBCLIC codetext
+                                var complexCodetext = ComplexCodetextReader.TryDecodeHIBCLIC(result.CodeText);
+                                if (complexCodetext is HIBCLICCombinedCodetext combined)
+                                {
+                                    // Output primary data fields
+                                    Console.WriteLine($"Page {pageNumber}:");
+                                    Console.WriteLine($"  Product or catalog number: {combined.PrimaryData.ProductOrCatalogNumber}");
+                                    Console.WriteLine($"  Labeler identification code: {combined.PrimaryData.LabelerIdentificationCode}");
+                                    Console.WriteLine($"  Unit of measure ID: {combined.PrimaryData.UnitOfMeasureID}");
 
-                        // Combine the decoded barcode texts for the current page.
-                        string combinedData = string.Join("; ", barcodesOnPage);
-                        Console.WriteLine($"Page {pageNumber}: {combinedData}");
+                                    // Output secondary and additional data fields
+                                    var secondary = combined.SecondaryAndAdditionalData;
+                                    Console.WriteLine($"  Expiry date: {secondary.ExpiryDate}");
+                                    Console.WriteLine($"  Quantity: {secondary.Quantity}");
+                                    Console.WriteLine($"  Lot number: {secondary.LotNumber}");
+                                    Console.WriteLine($"  Serial number: {secondary.SerialNumber}");
+                                    Console.WriteLine($"  Date of manufacture: {secondary.DateOfManufacture}");
+                                }
+                            }
+                        }
                     }
                 }
             }
-
-            // Release resources used by the PDF converter.
-            pdfConverter.Dispose();
         }
     }
 }

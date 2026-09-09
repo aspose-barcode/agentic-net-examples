@@ -1,43 +1,57 @@
-// Title: Generate HIBC DataMatrix LIC barcode with custom image size
-// Description: Demonstrates how to set a specific image size (300 × 150 pixels) and generate a DataMatrix HIBC LIC barcode using Aspose.BarCode.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to configure image dimensions, colors, and save the result as a PNG. It showcases the BarcodeGenerator class with EncodeTypes.HIBCDataMatrixLIC, a common scenario for developers needing HIBC‑compliant DataMatrix barcodes in healthcare labeling.
+// Title: Configure Image Size for DataMatrix HIBC LIC Barcode
+// Description: Demonstrates how to set a fixed image size of 300 × 150 pixels when generating a DataMatrix HIBC LIC barcode using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on complex barcode creation with the ComplexBarcodeGenerator class. It shows how to configure image dimensions, resolution, and save the result in PNG format—common tasks for developers integrating barcode imaging into packaging, labeling, or inventory systems.
 // Prompt: Configure barcode image size to 300 × 150 pixels before rendering a DataMatrix HIBC LIC barcode.
-// Tags: barcode, datamatrix, hibc, image-size, png, generation, aspose.barcodes, aspose.drawing
+// Tags: datamatrix, hibc, barcode, image-size, generation, png, aspose.barcode
 
 using System;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
+using Aspose.BarCode.ComplexBarcode;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates configuring image size and generating a HIBC DataMatrix LIC barcode.
+/// Generates a DataMatrix HIBC LIC barcode with a fixed image size of 300 × 150 pixels and saves it as a PNG file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates and saves the barcode image.
+    /// Entry point of the example. Creates the barcode, configures image dimensions, and writes the output file.
     /// </summary>
     static void Main()
     {
-        // Sample HIBC DataMatrix LIC codetext (adjust as needed for a valid HIBC string)
-        string codeText = "A12345";
+        // Define the output file path in the current working directory.
+        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "DataMatrixHIBC.png");
 
-        // Initialize the barcode generator for HIBC DataMatrix LIC symbology
-        using (var generator = new BarcodeGenerator(EncodeTypes.HIBCDataMatrixLIC, codeText))
+        // Prepare primary data required for a HIBC LIC barcode.
+        HIBCLICPrimaryDataCodetext complexCodetext = new HIBCLICPrimaryDataCodetext
         {
-            // Set the desired image size: 300 × 150 pixels
-            generator.Parameters.ImageWidth.Point = 300f;
-            generator.Parameters.ImageHeight.Point = 150f;
+            BarcodeType = EncodeTypes.HIBCDataMatrixLIC,
+            Data = new PrimaryData
+            {
+                ProductOrCatalogNumber = "12345",
+                LabelerIdentificationCode = "A999",
+                UnitOfMeasureID = 1
+            }
+        };
 
-            // Optional: define foreground (bar) and background colors
-            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-            generator.Parameters.BackColor = Aspose.Drawing.Color.White;
+        // Initialize the complex barcode generator with the prepared data.
+        using (ComplexBarcodeGenerator generator = new ComplexBarcodeGenerator(complexCodetext))
+        {
+            // Configure fixed image dimensions: 300 × 150 pixels.
+            generator.Parameters.AutoSizeMode = AutoSizeMode.Nearest;
+            generator.Parameters.ImageWidth.Pixels = 300f;
+            generator.Parameters.ImageHeight.Pixels = 150f;
 
-            // Save the generated barcode as a PNG file
-            generator.Save("HIBCDataMatrixLIC.png");
+            // Optionally set a higher resolution (default is 96 DPI).
+            generator.Parameters.Resolution = 300f;
+
+            // Render and save the barcode image in PNG format.
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        Console.WriteLine("Barcode generated and saved as HIBCDataMatrixLIC.png");
+        // Inform the user where the barcode image has been saved.
+        Console.WriteLine($"Barcode saved to: {outputPath}");
     }
 }
