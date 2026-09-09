@@ -1,95 +1,91 @@
-// Title: Default Checksum Behavior Demonstration
-// Description: Shows how Aspose.BarCode handles default checksum generation for symbologies with obligatory and optional checksum requirements.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the default checksum settings for different barcode symbologies. It uses BarcodeGenerator, BarcodeParameters, and EnableChecksum to demonstrate how the library automatically adds a checksum for mandatory symbologies (e.g., EAN13) and omits it for optional ones (e.g., Code39FullASCII). Developers working with barcode creation often need to understand when checksums are applied automatically versus when they must be enabled manually.
+// Title: Demonstrate default checksum behavior for optional and obligatory barcode symbologies
+// Description: Shows how Aspose.BarCode handles checksum generation by default for symbologies where the checksum is optional versus those where it is mandatory, saving example images to a temporary folder.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and BarcodeParameters.IsChecksumEnabled. Developers often need to understand default checksum settings when creating barcodes for Code39 (optional checksum) and Code128 (obligatory checksum) to ensure data integrity without manually configuring the checksum.
 // Prompt: Write documentation comments explaining default checksum behavior for obligatory and optional symbologies.
-// Tags: barcode symbology checksum generation aspose.barcode ean13 code39fullascii
+// Tags: barcode symbology, checksum, optional checksum, obligatory checksum, generation, aspnet, aspose.barcode, encode types, image output
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
-namespace AsposeBarcodeChecksumDemo
+/// <summary>
+/// Contains examples that demonstrate the default checksum behavior for barcode symbologies
+/// with optional and obligatory checksum requirements using Aspose.BarCode.
+/// </summary>
+class Program
 {
     /// <summary>
-    /// Demonstrates the default checksum behavior of Aspose.BarCode for
-    /// symbologies where the checksum is obligatory and for those where it is optional.
+    /// Demonstrates the default checksum behavior for symbologies with an optional checksum.
+    /// For such symbologies the <see cref="BarcodeParameters.IsChecksumEnabled"/> property
+    /// defaults to <see cref="EnableChecksum.No"/>, meaning the checksum digit is not generated
+    /// unless explicitly enabled.
     /// </summary>
-    internal static class ChecksumDocumentation
+    /// <param name="outputFolder">Folder where the generated barcode image will be saved.</param>
+    static void OptionalChecksumDemo(string outputFolder)
     {
-        /// <summary>
-        /// Generates an EAN13 barcode. EAN13 requires a checksum, therefore the
-        /// default value of <see cref="BarcodeParameters.IsChecksumEnabled"/> is
-        /// <see cref="EnableChecksum.Yes"/> for this symbology. When the code text
-        /// contains only the 12 data digits, Aspose.BarCode automatically calculates
-        /// and appends the 13th checksum digit during generation.
-        /// </summary>
-        /// <param name="outputPath">File path where the barcode image will be saved.</param>
-        public static void GenerateObligatoryChecksumBarcode(string outputPath)
-        {
-            // 12 digits without checksum – the library will add the 13th digit automatically.
-            const string codeText = "123456789012";
+        // Build the full file path for the optional checksum example image.
+        string filePath = Path.Combine(outputFolder, "OptionalChecksum_Code39.png");
 
-            // Create a generator for EAN13 with the provided code text.
-            using (var generator = new BarcodeGenerator(EncodeTypes.EAN13, codeText))
-            {
-                // Explicitly set to Default to show that the library decides based on symbology.
-                generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Default;
-                // Save the generated barcode image to the specified path.
-                generator.Save(outputPath);
-            }
+        // Create a generator for Code39, which has an optional checksum.
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code39, "CODE39"))
+        {
+            // By default, optional checksum is disabled.
+            Console.WriteLine($"[Optional] Default IsChecksumEnabled: {generator.Parameters.Barcode.IsChecksumEnabled}");
+
+            // Save the generated barcode image as PNG.
+            generator.Save(filePath, BarCodeImageFormat.Png);
         }
 
-        /// <summary>
-        /// Generates a Code39FullASCII barcode. For this symbology the checksum is optional.
-        /// The default value of <see cref="BarcodeParameters.IsChecksumEnabled"/> is
-        /// <see cref="EnableChecksum.No"/> when the checksum is only possible.
-        /// Consequently, the library does not add a checksum unless the property is set
-        /// to <see cref="EnableChecksum.Yes"/>. The example leaves the setting at its
-        /// default, so the resulting barcode contains no checksum digit.
-        /// </summary>
-        /// <param name="outputPath">File path where the barcode image will be saved.</param>
-        public static void GenerateOptionalChecksumBarcode(string outputPath)
-        {
-            // Sample data for Code39FullASCII; checksum is optional.
-            const string codeText = "ABC-123";
-
-            // Create a generator for Code39FullASCII with the provided code text.
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code39FullASCII, codeText))
-            {
-                // Keep the default (No) – checksum will not be generated.
-                generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Default;
-                // Save the generated barcode image to the specified path.
-                generator.Save(outputPath);
-            }
-        }
+        // Inform the user where the image was saved.
+        Console.WriteLine($"Optional checksum barcode saved to: {filePath}");
     }
 
     /// <summary>
-    /// Entry point for the checksum demonstration application.
+    /// Demonstrates the default checksum behavior for symbologies with an obligatory checksum.
+    /// For these symbologies the <see cref="BarcodeParameters.IsChecksumEnabled"/> property
+    /// defaults to <see cref="EnableChecksum.Yes"/>, meaning the checksum digit is always generated.
     /// </summary>
-    internal class Program
+    /// <param name="outputFolder">Folder where the generated barcode image will be saved.</param>
+    static void ObligatoryChecksumDemo(string outputFolder)
     {
-        /// <summary>
-        /// Creates output directories, generates example barcodes, and writes their locations to the console.
-        /// </summary>
-        private static void Main()
+        // Build the full file path for the obligatory checksum example image.
+        string filePath = Path.Combine(outputFolder, "ObligatoryChecksum_Code128.png");
+
+        // Create a generator for Code128, which requires a checksum.
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "CODE128"))
         {
-            // Determine a temporary folder for output files.
-            string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeChecksumDemo");
-            Directory.CreateDirectory(outputDir);
+            // By default, obligatory checksum is enabled.
+            Console.WriteLine($"[Obligatory] Default IsChecksumEnabled: {generator.Parameters.Barcode.IsChecksumEnabled}");
 
-            // Define file paths for the generated barcode images.
-            string ean13Path = Path.Combine(outputDir, "EAN13_DefaultChecksum.png");
-            string code39Path = Path.Combine(outputDir, "Code39FullASCII_NoChecksum.png");
-
-            // Generate an EAN13 barcode with the default (mandatory) checksum.
-            ChecksumDocumentation.GenerateObligatoryChecksumBarcode(ean13Path);
-            Console.WriteLine($"Generated EAN13 barcode with default checksum at: {ean13Path}");
-
-            // Generate a Code39FullASCII barcode without a checksum (optional).
-            ChecksumDocumentation.GenerateOptionalChecksumBarcode(code39Path);
-            Console.WriteLine($"Generated Code39FullASCII barcode without checksum at: {code39Path}");
+            // Save the generated barcode image as PNG.
+            generator.Save(filePath, BarCodeImageFormat.Png);
         }
+
+        // Inform the user where the image was saved.
+        Console.WriteLine($"Obligatory checksum barcode saved to: {filePath}");
+    }
+
+    /// <summary>
+    /// Entry point of the demonstration program. Creates a temporary folder,
+    /// runs both checksum examples, and reports completion.
+    /// </summary>
+    static void Main()
+    {
+        // Create a temporary folder for demonstration files.
+        string tempFolder = Path.Combine(Path.GetTempPath(), "ChecksumDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
+
+        Console.WriteLine("Running checksum behavior demonstration...");
+
+        // Execute the optional checksum example.
+        OptionalChecksumDemo(tempFolder);
+
+        // Execute the obligatory checksum example.
+        ObligatoryChecksumDemo(tempFolder);
+
+        Console.WriteLine("Demonstration completed.");
     }
 }

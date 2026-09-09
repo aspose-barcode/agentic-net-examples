@@ -1,8 +1,8 @@
-// Title: Code128 barcode generation with checksum disabled handling
-// Description: Demonstrates generating a Code128 barcode while attempting to disable its mandatory checksum, and handling the resulting exception.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on symbology configuration and error handling. It showcases the use of BarcodeGenerator, EncodeTypes, and barcode parameters such as IsChecksumEnabled. Developers often need to adjust symbology settings and gracefully handle invalid configurations, especially when working with mandatory checksum symbologies like Code128.
+// Title: Disabling checksum on Code128 barcode and handling exception
+// Description: Demonstrates how to attempt disabling the checksum for a Code128 barcode, which requires a checksum, and captures the resulting exception.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, focusing on barcode parameter configuration and error handling. It showcases the use of BarcodeGenerator, EncodeTypes, and checksum settings (EnableChecksum) to illustrate typical scenarios where developers need to validate symbology constraints and gracefully handle invalid configurations. Ideal for developers working with barcode creation, validation, and image output in .NET applications.
 // Prompt: Implement exception handling for disabling checksum on an obligatory‑checksum symbology like Code 128.
-// Tags: barcode symbology, checksum, code128, exception handling, generation, aspose.barcode
+// Tags: barcode symbology, checksum, exception handling, code128, generation, png, aspose.barcode
 
 using System;
 using System.IO;
@@ -10,39 +10,47 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Example program that attempts to generate a Code128 barcode with the checksum disabled,
-/// captures the exception thrown by the Aspose.BarCode library, and reports the error.
+/// Example program that shows exception handling when disabling checksum on a mandatory‑checksum symbology (Code128).
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a Code128 barcode, disables its mandatory checksum, and handles any resulting exception.
+    /// Generates a Code128 barcode with checksum enabled, then attempts to disable the checksum,
+    /// captures the resulting exception, and saves the valid barcode image.
     /// </summary>
     static void Main()
     {
-        // Define the output file path for the generated barcode image
-        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "code128_no_checksum.png");
+        // Define the output file path for the barcode with checksum enabled
+        string outputPath = Path.Combine(Path.GetTempPath(), "ChecksumDemo.png");
 
-        // Attempt to generate the barcode with an invalid checksum configuration
-        try
+        // Create a Code128 barcode generator with sample text
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "ABC123"))
         {
-            // Initialize the barcode generator for Code128 with sample data
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+            // Enable checksum (default for Code128) and save the image
+            generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
+            generator.Save(outputPath, BarCodeImageFormat.Png);
+            Console.WriteLine($"Barcode with checksum saved to: {outputPath}");
+
+            // Attempt to disable checksum on an obligatory‑checksum symbology
+            try
             {
-                // Disable the checksum (which is obligatory for Code128)
+                // Set checksum to disabled; this is not allowed for Code128
                 generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.No;
 
-                // Save the generated barcode image to the specified path
-                generator.Save(outputPath);
-                Console.WriteLine($"Barcode saved to: {outputPath}");
+                // Generate the barcode image to trigger validation logic
+                generator.GenerateBarCodeImage();
+
+                // If no exception occurs (unexpected), save the invalid image
+                string disabledPath = Path.Combine(Path.GetTempPath(), "ChecksumDisabled.png");
+                generator.Save(disabledPath, BarCodeImageFormat.Png);
+                Console.WriteLine($"Barcode with checksum disabled saved to: {disabledPath}");
             }
-        }
-        catch (Exception ex)
-        {
-            // Output a friendly message and the exception details when generation fails
-            Console.WriteLine("Failed to generate barcode with checksum disabled:");
-            Console.WriteLine(ex.Message);
+            catch (Exception ex)
+            {
+                // Output the caught exception details
+                Console.WriteLine("Exception caught while disabling checksum on Code128:");
+                Console.WriteLine(ex.Message);
+            }
         }
     }
 }
