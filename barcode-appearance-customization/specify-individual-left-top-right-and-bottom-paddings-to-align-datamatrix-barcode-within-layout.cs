@@ -1,46 +1,49 @@
 // Title: DataMatrix Barcode with Individual Padding Settings
-// Description: Demonstrates how to set left, top, right, and bottom paddings for a DataMatrix barcode and save it as a PNG image.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to customize barcode layout using the BarcodeGenerator class and its Parameters property. Typical use cases include aligning barcodes within forms, labels, or UI components where precise padding is required. Developers often need to control individual padding values to meet design specifications or printing constraints.
-/// <summary>
-/// Provides an example of configuring individual padding values for a DataMatrix barcode using Aspose.BarCode.
-/// </summary>
+// Description: Demonstrates how to set left, top, right, and bottom paddings for a DataMatrix barcode and save it as a PNG image. Useful for aligning the barcode within a layout or document.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to customize barcode appearance using the BarcodeGenerator and its Parameters properties. Developers often need to adjust padding, module size, and image format when embedding barcodes in reports, labels, or UI layouts. The snippet shows typical API usage for DataMatrix symbology with fine‑grained padding control.
+// Prompt: Specify individual left, top, right, and bottom paddings to align a DataMatrix barcode within a layout.
+// Tags: datamatrix, padding, image, generation, aspose.barcode, aspose.drawing
+
 using System;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Entry point for the DataMatrix padding demonstration.
+/// Generates a DataMatrix barcode with custom left, top, right, and bottom paddings
+/// and saves it as a PNG image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Generates a DataMatrix barcode with custom left, top, right, and bottom paddings and saves it as a PNG file.
+    /// Entry point of the example. Creates the output folder, configures the barcode,
+    /// applies individual paddings, and writes the image to disk.
     /// </summary>
     static void Main()
     {
-        // Define the output file name and location.
-        string outputPath = "datamatrix_padding.png";
+        // Prepare output directory in the system temporary folder
+        string outputDir = Path.Combine(Path.GetTempPath(), "DataMatrixPaddingDemo");
+        Directory.CreateDirectory(outputDir);
+        string outputFile = Path.Combine(outputDir, "DataMatrix.png");
 
-        // Text that will be encoded into the barcode.
-        string codeText = "Hello Aspose";
-
-        // Initialize the barcode generator for DataMatrix symbology.
-        using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, codeText))
+        // Create a DataMatrix barcode generator with the desired text
+        using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, "Sample123"))
         {
-            // Set individual padding values (in points) to control barcode positioning.
-            generator.Parameters.Barcode.Padding.Left.Point = 10f;    // left padding
-            generator.Parameters.Barcode.Padding.Top.Point = 20f;     // top padding
-            generator.Parameters.Barcode.Padding.Right.Point = 30f;   // right padding
-            generator.Parameters.Barcode.Padding.Bottom.Point = 40f;  // bottom padding
+            // Set individual paddings (in points) for precise layout alignment
+            generator.Parameters.Barcode.Padding.Left.Point = 5f;
+            generator.Parameters.Barcode.Padding.Top.Point = 10f;
+            generator.Parameters.Barcode.Padding.Right.Point = 5f;
+            generator.Parameters.Barcode.Padding.Bottom.Point = 10f;
 
-            // Optional: increase module size for better visual clarity.
+            // Optional: adjust the module (dot) size of the barcode
             generator.Parameters.Barcode.XDimension.Point = 2f;
 
-            // Save the generated barcode image in PNG format.
-            generator.Save(outputPath, BarCodeImageFormat.Png);
+            // Save the generated barcode image as PNG
+            generator.Save(outputFile, BarCodeImageFormat.Png);
         }
 
-        // Inform the user where the barcode image has been saved.
-        Console.WriteLine($"DataMatrix barcode saved to {outputPath}");
+        // Inform the user where the image was saved
+        Console.WriteLine($"DataMatrix barcode saved to: {outputFile}");
     }
 }
