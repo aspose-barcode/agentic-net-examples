@@ -1,8 +1,8 @@
-// Title: Generate QR Code with automatic sizing and save as SVG
-// Description: Demonstrates creating a QR Code barcode using Aspose.BarCode, automatically selecting the optimal size, and exporting it to an SVG file.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on QR Code creation and image export. It showcases the BarcodeGenerator class, EncodeTypes, AutoSizeMode, and BarCodeImageFormat for producing scalable vector graphics. Developers often need to generate QR codes for web links or product information and require SVG output for high‑resolution or responsive designs.
+// Title: Generate QR Code barcode and save as SVG with automatic size selection
+// Description: Demonstrates creating a QR Code using Aspose.BarCode, letting the library choose the optimal QR version automatically, and saving the result as an SVG file.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on QR Code creation. It showcases the BarcodeGenerator class, EncodeTypes enumeration, QRVersion auto‑selection, and saving to vector formats like SVG. Developers use these APIs to embed scannable QR codes in web pages, reports, or documents where scalable graphics are required.
 // Prompt: Generate a QR Code barcode with automatic size selection and store as SVG file.
-// Tags: qr code, auto size, svg, aspose.barcode, barcode generation, encode types
+// Tags: qr code, barcode generation, automatic size, svg output, aspose.barcode, encode types, qrversion
 
 using System;
 using System.IO;
@@ -10,39 +10,34 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Example program that generates a QR Code with automatic size selection
-/// and saves it as an SVG file using Aspose.BarCode.
+/// Demonstrates generating a QR Code barcode with automatic version selection and saving it as an SVG file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
+    /// Entry point of the example.
     /// </summary>
     static void Main()
     {
-        // Determine the full path for the output SVG file in the current directory.
-        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "qr.svg");
+        // Define the full path for the output SVG file.
+        string outputPath = Path.Combine(Environment.CurrentDirectory, "qr.svg");
 
-        // Initialize a BarcodeGenerator for QR Code with automatic size selection.
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR))
+        // Initialize the barcode generator for a QR Code with the desired text.
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
         {
-            // Set the text (URL) that the QR Code will encode.
-            generator.CodeText = "https://example.com";
+            // Set QR version to Auto so the library selects the optimal size.
+            generator.Parameters.Barcode.QR.Version = QRVersion.Auto;
 
-            // Enable automatic sizing using interpolation mode to let the library choose optimal dimensions.
-            generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
-
-            // Attempt to save the generated barcode as an SVG file.
-            // If the evaluation license does not support SVG export for QR codes, handle the exception gracefully.
             try
             {
+                // Save the generated QR Code as an SVG image.
                 generator.Save(outputPath, BarCodeImageFormat.Svg);
-                Console.WriteLine($"QR Code saved successfully to: {outputPath}");
+                Console.WriteLine($"QR code saved to {outputPath}");
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Failed to save SVG. A full license is required for SVG export of QR codes.");
-                Console.WriteLine($"Error: {ex.Message}");
+                // Output any errors that occur during the save operation.
+                Console.WriteLine($"Failed to save QR code as SVG: {ex.Message}");
             }
         }
     }

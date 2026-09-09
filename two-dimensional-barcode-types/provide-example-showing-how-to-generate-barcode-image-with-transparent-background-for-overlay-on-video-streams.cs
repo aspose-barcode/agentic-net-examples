@@ -1,8 +1,8 @@
-// Title: Generate QR Code with Transparent Background for Video Overlay
-// Description: Demonstrates creating a QR code image with a fully transparent background using Aspose.BarCode, suitable for overlaying on video streams.
-// Category-Description: This example belongs to the Aspose.BarCode image generation category, illustrating how to configure barcode appearance properties such as background transparency and foreground color. It uses the BarcodeGenerator class together with EncodeTypes, BarCodeImageFormat, and Aspose.Drawing.Color to produce PNG images that support alpha channels. Developers often need such examples when integrating barcodes into multimedia applications, UI overlays, or any scenario requiring seamless compositing over existing graphics.
+// Title: Generate barcode with transparent background for video overlay
+// Description: Demonstrates creating a Code128 barcode image with a transparent background, saved as PNG for use as an overlay in video streams.
+// Category-Description: This example belongs to the Aspose.BarCode image generation category, illustrating how to configure barcode appearance using the BarcodeGenerator class. It shows setting background color to transparent and exporting to PNG, a common requirement when developers need to overlay barcodes on video or UI elements without obscuring underlying content. The snippet highlights key API classes such as BarcodeGenerator, EncodeTypes, BarCodeImageFormat, and Aspose.Drawing.Color.
 // Prompt: Provide example showing how to generate barcode image with transparent background for overlay on video streams.
-// Tags: qr, barcode, generation, transparent background, png, aspose.barcode, aspose.drawing
+// Tags: barcode generation, transparent background, png, code128, aspose.barcode, image export
 
 using System;
 using System.IO;
@@ -12,33 +12,34 @@ using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a QR code PNG with a transparent background using Aspose.BarCode.
+/// Example program that creates a Code128 barcode with a transparent background
+/// and saves it as a PNG file suitable for overlaying on video streams.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Creates a QR code image with transparent background and saves it to a temporary file.
+    /// Entry point of the example. Generates the barcode image and writes the output path to the console.
     /// </summary>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Define the output file path in the system's temporary folder.
-        string outputPath = Path.Combine(Path.GetTempPath(), "transparent_qr.png");
+        // Build a unique temporary directory to store the generated barcode image.
+        string outputDir = Path.Combine(Path.GetTempPath(), "BarcodeTransparent_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputDir);
 
-        // Initialize a QR code generator with the desired text.
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "OverlayText"))
+        // Define the full file path for the PNG output.
+        string outputPath = Path.Combine(outputDir, "barcode.png");
+
+        // Initialize the barcode generator with Code128 symbology and the desired text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "VideoOverlay"))
         {
-            // Configure the background to be fully transparent (alpha = 0).
-            generator.Parameters.BackColor = Color.FromArgb(0, 0, 0, 0);
+            // Set the background color to transparent so the barcode can be overlaid without a solid box.
+            generator.Parameters.BackColor = Color.Transparent;
 
-            // Set the barcode (foreground) color to black for readability.
-            generator.Parameters.Barcode.BarColor = Color.Black;
-
-            // Save the barcode as a PNG file, which supports alpha transparency.
+            // Save the barcode as a PNG image, preserving the transparent background.
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user where the generated image has been saved.
-        Console.WriteLine($"Barcode image with transparent background saved to: {outputPath}");
-        // The resulting PNG can be overlaid on video streams using any video processing library.
+        // Inform the user where the barcode image was saved.
+        Console.WriteLine($"Barcode saved to: {outputPath}");
     }
 }

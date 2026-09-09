@@ -1,8 +1,8 @@
-// Title: Set DataMatrix Quiet Zone (Margin) Using Aspose.BarCode
-// Description: Demonstrates how to increase the quiet zone around a DataMatrix barcode by configuring padding, improving scan reliability.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating barcode appearance customization. It shows how to use the BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes to modify visual parameters such as padding (quiet zone). Developers often need to adjust margins for better scanner detection or to meet printing specifications, and this snippet provides a concise reference.
+// Title: Generate DataMatrix barcode with custom margin (padding)
+// Description: Demonstrates how to configure the margin around a DataMatrix barcode using Aspose.BarCode to improve scanning reliability.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing the use of BarcodeGenerator, EncodeTypes, and barcode parameters such as Padding and XDimension. Typical scenarios include creating high‑quality barcodes for packaging, inventory, and document automation where precise control over symbol margins is required. Developers often need to adjust these settings to meet scanner specifications and ensure optimal readability.
 // Prompt: Provide configuration option to set DataMatrix margin size around the symbol for better scanning.
-// Tags: datamatrix, margin, quietzone, barcode, generation, png, aspose.barcode
+// Tags: datamatrix, barcode, margin, padding, generation, aspnet, aspose.barcode, png, image
 
 using System;
 using System.IO;
@@ -10,34 +10,39 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates setting a custom margin (quiet zone) for a DataMatrix barcode using Aspose.BarCode.
+/// Example program that generates a DataMatrix barcode with configurable margins (padding) to enhance scanability.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Generates a DataMatrix barcode with increased padding and saves it as a PNG file.
+    /// Entry point of the application. Creates a temporary directory, configures barcode margins, and saves the image.
     /// </summary>
-    /// <param name="args">Command‑line arguments (not used).</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Determine a temporary output file path.
-        string outputPath = Path.Combine(Path.GetTempPath(), "datamatrix_margin.png");
+        // Define output directory in the system's temporary folder and ensure it exists
+        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
+        Directory.CreateDirectory(outputDir);
 
-        // Initialize the barcode generator for DataMatrix with the desired text.
-        using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, "Sample"))
+        // Full path for the generated PNG file
+        string outputPath = Path.Combine(outputDir, "DataMatrixWithMargin.png");
+
+        // Initialize the barcode generator for DataMatrix with the desired text
+        using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, "Hello Aspose"))
         {
-            // Configure the quiet zone (margin) around the symbol.
-            // Each side is set to 10 points (approximately 3.5 mm).
-            generator.Parameters.Barcode.Padding.Left.Point = 10f;
-            generator.Parameters.Barcode.Padding.Top.Point = 10f;
-            generator.Parameters.Barcode.Padding.Right.Point = 10f;
-            generator.Parameters.Barcode.Padding.Bottom.Point = 10f;
+            // Configure uniform margin (padding) of 20 points on all sides of the symbol
+            generator.Parameters.Barcode.Padding.Left.Point = 20f;
+            generator.Parameters.Barcode.Padding.Right.Point = 20f;
+            generator.Parameters.Barcode.Padding.Top.Point = 20f;
+            generator.Parameters.Barcode.Padding.Bottom.Point = 20f;
 
-            // Save the generated barcode image in PNG format.
+            // Optional: set the module (dot) size to 2 points for better visual clarity
+            generator.Parameters.Barcode.XDimension.Point = 2f;
+
+            // Save the generated barcode as a PNG image
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user where the file was saved.
-        Console.WriteLine($"DataMatrix barcode with increased margin saved to: {outputPath}");
+        // Inform the user where the barcode image has been saved
+        Console.WriteLine($"DataMatrix barcode saved to: {outputPath}");
     }
 }

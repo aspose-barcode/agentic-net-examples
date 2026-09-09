@@ -1,8 +1,8 @@
-// Title: Generate QR Code and output as PNG via MemoryStream
-// Description: Creates a QR Code barcode from a URL, saves it as a PNG image into a MemoryStream, and displays the generated size.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, demonstrating how to use the BarcodeGenerator class with EncodeTypes.QR to produce QR Code barcodes. Typical use cases include creating barcode images for web responses, APIs, or dynamic content where the image must be held in memory rather than written to disk. Developers often need to configure QR parameters such as error correction level and serialize the result to common image formats like PNG.
+// Title: Generate QR Code barcode and output as PNG stream
+// Description: Demonstrates creating a QR Code barcode with Aspose.BarCode, configuring error correction, and saving the image to a memory stream suitable for returning in a web response.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating how to use the BarcodeGenerator class with QR symbology. It shows typical steps such as setting encoding parameters, choosing an image format, and writing the result to a stream for web APIs or other in‑memory processing scenarios. Developers often need this pattern when integrating barcode images into HTTP responses, PDFs, or other dynamic content.
 // Prompt: Generate a QR Code barcode and write image to memory stream for web response.
-// Tags: qr code, barcode generation, memory stream, png, aspose.barcode, image output, web response
+// Tags: qr code, barcode generation, memory stream, png, aspose.barcode, encode types, web response
 
 using System;
 using System.IO;
@@ -10,42 +10,33 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generating a QR Code barcode, saving it to a MemoryStream as a PNG,
-/// and outputting the resulting image size. Suitable for scenarios where the image
-/// is returned directly in a web response.
+/// Demonstrates QR Code generation using Aspose.BarCode and writes the PNG image to a memory stream.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Encodes a URL into a QR Code, writes the PNG image
-    /// to a MemoryStream, and writes the stream length to the console.
+    /// Entry point. Generates a QR Code, configures high error correction, saves as PNG to a MemoryStream, and writes the size to console.
     /// </summary>
     static void Main()
     {
-        // The data to be encoded in the QR Code (e.g., a website URL).
-        string qrText = "https://example.com";
+        // Text to encode in the QR code
+        string codeText = "Hello World";
 
-        // Create a MemoryStream that will hold the generated PNG image.
-        using (var memoryStream = new MemoryStream())
+        // Initialize the barcode generator with QR symbology and the text to encode
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, codeText))
         {
-            // Initialize the QR Code generator with the QR symbology.
-            using (var generator = new BarcodeGenerator(EncodeTypes.QR))
+            // Set the QR error correction level to high (Level H)
+            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
+
+            // Create a memory stream to hold the generated PNG image
+            using (var memoryStream = new MemoryStream())
             {
-                // Assign the text to be encoded.
-                generator.CodeText = qrText;
-
-                // Optional: configure the QR Code error correction level (Medium in this case).
-                generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
-
-                // Save the generated barcode directly into the MemoryStream in PNG format.
+                // Save the barcode image into the memory stream in PNG format
                 generator.Save(memoryStream, BarCodeImageFormat.Png);
+
+                // Output the size of the generated image (for demonstration purposes)
+                Console.WriteLine($"QR code image generated. Size: {memoryStream.Length} bytes.");
             }
-
-            // Reset the stream position to the beginning for any subsequent reads.
-            memoryStream.Position = 0;
-
-            // Output the size of the generated PNG image to verify creation.
-            Console.WriteLine($"QR Code PNG generated, size: {memoryStream.Length} bytes");
         }
     }
 }

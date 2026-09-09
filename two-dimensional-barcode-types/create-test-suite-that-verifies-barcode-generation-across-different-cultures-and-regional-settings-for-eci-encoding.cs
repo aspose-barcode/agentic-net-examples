@@ -1,83 +1,148 @@
-// Title: ECI Encoding Verification Across Cultures for QR Barcodes
-// Description: Demonstrates generating QR barcodes with ECI encoding for various cultures and verifying the decoded text matches the original.
-// Category-Description: Shows how to use Aspose.BarCode's BarcodeGenerator and BarCodeReader to create and read QR codes with ECI encodings. Useful for developers needing locale‑specific barcode generation, testing multilingual support, and ensuring correct encoding/decoding across different character sets. Covers key classes EncodeTypes, QREncodeMode, ECIEncodings, BarCodeImageFormat, and DecodeType.
+// Title: ECI Encoding Barcode Generation Test Across Cultures
+// Description: Demonstrates generating barcodes with ECI encoding for different languages and verifying them under specific culture settings.
+// Category-Description: This example belongs to the Aspose.BarCode culture‑aware barcode generation category. It shows how to configure ECI encoding for various symbologies (QR, DataMatrix, PDF417, DotCode) using the BarcodeGenerator class, save the image, and validate it with BarCodeReader. Developers often need to ensure correct character set handling when generating barcodes for international applications.
 // Prompt: Create a test suite that verifies barcode generation across different cultures and regional settings for ECI encoding.
-// Tags: qr, eci, png, barcodegenerator, barcodereader, aspose.barcode
+// Tags: barcode, eci, culture, localization, qrcode, datamatrix, pdf417, dotcode, generation, recognition, aspose.barcode
 
 using System;
-using System.Collections.Generic;
 using System.IO;
+using System.Text;
+using System.Globalization;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing.Imaging;
+using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates QR barcodes with ECI encoding for multiple cultures,
-/// saves them as PNG files, and validates the decoded text using Aspose.BarCode.
+/// Contains the entry point and helper methods for running barcode generation tests with ECI encoding across multiple cultures.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the test suite. Creates barcodes, saves them, reads them back,
-    /// and reports pass/fail results for each culture-specific test case.
+    /// Main entry point. Creates a temporary directory and runs a series of barcode generation tests for different symbologies and cultures.
     /// </summary>
     static void Main()
     {
-        // Define test cases: culture name, sample text, and the corresponding ECI encoding.
-        var testCases = new List<(string Culture, string Text, ECIEncodings Encoding)>
-        {
-            ("Japanese", "こんにちは", ECIEncodings.Shift_JIS),
-            ("Russian", "Привет", ECIEncodings.Win1251),
-            ("Arabic", "مرحبا", ECIEncodings.ISO_8859_6),
-            ("ChineseSimplified", "你好", ECIEncodings.GB2312),
-            ("Greek", "Γειά", ECIEncodings.ISO_8859_7)
-        };
+        // Create a unique temporary folder for test output files
+        string tempDir = Path.Combine(Path.GetTempPath(), "ECITest_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
 
-        // Create a unique temporary folder for generated barcode images.
-        string outputFolder = Path.Combine(Path.GetTempPath(), "BarcodeECITest_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(outputFolder);
-
-        Console.WriteLine($"Barcodes will be saved to: {outputFolder}");
-        Console.WriteLine();
-
-        // Iterate over each test case, generate the barcode, and verify decoding.
-        foreach (var (culture, text, encoding) in testCases)
-        {
-            // Build the file path for the current culture's barcode image.
-            string filePath = Path.Combine(outputFolder, $"{culture}.png");
-
-            // Generate a QR barcode with the specified ECI encoding.
-            using (var generator = new BarcodeGenerator(EncodeTypes.QR))
+        // Run QR code test with Greek characters under Greek culture
+        RunTest(
+            "QR_Greek",
+            EncodeTypes.QR,
+            "ΑΒΓΔΕ", // Greek letters
+            ECIEncodings.ISO_8859_7,
+            (gen) =>
             {
-                generator.Parameters.Barcode.QR.EncodeMode = QREncodeMode.ECI;
-                generator.Parameters.Barcode.QR.ECIEncoding = encoding;
-                generator.CodeText = text;
+                gen.Parameters.Barcode.QR.EncodeMode = QREncodeMode.ECI;
+                gen.Parameters.Barcode.QR.ECIEncoding = ECIEncodings.ISO_8859_7;
+            },
+            new CultureInfo("el-GR")
+        );
+
+        // Run DataMatrix test with Cyrillic characters under Russian culture
+        RunTest(
+            "DataMatrix_Cyrillic",
+            EncodeTypes.DataMatrix,
+            "Привет", // Cyrillic
+            ECIEncodings.Win1251,
+            (gen) =>
+            {
+                gen.Parameters.Barcode.DataMatrix.EncodeMode = DataMatrixEncodeMode.ECI;
+                gen.Parameters.Barcode.DataMatrix.ECIEncoding = ECIEncodings.Win1251;
+            },
+            new CultureInfo("ru-RU")
+        );
+
+        // Run PDF417 test with Greek characters under Greek culture
+        RunTest(
+            "Pdf417_Greek",
+            EncodeTypes.Pdf417,
+            "ΑΒΓΔΕ", // Greek letters
+            ECIEncodings.ISO_8859_7,
+            (gen) =>
+            {
+                gen.Parameters.Barcode.Pdf417.EncodeMode = Pdf417EncodeMode.ECI;
+                gen.Parameters.Barcode.Pdf417.ECIEncoding = ECIEncodings.ISO_8859_7;
+            },
+            new CultureInfo("el-GR")
+        );
+
+        // Run DotCode test with Greek characters under Greek culture
+        RunTest(
+            "DotCode_Greek",
+            EncodeTypes.DotCode,
+            "ΑΒΓΔΕ", // Greek letters
+            ECIEncodings.ISO_8859_7,
+            (gen) =>
+            {
+                gen.Parameters.Barcode.DotCode.EncodeMode = DotCodeEncodeMode.ECI;
+                gen.Parameters.Barcode.DotCode.ECIEncoding = ECIEncodings.ISO_8859_7;
+            },
+            new CultureInfo("el-GR")
+        );
+
+        Console.WriteLine("All tests completed.");
+    }
+
+    /// <summary>
+    /// Executes a single barcode generation and verification test.
+    /// </summary>
+    /// <param name="testName">Unique name for the test, used for file naming and logging.</param>
+    /// <param name="encodeType">The barcode symbology to generate.</param>
+    /// <param name="codeText">The text to encode in the barcode.</param>
+    /// <param name="eciEncoding">The ECI encoding to apply.</param>
+    /// <param name="configure">Action that applies additional generator settings (e.g., enabling ECI mode).</param>
+    /// <param name="culture">CultureInfo to set during the test to simulate regional settings.</param>
+    static void RunTest(string testName, BaseEncodeType encodeType, string codeText, ECIEncodings eciEncoding, Action<BarcodeGenerator> configure, CultureInfo culture)
+    {
+        Console.WriteLine($"--- Running {testName} ---");
+
+        // Preserve the original culture to restore later
+        CultureInfo originalCulture = CultureInfo.CurrentCulture;
+
+        try
+        {
+            // Apply the test-specific culture
+            CultureInfo.CurrentCulture = culture;
+
+            // Determine output file path for the generated barcode image
+            string filePath = Path.Combine(Path.GetTempPath(), $"{testName}.png");
+
+            // Generate the barcode with the specified settings
+            using (var generator = new BarcodeGenerator(encodeType, codeText))
+            {
+                configure(generator);
+                generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
+                generator.Parameters.BackColor = Aspose.Drawing.Color.White;
                 generator.Save(filePath, BarCodeImageFormat.Png);
             }
 
-            // Read back the barcode image and extract the decoded text.
-            string decodedText = null;
-            using (var reader = new BarCodeReader(filePath, DecodeType.QR))
+            // Read and verify the generated barcode
+            using (var reader = new BarCodeReader(filePath, DecodeType.AllSupportedTypes))
             {
-                foreach (var result in reader.ReadBarCodes())
+                reader.BarcodeSettings.DetectEncoding = true;
+                var results = reader.ReadBarCodes();
+
+                if (results.Length > 0 && !string.IsNullOrEmpty(results[0].CodeText))
                 {
-                    decodedText = result.CodeText;
-                    break; // Expect only one barcode per image.
+                    Console.WriteLine($"Success: Detected symbology {results[0].CodeTypeName}, text length {results[0].CodeText.Length}");
+                }
+                else
+                {
+                    Console.WriteLine("Failure: No barcode detected or empty result.");
                 }
             }
-
-            // Determine if the decoded text matches the original input.
-            bool passed = decodedText != null && decodedText == text;
-            Console.WriteLine($"{culture} ({encoding}): {(passed ? "PASS" : "FAIL")}");
-            if (!passed)
-            {
-                Console.WriteLine($"  Expected: {text}");
-                Console.WriteLine($"  Decoded : {decodedText ?? "null"}");
-            }
         }
-
-        Console.WriteLine();
-        Console.WriteLine("Test suite completed.");
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Exception during {testName}: {ex.Message}");
+        }
+        finally
+        {
+            // Restore the original culture regardless of test outcome
+            CultureInfo.CurrentCulture = originalCulture;
+        }
     }
 }

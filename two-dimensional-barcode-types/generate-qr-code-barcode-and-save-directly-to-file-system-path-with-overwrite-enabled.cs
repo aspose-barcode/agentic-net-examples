@@ -1,8 +1,8 @@
 // Title: Generate QR Code and Save as PNG with Overwrite
-// Description: Demonstrates how to generate a QR Code barcode using Aspose.BarCode and save it directly to a file path, overwriting any existing file.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator with EncodeTypes.QR to create QR Code images. It shows setting code text, configuring error correction, and saving to PNG format. Developers working with barcode creation, especially QR codes, often need to generate images programmatically and control file output behavior.
+// Description: This example creates a QR Code barcode encoding a URL and saves it directly to a PNG file, overwriting any existing file.
+// Category-Description: Demonstrates basic Aspose.BarCode generation for QR Code symbology. It uses BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes to configure barcode parameters such as X‑Dimension and error correction level, then saves the image to the file system. Developers often need quick generation of QR codes for web links, product IDs, or authentication, and this pattern shows the typical steps for creating and perserving a barcode image.
 // Prompt: Generate a QR Code barcode and save directly to file system path with overwrite enabled.
-// Tags: qr code, generation, png, aspose.barcode, encode types
+// Tags: qr code, barcode generation, png, overwrite, aspose.barcode, encode types, image format
 
 using System;
 using System.IO;
@@ -10,31 +10,30 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Example program that creates a QR Code barcode and saves it as a PNG file,
-/// overwriting any existing file at the target location.
+/// Example program that generates a QR Code barcode and saves it as a PNG file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates the QR Code and writes it to disk.
+    /// Entry point of the application. Generates the QR Code and writes the output path to the console.
     /// </summary>
     static void Main()
     {
-        // Define the output file path; the file will be overwritten if it already exists.
-        string outputPath = Path.Combine(Environment.CurrentDirectory, "qr.png");
+        // Determine the full path for the output PNG file in the current directory.
+        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "qr_code.png");
 
-        // Initialize the QR Code generator with the QR symbology.
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR))
+        // Create a BarcodeGenerator for QR Code symbology with the desired data.
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
         {
-            // Set the text that will be encoded into the QR Code.
-            generator.CodeText = "Hello, Aspose QR!";
+            // Set the X dimension (module size) of the QR Code in pixels.
+            generator.Parameters.Barcode.XDimension.Pixels = 4f;
 
-            // Optionally configure the error correction level (Medium in this case).
+            // Configure the error correction level to Medium (Level M).
             generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
 
-            // Save the generated QR Code image to the specified path.
-            // The Save method overwrites any existing file at the same location.
-            generator.Save(outputPath);
+            // Save the generated QR Code directly to the specified file path as PNG.
+            // The Save method overwrites the file if it already exists.
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
         // Inform the user where the QR Code image has been saved.

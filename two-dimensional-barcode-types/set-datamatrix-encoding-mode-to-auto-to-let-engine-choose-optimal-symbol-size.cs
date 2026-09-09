@@ -1,8 +1,8 @@
-// Title: Generate DataMatrix barcode with automatic encoding mode
-// Description: Demonstrates how to set DataMatrix encoding mode to Auto, allowing the engine to choose the optimal symbol size for the given data, and saves the barcode as a PNG image.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator with EncodeTypes.DataMatrix and the DataMatrixEncodeMode enumeration. Typical use cases include creating DataMatrix barcodes where the optimal symbol size is not known in advance. Developers often need to configure encoding settings, specify output formats, and save barcodes to files, which this snippet showcases.
+// Title: Generate DataMatrix Barcode with Auto Encoding Mode
+// Description: Demonstrates how to create a DataMatrix barcode using Aspose.BarCode and let the engine automatically select the optimal symbol size by setting the encoding mode to Auto.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, focusing on DataMatrix symbology. It showcases the use of BarcodeGenerator, EncodeTypes, DataMatrixEncodeMode, and BarCodeImageFormat to produce a PNG image. Typical scenarios include generating compact, machine‑readable DataMatrix codes for inventory, packaging, or tracking where optimal symbol size is desired. Developers often need to adjust dimensions and encoding settings to meet specific layout or scanning requirements.
 // Prompt: Set DataMatrix encoding mode to Auto to let the engine choose the optimal symbol size.
-// Tags: datamatrix, encoding mode, auto, barcode generation, aspnet, aspose.barcode, png, file output
+// Tags: datamatrix, barcode, generation, auto, encoding, aspose.barcode, png
 
 using System;
 using System.IO;
@@ -10,36 +10,32 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generating a DataMatrix barcode with automatic encoding mode using Aspose.BarCode.
+/// Example program that generates a DataMatrix barcode image with automatic encoding mode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates the barcode, saves it as PNG, and writes the output path to console.
+    /// Entry point of the application. Generates a DataMatrix barcode, saves it as PNG, and writes the output path to the console.
     /// </summary>
     static void Main()
     {
-        // Define a temporary output directory and ensure it exists
-        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
-        Directory.CreateDirectory(outputDir);
+        // Define the temporary file path where the barcode image will be saved.
+        string outputPath = Path.Combine(Path.GetTempPath(), "DataMatrixAuto.png");
 
-        // Full path for the generated PNG file
-        string outputPath = Path.Combine(outputDir, "datamatrix_auto.png");
-
-        // Text to be encoded into the DataMatrix barcode
-        string codeText = "Sample DataMatrix";
-
-        // Initialize the barcode generator for DataMatrix with the sample text
-        using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, codeText))
+        // Create a BarcodeGenerator for DataMatrix symbology with the desired text.
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.DataMatrix, "Aspose常に先を行く"))
         {
-            // Configure the generator to let the engine automatically select the optimal symbol size
+            // Set the X-dimension (module size) to 4 pixels for better readability.
+            generator.Parameters.Barcode.XDimension.Pixels = 4;
+
+            // Enable automatic encoding mode so the engine selects the optimal symbol size.
             generator.Parameters.Barcode.DataMatrix.EncodeMode = DataMatrixEncodeMode.Auto;
 
-            // Save the generated barcode image in PNG format
+            // Save the generated barcode as a PNG image to the specified path.
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user where the barcode image was saved
+        // Inform the user where the barcode image has been saved.
         Console.WriteLine($"DataMatrix barcode saved to: {outputPath}");
     }
 }

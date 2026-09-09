@@ -1,8 +1,8 @@
-// Title: Generate QR Code with Manual Module Size and Save as PNG
-// Description: Demonstrates how to create a QR Code barcode with a custom module size of 4 pixels using Aspose.BarCode and export it as a PNG image.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, showcasing how to configure barcode parameters such as XDimension for QR Code symbology. It uses the BarcodeGenerator and related parameter classes to produce high‑quality images, a common requirement for developers integrating QR codes into web, mobile, or desktop applications. Typical use cases include generating printable QR codes, embedding them in documents, or serving them via APIs.
+// Title: Generate QR Code with Custom Module Size and Save as PNG
+// Description: This example creates a QR Code barcode with a manually set module size of 4 pixels and saves it as a PNG image.
+// Category-Description: Demonstrates Aspose.BarCode generation of QR Code symbology using the BarcodeGenerator class. It shows how to configure barcode parameters such as XDimension (module size) and export the result in PNG format. Developers working with barcode creation, custom sizing, and image output will find this pattern useful for integrating QR Code generation into .NET applications.
 // Prompt: Generate a QR Code barcode with manual module size of 4 pixels and export as PNG.
-// Tags: qr code, barcode generation, manual module size, png output, aspose.barcode
+// Tags: qr code, barcode generation, png, manual module size, aspose.barcode, c#
 
 using System;
 using System.IO;
@@ -10,29 +10,29 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Example program that creates a QR Code with a manually set module size and saves it as a PNG file.
+/// Demonstrates generating a QR Code with a custom module size and saving it as a PNG file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
+    /// Entry point of the example. Creates a QR Code barcode, sets a 4‑pixel module size, and writes the image to a temporary file.
     /// </summary>
     static void Main()
     {
-        // Define the full path for the output PNG file.
-        string outputPath = Path.Combine(Environment.CurrentDirectory, "qr.png");
+        // Define the output file path in the system's temporary folder.
+        string outputPath = Path.Combine(Path.GetTempPath(), "QrCode.png");
 
-        // Initialize a BarcodeGenerator for QR Code symbology with the desired text.
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Hello World"))
+        // Initialize the barcode generator for QR Code symbology with the desired text.
+        using (BarcodeGenerator gen = new BarcodeGenerator(EncodeTypes.QR, "Aspose"))
         {
-            // Configure the module size (XDimension) to 4 pixels.
-            generator.Parameters.Barcode.XDimension.Point = 4f;
+            // Set the module (X) dimension to 4 pixels for manual sizing.
+            gen.Parameters.Barcode.XDimension.Pixels = 4f;
 
-            // Render and save the barcode image in PNG format.
-            generator.Save(outputPath, BarCodeImageFormat.Png);
+            // Save the generated barcode as a PNG image to the specified path.
+            gen.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user where the QR Code image has been saved.
+        // Inform the user where the PNG file has been saved.
         Console.WriteLine($"QR Code saved to: {outputPath}");
     }
 }

@@ -1,8 +1,8 @@
-// Title: Generate QR Code and thumbnail preview
-// Description: Demonstrates creating a QR Code barcode, saving the full-size image, and producing a smaller thumbnail for preview purposes.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating how to use BarcodeGenerator, set QR error correction, and manipulate images with Aspose.Drawing to create thumbnails. Typical use cases include generating QR codes for URLs and providing lightweight preview images in web or mobile applications. Developers often need to export barcodes to PNG and create reduced‑size versions for UI thumbnails.
-// Prompt: Generate QR Code barcode and create a thumbnail version with reduced dimensions for preview.
-// Tags: qr code, barcode generation, thumbnail, image processing, aspose.barcode, aspose.drawing, png
+// Title: Generate QR Code and Create Thumbnail Preview
+// Description: Demonstrates generating a QR Code barcode with Aspose.BarCode, saving the full‑size PNG image, and producing a smaller thumbnail for quick preview.
+// Category-Description: This example belongs to the Aspose.BarCode image generation category. It showcases the use of BarcodeGenerator to create a QR Code, then leverages Aspose.Drawing's Bitmap and Graphics classes to resize the image. Developers commonly need to generate barcodes for documents and provide thumbnail previews in UI components or reports, making this pattern a frequent requirement in barcode‑related applications.
+/// Prompt: Generate QR Code barcode and create a thumbnail version with reduced dimensions for preview.
+/// Tags: qr code, barcode generation, thumbnail, image processing, aspose.barcode, aspose.drawing, png
 
 using System;
 using System.IO;
@@ -12,60 +12,60 @@ using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates QR Code generation and thumbnail creation using Aspose.BarCode and Aspose.Drawing.
+/// Example program that creates a QR Code barcode, saves it as a full‑size PNG,
+/// and generates a smaller thumbnail image for preview purposes.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates a QR Code, saves it, and generates a 100x100 thumbnail.
+    /// Entry point of the application.
     /// </summary>
     static void Main()
     {
-        // Define a temporary output directory and ensure it exists
-        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
-        Directory.CreateDirectory(outputDir);
+        // Define a temporary output folder for the generated images.
+        string outputFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
+        Directory.CreateDirectory(outputFolder);
 
-        // Build file paths for the full-size QR code and its thumbnail
-        string fullPath = Path.Combine(outputDir, "qr.png");
-        string thumbPath = Path.Combine(outputDir, "qr_thumb.png");
+        // Build full paths for the high‑resolution and thumbnail PNG files.
+        string fullImagePath = Path.Combine(outputFolder, "qr_full.png");
+        string thumbImagePath = Path.Combine(outputFolder, "qr_thumb.png");
 
-        // Initialize QR Code generator with sample text (a URL)
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
+        // Create a QR Code barcode generator with sample data.
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "Sample QR Code"))
         {
-            // Optional: set QR error correction level to Medium
-            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
+            // Optional: increase the module (pixel) size for better readability.
+            generator.Parameters.Barcode.XDimension.Pixels = 4f;
 
-            // Save the full-size QR code image as PNG
-            generator.Save(fullPath, BarCodeImageFormat.Png);
-            Console.WriteLine($"Full QR code saved to: {fullPath}");
+            // Save the full‑size QR Code directly to a PNG file.
+            generator.Save(fullImagePath, BarCodeImageFormat.Png);
 
-            // Generate a bitmap for further image processing
-            using (Bitmap bitmap = generator.GenerateBarCodeImage())
+            // Generate an in‑memory bitmap of the QR Code for further processing.
+            using (Bitmap fullBitmap = generator.GenerateBarCodeImage())
             {
-                // Write bitmap to a memory stream in PNG format
-                using (var ms = new MemoryStream())
+                // Calculate thumbnail dimensions (25 % of the original size, minimum 1 pixel).
+                int thumbWidth = Math.Max(1, fullBitmap.Width / 4);
+                int thumbHeight = Math.Max(1, fullBitmap.Height / 4);
+
+                // Create a new bitmap that will hold the scaled‑down image.
+                using (Bitmap thumbBitmap = new Bitmap(thumbWidth, thumbHeight))
                 {
-                    bitmap.Save(ms, ImageFormat.Png);
-                    ms.Position = 0; // Reset stream position for reading
-
-                    // Load the image from the memory stream to use GetThumbnailImage
-                    using (Image img = Image.FromStream(ms))
+                    // Obtain a graphics object to draw the scaled image.
+                    using (Graphics graphics = Graphics.FromImage(thumbBitmap))
                     {
-                        // Abort delegate required by GetThumbnailImage (always continue)
-                        Image.GetThumbnailImageAbort abort = delegate { return false; };
-
-                        // Create a 100x100 pixel thumbnail
-                        using (Image thumb = img.GetThumbnailImage(100, 100, abort, IntPtr.Zero))
-                        {
-                            // Save the thumbnail as PNG
-                            thumb.Save(thumbPath, ImageFormat.Png);
-                            Console.WriteLine($"Thumbnail saved to: {thumbPath}");
-                        }
+                        // Render the full‑size bitmap onto the thumbnail bitmap with scaling.
+                        graphics.DrawImage(
+                            fullBitmap,
+                            new Rectangle(0, 0, thumbWidth, thumbHeight));
                     }
+
+                    // Persist the thumbnail bitmap as a PNG file.
+                    thumbBitmap.Save(thumbImagePath, ImageFormat.Png);
                 }
             }
         }
 
-        Console.WriteLine("Barcode generation completed.");
+        // Output the locations of the generated files for user reference.
+        Console.WriteLine($"QR code saved to: {fullImagePath}");
+        Console.WriteLine($"Thumbnail saved to: {thumbImagePath}");
     }
 }

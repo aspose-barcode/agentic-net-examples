@@ -1,55 +1,51 @@
 // Title: Generate MaxiCode Mode 3 Barcode and Save as PNG
-// Description: Creates a MaxiCode barcode in mode 3 using Aspose.BarCode, then saves it as a PNG image file.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It demonstrates how to use the ComplexBarcodeGenerator with MaxiCodeCodetextMode3 to produce a MaxiCode symbol, a 2‑D barcode used in logistics and shipping. Developers commonly employ these APIs to encode postal information, country codes, and service categories, then export the result to common image formats such as PNG for downstream processing.
+// Description: Demonstrates creating a MaxiCode barcode in mode 3 using Aspose.BarCode, setting postal, country, and service data, and saving the result as a PNG image.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category, illustrating how to work with the MaxiCode symbology via the ComplexBarcodeGenerator and related codetext classes. Developers often need to encode shipping information for logistics, requiring mode‑specific fields such as postal code, country code, and service category. The snippet shows typical usage of MaxiCodeCodetextMode3, MaxiCodeStandardSecondMessage, and saving the barcode image.
 // Prompt: Generate a MaxiCode barcode using mode 3 and save the image as PNG file.
-// Tags: maxicode, barcode, generation, png, aspose.barcode, complexbarcodegenerator, mode3
+// Tags: maxicode, barcode, generation, png, aspose.barcode, complexbarcode, mode3
 
 using System;
 using System.IO;
 using Aspose.BarCode;
-using Aspose.BarCode.Generation;
 using Aspose.BarCode.ComplexBarcode;
+using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates how to generate a MaxiCode barcode in mode 3 and save it as a PNG file
-/// using Aspose.BarCode's ComplexBarcodeGenerator.
+/// Demonstrates generation of a MaxiCode barcode (mode 3) and saving it as a PNG file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Builds the MaxiCode codetext, generates the barcode,
-    /// and writes the resulting image to disk.
+    /// Entry point. Creates the barcode, configures its fields, and writes the image to disk.
     /// </summary>
     static void Main()
     {
-        // Define the full path for the output PNG file
-        string outputPath = Path.Combine(Environment.CurrentDirectory, "maxicode_mode3.png");
+        // Determine the full path for the output PNG file.
+        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "MaxiCodeMode3.png");
 
-        // Build the MaxiCode codetext for Mode 3, including postal code, country code,
-        // and service category. These fields are required for this mode.
+        // Create codetext for MaxiCode mode 3 and set mandatory fields.
         var maxiCodeCodetext = new MaxiCodeCodetextMode3
         {
-            PostalCode = "B1050",          // 6‑character alphanumeric postal code
-            CountryCode = 56,              // Example country code
-            ServiceCategory = 999          // Example service category
+            PostalCode = "B1050",
+            CountryCode = 56,
+            ServiceCategory = 999
         };
 
-        // Create a standard second message (plain text) that will be encoded
-        // alongside the primary MaxiCode data.
+        // Create and assign an optional second message.
         var secondMessage = new MaxiCodeStandardSecondMessage
         {
-            Message = "Sample MaxiCode Mode 3"
+            Message = "Second message"
         };
         maxiCodeCodetext.SecondMessage = secondMessage;
 
         // Initialize the complex barcode generator with the prepared codetext.
-        using (var complexGenerator = new ComplexBarcodeGenerator(maxiCodeCodetext))
+        using (var generator = new ComplexBarcodeGenerator(maxiCodeCodetext))
         {
-            // Save the generated barcode as a PNG image to the specified path.
-            complexGenerator.Save(outputPath, BarCodeImageFormat.Png);
+            // Save the generated barcode as a PNG image.
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user where the barcode image has been saved.
-        Console.WriteLine($"MaxiCode barcode (Mode 3) saved to: {outputPath}");
+        // Output the location of the saved barcode image.
+        Console.WriteLine($"MaxiCode barcode saved to {outputPath}");
     }
 }

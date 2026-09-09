@@ -1,91 +1,67 @@
 // Title: Generate QR Code and Create Thumbnail for Web UI
-// Description: Demonstrates generating a QR Code barcode, saving it as an image, creating a 100x100 thumbnail, and converting it to a Base64 string for embedding in a web page.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and image processing category. It showcases the use of BarcodeGenerator (EncodeTypes.QR) to create QR Code barcodes, Aspose.Drawing for image manipulation, and typical steps developers need when preparing barcode images for web UI display, such as thumbnail creation and Base64 encoding. Useful for web developers integrating dynamic barcodes into HTML or JavaScript front‑ends.
+// Description: Demonstrates generating a QR Code barcode, saving it as a PNG file, and creating a 100x100 thumbnail image for display in a web interface.
+// Category-Description: This example belongs to the Aspose.BarCode generation and image manipulation category. It showcases the use of BarcodeGenerator (Aspose.BarCode.Generation) to create QR Code barcodes, and Aspose.Drawing to resize images. Typical scenarios include preparing barcode images for web pages, mobile apps, or any UI where a smaller preview is needed. Developers often need to generate barcodes on the fly and provide thumbnail previews without additional third‑party tools.
 // Prompt: Generate QR Code barcode and retrieve thumbnail from cloud storage for display in web UI.
-// Tags: qr code, barcode generation, thumbnail, base64, aspose.barcode, aspose.drawing, image processing, web ui
+// Tags: qr code, barcode generation, thumbnail, image processing, aspose.barcode, aspose.drawing, png
 
 using System;
 using System.IO;
-using System.Text;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates QR Code generation, thumbnail creation, and Base64 conversion for web UI display.
+/// Example program that creates a QR Code barcode, saves it, and generates a thumbnail image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates a QR Code image, generates a thumbnail, and outputs the Base64 string.
+    /// Entry point of the example. Generates a QR Code, creates a thumbnail, and writes file paths to the console.
     /// </summary>
     static void Main()
     {
-        // Define the text to encode in the QR Code.
-        const string qrText = "https://example.com";
+        // Create a unique temporary folder to store generated files
+        string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
 
-        // Create a temporary directory to store the generated QR Code image.
-        string tempDir = Path.Combine(Path.GetTempPath(), "AsposeQrDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempDir);
-        string qrImagePath = Path.Combine(tempDir, "qr.png");
+        // Define file paths for the QR code image and its thumbnail
+        string qrPath = Path.Combine(tempFolder, "qr.png");
+        string thumbPath = Path.Combine(tempFolder, "qr_thumb.png");
 
-        // 1. Generate QR Code barcode and save it to a PNG file.
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR))
+        // Generate QR Code barcode and save it as PNG
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "Hello Aspose Barcode"))
         {
-            generator.CodeText = qrText;
-            // Optional: set a high error correction level for better resilience.
-            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
-            generator.Save(qrImagePath);
+            // Set module size (pixel dimension) for the QR code
+            generator.Parameters.Barcode.XDimension.Pixels = 4f;
+            // Set error correction level to Medium (Level M)
+            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
+            // Save the generated QR code image
+            generator.Save(qrPath, BarCodeImageFormat.Png);
         }
 
-        // 2. Load the saved QR Code image and create a 100x100 thumbnail.
-        using (Image originalImage = Image.FromFile(qrImagePath))
+        // Load the generated QR code image and create a 100x100 thumbnail
+        using (Bitmap original = new Bitmap(qrPath))
         {
-            const int thumbWidth = 100;
-            const int thumbHeight = 100;
+            int thumbWidth = 100;
+            int thumbHeight = 100;
 
-            using (var thumbnail = new Bitmap(thumbWidth, thumbHeight))
+            // Create a new bitmap for the thumbnail
+            using (Bitmap thumbnail = new Bitmap(thumbWidth, thumbHeight))
             {
-                using (var graphics = Graphics.FromImage(thumbnail))
+                // Draw the original image onto the thumbnail bitmap, scaling it down
+                using (Graphics graphics = Graphics.FromImage(thumbnail))
                 {
-                    // Draw the original image scaled down to the thumbnail dimensions.
-                    graphics.DrawImage(originalImage, new Rectangle(0, 0, thumbWidth, thumbHeight));
+                    graphics.DrawImage(original, 0, 0, thumbWidth, thumbHeight);
                 }
 
-                // 3. Convert the thumbnail to a Base64 string (simulating UI display).
-                using (var ms = new MemoryStream())
-                {
-                    thumbnail.Save(ms, ImageFormat.Png);
-                    string base64Thumb = Convert.ToBase64String(ms.ToArray());
-                    Console.WriteLine("Thumbnail Base64:");
-                    Console.WriteLine(base64Thumb);
-                }
+                // Save the thumbnail as PNG
+                thumbnail.Save(thumbPath, ImageFormat.Png);
             }
         }
 
-        // 4. Placeholder for cloud storage thumbnail retrieval.
-        // In a real environment you would download the thumbnail from Azure Blob, AWS S3, etc.
-        // Example (commented out because the SDK is not available in the snippet runner):
-        /*
-        // Azure Blob example:
-        // var blobClient = new BlobClient(connectionString, containerName, blobName);
-        // using var downloadStream = new MemoryStream();
-        // blobClient.DownloadTo(downloadStream);
-        // downloadStream.Position = 0;
-        // using var cloudImage = Image.FromStream(downloadStream);
-        // // Process cloudImage as needed...
-        */
-
-        // Clean up temporary files and directories.
-        try
-        {
-            if (File.Exists(qrImagePath))
-                File.Delete(qrImagePath);
-            Directory.Delete(tempDir, true);
-        }
-        catch
-        {
-            // Ignored - cleanup failure should not affect program exit.
-        }
+        // Output the locations of the generated files
+        Console.WriteLine("QR code saved to: " + qrPath);
+        Console.WriteLine("Thumbnail saved to: " + thumbPath);
     }
 }

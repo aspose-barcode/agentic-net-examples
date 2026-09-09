@@ -1,113 +1,95 @@
-// Title: GS1 Composite Barcode Generation with In-Memory Caching
-// Description: Demonstrates generating a GS1 Composite barcode image, caching the result in memory, and reusing the cached image for subsequent requests.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to create GS1 Composite barcodes using the BarcodeGenerator class. It illustrates typical use cases such as configuring linear and 2D components, adjusting rendering parameters, and implementing a simple in‑memory cache to improve performance for repeated barcode requests. Developers working with barcode rendering, image output, or performance optimization will find this pattern useful.
+// Title: GS1 Composite Barcode Image Caching Example
+// Description: Demonstrates how to cache generated GS1 Composite barcode images in memory to avoid redundant generation for identical requests.
+// Category-Description: This example belongs to the Aspose.BarCode image generation category, showcasing the use of BarcodeGenerator, EncodeTypes, and GS1CompositeBar parameters. Developers often need to generate barcodes repeatedly in web or desktop applications; caching the resulting image bytes improves performance and reduces CPU load. The pattern illustrated here is common for high‑throughput scenarios where the same barcode data is requested multiple times.
 // Prompt: Implement caching of generated GS1 Composite barcode images to improve performance for repeated requests.
-// Tags: gs1 composite, barcode generation, caching, image output, aspose.barcode, png
+// Tags: gs1 composite, barcode caching, image generation, aspose.barcode, c#
 
 using System;
 using System.Collections.Generic;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Simple thread‑unsafe in‑memory cache for barcode image byte arrays keyed by the barcode's code text.
+/// Provides an in‑memory cache for barcode image byte arrays keyed by barcode content and configuration.
 /// </summary>
 class BarcodeCache
 {
-    // Internal dictionary storing generated barcode images.
-    private static readonly Dictionary<string, byte[]> _cache = new Dictionary<string, byte[]>();
+    // Internal dictionary storing generated image data keyed by a composite string.
+    private readonly Dictionary<string, byte[]> _cache = new Dictionary<string, byte[]>();
 
     /// <summary>
-    /// Retrieves a cached barcode image or generates it using the supplied function and stores it in the cache.
+    /// Retrieves a cached barcode image or generates a new one if not present.
     /// </summary>
-    /// <param name="codeText">The barcode code text used as the cache key.</param>
-    /// <param name="generatorFunc">A function that generates the barcode image bytes when a cache miss occurs.</param>
-    /// <returns>Byte array containing the barcode image.</returns>
-    public static byte[] GetOrAdd(string codeText, Func<byte[]> generatorFunc)
+    /// <param name="codeText">The raw data to encode in the barcode.</param>
+    /// <param name="linearComponent">The linear component type (e.g., GS1‑Code128).</param>
+    /// <param name="twoDComponent">The 2‑D component type (e.g., CC_A or CC_B).</param>
+    /// <returns>Byte array containing the PNG image of the generated barcode.</returns>
+    public byte[] GetOrCreate(string codeText, BaseEncodeType linearComponent, TwoDComponentType twoDComponent)
     {
+        // Build a unique cache key from the input parameters.
+        string key = $"{codeText}|{linearComponent}|{twoDComponent}";
+
         // Return cached data if it exists.
-        if (_cache.TryGetValue(codeText, out var cachedData))
+        if (_cache.TryGetValue(key, out var data))
         {
-            Console.WriteLine($"Cache hit for codeText: {codeText}");
-            return cachedData;
+            Console.WriteLine($"Cache hit for key: {key}");
+            return data;
         }
 
-        // Cache miss – generate the barcode and store it.
-        Console.WriteLine($"Cache miss for codeText: {codeText}. Generating barcode...");
-        var data = generatorFunc();
-        _cache[codeText] = data;
-        return data;
+        // Cache miss – generate a new barcode image.
+        Console.WriteLine($"Generating barcode for key: {key}");
+        using (var generator = new BarcodeGenerator(EncodeTypes.GS1CompositeBar, codeText))
+        {
+            // Configure GS1 Composite barcode specifics.
+            generator.Parameters.Barcode.GS1CompositeBar.LinearComponentType = linearComponent;
+            generator.Parameters.Barcode.GS1CompositeBar.TwoDComponentType = twoDComponent;
+            generator.Parameters.Barcode.GS1CompositeBar.AllowOnlyGS1Encoding = false;
+            generator.Parameters.Barcode.XDimension.Pixels = 2f;
+
+            // Save the generated image to a memory stream.
+            using (var ms = new MemoryStream())
+            {
+                generator.Save(ms, BarCodeImageFormat.Png);
+                data = ms.ToArray();
+
+                // Store the generated bytes in the cache for future requests.
+                _cache[key] = data;
+                return data;
+            }
+        }
     }
 }
 
 /// <summary>
-/// Entry point demonstrating GS1 Composite barcode generation with caching and file output.
+/// Demonstrates usage of <see cref="BarcodeCache"/> to generate and cache GS1 Composite barcodes.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Generates a GS1 Composite barcode, caches the image, and writes two files to illustrate cache reuse.
+    /// Entry point of the example. Generates three barcode images, reusing the cached result for identical parameters.
     /// </summary>
     static void Main()
     {
-        // Sample GS1 Composite barcode code text.
-        // AI (01) requires exactly 14 digits; the linear part is followed by a 2D component separated by '|'.
-        string linearPart = "(01)00123456789012";
-        string twoDPart = "(21)A12345678";
-        string codeText = $"{linearPart}|{twoDPart}";
+        // Instantiate the cache manager.
+        var cache = new BarcodeCache();
 
-        // First request – generates the barcode and caches the image.
-        byte[] imageBytes1 = BarcodeCache.GetOrAdd(codeText, () => GenerateGs1CompositeBarcode(codeText));
-        WriteImageToFile("barcode1.png", imageBytes1);
+        // Define barcode data and component types.
+        string code = "(01)98898765432106|(10)0123";
+        BaseEncodeType linear = EncodeTypes.GS1Code128;
+        TwoDComponentType twoD_A = TwoDComponentType.CC_A;
+        TwoDComponentType twoD_B = TwoDComponentType.CC_B;
 
-        // Second request with the same code text – retrieves the image from the cache.
-        byte[] imageBytes2 = BarcodeCache.GetOrAdd(codeText, () => GenerateGs1CompositeBarcode(codeText));
-        WriteImageToFile("barcode2.png", imageBytes2);
+        // First request (generates and caches the image).
+        byte[] img1 = cache.GetOrCreate(code, linear, twoD_A);
+        File.WriteAllBytes("barcode1.png", img1);
 
-        Console.WriteLine("Barcode images have been saved.");
-    }
+        // Second request with the same parameters (retrieved from cache).
+        byte[] img2 = cache.GetOrCreate(code, linear, twoD_A);
+        File.WriteAllBytes("barcode2.png", img2);
 
-    /// <summary>
-    /// Creates a GS1 Composite barcode image in PNG format using Aspose.BarCode.
-    /// </summary>
-    /// <param name="codeText">The combined linear and 2D component text.</param>
-    /// <returns>Byte array containing the PNG image.</returns>
-    private static byte[] GenerateGs1CompositeBarcode(string codeText)
-    {
-        // Initialize the generator with the GS1 Composite symbology.
-        using (var generator = new BarcodeGenerator(EncodeTypes.GS1CompositeBar, codeText))
-        {
-            // Configure the linear component to use GS1‑Code128.
-            generator.Parameters.Barcode.GS1CompositeBar.LinearComponentType = EncodeTypes.GS1Code128;
-            // Configure the 2D component to use CC‑A (Composite Component A).
-            generator.Parameters.Barcode.GS1CompositeBar.TwoDComponentType = TwoDComponentType.CC_A;
-
-            // Optional rendering settings.
-            generator.Parameters.Barcode.Pdf417.AspectRatio = 3f;
-            generator.Parameters.Barcode.XDimension.Pixels = 3f;
-            generator.Parameters.Barcode.BarHeight.Pixels = 100f;
-
-            // Save the barcode to a memory stream in PNG format.
-            using (var ms = new MemoryStream())
-            {
-                generator.Save(ms, BarCodeImageFormat.Png);
-                return ms.ToArray();
-            }
-        }
-    }
-
-    /// <summary>
-    /// Writes a byte array containing image data to a file on disk.
-    /// </summary>
-    /// <param name="fileName">The target file name.</param>
-    /// <param name="imageData">The image data to write.</param>
-    private static void WriteImageToFile(string fileName, byte[] imageData)
-    {
-        using (var fs = new FileStream(fileName, FileMode.Create, FileAccess.Write))
-        {
-            fs.Write(imageData, 0, imageData.Length);
-        }
+        // Third request with a different 2‑D component (generates a new image).
+        byte[] img3 = cache.GetOrCreate(code, linear, twoD_B);
+        File.WriteAllBytes("barcode3.png", img3);
     }
 }

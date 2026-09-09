@@ -1,85 +1,75 @@
-// Title: Generate QR Code, store as BLOB, and output Base64 for web display
-// Description: Demonstrates creating a QR Code barcode, saving its image as a binary BLOB, simulating database storage, retrieving it, verifying via decoding, and producing a Base64 string suitable for embedding in an HTML <img> tag.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for QR Code creation, BarCodeReader for decoding, and common image handling classes. Developers often need to generate barcodes, persist them (e.g., in databases as BLOBs), and later render them on web pages; this snippet provides a concise reference for those workflows.
+// Title: Generate QR Code, store as BLOB, and display as Base64
+// Description: This example creates a QR Code barcode, saves it to a memory stream, simulates storing the image as a BLOB in a database, retrieves it, converts it to a Base64 string for web embedding, and decodes the barcode.
+// Category-Description: Demonstrates core Aspose.BarCode operations—barcode generation (BarcodeGenerator), image handling (BarCodeImageFormat), and barcode recognition (BarCodeReader). Typical use cases include creating QR codes for web pages, persisting barcode images as BLOBs in databases, and later retrieving and decoding them. Developers working with Aspose.BarCode often need to convert barcodes to various formats, store them efficiently, and extract encoded data on demand.
 // Prompt: Generate QR Code barcode and retrieve stored BLOB from database for display on web page.
-// Tags: qr code, barcode generation, barcode recognition, blob, base64, aspose.barcode
+// Tags: qr code, barcode generation, barcode recognition, blob storage, base64, aspose.barcode, image, web
 
 using System;
 using System.IO;
-using System.Text;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that creates a QR Code, stores it as a binary BLOB, retrieves it,
-/// verifies the content, and outputs a Base64 string for web page embedding.
+/// Demonstrates QR Code generation, simulated BLOB storage, retrieval, Base64 conversion, and decoding using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Executes the QR Code generation, BLOB storage/retrieval,
-    /// decoding verification, and Base64 conversion steps.
+    /// Entry point that runs the QR Code generation and retrieval workflow.
     /// </summary>
     static void Main()
     {
-        // Step 1: Generate a QR Code barcode and obtain its binary representation (BLOB)
-        byte[] barcodeBlob;
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR))
+        // Define the text to encode in the QR Code.
+        string codeText = "https://example.com";
+
+        // Create a QR Code generator with the specified text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, codeText))
         {
-            // Set the data to encode
-            generator.CodeText = "https://example.com";
+            // Set the error correction level (optional).
+            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
 
-            // Configure high error correction level for better resilience
-            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
-
-            // Save the generated barcode image to a memory stream in PNG format
+            // Save the generated barcode image to a memory stream in PNG format.
             using (var ms = new MemoryStream())
             {
                 generator.Save(ms, BarCodeImageFormat.Png);
-                barcodeBlob = ms.ToArray(); // Capture the image bytes as a BLOB
-            }
-        }
+                byte[] imageBytes = ms.ToArray();
 
-        // Step 2: Simulate storing the BLOB in a database by writing it to a temporary file
-        string blobFilePath = Path.Combine(Path.GetTempPath(), "qr_barcode_blob.bin");
-        File.WriteAllBytes(blobFilePath, barcodeBlob);
-        Console.WriteLine($"Barcode BLOB stored at: {blobFilePath}");
+                // Simulate storing the image BLOB in a database by writing to a temporary file.
+                string simulatedDbPath = Path.Combine(Path.GetTempPath(), "qr_blob.bin");
+                File.WriteAllBytes(simulatedDbPath, imageBytes);
+                Console.WriteLine($"Barcode image stored to simulated DB file: {simulatedDbPath}");
 
-        // Step 3: Retrieve the BLOB from the simulated database (local file)
-        if (!File.Exists(blobFilePath))
-        {
-            Console.WriteLine("Error: Stored BLOB file not found.");
-            return;
-        }
-        byte[] retrievedBlob = File.ReadAllBytes(blobFilePath);
-
-        // Step 4: Convert the BLOB back to an image and verify it by decoding
-        using (var ms = new MemoryStream(retrievedBlob))
-        {
-            using (var image = new Bitmap(ms))
-            {
-                // Decode the QR code to ensure it was stored correctly
-                using (var reader = new BarCodeReader(image, DecodeType.QR))
+                // Simulate retrieving the BLOB from the database.
+                if (File.Exists(simulatedDbPath))
                 {
-                    var result = reader.ReadBarCodes();
-                    foreach (var barcode in result)
+                    byte[] retrievedBytes = File.ReadAllBytes(simulatedDbPath);
+
+                    // Convert the retrieved image bytes to a Base64 string for embedding in a web page.
+                    string base64 = Convert.ToBase64String(retrievedBytes);
+                    Console.WriteLine("Base64 Image for web page:");
+                    Console.WriteLine(base64);
+
+                    // Decode the barcode from the retrieved image to verify correctness.
+                    using (var msRead = new MemoryStream(retrievedBytes))
                     {
-                        Console.WriteLine($"Decoded Text: {barcode.CodeText}");
+                        using (var reader = new BarCodeReader(msRead, DecodeType.QR))
+                        {
+                            var results = reader.ReadBarCodes();
+                            foreach (var result in results)
+                            {
+                                Console.WriteLine($"Decoded text: {result.CodeText}");
+                            }
+                        }
                     }
                 }
-
-                // Step 5: Prepare a Base64 string for web display (e.g., <img src="data:image/png;base64,...">)
-                string base64 = Convert.ToBase64String(retrievedBlob);
-                Console.WriteLine("Base64 representation for web page:");
-                Console.WriteLine($"data:image/png;base64,{base64}");
+                else
+                {
+                    Console.WriteLine("Failed to retrieve barcode image from simulated DB.");
+                }
             }
         }
-
-        // Note: In a real application, the BLOB would be stored/retrieved from a database
-        // using appropriate data access libraries (e.g., ADO.NET, Entity Framework).
-        // The above file-based approach is used because database packages are not available
-        // in the snippet runner environment.
     }
 }

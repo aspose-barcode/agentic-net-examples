@@ -1,72 +1,64 @@
 // Title: QR Code Generation Benchmark Example
-// Description: Demonstrates generating a QR Code barcode using Aspose.BarCode and measuring the time required to create multiple barcodes.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating how to use the BarcodeGenerator class with QR Code symbology, configure error correction, render the barcode to a bitmap, and benchmark performance across repeated iterations. Developers commonly need to generate barcodes in bulk for high‑throughput applications, evaluate rendering speed, and avoid file I/O by using memory streams.
+// Description: Demonstrates generating a QR Code barcode using Aspose.BarCode and measuring the time taken to create multiple images.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating how to use the BarcodeGenerator class with QR symbology, configure QR-specific parameters, and render images to streams. Typical use cases include performance testing, batch barcode creation, and integration into automated pipelines where developers need to assess generation speed and resource usage.
 // Prompt: Generate QR Code barcode and benchmark generation time across 1000 iterations for performance.
-// Tags: qr code, barcode generation, performance benchmark, aspose.barcode, encode types, bitmap, memory stream
+// Tags: qr code, barcode generation, performance benchmark, aspose.barcode, encode types, image output, png, c#
 
 using System;
 using System.Diagnostics;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Provides an example that generates QR Code barcodes and benchmarks the generation time.
+/// Provides a console application that generates QR Code barcodes and benchmarks the generation time.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates QR Code barcodes a specified number of times,
-    /// measures the total elapsed time, and outputs average generation time.
+    /// Entry point of the application. Generates QR codes for a specified number of iterations and reports timing statistics.
     /// </summary>
-    /// <param name="args">Optional command‑line argument specifying the number of iterations.</param>
+    /// <param name="args">Optional command‑line argument specifying the number of iterations (default 1000).</param>
     static void Main(string[] args)
     {
-        // Determine iteration count (capped to 10 for safe execution)
+        // Default number of iterations; can be overridden via command‑line argument.
         int requestedIterations = 1000;
         if (args.Length > 0 && int.TryParse(args[0], out int parsed) && parsed > 0)
         {
             requestedIterations = parsed;
         }
+
+        // Safety cap to keep execution time reasonable in CI environments.
         int iterations = Math.Min(requestedIterations, 10);
 
-        // Prepare a stopwatch for benchmarking
-        Stopwatch sw = new Stopwatch();
-        sw.Start();
+        // Start measuring elapsed time.
+        var stopwatch = Stopwatch.StartNew();
 
-        // Generate QR Code barcodes repeatedly
-        for (int i = 0; i < iterations; i++)
+        // Initialize the barcode generator for QR symbology with the target data.
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
         {
-            // Create a QR Code generator with sample text
-            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
+            // Set QR‑specific error correction level.
+            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
+
+            // Generate the barcode image repeatedly.
+            for (int i = 0; i < iterations; i++)
             {
-                // Optional: set error correction level
-                generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
-
-                // Generate the barcode image as a bitmap
-                Bitmap bitmap = generator.GenerateBarCodeImage();
-
-                // Save the bitmap to a memory stream (avoids file I/O)
-                using (MemoryStream ms = new MemoryStream())
+                using (var bitmap = generator.GenerateBarCodeImage())
                 {
-                    bitmap.Save(ms, ImageFormat.Png);
+                    // Save the generated image to a memory stream in PNG format.
+                    using (var ms = new MemoryStream())
+                    {
+                        bitmap.Save(ms, ImageFormat.Png);
+                    }
                 }
-
-                // Dispose the bitmap explicitly to free resources
-                bitmap.Dispose();
             }
         }
 
-        sw.Stop();
+        // Stop timing and output results.
+        stopwatch.Stop();
 
-        // Calculate average time per iteration in milliseconds
-        double averageMs = sw.Elapsed.TotalMilliseconds / iterations;
-
-        // Output benchmark results
-        Console.WriteLine($"Generated {iterations} QR Code barcodes.");
-        Console.WriteLine($"Total time: {sw.Elapsed.TotalMilliseconds:F2} ms");
-        Console.WriteLine($"Average time per barcode: {averageMs:F2} ms");
+        Console.WriteLine($"Generated {iterations} QR code(s) in {stopwatch.ElapsedMilliseconds} ms.");
+        Console.WriteLine($"Average time per generation: {stopwatch.ElapsedMilliseconds / (double)iterations:F2} ms.");
     }
 }

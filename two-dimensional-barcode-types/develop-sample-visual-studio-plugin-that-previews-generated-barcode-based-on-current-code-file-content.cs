@@ -1,87 +1,64 @@
-// Title: Visual Studio plugin sample that generates a QR code preview from source file content
-// Description: Demonstrates reading a C# source file (or fallback text) and creating a QR code image using Aspose.BarCode. The image is saved to a temporary location for preview.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to use BarcodeGenerator with EncodeTypes.QR, configure basic parameters, and export to PNG. Developers working on IDE extensions, reporting tools, or any scenario that needs on‑the‑fly barcode creation can adapt this pattern. Typical use cases include previewing barcodes in Visual Studio extensions, generating documentation assets, or embedding barcodes in reports.
+// Title: Generate Barcode Preview from Source File Content
+// Description: This example reads the content of a source code file (or a default string) and creates a Code128 barcode image for quick visual preview.
+// Category-Description: Demonstrates Aspose.BarCode generation capabilities, focusing on the BarcodeGenerator class, EncodeTypes enumeration, and BarCodeImageFormat output options. Typical scenarios include creating barcodes from dynamic text, saving them as image files, and integrating previews into development tools. Developers often need to adjust appearance settings such as colors, resolution, and dimensions when generating barcodes programmatically.
 // Prompt: Develop a sample Visual Studio plugin that previews generated barcode based on current code file content.
-// Tags: qr code, barcode generation, image output, aspose.barcode, aspose.drawing, visual studio extension
+// Tags: barcode symbology, generation, png, aspose.barcode, code128, preview, file-io
 
 using System;
 using System.IO;
+using System.Text;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Sample console application that could be used as the core of a Visual Studio extension
-/// to generate a QR code preview from the current code file.
+/// Sample program that generates a Code128 barcode image from the content of a source file and saves it for preview.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Reads a source file path from arguments or locates the program's own .cs file,
-    /// generates a QR code image, and saves it to a temporary PNG file.
+    /// Entry point. Reads a source file (or uses a default string), creates a barcode, and writes the PNG to a temporary location.
     /// </summary>
-    /// <param name="args">Command‑line arguments; first argument may be a path to a source file.</param>
+    /// <param name="args">Command‑line arguments; the first argument may specify the source file path.</param>
     static void Main(string[] args)
     {
-        // ------------------------------------------------------------
-        // Determine the source code file to read
-        // ------------------------------------------------------------
-        string sourcePath = null;
-        if (args.Length > 0 && File.Exists(args[0]))
+        // Determine source file path: first argument or fallback to this source file if it exists.
+        string sourcePath = args.Length > 0 ? args[0] : "Program.cs";
+        string codeContent;
+
+        if (File.Exists(sourcePath))
         {
-            // Use the file path supplied via command line
-            sourcePath = args[0];
+            // Read the entire file using UTF‑8 encoding.
+            codeContent = File.ReadAllText(sourcePath, Encoding.UTF8);
         }
         else
         {
-            // Attempt to locate this program's .cs file in the same directory as the executable
-            string exePath = System.Reflection.Assembly.GetExecutingAssembly().Location;
-            string dir = Path.GetDirectoryName(exePath);
-            string candidate = Path.Combine(dir, "Program.cs");
-            if (File.Exists(candidate))
-                sourcePath = candidate;
+            // Use a placeholder when the file cannot be found.
+            codeContent = "No source file found. Using default text.";
         }
 
-        // ------------------------------------------------------------
-        // Read file content or fall back to a default string
-        // ------------------------------------------------------------
-        string codeText;
-        if (!string.IsNullOrEmpty(sourcePath) && File.Exists(sourcePath))
+        // Limit length to avoid excessively large barcodes.
+        if (codeContent.Length > 200)
         {
-            codeText = File.ReadAllText(sourcePath);
-        }
-        else
-        {
-            codeText = "Sample barcode preview content";
+            codeContent = codeContent.Substring(0, 200);
         }
 
-        // ------------------------------------------------------------
-        // QR codes have a practical length limit; truncate if necessary
-        // ------------------------------------------------------------
-        if (codeText.Length > 2000)
-            codeText = codeText.Substring(0, 2000);
-
-        // ------------------------------------------------------------
-        // Prepare output path (temporary folder)
-        // ------------------------------------------------------------
+        // Define the temporary output path for the PNG image.
         string outputPath = Path.Combine(Path.GetTempPath(), "barcode_preview.png");
 
-        // ------------------------------------------------------------
-        // Generate the barcode image using Aspose.BarCode
-        // ------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, codeText))
+        // Generate barcode image using Aspose.BarCode.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeContent))
         {
-            // Example parameter customizations
-            generator.Parameters.Barcode.XDimension.Point = 2f;               // Set module size
-            generator.Parameters.Barcode.FilledBars = false;                // Use non‑filled bars
-            generator.Parameters.Barcode.ThrowExceptionWhenCodeTextIncorrect = false; // Suppress validation errors
+            // Basic appearance settings.
+            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
+            generator.Parameters.BackColor = Aspose.Drawing.Color.White;
+            generator.Parameters.Resolution = 300f;
+            generator.Parameters.Barcode.XDimension.Point = 2f;
 
-            // Save the generated QR code as a PNG file
+            // Save to PNG file.
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user where the preview image was saved
         Console.WriteLine($"Barcode preview saved to: {outputPath}");
     }
 }

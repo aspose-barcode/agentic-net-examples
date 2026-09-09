@@ -1,77 +1,92 @@
-// Title: Batch QR Code Generation from Data List
-// Description: Demonstrates generating QR Code barcodes for multiple data strings and saving each as a JPEG file in a temporary folder.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating how to use the BarcodeGenerator class with EncodeTypes.QR to create QR codes in bulk. Typical use cases include batch processing of database records, exporting barcodes for inventory, or creating marketing assets. Developers often need to loop through data sources, configure QR error correction, and save images in common formats such as JPEG or PNG.
+// Title: Batch QR Code Generation from Database Records to JPEG Files
+// Description: Demonstrates generating QR Code barcodes for multiple records retrieved from a database and saving each as a JPEG image.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating how to use the BarcodeGenerator class with EncodeTypes.QR to create QR codes in bulk. Typical use cases include batch processing of data rows, exporting barcodes to image files, and integrating barcode creation into automated workflows. Developers often need to configure dimensions, error correction levels, and output formats, which this sample showcases.
 // Prompt: Generate QR Code barcodes in batch from database query and store each as JPEG in folder.
-// Tags: qr code, batch generation, barcode, jpeg, aspose.barcode, encode types, barcodegenerator, error correction
+// Tags: qr code, batch generation, jpeg, aspose.barcode, barcodegenerator, encode types, image export
 
 using System;
-using System.Collections.Generic;
 using System.IO;
+using System.Collections.Generic;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates batch generation of QR Code barcodes and saving them as JPEG files.
+/// Example program that generates QR Code barcodes for a set of records and saves each as a JPEG file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Retrieves sample data, creates an output folder, generates QR codes, and saves them.
+    /// Entry point of the application. Simulates a database query, creates a unique output folder,
+    /// generates QR codes for each record, and saves them as JPEG images.
     /// </summary>
     static void Main()
     {
-        // In a real scenario, replace GetSampleData() with a method that queries a database.
-        // Example (requires a database provider):
-        // var data = GetDataFromDatabase(connectionString, query);
-        List<string> data = GetSampleData();
-
-        // Create a unique output folder in the system's temporary directory.
-        string outputFolder = Path.Combine(Path.GetTempPath(), "Batch_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(outputFolder);
-
-        // Iterate over each data item and generate a corresponding QR code.
-        for (int i = 0; i < data.Count; i++)
+        // Simulated database query result: a list of record IDs and associated QR code text.
+        List<(int Id, string CodeText)> records = new List<(int, string)>
         {
-            string codeText = data[i];
-            string fileName = $"qr_{i + 1}.jpeg";
-            string filePath = Path.Combine(outputFolder, fileName);
+            (1, "https://example.com/1"),
+            (2, "https://example.com/2"),
+            (3, "https://example.com/3"),
+            (4, "https://example.com/4"),
+            (5, "https://example.com/5")
+        };
 
-            // Initialize the barcode generator for QR encoding with the current text.
-            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, codeText))
+        // Create a unique temporary output folder for the generated images.
+        string outputFolder = Path.Combine(Path.GetTempPath(), "QrBatch_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputFolder);
+        Console.WriteLine($"Output folder: {outputFolder}");
+
+        // Iterate over each record and generate a QR code image.
+        foreach (var record in records)
+        {
+            try
             {
-                // Optional: set a higher error correction level for better resilience.
-                generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
+                // Initialize the barcode generator with QR encoding and the record's text.
+                using (var generator = new BarcodeGenerator(EncodeTypes.QR, record.CodeText))
+                {
+                    // Optional appearance adjustments.
+                    generator.Parameters.Barcode.XDimension.Pixels = 4f;               // Set module size.
+                    generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM; // Set error correction level.
+                    generator.Parameters.Resolution = 300f;                           // Set image resolution.
 
-                // Save the generated QR code as a JPEG file. The format is inferred from the file extension.
-                generator.Save(filePath);
+                    // Build a safe file name by replacing invalid characters.
+                    string safeText = record.CodeText.Replace(Path.GetInvalidFileNameChars(), '_');
+                    string fileName = $"{record.Id}_{safeText}.jpg";
+                    string filePath = Path.Combine(outputFolder, fileName);
+
+                    // Save the generated QR code as a JPEG image.
+                    generator.Save(filePath, BarCodeImageFormat.Jpeg);
+                    Console.WriteLine($"Saved QR code for record {record.Id} to {filePath}");
+                }
             }
-
-            // Log the successful creation of the QR code file.
-            Console.WriteLine($"Saved QR code for \"{codeText}\" to \"{filePath}\"");
+            catch (Exception ex)
+            {
+                // Log any errors that occur during generation for this record.
+                Console.WriteLine($"Failed to generate QR code for record {record.Id}: {ex.Message}");
+            }
         }
 
-        // Indicate that the batch process has finished.
-        Console.WriteLine("Batch QR code generation completed.");
+        Console.WriteLine("Batch generation completed.");
     }
+}
 
-    // Mock method to simulate database query results.
-    static List<string> GetSampleData()
+// Extension method to replace invalid filename characters with a specified replacement character.
+static class StringExtensions
+{
+    /// <summary>
+    /// Replaces each character in the provided array with the specified replacement character.
+    /// </summary>
+    /// <param name="str">The original string.</param>
+    /// <param name="chars">Array of characters to replace.</param>
+    /// <param name="replacement">The character to insert in place of each invalid character.</param>
+    /// <returns>A new string with invalid characters replaced.</returns>
+    public static string Replace(this string str, char[] chars, char replacement)
     {
-        return new List<string>
+        foreach (char c in chars)
         {
-            "https://example.com/item/1",
-            "https://example.com/item/2",
-            "https://example.com/item/3",
-            "https://example.com/item/4",
-            "https://example.com/item/5"
-        };
+            str = str.Replace(c, replacement);
+        }
+        return str;
     }
-
-    // Placeholder for real database access (not implemented in this environment).
-    // static List<string> GetDataFromDatabase(string connectionString, string query)
-    // {
-    //     // Implement database connection and query execution here.
-    //     // Return a list of strings representing the data to encode.
-    // }
 }

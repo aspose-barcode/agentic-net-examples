@@ -1,8 +1,8 @@
-// Title: Barcode generation with retry on temporary I/O errors
-// Description: Demonstrates how to generate a Code128 barcode image and save it to disk with retry logic handling transient I/O exceptions.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing the use of BarcodeGenerator, EncodeTypes, and file I/O handling. Developers often need to create barcodes programmatically and ensure reliable saving to storage, especially when dealing with temporary file system issues. The pattern shown helps implement robust retry mechanisms for common barcode output scenarios.
+// Title: Barcode Generation with Retry Logic for Temporary IO Failures
+// Description: Demonstrates how to generate a barcode image using Aspose.BarCode and implement retry logic when temporary I/O exceptions occur while saving the file to disk.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator, encoding types, and image format classes. It shows typical scenarios where developers need to handle transient file system errors during barcode image creation, employing retry loops to improve robustness. Useful for applications that generate barcodes in batch processes or cloud environments where I/O reliability may vary.
 // Prompt: Implement retry logic for barcode generation when temporary IO exceptions occur while writing to disk.
-// Tags: barcode generation, code128, retry logic, io exception, aspose.barcode, image output
+// Tags: barcode, generation, retry, ioexception, png, code128, aspose.barcode, c#
 
 using System;
 using System.IO;
@@ -10,85 +10,61 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Provides an entry point that generates a barcode image with retry logic for temporary I/O failures.
+/// Demonstrates barcode generation with retry logic for handling temporary I/O errors.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Main method – defines barcode parameters, invokes the generation routine, and reports the result.
+    /// Entry point of the example. Creates a temporary output folder and initiates barcode generation with retry handling.
     /// </summary>
     static void Main()
     {
-        // Define barcode parameters
-        string fileName = "sample_barcode.png";
-        string outputPath = Path.Combine(Path.GetTempPath(), fileName);
+        // Create a unique temporary folder for output
+        string outputFolder = Path.Combine(Path.GetTempPath(), "BarcodeRetryDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputFolder);
+
+        // Define the full path for the barcode image file
+        string outputPath = Path.Combine(outputFolder, "barcode.png");
+        string codeText = "12345678";
         BaseEncodeType encodeType = EncodeTypes.Code128;
-        string codeText = "123ABC";
+        int maxAttempts = 3;
 
-        // Attempt to generate and save the barcode with retry logic
-        bool success = GenerateBarcodeWithRetry(outputPath, encodeType, codeText, maxAttempts: 3);
-
-        // Output the final status
-        Console.WriteLine(success
-            ? $"Barcode successfully saved to: {outputPath}"
-            : "Failed to save barcode after multiple attempts.");
+        // Generate the barcode image with retry logic
+        GenerateBarcodeWithRetry(outputPath, codeText, encodeType, maxAttempts);
     }
 
-    /// <summary>
-    /// Generates a barcode and saves it to disk, retrying on temporary I/O exceptions.
-    /// </summary>
-    /// <param name="outputPath">Full file path where the barcode image will be saved.</param>
-    /// <param name="type">The barcode symbology type.</param>
-    /// <param name="codeText">The text to encode.</param>
-    /// <param name="maxAttempts">Maximum number of retry attempts.</param>
-    /// <returns>True if the barcode was saved successfully; otherwise false.</returns>
-    static bool GenerateBarcodeWithRetry(string outputPath, BaseEncodeType type, string codeText, int maxAttempts)
+    static void GenerateBarcodeWithRetry(string filePath, string codeText, BaseEncodeType encodeType, int maxAttempts)
     {
-        for (int attempt = 1; attempt <= maxAttempts; attempt++)
+        // Initialize the barcode generator with the specified symbology and data
+        using (var generator = new BarcodeGenerator(encodeType, codeText))
         {
-            try
+            // Example of setting a parameter (optional)
+            generator.Parameters.Barcode.XDimension.Pixels = 2f;
+
+            // Attempt to save the barcode image, retrying on temporary I/O failures
+            for (int attempt = 1; attempt <= maxAttempts; attempt++)
             {
-                // Ensure the target directory exists
-                string directory = Path.GetDirectoryName(outputPath);
-                if (!Directory.Exists(directory))
+                try
                 {
-                    Directory.CreateDirectory(directory);
+                    generator.Save(filePath, BarCodeImageFormat.Png);
+                    Console.WriteLine($"Barcode successfully saved to: {filePath}");
+                    break; // Exit loop on success
                 }
-
-                // Create the generator, configure optional parameters, and save the barcode
-                using (var generator = new BarcodeGenerator(type, codeText))
+                catch (IOException ex)
                 {
-                    // Example of setting a barcode parameter (optional)
-                    generator.Parameters.Barcode.XDimension.Point = 2f;
-
-                    generator.Save(outputPath);
+                    Console.WriteLine($"Attempt {attempt} failed with IO exception: {ex.Message}");
+                    if (attempt == maxAttempts)
+                    {
+                        Console.WriteLine("All retry attempts exhausted. Barcode generation failed.");
+                    }
                 }
-
-                // Saving succeeded – exit early
-                return true;
-            }
-            catch (IOException ioEx)
-            {
-                // Log the I/O exception and retry if attempts remain
-                Console.WriteLine($"Attempt {attempt} failed due to I/O error: {ioEx.Message}");
-                if (attempt == maxAttempts)
+                catch (Exception ex)
                 {
-                    // No more attempts left
-                    return false;
+                    Console.WriteLine($"Attempt {attempt} failed with unexpected exception: {ex.Message}");
+                    // Non-IO exceptions are not retried
+                    break;
                 }
-
-                // Optionally, introduce a short delay before the next attempt
-                // (omitted for brevity)
-            }
-            catch (Exception ex)
-            {
-                // For non-I/O exceptions, log and abort retries
-                Console.WriteLine($"Unexpected error on attempt {attempt}: {ex.Message}");
-                return false;
             }
         }
-
-        // Should never reach here
-        return false;
     }
 }

@@ -1,39 +1,50 @@
-// Title: Generate a rectangular DataMatrix barcode (10 rows x 30 columns)
-// Description: Demonstrates how to configure a DataMatrix barcode to use a rectangular shape approximating 10 rows and 30 columns and save it as a PNG image.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, focusing on DataMatrix symbology. It shows how to select a specific rectangular version of a DataMatrix barcode using the BarcodeGenerator class, a common requirement when fitting barcodes into constrained layouts. Developers often need to control barcode dimensions for packaging, labeling, or UI rendering, and this snippet illustrates the typical API usage for version selection and image output.
+// Title: Generate a rectangular DataMatrix barcode (approx. 10x30) and save as PNG
+// Description: This example creates a DataMatrix barcode using a rectangular version close to 10 rows by 30 columns, sets the X dimension for better visibility, and saves the image as a PNG file.
+// Category-Description: Demonstrates Aspose.BarCode generation for DataMatrix symbology, focusing on selecting a specific rectangular version. The example uses BarcodeGenerator, EncodeTypes, and DataMatrixVersion classes to configure the barcode, a common requirement when space constraints or layout considerations demand non‑square matrices. Ideal for developers needing to produce printable or on‑screen DataMatrix codes with custom dimensions.
 // Prompt: Configure DataMatrix barcode to use rectangular shape with 10 rows and 30 columns.
-// Tags: datamatrix, barcode, rectangular, version, aspose.barcode, c#, image, png, generation
+// Tags: datamatrix, barcode, rectangular, version, png, aspose.barcode, generation
 
 using System;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Provides an entry point that generates a rectangular DataMatrix barcode and saves it as a PNG file.
+/// Demonstrates generating a rectangular DataMatrix barcode and saving it as a PNG image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Generates a DataMatrix barcode with a rectangular version close to 10 rows by 30 columns,
-    /// then writes the resulting image to the file system.
+    /// Entry point that creates the barcode, configures its version, and writes the image to a temporary folder.
     /// </summary>
     static void Main()
     {
-        // The text to be encoded in the barcode.
-        string codeText = "HelloWorld";
+        // Define output directory in the system temporary folder and ensure it exists
+        string outputDir = Path.Combine(Path.GetTempPath(), "DataMatrixDemo");
+        Directory.CreateDirectory(outputDir);
 
-        // Initialize the barcode generator for DataMatrix symbology.
+        // Full path for the generated PNG file
+        string outputPath = Path.Combine(outputDir, "datamatrix.png");
+
+        // Text to encode in the barcode
+        string codeText = "SampleData";
+
+        // Initialize the barcode generator for DataMatrix symbology
         using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, codeText))
         {
-            // Select a rectangular version that best matches the desired 10x30 size.
-            // The exact 10x30 version is unavailable; ECC200_12x26 is the nearest alternative.
-            generator.Parameters.Barcode.DataMatrix.Version = DataMatrixVersion.ECC200_12x26;
+            // Set a rectangular version close to the requested 10 rows x 30 columns.
+            // Exact 10x30 is unavailable; ECC200_12x36 is the nearest rectangular size.
+            generator.Parameters.Barcode.DataMatrix.Version = DataMatrixVersion.ECC200_12x36;
 
-            // Save the generated barcode as a PNG image.
-            generator.Save("datamatrix.png");
+            // Optional: increase the X dimension (module size) for better visual clarity
+            generator.Parameters.Barcode.XDimension.Pixels = 4;
+
+            // Save the generated barcode as a PNG image
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user that the barcode image has been created.
-        Console.WriteLine("DataMatrix barcode generated: datamatrix.png");
+        // Inform the user where the barcode image was saved
+        Console.WriteLine($"DataMatrix barcode saved to: {outputPath}");
     }
 }

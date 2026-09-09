@@ -1,58 +1,50 @@
 // Title: Generate QR Code with Embedded Binary Data
-// Description: Demonstrates how to embed raw binary file content into a QR Code barcode and save it as a PNG image.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator with EncodeTypes.QR to create QR Code barcodes. It shows how to set raw byte data as the code text, adjust error correction level, and export the barcode to common image formats. Developers working on data transfer, product labeling, or mobile scanning often need to embed binary payloads in QR codes using Aspose.BarCode.
+// Description: Demonstrates creating a QR Code that encodes binary file content, useful for small data transfers.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, focusing on QR Code creation with binary encoding. It showcases the use of BarcodeGenerator, EncodeTypes.QR, and QREncodeMode.Binary to embed raw byte arrays into a QR symbol. Developers often need to transfer small files or configuration data via QR codes, and this pattern illustrates the typical workflow for such scenarios.
 // Prompt: Generate QR Code barcode and embed binary file content for small data transfer.
-// Tags: qr code, binary data, embed, png, barcodegenerator, encode types, aspose.barcode, generation
+// Tags: qr code, binary data, barcode generation, aspose.barcode, png output
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that creates a QR Code containing binary data and saves it as a PNG image.
+/// Example program that creates a QR Code containing binary file data.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
+    /// Entry point that generates a QR Code with binary mode and saves it as a PNG image.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder for the demo
-        string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        // Create a unique temporary folder to store demo files
+        string tempFolder = Path.Combine(Path.GetTempPath(), "QrBinaryDemo_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
 
-        // Define the path for the sample binary file
+        // Create a sample binary file with arbitrary data
         string binaryFilePath = Path.Combine(tempFolder, "sample.bin");
-
-        // Write a small set of binary data to the file
-        byte[] sampleData = new byte[] { 0xDE, 0xAD, 0xBE, 0xEF, 0x01, 0x02, 0x03 };
+        byte[] sampleData = new byte[] { 0x01, 0x02, 0xFF, 0x00, 0xAB };
         File.WriteAllBytes(binaryFilePath, sampleData);
 
         // Read the binary content back into a byte array
-        byte[] fileContent = File.ReadAllBytes(binaryFilePath);
+        byte[] fileBytes = File.ReadAllBytes(binaryFilePath);
 
-        // Generate a QR Code barcode with the binary content embedded
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR))
+        // Generate a QR Code using binary encoding mode
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR))
         {
-            // Set the raw bytes as the code text for the QR Code
-            generator.SetCodeText(fileContent);
+            // Set the QR Code payload to the binary data
+            generator.SetCodeText(fileBytes);
+            // Configure the QR encoder to treat the data as binary
+            generator.Parameters.Barcode.QR.EncodeMode = QREncodeMode.Binary;
 
-            // Optional: increase error correction level for better resilience
-            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
+            // Define the output image path and save the QR Code as PNG
+            string outputPath = Path.Combine(tempFolder, "qr_binary.png");
+            generator.Save(outputPath, BarCodeImageFormat.Png);
 
-            // Define the output image path
-            string qrImagePath = Path.Combine(tempFolder, "qr_code.png");
-
-            // Save the QR Code image in PNG format
-            generator.Save(qrImagePath, BarCodeImageFormat.Png);
-
-            Console.WriteLine($"QR Code image saved to: {qrImagePath}");
+            // Inform the user where the QR Code image was saved
+            Console.WriteLine($"QR Code saved to: {outputPath}");
         }
-
-        // Clean up: (optional) delete temporary files if desired
-        // Directory.Delete(tempFolder, true);
     }
 }

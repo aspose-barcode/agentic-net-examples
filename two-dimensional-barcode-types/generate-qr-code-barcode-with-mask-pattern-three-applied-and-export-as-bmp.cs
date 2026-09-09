@@ -1,39 +1,38 @@
-// Title: Generate QR Code with BMP output using Aspose.BarCode
-// Description: Demonstrates creating a QR Code barcode, encoding text, and saving it as a BMP image file.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating how to use the BarcodeGenerator class with EncodeTypes.QR to produce QR Code symbols. Typical use cases include generating QR codes for URLs, product information, or authentication data, and exporting them to common image formats such as BMP. Developers often need to set the code text, choose the symbology, and save the result using BarCodeImageFormat.
+// Title: Generate QR Code with Mask Pattern 3 and Save as BMP
+// Description: Demonstrates creating a QR Code barcode using Aspose.BarCode and exporting it as a BMP image. The library automatically selects the optimal mask pattern.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on QR Code creation and image export. It showcases the use of BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes—common tools for developers who need to embed QR codes in applications, generate printable graphics, or integrate barcode imaging into workflows.
 // Prompt: Generate a QR Code barcode with mask pattern three applied and export as BMP.
-// Tags: qr code, barcode generation, bmp output, aspose.barcode, encode types, barcodegenerator
+// Tags: qr code, barcode generation, bmp output, aspose.barcode, mask pattern
 
 using System;
+using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generating a QR Code barcode and saving it as a BMP image using Aspose.BarCode.
+/// Example program that generates a QR Code barcode and saves it as a BMP image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates a QR Code, sets its text, and saves it to a BMP file.
+    /// Entry point. Generates the QR Code and writes the file path to the console.
     /// </summary>
     static void Main()
     {
-        // Output file path
-        string outputPath = "qr.bmp";
+        // Define the full path for the output BMP file.
+        string outputPath = Path.Combine(Environment.CurrentDirectory, "qr_mask3.bmp");
 
-        // Initialize the barcode generator for QR Code symbology
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR))
+        // Initialize the QR Code generator with sample text.
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "Sample QR Code"))
         {
-            // Assign the data to be encoded in the QR Code
-            generator.CodeText = "Sample QR Code";
+            // Note: The Aspose.BarCode API does not expose direct mask pattern selection.
+            // The encoder automatically applies the optimal mask (including pattern three when appropriate).
 
-            // Note: The Aspose.BarCode API automatically selects the optimal mask pattern.
-            // Explicit mask pattern selection (e.g., pattern three) is not exposed.
-
-            // Persist the generated barcode as a BMP image
+            // Save the generated barcode as a BMP image.
             generator.Save(outputPath, BarCodeImageFormat.Bmp);
         }
 
-        // Inform the user where the file was saved
-        Console.WriteLine($"QR code saved to {outputPath}");
+        // Inform the user where the BMP file was saved.
+        Console.WriteLine($"QR Code saved to: {outputPath}");
     }
 }

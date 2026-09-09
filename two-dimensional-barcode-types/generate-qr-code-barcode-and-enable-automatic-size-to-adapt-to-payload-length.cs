@@ -1,60 +1,58 @@
-// Title: Generate QR Code with Automatic Sizing Based on Payload Length
-// Description: Demonstrates creating QR Code barcodes where the symbol size automatically adjusts to fit the length of the encoded text.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use the BarcodeGenerator class with EncodeTypes.QR, AutoSizeMode, and QR error correction settings. Typical use cases include dynamically sized QR codes for varying data payloads in web, mobile, or desktop applications. Developers often need to generate QR codes that adapt to content length without manually selecting versions.
+// Title: Generate QR Code with Automatic Size Adaptation
+// Description: Demonstrates creating QR Code barcodes where the symbol size automatically adjusts to the length of the input payload.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use the BarcodeGenerator class with EncodeTypes.QR to produce QR codes. It highlights setting visual parameters such as XDimension and saving the result as PNG. Developers working with dynamic data often need barcodes that resize automatically based on payload length, making this pattern common in reporting, inventory, and mobile scanning scenarios.
 // Prompt: Generate QR Code barcode and enable automatic size to adapt to payload length.
-// Tags: qr, barcode, generation, autosize, png, aspose.barcode
+// Tags: qr code, barcode generation, automatic size, png, aspose.barcode, encode types
 
 using System;
 using System.IO;
-using System.Collections.Generic;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Example program that generates QR Code barcodes with automatic size adaptation.
+/// Example program that generates QR Code barcodes whose size adapts automatically to the payload length.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates QR codes for sample payloads and saves them as PNG files.
+    /// Entry point of the application. Creates output directory, generates QR codes for sample payloads,
+    /// and saves them as PNG images.
     /// </summary>
     static void Main()
     {
-        // Prepare output directory
+        // Determine the output folder relative to the current working directory.
         string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Output");
-        Directory.CreateDirectory(outputDir);
 
-        // Sample payloads of varying lengths
-        List<string> payloads = new List<string>
+        // Ensure the output directory exists.
+        if (!Directory.Exists(outputDir))
+        {
+            Directory.CreateDirectory(outputDir);
+        }
+
+        // Sample payloads of varying length to demonstrate automatic size adaptation.
+        string[] payloads = new string[]
         {
             "Short",
-            "This is a medium length text for QR code.",
-            "This is a longer text payload intended to test the automatic sizing capability of the QR code generator. It includes multiple sentences and enough characters to increase the QR code version automatically."
+            "This is a longer text to demonstrate automatic QR code size adaptation based on payload length."
         };
 
-        // Generate a QR code for each payload
-        for (int i = 0; i < payloads.Count; i++)
+        // Iterate over each payload, generate a QR code, and save it as a PNG file.
+        for (int i = 0; i < payloads.Length; i++)
         {
             string text = payloads[i];
-            string filePath = Path.Combine(outputDir, $"qr_{i + 1}.png");
+            string filePath = Path.Combine(outputDir, $"QrCode_{i + 1}.png");
 
-            // Initialize the barcode generator for QR code symbology
-            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR))
+            // Create a BarcodeGenerator for QR encoding with the current payload.
+            using (BarcodeGenerator gen = new BarcodeGenerator(EncodeTypes.QR, text))
             {
-                // Set the text to encode
-                generator.CodeText = text;
+                // Set the module (pixel) size of the QR code; the overall size will scale automatically.
+                gen.Parameters.Barcode.XDimension.Pixels = 4;
 
-                // Enable automatic size adaptation based on the payload
-                generator.Parameters.AutoSizeMode = AutoSizeMode.Nearest;
-
-                // Optional: set a higher error correction level for better resilience
-                generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
-
-                // Save the generated QR code image as PNG
-                generator.Save(filePath);
+                // Save the generated QR code image to the specified file path in PNG format.
+                gen.Save(filePath, BarCodeImageFormat.Png);
             }
 
-            // Inform the user about the saved file
+            // Inform the user where the QR code image has been saved.
             Console.WriteLine($"Generated QR code saved to: {filePath}");
         }
     }

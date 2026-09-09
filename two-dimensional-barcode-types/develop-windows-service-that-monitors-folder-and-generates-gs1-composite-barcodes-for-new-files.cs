@@ -1,79 +1,103 @@
-// Title: Generate GS1 Composite Barcodes for Files in a Folder
-// Description: Demonstrates creating GS1 Composite barcodes for each file in a temporary working directory and saving them as PNG images.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, focusing on GS1 Composite barcode creation. It showcases the use of BarcodeGenerator, EncodeTypes, and GS1CompositeBar parameters to produce combined linear and 2D barcodes. Typical use cases include labeling products with both human‑readable and machine‑readable data, such as GTINs and serial numbers. Developers often need to generate these barcodes programmatically for batch processing or integration with file‑based workflows.
+// Title: Generate GS1 Composite Barcodes for Files in a Monitored Folder
+// Description: Demonstrates creating GS1 Composite barcodes from files in a temporary input folder and saving them as PNG images.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, showcasing how to use BarcodeGenerator with EncodeTypes.GS1CompositeBar and BarCodeReader to produce and read composite barcodes. Typical use cases include batch processing of documents, inventory labeling, and automated barcode creation in services. Developers often need to configure linear and 2‑D components, set colors, and extract embedded data.
 // Prompt: Develop a Windows service that monitors a folder and generates GS1 Composite barcodes for new files.
-// Tags: gs1 composite barcode generation file monitoring aspose.barcode generation
+// Tags: gs1 composite barcode generation, barcode recognition, aspnet barcodereader, aspnet barcodelibrary, png output, encode types, c# example
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Example program that creates a temporary folder, seeds a sample file,
-/// and generates GS1 Composite barcodes for each file using Aspose.BarCode.
+/// Demonstrates generating GS1 Composite barcodes for files in a temporary folder and reading back the 2D component.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates barcodes for files in the working folder and saves them.
+    /// Entry point of the example. Creates sample input files, generates GS1 Composite barcodes,
+    /// saves them as PNG images, and reads the 2D component text from each generated barcode.
     /// </summary>
-    /// <param name="args">Command‑line arguments (not used).</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Create a unique temporary working folder
-        string workFolder = Path.Combine(Path.GetTempPath(), "GS1CompositeBatch_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(workFolder);
+        // --------------------------------------------------------------------
+        // Setup: create a unique temporary input folder and populate it with sample files
+        // --------------------------------------------------------------------
+        string inputFolder = Path.Combine(Path.GetTempPath(), "GS1Input_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(inputFolder);
+        for (int i = 1; i <= 3; i++)
+        {
+            string filePath = Path.Combine(inputFolder, $"File{i}.txt");
+            File.WriteAllText(filePath, $"Sample content {i}");
+        }
 
-        // Seed a sample input file to demonstrate barcode generation
-        string sampleFileName = "SampleDocument.txt";
-        string sampleFilePath = Path.Combine(workFolder, sampleFileName);
-        File.WriteAllText(sampleFilePath, "This is a sample file for GS1 Composite barcode generation.");
-
-        // Prepare an output folder for the generated barcode images
-        string outputFolder = Path.Combine(workFolder, "Barcodes");
+        // --------------------------------------------------------------------
+        // Setup: create a unique temporary output folder for the generated barcodes
+        // --------------------------------------------------------------------
+        string outputFolder = Path.Combine(Path.GetTempPath(), "GS1Output_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(outputFolder);
 
-        // Retrieve all files in the working folder (excluding subfolders)
-        string[] files = Directory.GetFiles(workFolder, "*.*", SearchOption.TopDirectoryOnly);
+        // --------------------------------------------------------------------
+        // Process each file in the input folder
+        // --------------------------------------------------------------------
+        string[] files = Directory.GetFiles(inputFolder);
         foreach (string file in files)
         {
-            // Skip any entries that are actually directories
-            if (Directory.Exists(file))
-                continue;
-
-            // Build GS1 Composite codetext
-            // Linear component: (01) GTIN‑14 (example GTIN padded to 14 digits)
-            string gtin = "00123456789012"; // 14‑digit GTIN (example)
-            string linearComponent = $"(01){gtin}";
-
-            // Two‑dimensional component: (21) file name without extension
-            string fileNameWithoutExt = Path.GetFileNameWithoutExtension(file);
-            string twoDComponent = $"(21){fileNameWithoutExt}";
-
-            // Combine components with '|' separator as required for GS1 Composite Bar
-            string compositeCodeText = $"{linearComponent}|{twoDComponent}";
-
-            // Generate the barcode using Aspose.BarCode
-            using (var generator = new BarcodeGenerator(EncodeTypes.GS1CompositeBar, compositeCodeText))
+            try
             {
-                // Specify component types: linear part as GS1‑Code128, 2D part as CC‑A
-                generator.Parameters.Barcode.GS1CompositeBar.LinearComponentType = EncodeTypes.GS1Code128;
-                generator.Parameters.Barcode.GS1CompositeBar.TwoDComponentType = TwoDComponentType.CC_A;
+                // Extract the file name without extension for use in the output image name
+                string fileNameWithoutExt = Path.GetFileNameWithoutExtension(file);
 
-                // Optional visual settings
-                generator.Parameters.Barcode.XDimension.Point = 2f;          // Module size
-                generator.Parameters.Barcode.BarHeight.Pixels = 100f;       // Height of linear part
-                generator.Parameters.Barcode.Pdf417.AspectRatio = 3f;       // Aspect ratio for 2D part (if applicable)
+                // Build GS1 Composite codetext (linear|2d)
+                string linearComponent = "(01)12345678901231";
+                string twoDComponent = "(01)00123456789012";
+                string compositeCodeText = $"{linearComponent}|{twoDComponent}";
 
-                // Save the barcode image as PNG
-                string outputFileName = Path.GetFileNameWithoutExtension(file) + "_GS1Composite.png";
-                string outputPath = Path.Combine(outputFolder, outputFileName);
-                generator.Save(outputPath);
-                Console.WriteLine($"Generated barcode for '{file}' -> '{outputPath}'");
+                // ----------------------------------------------------------------
+                // Generate GS1 Composite barcode using BarcodeGenerator
+                // ----------------------------------------------------------------
+                using (var generator = new BarcodeGenerator(EncodeTypes.GS1CompositeBar, compositeCodeText))
+                {
+                    // Configure linear and 2D component types
+                    generator.Parameters.Barcode.GS1CompositeBar.LinearComponentType = EncodeTypes.GS1Code128;
+                    generator.Parameters.Barcode.GS1CompositeBar.TwoDComponentType = TwoDComponentType.CC_C;
+
+                    // Additional barcode settings
+                    generator.Parameters.Barcode.Pdf417.Columns = 30;
+                    generator.Parameters.Barcode.GS1CompositeBar.AllowOnlyGS1Encoding = false;
+                    generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
+                    generator.Parameters.BackColor = Aspose.Drawing.Color.White;
+
+                    // Save the generated barcode as a PNG file
+                    string outputPath = Path.Combine(outputFolder, fileNameWithoutExt + ".png");
+                    generator.Save(outputPath, BarCodeImageFormat.Png);
+                    Console.WriteLine($"Generated barcode for '{fileNameWithoutExt}' at: {outputPath}");
+
+                    // ----------------------------------------------------------------
+                    // Read back the barcode to extract the 2D component text
+                    // ----------------------------------------------------------------
+                    BaseDecodeType decodeType = DecodeType.GS1CompositeBar;
+                    using (var reader = new BarCodeReader(outputPath, decodeType))
+                    {
+                        foreach (var result in reader.ReadBarCodes())
+                        {
+                            string twoDText = result.Extended.GS1CompositeBar.TwoDCodeText;
+                            Console.WriteLine($"Read TwoDComponent text for '{fileNameWithoutExt}': {twoDText}");
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // Log any errors that occur while processing a file
+                Console.WriteLine($"Error processing file '{file}': {ex.Message}");
             }
         }
 
-        Console.WriteLine("Processing completed.");
+        // Cleanup: optional removal of temporary folders (commented out to allow inspection)
+        // Directory.Delete(inputFolder, true);
+        // Directory.Delete(outputFolder, true);
     }
 }

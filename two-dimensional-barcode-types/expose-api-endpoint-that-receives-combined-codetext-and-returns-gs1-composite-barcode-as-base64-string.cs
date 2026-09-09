@@ -1,71 +1,65 @@
-// Title: Generate GS1 Composite barcode and output as Base64 PNG
-// Description: This example creates a GS1 Composite barcode from a combined CodeText string and returns the image encoded as a Base64 PNG. It shows how to configure linear and 2D components using Aspose.BarCode.
-// Category-Description: Demonstrates Aspose.BarCode generation of composite symbologies, focusing on GS1 Composite Bar. The example uses BarcodeGenerator, EncodeTypes, and TwoDComponentType to set up linear (GS1Code128) and 2D (CC-A) components, then saves the image as PNG. Useful for developers needing to embed barcode images in web responses or APIs.
+// Title: Generate GS1 Composite barcode and return Base64 PNG
+// Description: Demonstrates creating a GS1 Composite barcode from a combined linear and 2D code text string and encoding the resulting PNG image as a Base64 string.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, focusing on GS1 Composite symbology. It uses BarcodeGenerator with EncodeTypes.GS1CompositeBar, configures linear and 2D component types, and shows how to customize component settings such as PDF417 columns. Developers building barcode services or APIs often need to generate composite barcodes and deliver them in web‑friendly formats like Base64 strings.
 // Prompt: Expose an API endpoint that receives combined CodeText and returns a GS1 Composite barcode as base64 string.
-// Tags: barcode, gs1 composite, generation, base64, png, aspose.barcode, csharp
+// Tags: gs1 composite, barcode generation, base64, png, aspose.barcode, encode types, api endpoint
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing.Imaging;
+using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates how to generate a GS1 Composite barcode from a combined CodeText
-/// and obtain the resulting PNG image as a Base64 string.
+/// Provides a console example that generates a GS1 Composite barcode and outputs it as a Base64‑encoded PNG string.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the console application. Generates a barcode and writes the Base64 string to the console.
+    /// Entry point. Builds sample combined code text, generates the barcode, and writes the Base64 string to the console.
     /// </summary>
     static void Main()
     {
-        // Sample combined CodeText for GS1 Composite barcode (linear|2D)
-        string combinedCodeText = "(01)03212345678906|(21)A1B2C3D4E5F6G7H8";
+        // Sample combined CodeText: linear part | 2D part
+        string linearPart = "(01)12345678901231";
+        string twoDPart = "(01)00123456789012";
+        string combinedCodeText = $"{linearPart}|{twoDPart}";
 
-        // Generate the barcode image and retrieve it as a Base64-encoded PNG
-        string base64Barcode = GenerateGs1CompositeBarcodeBase64(combinedCodeText);
-
-        // Output the Base64 string to the console
+        // Generate the barcode image and obtain its Base64 representation
+        string base64Image = GenerateGs1CompositeBase64(combinedCodeText);
         Console.WriteLine("Base64 PNG of GS1 Composite barcode:");
-        Console.WriteLine(base64Barcode);
+        Console.WriteLine(base64Image);
     }
 
     /// <summary>
-    /// Generates a GS1 Composite barcode image from the provided combined CodeText
-    /// and returns the image as a Base64-encoded PNG string.
+    /// Generates a GS1 Composite barcode from the provided combined code text and returns the PNG image as a Base64 string.
     /// </summary>
-    /// <param name="combinedCodeText">Combined linear and 2D components separated by '|'.</param>
-    /// <returns>Base64 string representing the PNG image.</returns>
-    private static string GenerateGs1CompositeBarcodeBase64(string combinedCodeText)
+    /// <param name="combinedCodeText">The combined linear and 2D component data, separated by a pipe character.</param>
+    /// <returns>Base64‑encoded PNG image of the generated barcode.</returns>
+    static string GenerateGs1CompositeBase64(string combinedCodeText)
     {
-        // Validate input
-        if (string.IsNullOrEmpty(combinedCodeText))
-            throw new ArgumentException("CodeText cannot be null or empty.", nameof(combinedCodeText));
-
-        // Initialize the barcode generator for GS1 Composite Bar with the combined CodeText
+        // Initialize the generator with GS1 Composite symbology and the combined code text
         using (var generator = new BarcodeGenerator(EncodeTypes.GS1CompositeBar, combinedCodeText))
         {
-            // Set the linear component to GS1 Code128
+            // Configure the linear component to use GS1‑Code128 encoding
             generator.Parameters.Barcode.GS1CompositeBar.LinearComponentType = EncodeTypes.GS1Code128;
 
-            // Set the 2D component to Composite Component (CC) type A
-            generator.Parameters.Barcode.GS1CompositeBar.TwoDComponentType = TwoDComponentType.CC_A;
+            // Configure the 2D component to use CC‑C (Composite Component) type
+            generator.Parameters.Barcode.GS1CompositeBar.TwoDComponentType = TwoDComponentType.CC_C;
 
-            // Optional visual settings
-            generator.Parameters.Barcode.XDimension.Pixels = 3f;      // Module size (pixel width of the smallest bar)
-            generator.Parameters.Barcode.BarHeight.Pixels = 100f;   // Height of the linear component
-            generator.Parameters.Barcode.Pdf417.AspectRatio = 3f;   // Aspect ratio for the 2D component (PDF417 based)
+            // Allow non‑GS1 data in the 2D component (optional, set to false to enforce GS1 only)
+            generator.Parameters.Barcode.GS1CompositeBar.AllowOnlyGS1Encoding = false;
+
+            // Example: set PDF417 column count for the CC‑C component
+            generator.Parameters.Barcode.Pdf417.Columns = 30;
 
             // Render the barcode to a memory stream in PNG format
-            using (var memoryStream = new MemoryStream())
+            using (var ms = new MemoryStream())
             {
-                generator.Save(memoryStream, BarCodeImageFormat.Png);
-                byte[] imageBytes = memoryStream.ToArray();
-
-                // Convert the PNG byte array to a Base64 string
-                return Convert.ToBase64String(imageBytes);
+                generator.Save(ms, BarCodeImageFormat.Png);
+                // Convert the image bytes to a Base64 string
+                return Convert.ToBase64String(ms.ToArray());
             }
         }
     }

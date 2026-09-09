@@ -1,62 +1,61 @@
-// Title: Generate QR Code and Return as PNG via Simulated REST Endpoint
-// Description: Demonstrates how to generate a QR Code barcode using Aspose.BarCode and return the image as a PNG byte array, suitable for serving through a REST API.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on QR Code creation and image export. It showcases the BarcodeGenerator class with EncodeTypes.QR, configuring QR error correction, and saving the result in PNG format using BarCodeImageFormat. Developers building web services or APIs often need to produce barcode images on‑the‑fly for client applications, and this pattern illustrates the typical steps required.
+// Title: Generate QR Code and Return PNG via REST Endpoint (example)
+// Description: Demonstrates creating a QR Code barcode using Aspose.BarCode and saving it as a PNG byte array. The PNG can be sent from a REST API as a response stream.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on QR Code symbology. It shows how to use the BarcodeGenerator class with EncodeTypes.QR, configure image format, and obtain a byte array suitable for web services. Developers building REST endpoints often need to generate barcodes on‑the‑fly and return them as image streams without writing to disk.
 // Prompt: Generate QR Code barcode and provide a REST endpoint that returns barcode as PNG stream.
-// Tags: qr code,barcode generation,rest endpoint,png output,aspose.barcode,aspose.drawing
+// Tags: qr code, barcode generation, png output, aspnet core, aspose.barcode, rest endpoint
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Provides a simple demonstration of generating a QR Code barcode and returning it as a PNG byte array,
-/// mimicking a REST endpoint response.
+/// Provides a simple console demonstration of generating a QR Code barcode and obtaining its PNG representation.
 /// </summary>
 class Program
 {
-    // Simulated REST endpoint method that returns QR code PNG as a byte array
-    static byte[] GetQrCodePng(string text)
-    {
-        // Create QR code generator with QR symbology
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR))
-        {
-            // Set the data to encode
-            generator.CodeText = text;
-
-            // Configure error correction level (optional, LevelM provides a good balance)
-            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
-
-            // Save the generated barcode to a memory stream in PNG format
-            using (var memoryStream = new MemoryStream())
-            {
-                generator.Save(memoryStream, BarCodeImageFormat.Png);
-                // Return the PNG image as a byte array
-                return memoryStream.ToArray();
-            }
-        }
-    }
-
     /// <summary>
-    /// Entry point that generates a sample QR Code, saves it to a file, and displays basic information.
+    /// Entry point. Generates a QR Code PNG, writes it to a temporary file, and outputs diagnostic information.
     /// </summary>
     static void Main()
     {
-        // Sample QR code content
-        string sampleText = "Hello, Aspose QR!";
+        // Text to encode in the QR Code.
+        string sampleText = "Hello Aspose QR!";
 
-        // Call the simulated endpoint to obtain PNG data
-        byte[] pngData = GetQrCodePng(sampleText);
+        // Generate the QR Code as a PNG byte array.
+        byte[] pngData = GenerateQrCodePng(sampleText);
 
-        // Determine output file path in the current directory
-        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "qr.png");
+        // Determine a temporary file path for demonstration purposes.
+        string outputPath = Path.Combine(Path.GetTempPath(), "qr_sample.png");
 
-        // Write the PNG data to a file for verification
-        File.WriteAllBytes(outputPath, pngData);
+        // Write the PNG bytes to the file system.
+        using (var fileStream = new FileStream(outputPath, FileMode.Create, FileAccess.Write))
+        {
+            fileStream.Write(pngData, 0, pngData.Length);
+        }
 
-        // Output result information to the console
-        Console.WriteLine($"QR code generated and saved to: {outputPath}");
-        Console.WriteLine($"PNG size: {pngData.Length} bytes");
+        // Output the location and size of the generated PNG.
+        Console.WriteLine($"QR code PNG generated: {outputPath}");
+        Console.WriteLine($"Byte size: {pngData.Length}");
+    }
+
+    /// <summary>
+    /// Generates a QR Code barcode for the specified text and returns it as a PNG byte array.
+    /// </summary>
+    /// <param name="codeText">The text to encode in the QR Code.</param>
+    /// <returns>Byte array containing the PNG image of the QR Code.</returns>
+    static byte[] GenerateQrCodePng(string codeText)
+    {
+        // Initialize the barcode generator with QR encoding.
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, codeText))
+        {
+            // Save the generated barcode to a memory stream in PNG format.
+            using (var ms = new MemoryStream())
+            {
+                generator.Save(ms, BarCodeImageFormat.Png);
+                // Return the stream contents as a byte array.
+                return ms.ToArray();
+            }
+        }
     }
 }

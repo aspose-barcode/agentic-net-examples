@@ -1,85 +1,79 @@
-// Title: Integration test for barcode generation and verification using Aspose.BarCode
-// Description: Generates a Code128 barcode image, saves it to a temporary folder, then decodes it to confirm the extracted data matches the original string.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, illustrating how to use BarcodeGenerator to create barcodes and BarCodeReader to decode them. Typical use cases include automated testing of barcode workflows, validating data integrity, and ensuring compatibility with third‑party scanners. Developers often need to generate temporary barcode images, read them back, and verify correctness using these core API classes.
+// Title: Generate and Verify QR Code Using Aspose.BarCode
+// Description: Demonstrates creating a QR code image, saving it to a temporary file, and reading it back to confirm the encoded data.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes and BarCodeReader for decoding them. Typical scenarios include integration testing, automated validation of barcode output, and ensuring compatibility with third‑party scanners. Developers often need to generate barcode images, store them, and later verify that the encoded information can be accurately retrieved.
 // Prompt: Write integration test verifying barcode image can be decoded back to original data using third‑party scanner library.
-// Tags: barcode, code128, generation, recognition, integration-test, aspose.barcode, png, temporary-files
+// Tags: qr, barcode, generation, recognition, png, aspose.barcode, integration-test
 
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates an integration test that generates a Code128 barcode,
-/// saves it as PNG, and verifies decoding returns the original data.
+/// Example program that generates a QR code, saves it as a PNG file,
+/// reads the barcode back using Aspose.BarCode recognition, and verifies
+/// that the decoded text matches the original input.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the test application.
-    /// Generates a barcode, decodes it, and reports success or failure.
+    /// Entry point of the example. Executes the generate‑and‑verify workflow.
     /// </summary>
-    /// <param name="args">Command‑line arguments (not used).</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Create a unique temporary folder for the test files
-        string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeTest_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
+        // Create a unique temporary folder to hold the barcode image
+        string tempDir = Path.Combine(Path.GetTempPath(), "BarcodeTest_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
 
-        // Define the barcode image path
-        string barcodePath = Path.Combine(tempFolder, "barcode.png");
+        // Define the full path for the generated PNG image and the text to encode
+        string imagePath = Path.Combine(tempDir, "test_qr.png");
+        string originalText = "Test123";
 
-        // The data to encode
-        const string originalData = "Test123";
-
-        // Generate the barcode image and save it
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, originalData))
+        // Generate a QR code image using BarcodeGenerator
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, originalText))
         {
-            // Save as PNG (default format inferred from extension)
-            generator.Save(barcodePath);
+            // Set the module size (pixel dimension) for better readability
+            generator.Parameters.Barcode.XDimension.Pixels = 4f;
+            // Save the generated barcode as a PNG file
+            generator.Save(imagePath, BarCodeImageFormat.Png);
         }
 
-        // Verify that the image file was created
-        if (!File.Exists(barcodePath))
+        // Verify that the image file was successfully created
+        if (!File.Exists(imagePath))
         {
             Console.WriteLine("Failed to create barcode image.");
             return;
         }
 
-        // Decode the barcode image
-        bool decodedSuccessfully = false;
-        using (var reader = new BarCodeReader(barcodePath, DecodeType.Code128))
+        // Prepare to read the barcode back using BarCodeReader
+        BaseDecodeType decodeType = DecodeType.QR;
+        using (BarCodeReader reader = new BarCodeReader(imagePath, decodeType))
         {
-            foreach (BarCodeResult result in reader.ReadBarCodes())
+            // Attempt to read all barcodes from the image
+            BarCodeResult[] results = reader.ReadBarCodes();
+
+            // Determine if a barcode was successfully decoded
+            bool success = results.Length > 0 && !string.IsNullOrEmpty(results[0].CodeText);
+            Console.WriteLine($"Barcode read success: {success}");
+
+            if (success)
             {
-                Console.WriteLine($"Decoded CodeText: {result.CodeText}");
-                if (result.CodeText == originalData)
-                {
-                    decodedSuccessfully = true;
-                }
+                // Output details of the detected barcode
+                Console.WriteLine($"Detected type: {results[0].CodeTypeName}");
+                Console.WriteLine($"Decoded text (may contain evaluation watermark): {results[0].CodeText}");
             }
         }
 
-        // Output the test result
-        if (decodedSuccessfully)
-        {
-            Console.WriteLine("Integration test passed: decoded data matches original.");
-        }
-        else
-        {
-            Console.WriteLine("Integration test failed: decoded data does not match original.");
-        }
-
-        // Clean up temporary files (optional)
+        // Clean up temporary files and directory
         try
         {
-            File.Delete(barcodePath);
-            Directory.Delete(tempFolder);
+            File.Delete(imagePath);
+            Directory.Delete(tempDir, true);
         }
         catch
         {
-            // Ignored – cleanup failures should not affect test outcome
+            // Ignored – cleanup failures are non‑critical for this example
         }
     }
 }

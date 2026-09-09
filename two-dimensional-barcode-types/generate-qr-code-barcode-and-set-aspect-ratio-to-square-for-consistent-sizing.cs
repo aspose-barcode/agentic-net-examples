@@ -1,44 +1,45 @@
-// Title: Generate QR Code with Square Aspect Ratio
-// Description: Demonstrates how to generate a QR Code barcode using Aspose.BarCode and enforce a square aspect ratio for consistent module sizing.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, showcasing the use of BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes. Typical scenarios include creating QR codes for URLs, product information, or authentication purposes where uniform module dimensions are required. Developers often need to control visual appearance, such as aspect ratio, to ensure consistent rendering across different media.
+// Title: Generate a QR Code with a square aspect ratio
+// Description: Demonstrates creating a QR Code barcode using Aspose.BarCode and forcing a 1:1 aspect ratio for consistent square sizing.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to configure QR Code parameters such as X‑Dimension and AspectRatio. Developers commonly use these APIs to produce QR codes for web URLs, product IDs, or authentication tokens, requiring precise control over size and shape for UI consistency. The key classes shown are BarcodeGenerator, EncodeTypes, and BarCodeImageFormat, which are typical in barcode creation workflows.
 // Prompt: Generate QR Code barcode and set aspect ratio to square for consistent sizing.
-// Tags: qr code, barcode generation, aspect ratio, square, aspose.barcode, png, c#
+// Tags: qr code, barcode generation, aspect ratio, square, aspose.barcode, png output
 
 using System;
 using System.IO;
-using Aspose.BarCode.Generation;
 using Aspose.BarCode;
+using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Example program that creates a QR Code barcode with a square aspect ratio
-/// and saves it as a PNG image.
+/// Demonstrates generating a QR Code barcode with a square aspect ratio using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates the QR Code and writes the output file path to the console.
+    /// Entry point. Creates output directory, generates QR code, saves as PNG, and writes the file path.
     /// </summary>
-    /// <param name="args">Command‑line arguments (not used).</param>
     static void Main(string[] args)
     {
-        // Define the full path for the output PNG file.
-        string outputPath = Path.Combine(Environment.CurrentDirectory, "qr_square.png");
+        // Define a temporary output directory and ensure it exists
+        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeQrDemo");
+        Directory.CreateDirectory(outputDir);
 
-        // Initialize the barcode generator for QR Code symbology.
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR))
+        // Full path for the generated PNG file
+        string outputPath = Path.Combine(outputDir, "QrSquare.png");
+
+        // Initialize the barcode generator for QR code with sample data
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "Sample QR"))
         {
-            // Set the data to be encoded in the QR Code.
-            generator.CodeText = "https://example.com";
+            // Set the size of each QR module (pixel dimension)
+            generator.Parameters.Barcode.XDimension.Pixels = 4;
 
-            // AspectRatio = Height / Width; setting to 1 makes each module square.
-            generator.Parameters.Barcode.QR.AspectRatio = 1f;
+            // Force a square aspect ratio (1:1) for consistent sizing
+            generator.Parameters.Barcode.QR.AspectRatio = 1;
 
-            // Save the generated barcode image in PNG format.
+            // Save the generated QR code as a PNG image
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user where the QR Code image has been saved.
-        Console.WriteLine($"QR Code saved to: {outputPath}");
+        // Inform the user where the QR code image was saved
+        Console.WriteLine($"QR code saved to: {outputPath}");
     }
 }

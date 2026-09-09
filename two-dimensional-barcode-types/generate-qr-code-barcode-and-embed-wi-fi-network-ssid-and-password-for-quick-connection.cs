@@ -1,47 +1,49 @@
-// Title: Generate Wi‑Fi QR Code using Aspose.BarCode
-// Description: Creates a QR code that encodes Wi‑Fi network SSID, password, and authentication type, then saves it as a PNG image.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to use the BarcodeGenerator class with QR symbology to embed custom data. Typical use cases include encoding contact information, URLs, or configuration strings (e.g., Wi‑Fi credentials) into scannable QR codes. Developers often need to set error correction levels, character encodings, and output formats when creating QR codes for mobile or web applications.
+// Title: Generate QR Code for Wi‑Fi Connection
+// Description: Demonstrates creating a QR Code that encodes Wi‑Fi network SSID, authentication type, and password, then saving it as a PNG image.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to use the BarcodeGenerator class with EncodeTypes.QR to produce QR Code barcodes. Typical use cases include embedding connection information for Wi‑Fi networks, URLs, or contact data. Developers often need to configure barcode parameters such as X‑dimension and error correction level before saving the image in a desired format.
 // Prompt: Generate QR Code barcode and embed Wi‑Fi network SSID and password for quick connection.
-// Tags: qr code, wifi, barcode generation, aspose.barcode, png, encoding
+// Tags: qr code, wifi, barcode generation, aspose.barcode, png, encode types, qrcode
 
 using System;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generating a QR code that contains Wi‑Fi network credentials using Aspose.BarCode.
+/// Demonstrates generating a QR Code that contains Wi‑Fi credentials and saving it as a PNG file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that builds the Wi‑Fi QR code string, configures the generator, and saves the image.
+    /// Entry point. Creates the Wi‑Fi payload, configures the QR Code generator, and writes the image to disk.
     /// </summary>
     static void Main()
     {
-        // Define sample Wi‑Fi credentials
+        // Define Wi‑Fi network details
         string ssid = "MyNetwork";
         string password = "SecretPass";
-        string authType = "WPA"; // Options: WPA, WEP, nopass
+        string authType = "WPA";
 
-        // Construct the Wi‑Fi QR code payload in the standard format
-        // Format: WIFI:S:<SSID>;T:<AuthType>;P:<Password>;;
-        string wifiCode = $"WIFI:S:{ssid};T:{authType};P:{password};;";
+        // Build the Wi‑Fi payload string in the required format
+        string wifiPayload = $"WIFI:S:{ssid};T:{authType};P:{password};;";
 
-        // Initialize a QR code generator with the Wi‑Fi data
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, wifiCode))
+        // Determine output file path
+        string outputPath = Path.Combine(Environment.CurrentDirectory, "wifi_qr.png");
+
+        // Initialize the barcode generator with QR encoding and payload
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, wifiPayload))
         {
-            // Configure a high error correction level for improved readability on imperfect scans
+            // Set barcode visual parameters (pixel size of each module)
+            generator.Parameters.Barcode.XDimension.Pixels = 4f;
+
+            // Set QR Code error correction level to high for better readability
             generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
 
-            // Set UTF‑8 encoding to correctly represent any non‑ASCII characters in the payload
-            generator.Parameters.Barcode.QR.ECIEncoding = ECIEncodings.UTF8;
-
-            // Define the output file path and save the QR code as a PNG image
-            string outputPath = "wifi_qr.png";
+            // Save the generated barcode image as PNG
             generator.Save(outputPath, BarCodeImageFormat.Png);
-
-            // Inform the user where the QR code image was saved
-            Console.WriteLine($"Wi‑Fi QR code saved to {outputPath}");
         }
+
+        // Inform user of saved file location
+        Console.WriteLine($"QR code saved to {outputPath}");
     }
 }

@@ -1,8 +1,8 @@
-// Title: Generate QR Code and embed into PDF form button
-// Description: Demonstrates creating a QR Code barcode image and placing it into a PDF button form field, producing an interactive PDF document.
-// Category-Description: This example belongs to the Aspose.BarCode and Aspose.Pdf integration category, showing how to generate barcodes (using BarcodeGenerator, EncodeTypes) and embed them into PDF forms (using Document, ButtonField, PdfImage). Typical use cases include adding scannable QR codes to interactive PDFs for marketing, tickets, or data capture. Developers often need to combine barcode generation with PDF form manipulation to create dynamic, user‑friendly documents.
+// Title: Generate QR Code and embed into PDF form button field
+// Description: Demonstrates creating a QR Code barcode with Aspose.BarCode, converting it to an image, and placing it into a button form field of a PDF using Aspose.Pdf for interactive documents.
+// Category-Description: This example belongs to the Aspose.BarCode and Aspose.Pdf integration category, showcasing how to generate barcodes (specifically QR codes) and embed them into PDF form fields. Key API classes include BarcodeGenerator, Document, ButtonField, and PdfImage. Typical use cases involve creating interactive PDFs where users can click on barcode images to trigger actions or simply view embedded barcodes. Developers often need to combine barcode generation with PDF form manipulation to produce dynamic, data‑rich documents.
 // Prompt: Generate QR Code barcode and embed barcode into PDF form field for interactive documents.
-// Tags: qr code, barcode generation, pdf form, aspose.barcode, aspose.pdf, interactive document
+// Tags: qr code, barcode generation, pdf, form field, aspose.barcode, aspose.pdf, image embedding
 
 using System;
 using System.IO;
@@ -10,7 +10,6 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Pdf;
 using Aspose.Pdf.Forms;
-using Aspose.Pdf.Drawing;
 
 /// <summary>
 /// Example program that creates a QR Code barcode and embeds it into a PDF button form field.
@@ -22,54 +21,54 @@ class Program
     /// </summary>
     static void Main()
     {
-        // Generate QR code image into a memory stream
-        using (var barcodeStream = new MemoryStream())
+        // Define the output PDF path in the temporary folder
+        string pdfPath = Path.Combine(Path.GetTempPath(), "QrInPdf.pdf");
+
+        // Generate QR Code barcode into a memory stream
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Hello World"))
         {
-            // Configure and create the QR Code barcode
-            using (var generator = new BarcodeGenerator(EncodeTypes.QR))
+            // Configure barcode appearance
+            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
+            generator.Parameters.BackColor = Aspose.Drawing.Color.White;
+
+            // Set high error correction level for the QR Code (optional)
+            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
+
+            // Stream to hold the generated barcode image
+            using (var barcodeStream = new MemoryStream())
             {
-                generator.CodeText = "https://example.com";
-
-                // Set high error correction level for better readability
-                generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
-
-                // Define barcode and background colors
-                generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-                generator.Parameters.BackColor = Aspose.Drawing.Color.White;
-
-                // Save the barcode as a PNG image into the memory stream
+                // Save the barcode as a PNG image into the stream
                 generator.Save(barcodeStream, BarCodeImageFormat.Png);
-            }
+                barcodeStream.Position = 0; // Reset stream position for reading
 
-            // Reset stream position so it can be read from the beginning
-            barcodeStream.Position = 0;
-
-            // Create a new PDF document and embed the barcode into a button form field
-            using (var pdfDoc = new Document())
-            {
-                // Add a page to the PDF
-                var page = pdfDoc.Pages.Add();
-
-                // Define the rectangle area for the button field (lower-left X, lower-left Y, upper-right X, upper-right Y)
-                var rect = new Aspose.Pdf.Rectangle(100, 500, 300, 700);
-
-                // Create a button field on the page using the defined rectangle
-                var button = new ButtonField(page, rect);
-
-                // Add the barcode image to the button field
-                using (var pdfImage = new PdfImage(barcodeStream))
+                // Create a new PDF document
+                using (var pdfDoc = new Document())
                 {
-                    button.AddImage(pdfImage);
+                    // Add a single page to the document
+                    var page = pdfDoc.Pages.Add();
+
+                    // Define the rectangle area for the button field (lower-left X/Y, upper-right X/Y)
+                    var rect = new Aspose.Pdf.Rectangle(100, 500, 300, 700);
+
+                    // Create a button form field on the page using the defined rectangle
+                    var button = new ButtonField(page, rect);
+
+                    // Embed the barcode image into the button field
+                    using (var pdfImage = new Aspose.Pdf.Drawing.PdfImage(barcodeStream))
+                    {
+                        button.AddImage(pdfImage);
+                    }
+
+                    // Add the button field to the PDF form (page index 1)
+                    pdfDoc.Form.Add(button, 1);
+
+                    // Save the PDF document to the specified path
+                    pdfDoc.Save(pdfPath);
                 }
-
-                // Register the button field with the PDF form (page index is 1‑based)
-                pdfDoc.Form.Add(button, 1);
-
-                // Save the resulting PDF to disk
-                string outputPath = "QrBarcodeForm.pdf";
-                pdfDoc.Save(outputPath);
-                Console.WriteLine($"PDF saved to {outputPath}");
             }
         }
+
+        // Inform the user where the PDF was saved
+        Console.WriteLine($"PDF with embedded QR Code saved to: {pdfPath}");
     }
 }

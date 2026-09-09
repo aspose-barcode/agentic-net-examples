@@ -1,8 +1,8 @@
-// Title: Generate Han Xin Barcode and Return PNG as Base64
-// Description: Creates a Han Xin 2D barcode from JSON input and outputs the PNG image as a Base64 string, illustrating how to use Aspose.BarCode for barcode generation.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category. It demonstrates the use of EncodeTypes.HanXin, BarcodeGenerator, and related parameter classes to produce a Han Xin barcode with configurable error correction. Typical use cases include generating QR‑like barcodes for inventory, tracking, or mobile scanning applications where developers need to return the image as a binary stream or Base64 payload.
+// Title: Generate Han Xin Barcode and Return PNG Stream
+// Description: Demonstrates creating a Han Xin barcode using Aspose.BarCode, encoding it as PNG, and outputting the image as a Base64 string (simulating a web service response).
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category. It showcases the use of BarcodeGenerator, EncodeTypes, and BarCodeImageFormat to produce a Han Xin symbology image. Typical scenarios include generating barcodes for inventory, tracking, or mobile scanning applications where developers need to customize encoding mode, error correction level, and version. The code illustrates how to deserialize request data, configure generator parameters, and return the barcode as a PNG byte stream.
 // Prompt: Expose a web service that returns Han Xin barcode as PNG stream based on posted JSON payload.
-// Tags: hanxin, barcode, generation, png, base64, aspose.barcode, json, webservice
+// Tags: hanxin, barcode, generation, png, base64, aspose.barcode
 
 using System;
 using System.IO;
@@ -14,77 +14,85 @@ using Aspose.Drawing.Imaging;
 namespace HanXinBarcodeService
 {
     /// <summary>
-    /// Model representing the JSON payload for barcode generation.
-    /// </summary>
-    public class BarcodeRequest
-    {
-        public string CodeText { get; set; }
-        public string ErrorLevel { get; set; } // Expected values: L1, L2, L3, L4
-    }
-
-    /// <summary>
-    /// Demonstrates generating a Han Xin barcode from a JSON request and outputting the PNG image as a Base64 string.
+    /// Simulates a web service that generates a Han Xin barcode PNG image from a JSON payload.
     /// </summary>
     class Program
     {
+        // Sample JSON payload representing a request to the web service
+        private const string SampleJson = @"{
+            ""CodeText"": ""1234567890"",
+            ""EncodeMode"": ""Auto"",
+            ""ErrorLevel"": ""L2"",
+            ""Version"": 24
+        }";
+
         /// <summary>
-        /// Entry point of the example. Simulates receiving a JSON payload, creates the barcode, and writes the PNG data as Base64.
+        /// Entry point that processes the sample request, generates the barcode, and outputs the PNG as Base64.
         /// </summary>
         static void Main()
         {
-            // Simulated incoming JSON payload (in a real web service this would come from the request body)
-            string jsonPayload = @"{ ""CodeText"": ""Hello HanXin"", ""ErrorLevel"": ""L2"" }";
+            // NOTE: The original task describes a web service. The snippet runner cannot host an HTTP server,
+            // so we simulate a single request/response flow in-process.
 
             // Deserialize the JSON payload into a strongly‑typed request object
-            BarcodeRequest request;
-            try
+            RequestPayload request = JsonSerializer.Deserialize<RequestPayload>(SampleJson);
+            if (request == null || string.IsNullOrEmpty(request.CodeText))
             {
-                request = JsonSerializer.Deserialize<BarcodeRequest>(jsonPayload);
-                if (request == null || string.IsNullOrWhiteSpace(request.CodeText))
-                {
-                    Console.WriteLine("Invalid request payload.");
-                    return;
-                }
-            }
-            catch (JsonException ex)
-            {
-                Console.WriteLine($"JSON deserialization error: {ex.Message}");
+                Console.WriteLine("Invalid request payload.");
                 return;
             }
 
-            // Resolve the error level string to the corresponding enum; default to L1 on failure
-            HanXinErrorLevel errorLevel = HanXinErrorLevel.L1;
-            if (!string.IsNullOrWhiteSpace(request.ErrorLevel))
-            {
-                if (!Enum.TryParse<HanXinErrorLevel>(request.ErrorLevel, true, out errorLevel))
-                {
-                    Console.WriteLine($"Unknown error level '{request.ErrorLevel}'. Using default L1.");
-                    errorLevel = HanXinErrorLevel.L1;
-                }
-            }
-
-            // Generate the Han Xin barcode and capture the PNG bytes in memory
-            byte[] pngBytes;
+            // Create a barcode generator for Han Xin symbology with the supplied code text
             using (var generator = new BarcodeGenerator(EncodeTypes.HanXin, request.CodeText))
             {
-                // Apply the requested error correction level
-                generator.Parameters.Barcode.HanXin.ErrorLevel = errorLevel;
-
-                // Enable automatic version selection for a square barcode
-                generator.Parameters.Barcode.HanXin.Version = HanXinVersion.Auto;
-
-                // Save the barcode directly to a memory stream in PNG format
-                using (var ms = new MemoryStream())
+                // Apply optional encoding mode if provided
+                if (!string.IsNullOrEmpty(request.EncodeMode) &&
+                    Enum.TryParse<HanXinEncodeMode>(request.EncodeMode, out var encodeMode))
                 {
-                    generator.Save(ms, BarCodeImageFormat.Png);
-                    pngBytes = ms.ToArray();
+                    generator.Parameters.Barcode.HanXin.EncodeMode = encodeMode;
+                }
+
+                // Apply optional error correction level if provided
+                if (!string.IsNullOrEmpty(request.ErrorLevel) &&
+                    Enum.TryParse<HanXinErrorLevel>(request.ErrorLevel, out var errorLevel))
+                {
+                    generator.Parameters.Barcode.HanXin.ErrorLevel = errorLevel;
+                }
+
+                // Apply optional version if provided (maps integer to enum name, e.g., 24 -> Version24)
+                if (request.Version.HasValue)
+                {
+                    string enumName = $"Version{request.Version.Value:D2}";
+                    if (Enum.TryParse<HanXinVersion>(enumName, out var version))
+                    {
+                        generator.Parameters.Barcode.HanXin.Version = version;
+                    }
+                }
+
+                // Render the barcode to a memory stream in PNG format
+                using (var memoryStream = new MemoryStream())
+                {
+                    generator.Save(memoryStream, BarCodeImageFormat.Png);
+                    byte[] pngBytes = memoryStream.ToArray();
+
+                    // Write PNG to a file for local verification (optional)
+                    File.WriteAllBytes("hanxin.png", pngBytes);
+
+                    // Convert PNG bytes to Base64 string to simulate a stream response
+                    string base64 = Convert.ToBase64String(pngBytes);
+                    Console.WriteLine("Generated Han Xin barcode PNG (Base64):");
+                    Console.WriteLine(base64);
                 }
             }
+        }
 
-            // Convert the PNG byte array to a Base64 string to simulate a binary HTTP response payload
-            string base64Png = Convert.ToBase64String(pngBytes);
-            Console.WriteLine("Generated Han Xin barcode (Base64 PNG):");
-            Console.WriteLine(base64Png);
+        // DTO representing the expected JSON request payload
+        private class RequestPayload
+        {
+            public string CodeText { get; set; }
+            public string EncodeMode { get; set; }
+            public string ErrorLevel { get; set; }
+            public int? Version { get; set; }
         }
     }
 }

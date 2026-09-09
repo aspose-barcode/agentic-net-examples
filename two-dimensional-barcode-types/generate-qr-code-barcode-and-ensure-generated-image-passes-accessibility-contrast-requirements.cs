@@ -1,89 +1,63 @@
 // Title: Generate QR Code with High Contrast for Accessibility
-// Description: Creates a QR Code barcode, applies black‑on‑white colors to meet WCAG contrast requirements, and saves it as a PNG image.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, demonstrating how to configure QR Code parameters, set foreground and background colors, and verify accessibility contrast using the BarcodeGenerator, QRErrorLevel, and color utilities. Typical use cases include producing scannable QR codes for web links or product information while ensuring the output complies with accessibility standards. Developers often need to adjust colors and validate contrast ratios for inclusive design.
-// Prompt: Generate QR Code barcode and ensure generated image passes accessibility contrast requirements.
-// Tags: qr code, barcode generation, png, contrast, accessibility, aspose.barcode, aspose.drawing
+// Description: Creates a QR Code barcode image with black foreground on white background to meet accessibility contrast guidelines.
+// Category-Description: This example demonstrates Aspose.BarCode's barcode generation capabilities, focusing on QR Code creation using the BarcodeGenerator class. It shows how to configure encoding mode, error correction level, module size, and foreground/background colors to satisfy accessibility contrast requirements. Developers commonly use these APIs to embed scannable QR codes in applications, websites, or printed media while ensuring readability for users with visual impairments.
+/// Prompt: Generate QR Code barcode and ensure generated image passes accessibility contrast requirements.
+/// Tags: qr code, barcode generation, accessibility, contrast, aspose.barcode, png, encode types, high error correction
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a QR Code barcode with maximum contrast (black on white) to satisfy
-/// WCAG accessibility guidelines, and saving the result as a PNG image.
+/// Demonstrates how to generate a QR Code barcode image with high contrast suitable for accessibility compliance.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates the QR Code, checks contrast, and writes the image to a temporary file.
+    /// Entry point of the example. Generates a QR Code PNG file with black on white colors and high error correction.
     /// </summary>
-    /// <param name="args">Command‑line arguments (not used).</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Define the output file path in the system's temporary folder.
-        string outputPath = Path.Combine(Path.GetTempPath(), "qr_contrast.png");
+        // --------------------------------------------------------------------
+        // Prepare output directory and file path
+        // --------------------------------------------------------------------
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "output");
+        if (!Directory.Exists(outputDir))
+        {
+            Directory.CreateDirectory(outputDir);
+        }
+        string outputPath = Path.Combine(outputDir, "QrCode.png");
 
-        // Text to encode in the QR Code (e.g., a URL).
+        // --------------------------------------------------------------------
+        // Define the data to encode in the QR Code
+        // --------------------------------------------------------------------
         string codeText = "https://example.com";
 
-        // Initialize the QR Code generator with the desired text.
+        // --------------------------------------------------------------------
+        // Create and configure the QR Code generator
+        // --------------------------------------------------------------------
         using (var generator = new BarcodeGenerator(EncodeTypes.QR, codeText))
         {
-            // Use the highest error correction level for maximum robustness.
+            // QR-specific settings: use ECI encoding (UTF-8) and highest error correction level
+            generator.Parameters.Barcode.QR.EncodeMode = QREncodeMode.ECI;
+            generator.Parameters.Barcode.QR.ECIEncoding = ECIEncodings.UTF8;
             generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
 
-            // Set foreground (barcode) and background colors to achieve maximum contrast.
+            // Define the size of each QR module (pixel dimension)
+            generator.Parameters.Barcode.XDimension.Pixels = 8f;
+
+            // Set colors to ensure maximum contrast (black foreground, white background)
             generator.Parameters.Barcode.BarColor = Color.Black;
             generator.Parameters.BackColor = Color.White;
 
-            // Compute the contrast ratio between the chosen colors.
-            double contrast = ComputeContrastRatio(generator.Parameters.Barcode.BarColor, generator.Parameters.BackColor);
-
-            // If the contrast is below the WCAG AA threshold (4.5:1), enforce black on white.
-            if (contrast < 4.5)
-            {
-                Console.WriteLine($"Contrast ratio {contrast:F2} is below 4.5. Adjusting to black/white.");
-                generator.Parameters.Barcode.BarColor = Color.Black;
-                generator.Parameters.BackColor = Color.White;
-            }
-
-            // Save the generated QR Code as a PNG image.
+            // Save the generated QR Code as a PNG image
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        Console.WriteLine($"QR code saved to: {outputPath}");
-    }
-
-    // Calculates the contrast ratio between two colors according to WCAG guidelines.
-    static double ComputeContrastRatio(Color fore, Color back)
-    {
-        double lumFore = RelativeLuminance(fore);
-        double lumBack = RelativeLuminance(back);
-
-        // Ensure lumFore represents the lighter color for correct ratio calculation.
-        if (lumFore < lumBack)
-        {
-            double temp = lumFore;
-            lumFore = lumBack;
-            lumBack = temp;
-        }
-
-        return (lumFore + 0.05) / (lumBack + 0.05);
-    }
-
-    // Computes the relative luminance of an sRGB color per WCAG specifications.
-    static double RelativeLuminance(Color color)
-    {
-        double r = color.R / 255.0;
-        double g = color.G / 255.0;
-        double b = color.B / 255.0;
-
-        r = (r <= 0.03928) ? r / 12.92 : Math.Pow((r + 0.055) / 1.055, 2.4);
-        g = (g <= 0.03928) ? g / 12.92 : Math.Pow((g + 0.055) / 1.055, 2.4);
-        b = (b <= 0.03928) ? b / 12.92 : Math.Pow((b + 0.055) / 1.055, 2.4);
-
-        return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+        // Inform the user where the image was saved
+        Console.WriteLine($"QR Code generated at: {outputPath}");
     }
 }
