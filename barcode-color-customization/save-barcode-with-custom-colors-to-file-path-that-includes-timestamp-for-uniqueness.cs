@@ -1,8 +1,8 @@
 // Title: Save barcode with custom colors and timestamped filename
-// Description: Demonstrates generating a Code128 barcode with custom foreground and background colors, saving it to a uniquely named PNG file using a timestamp.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to customize barcode appearance with color properties and persist the image. It uses BarcodeGenerator, EncodeTypes, and drawing color classes, common tasks for developers needing branded or visually distinct barcodes in applications.
+// Description: Demonstrates generating a Code128 barcode, applying custom foreground and background colors, and saving it as a PNG file with a unique timestamped name.
+// Category-Description: This example belongs to the Aspose.BarCode image generation category, illustrating how to customize barcode appearance using the BarcodeGenerator class and its Parameters properties. Typical use cases include branding, UI integration, and batch processing where distinct file names are required. Developers often need to set colors, choose symbology, and manage output paths for automated workflows.
 // Prompt: Save a barcode with custom colors to a file path that includes a timestamp for uniqueness.
-// Tags: code128, barcode, color, save, png, aspose.barcode, generation
+// Tags: code128, barcode generation, png, aspose.barcode, aspose.drawing
 
 using System;
 using System.IO;
@@ -16,34 +16,33 @@ using Aspose.Drawing;
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates a barcode, applies custom colors, and writes the image to a timestamped file.
+    /// Entry point of the application. Creates output directory, builds a timestamped file name,
+    /// configures barcode colors, and saves the image.
     /// </summary>
     static void Main()
     {
-        // Define the text to encode in the barcode.
-        const string codeText = "Sample12345";
+        // Prepare the output directory where barcode images will be stored.
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
+        Directory.CreateDirectory(outputDir);
 
-        // Build a timestamp string for a unique file name (e.g., 20231127_154530123).
+        // Build a unique file name using the current timestamp to avoid overwriting existing files.
         string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmssfff");
+        string filePath = Path.Combine(outputDir, $"barcode_{timestamp}.png");
 
-        // Compose the full file name and path in the current working directory.
-        string fileName = $"barcode_{timestamp}.png";
-        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), fileName);
-
-        // Initialize the barcode generator with Code128 symbology and the desired text.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+        // Initialize the barcode generator with Code128 symbology and the desired data.
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "12345678"))
         {
-            // Set the color of the barcode bars (foreground).
-            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Blue;
+            // Set the foreground (bar) color to blue.
+            generator.Parameters.Barcode.BarColor = Color.Blue;
 
-            // Set the background color of the image.
-            generator.Parameters.BackColor = Aspose.Drawing.Color.Yellow;
+            // Set the background color to yellow.
+            generator.Parameters.BackColor = Color.Yellow;
 
-            // Save the generated barcode image to the specified path.
-            generator.Save(outputPath);
+            // Save the generated barcode as a PNG image to the specified path.
+            generator.Save(filePath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user where the barcode image was saved.
-        Console.WriteLine($"Barcode saved to: {outputPath}");
+        // Inform the user where the barcode image has been saved.
+        Console.WriteLine($"Barcode saved to: {filePath}");
     }
 }

@@ -1,8 +1,8 @@
-// Title: Generate Code128 barcodes with alternating background colors
-// Description: Demonstrates creating multiple Code128 barcodes where the background color alternates while the bar color stays black, saving each as a PNG file.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating how to use the BarcodeGenerator class together with the Parameters property to customize visual appearance such as bar and background colors. Typical use cases include batch creation of barcodes for product labeling or testing visual themes. Developers often need to programmatically vary colors, formats, or symbologies across multiple images.
+// Title: Generate multiple Code128 barcodes with alternating background colors
+// Description: Demonstrates creating a series of Code128 barcodes where the background color alternates between white and light gray while the bar color remains black. The images are saved as PNG files to a temporary folder.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to configure barcode appearance using the BarcodeGenerator class. It shows setting barcode parameters such as BarColor and BackColor, looping to produce multiple images, and saving them in PNG format. Developers working with barcode creation often need to customize visual styles for different branding or UI requirements, and this snippet provides a concise pattern for batch generation.
 // Prompt: Use a loop to generate barcodes with alternating background colors while keeping bar color constant.
-// Tags: code128, barcode generation, background color, bar color, png, aspose.barcode, barcodegenerator, parameters
+// Tags: code128, barcode generation, background color, bar color, loop, png, aspose.barcode, aspose.drawing
 
 using System;
 using System.IO;
@@ -11,46 +11,46 @@ using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Generates a series of Code128 barcode images with alternating background colors.
+/// Example program that generates a set of Code128 barcodes with alternating background colors.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Creates five barcode PNG files with alternating backgrounds.
+    /// Entry point. Creates a temporary directory, generates barcodes, and saves them as PNG files.
     /// </summary>
     static void Main()
     {
-        // Ensure the output directory exists
-        string outputDir = "Barcodes";
+        // Build a unique temporary output folder for the generated barcode images.
+        string outputDir = Path.Combine(Path.GetTempPath(), "Barcodes_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(outputDir);
 
-        // Define the two background colors to alternate between
-        Color[] backgroundColors = new Color[] { Color.White, Color.LightGray };
+        // Define how many barcodes to generate.
+        int count = 6;
 
-        // Loop to generate a small set of barcodes (5 samples)
-        for (int i = 0; i < 5; i++)
+        // Loop to create each barcode with alternating background colors.
+        for (int i = 0; i < count; i++)
         {
-            // Build the text to encode for the current barcode
-            string codeText = $"Sample{i + 1}";
+            // Create distinct text for each barcode.
+            string codeText = "Sample" + (i + 1);
 
-            // Determine the file path for the generated image
-            string filePath = Path.Combine(outputDir, $"barcode_{i + 1}.png");
-
-            // Initialize the barcode generator with Code128 symbology and the sample text
+            // Initialize the barcode generator with Code128 symbology and the current text.
             using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
             {
-                // Set the bar (foreground) color to black (constant for all barcodes)
+                // Set the bar (foreground) color to black for all barcodes.
                 generator.Parameters.Barcode.BarColor = Color.Black;
 
-                // Alternate the background color based on the loop index
-                generator.Parameters.BackColor = backgroundColors[i % backgroundColors.Length];
+                // Alternate background color: white for even indices, light gray for odd indices.
+                generator.Parameters.BackColor = (i % 2 == 0) ? Color.White : Color.LightGray;
 
-                // Save the barcode image as a PNG file
+                // Build the full file path for the PNG image.
+                string filePath = Path.Combine(outputDir, $"barcode_{i + 1}.png");
+
+                // Save the generated barcode image to disk.
                 generator.Save(filePath, BarCodeImageFormat.Png);
+
+                // Output the location of the generated file.
+                Console.WriteLine($"Generated: {filePath}");
             }
         }
-
-        // Inform the user that generation is complete
-        Console.WriteLine("Barcode images have been generated in the 'Barcodes' folder.");
     }
 }

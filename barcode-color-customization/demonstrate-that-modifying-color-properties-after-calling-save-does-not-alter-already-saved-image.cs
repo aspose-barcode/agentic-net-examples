@@ -1,67 +1,65 @@
-// Title: Demonstrate color immutability after saving barcode image
-// Description: Shows that changing barcode colors after calling Save does not affect the previously saved image file.
-// Category-Description: This example belongs to the Aspose.BarCode image generation category, illustrating how the BarcodeGenerator and related drawing classes (Aspose.Drawing, Aspose.Drawing.Imaging) are used to create, customize, and persist barcode images. Developers often need to generate multiple variants of a barcode with different visual styles while ensuring earlier files remain unchanged. The snippet demonstrates best‑practice handling of color properties and file output, a common requirement when producing batch‑processed barcodes for packaging, labeling, or inventory systems.
+// Title: Demonstrate post-save color changes do not affect saved barcode image
+// Description: This example generates a Code128 barcode, saves it, then changes its colors and saves again, showing the first saved file remains unchanged.
+// Category-Description: Shows how to use Aspose.BarCode's BarcodeGenerator and its Parameters to control barcode appearance. Typical use cases include generating barcodes with specific colors, saving them, and ensuring saved images are immutable after further modifications. Developers often need to verify that subsequent property changes do not retroactively alter previously saved files.
 // Prompt: Demonstrate that modifying color properties after calling Save does not alter the already saved image.
-// Tags: code128, color, save, bitmap, aspose.barcode, aspose.drawing
+// Tags: code128, color, png, barcodegenerator, parameters
 
 using System;
 using System.IO;
+using System.Linq;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates a Code128 barcode, saves it, changes its colors,
-/// saves a second image, and then verifies that the first saved file remains unchanged.
+/// Example program that demonstrates that changing barcode color properties after a save operation
+/// does not modify the already saved image file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Executes the barcode generation, saves two images with
-    /// different color settings, and compares a pixel from each file to confirm independence.
+    /// Entry point of the demo. Generates a barcode, saves it, modifies colors, saves again,
+    /// and verifies the first saved image remains unchanged.
     /// </summary>
     static void Main()
     {
-        // Define absolute file paths for the original and modified barcode images.
-        string originalPath = Path.Combine(Directory.GetCurrentDirectory(), "barcode_original.png");
-        string modifiedPath = Path.Combine(Directory.GetCurrentDirectory(), "barcode_modified.png");
+        // Create a unique temporary folder for the demo files
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
 
-        // Create a BarcodeGenerator for Code128, set initial colors, and save the first image.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Test123"))
+        // Define file paths for the initial and modified barcode images
+        string filePath1 = Path.Combine(tempFolder, "barcode_initial.png");
+        string filePath2 = Path.Combine(tempFolder, "barcode_modified.png");
+
+        // Generate a Code128 barcode, set initial colors, and save the first image
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "12345678"))
         {
-            // Set the barcode (foreground) color to red and the background to white.
-            generator.Parameters.Barcode.BarColor = Color.Red;
+            // Set background to white and barcode bars to black
             generator.Parameters.BackColor = Color.White;
+            generator.Parameters.Barcode.BarColor = Color.Black;
 
-            // Persist the first image to disk.
-            generator.Save(originalPath, BarCodeImageFormat.Png);
+            // Save the initial barcode image
+            generator.Save(filePath1, BarCodeImageFormat.Png);
 
-            // Change colors after the first save: barcode to blue, background to yellow.
-            generator.Parameters.Barcode.BarColor = Color.Blue;
+            // Capture the byte content of the first saved file for later comparison
+            byte[] originalBytes = File.ReadAllBytes(filePath1);
+
+            // Change color properties after the first save
             generator.Parameters.BackColor = Color.Yellow;
+            generator.Parameters.Barcode.BarColor = Color.Red;
 
-            // Persist the second image to disk.
-            generator.Save(modifiedPath, BarCodeImageFormat.Png);
+            // Save the barcode again with the new colors
+            generator.Save(filePath2, BarCodeImageFormat.Png);
+
+            // Re-read the first file to ensure its content has not changed
+            byte[] afterBytes = File.ReadAllBytes(filePath1);
+
+            // Compare the original and after bytes to confirm immutability
+            bool unchanged = originalBytes.SequenceEqual(afterBytes);
+            Console.WriteLine("First saved image unchanged after modifying colors: " + unchanged);
         }
 
-        // Load both saved images to compare a single pixel and demonstrate that they are independent.
-        using (var originalImg = (Bitmap)Image.FromFile(originalPath))
-        using (var modifiedImg = (Bitmap)Image.FromFile(modifiedPath))
-        {
-            // Sample the top‑left pixel (0,0) from each image.
-            var origPixel = originalImg.GetPixel(0, 0);
-            var modPixel = modifiedImg.GetPixel(0, 0);
-
-            // Output ARGB values for visual verification.
-            Console.WriteLine($"Original top‑left pixel ARGB: 0x{origPixel.ToArgb():X8}");
-            Console.WriteLine($"Modified top‑left pixel ARGB: 0x{modPixel.ToArgb():X8}");
-
-            // Compare the pixel values to confirm that the images differ as expected.
-            if (origPixel.ToArgb() != modPixel.ToArgb())
-                Console.WriteLine("The images have different colors as expected – changes after Save do not affect the already saved file.");
-            else
-                Console.WriteLine("The images appear identical – unexpected behavior.");
-        }
+        // Optional cleanup: uncomment the line below to delete the temporary folder and its contents
+        // Directory.Delete(tempFolder, true);
     }
 }

@@ -1,8 +1,8 @@
 // Title: Save barcode with custom colors and unique GUID filename
 // Description: Demonstrates generating a Code128 barcode, applying custom foreground and background colors, and saving it to a uniquely named PNG file using a GUID.
-// Category-Description: This example belongs to the Aspose.BarCode image generation category, illustrating how to customize barcode appearance with the BarcodeGenerator class, set color properties, and output to common image formats. Developers often need to create distinct barcode files for batch processing, reporting, or inventory systems, and this pattern shows the typical steps for color customization and unique file naming.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to customize barcode appearance with the BarcodeGenerator class, set color parameters, and export the image in PNG format. Developers often need to create visually distinct barcodes for branding or UI integration, requiring control over colors and unique file naming to avoid collisions.
 // Prompt: Save a barcode with custom colors to a file path that includes a GUID for uniqueness.
-// Tags: barcode, code128, custom colors, png, guid, aspose.barcode, generation
+// Tags: barcode, code128, custom colors, png, guid, filename, aspose.barcode, generation
 
 using System;
 using System.IO;
@@ -18,31 +18,42 @@ class Program
 {
     /// <summary>
     /// Entry point of the application.
-    /// Generates the barcode, applies color settings, and writes the image to disk.
+    /// Generates the barcode, applies color customizations, and writes the image to disk.
     /// </summary>
     static void Main()
     {
-        // Define the output directory relative to the current working directory
-        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
-        Directory.CreateDirectory(outputDir); // Ensure the directory exists
+        // Generate a new GUID and format it as a 32‑character string without hyphens.
+        string guid = Guid.NewGuid().ToString("N");
 
-        // Build a unique file name using a new GUID and combine it with the output path
-        string filePath = Path.Combine(outputDir, $"{Guid.NewGuid()}.png");
+        // Build a file name that includes the GUID to ensure uniqueness.
+        string fileName = $"barcode_{guid}.png";
 
-        // Initialize the barcode generator for Code128 with sample data
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
+        // Determine a temporary folder for storing the barcode image.
+        string folder = Path.Combine(Path.GetTempPath(), "AsposeBarcodes");
+
+        // Ensure the target directory exists.
+        Directory.CreateDirectory(folder);
+
+        // Combine folder and file name to obtain the full file path.
+        string filePath = Path.Combine(folder, fileName);
+
+        // Create a BarcodeGenerator for Code128 with the desired data.
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "12345678"))
         {
-            // Set the barcode (foreground) color to blue
-            generator.Parameters.Barcode.BarColor = Color.Blue;
-
-            // Set the background color of the image to yellow
+            // Set the background color of the image.
             generator.Parameters.BackColor = Color.Yellow;
 
-            // Save the generated barcode as a PNG file at the specified path
+            // Set the color of the barcode bars.
+            generator.Parameters.Barcode.BarColor = Color.Blue;
+
+            // Set the color of the human‑readable text.
+            generator.Parameters.Barcode.CodeTextParameters.Color = Color.Red;
+
+            // Save the generated barcode as a PNG file to the specified path.
             generator.Save(filePath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user where the barcode image was saved
+        // Output the location of the saved barcode image.
         Console.WriteLine($"Barcode saved to: {filePath}");
     }
 }

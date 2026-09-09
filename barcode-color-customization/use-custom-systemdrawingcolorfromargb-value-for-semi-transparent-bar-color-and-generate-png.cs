@@ -1,41 +1,39 @@
-// Title: Generate semi‑transparent barcode with custom ARGB color and save as PNG
-// Description: Demonstrates setting a semi‑transparent bar color using System.Drawing.Color.FromArgb and exporting the barcode to a PNG file.
-// Category-Description: This example belongs to the Aspose.BarCode image generation category, illustrating how to customize barcode appearance with the BarcodeGenerator class. It shows typical use cases such as applying custom colors, adjusting transparency, and saving to common image formats. Developers often need these techniques when integrating barcodes into UI designs or reports that require visual styling.
+// Title: Generate semi‑transparent Code128 barcode PNG using Aspose.BarCode
+// Description: Demonstrates how to set a custom semi‑transparent bar color with System.Drawing.Color.FromArgb and save the barcode as a PNG image.
+// Category-Description: This example belongs to the Aspose.BarCode image generation category, illustrating how to customize barcode appearance using the BarcodeGenerator class and its Parameters.Barcode properties. Typical use cases include branding, UI overlays, or any scenario where a partially transparent barcode is required. Developers often need to adjust colors, sizes, and output formats when integrating barcodes into graphics‑rich applications.
 // Prompt: Use a custom System.Drawing.Color.FromArgb value for semi‑transparent bar color and generate PNG.
-// Tags: barcode symbology, color customization, png output, aspose.barcode, aspose.drawing
+// Tags: code128, barcode, color, transparency, png, aspose.barcode, generation
 
 using System;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Program demonstrating semi‑transparent barcode generation.
+/// Example program that creates a Code128 barcode with a semi‑transparent bar color and saves it as a PNG file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a Code128 barcode with a semi‑transparent red bar color and saves it as a PNG file.
+    /// Entry point of the application.
     /// </summary>
     static void Main()
     {
-        // Define the output file path for the generated PNG image
-        string outputPath = "semiTransparentBarcode.png";
+        // Define the full path for the output PNG file.
+        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "semiTransparentBarcode.png");
 
-        // Initialize the barcode generator for Code128 symbology with sample data
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456789"))
+        // Initialize the barcode generator with Code128 symbology and the desired data.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            // Apply a semi‑transparent red color to the bars (alpha 128 out of 255)
+            // Set the bar color to a semi‑transparent red using ARGB (alpha 128, red 255, green 0, blue 0).
             generator.Parameters.Barcode.BarColor = Color.FromArgb(128, 255, 0, 0);
 
-            // Set a white background to improve visibility of the semi‑transparent bars
-            generator.Parameters.BackColor = Color.White;
-
-            // Save the generated barcode image as a PNG file
+            // Save the generated barcode image as a PNG file.
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user where the barcode image has been saved
-        Console.WriteLine($"Barcode saved to {outputPath}");
+        // Inform the user where the barcode image was saved.
+        Console.WriteLine($"Barcode saved to: {outputPath}");
     }
 }
