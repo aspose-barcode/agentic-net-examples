@@ -1,88 +1,80 @@
-// Title: Verify BarHeight overrides automatic height calculation while preserving module width
-// Description: Demonstrates how to test that setting the BarHeight property changes the barcode image height without affecting the module (XDimension) width.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to control barcode dimensions using the BarcodeGenerator, Parameters.AutoSizeMode, and Parameters.Barcode properties. Typical use cases include unit testing barcode rendering, customizing size for printing, and ensuring consistent module width across different heights. Developers often need to validate that manual height settings do not alter the calculated module width.
+// Title: BarHeight Override Test for Code128 Barcode
+// Description: Demonstrates that setting the BarHeight property overrides the automatic height calculation while preserving the module width (XDimension) of a generated Code128 barcode.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating how to control barcode dimensions using the BarcodeGenerator, Parameters.Barcode, and XDimension/BarHeight properties. Typical use cases include customizing barcode size for printing or UI display without altering the encoded data's visual density. Developers often need unit‑style checks to verify that dimension tweaks behave as expected.
 // Prompt: Write a unit test that ensures BarHeight property overrides automatic height calculation without affecting module width.
-// Tags: code128, barheight, autosizemode, xdimension, bitmap, aspose.barcode, generation, unit-test
+// Tags: barcode, code128, barheight, xdimension, dimension control, generation, aspose.barcode, unit test
 
 using System;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates a simple verification that setting BarHeight manually changes image height while keeping module width constant.
+/// Demonstrates that setting BarHeight overrides automatic height calculation without affecting XDimension.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates two barcodes with different BarHeight values and checks width and height differences.
+    /// Entry point that generates two barcodes—one with default height and one with explicit BarHeight—and validates the behavior.
     /// </summary>
     static void Main()
     {
-        // --------------------------------------------------------------------
-        // Prepare test data
-        // --------------------------------------------------------------------
-        const string codeText = "123456";
-        const float xDimension = 2f; // points (module width)
-        const float barHeight1 = 30f; // points (first barcode height)
-        const float barHeight2 = 60f; // points (second barcode height)
+        // Text to encode in the barcode
+        string codeText = "ASPOSE";
 
-        // --------------------------------------------------------------------
-        // First barcode with BarHeight = 30 (module width unchanged)
-        // --------------------------------------------------------------------
-        int width1, height1;
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+        // Desired module width in pixels (XDimension)
+        float xDimensionPixels = 2f;
+
+        // ------------------------------------------------------------
+        // Generate barcode with default (automatic) height
+        // ------------------------------------------------------------
+        using (var generatorDefault = new BarcodeGenerator(EncodeTypes.Code128, codeText))
         {
-            // Disable automatic sizing so manual dimensions are respected
-            generator.Parameters.AutoSizeMode = AutoSizeMode.None;
-            // Set module width
-            generator.Parameters.Barcode.XDimension.Point = xDimension;
-            // Set explicit bar height
-            generator.Parameters.Barcode.BarHeight.Point = barHeight1;
+            // Set module width; height remains automatic
+            generatorDefault.Parameters.Barcode.XDimension.Pixels = xDimensionPixels;
 
-            // Generate the image and capture its dimensions
-            using (Bitmap image = generator.GenerateBarCodeImage())
+            using (Bitmap bitmapDefault = generatorDefault.GenerateBarCodeImage())
             {
-                width1 = image.Width;
-                height1 = image.Height;
+                int heightDefault = bitmapDefault.Height;
+
+                // ------------------------------------------------------------
+                // Generate barcode with explicit BarHeight
+                // ------------------------------------------------------------
+                using (var generatorCustom = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+                {
+                    // Preserve the same module width
+                    generatorCustom.Parameters.Barcode.XDimension.Pixels = xDimensionPixels;
+
+                    // Override automatic height with a fixed value (80 pixels)
+                    generatorCustom.Parameters.Barcode.BarHeight.Pixels = 80f;
+
+                    using (Bitmap bitmapCustom = generatorCustom.GenerateBarCodeImage())
+                    {
+                        int heightCustom = bitmapCustom.Height;
+
+                        // Verify that the custom height is greater than the default height
+                        bool heightIncreased = heightCustom > heightDefault;
+
+                        // Verify that XDimension (module width) remains unchanged between generators
+                        bool xDimensionUnchanged = Math.Abs(
+                            generatorCustom.Parameters.Barcode.XDimension.Pixels -
+                            generatorDefault.Parameters.Barcode.XDimension.Pixels) < 0.001f;
+
+                        // Output test result
+                        if (heightIncreased && xDimensionUnchanged)
+                        {
+                            Console.WriteLine("PASS: BarHeight overrides height without affecting module width.");
+                        }
+                        else
+                        {
+                            Console.WriteLine("FAIL: BarHeight test failed.");
+                            Console.WriteLine($"Default height: {heightDefault}, Custom height: {heightCustom}, XDimension unchanged: {xDimensionUnchanged}");
+                        }
+                    }
+                }
             }
-        }
-
-        // --------------------------------------------------------------------
-        // Second barcode with BarHeight = 60 (module width unchanged)
-        // --------------------------------------------------------------------
-        int width2, height2;
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
-        {
-            generator.Parameters.AutoSizeMode = AutoSizeMode.None;
-            generator.Parameters.Barcode.XDimension.Point = xDimension;
-            generator.Parameters.Barcode.BarHeight.Point = barHeight2;
-
-            using (Bitmap image = generator.GenerateBarCodeImage())
-            {
-                width2 = image.Width;
-                height2 = image.Height;
-            }
-        }
-
-        // --------------------------------------------------------------------
-        // Verify that module width (image width) is unchanged while height changes
-        // --------------------------------------------------------------------
-        bool widthUnchanged = width1 == width2;
-        bool heightChanged = height1 != height2;
-
-        if (widthUnchanged && heightChanged)
-        {
-            Console.WriteLine("PASSED: BarHeight overrides automatic height calculation without affecting module width.");
-        }
-        else
-        {
-            Console.WriteLine("FAILED:");
-            if (!widthUnchanged)
-                Console.WriteLine($"  Image width changed (was {width1}, now {width2}).");
-            if (!heightChanged)
-                Console.WriteLine($"  Image height did not change (both {height1}).");
         }
     }
 }

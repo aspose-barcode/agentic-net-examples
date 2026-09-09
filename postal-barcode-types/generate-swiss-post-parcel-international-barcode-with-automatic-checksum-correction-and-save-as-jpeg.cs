@@ -1,55 +1,45 @@
-// Title: Generate Swiss Post Parcel Barcode and Save as JPEG
+// Title: Generate Swiss Post Parcel International Barcode and Save as JPEG
 // Description: Demonstrates creating a Swiss Post Parcel international barcode with automatic checksum correction and exporting it to a JPEG image.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use the BarcodeGenerator class with EncodeTypes.SwissPostParcel. Typical use cases include creating shipping labels for Swiss Post parcels where the barcode must include a valid checksum. Developers often need to enable checksum generation and handle incorrect code text gracefully, then save the result in common image formats such as JPEG.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use the BarcodeGenerator class with EncodeTypes.SwissPostParcel. Typical use cases include creating shipping labels for Swiss Post parcels, where the barcode must conform to international standards and include a valid checksum. Developers often need to adjust visual parameters such as X‑dimension and bar height before saving the barcode in common image formats.
 // Prompt: Generate a Swiss Post Parcel international barcode with automatic checksum correction and save as JPEG.
-// Tags: barcode, swisspostparcel, checksum, jpeg, aspose.barcode, generation
+// Tags: barcode, swisspost, parcel, international, checksum, jpeg, generation, aspose.barcode
 
 using System;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing.Imaging;
+using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Example program that generates a Swiss Post Parcel barcode,
-/// automatically corrects the checksum, and saves the image as JPEG.
+/// Example program that generates a Swiss Post Parcel international barcode,
+/// lets the library correct an invalid checksum automatically,
+/// and saves the result as a JPEG image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Calls the barcode generation routine.
+    /// Entry point of the example. Generates the barcode and writes the output file path to the console.
     /// </summary>
     static void Main()
     {
-        // Generate a Swiss Post Parcel barcode and save it as JPEG.
-        GenerateSwissPostParcelBarcode();
-    }
+        // Define the output file path in the current working directory.
+        string outputPath = Path.Combine(Environment.CurrentDirectory, "SwissPostInternationalMail.jpg");
 
-    /// <summary>
-    /// Creates a Swiss Post Parcel barcode with checksum enabled,
-    /// suppresses exceptions for incorrect code text, and writes the result to a JPEG file.
-    /// </summary>
-    static void GenerateSwissPostParcelBarcode()
-    {
-        // Sample code text; Aspose will correct checksum automatically.
-        const string codeText = "1234567890123";
+        // Barcode text with an intentionally incorrect checksum; the library will correct it.
+        string codeText = "RM999605017CH";
 
-        // Initialize the barcode generator for Swiss Post Parcel symbology.
+        // Create a BarcodeGenerator for the Swiss Post Parcel symbology.
         using (var generator = new BarcodeGenerator(EncodeTypes.SwissPostParcel, codeText))
         {
-            // Enable checksum generation for the barcode.
-            generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
-
-            // Allow automatic correction of incorrect code text (no exception thrown).
-            generator.Parameters.Barcode.ThrowExceptionWhenCodeTextIncorrect = false;
-
-            // Define the output file path.
-            const string outputPath = "SwissPostParcel.jpg";
+            // Set visual appearance: X‑dimension (module width) and bar height in pixels.
+            generator.Parameters.Barcode.XDimension.Pixels = 2f;
+            generator.Parameters.Barcode.BarHeight.Pixels = 40f;
 
             // Save the generated barcode as a JPEG image.
             generator.Save(outputPath, BarCodeImageFormat.Jpeg);
-
-            // Inform the user where the file was saved.
-            Console.WriteLine($"Barcode saved to {outputPath}");
         }
+
+        // Inform the user where the barcode image was saved.
+        Console.WriteLine($"Swiss Post International barcode saved to: {outputPath}");
     }
 }

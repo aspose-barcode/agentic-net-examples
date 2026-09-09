@@ -1,55 +1,48 @@
 // Title: Generate Swiss Post Parcel barcode with custom margins
-// Description: Demonstrates creating a Swiss Post Parcel domestic barcode using Aspose.BarCode, applying a custom margin around the image, and saving it as PNG.
-// Category-Description: This example belongs to the barcode generation category of Aspose.BarCode. It showcases the BarcodeGenerator class with EncodeTypes.SwissPostParcel, configuring barcode parameters such as padding and exception handling. Developers often need to generate postal barcodes for shipping labels and customize image layout, making this pattern useful for creating printable barcode graphics.
+// Description: Demonstrates creating a Swiss Post Parcel domestic barcode using the original identifier and saving it as a PNG image.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to configure barcode parameters such as X‑dimension, bar height, and custom padding. It uses the BarcodeGenerator class to produce a Swiss Post Parcel barcode, a common requirement for logistics and mailing applications. Developers often need to adjust visual appearance and export formats for integration into shipping labels and documents.
 // Prompt: Generate a Swiss Post Parcel domestic barcode using original identifier and add a custom margin around the image.
-// Tags: swisspostparcel, barcode, generation, padding, png, aspose.barcode
+// Tags: swisspostparcel, barcode generation, custom margin, png, aspose.barcode, xdimension, barheight
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates a Swiss Post Parcel barcode,
-/// applies custom margins, and saves the result as a PNG file.
+/// Demonstrates generating a Swiss Post Parcel domestic barcode with custom margins and saving it as a PNG file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
+    /// Entry point of the example. Creates the barcode, applies visual settings, and writes the image to disk.
     /// </summary>
     static void Main()
     {
-        // Sample identifier for Swiss Post Parcel domestic barcode
-        const string codeText = "1234567890";
+        // Determine output file path in the current directory
+        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "SwissPostDomestic.png");
 
-        // Output file path for the generated barcode image
-        string outputPath = "SwissPostParcel.png";
-
-        // Ensure the output directory exists before saving the file
-        string outputDir = Path.GetDirectoryName(Path.GetFullPath(outputPath));
-        if (!Directory.Exists(outputDir))
+        // Initialize the barcode generator with Swiss Post Parcel symbology and the original identifier
+        using (var generator = new BarcodeGenerator(EncodeTypes.SwissPostParcel, "98.34.123456.12345678"))
         {
-            Directory.CreateDirectory(outputDir);
+            // Set the X dimension (module width) to 2 pixels
+            generator.Parameters.Barcode.XDimension.Pixels = 2f;
+            // Set the bar height to 40 pixels
+            generator.Parameters.Barcode.BarHeight.Pixels = 40f;
+
+            // Apply a custom margin of 10 pixels on all sides
+            generator.Parameters.Barcode.Padding.Left.Pixels = 10f;
+            generator.Parameters.Barcode.Padding.Top.Pixels = 10f;
+            generator.Parameters.Barcode.Padding.Right.Pixels = 10f;
+            generator.Parameters.Barcode.Padding.Bottom.Pixels = 10f;
+
+            // Save the generated barcode as a PNG image
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Create the barcode generator with Swiss Post Parcel symbology
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.SwissPostParcel, codeText))
-        {
-            // Set custom margins (padding) around the barcode image (15 points on each side)
-            generator.Parameters.Barcode.Padding.Left.Point = 15f;   // left margin
-            generator.Parameters.Barcode.Padding.Top.Point = 15f;    // top margin
-            generator.Parameters.Barcode.Padding.Right.Point = 15f;  // right margin
-            generator.Parameters.Barcode.Padding.Bottom.Point = 15f; // bottom margin
-
-            // Optional: prevent exception if the code text is slightly incorrect
-            generator.Parameters.Barcode.ThrowExceptionWhenCodeTextIncorrect = false;
-
-            // Save the barcode image as PNG to the specified path
-            generator.Save(outputPath);
-        }
-
-        // Inform the user where the barcode image has been saved
-        Console.WriteLine($"Swiss Post Parcel barcode saved to: {Path.GetFullPath(outputPath)}");
+        // Inform the user where the file was saved
+        Console.WriteLine($"Barcode saved to {outputPath}");
     }
 }

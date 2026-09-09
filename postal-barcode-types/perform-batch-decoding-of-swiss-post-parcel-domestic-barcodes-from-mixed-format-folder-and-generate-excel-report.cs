@@ -1,8 +1,8 @@
 // Title: Batch decode Swiss Post Parcel barcodes and generate Excel report
-// Description: Demonstrates generating sample Swiss Post Parcel barcodes, decoding them in batch, and exporting the results to an Excel file.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It shows how to use BarcodeGenerator to create barcodes, BarCodeReader to decode them, and Aspose.Cells to build a spreadsheet report. Typical use cases include processing folders with mixed‑format images, extracting barcode data, and summarizing results for downstream systems. Developers often need to combine barcode handling with reporting utilities, making this pattern common in logistics and inventory applications.
+// Description: This example creates Swiss Post Parcel barcode images, decodes them in a batch, and writes the results to an Excel spreadsheet.
+// Category-Description: The sample belongs to the Aspose.BarCode generation and recognition category, illustrating how to use BarcodeGenerator, BarCodeReader, and related classes to produce barcodes, perform batch decoding, and export data with Aspose.Cells. Typical use cases include bulk barcode processing, quality assessment, and reporting for logistics or postal applications.
 // Prompt: Perform batch decoding of Swiss Post Parcel domestic barcodes from a mixed‑format folder and generate an Excel report.
-// Tags: swisspostparcel, barcode, batch-decoding, excel, aspose.barcode, aspose.cells, report
+// Tags: barcode, swisspost, batch decoding, excel, aspose.barcode, aspose.cells, generation, recognition, report
 
 using System;
 using System.IO;
@@ -11,113 +11,108 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Cells;
-using Aspose.Cells.Drawing;
 
-namespace BatchSwissPostDecode
+/// <summary>
+/// Demonstrates batch decoding of Swiss Post Parcel barcodes and creating an Excel report.
+/// </summary>
+class Program
 {
     /// <summary>
-    /// Demonstrates batch generation, decoding, and reporting of Swiss Post Parcel barcodes.
+    /// Entry point. Generates sample barcodes, decodes them, and writes results to an Excel file.
     /// </summary>
-    class Program
+    static void Main()
     {
-        // Simple DTO to hold decoding results
-        private class DecodedInfo
+        // Create a unique temporary folder for generated images and the report
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BatchSwissPost_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
+
+        // Sample Swiss Post Parcel domestic identifiers
+        var codes = new List<string>
         {
-            public string FilePath { get; set; }
-            public string CodeType { get; set; }
-            public string CodeText { get; set; }
+            "98.34.123456.12345678",
+            "983412345612345678",
+            "98.12.000001.00000001"
+        };
+
+        var barcodeFiles = new List<string>();
+
+        // Generate barcode images for each sample code
+        for (int i = 0; i < codes.Count; i++)
+        {
+            string filePath = Path.Combine(tempFolder, $"barcode_{i + 1}.png");
+            using (var generator = new BarcodeGenerator(EncodeTypes.SwissPostParcel, codes[i]))
+            {
+                // Set visual parameters
+                generator.Parameters.Barcode.XDimension.Pixels = 2f;
+                generator.Parameters.Barcode.BarHeight.Pixels = 40f;
+                // Save as PNG
+                generator.Save(filePath, BarCodeImageFormat.Png);
+            }
+            barcodeFiles.Add(filePath);
         }
 
-        /// <summary>
-        /// Entry point. Generates sample barcodes, decodes them, and creates an Excel report.
-        /// </summary>
-        /// <param name="args">Command‑line arguments (not used).</param>
-        static void Main(string[] args)
+        // Prepare list to hold decoding results
+        var results = new List<(string File, string CodeText, string CodeType, double Quality)>();
+
+        // Batch decode each generated barcode image
+        foreach (string file in barcodeFiles)
         {
-            // Create a unique temporary folder for the sample files
-            string tempFolder = Path.Combine(Path.GetTempPath(), "BatchSwissPost_" + Guid.NewGuid().ToString("N"));
-            Directory.CreateDirectory(tempFolder);
-
-            // -----------------------------------------------------------------
-            // Generate a few sample Swiss Post Parcel barcode images
-            // -----------------------------------------------------------------
-            List<string> barcodeFiles = new List<string>();
-            for (int i = 0; i < 5; i++)
+            if (!File.Exists(file))
             {
-                string filePath = Path.Combine(tempFolder, $"SwissPostParcel_{i}.png");
-                string codeText = $"12345678{i}"; // simple varying code text
-
-                using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.SwissPostParcel, codeText))
-                {
-                    // Optional: adjust barcode appearance if needed
-                    // generator.Parameters.Barcode.XDimension.Point = 2f;
-
-                    // Save directly to PNG file
-                    generator.Save(filePath, BarCodeImageFormat.Png);
-                }
-
-                barcodeFiles.Add(filePath);
+                Console.WriteLine($"File not found: {file}");
+                continue;
             }
 
-            // -----------------------------------------------------------------
-            // Decode the generated barcodes
-            // -----------------------------------------------------------------
-            List<DecodedInfo> decodedResults = new List<DecodedInfo>();
-            foreach (string file in barcodeFiles)
+            try
             {
-                if (!File.Exists(file))
+                using (var reader = new BarCodeReader(file, DecodeType.SwissPostParcel))
                 {
-                    Console.WriteLine($"File not found, skipping: {file}");
-                    continue;
-                }
-
-                try
-                {
-                    using (BarCodeReader reader = new BarCodeReader(file, DecodeType.SwissPostParcel))
+                    BarCodeResult[] barCodes = reader.ReadBarCodes();
+                    if (barCodes.Length > 0)
                     {
-                        foreach (var result in reader.ReadBarCodes())
-                        {
-                            decodedResults.Add(new DecodedInfo
-                            {
-                                FilePath = file,
-                                CodeType = result.CodeTypeName,
-                                CodeText = result.CodeText
-                            });
-                        }
+                        var result = barCodes[0];
+                        results.Add((Path.GetFileName(file), result.CodeText, result.CodeTypeName, result.ReadingQuality));
+                    }
+                    else
+                    {
+                        // No barcode detected in the image
+                        results.Add((Path.GetFileName(file), string.Empty, "NotDetected", 0));
                     }
                 }
-                catch (ArgumentException ex)
-                {
-                    // Handles "Image loading failed" or other argument issues
-                    Console.WriteLine($"Failed to read '{file}': {ex.Message}");
-                }
             }
-
-            // -----------------------------------------------------------------
-            // Create an Excel report with the decoding results
-            // -----------------------------------------------------------------
-            string reportPath = Path.Combine(tempFolder, "SwissPostParcelReport.xlsx");
-            using (Workbook workbook = new Workbook())
+            catch (ArgumentException ex)
             {
-                Worksheet sheet = workbook.Worksheets[0];
-                // Header row
-                sheet.Cells[0, 0].PutValue("File");
-                sheet.Cells[0, 1].PutValue("Barcode Type");
-                sheet.Cells[0, 2].PutValue("Code Text");
-
-                int row = 1;
-                foreach (var info in decodedResults)
-                {
-                    sheet.Cells[row, 0].PutValue(info.FilePath);
-                    sheet.Cells[row, 1].PutValue(info.CodeType);
-                    sheet.Cells[row, 2].PutValue(info.CodeText);
-                    row++;
-                }
-
-                workbook.Save(reportPath, SaveFormat.Xlsx);
+                // Handle cases where the file cannot be processed as a barcode
+                Console.WriteLine($"Failed to read {file}: {ex.Message}");
+                results.Add((Path.GetFileName(file), string.Empty, "Error", 0));
             }
-
-            Console.WriteLine($"Batch decoding completed. Report saved to: {reportPath}");
         }
+
+        // Create an Excel workbook to hold the report
+        string reportPath = Path.Combine(tempFolder, "SwissPostReport.xlsx");
+        var workbook = new Workbook();
+        var sheet = workbook.Worksheets[0];
+        sheet.Name = "Report";
+
+        // Write header row
+        sheet.Cells[0, 0].PutValue("File");
+        sheet.Cells[0, 1].PutValue("Code Text");
+        sheet.Cells[0, 2].PutValue("Code Type");
+        sheet.Cells[0, 3].PutValue("Reading Quality");
+
+        // Write data rows
+        for (int i = 0; i < results.Count; i++)
+        {
+            var r = results[i];
+            int row = i + 1;
+            sheet.Cells[row, 0].PutValue(r.File);
+            sheet.Cells[row, 1].PutValue(r.CodeText);
+            sheet.Cells[row, 2].PutValue(r.CodeType);
+            sheet.Cells[row, 3].PutValue(r.Quality);
+        }
+
+        // Save the Excel report
+        workbook.Save(reportPath, SaveFormat.Xlsx);
+        Console.WriteLine($"Excel report generated at: {reportPath}");
     }
 }

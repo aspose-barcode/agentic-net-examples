@@ -1,87 +1,75 @@
-// Title: Generate Postnet barcodes batch from a data source
-// Description: Demonstrates how to create multiple Postnet barcode images using Aspose.BarCode and save them to a folder. The example simulates reading zip codes from a database.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on batch processing of barcodes. It showcases the BarcodeGenerator class with EncodeTypes.Postnet, file output handling, and typical customization points. Developers looking for ways to automate barcode creation from data collections will find this pattern useful.
+// Title: Generate Postnet barcodes from a list and save as PNG files
+// Description: Demonstrates how to create Postnet barcodes using Aspose.BarCode and store each image in a designated folder.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating the use of BarcodeGenerator with EncodeTypes.Postnet. It shows typical parameter settings, file output handling, and batch processing of multiple codes—common tasks for developers needing to produce postal barcodes for mailing applications.
 // Prompt: Generate a batch of Postnet barcodes from a database table column and save images to a specified folder.
-// Tags: postnet, barcode, batch generation, image output, aspose.barcode, c#, png
+// Tags: postnet, barcode generation, batch processing, png, aspose.barcode, encode types, file output
 
 using System;
-using System.Collections.Generic;
 using System.IO;
+using System.Collections.Generic;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
-namespace PostnetBatchGenerator
+/// <summary>
+/// Example program that generates a batch of Postnet barcodes and saves them as PNG images.
+/// </summary>
+class Program
 {
     /// <summary>
-    /// Provides an entry point that generates a set of Postnet barcodes from a list of codes
-    /// (simulating a database column) and saves each barcode as a PNG file.
+    /// Entry point of the application. Generates Postnet barcodes for a set of codes and writes them to an output folder.
     /// </summary>
-    class Program
+    /// <param name="args">Optional command‑line argument specifying the output folder path.</param>
+    static void Main(string[] args)
     {
-        /// <summary>
-        /// Main method that orchestrates folder creation, data preparation, barcode generation,
-        /// and file saving for a batch of Postnet barcodes.
-        /// </summary>
-        static void Main()
+        // Determine the output folder: use the first argument if provided; otherwise create a temporary folder.
+        string outputFolder;
+        if (args.Length > 0 && !string.IsNullOrWhiteSpace(args[0]))
         {
-            // Determine the output folder path relative to the current working directory.
-            string outputFolder = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
-            if (!Directory.Exists(outputFolder))
-            {
-                // Create the folder if it does not already exist.
-                Directory.CreateDirectory(outputFolder);
-            }
-
-            // -----------------------------------------------------------------
-            // In a real scenario, replace the following block with code that
-            // reads the desired column from a database table (e.g., using
-            // ADO.NET, Dapper, Entity Framework, etc.).
-            // Example (pseudo‑code):
-            //   using (var connection = new SqlConnection(connectionString))
-            //   {
-            //       connection.Open();
-            //       var command = new SqlCommand("SELECT ZipCode FROM Addresses", connection);
-            //       using (var reader = command.ExecuteReader())
-            //       {
-            //           while (reader.Read())
-            //               postnetCodes.Add(reader.GetString(0));
-            //       }
-            //   }
-            // -----------------------------------------------------------------
-
-            // Sample data to simulate database column values.
-            List<string> postnetCodes = new List<string>
-            {
-                "12345",
-                "67890",
-                "123456789",
-                "00123",
-                "98765"
-            };
-
-            // Iterate over each code and generate a corresponding Postnet barcode image.
-            foreach (string code in postnetCodes)
-            {
-                // Initialize the barcode generator for the Postnet symbology with the current code.
-                using (var generator = new BarcodeGenerator(EncodeTypes.Postnet, code))
-                {
-                    // Optional: customize barcode appearance here, e.g.:
-                    // generator.Parameters.Barcode.XDimension.Point = 2f;
-                    // generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-
-                    // Build the full file path using the code as the file name.
-                    string filePath = Path.Combine(outputFolder, $"{code}.png");
-
-                    // Save the generated barcode image as a PNG file.
-                    generator.Save(filePath);
-
-                    // Inform the user about the generated file.
-                    Console.WriteLine($"Generated Postnet barcode for '{code}' at '{filePath}'.");
-                }
-            }
-
-            Console.WriteLine("Barcode batch generation completed.");
+            outputFolder = args[0];
         }
+        else
+        {
+            outputFolder = Path.Combine(Path.GetTempPath(), "PostnetBarcodes_" + Guid.NewGuid().ToString("N"));
+        }
+
+        // Ensure the output directory exists.
+        if (!Directory.Exists(outputFolder))
+        {
+            Directory.CreateDirectory(outputFolder);
+        }
+
+        // Simulated database column values (Postnet code texts).
+        List<string> postnetCodes = new List<string>
+        {
+            "123456",
+            "1159628792",
+            "9876543210",
+            "0012345678",
+            "5555555555"
+        };
+
+        // Iterate over each code, generate a barcode, and save it as a PNG file.
+        foreach (string code in postnetCodes)
+        {
+            string filePath = Path.Combine(outputFolder, $"Postnet_{code}.png");
+            using (var generator = new BarcodeGenerator(EncodeTypes.Postnet, code))
+            {
+                // Configure typical Postnet barcode parameters.
+                generator.Parameters.Barcode.XDimension.Pixels = 3f;          // Width of the smallest bar.
+                generator.Parameters.Barcode.BarHeight.Pixels = 50f;        // Overall bar height.
+                generator.Parameters.Barcode.Postal.ShortBarHeight.Pixels = 20f; // Height of short bars.
+
+                // Save the generated barcode image to the specified file.
+                generator.Save(filePath, BarCodeImageFormat.Png);
+            }
+
+            // Log the location of the generated barcode.
+            Console.WriteLine($"Generated Postnet barcode for '{code}' at: {filePath}");
+        }
+
+        // Indicate that the batch process has finished.
+        Console.WriteLine("Batch generation completed.");
     }
 }

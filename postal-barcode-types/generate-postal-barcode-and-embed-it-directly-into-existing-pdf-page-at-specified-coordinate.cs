@@ -1,8 +1,8 @@
-// Title: Generate and embed a Postnet barcode into a PDF
-// Description: This example creates a Postnet postal barcode and places it onto an existing PDF page at a specific location.
-// Category-Description: Demonstrates how to use Aspose.BarCode to generate barcode images and Aspose.Pdf to insert those images into PDF documents. Typical scenarios include adding shipping or mailing barcodes to invoices, labels, or reports. Developers often need to generate barcodes on‑the‑fly and embed them without creating intermediate files.
+// Title: Generate Postal Barcode and Embed in PDF
+// Description: Demonstrates creating a POSTNET barcode and placing it at a specific location inside a new PDF document.
+// Category-Description: This example belongs to the Aspose.BarCode for .NET PDF integration category. It shows how to use BarcodeGenerator (Aspose.BarCode.Generation) to produce a barcode image, convert it to a stream, and then embed the image into an Aspose.Pdf Document at precise coordinates. Developers working with shipping labels, postal services, or any scenario that requires barcode graphics inside PDF files can follow this pattern to generate and position barcodes programmatically.
 // Prompt: Generate a postal barcode and embed it directly into an existing PDF page at a specified coordinate.
-// Tags: postnet, barcode generation, pdf embedding, aspose.barcode, aspose.pdf, image insertion, c#
+// Tags: postnet, barcode generation, pdf embedding, aspnet, aspose.barcode, aspose.pdf, image conversion
 
 using System;
 using System.IO;
@@ -11,61 +11,64 @@ using Aspose.BarCode.Generation;
 using Aspose.Pdf;
 
 /// <summary>
-/// Demonstrates generating a Postnet barcode and embedding it into a PDF page.
+/// Example program that creates a POSTNET barcode and embeds it into a PDF at a given coordinate.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a barcode, creates a placeholder PDF if needed, and embeds the barcode at defined coordinates.
+    /// Entry point of the example. Generates the barcode, converts it to a PNG stream,
+    /// calculates its size in PDF points, and places it on a new PDF page.
     /// </summary>
-    /// <param name="args">Command‑line arguments (not used).</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Input and output PDF file paths
-        string inputPdfPath = "input.pdf";
-        string outputPdfPath = "output.pdf";
+        // Define barcode generation settings
+        int resolution = 300;                 // DPI for the barcode image
+        string barcodeText = "1159628792";    // Data to encode in the POSTNET barcode
+        int leftPos = 100;                    // X coordinate (points) from the left edge of the page
+        int bottomPos = 200;                  // Y coordinate (points) from the bottom edge of the page
 
-        // Ensure the input PDF exists; create a simple one if it does not.
-        if (!File.Exists(inputPdfPath))
+        // Create a barcode generator for POSTNET symbology
+        using (var generator = new BarcodeGenerator(EncodeTypes.Postnet, barcodeText))
         {
-            using (var doc = new Document())
+            // Set image resolution and X-dimension (module width) in pixels
+            generator.Parameters.Resolution = resolution;
+            generator.Parameters.Barcode.XDimension.Pixels = 3f;
+
+            // Generate the barcode as a bitmap
+            using (Aspose.Drawing.Bitmap bitmap = generator.GenerateBarCodeImage())
             {
-                doc.Pages.Add(); // add a blank page
-                doc.Save(inputPdfPath);
-            }
-        }
-
-        // Generate a postal barcode (Postnet) and embed it into the PDF.
-        // Sample code text "12345678" – adjust as needed.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Postnet, "12345678"))
-        {
-            // Optional: set barcode colors
-            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-            generator.Parameters.BackColor = Aspose.Drawing.Color.White;
-
-            // Save barcode image to a memory stream in PNG format.
-            using (var barcodeStream = new MemoryStream())
-            {
-                generator.Save(barcodeStream, BarCodeImageFormat.Png);
-                barcodeStream.Position = 0; // reset for reading
-
-                // Load the existing PDF and add the barcode image at specified coordinates.
-                using (var pdfDoc = new Document(inputPdfPath))
+                // Save the bitmap to a memory stream in PNG format
+                using (var imageStream = new MemoryStream())
                 {
-                    var page = pdfDoc.Pages[1];
+                    generator.Save(imageStream, BarCodeImageFormat.Png);
+                    imageStream.Position = 0; // Reset stream position for reading
 
-                    // Define placement rectangle: lower-left (100,500), upper-right (250,650)
-                    var rect = new Aspose.Pdf.Rectangle(100, 500, 250, 650);
+                    // Convert bitmap dimensions from pixels to PDF points (1 point = 1/72 inch)
+                    double widthPoints = (bitmap.Width * 72.0) / resolution;
+                    double heightPoints = (bitmap.Height * 72.0) / resolution;
 
-                    // Add the image to the page.
-                    page.AddImage(barcodeStream, rect);
+                    // Create a new PDF document and add a page
+                    using (var pdfDoc = new Document())
+                    {
+                        var page = pdfDoc.Pages.Add();
 
-                    // Save the modified PDF.
-                    pdfDoc.Save(outputPdfPath);
+                        // Define the rectangle where the barcode image will be placed
+                        var pdfRect = new Aspose.Pdf.Rectangle(
+                            leftPos,
+                            page.Rect.Height - (bottomPos + heightPoints), // Top coordinate
+                            leftPos + widthPoints,
+                            page.Rect.Height - bottomPos);                // Bottom coordinate
+
+                        // Embed the barcode image into the PDF page at the specified rectangle
+                        page.AddImage(imageStream, pdfRect);
+
+                        // Save the resulting PDF to the current directory
+                        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "PostalBarcode.pdf");
+                        pdfDoc.Save(outputPath);
+                        Console.WriteLine($"PDF saved to {outputPath}");
+                    }
                 }
             }
         }
-
-        Console.WriteLine($"Barcode embedded successfully. Output saved to '{outputPdfPath}'.");
     }
 }

@@ -1,8 +1,8 @@
 // Title: Batch decode Swiss Post Parcel barcodes with checksum validation
-// Description: Demonstrates generating Swiss Post Parcel barcode images, storing them in a temporary network‑share‑like folder, and batch decoding them while detecting checksum mismatches.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator for creating SwissPostParcel barcodes, BarCodeReader for batch decoding, and checksum validation settings. Developers working with postal barcode automation, bulk image processing, or quality‑control scenarios can use these APIs to validate barcode data and handle errors efficiently.
+// Description: Demonstrates generating a set of Swiss Post Parcel International barcodes, then decoding them in batch while detecting checksum mismatches.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator for image creation, BarCodeReader for decoding, and the ChecksumValidation setting to differentiate valid and invalid barcodes. Developers working with postal symbologies often need to process multiple images and handle checksum errors efficiently.
 // Prompt: Perform batch decoding of Swiss Post Parcel international barcodes from a network share and handle checksum mismatches.
-// Tags: swisspostparcel, barcode generation, barcode recognition, checksum validation, batch processing, aspnet.barcode, aspose.barcode
+// Tags: swisspostparcel, barcode, batch-decoding, checksum-validation, generation, recognition, aspose.barcode
 
 using System;
 using System.IO;
@@ -10,110 +10,112 @@ using System.Collections.Generic;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Entry point for the batch Swiss Post Parcel barcode generation and decoding example.
+/// Demonstrates batch generation and decoding of Swiss Post Parcel barcodes,
+/// including handling of checksum mismatches.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Generates sample Swiss Post Parcel barcodes, saves them to a temporary folder,
-    /// then reads them back in a batch, reporting success or checksum mismatches.
+    /// Entry point. Generates sample barcodes, decodes them with checksum validation
+    /// enabled and disabled, and reports the results.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder to simulate a network share
-        string tempFolder = Path.Combine(Path.GetTempPath(), "BatchSwissPost_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
+        // Create a unique temporary folder for the batch
+        string batchFolder = Path.Combine(Path.GetTempPath(), "Batch_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(batchFolder);
 
-        // Sample Swiss Post Parcel barcode texts (some with intentional checksum errors)
-        var barcodeTexts = new List<string>
+        // Sample Swiss Post Parcel International barcodes
+        var codeTexts = new[]
         {
-            "1234567890123", // assume valid
-            "9876543210987", // assume valid
-            "1111111111111"  // assume invalid checksum
+            "RM999605013CH", // correct checksum
+            "RM999605017CH", // erroneous checksum
+            "RM99960501CH"   // without checksum (will be generated)
         };
 
-        // Generate barcode images and collect file paths
         var generatedFiles = new List<string>();
-        foreach (var text in barcodeTexts)
+
+        // Generate barcode images for each sample text
+        foreach (var code in codeTexts)
         {
-            string filePath = Path.Combine(tempFolder, $"SwissPost_{text}.png");
-            using (var generator = new BarcodeGenerator(EncodeTypes.SwissPostParcel, text))
+            string filePath = Path.Combine(batchFolder, $"{code}.png");
+            using (var generator = new BarcodeGenerator(EncodeTypes.SwissPostParcel, code))
             {
-                // Example of setting a barcode property (optional)
-                generator.Parameters.Barcode.XDimension.Point = 2f;
+                generator.Parameters.Barcode.XDimension.Pixels = 2f;
+                generator.Parameters.Barcode.BarHeight.Pixels = 40f;
                 generator.Save(filePath, BarCodeImageFormat.Png);
             }
             generatedFiles.Add(filePath);
         }
 
-        Console.WriteLine($"Generated {generatedFiles.Count} barcode images in: {tempFolder}");
+        Console.WriteLine("Batch decoding results:");
         Console.WriteLine();
 
-        // Batch decode the generated images
+        // Process each generated file:
+        // first with checksum validation ON (default), then OFF to detect mismatches
         foreach (var file in generatedFiles)
         {
-            if (!File.Exists(file))
-            {
-                Console.WriteLine($"File not found, skipping: {file}");
-                continue;
-            }
+            bool hasValidResult = false;
+            string decodedTextOn = null;
+            string decodedTextOff = null;
 
+            // Decode with checksum validation enabled
             try
             {
-                using (var reader = new BarCodeReader(file, DecodeType.SwissPostParcel))
+                using (var readerOn = new BarCodeReader(file, DecodeType.SwissPostParcel))
                 {
-                    // Enable checksum validation
-                    reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
-                    // Allow reading even if checksum is wrong (so we can detect mismatch)
-                    reader.QualitySettings.AllowIncorrectBarcodes = true;
-
-                    var results = reader.ReadBarCodes();
-                    if (results.Length == 0)
+                    readerOn.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
+                    foreach (var result in readerOn.ReadBarCodes())
                     {
-                        Console.WriteLine($"No barcode detected in file: {Path.GetFileName(file)}");
-                        continue;
-                    }
-
-                    foreach (var result in results)
-                    {
-                        // If CodeText is null or empty, treat it as a checksum mismatch
-                        if (string.IsNullOrEmpty(result.CodeText))
-                        {
-                            Console.WriteLine($"[Checksum Mismatch] File: {Path.GetFileName(file)}");
-                        }
-                        else
-                        {
-                            Console.WriteLine($"[Success] File: {Path.GetFileName(file)}");
-                            Console.WriteLine($"  Type    : {result.CodeTypeName}");
-                            Console.WriteLine($"  CodeText: {result.CodeText}");
-                        }
+                        hasValidResult = true;
+                        decodedTextOn = result.CodeText;
+                        break; // only need first result
                     }
                 }
             }
-            catch (ArgumentException ex) when (ex.Message.Contains("Image loading failed"))
+            catch (ArgumentException ex)
             {
-                Console.WriteLine($"Unable to load image (skipped): {Path.GetFileName(file)}");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Unexpected error processing {Path.GetFileName(file)}: {ex.Message}");
+                Console.WriteLine($"File '{Path.GetFileName(file)}' could not be loaded: {ex.Message}");
+                continue;
             }
 
-            Console.WriteLine();
+            // Decode with checksum validation disabled to obtain raw data even if checksum is wrong
+            try
+            {
+                using (var readerOff = new BarCodeReader(file, DecodeType.SwissPostParcel))
+                {
+                    readerOff.BarcodeSettings.ChecksumValidation = ChecksumValidation.Off;
+                    foreach (var result in readerOff.ReadBarCodes())
+                    {
+                        decodedTextOff = result.CodeText;
+                        break;
+                    }
+                }
+            }
+            catch (ArgumentException ex)
+            {
+                Console.WriteLine($"File '{Path.GetFileName(file)}' could not be loaded (off mode): {ex.Message}");
+                continue;
+            }
+
+            // Output the appropriate result based on checksum validation outcome
+            if (hasValidResult)
+            {
+                Console.WriteLine($"File '{Path.GetFileName(file)}': Checksum OK, Data = {decodedTextOn}");
+            }
+            else if (decodedTextOff != null)
+            {
+                Console.WriteLine($"File '{Path.GetFileName(file)}': Checksum MISMATCH, Raw Data = {decodedTextOff}");
+            }
+            else
+            {
+                Console.WriteLine($"File '{Path.GetFileName(file)}': No barcode detected.");
+            }
         }
 
-        // Cleanup: delete temporary folder and its contents
-        try
-        {
-            Directory.Delete(tempFolder, true);
-            Console.WriteLine("Temporary files cleaned up.");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Failed to delete temporary folder: {ex.Message}");
-        }
+        // Cleanup: optional removal of temporary folder
+        // Directory.Delete(batchFolder, true);
     }
 }

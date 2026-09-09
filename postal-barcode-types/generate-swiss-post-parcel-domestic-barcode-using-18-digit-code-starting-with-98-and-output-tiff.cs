@@ -1,38 +1,42 @@
-// Title: Generate Swiss Post Parcel Domestic Barcode and Save as TIFF
-// Description: Demonstrates how to create a Swiss Post Parcel domestic barcode from an 18‑digit code and save it as a TIFF image using Aspose.BarCode.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category. It shows how to use the BarcodeGenerator class with the EncodeTypes.SwissPostParcel symbology to produce printable barcodes. Typical use cases include generating shipping labels for Swiss Post parcels, where an 18‑digit numeric code starting with '98' is required. Developers often need to configure generator parameters, handle validation, and export the barcode to common image formats such as TIFF.
+// Title: Generate Swiss Post Parcel barcode and save as TIFF
+// Description: Demonstrates creating a Swiss Post Parcel domestic barcode with an 18‑digit value beginning with 98, then saving it as a TIFF image.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, showcasing the use of BarcodeGenerator with EncodeTypes.SwissPostParcel. It illustrates typical tasks such as setting barcode dimensions, configuring image format, and exporting to a file—common operations for developers integrating Swiss Post parcel barcodes into shipping or logistics applications.
 // Prompt: Generate a Swiss Post Parcel domestic barcode using an 18‑digit code starting with 98 and output TIFF.
-// Tags: barcode generation, swiss post parcel, tiff, aspose.barcode, encode types, image export
+// Tags: swisspostparcel, barcode generation, tiff, aspnet, aspose.barcode, encode types
 
 using System;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generation of a Swiss Post Parcel domestic barcode and saving it as a TIFF file.
+/// Example program that creates a Swiss Post Parcel barcode and saves it as a TIFF file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates the barcode and writes it to disk.
+    /// Entry point. Generates the barcode, configures dimensions, saves to a temporary TIFF file, and writes the output path to console.
     /// </summary>
-    static void Main()
+    /// <param name="args">Command‑line arguments (not used).</param>
+    static void Main(string[] args)
     {
-        // Define an 18‑digit code for Swiss Post Parcel (must start with "98")
-        string codeText = "981234567890123456";
+        // Define the output file path in the system's temporary folder
+        string outputPath = Path.Combine(Path.GetTempPath(), "SwissPostParcel.tif");
 
-        // Initialize the barcode generator with Swiss Post Parcel symbology and the code text
-        using (var generator = new BarcodeGenerator(EncodeTypes.SwissPostParcel, codeText))
+        // Initialize the barcode generator with Swiss Post Parcel symbology and an 18‑digit value starting with 98
+        using (var generator = new BarcodeGenerator(EncodeTypes.SwissPostParcel, "983412345612345678"))
         {
-            // Allow the generator to proceed even if the code text is slightly off the strict format
-            generator.Parameters.Barcode.ThrowExceptionWhenCodeTextIncorrect = false;
+            // Set the X‑dimension (module width) to 2 pixels
+            generator.Parameters.Barcode.XDimension.Pixels = 2f;
 
-            // Specify the output file path and save the barcode as a TIFF image
-            string outputPath = "SwissPostParcel.tiff";
-            generator.Save(outputPath, BarCodeImageFormat.Tiff);
+            // Set the barcode height to 40 pixels
+            generator.Parameters.Barcode.BarHeight.Pixels = 40f;
 
-            // Inform the user where the barcode image was saved
-            Console.WriteLine($"Barcode saved to {outputPath}");
+            // Save the generated barcode as a TIFF image in CMYK color space
+            generator.Save(outputPath, BarCodeImageFormat.TiffInCmyk);
         }
+
+        // Output the location of the saved barcode image
+        Console.WriteLine($"Barcode saved to {outputPath}");
     }
 }

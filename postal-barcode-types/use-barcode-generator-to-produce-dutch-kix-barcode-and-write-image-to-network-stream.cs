@@ -1,55 +1,48 @@
-// Title: Generate Dutch KIX Barcode and Send via Network Stream
-// Description: Demonstrates how to generate a Dutch KIX barcode using Aspose.BarCode and transmit the PNG image over a TCP network stream.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing the use of BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes to create barcodes. Typical scenarios include producing barcode images on-the-fly and delivering them to remote services or devices via network streams. Developers working with real‑time barcode distribution often need to serialize images directly to sockets, making this pattern a common building block.
+// Title: Generate Dutch KIX Barcode and Write to a Network Stream
+// Description: Demonstrates how to generate a Dutch KIX barcode using Aspose.BarCode and output the image to a stream that can be sent over a network.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator with EncodeTypes.DutchKIX. It shows typical steps such as setting barcode parameters, rendering to an image format, and writing the result to a stream. Developers working with barcode creation for POS or logistics often need to produce KIX barcodes and transmit them via network sockets or web services.
 // Prompt: Use a barcode generator to produce a Dutch KIX barcode and write the image to a network stream.
-// Tags: dutch kix, barcode generation, network stream, tcp, png, aspose.barcode, csharp
+// Tags: barcode, dutch kix, generation, image, png, stream, network, aspose.barcode, generatortypes
 
 using System;
-using System.Net.Sockets;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Example program that creates a Dutch KIX barcode and sends the PNG image over a TCP connection.
+/// Demonstrates generating a Dutch KIX barcode and saving it to a stream.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates the barcode and writes it to a network stream.
+    /// Entry point that creates the barcode, configures appearance, and writes the PNG image to a memory stream.
     /// </summary>
     static void Main()
     {
-        // The data to encode in the Dutch KIX barcode.
-        const string codeText = "1234567890";
+        // Sample code text for Dutch KIX barcode
+        string codeText = "123456ASPOSE";
 
-        // Network endpoint configuration (example uses localhost on port 5000).
-        const string host = "127.0.0.1";
-        const int port = 5000;
-
-        try
+        // Create the barcode generator for Dutch KIX
+        using (var generator = new BarcodeGenerator(EncodeTypes.DutchKIX, codeText))
         {
-            // Initialize the barcode generator for Dutch KIX symbology.
-            using (var generator = new BarcodeGenerator(EncodeTypes.DutchKIX, codeText))
+            // Optional appearance settings
+            generator.Parameters.Barcode.XDimension.Pixels = 4f;
+            generator.Parameters.Barcode.BarHeight.Pixels = 50f;
+
+            // Write the barcode image to a memory stream (simulating a network stream)
+            using (var memoryStream = new MemoryStream())
             {
-                // Establish a TCP connection to the specified host and port.
-                using (var client = new TcpClient())
-                {
-                    client.Connect(host, port);
+                generator.Save(memoryStream, BarCodeImageFormat.Png);
+                memoryStream.Position = 0;
+                Console.WriteLine($"Generated Dutch KIX barcode image size: {memoryStream.Length} bytes");
 
-                    // Obtain the network stream associated with the TCP client.
-                    using (NetworkStream networkStream = client.GetStream())
-                    {
-                        // Serialize the barcode image directly to the network stream in PNG format.
-                        generator.Save(networkStream, BarCodeImageFormat.Png);
-                        Console.WriteLine("Barcode image sent to {0}:{1}", host, port);
-                    }
-                }
+                // In a real network scenario, replace the MemoryStream with a NetworkStream, e.g.:
+                // using (var client = new System.Net.Sockets.TcpClient("host", port))
+                // using (var networkStream = client.GetStream())
+                // {
+                //     generator.Save(networkStream, BarCodeImageFormat.Png);
+                // }
             }
-        }
-        catch (Exception ex)
-        {
-            // Output any errors that occur during generation or transmission.
-            Console.WriteLine("Error: " + ex.Message);
         }
     }
 }

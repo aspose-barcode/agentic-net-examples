@@ -1,126 +1,90 @@
-// Title: Validate 4‑State Barcode Encoding of Uppercase Letters
-// Description: Demonstrates how to generate 4‑state (or fallback Code128) barcodes for each uppercase alphabet character and verify that they decode back to the original text.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, showing how to use BarcodeGenerator, BarCodeReader, EncodeTypes, and DecodeType classes. Typical use cases include automated barcode validation, quality assurance, and unit testing of barcode symbologies. Developers often need to programmatically confirm that a barcode encodes the expected data before deployment.
+// Title: Validate 4‑State RM4SCC Barcodes for Uppercase Letters
+// Description: Generates RM4SCC (4‑state) barcodes for letters A‑Z, reads them back, and verifies that the decoded text matches the original character.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It demonstrates using BarcodeGenerator to create 4‑state barcodes, BarCodeReader to decode them, and typical validation logic. Developers working with RM4SCC symbology can use this pattern to ensure correct encoding/decoding in automated tests or batch processing scenarios.
 // Prompt: Validate that generated 4‑state barcodes correctly encode uppercase letters by comparing expected bit patterns.
-// Tags: barcode, symbology, fourstate, code128, generation, recognition, validation, csharp, aspose.barcode
+// Tags: barcode, rm4scc, generation, recognition, validation, csharp, aspose.barcode
 
 using System;
 using System.IO;
+using System.Collections.Generic;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Program that validates 4‑state barcode encoding of uppercase letters using Aspose.BarCode.
+/// Demonstrates generation and validation of RM4SCC (4‑state) barcodes for uppercase letters.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Generates barcodes for letters A‑Z, decodes them, and reports pass/fail results.
+    /// Entry point. Generates barcodes, decodes them, and reports success or mismatches.
     /// </summary>
     static void Main()
     {
-        // Symbology names to try: FourState (if available) otherwise Code128.
-        const string primarySymbology = "FourState";
-        const string fallbackSymbology = "Code128";
+        // Create a unique temporary folder for the generated barcode images
+        string tempFolder = Path.Combine(Path.GetTempPath(), "Barcode4State_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
+        List<string> files = new List<string>();
 
-        // Resolve encode type via reflection; fall back if primary is unavailable.
-        BaseEncodeType encodeType = ResolveEncodeType(primarySymbology) ?? ResolveEncodeType(fallbackSymbology);
-        if (encodeType == null)
+        // Generate RM4SCC barcodes for uppercase letters A-Z
+        for (char ch = 'A'; ch <= 'Z'; ch++)
         {
-            Console.WriteLine("Unable to resolve a suitable encode type.");
-            return;
-        }
-
-        // Resolve matching decode type based on the selected encode type.
-        BaseDecodeType decodeType = ResolveDecodeType(encodeType);
-        if (decodeType == null)
-        {
-            Console.WriteLine("Unable to resolve a matching decode type.");
-            return;
-        }
-
-        // Prepare test data: uppercase letters A‑Z.
-        string[] letters = GetUppercaseLetters();
-        int passed = 0;
-        int failed = 0;
-
-        // Iterate over each letter, generate and validate the barcode.
-        foreach (string letter in letters)
-        {
-            // Generate barcode image in memory for the current letter.
-            using (var generator = new BarcodeGenerator(encodeType, letter))
+            string text = ch.ToString();
+            string filePath = Path.Combine(tempFolder, $"RM4SCC_{ch}.png");
+            using (BarcodeGenerator gen = new BarcodeGenerator(EncodeTypes.RM4SCC, text))
             {
-                // Do not throw if the code text is considered incorrect; we only need to test decoding.
-                generator.Parameters.Barcode.ThrowExceptionWhenCodeTextIncorrect = false;
+                // Set the X-dimension (module width) to 4 pixels for better readability
+                gen.Parameters.Barcode.XDimension.Pixels = 4;
+                // Save the barcode image as PNG
+                gen.Save(filePath, BarCodeImageFormat.Png);
+            }
+            files.Add(filePath);
+        }
 
-                using (Bitmap bitmap = generator.GenerateBarCodeImage())
-                using (var ms = new MemoryStream())
+        // Prepare a reader that can decode any supported barcode type
+        BaseDecodeType decodeType = DecodeType.AllSupportedTypes;
+
+        // Read and validate each generated barcode
+        foreach (string file in files)
+        {
+            using (BarCodeReader reader = new BarCodeReader(file, decodeType))
+            {
+                BarCodeResult[] results = reader.ReadBarCodes();
+                // Expected text is the character part of the file name (e.g., "A" from "RM4SCC_A.png")
+                string expected = Path.GetFileNameWithoutExtension(file).Split('_')[1];
+
+                if (results.Length == 0)
                 {
-                    // Save the generated bitmap to a memory stream in PNG format.
-                    bitmap.Save(ms, Aspose.Drawing.Imaging.ImageFormat.Png);
-                    ms.Position = 0;
-
-                    // Read the barcode from the memory stream.
-                    using (var reader = new BarCodeReader(ms, decodeType))
+                    Console.WriteLine($"No barcode detected in {Path.GetFileName(file)}");
+                }
+                else
+                {
+                    string decoded = results[0].CodeText;
+                    if (decoded != expected)
                     {
-                        bool matchFound = false;
-                        foreach (var result in reader.ReadBarCodes())
-                        {
-                            if (result.CodeText == letter)
-                            {
-                                matchFound = true;
-                                break;
-                            }
-                        }
-
-                        if (matchFound)
-                        {
-                            Console.WriteLine($"[PASS] Letter '{letter}' correctly encoded.");
-                            passed++;
-                        }
-                        else
-                        {
-                            Console.WriteLine($"[FAIL] Letter '{letter}' did not decode correctly.");
-                            failed++;
-                        }
+                        Console.WriteLine($"Mismatch for {expected}: decoded '{decoded}'");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Success for {expected}");
                     }
                 }
             }
         }
 
-        // Output summary of validation results.
-        Console.WriteLine();
-        Console.WriteLine($"Validation complete. Passed: {passed}, Failed: {failed}");
-    }
-
-    // Returns an array of strings "A".."Z".
-    static string[] GetUppercaseLetters()
-    {
-        var letters = new string[26];
-        for (int i = 0; i < 26; i++)
+        // Cleanup temporary files and folder
+        try
         {
-            letters[i] = ((char)('A' + i)).ToString();
+            foreach (string file in files)
+            {
+                File.Delete(file);
+            }
+            Directory.Delete(tempFolder);
         }
-        return letters;
-    }
-
-    // Resolve an EncodeTypes field name to BaseEncodeType via reflection.
-    static BaseEncodeType ResolveEncodeType(string name)
-    {
-        var field = typeof(EncodeTypes).GetField(name);
-        if (field == null) return null;
-        return (BaseEncodeType)field.GetValue(null);
-    }
-
-    // Resolve a DecodeType field that matches the given encode type name.
-    static BaseDecodeType ResolveDecodeType(BaseEncodeType encodeType)
-    {
-        // EncodeTypes and DecodeType share the same field names.
-        string name = encodeType.GetType().GetField(encodeType.ToString())?.Name;
-        if (string.IsNullOrEmpty(name)) return null;
-        var field = typeof(DecodeType).GetField(name);
-        if (field == null) return null;
-        return (BaseDecodeType)field.GetValue(null);
+        catch
+        {
+            // Ignored - cleanup failure should not affect validation result
+        }
     }
 }

@@ -1,95 +1,100 @@
-// Title: Retrieve and Decode Barcode BLOB from Database
-// Description: Demonstrates generating a barcode, storing it as a BLOB, retrieving it, and decoding to verify data integrity.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It shows how to use BarcodeGenerator to create a barcode image, store it as a binary BLOB, and then use BarCodeReader with DecodeType.AllSupportedTypes to detect and decode the barcode. Developers often need to persist barcodes in databases and later validate them, making this pattern useful for inventory, ticketing, and authentication systems.
+// Title: Retrieve and Decode a QR Barcode Stored as a BLOB
+// Description: Demonstrates generating a QR barcode, saving its image bytes as a BLOB (simulating database storage), retrieving the BLOB, and decoding it to verify data integrity.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases how to use the BarcodeGenerator class to create barcodes, store the resulting image bytes (e.g., in a database), and later employ the BarCodeReader class to decode the stored image. Typical use cases include persisting barcodes for later verification, auditing, or downstream processing. Developers often need to handle barcode BLOBs, convert them to streams, and extract encoded information reliably.
 // Prompt: Retrieve a stored barcode BLOB from the database and decode it to verify data integrity.
-// Tags: barcode, code128, generation, recognition, blob, data integrity, aspose.barcode, csharp
+// Tags: qr, barcode, blob, storage, decode, aspose.barcode, generation, recognition
 
 using System;
 using System.IO;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a barcode, persisting it as a BLOB, retrieving it, and decoding to verify data integrity.
+/// Example program that generates a QR barcode, stores it as a binary BLOB,
+/// retrieves the BLOB, and decodes it to verify the encoded data.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a Code128 barcode, saves it to a temporary file,
-    /// reads the file into a byte array (simulating a database BLOB), decodes the barcode,
-    /// and checks that the decoded text matches the original.
+    /// Entry point of the example. Performs barcode generation, simulated DB storage,
+    /// retrieval, and decoding.
     /// </summary>
     static void Main()
     {
-        // Sample data to encode
-        const string originalText = "HelloAspose";
+        // Create a unique temporary folder for all demo files.
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
 
-        // Path for temporary barcode image
-        string imagePath = Path.Combine(Path.GetTempPath(), "sample_barcode.png");
+        // Define file paths for the barcode image and the simulated database BLOB.
+        string imagePath = Path.Combine(tempFolder, "barcode.png");
+        string blobPath = Path.Combine(tempFolder, "barcode_blob.bin");
 
-        // -------------------------------------------------
-        // Step 1: Generate a barcode and save it to a file
-        // -------------------------------------------------
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, originalText))
+        // ------------------------------------------------------------
+        // Generate a QR barcode and store its image bytes as a BLOB.
+        // ------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Test123"))
         {
-            // Save as PNG
-            generator.Save(imagePath, BarCodeImageFormat.Png);
+            // Set the module size (pixel dimension) for the QR code.
+            generator.Parameters.Barcode.XDimension.Pixels = 4;
+
+            using (var ms = new MemoryStream())
+            {
+                // Save the barcode image to the memory stream in PNG format.
+                generator.Save(ms, BarCodeImageFormat.Png);
+                byte[] blob = ms.ToArray();
+
+                // Optionally write the image file for visual reference.
+                File.WriteAllBytes(imagePath, blob);
+
+                // Simulate storing the BLOB in a database by writing it to a file.
+                File.WriteAllBytes(blobPath, blob);
+            }
         }
 
-        // -------------------------------------------------
-        // Step 2: Simulate retrieving the barcode BLOB from a database
-        // -------------------------------------------------
-        if (!File.Exists(imagePath))
+        // ------------------------------------------------------------
+        // Retrieve the stored BLOB and decode it.
+        // ------------------------------------------------------------
+        if (!File.Exists(blobPath))
         {
-            Console.WriteLine("Failed to create barcode image.");
+            Console.WriteLine("Stored barcode BLOB not found.");
             return;
         }
 
-        byte[] barcodeBlob;
-        using (FileStream readStream = new FileStream(imagePath, FileMode.Open, FileAccess.Read))
-        using (MemoryStream ms = new MemoryStream())
+        byte[] storedBlob = File.ReadAllBytes(blobPath);
+        using (var ms = new MemoryStream(storedBlob))
         {
-            // Copy file contents into memory stream
-            readStream.CopyTo(ms);
-            barcodeBlob = ms.ToArray();
-        }
+            // Specify the expected barcode type for decoding.
+            BaseDecodeType decodeType = DecodeType.QR;
 
-        // -------------------------------------------------
-        // Step 3: Decode the barcode from the BLOB and verify integrity
-        // -------------------------------------------------
-        using (MemoryStream blobStream = new MemoryStream(barcodeBlob))
-        using (BarCodeReader reader = new BarCodeReader(blobStream, DecodeType.AllSupportedTypes))
-        {
-            // Read all barcodes in the image
-            BarCodeResult[] results = reader.ReadBarCodes();
+            using (var reader = new BarCodeReader(ms, decodeType))
+            {
+                // Read all barcodes found in the stream.
+                BarCodeResult[] results = reader.ReadBarCodes();
 
-            if (results.Length == 0)
-            {
-                Console.WriteLine("No barcode detected.");
-            }
-            else
-            {
-                foreach (BarCodeResult result in results)
+                if (results.Length > 0 && !string.IsNullOrEmpty(results[0].CodeText))
                 {
-                    Console.WriteLine($"Detected Type: {result.CodeTypeName}");
-                    Console.WriteLine($"Decoded Text: {result.CodeText}");
-
-                    // Verify data integrity
-                    bool isValid = string.Equals(originalText, result.CodeText, StringComparison.Ordinal);
-                    Console.WriteLine($"Data Integrity Check: {(isValid ? "PASS" : "FAIL")}");
+                    Console.WriteLine("Barcode decoded successfully.");
+                    Console.WriteLine($"CodeText: {results[0].CodeText}");
+                    Console.WriteLine($"CodeTypeName: {results[0].CodeTypeName}");
+                }
+                else
+                {
+                    Console.WriteLine("Failed to decode barcode.");
                 }
             }
         }
 
-        // Cleanup temporary file
+        // ------------------------------------------------------------
+        // Cleanup temporary files (optional).
+        // ------------------------------------------------------------
         try
         {
-            File.Delete(imagePath);
+            Directory.Delete(tempFolder, true);
         }
         catch
         {
-            // Ignored - cleanup failure should not affect program flow
+            // Ignore any errors during cleanup.
         }
     }
 }

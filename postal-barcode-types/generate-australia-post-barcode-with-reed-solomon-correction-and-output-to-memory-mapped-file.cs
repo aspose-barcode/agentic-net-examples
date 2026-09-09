@@ -1,62 +1,59 @@
-// Title: Generate Australia Post barcode with Reed‑Solomon correction to a memory‑mapped file
-// Description: Demonstrates creating an Australia Post barcode using Reed‑Solomon error correction and saving the PNG image into an anonymous memory‑mapped file.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to configure barcode parameters (such as encoding tables and X‑dimension), generate a bitmap image, and write the result to a memory‑mapped file. Key API classes include BarcodeGenerator, BarcodeParameters, Bitmap, MemoryMappedFile, and related accessor classes. Developers often need to produce barcodes for printing or embedding in applications while handling the image data in memory for further processing or inter‑process communication.
+// Title: Generate Australia Post barcode with Reed‑Solomon correction to memory‑mapped file
+// Description: Demonstrates creating an Australia Post barcode using Aspose.BarCode with Reed‑Solomon error correction and writing the PNG image to an anonymous memory‑mapped file.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on symbology configuration and advanced output handling. It showcases the BarcodeGenerator class, EncodeTypes enumeration, and memory‑mapped file APIs to produce a barcode image and store it in memory without touching the file system. Developers working with high‑throughput or in‑memory processing scenarios often need such patterns.
 // Prompt: Generate an Australia Post barcode with Reed‑Solomon correction and output to a memory‑mapped file.
-// Tags: australia post, barcode generation, memory-mapped file, png, aspose.barcode, aspose.drawing
+// Tags: australia post barcode, reed-solomon, memory-mapped file, barcode generation, aspose.barcode, png output
 
 using System;
 using System.IO;
 using System.IO.MemoryMappedFiles;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates an Australia Post barcode with Reed‑Solomon correction
-/// and stores the PNG image in an anonymous memory‑mapped file.
+/// Example program that creates an Australia Post barcode with Reed‑Solomon correction
+/// and writes the resulting PNG image to an anonymous memory‑mapped file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Creates the barcode, saves it to a memory stream, and writes the bytes to a memory‑mapped file.
+    /// Entry point of the example. Generates the barcode, saves it to a byte array,
+    /// and stores the bytes in a memory‑mapped file.
     /// </summary>
     static void Main()
     {
-        // Sample Australia Post code text (FCC 59 with 2 CTable characters)
-        const string codeText = "5980123456AB";
+        // Define the barcode content: Australia Post format (FCC 62, 8‑digit sorting code, 5‑character customer info)
+        string codeText = "6201234567ABCD";
 
-        // Initialize the barcode generator for Australia Post symbology
+        // Generate the barcode image and capture it in a byte array
+        byte[] imageBytes;
         using (var generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, codeText))
         {
-            // Use CTable encoding for the optional customer information part
+            // Configure visual parameters
+            generator.Parameters.Barcode.XDimension.Pixels = 4f;
+            generator.Parameters.Barcode.BarHeight.Pixels = 50f;
+
+            // Set the encoding table for customer information (CTable) and enable Reed‑Solomon correction implicitly
             generator.Parameters.Barcode.AustralianPost.EncodingTable = CustomerInformationInterpretingType.CTable;
 
-            // Optional: adjust module size (X‑dimension) for better readability
-            generator.Parameters.Barcode.XDimension.Point = 2f;
-
-            // Generate the barcode image as a Bitmap
-            using (Bitmap bitmap = generator.GenerateBarCodeImage())
+            // Save the barcode as PNG into a memory stream, then extract the byte array
+            using (var ms = new MemoryStream())
             {
-                // Save the bitmap to a memory stream in PNG format
-                using (var ms = new MemoryStream())
-                {
-                    bitmap.Save(ms, ImageFormat.Png);
-                    byte[] imageBytes = ms.ToArray();
-
-                    // Create an anonymous memory‑mapped file sized to hold the image bytes
-                    using (var mmf = MemoryMappedFile.CreateNew(null, imageBytes.Length))
-                    {
-                        // Write the image bytes into the memory‑mapped file
-                        using (var accessor = mmf.CreateViewAccessor())
-                        {
-                            accessor.WriteArray(0, imageBytes, 0, imageBytes.Length);
-                        }
-
-                        Console.WriteLine($"Australia Post barcode generated ({imageBytes.Length} bytes) and stored in a memory‑mapped file.");
-                    }
-                }
+                generator.Save(ms, BarCodeImageFormat.Png);
+                imageBytes = ms.ToArray();
             }
         }
+
+        // Create an anonymous memory‑mapped file sized to hold the image bytes
+        using (var mmf = MemoryMappedFile.CreateNew(null, imageBytes.Length))
+        {
+            // Obtain a view accessor and write the image bytes into the memory‑mapped region
+            using (var accessor = mmf.CreateViewAccessor())
+            {
+                accessor.WriteArray(0, imageBytes, 0, imageBytes.Length);
+            }
+        }
+
+        Console.WriteLine("Australia Post barcode generated and written to memory‑mapped file successfully.");
     }
 }

@@ -1,73 +1,98 @@
-// Title: Decode Swiss Post Parcel barcode from PNG and validate identifier
-// Description: Demonstrates decoding a Swiss Post Parcel domestic barcode stored in a PNG file and checking whether the identifier is valid.
-// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category. It shows how to use the BarCodeReader class with DecodeType.SwissPostParcel to read and validate Swiss Post Parcel barcodes. Typical use cases include verifying parcel identifiers in logistics and shipping applications. Developers often need to generate sample barcodes with BarcodeGenerator and then decode them to ensure correct data extraction.
+// Title: Decode Swiss Post Parcel Domestic Barcode and Validate Identifier
+// Description: Generates a Swiss Post Parcel domestic barcode, saves it as a PNG image, reads the image back, decodes the barcode data, and verifies that the identifier conforms to the expected format.
+// Category-Description: This example demonstrates the combined use of Aspose.BarCode generation and recognition APIs to work with Swiss Post Parcel barcodes. It shows how to create a barcode with BarcodeGenerator, persist it as an image, and then read it using BarCodeReader. Developers building shipping, logistics, or postal applications often need to generate barcodes for parcels and later validate the encoded identifiers during processing.
 // Prompt: Decode a Swiss Post Parcel domestic barcode from a PNG file and confirm identifier validity.
-// Tags: swisspostparcel, barcode, decoding, validation, png, aspose.barcode, generation, recognition
+// Tags: swisspost, parcel, barcode, generation, recognition, decode, validation, png, aspose.barcode
 
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates (if needed) and decodes a Swiss Post Parcel domestic barcode
-/// from a PNG image, then confirms the identifier's validity.
+/// Demonstrates generating, saving, reading, and validating a Swiss Post Parcel domestic barcode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Handles barcode image preparation, decoding, and validation output.
+    /// Entry point of the example. Generates a barcode, saves it as PNG, decodes it, and validates the identifier.
     /// </summary>
     static void Main()
     {
-        // Path to the barcode image file
-        string imagePath = "SwissPostParcel.png";
+        // --------------------------------------------------------------------
+        // Prepare a temporary folder and file path for the barcode image.
+        // --------------------------------------------------------------------
+        string tempFolder = Path.Combine(Path.GetTempPath(), "SwissPostDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
+        string barcodePath = Path.Combine(tempFolder, "SwissPostDomestic.png");
 
-        // If the image does not exist, generate a sample Swiss Post Parcel barcode
-        if (!File.Exists(imagePath))
+        // --------------------------------------------------------------------
+        // Generate a Swiss Post Parcel Domestic barcode using the original
+        // identifier format (dotted notation) and save it as a PNG file.
+        // --------------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.SwissPostParcel, "98.34.123456.12345678"))
         {
-            // Sample numeric code text for a domestic Swiss Post Parcel barcode
-            string sampleCodeText = "123456789012";
-
-            // Create a barcode generator for the Swiss Post Parcel symbology
-            using (var generator = new BarcodeGenerator(EncodeTypes.SwissPostParcel, sampleCodeText))
-            {
-                // Save the generated barcode as a PNG file
-                generator.Save(imagePath, BarCodeImageFormat.Png);
-                Console.WriteLine($"Sample barcode generated at: {Path.GetFullPath(imagePath)}");
-            }
+            generator.Parameters.Barcode.XDimension.Pixels = 2f;
+            generator.Parameters.Barcode.BarHeight.Pixels = 40f;
+            generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        // Verify that the barcode image file now exists
-        if (!File.Exists(imagePath))
+        // --------------------------------------------------------------------
+        // Verify that the barcode image was created successfully.
+        // --------------------------------------------------------------------
+        if (!File.Exists(barcodePath))
         {
-            Console.WriteLine("Error: Barcode image file not found.");
+            Console.WriteLine("Failed to create barcode image.");
             return;
         }
 
-        // Initialize a barcode reader for the Swiss Post Parcel symbology
-        using (var reader = new BarCodeReader(imagePath, DecodeType.SwissPostParcel))
+        // --------------------------------------------------------------------
+        // Read and decode the barcode from the PNG file using the appropriate
+        // decode type for Swiss Post Parcel barcodes.
+        // --------------------------------------------------------------------
+        using (var reader = new BarCodeReader(barcodePath, DecodeType.SwissPostParcel))
         {
-            bool found = false;
-
-            // Iterate through all detected barcodes in the image
-            foreach (var result in reader.ReadBarCodes())
+            bool anyResult = false;
+            foreach (BarCodeResult result in reader.ReadBarCodes())
             {
-                found = true;
-                Console.WriteLine("Barcode Type: " + result.CodeTypeName);
-                Console.WriteLine("Decoded CodeText: " + result.CodeText);
-                // Additional validation logic can be placed here if needed
+                anyResult = true;
+                Console.WriteLine($"Barcode type: {result.CodeTypeName}, Data: {result.CodeText}");
+
+                // Validate the decoded identifier against the expected formats.
+                bool isValid = ValidateSwissPostDomesticIdentifier(result.CodeText);
+                Console.WriteLine($"Identifier valid: {isValid}");
             }
 
-            // Output validation result based on detection outcome
-            if (!found)
+            if (!anyResult)
             {
-                Console.WriteLine("No Swiss Post Parcel barcode detected – identifier is invalid.");
-            }
-            else
-            {
-                Console.WriteLine("Barcode successfully decoded – identifier is valid.");
+                Console.WriteLine("No barcode detected in the image.");
             }
         }
+    }
+
+    // ------------------------------------------------------------------------
+    // Validates Swiss Post Parcel Domestic identifier.
+    // Accepts either the original dotted format (dd.dd.dddddd.dddddddd)
+    // or the 18‑digit plain format starting with 98 or 99.
+    // ------------------------------------------------------------------------
+    static bool ValidateSwissPostDomesticIdentifier(string codeText)
+    {
+        if (string.IsNullOrEmpty(codeText))
+            return false;
+
+        // Remove any surrounding whitespace.
+        codeText = codeText.Trim();
+
+        // Dotted format validation (e.g., "98.34.123456.12345678").
+        if (System.Text.RegularExpressions.Regex.IsMatch(codeText, @"^\d{2}\.\d{2}\.\d{6}\.\d{8}$"))
+            return true;
+
+        // Plain 18‑digit format validation (e.g., "983412345612345678").
+        if (System.Text.RegularExpressions.Regex.IsMatch(codeText, @"^(98|99)\d{16}$"))
+            return true;
+
+        return false;
     }
 }
