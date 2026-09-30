@@ -1,74 +1,67 @@
-// Title: Hide Checksum Digit for Code 39 Barcode and Verify Data
-// Description: Demonstrates generating a Code 39 barcode with the checksum digit hidden and then reading it back to confirm the encoded data excludes the checksum.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It shows how to configure BarcodeGenerator parameters such as IsChecksumEnabled and ChecksumAlwaysShow for Code 39 symbology, generate an image, and use BarCodeReader to decode and validate the result. Developers working with barcode creation, customization, and verification commonly use these APIs to control checksum display and ensure data integrity.
+// Title: Hide Code 39 checksum digit and verify barcode data
+// Description: Demonstrates how to generate a Code 39 barcode without calculating or displaying the checksum digit, then reads the barcode to confirm the decoded text matches the original data.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It shows how to use BarcodeGenerator and BarCodeReader with the EncodeTypes.Code39FullASCII symbology, configuring BarcodeParameters such as IsChecksumEnabled and ChecksumAlwaysShow. Developers often need to suppress checksum digits for compact human‑readable output or when the checksum is managed externally.
 // Prompt: Configure BarcodeParameters to hide the checksum digit for Code 39 and verify the data excludes it.
-// Tags: code39, checksum, barcode generation, barcode recognition, aspose.barcode, png, c#
+// Tags: code39, checksum, hide-checksum, barcode-generation, barcode-recognition, aspose.barcode, csharp
 
 using System;
 using System.IO;
+using System.Linq;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates configuring BarcodeParameters to hide the checksum digit for Code 39,
-/// generating the barcode image, and verifying that the decoded data matches the original input.
+/// Demonstrates hiding the checksum digit for a Code 39 barcode and verifying the decoded data.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates a temporary folder, generates a Code 39 barcode without a visible checksum,
-    /// reads the barcode back, validates the data, and cleans up temporary files.
+    /// Entry point that generates a barcode, saves it, reads it back, and validates the text.
     /// </summary>
-    static void Main()
+    /// <param name="args">Command‑line arguments (not used).</param>
+    static void Main(string[] args)
     {
-        // Prepare a unique temporary directory for the demo files
-        string tempFolder = Path.Combine(Path.GetTempPath(), "Code39Demo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
+        // Sample data without checksum
+        string codeText = "ABC123";
 
-        // Define the output path for the barcode image and the data to encode
-        string barcodePath = Path.Combine(tempFolder, "code39.png");
-        string data = "ABC123";
+        // Define output image path in the temporary folder
+        string outputPath = Path.Combine(Path.GetTempPath(), "code39.png");
 
-        // Generate Code 39 barcode without checksum display
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code39FullASCII, data))
+        // Generate Code 39 barcode, hide checksum and disable its calculation
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code39FullASCII, codeText))
         {
-            // Disable checksum calculation and hide it if present
+            // Disable checksum calculation
             generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.No;
+            // Hide checksum in the human‑readable text
             generator.Parameters.Barcode.ChecksumAlwaysShow = false;
 
-            // Save the barcode as a PNG image
-            generator.Save(barcodePath, BarCodeImageFormat.Png);
+            // Save the generated barcode image as PNG
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Verify that the barcode image was created successfully
-        if (!File.Exists(barcodePath))
-        {
-            Console.WriteLine("Failed to create barcode image.");
-            return;
-        }
+        Console.WriteLine($"Barcode image saved to: {outputPath}");
 
-        // Read the barcode and verify the decoded text matches the original data (no checksum)
-        using (var reader = new BarCodeReader(barcodePath, DecodeType.Code39FullASCII))
+        // Read back the barcode and verify the decoded text matches the original (no checksum)
+        using (var reader = new BarCodeReader(outputPath, DecodeType.Code39))
         {
-            foreach (BarCodeResult result in reader.ReadBarCodes())
+            var result = reader.ReadBarCodes().FirstOrDefault();
+            if (result != null)
             {
-                Console.WriteLine($"Read CodeText: {result.CodeText}");
-                bool matches = string.Equals(result.CodeText, data, StringComparison.Ordinal);
-                Console.WriteLine($"Verification {(matches ? "passed" : "failed")}: code text {(matches ? "matches" : "does not match")} original data.");
+                Console.WriteLine($"Decoded text: {result.CodeText}");
+                if (result.CodeText == codeText)
+                {
+                    Console.WriteLine("Verification succeeded: decoded text matches original (checksum excluded).");
+                }
+                else
+                {
+                    Console.WriteLine("Verification failed: decoded text does not match the original.");
+                }
             }
-        }
-
-        // Clean up temporary files and directory
-        try
-        {
-            File.Delete(barcodePath);
-            Directory.Delete(tempFolder);
-        }
-        catch
-        {
-            // Ignore any cleanup errors
+            else
+            {
+                Console.WriteLine("No barcode detected in the image.");
+            }
         }
     }
 }

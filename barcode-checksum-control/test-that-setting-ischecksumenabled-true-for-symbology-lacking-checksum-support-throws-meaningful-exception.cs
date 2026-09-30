@@ -1,51 +1,42 @@
-// Title: Checksum Validation for Unsupported Symbology
-// Description: Demonstrates that enabling checksum on a barcode symbology that does not support it (QR) throws an exception.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, focusing on checksum handling. It shows how to configure barcode parameters using the BarcodeGenerator class, a common task when creating barcodes programmatically. Developers often need to verify that unsupported features, such as checksums for certain symbologies, raise meaningful errors, ensuring robust error handling in automated workflows.
+// Title: Enabling checksum on a QR code triggers an exception
+// Description: Demonstrates that setting IsChecksumEnabled to true for a QR code, which lacks checksum support, results in a meaningful exception.
+// Category-Description: This example belongs to the Aspose.BarCode generation and validation category, illustrating how to use BarcodeGenerator, configure barcode parameters, and handle validation errors. Developers often need to verify supported features per symbology, such as checksum availability, and capture exceptions when unsupported options are applied.
 // Prompt: Test that setting IsChecksumEnabled true for a symbology lacking checksum support throws a meaningful exception.
-// Tags: barcode, checksum, qr, exception, aspose.barcode, generation
+// Tags: barcode, symbology, checksum, exception handling, generation, aspose.barcode, qr code
 
 using System;
-using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 
 /// <summary>
-/// Example program that verifies an exception is thrown when attempting to enable a checksum
-/// for a barcode symbology (QR) that does not support this feature.
+/// Demonstrates exception handling when enabling checksum on an unsupported symbology.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a QR code with checksum enabled to provoke an error.
+    /// Entry point that attempts to enable checksum on a QR code and catches the expected exception.
     /// </summary>
-    /// <param name="args">Command‑line arguments (not used).</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Create a unique temporary directory for the output file
-        string tempDir = Path.Combine(Path.GetTempPath(), "ChecksumTest_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempDir);
-
-        // Define the full path for the generated PNG image
-        string outputPath = Path.Combine(tempDir, "qr.png");
-
         try
         {
-            // Initialize the barcode generator for QR code with sample data
-            using (BarcodeGenerator gen = new BarcodeGenerator(EncodeTypes.QR, "Test"))
+            // QR code does not support checksum. Enabling it should trigger validation and throw.
+            using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Test"))
             {
-                // QR symbology does not support checksum; enabling it should trigger an exception
-                gen.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
+                // Attempt to enable checksum; this operation is invalid for QR codes.
+                generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
 
-                // Attempt to generate and save the barcode image (expected to fail)
-                gen.Save(outputPath, BarCodeImageFormat.Png);
-                Console.WriteLine("Barcode generated successfully (unexpected).");
+                // Generate the barcode to force internal validation logic to run.
+                generator.Save("qr.png");
+
+                // If no exception occurs, the behavior is unexpected.
+                Console.WriteLine("Checksum enabled without exception (unexpected).");
             }
         }
         catch (Exception ex)
         {
-            // Expected path: capture and display the meaningful exception message
-            Console.WriteLine("Expected exception caught: " + ex.Message);
+            // Expected path: capture and display the meaningful exception.
+            Console.WriteLine($"Caught expected exception: {ex.GetType().Name} - {ex.Message}");
         }
     }
 }

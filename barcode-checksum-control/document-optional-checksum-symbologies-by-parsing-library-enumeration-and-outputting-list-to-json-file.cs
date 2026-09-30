@@ -1,66 +1,80 @@
-// Title: Generate JSON list of optional‑checksum barcode symbologies
-// Description: This example reflects over Aspose.BarCode's EncodeTypes to collect symbologies that support optional checksums and writes the list to a JSON file.
-// Category-Description: Demonstrates how to enumerate barcode symbologies using Aspose.BarCode's API, a common task for developers creating documentation or validation tools. It showcases reflection on the EncodeTypes class, JSON serialization with System.Text.Json, and file I/O. These examples help developers understand which symbologies support optional checksum features and how to programmatically retrieve such metadata.
+// Title: List Optional-Checksum Symbologies and Export to JSON
+// Description: The example enumerates barcode symbologies that support disabling the checksum, then writes their names to a JSON file.
+// Category-Description: This sample belongs to the Aspose.BarCode enumeration and configuration category. It demonstrates how to use the EncodeTypes enumeration, BaseEncodeType class, and BarcodeGenerator to probe symbology capabilities such as optional checksum handling. Developers often need to programmatically discover supported features across symbologies for validation, UI generation, or documentation purposes.
 // Prompt: Document optional‑checksum symbologies by parsing the library enumeration and outputting the list to a JSON file.
-// Tags: barcode symbology, documentation, json output, reflection, aspose.barcode, encode types
+// Tags: barcode symbology, enumeration, json output, aspose.barcode, optional checksum
 
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Reflection;
+using System.Collections.Generic;
 using System.Text.Json;
+using System.Reflection;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates extracting optional‑checksum barcode symbologies from Aspose.BarCode and exporting them to a JSON file.
+/// Demonstrates how to discover barcode symbologies that allow optional checksum disabling
+/// and export the list to a JSON file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Collects symbology names that have optional checksum support and writes them to a JSON file.
+    /// Entry point. Generates the list of optional‑checksum symbologies and writes it to a JSON file.
     /// </summary>
     static void Main()
     {
-        // Define the set of symbology names known to support optional checksum according to documentation
-        var optionalNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-        {
-            "Codabar",
-            "Code39",
-            "ItalianPost25",
-            "Interleaved2of5",
-            "Matrix2of5",
-            "MSI",
-            "Pharmacode",
-            "PatchCode",
-            "PZN",
-            "Standard2of5"
-        };
+        // Retrieve symbologies where checksum can be turned off
+        var optionalChecksumSymbologies = GetOptionalChecksumSymbologies();
 
-        // List that will hold the matching symbology names found via reflection
-        var optionalSymbologies = new List<string>();
+        // Convert the list to a formatted JSON string
+        string json = JsonSerializer.Serialize(optionalChecksumSymbologies, new JsonSerializerOptions { WriteIndented = true });
 
-        // Use reflection to enumerate all public static fields of EncodeTypes
-        var fields = typeof(EncodeTypes).GetFields(BindingFlags.Public | BindingFlags.Static);
+        // Determine output path in the current working directory
+        string outputPath = Path.Combine(Environment.CurrentDirectory, "optional_checksum_symbologies.json");
+
+        // Persist the JSON content to disk
+        File.WriteAllText(outputPath, json);
+
+        // Inform the user about the result
+        Console.WriteLine($"Found {optionalChecksumSymbologies.Count} symbologies with optional checksum.");
+        Console.WriteLine($"Output written to: {outputPath}");
+    }
+
+    /// <summary>
+    /// Scans all EncodeTypes fields, attempts to disable checksum, and collects those that succeed.
+    /// </summary>
+    /// <returns>List of symbology names that support optional checksum.</returns>
+    private static List<string> GetOptionalChecksumSymbologies()
+    {
+        var result = new List<string>();
+
+        // Retrieve all public static fields of EncodeTypes that are BaseEncodeType instances
+        FieldInfo[] fields = typeof(EncodeTypes).GetFields(BindingFlags.Public | BindingFlags.Static);
         foreach (var field in fields)
         {
-            // If the field name is in the predefined optional checksum set, add it to the result list
-            if (optionalNames.Contains(field.Name))
+            // Skip fields that are not BaseEncodeType (e.g., helper constants)
+            if (field.FieldType != typeof(BaseEncodeType))
+                continue;
+
+            string symbologyName = field.Name;
+            BaseEncodeType encodeType = (BaseEncodeType)field.GetValue(null);
+
+            // Attempt to disable checksum; if no exception, checksum is optional for this symbology
+            try
             {
-                optionalSymbologies.Add(field.Name);
+                using (var generator = new BarcodeGenerator(encodeType, "12345"))
+                {
+                    // Some symbologies may not support disabling checksum and will throw
+                    generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.No;
+                    result.Add(symbologyName);
+                }
+            }
+            catch
+            {
+                // Either the symbology does not support disabling checksum or the code text is invalid; ignore
             }
         }
 
-        // Serialize the resulting list to a formatted JSON string
-        string json = JsonSerializer.Serialize(optionalSymbologies, new JsonSerializerOptions { WriteIndented = true });
-
-        // Determine the output file path in the current working directory
-        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "optional_checksum_symbologies.json");
-
-        // Write the JSON content to the file
-        File.WriteAllText(outputPath, json);
-
-        // Inform the user where the file was written
-        Console.WriteLine($"Optional checksum symbologies written to: {outputPath}");
+        return result;
     }
 }
