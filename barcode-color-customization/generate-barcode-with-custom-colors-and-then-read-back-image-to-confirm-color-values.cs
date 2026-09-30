@@ -1,74 +1,97 @@
-// Title: Generate a barcode with custom colors and verify color values
-// Description: Demonstrates creating a Code128 barcode with a custom background and bar color, saving it as a PNG, and then reading the image to confirm the colors match the specified ARGB values.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, showcasing how to customize barcode appearance using the BarcodeGenerator class and how to validate the output with Aspose.Drawing. Typical use cases include branding, UI integration, and quality assurance where specific colors are required. Developers often need to set BackColor and BarColor, save to common image formats, and programmatically verify visual properties.
+// Title: Generate barcode with custom colors and verify colors
+// Description: Demonstrates creating a Code128 barcode image with custom foreground and background colors, saving it as PNG, then reading the barcode and inspecting pixel colors to confirm the applied colors.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It shows how to use BarcodeGenerator to customize barcode appearance (BarColor, BackColor) and BarCodeReader to decode the image. Typical use cases include branding, UI integration, and validation of visual barcode properties. Developers often need to adjust colors to match corporate design guidelines and verify the output programmatically.
 // Prompt: Generate a barcode with custom colors and then read back the image to confirm color values.
-// Tags: barcode, code128, generation, custom colors, png, aspose.barcode, aspose.drawing, verification
+// Tags: code128, barcode generation, barcode recognition, custom colors, png, aspose.barcode, aspose.drawing
 
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates barcode generation with custom colors and verification of the saved image.
+/// Example program that creates a barcode with custom colors, decodes it, and inspects pixel values.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a barcode, saves it, and checks the background and bar colors.
+    /// Entry point. Generates a barcode image, reads it back, and validates color values.
     /// </summary>
     static void Main()
     {
-        // Define the output file path in the temporary folder.
-        string outputPath = Path.Combine(Path.GetTempPath(), "custom_color_barcode.png");
+        // --------------------------------------------------------------------
+        // Set up a temporary folder to store the generated barcode image.
+        // --------------------------------------------------------------------
+        string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
+        string barcodePath = Path.Combine(tempFolder, "custom_color_barcode.png");
 
-        // Define custom colors: a light green background and a blue bar.
-        Color backgroundColor = Color.FromArgb(255, 200, 255, 200);
-        Color barColor = Color.Blue;
-
-        // Generate the barcode with the specified colors.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
+        // --------------------------------------------------------------------
+        // Generate a Code128 barcode with custom foreground (blue) and background (yellow) colors.
+        // --------------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            // Apply the custom background and bar colors.
-            generator.Parameters.BackColor = backgroundColor;
-            generator.Parameters.Barcode.BarColor = barColor;
+            // Apply custom colors.
+            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Blue;   // Foreground (bars)
+            generator.Parameters.BackColor = Aspose.Drawing.Color.Yellow;       // Background
 
-            // Save the barcode image as PNG.
-            generator.Save(outputPath, BarCodeImageFormat.Png);
+            // Save the barcode as a PNG file.
+            generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        // Verify that the image file was created successfully.
-        if (!File.Exists(outputPath))
+        // --------------------------------------------------------------------
+        // Verify that the barcode image file was created successfully.
+        // --------------------------------------------------------------------
+        if (!File.Exists(barcodePath))
         {
-            Console.WriteLine("Failed to create barcode image.");
+            Console.WriteLine("Failed to create the barcode image.");
             return;
         }
 
-        // Load the saved image for color verification.
-        using (Image img = Image.FromFile(outputPath))
+        // --------------------------------------------------------------------
+        // Decode the barcode image to confirm that the encoded text is correct.
+        // --------------------------------------------------------------------
+        BaseDecodeType decodeType = DecodeType.Code128;
+        using (var reader = new BarCodeReader(barcodePath, decodeType))
         {
-            using (Bitmap bitmap = new Bitmap(img))
+            foreach (BarCodeResult result in reader.ReadBarCodes())
             {
-                // Sample a background pixel (top-left corner).
-                Color sampledBackground = bitmap.GetPixel(0, 0);
-
-                // Sample a pixel near the center, which is likely part of a barcode bar.
-                int centerX = bitmap.Width / 2;
-                int centerY = bitmap.Height / 2;
-                Color sampledBar = bitmap.GetPixel(centerX, centerY);
-
-                // Compare the sampled colors with the expected ARGB values.
-                bool backgroundMatches = sampledBackground.ToArgb() == backgroundColor.ToArgb();
-                bool barMatches = sampledBar.ToArgb() == barColor.ToArgb();
-
-                // Output verification results.
-                Console.WriteLine($"Background color match: {backgroundMatches}");
-                Console.WriteLine($"Bar color match: {barMatches}");
-                Console.WriteLine($"Sampled background ARGB: {sampledBackground.ToArgb():X8}");
-                Console.WriteLine($"Sampled bar ARGB: {sampledBar.ToArgb():X8}");
+                Console.WriteLine($"Decoded CodeText: {result.CodeText}");
+                Console.WriteLine($"Decoded Symbology: {result.CodeType}");
             }
+        }
+
+        // --------------------------------------------------------------------
+        // Load the saved image and sample pixel colors to verify custom colors.
+        // --------------------------------------------------------------------
+        using (var bitmap = new Aspose.Drawing.Bitmap(barcodePath))
+        {
+            // Sample a pixel from the top-left corner (expected background color).
+            Color bgPixel = bitmap.GetPixel(0, 0);
+
+            // Sample a pixel from the image center (likely part of a barcode bar, foreground color).
+            int centerX = bitmap.Width / 2;
+            int centerY = bitmap.Height / 2;
+            Color fgPixel = bitmap.GetPixel(centerX, centerY);
+
+            Console.WriteLine($"Background pixel ARGB: 0x{bgPixel.ToArgb():X8}");
+            Console.WriteLine($"Foreground pixel ARGB: 0x{fgPixel.ToArgb():X8}");
+        }
+
+        // --------------------------------------------------------------------
+        // Clean up temporary files (optional). Failures are ignored to avoid affecting program outcome.
+        // --------------------------------------------------------------------
+        try
+        {
+            File.Delete(barcodePath);
+            Directory.Delete(tempFolder);
+        }
+        catch
+        {
+            // Ignored – cleanup failure should not affect program outcome.
         }
     }
 }

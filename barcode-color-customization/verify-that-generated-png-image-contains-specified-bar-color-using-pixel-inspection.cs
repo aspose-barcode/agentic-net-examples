@@ -1,89 +1,78 @@
-// Title: Generate Code128 barcode PNG with custom bar color and verify via pixel inspection
-// Description: This example creates a Code128 barcode, sets the bar color to blue, saves it as a PNG, and checks that the specified color appears in the image by scanning its pixels.
-// Category-Description: Demonstrates Aspose.BarCode barcode generation and image analysis, covering the BarcodeGenerator class, barcode parameters, and Aspose.Drawing bitmap handling. Typical use cases include customizing barcode appearance and programmatically validating visual output, which developers often need when integrating barcodes into automated workflows or CI pipelines.
+// Title: Generate Code128 Barcode PNG with Red Bars and Verify Color via Pixel Inspection
+// Description: This example creates a Code128 barcode, sets the bar (foreground) color to red, saves it as a PNG file, and then inspects a pixel to confirm the bar color.
+// Category-Description: Demonstrates Aspose.BarCode barcode generation and image verification. It uses BarcodeGenerator, BarcodeParameters, and Aspose.Drawing to produce a PNG image, then reads the bitmap to validate visual properties. Developers working with barcode rendering, custom colors, and automated image validation can reference this pattern for unit tests or CI pipelines.
 // Prompt: Verify that the generated PNG image contains the specified bar color using pixel inspection.
-// Tags: barcode, code128, color, png, pixel inspection, aspose.barcode, aspose.drawing, image verification
+// Tags: barcode, code128, png, color verification, aspose.barcode, aspose.drawing, image processing
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a Code128 barcode with a custom bar color,
-/// saving it as PNG, and verifying the color via pixel inspection.
+/// Example program that generates a Code128 barcode with a custom bar color,
+/// saves it as a PNG file, and verifies the color by inspecting a pixel.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates the barcode, saves it,
-    /// inspects pixels for the target color, reports the result,
-    /// and cleans up the temporary file.
+    /// Entry point of the example. Performs barcode generation, saves the image,
+    /// validates the bar color, and cleans up the temporary file.
     /// </summary>
     static void Main()
     {
-        // Define barcode parameters
-        string codeText = "12345678";
-        BaseEncodeType encodeType = EncodeTypes.Code128;
-        Aspose.Drawing.Color targetBarColor = Aspose.Drawing.Color.Blue;
+        // Define the barcode content and the temporary output file path.
+        string codeText = "123456";
+        string outputPath = Path.Combine(Path.GetTempPath(), "barcode.png");
 
-        // Create a unique temporary file path for the PNG image
-        string tempFile = Path.Combine(Path.GetTempPath(),
-            "BarcodeColorTest_" + Guid.NewGuid().ToString("N") + ".png");
-
-        // Generate the barcode and set the custom bar color
-        using (BarcodeGenerator generator = new BarcodeGenerator(encodeType, codeText))
+        // Create a BarcodeGenerator for Code128 and set the bar (foreground) color to red.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
         {
-            generator.Parameters.Barcode.BarColor = targetBarColor;
-            generator.Save(tempFile, BarCodeImageFormat.Png);
+            generator.Parameters.Barcode.BarColor = Color.Red; // Set bar color.
+
+            // Save the generated barcode as a PNG image.
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Verify that the image file was created successfully
-        if (!File.Exists(tempFile))
+        // Ensure the image file was created successfully.
+        if (!File.Exists(outputPath))
         {
             Console.WriteLine("Failed to create barcode image.");
             return;
         }
 
-        // Load the generated PNG and inspect each pixel for the target color
-        bool colorFound = false;
-        using (Bitmap bitmap = new Bitmap(tempFile))
+        // Load the PNG image using Aspose.Drawing for pixel-level inspection.
+        using (var image = Image.FromFile(outputPath))
+        using (var bitmap = (Bitmap)image)
         {
-            int width = bitmap.Width;
-            int height = bitmap.Height;
+            // Choose a pixel location that is likely within a barcode bar.
+            int x = bitmap.Width / 4;   // Quarter of the image width.
+            int y = bitmap.Height / 2;  // Vertically centered.
 
-            for (int y = 0; y < height && !colorFound; y++)
+            // Retrieve the color of the selected pixel.
+            Color pixelColor = bitmap.GetPixel(x, y);
+
+            // Compare the pixel color with the expected red bar color.
+            if (pixelColor.ToArgb() == Color.Red.ToArgb())
             {
-                for (int x = 0; x < width && !colorFound; x++)
-                {
-                    Aspose.Drawing.Color pixelColor = bitmap.GetPixel(x, y);
-                    if (pixelColor.ToArgb() == targetBarColor.ToArgb())
-                    {
-                        colorFound = true;
-                    }
-                }
+                Console.WriteLine("Bar color verification succeeded: pixel is Red as expected.");
+            }
+            else
+            {
+                Console.WriteLine($"Bar color verification failed: pixel color is {pixelColor}.");
             }
         }
 
-        // Output the verification result to the console
-        if (colorFound)
-        {
-            Console.WriteLine("Verification succeeded: bar color found in the image.");
-        }
-        else
-        {
-            Console.WriteLine("Verification failed: bar color not found in the image.");
-        }
-
-        // Attempt to delete the temporary file; ignore any errors
+        // Optional cleanup: delete the temporary PNG file.
         try
         {
-            File.Delete(tempFile);
+            File.Delete(outputPath);
         }
         catch
         {
-            // Cleanup errors are intentionally ignored
+            // Suppress any exceptions during cleanup.
         }
     }
 }

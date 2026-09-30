@@ -1,8 +1,8 @@
-// Title: Change DataMatrix barcode text color to orange
-// Description: Demonstrates how to set the code text color of a DataMatrix barcode to orange while preserving the default background.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to customize visual aspects of barcodes such as text color. It uses the BarcodeGenerator class with EncodeTypes.DataMatrix and modifies the CodeTextParameters.Color property. Developers often need to match branding colors or improve readability, and this pattern shows the typical steps for color customization before saving the image.
+// Title: Change DataMatrix barcode foreground color to orange
+// Description: Demonstrates how to set the text (foreground) color of a DataMatrix barcode to orange while preserving the default white background.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating the use of BarcodeGenerator and its Parameters to customize visual appearance. Typical use cases include branding, UI integration, and printing where specific foreground colors are required. Developers often need to adjust BarColor, BackColor, and other visual settings without altering the encoded data.
 // Prompt: Change only the text color of a DataMatrix barcode to orange while keeping default background.
-// Tags: datamatrix, barcode, color, textcolor, png, aspose.barcode, generation
+// Tags: datamatrix, color, foreground, png, barcodegenerator, parameters
 
 using System;
 using System.IO;
@@ -11,33 +11,40 @@ using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates a DataMatrix barcode with orange text color.
+/// Generates a DataMatrix barcode with an orange foreground color and saves it as a PNG file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates the barcode and saves it as a PNG file.
+    /// Entry point of the example. Creates the output folder, configures the barcode generator,
+    /// sets the foreground color, and writes the image to disk.
     /// </summary>
     static void Main()
     {
-        // Define output directory in the temporary folder and ensure it exists
-        string outputDir = Path.Combine(Path.GetTempPath(), "DataMatrixColorDemo");
-        Directory.CreateDirectory(outputDir);
-
-        // Full path for the resulting PNG image
-        string outputPath = Path.Combine(outputDir, "DataMatrix_OrangeText.png");
-
-        // Create a BarcodeGenerator for DataMatrix with the desired data
-        using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, "123456"))
+        // Determine the output directory relative to the current working folder
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Output");
+        if (!Directory.Exists(outputDir))
         {
-            // Set only the code text (human‑readable) color to orange; background remains default
-            generator.Parameters.Barcode.CodeTextParameters.Color = Color.Orange;
+            // Create the directory if it does not already exist
+            Directory.CreateDirectory(outputDir);
+        }
 
-            // Save the generated barcode image as PNG to the specified path
+        // Full path for the resulting PNG file
+        string outputPath = Path.Combine(outputDir, "DataMatrix_Orange.png");
+
+        // Initialize a DataMatrix barcode generator with sample text
+        using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, "Sample123"))
+        {
+            // Set only the barcode (foreground) color to orange
+            generator.Parameters.Barcode.BarColor = Color.Orange;
+
+            // Background remains the default (white); no explicit BackColor assignment needed
+
+            // Save the generated barcode as a PNG image
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user where the barcode image was saved
+        // Inform the user where the file was saved
         Console.WriteLine($"Barcode saved to: {outputPath}");
     }
 }

@@ -1,8 +1,8 @@
-// Title: Generate PDF417 barcode with custom gray colors
-// Description: Demonstrates how to set a light gray background and dark gray bar color for a PDF417 barcode and save it as a PNG image.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to customize visual appearance of barcodes using the BarcodeGenerator class. It shows setting background and bar colors for common symbologies like PDF417, useful for developers needing branded or themed barcode images in applications or reports. Typical use cases include creating printable barcodes with specific color schemes for branding or accessibility.
+// Title: Set PDF417 barcode background and bar colors
+// Description: Demonstrates how to set a light gray background and dark gray bar color for a PDF417 barcode using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to customize barcode appearance. It uses the BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes to create a PDF417 barcode with specific colors, a common requirement for branding, printing, and improving scan reliability. Developers often need to adjust foreground and background colors to match design guidelines or enhance contrast for various output media.
 // Prompt: Set the background color to light gray and bar color to dark gray for a PDF417 barcode.
-// Tags: pdf417, barcode, color, background, barcolor, generation, png, aspose.barcode
+// Tags: pdf417, barcode, color, background, barcolor, generation, png, aspose.barcode, csharp
 
 using System;
 using System.IO;
@@ -11,32 +11,34 @@ using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a PDF417 barcode with custom gray colors and saving it as a PNG file.
+/// Generates a PDF417 barcode with a light gray background and dark gray bars,
+/// then saves it as a PNG image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates a BarcodeGenerator, configures colors, and saves the image.
+    /// Entry point of the example. Creates the barcode, applies color settings,
+    /// saves the image, and writes the output path to the console.
     /// </summary>
     static void Main()
     {
-        // Define output file path in the current directory
-        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "pdf417_gray.png");
+        // Define the full path for the output PNG file.
+        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "pdf417.png");
 
-        // Initialize the barcode generator for PDF417 symbology with sample data
-        using (var generator = new BarcodeGenerator(EncodeTypes.Pdf417, "123456789"))
+        // Initialize the barcode generator for PDF417 with the desired text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Pdf417, "Sample Text"))
         {
-            // Set the background color to light gray
+            // Apply a light gray background to the entire image.
             generator.Parameters.BackColor = Color.LightGray;
 
-            // Set the bar (foreground) color to dark gray
+            // Set the barcode (foreground) color to dark gray.
             generator.Parameters.Barcode.BarColor = Color.DarkGray;
 
-            // Save the generated barcode as a PNG image
+            // Render and save the barcode as a PNG file.
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user where the barcode image was saved
-        Console.WriteLine($"Barcode saved to {outputPath}");
+        // Inform the user where the barcode image was saved.
+        Console.WriteLine($"Barcode saved to: {outputPath}");
     }
 }
