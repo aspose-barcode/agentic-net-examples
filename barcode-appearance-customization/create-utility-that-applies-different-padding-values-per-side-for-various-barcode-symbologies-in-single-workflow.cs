@@ -1,76 +1,117 @@
-// Title: Barcode Generation with Per‑Side Padding for Multiple Symbologies
-// Description: Demonstrates how to generate barcodes of different symbologies while applying individual padding values for each side.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use the BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes to create images with custom padding. Developers often need to adjust whitespace around barcodes for layout or printing requirements, especially when handling multiple symbologies in a single workflow. The snippet illustrates typical usage patterns for setting per‑side padding, X‑dimension, and saving PNG output.
+// Title: Barcode Padding Utility Demonstration
+// Description: Shows how to generate barcodes with custom padding values for each side using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating per‑side padding configuration across multiple symbologies. It uses BarcodeGenerator, EncodeTypes, and the Padding properties to control whitespace around the barcode. Developers often need to fine‑tune padding for layout or printing requirements, and this snippet provides a reusable pattern for such scenarios.
 // Prompt: Create a utility that applies different padding values per side for various barcode symbologies in a single workflow.
-// Tags: barcode symbology, padding, generation, aspose.barcode, png, encode types
+// Tags: barcode symbology, padding, generation, aspose.barcode, png output, csharp
 
 using System;
-using System.IO;
 using System.Collections.Generic;
-using System.Reflection;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing.Imaging;
 
-/// <summary>
-/// Generates barcode images for several symbologies, applying distinct padding values per side.
-/// </summary>
-class Program
+namespace BarcodePaddingUtility
 {
     /// <summary>
-    /// Entry point that creates an output folder, defines barcode specifications,
-    /// generates each barcode with custom padding, and saves the images as PNG files.
+    /// Configuration for a single barcode generation, including symbology, encoded text, per‑side padding, and output file name.
     /// </summary>
-    static void Main()
+    class BarcodeConfig
     {
-        // Create a unique temporary output folder
-        string outputFolder = Path.Combine(Path.GetTempPath(), "Barcodes_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(outputFolder);
+        public string SymbologyName { get; set; }      // e.g., "Code128", "QR", "DataMatrix"
+        public string CodeText { get; set; }           // text to encode
+        public float PaddingLeft { get; set; }         // points
+        public float PaddingTop { get; set; }
+        public float PaddingRight { get; set; }
+        public float PaddingBottom { get; set; }
+        public string OutputFileName { get; set; }     // without extension
+    }
 
-        // Define barcode specifications:
-        // Symbology name, code text, and padding values (left, top, right, bottom) in pixels
-        var barcodeSpecs = new List<(string Symbology, string CodeText, float Left, float Top, float Right, float Bottom)>
+    /// <summary>
+    /// Demonstrates generating multiple barcodes with individual side padding values and saving them as PNG files.
+    /// </summary>
+    class Program
+    {
+        /// <summary>
+        /// Entry point. Prepares output directory, defines barcode configurations, generates each barcode with specified padding, and saves the images.
+        /// </summary>
+        static void Main()
         {
-            ("Code128", "ASPOSE123", 10f, 5f, 10f, 5f),
-            ("QR", "https://www.aspose.com", 2f, 2f, 2f, 2f),
-            ("DataMatrix", "DM12345", 0f, 0f, 0f, 0f),
-            ("Pdf417", "PDF417 Sample Text", 8f, 12f, 8f, 12f),
-            ("Aztec", "AztecDemo", 4f, 6f, 4f, 6f)
-        };
+            // Prepare output directory
+            string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "BarcodesOutput");
+            if (!Directory.Exists(outputDir))
+                Directory.CreateDirectory(outputDir);
 
-        // Iterate over each specification and generate the corresponding barcode
-        foreach (var spec in barcodeSpecs)
-        {
-            // Resolve the symbology name to a BaseEncodeType enum value using reflection
-            FieldInfo field = typeof(EncodeTypes).GetField(spec.Symbology);
-            if (field == null)
+            // Define sample configurations for different symbologies
+            var configs = new List<BarcodeConfig>
             {
-                Console.WriteLine($"Unknown symbology: {spec.Symbology}");
-                continue;
+                new BarcodeConfig
+                {
+                    SymbologyName = "Code128",
+                    CodeText = "ABC123",
+                    PaddingLeft = 10f,
+                    PaddingTop = 5f,
+                    PaddingRight = 15f,
+                    PaddingBottom = 5f,
+                    OutputFileName = "Code128_Padding"
+                },
+                new BarcodeConfig
+                {
+                    SymbologyName = "QR",
+                    CodeText = "https://example.com",
+                    PaddingLeft = 2f,
+                    PaddingTop = 2f,
+                    PaddingRight = 2f,
+                    PaddingBottom = 2f,
+                    OutputFileName = "QR_Padding"
+                },
+                new BarcodeConfig
+                {
+                    SymbologyName = "DataMatrix",
+                    CodeText = "DM12345",
+                    PaddingLeft = 0f,
+                    PaddingTop = 0f,
+                    PaddingRight = 0f,
+                    PaddingBottom = 0f,
+                    OutputFileName = "DataMatrix_NoPadding"
+                }
+            };
+
+            // Iterate over each configuration and generate the corresponding barcode
+            foreach (var cfg in configs)
+            {
+                // Resolve symbology name to BaseEncodeType via reflection
+                var field = typeof(EncodeTypes).GetField(cfg.SymbologyName);
+                if (field == null)
+                {
+                    Console.WriteLine($"Unknown symbology: {cfg.SymbologyName}. Skipping.");
+                    continue;
+                }
+
+                BaseEncodeType encodeType = (BaseEncodeType)field.GetValue(null);
+
+                // Create generator with resolved symbology and code text
+                using (var generator = new BarcodeGenerator(encodeType, cfg.CodeText))
+                {
+                    // Apply individual padding values (points) to each side
+                    generator.Parameters.Barcode.Padding.Left.Point = cfg.PaddingLeft;
+                    generator.Parameters.Barcode.Padding.Top.Point = cfg.PaddingTop;
+                    generator.Parameters.Barcode.Padding.Right.Point = cfg.PaddingRight;
+                    generator.Parameters.Barcode.Padding.Bottom.Point = cfg.PaddingBottom;
+
+                    // Optional: set a modest XDimension for visibility
+                    generator.Parameters.Barcode.XDimension.Point = 1.5f;
+
+                    // Build output file path
+                    string outputPath = Path.Combine(outputDir, cfg.OutputFileName + ".png");
+
+                    // Save barcode as PNG
+                    generator.Save(outputPath, BarCodeImageFormat.Png);
+                    Console.WriteLine($"Saved {cfg.SymbologyName} barcode to {outputPath}");
+                }
             }
 
-            BaseEncodeType encodeType = (BaseEncodeType)field.GetValue(null);
-            string fileName = $"{spec.Symbology}_{Guid.NewGuid().ToString("N")}.png";
-            string filePath = Path.Combine(outputFolder, fileName);
-
-            // Initialize the barcode generator with the resolved type and code text
-            using (var generator = new BarcodeGenerator(encodeType, spec.CodeText))
-            {
-                // Apply per‑side padding (pixels)
-                generator.Parameters.Barcode.Padding.Left.Pixels = spec.Left;
-                generator.Parameters.Barcode.Padding.Top.Pixels = spec.Top;
-                generator.Parameters.Barcode.Padding.Right.Pixels = spec.Right;
-                generator.Parameters.Barcode.Padding.Bottom.Pixels = spec.Bottom;
-
-                // Optional: set a modest XDimension for better visibility
-                generator.Parameters.Barcode.XDimension.Pixels = 2f;
-
-                // Save the generated barcode image as PNG
-                generator.Save(filePath, BarCodeImageFormat.Png);
-            }
-
-            Console.WriteLine($"Generated {spec.Symbology} barcode at: {filePath}");
+            Console.WriteLine("Barcode generation completed.");
         }
-
-        Console.WriteLine("Barcode generation completed.");
     }
 }
