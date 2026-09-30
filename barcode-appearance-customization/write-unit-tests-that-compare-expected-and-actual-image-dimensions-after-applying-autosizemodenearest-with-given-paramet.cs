@@ -1,114 +1,97 @@
-// Title: Demonstrate AutoSizeMode.Nearest barcode image dimension verification
-// Description: Shows how to generate Code128 barcodes with specific image dimensions and X‑dimension, then verifies that the resulting bitmap matches expected width and height.
-// Category-Description: This example belongs to the Aspose.BarCode image generation category, illustrating the use of BarcodeGenerator, AutoSizeMode, and image size parameters. Developers often need to ensure that generated barcode images meet exact size requirements for downstream processing or UI layout, and this snippet demonstrates a simple test harness for that purpose.
+// Title: Barcode AutoSizeMode.Nearest dimension verification example
+// Description: Demonstrates generating Code128 barcodes with specific pixel dimensions using AutoSizeMode.Nearest and validates that the produced image matches the expected width and height.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to control barcode image size with the AutoSizeMode property. It uses BarcodeGenerator, AutoSizeMode, and image dimension properties, common tasks for developers needing precise barcode rendering for UI or printing scenarios. Suitable for search queries about barcode image sizing and verification.
 // Prompt: Write unit tests that compare expected and actual image dimensions after applying AutoSizeMode.Nearest with given parameters.
-// Tags: code128, autosizemode, nearest, image-dimensions, barcode-generation, aspose.barcode, testing
+// Tags: barcode, code128, autosizemode, image-dimensions, aspose.barcode, generation, unit-test
 
 using System;
-using System.Collections.Generic;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Contains a simple test harness that generates barcodes and validates image dimensions.
+/// Example program that generates barcodes with AutoSizeMode.Nearest and verifies image dimensions.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Represents a single test case with input parameters and expected output dimensions.
-    /// </summary>
-    class TestCase
-    {
-        public string CodeText { get; set; }
-        public int ImageWidth { get; set; }
-        public int ImageHeight { get; set; }
-        public float XDimensionPixels { get; set; }
-        public int ExpectedWidth { get; set; }
-        public int ExpectedHeight { get; set; }
-    }
-
-    /// <summary>
-    /// Executes a series of test cases, generating barcodes with specified parameters and checking that the output image size matches expectations.
+    /// Entry point. Executes two dimension verification tests.
     /// </summary>
     static void Main()
     {
-        // Define a collection of test scenarios with expected dimensions.
-        var tests = new List<TestCase>
-        {
-            new TestCase
-            {
-                CodeText = "12345",
-                ImageWidth = 300,
-                ImageHeight = 150,
-                XDimensionPixels = 3f,
-                ExpectedWidth = 300,
-                ExpectedHeight = 150
-            },
-            new TestCase
-            {
-                CodeText = "ABCDE",
-                ImageWidth = 400,
-                ImageHeight = 200,
-                XDimensionPixels = 2.5f,
-                ExpectedWidth = 400,
-                ExpectedHeight = 200
-            },
-            new TestCase
-            {
-                CodeText = "XYZ",
-                ImageWidth = 250,
-                ImageHeight = 250,
-                XDimensionPixels = 4f,
-                ExpectedWidth = 250,
-                ExpectedHeight = 250
-            }
-        };
+        // Test 1: Verify a 300x100 pixel barcode
+        RunTest(
+            testName: "Test1",
+            codeText: "12345",
+            encodeType: EncodeTypes.Code128,
+            widthPixels: 300f,
+            heightPixels: 100f,
+            expectedWidth: 300,
+            expectedHeight: 100);
 
-        int passed = 0;   // Counter for successful tests
-        int failed = 0;   // Counter for failed tests
-        int index = 1;    // Sequential test identifier
+        // Test 2: Verify a 250x150 pixel barcode
+        RunTest(
+            testName: "Test2",
+            codeText: "ABCDE",
+            encodeType: EncodeTypes.Code128,
+            widthPixels: 250f,
+            heightPixels: 150f,
+            expectedWidth: 250,
+            expectedHeight: 150);
+    }
 
-        // Iterate over each test case, generate the barcode, and verify dimensions.
-        foreach (var test in tests)
+    /// <summary>
+    /// Generates a barcode with the specified parameters, applies AutoSizeMode.Nearest,
+    /// and compares the actual image dimensions to the expected values.
+    /// </summary>
+    /// <param name="testName">Identifier for the test case.</param>
+    /// <param name="codeText">Text to encode in the barcode.</param>
+    /// <param name="encodeType">Symbology type (e.g., Code128).</param>
+    /// <param name="widthPixels">Target image width in pixels.</param>
+    /// <param name="heightPixels">Target image height in pixels.</param>
+    /// <param name="expectedWidth">Expected width of the generated image.</param>
+    /// <param name="expectedHeight">Expected height of the generated image.</param>
+    static void RunTest(string testName, string codeText, BaseEncodeType encodeType, float widthPixels, float heightPixels, int expectedWidth, int expectedHeight)
+    {
+        try
         {
-            try
+            // Initialize the barcode generator with the chosen symbology and data
+            using (var generator = new BarcodeGenerator(encodeType, codeText))
             {
-                // Initialize the barcode generator with Code128 symbology and the test's code text.
-                using (var generator = new BarcodeGenerator(EncodeTypes.Code128, test.CodeText))
+                // Configure AutoSizeMode to automatically adjust to the nearest size
+                generator.Parameters.AutoSizeMode = AutoSizeMode.Nearest;
+
+                // Set the desired image dimensions (in pixels)
+                generator.Parameters.ImageWidth.Pixels = widthPixels;
+                generator.Parameters.ImageHeight.Pixels = heightPixels;
+
+                // Generate the barcode image
+                using (Bitmap bitmap = generator.GenerateBarCodeImage())
                 {
-                    // Apply AutoSizeMode.Nearest and set image size and X-dimension parameters.
-                    generator.Parameters.AutoSizeMode = AutoSizeMode.Nearest;
-                    generator.Parameters.ImageWidth.Pixels = test.ImageWidth;
-                    generator.Parameters.ImageHeight.Pixels = test.ImageHeight;
-                    generator.Parameters.Barcode.XDimension.Pixels = test.XDimensionPixels;
+                    int actualWidth = bitmap.Width;
+                    int actualHeight = bitmap.Height;
 
-                    // Generate the barcode image.
-                    using (Bitmap bitmap = generator.GenerateBarCodeImage())
+                    bool widthMatch = actualWidth == expectedWidth;
+                    bool heightMatch = actualHeight == expectedHeight;
+
+                    if (widthMatch && heightMatch)
                     {
-                        int actualWidth = bitmap.Width;
-                        int actualHeight = bitmap.Height;
-
-                        // Compare actual dimensions with expected values.
-                        bool ok = actualWidth == test.ExpectedWidth && actualHeight == test.ExpectedHeight;
-                        if (ok) passed++; else failed++;
-
-                        Console.WriteLine($"Test {index}: {(ok ? "PASS" : "FAIL")} - Expected ({test.ExpectedWidth}x{test.ExpectedHeight}), Actual ({actualWidth}x{actualHeight})");
+                        Console.WriteLine($"{testName}: PASSED (Width={actualWidth}, Height={actualHeight})");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"{testName}: FAILED");
+                        Console.WriteLine($"  Expected Width={expectedWidth}, Height={expectedHeight}");
+                        Console.WriteLine($"  Actual   Width={actualWidth}, Height={actualHeight}");
                     }
                 }
             }
-            catch (Exception ex)
-            {
-                // Record any exceptions as failures.
-                failed++;
-                Console.WriteLine($"Test {index}: EXCEPTION - {ex.Message}");
-            }
-
-            index++;
         }
-
-        // Output a summary of test results.
-        Console.WriteLine($"Summary: {passed} passed, {failed} failed.");
+        catch (Exception ex)
+        {
+            Console.WriteLine($"{testName}: EXCEPTION - {ex.Message}");
+        }
     }
 }

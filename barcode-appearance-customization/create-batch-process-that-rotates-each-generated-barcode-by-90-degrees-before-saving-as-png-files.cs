@@ -1,49 +1,47 @@
-// Title: Batch barcode generation with 90-degree rotation
-// Description: Demonstrates generating multiple Code128 barcodes, rotating each by 90 degrees, and saving them as PNG images.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use BarcodeGenerator, EncodeTypes, and BarCodeImageFormat to create barcodes in bulk. Typical use cases include preparing rotated barcode assets for printing or embedding in documents. Developers often need to batch‑process barcodes with specific visual transformations, such as rotation, scaling, or color changes.
+// Title: Batch Barcode Generation with 90° Rotation and PNG Output
+// Description: Generates multiple barcodes, rotates each image by 90 degrees, and saves them as PNG files in a temporary folder.
+// Category-Description: This example demonstrates batch processing of barcodes using Aspose.BarCode for .NET. It shows how to create various barcode symbologies, apply image rotation via the BarcodeGenerator.Parameters.RotationAngle property, and export the results as PNG files. Developers working with barcode generation, image manipulation, and file output can use this pattern for automated reporting, labeling, or bulk image preparation.
 // Prompt: Create a batch process that rotates each generated barcode by 90 degrees before saving as PNG files.
-// Tags: barcode symbology, rotation, png, aspose.barcode, generation, encode types
+// Tags: barcode symbology, rotation, png, aspose.barcode, generation
 
 using System;
 using System.IO;
 using System.Collections.Generic;
-using Aspose.BarCode.Generation;
 using Aspose.BarCode;
+using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates batch creation of Code128 barcodes rotated 90° and saved as PNG files.
+/// Demonstrates batch generation of barcodes, rotating each by 90 degrees, and saving as PNG files.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a temporary folder, creates barcodes, applies rotation, and writes PNG files.
+    /// Entry point that creates a temporary folder, generates barcodes, rotates them, and saves the images.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder for the batch process
-        string batchFolder = Path.Combine(Path.GetTempPath(), "Batch_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(batchFolder);
+        // Create a unique temporary folder for the generated barcodes
+        string outputFolder = Path.Combine(Path.GetTempPath(), "BarcodeBatch_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputFolder);
 
-        // Sample list of barcode texts to generate
-        List<string> codeTexts = new List<string>
+        // Define a list of barcodes to generate (type, text, output file name)
+        var barcodes = new List<(BaseEncodeType Type, string Text, string FileName)>
         {
-            "ABC123",
-            "9876543210",
-            "Aspose2024",
-            "ZXCVBNM",
-            "12345"
+            (EncodeTypes.Code128, "ABC123", "code128.png"),
+            (EncodeTypes.QR, "https://example.com", "qr.png"),
+            (EncodeTypes.DataMatrix, "DM12345", "datamatrix.png")
         };
 
-        // Generate each barcode with 90-degree rotation and save as PNG
-        foreach (string text in codeTexts)
+        // Generate each barcode, rotate it 90 degrees, and save as PNG
+        foreach (var (type, text, fileName) in barcodes)
         {
-            // Build the output file path for the rotated barcode image
-            string filePath = Path.Combine(batchFolder, $"{text}_rotated.png");
+            // Build the full file path for the current barcode image
+            string filePath = Path.Combine(outputFolder, fileName);
 
-            // Initialize the barcode generator for Code128 symbology
-            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, text))
+            // Initialize the barcode generator with the specified type and text
+            using (var generator = new BarcodeGenerator(type, text))
             {
-                // Apply a 90° rotation to the generated barcode
+                // Rotate the barcode image by 90 degrees
                 generator.Parameters.RotationAngle = 90f;
 
                 // Save the rotated barcode as a PNG file
@@ -51,8 +49,7 @@ class Program
             }
         }
 
-        // Output the location of the generated barcode images
-        Console.WriteLine("Barcodes generated in folder:");
-        Console.WriteLine(batchFolder);
+        // Inform the user where the barcode images have been saved
+        Console.WriteLine($"Barcodes have been generated in: {outputFolder}");
     }
 }

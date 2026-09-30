@@ -1,42 +1,48 @@
-// Title: Generate Code128 Barcode with Custom Image Size Using Interpolation AutoSizeMode
-// Description: Demonstrates how to generate a Code128 barcode image with explicit width and height while keeping AutoSizeMode set to Interpolation.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing the use of BarcodeGenerator, EncodeTypes, and BarCodeImageFormat to create barcode images. Developers often need to control the exact pixel dimensions of generated barcodes for UI layout or printing while still leveraging automatic sizing algorithms like Interpolation. The snippet illustrates typical steps: configuring parameters, setting image size, and saving the result.
+// Title: Override Barcode Image Size with Explicit Width and Height
+// Description: Demonstrates how to set ImageWidth and ImageHeight while keeping AutoSizeMode set to Interpolation, producing a PNG barcode.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing the use of BarcodeGenerator, EncodeTypes, and BarCodeImageFormat to create custom-sized barcodes. Developers often need to control barcode dimensions for layout consistency in reports, labels, or UI elements. The snippet illustrates typical steps: initializing the generator, configuring sizing parameters, and saving the image.
 // Prompt: Override default sizing by setting explicit ImageHeight and ImageWidth while AutoSizeMode remains Interpolation.
-// Tags: barcode symbology, generation, png, autosizemode, imagesize, aspose.barcode
+// Tags: barcode symbology, generation, image size, autosizemode, png, aspose.barcode, code128
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing;
 
 /// <summary>
-/// Example program that creates a Code128 barcode image with custom dimensions using Aspose.BarCode.
+/// Demonstrates overriding default barcode image sizing by setting explicit width and height while keeping AutoSizeMode set to Interpolation.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates the barcode, saves it to a temporary PNG file, and writes the path to console.
+    /// Generates a Code128 barcode with custom dimensions and saves it as a PNG file.
     /// </summary>
     static void Main()
     {
-        // Determine a temporary file path for the output PNG image.
-        string outputPath = Path.Combine(Path.GetTempPath(), "sample_barcode.png");
-
-        // Create a BarcodeGenerator for Code128 with the desired text.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
+        // Define a temporary output folder and ensure it exists
+        string outputFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
+        if (!Directory.Exists(outputFolder))
         {
-            // Keep automatic sizing enabled but use the Interpolation mode.
+            Directory.CreateDirectory(outputFolder);
+        }
+
+        // Build the full path for the resulting PNG file
+        string outputPath = Path.Combine(outputFolder, "barcode.png");
+
+        // Initialize the barcode generator for Code128 with sample text
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+        {
+            // Keep AutoSizeMode as Interpolation and set explicit image dimensions
             generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
+            generator.Parameters.ImageWidth.Pixels = 300f;   // explicit width in pixels
+            generator.Parameters.ImageHeight.Pixels = 150f;  // explicit height in pixels
 
-            // Set explicit image dimensions in pixels.
-            generator.Parameters.ImageWidth.Pixels = 300f;
-            generator.Parameters.ImageHeight.Pixels = 150f;
-
-            // Save the generated barcode as a PNG file.
+            // Save the generated barcode image to the specified path in PNG format
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user where the barcode image was saved.
-        Console.WriteLine($"Barcode saved to: {outputPath}");
+        // Inform the user where the barcode image was saved
+        Console.WriteLine($"Barcode image saved to: {outputPath}");
     }
 }
