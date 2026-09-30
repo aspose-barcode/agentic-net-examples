@@ -1,8 +1,8 @@
-// Title: Clone BarcodeGenerator Configuration via XML Export/Import
-// Description: Demonstrates exporting a BarcodeGenerator's settings to XML and importing them into a new generator to clone the configuration, then saving both barcodes as PNG images.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to persist and reuse barcode generator settings using ExportToXml and ImportFromXml. It highlights key API classes such as BarcodeGenerator, EncodeTypes, and BarCodeImageFormat, which developers commonly use to create, configure, and serialize barcode definitions for reuse across applications or environments.
+// Title: Clone BarcodeGenerator Configuration Using ExportToXml and ImportFromXml
+// Description: Demonstrates how to export a BarcodeGenerator's settings to XML and import them into a new instance, effectively cloning the configuration.
+// Category-Description: This example belongs to the Aspose.BarCode configuration management category, showcasing the use of ExportToXml and ImportFromXml methods of BarcodeGenerator. Developers often need to persist barcode settings, share them across applications, or duplicate generators with identical parameters. The example highlights key classes such as BarcodeGenerator, EncodeTypes, and BarCodeImageFormat, useful for scenarios like batch processing or template-based barcode creation.
 // Prompt: Chain ExportToXml and ImportFromXml calls to clone a BarcodeGenerator configuration into a new object.
-// Tags: barcode symbology, configuration cloning, export to xml, import from xml, aspose.barcode, qrcode, png
+// Tags: code128, export, import, xml, clone, aspose.barcode, generation, png
 
 using System;
 using System.IO;
@@ -11,50 +11,46 @@ using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates cloning a BarcodeGenerator configuration by exporting to XML and importing back,
-/// then saving the original and cloned barcodes as PNG files.
+/// Demonstrates cloning a BarcodeGenerator configuration via XML export/import.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates a QR code, exports its configuration to XML,
-    /// imports the configuration into a new generator, and saves both images.
+    /// Entry point that creates an original barcode, saves it, clones its configuration, and saves the cloned barcode.
     /// </summary>
     static void Main()
     {
-        // Prepare a temporary directory to store generated files
-        string tempDir = Path.Combine(Path.GetTempPath(), "BarcodeCloneDemo");
-        Directory.CreateDirectory(tempDir);
-
-        // Define file paths for the XML configuration and the PNG images
-        string xmlPath = Path.Combine(tempDir, "generator.xml");
-        string originalImagePath = Path.Combine(tempDir, "original.png");
-        string clonedImagePath = Path.Combine(tempDir, "cloned.png");
-
-        // Create the original barcode generator and configure its appearance
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "SampleText"))
+        // Create an original barcode generator with Code128 symbology and sample data
+        using (var originalGenerator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            // Set the module size and barcode color
-            generator.Parameters.Barcode.XDimension.Pixels = 4f;
-            generator.Parameters.Barcode.BarColor = Color.Green;
+            // Configure visual appearance and caption for the original barcode
+            originalGenerator.Parameters.Barcode.BarColor = Color.Blue;
+            originalGenerator.Parameters.Barcode.XDimension.Point = 2f;
+            originalGenerator.Parameters.CaptionAbove.Text = "Original Barcode";
+            originalGenerator.Parameters.CaptionAbove.Alignment = TextAlignment.Center;
+            originalGenerator.Parameters.Barcode.CodeTextParameters.Font.FamilyName = "Arial";
+            originalGenerator.Parameters.Barcode.CodeTextParameters.Font.Size.Point = 12f;
 
-            // Export the current configuration to an XML file
-            generator.ExportToXml(xmlPath);
+            // Save the original barcode image to a temporary PNG file
+            string originalPath = Path.Combine(Path.GetTempPath(), "original.png");
+            originalGenerator.Save(originalPath, BarCodeImageFormat.Png);
+            Console.WriteLine($"Original barcode saved to: {originalPath}");
 
-            // Save the generated barcode image to PNG format
-            generator.Save(originalImagePath, BarCodeImageFormat.Png);
+            // Export the generator's configuration to an XML file for later reuse
+            string xmlPath = Path.Combine(Path.GetTempPath(), "barcodeConfig.xml");
+            originalGenerator.ExportToXml(xmlPath);
+
+            // Import the saved XML configuration into a new generator instance (clone)
+            using (var clonedGenerator = BarcodeGenerator.ImportFromXml(xmlPath))
+            {
+                // Modify the caption to demonstrate that this is a separate instance
+                clonedGenerator.Parameters.CaptionAbove.Text = "Cloned Barcode";
+
+                // Save the cloned barcode image to a temporary PNG file
+                string clonedPath = Path.Combine(Path.GetTempPath(), "cloned.png");
+                clonedGenerator.Save(clonedPath, BarCodeImageFormat.Png);
+                Console.WriteLine($"Cloned barcode saved to: {clonedPath}");
+            }
         }
-
-        // Import the saved XML configuration into a new generator instance
-        using (var clonedGenerator = BarcodeGenerator.ImportFromXml(xmlPath))
-        {
-            // Save the cloned barcode image to PNG format
-            clonedGenerator.Save(clonedImagePath, BarCodeImageFormat.Png);
-        }
-
-        // Output the locations of the generated files
-        Console.WriteLine($"Original barcode saved to: {originalImagePath}");
-        Console.WriteLine($"Cloned barcode saved to: {clonedImagePath}");
-        Console.WriteLine($"Configuration XML saved to: {xmlPath}");
     }
 }

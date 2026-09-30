@@ -1,93 +1,85 @@
-// Title: Compare memory usage of ExportToXml with file path vs. stream
-// Description: Demonstrates measuring memory consumption when exporting a barcode configuration to XML using a file path and a memory stream.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use the BarcodeGenerator class to export barcode settings to XML. It highlights typical scenarios where developers need to persist barcode configurations either to a file or an in‑memory stream and want to understand the memory impact of each approach. The example uses ExportToXml(string) and ExportToXml(Stream) methods, common in reporting, logging, or configuration‑export workflows.
+// Title: Compare memory usage of ExportToXml with file path vs MemoryStream
+// Description: Demonstrates how to measure and compare the memory consumption of Aspose.BarCode's ExportToXml method when exporting to a file path versus a MemoryStream, using identical barcode configurations.
+// Category-Description: This example belongs to the Aspose.BarCode export operations category, illustrating the use of BarcodeGenerator and its ExportToXml API. It shows typical scenarios where developers need to persist barcode settings as XML, either to disk or in-memory, and how to assess memory impact. Common use cases include configuration backup, diagnostics, and integration with services that require XML payloads.
 // Prompt: Compare memory usage of ExportToXml(Stream) versus ExportToXml(string) for identical configurations.
-// Tags: barcode, export, xml, memory, stream, file, aspose.barcode, generation
+// Tags: barcode, export, xml, memory-usage, code128, aspose.barcode, stream, file
 
 using System;
 using System.IO;
+using System.Diagnostics;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing;
 
 /// <summary>
-/// Provides a simple console application that measures and compares the memory usage
-/// of the <c>ExportToXml</c> method when writing to a file path versus a memory stream.
+/// Demonstrates measuring memory usage of ExportToXml using a file path and a MemoryStream.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Executes two export scenarios and reports the
-    /// memory increase observed for each case.
+    /// Entry point. Configures a barcode generator, exports its configuration to XML via file and stream,
+    /// and reports the memory consumption of each approach.
     /// </summary>
     static void Main()
     {
-        // Prepare a unique temporary folder for the XML file output
-        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeXmlMemTest_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
-        string xmlFilePath = Path.Combine(tempFolder, "generator.xml");
+        // Prepare a barcode generator with a sample configuration
+        BaseEncodeType encodeType = EncodeTypes.Code128;
+        string codeText = "1234567890";
 
-        // ------------------------------------------------------------
-        // Scenario 1: Export barcode configuration to an XML file
-        // ------------------------------------------------------------
-        using (var generator = CreateGenerator())
+        using (var generator = new BarcodeGenerator(encodeType, codeText))
         {
-            // Force a full garbage collection to get a clean baseline
+            // Example configuration: set X dimension and bar color
+            generator.Parameters.Barcode.XDimension.Point = 2f;
+            generator.Parameters.Barcode.BarColor = Color.Green;
+
+            // Ensure any previous allocations are collected before measurement
             GC.Collect();
             GC.WaitForPendingFinalizers();
 
-            long before = GC.GetTotalMemory(true); // Memory before export
-            generator.ExportToXml(xmlFilePath);    // Export to file path
-            long after = GC.GetTotalMemory(true);  // Memory after export
+            // -------------------------------------------------
+            // Export to XML using a file path (disk storage)
+            // -------------------------------------------------
+            string tempFilePath = Path.Combine(Path.GetTempPath(), "barcode_config_path.xml");
+            // Remove the file if it already exists to ensure a clean test
+            if (File.Exists(tempFilePath))
+                File.Delete(tempFilePath);
 
-            long diffFile = after - before;
-            Console.WriteLine($"Memory increase after ExportToXml(string): {diffFile} bytes");
-        }
+            long beforeFileExport = GC.GetTotalMemory(true);
+            generator.ExportToXml(tempFilePath);
+            long afterFileExport = GC.GetTotalMemory(true);
+            long fileExportMemory = afterFileExport - beforeFileExport;
 
-        // ------------------------------------------------------------
-        // Scenario 2: Export barcode configuration to a memory stream
-        // ------------------------------------------------------------
-        using (var generator = CreateGenerator())
-        {
-            using (var ms = new MemoryStream())
+            // -------------------------------------------------
+            // Export to XML using a MemoryStream (in‑memory)
+            // -------------------------------------------------
+            using (var memoryStream = new MemoryStream())
             {
-                // Force a full garbage collection to get a clean baseline
+                // Reset GC before measuring the stream export
                 GC.Collect();
                 GC.WaitForPendingFinalizers();
 
-                long before = GC.GetTotalMemory(true); // Memory before export
-                generator.ExportToXml(ms);             // Export to stream
-                long after = GC.GetTotalMemory(true);  // Memory after export
+                long beforeStreamExport = GC.GetTotalMemory(true);
+                generator.ExportToXml(memoryStream);
+                long afterStreamExport = GC.GetTotalMemory(true);
+                long streamExportMemory = afterStreamExport - beforeStreamExport;
 
-                long diffStream = after - before;
-                Console.WriteLine($"Memory increase after ExportToXml(Stream): {diffStream} bytes");
+                // Output the memory usage comparison
+                Console.WriteLine($"Memory used by ExportToXml(string path): {fileExportMemory} bytes");
+                Console.WriteLine($"Memory used by ExportToXml(Stream): {streamExportMemory} bytes");
+                Console.WriteLine($"Difference (path - stream): {fileExportMemory - streamExportMemory} bytes");
+
+                // Optional: verify that the XML was written to the stream
+                memoryStream.Position = 0;
+                using (var reader = new StreamReader(memoryStream, leaveOpen: true))
+                {
+                    string xmlContent = reader.ReadToEnd();
+                    Console.WriteLine($"XML length from stream: {xmlContent.Length} characters");
+                }
             }
-        }
 
-        // ------------------------------------------------------------
-        // Cleanup temporary files and directories
-        // ------------------------------------------------------------
-        try
-        {
-            if (File.Exists(xmlFilePath))
-                File.Delete(xmlFilePath);
-
-            Directory.Delete(tempFolder, true);
+            // Clean up the temporary file after the test
+            if (File.Exists(tempFilePath))
+                File.Delete(tempFilePath);
         }
-        catch
-        {
-            // Ignored - cleanup failure should not affect program outcome
-        }
-    }
-
-    /// <summary>
-    /// Creates and configures a <see cref="BarcodeGenerator"/> instance with QR code settings.
-    /// </summary>
-    /// <returns>A configured <see cref="BarcodeGenerator"/> ready for export.</returns>
-    static BarcodeGenerator CreateGenerator()
-    {
-        var gen = new BarcodeGenerator(EncodeTypes.QR, "SampleText");
-        gen.Parameters.Barcode.XDimension.Pixels = 4f;
-        gen.Parameters.Barcode.CodeTextParameters.Font.Size.Point = 12f;
-        return gen;
     }
 }

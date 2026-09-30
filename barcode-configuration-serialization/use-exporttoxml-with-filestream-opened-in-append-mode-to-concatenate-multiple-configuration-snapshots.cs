@@ -1,59 +1,63 @@
-// Title: Export multiple barcode configurations to a single XML file using Append mode
+// Title: Export Multiple Barcode Configurations to a Single XML File
 // Description: Demonstrates how to use ExportToXml with a FileStream opened in Append mode to concatenate several barcode configuration snapshots into one XML document.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing the ExportToXml API for persisting barcode generator settings. It illustrates creating different barcode types, adjusting parameters, and writing their configurations sequentially to a single XML file. Developers working with barcode configuration management, backup, or versioning often need to serialize multiple settings, and this pattern provides a straightforward solution.
+// Category-Description: This example belongs to the Aspose.BarCode configuration export category. It shows how to work with the BarcodeGenerator class and its Parameters to customize barcodes, then serialize each configuration to XML using ExportToXml. Typical use cases include persisting barcode settings for later reuse, auditing, or batch processing. Developers often need to combine multiple configuration snapshots into a single file for easy storage or version control.
 // Prompt: Use ExportToXml with a FileStream opened in Append mode to concatenate multiple configuration snapshots.
 // Tags: barcode, export, xml, append, configuration, aspose.barcode, generation
 
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing;
 
 /// <summary>
-/// Shows how to export several barcode generator configurations to one XML file by appending each snapshot.
+/// Shows how to export several barcode generator configurations to a single XML file
+/// by appending each snapshot using a FileStream in Append mode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates three barcode generators, customizes their X‑dimension, and appends their XML configurations to a single file.
+    /// Entry point of the example. Creates three barcode generators, customizes them,
+    /// and writes their XML representations sequentially to one file.
     /// </summary>
     static void Main()
     {
-        // Define the temporary output file path
-        string outputPath = Path.Combine(Path.GetTempPath(), "BarcodesConfig.xml");
+        // Define the path for the concatenated XML file in the temporary folder.
+        string xmlPath = Path.Combine(Path.GetTempPath(), "BarcodesConfig.xml");
 
-        // Ensure a clean start by deleting any existing file
-        if (File.Exists(outputPath))
+        // Ensure the output file starts empty by deleting any existing file.
+        if (File.Exists(xmlPath))
         {
-            File.Delete(outputPath);
+            File.Delete(xmlPath);
         }
 
-        // Open a FileStream in Append mode so each ExportToXml call adds to the same file
-        using (FileStream fs = new FileStream(outputPath, FileMode.Append, FileAccess.Write, FileShare.Read))
+        // Prepare a collection of sample barcode configurations to export.
+        var configs = new[]
         {
-            // First barcode configuration (QR)
-            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "SampleQR"))
-            {
-                generator.Parameters.Barcode.XDimension.Pixels = 4f;
-                generator.ExportToXml(fs);
-            }
+            new { Encode = EncodeTypes.Code128, Text = "ABC123" },
+            new { Encode = EncodeTypes.QR, Text = "Hello World" },
+            new { Encode = EncodeTypes.DataMatrix, Text = "DM001" }
+        };
 
-            // Second barcode configuration (Code128)
-            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "SampleCode128"))
+        // Iterate over each configuration, generate a barcode, customize it,
+        // and append its XML representation to the same file.
+        foreach (var cfg in configs)
+        {
+            using (var generator = new BarcodeGenerator(cfg.Encode, cfg.Text))
             {
-                generator.Parameters.Barcode.XDimension.Pixels = 2f;
-                generator.ExportToXml(fs);
-            }
+                // Example of customizing a barcode property (set bar color to blue).
+                generator.Parameters.Barcode.BarColor = Color.Blue;
 
-            // Third barcode configuration (DataMatrix)
-            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.DataMatrix, "SampleDM"))
-            {
-                generator.Parameters.Barcode.XDimension.Pixels = 3f;
-                generator.ExportToXml(fs);
+                // Open a FileStream in Append mode and write the XML snapshot.
+                using (var fs = new FileStream(xmlPath, FileMode.Append, FileAccess.Write, FileShare.Read))
+                {
+                    generator.ExportToXml(fs);
+                }
             }
         }
 
-        // Output result information
-        Console.WriteLine($"Exported barcode configurations to: {outputPath}");
-        Console.WriteLine($"File size: {new FileInfo(outputPath).Length} bytes");
+        // Inform the user where the concatenated XML file was saved.
+        Console.WriteLine($"Exported {configs.Length} barcode configurations to:");
+        Console.WriteLine(xmlPath);
     }
 }

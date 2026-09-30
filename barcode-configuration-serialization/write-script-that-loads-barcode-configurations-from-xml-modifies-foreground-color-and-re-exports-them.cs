@@ -1,8 +1,8 @@
-// Title: Load and modify barcode configuration XML
-// Description: Demonstrates loading a barcode configuration from an XML file, changing the bar color, and exporting the updated configuration.
-// Category-Description: This example belongs to the Aspose.BarCode configuration management category, showing how to use BarcodeGenerator to export and import settings via XML. It covers key classes like BarcodeGenerator, EncodeTypes, and the Parameters property for customizing barcode appearance. Developers often need to persist barcode settings, adjust them programmatically, and re‑use them across applications, making this pattern useful for batch processing or dynamic styling.
+// Title: Load, modify, and re-export barcode configuration via XML
+// Description: Demonstrates loading a barcode configuration from an XML file, changing the bar color, and saving both the image and updated XML.
+// Category-Description: This example belongs to the Aspose.BarCode configuration management category. It showcases the BarcodeGenerator class together with its ExportToXml and ImportFromXml methods, which are commonly used to persist barcode settings, adjust visual properties such as colors, and regenerate barcodes without recreating the generator from scratch. Developers working with batch barcode processing, dynamic styling, or configuration versioning often rely on these APIs.
 // Prompt: Write a script that loads barcode configurations from XML, modifies the foreground color, and re‑exports them.
-// Tags: barcode, xml, configuration, color, export, import, aspose.barcode, code128, generation
+// Tags: barcode symbology, configuration, xml, color, export, aspose.barcode, csharp
 
 using System;
 using System.IO;
@@ -11,46 +11,67 @@ using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates a barcode, exports its configuration to XML,
-/// imports the configuration, changes the bar color, and re‑exports the modified XML.
+/// Example program that creates a barcode, exports its configuration to XML,
+/// reloads the configuration, changes the bar color, and re‑exports both the
+/// modified image and XML configuration.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Executes the XML export/import workflow.
+    /// Entry point of the example. Executes the create‑export‑modify‑re‑export workflow.
     /// </summary>
-    static void Main()
+    /// <param name="args">Command‑line arguments (not used).</param>
+    static void Main(string[] args)
     {
-        // Create a unique temporary folder to store the XML files
-        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeXmlDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
+        // Define temporary file paths for the original and modified assets
+        string xmlPath = Path.Combine(Path.GetTempPath(), "barcodeConfig.xml");
+        string modifiedXmlPath = Path.Combine(Path.GetTempPath(), "barcodeConfigModified.xml");
+        string originalImagePath = Path.Combine(Path.GetTempPath(), "barcode.png");
+        string modifiedImagePath = Path.Combine(Path.GetTempPath(), "barcode_modified.png");
 
-        // Define file paths for the original and modified configuration XML files
-        string originalXmlPath = Path.Combine(tempFolder, "original.xml");
-        string modifiedXmlPath = Path.Combine(tempFolder, "modified.xml");
-
-        // Step 1: Generate a sample barcode and export its configuration to XML
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
+        // ------------------------------------------------------------
+        // Step 1: Create a barcode, set its initial color, save the image,
+        // and export the generator configuration to an XML file.
+        // ------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
         {
-            // Optional: set an initial bar (foreground) color
+            // Set the initial foreground (bar) color to black
             generator.Parameters.Barcode.BarColor = Color.Black;
 
-            // Export the current configuration to the original XML file
-            generator.ExportToXml(originalXmlPath);
+            // Save the barcode image as PNG
+            generator.Save(originalImagePath, BarCodeImageFormat.Png);
+
+            // Export the current generator settings to XML
+            generator.ExportToXml(xmlPath);
         }
 
-        // Step 2: Import the configuration, modify the foreground (bar) color, and re‑export
-        using (var generator = BarcodeGenerator.ImportFromXml(originalXmlPath))
+        // Verify that the XML configuration file was successfully created
+        if (!File.Exists(xmlPath))
         {
-            // Change the bar color to blue
-            generator.Parameters.Barcode.BarColor = Color.Blue;
-
-            // Export the modified configuration to a new XML file
-            generator.ExportToXml(modifiedXmlPath);
+            Console.WriteLine("Failed to create the initial XML configuration.");
+            return;
         }
 
-        // Output the locations of the generated XML files for verification
-        Console.WriteLine("Original configuration XML: " + originalXmlPath);
-        Console.WriteLine("Modified configuration XML: " + modifiedXmlPath);
+        // ------------------------------------------------------------
+        // Step 2: Load the previously saved configuration, modify the bar
+        // color, save the updated image, and export the new configuration.
+        // ------------------------------------------------------------
+        using (var loadedGenerator = BarcodeGenerator.ImportFromXml(xmlPath))
+        {
+            // Change the foreground (bar) color to blue
+            loadedGenerator.Parameters.Barcode.BarColor = Color.Blue;
+
+            // Save the modified barcode image to verify the color change
+            loadedGenerator.Save(modifiedImagePath, BarCodeImageFormat.Png);
+
+            // Export the modified generator settings to a new XML file
+            loadedGenerator.ExportToXml(modifiedXmlPath);
+        }
+
+        // Output the locations of the generated files for reference
+        Console.WriteLine("Original barcode image saved to: " + originalImagePath);
+        Console.WriteLine("Modified barcode image saved to: " + modifiedImagePath);
+        Console.WriteLine("Original XML configuration saved to: " + xmlPath);
+        Console.WriteLine("Modified XML configuration saved to: " + modifiedXmlPath);
     }
 }
