@@ -1,8 +1,8 @@
-// Title: Set top caption and custom color for PDF417 barcode and save as PNG
-// Description: Demonstrates how to place a caption above a PDF417 barcode, customize its text color, and save the result as a PNG image.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to use the BarcodeGenerator class to configure barcode appearance. It covers setting caption visibility, text, font, and color—common tasks when customizing barcodes for branding or instructional purposes. Developers often need to adjust these properties before rendering barcodes to various image formats.
+// Title: Set caption position to top and customize caption color in barcode PNG
+// Description: Demonstrates how to place a caption above a Code128 barcode and apply a custom text color before saving the image as PNG.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes to customize barcode appearance. Typical use cases include adding descriptive text above or below barcodes and styling the caption for branding or readability. Developers often need to adjust caption position, font, and color when integrating barcodes into reports, labels, or UI elements.
 // Prompt: Set the caption position to top and apply a custom caption color before saving as PNG.
-// Tags: pdf417, caption, png, aspose.barcode, aspose.drawing, generation
+// Tags: code128, barcode, caption, color, png, generation, aspose.barcode
 
 using System;
 using System.IO;
@@ -11,41 +11,32 @@ using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Example program that creates a PDF417 barcode with a top caption,
-/// applies a custom caption color, and saves the image as PNG.
+/// Generates a Code128 barcode with a top caption and custom caption color, then saves it as a PNG file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
+    /// Entry point of the example. Creates the barcode, configures caption settings, and writes the image to disk.
     /// </summary>
     static void Main()
     {
-        // Define a temporary output directory and ensure it exists
-        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeExample");
-        Directory.CreateDirectory(outputDir);
+        // Define the full path for the output PNG file.
+        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "barcode.png");
 
-        // Full path for the generated PNG file
-        string outputPath = Path.Combine(outputDir, "BarcodeWithTopCaption.png");
-
-        // Create a BarcodeGenerator for PDF417 symbology with sample text
-        using (var generator = new BarcodeGenerator(EncodeTypes.Pdf417, "SampleCodeText"))
+        // Initialize the barcode generator with Code128 symbology and sample data.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
         {
-            // Enable the caption above the barcode and set its text
-            generator.Parameters.CaptionAbove.Visible = true;
+            // Set the caption text that will appear above the barcode.
             generator.Parameters.CaptionAbove.Text = "Top Caption";
 
-            // Apply a custom green color to the caption text
-            generator.Parameters.CaptionAbove.TextColor = Color.Green;
+            // Apply a custom color (blue) to the caption text.
+            generator.Parameters.CaptionAbove.TextColor = Color.Blue;
 
-            // Optionally increase the caption font size for better readability
-            generator.Parameters.CaptionAbove.Font.Size.Point = 14f;
-
-            // Render and save the barcode image as PNG
+            // Save the generated barcode image as a PNG file.
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user where the image was saved
-        Console.WriteLine($"Barcode image saved to: {outputPath}");
+        // Inform the user where the barcode image was saved.
+        Console.WriteLine($"Barcode saved to: {outputPath}");
     }
 }
