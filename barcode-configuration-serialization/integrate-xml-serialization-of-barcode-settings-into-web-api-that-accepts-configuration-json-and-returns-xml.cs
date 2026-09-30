@@ -1,57 +1,62 @@
-// Title: XML Serialization of Barcode Settings for API Integration
-// Description: Demonstrates how to deserialize barcode configuration from JSON, apply settings to an Aspose.BarCode generator, export the generator state to XML, and re-import it to produce a barcode image.
-// Category-Description: This example belongs to the Aspose.BarCode generation and serialization category. It shows how to use BarcodeGenerator, EncodeTypes, and related parameter classes to configure barcodes, serialize the generator state to XML, and deserialize it back. Developers building web APIs or services that need to exchange barcode settings in XML or JSON will find this pattern useful for persisting configurations and reproducing barcodes.
+// Title: Barcode Settings XML Serialization from JSON Configuration
+// Description: Demonstrates converting a JSON barcode configuration into Aspose.BarCode settings, exporting them to XML, and returning the XML content.
+// Category-Description: This example belongs to the Aspose.BarCode configuration serialization category, showcasing how to map JSON payloads to barcode generation parameters, serialize those settings to XML, and use the output in web API scenarios. It highlights key API classes such as BarcodeGenerator, EncodeTypes, and the Parameters property, which developers frequently employ when building services that need dynamic barcode configuration.
 // Prompt: Integrate XML serialization of barcode settings into a web API that accepts configuration JSON and returns XML.
-// Tags: barcode, symbology, json, xml, serialization, aspose.barcode, generation
+// Tags: barcode, symbology, json, xml, serialization, aspose.barcode, configuration, webapi
 
 using System;
 using System.IO;
 using System.Text;
 using System.Text.Json;
-using System.Reflection;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates barcode configuration deserialization, XML export/import, and image generation using Aspose.BarCode.
+/// Provides a console demonstration of converting a JSON barcode configuration
+/// into Aspose.BarCode settings, exporting those settings to XML, and outputting
+/// the XML content. In a real web API, the JSON would come from the request body
+/// and the XML would be returned as the response.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Represents the JSON‑serializable configuration for a barcode.
+    /// Simple DTO that matches the expected JSON payload for barcode configuration.
     /// </summary>
-    class BarcodeConfig
+    private class BarcodeConfig
     {
         public string Symbology { get; set; }
         public string CodeText { get; set; }
-        public float XDimensionPixels { get; set; }
-        public string BarColor { get; set; }
+        public string BarColor { get; set; }      // Color name, e.g., "Green"
+        public string BackColor { get; set; }     // Color name, e.g., "White"
+        public float XDimension { get; set; }     // In points
     }
 
     /// <summary>
-    /// Entry point that simulates a web API handling JSON payload, exporting settings to XML, and generating a barcode image.
+    /// Entry point of the demonstration. Deserializes a JSON request, configures a
+    /// BarcodeGenerator, exports the settings to XML, and writes the XML to the console.
     /// </summary>
     static void Main()
     {
-        // Simulated JSON payload received by a web API
-        string jsonPayload = @"{
+        // Simulated incoming JSON request payload
+        string jsonRequest = @"{
             ""Symbology"": ""Code128"",
             ""CodeText"": ""Sample123"",
-            ""XDimensionPixels"": 2.5,
-            ""BarColor"": ""Blue""
+            ""BarColor"": ""Green"",
+            ""BackColor"": ""White"",
+            ""XDimension"": 2.0
         }";
 
-        // Deserialize JSON to a strongly‑typed configuration object
-        BarcodeConfig config = JsonSerializer.Deserialize<BarcodeConfig>(jsonPayload);
+        // Deserialize JSON into a BarcodeConfig object
+        BarcodeConfig config = JsonSerializer.Deserialize<BarcodeConfig>(jsonRequest);
         if (config == null)
         {
-            Console.WriteLine("Failed to parse configuration.");
+            Console.WriteLine("Failed to parse JSON configuration.");
             return;
         }
 
-        // Resolve the symbology name to the corresponding EncodeTypes field via reflection
-        FieldInfo field = typeof(EncodeTypes).GetField(config.Symbology);
+        // Resolve the symbology name to a BaseEncodeType using reflection
+        var field = typeof(EncodeTypes).GetField(config.Symbology);
         if (field == null)
         {
             Console.WriteLine($"Unknown symbology: {config.Symbology}");
@@ -59,34 +64,31 @@ class Program
         }
         BaseEncodeType encodeType = (BaseEncodeType)field.GetValue(null);
 
-        // Create a barcode generator with the resolved symbology and provided code text
-        using (BarcodeGenerator generator = new BarcodeGenerator(encodeType, config.CodeText))
+        // Create a barcode generator with the resolved symbology
+        using (var generator = new BarcodeGenerator(encodeType, string.Empty))
         {
-            // Apply additional settings from the configuration
-            generator.Parameters.Barcode.XDimension.Pixels = config.XDimensionPixels;
-            generator.Parameters.Barcode.BarColor = Color.FromName(config.BarColor);
+            // Set the code text, specifying UTF-8 encoding explicitly
+            generator.SetCodeText(config.CodeText, Encoding.UTF8);
 
-            // Export the generator's state to XML (simulating an API response)
-            using (MemoryStream xmlStream = new MemoryStream())
-            {
-                generator.ExportToXml(xmlStream);
-                xmlStream.Position = 0;
-                string xmlResult = new StreamReader(xmlStream, Encoding.UTF8).ReadToEnd();
-                Console.WriteLine("Exported XML:");
-                Console.WriteLine(xmlResult);
+            // Apply visual appearance settings if provided
+            if (!string.IsNullOrEmpty(config.BarColor))
+                generator.Parameters.Barcode.BarColor = Color.FromName(config.BarColor);
+            if (!string.IsNullOrEmpty(config.BackColor))
+                generator.Parameters.BackColor = Color.FromName(config.BackColor);
 
-                // Import the generator state back from the XML
-                using (MemoryStream importStream = new MemoryStream(Encoding.UTF8.GetBytes(xmlResult)))
-                {
-                    using (BarcodeGenerator importedGenerator = BarcodeGenerator.ImportFromXml(importStream))
-                    {
-                        // Save the generated barcode image to a temporary file
-                        string outputPath = Path.Combine(Path.GetTempPath(), "generated_barcode.png");
-                        importedGenerator.Save(outputPath, BarCodeImageFormat.Png);
-                        Console.WriteLine($"Barcode image saved to: {outputPath}");
-                    }
-                }
-            }
+            // Set the module size (X dimension) in points
+            generator.Parameters.Barcode.XDimension.Point = config.XDimension;
+
+            // Export the configured barcode settings to an XML file
+            string xmlPath = Path.Combine(Path.GetTempPath(), "barcodeConfig.xml");
+            generator.ExportToXml(xmlPath);
+
+            // Read the generated XML content
+            string xmlContent = File.ReadAllText(xmlPath, Encoding.UTF8);
+
+            // Output the XML content (simulating an API response)
+            Console.WriteLine("=== Exported Barcode Settings XML ===");
+            Console.WriteLine(xmlContent);
         }
     }
 }

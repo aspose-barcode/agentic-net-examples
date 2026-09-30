@@ -1,12 +1,11 @@
 // Title: Generate Barcodes from XML Files in a Folder
-// Description: Demonstrates creating temporary input/output directories, writing a sample XML that defines a barcode, reading each XML file, resolving the symbology via reflection, and generating a PNG barcode image using Aspose.BarCode.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to programmatically create barcodes from data sources such as XML files. It highlights key API classes like BarcodeGenerator, EncodeTypes, and BarCodeImageFormat, and illustrates typical batch‑processing scenarios where developers need to convert structured data into visual barcode assets for printing or digital distribution.
+// Description: Demonstrates creating temporary input/output directories, seeding sample XML files that specify barcode type and value, reading each XML, resolving the symbology via reflection, and generating PNG barcode images using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode batch‑processing category, showcasing how to work with EncodeTypes, BarcodeGenerator, and image export APIs. Typical scenarios include automated barcode creation from data files, bulk image generation, and integration into file‑based workflows. Developers often need to parse input data, map it to supported symbologies, and produce visual barcode assets for downstream systems.
 // Prompt: Build a Windows service that watches a folder for new XML files and automatically generates barcodes.
-// Tags: barcode, symbology, generation, xml, file-io, aspose.barcode, png, reflection
+// Tags: barcode, symbology, generation, png, xml, aspose.barcode, batch-processing
 
 using System;
 using System.IO;
-using System.Text;
 using System.Xml.Linq;
 using System.Reflection;
 using Aspose.BarCode;
@@ -14,14 +13,14 @@ using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Sample console application that reads XML files describing barcodes,
-/// generates corresponding barcode images, and saves them to an output folder.
+/// Sample console application that reads XML definitions of barcodes from a folder
+/// and generates corresponding PNG images using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Creates temporary folders, writes a sample XML,
-    /// processes each XML file to generate a barcode image, and lists the results.
+    /// Entry point of the application. Creates temporary folders, seeds sample XML files,
+    /// processes each file to generate a barcode image, and lists the generated files.
     /// </summary>
     static void Main()
     {
@@ -34,86 +33,73 @@ class Program
         Directory.CreateDirectory(outputFolder);
 
         // --------------------------------------------------------------------
-        // Create a sample XML file that defines a barcode (symbology + code text)
+        // Seed the input folder with sample XML files describing barcode type/value
         // --------------------------------------------------------------------
-        string sampleXmlPath = Path.Combine(inputFolder, "sample1.xml");
-        string sampleXmlContent =
-            @"<Barcode>" +
-            @"  <Symbology>Code128</Symbology>" +
-            @"  <CodeText>ABC12345</CodeText>" +
-            @"</Barcode>";
-        File.WriteAllText(sampleXmlPath, sampleXmlContent, Encoding.UTF8);
+        for (int i = 1; i <= 3; i++)
+        {
+            string xmlContent = $@"<?xml version=""1.0"" encoding=""utf-8""?>
+<Barcode>
+    <Type>{(i == 1 ? "Code128" : i == 2 ? "QR" : "DataMatrix")}</Type>
+    <Value>Sample{i}123</Value>
+</Barcode>";
+            File.WriteAllText(Path.Combine(inputFolder, $"Sample{i}.xml"), xmlContent);
+        }
 
         // --------------------------------------------------------------------
-        // Process each XML file found in the input folder
+        // Process each XML file in the input folder
         // --------------------------------------------------------------------
         string[] xmlFiles = Directory.GetFiles(inputFolder, "*.xml");
-        for (int i = 0; i < xmlFiles.Length; i++)
+        foreach (string xmlPath in xmlFiles)
         {
-            string xmlFile = xmlFiles[i];
             try
             {
-                // Load XML document
-                XDocument doc = XDocument.Load(xmlFile);
-                XElement root = doc.Element("Barcode");
-                if (root == null)
+                // Load XML and extract barcode type and value
+                XDocument doc = XDocument.Load(xmlPath);
+                string typeName = doc.Root.Element("Type")?.Value?.Trim();
+                string codeText = doc.Root.Element("Value")?.Value?.Trim();
+
+                // Validate required elements
+                if (string.IsNullOrEmpty(typeName) || string.IsNullOrEmpty(codeText))
                 {
-                    Console.WriteLine($"Skipping file (invalid root): {Path.GetFileName(xmlFile)}");
+                    Console.WriteLine($"Skipping '{Path.GetFileName(xmlPath)}': missing Type or Value.");
                     continue;
                 }
 
-                // Extract required elements
-                string symbologyName = root.Element("Symbology")?.Value?.Trim();
-                string codeText = root.Element("CodeText")?.Value?.Trim();
-
-                // Validate extracted data
-                if (string.IsNullOrEmpty(symbologyName) || string.IsNullOrEmpty(codeText))
-                {
-                    Console.WriteLine($"Skipping file (missing data): {Path.GetFileName(xmlFile)}");
-                    continue;
-                }
-
-                // Resolve symbology name to BaseEncodeType using reflection
-                FieldInfo field = typeof(EncodeTypes).GetField(symbologyName);
+                // Resolve the EncodeTypes member that matches the type name via reflection
+                FieldInfo field = typeof(EncodeTypes).GetField(typeName, BindingFlags.Public | BindingFlags.Static);
                 if (field == null)
                 {
-                    Console.WriteLine($"Unknown symbology '{symbologyName}' in file {Path.GetFileName(xmlFile)}");
+                    Console.WriteLine($"Unknown symbology '{typeName}' in '{Path.GetFileName(xmlPath)}'.");
                     continue;
                 }
-
                 BaseEncodeType encodeType = (BaseEncodeType)field.GetValue(null);
 
-                // ----------------------------------------------------------------
-                // Generate barcode image using Aspose.BarCode
-                // ----------------------------------------------------------------
-                using (BarcodeGenerator generator = new BarcodeGenerator(encodeType, codeText))
+                // Generate the barcode image
+                using (var generator = new BarcodeGenerator(encodeType, codeText))
                 {
-                    // Basic appearance settings
-                    generator.Parameters.Barcode.BarColor = Color.Black;
-                    generator.Parameters.BackColor = Color.White;
-                    generator.Parameters.Resolution = 300f;
+                    // Set basic appearance: black bars on white background
+                    generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
+                    generator.Parameters.BackColor = Aspose.Drawing.Color.White;
 
                     // Determine output file path and save as PNG
-                    string outputFileName = Path.GetFileNameWithoutExtension(xmlFile) + ".png";
-                    string outputPath = Path.Combine(outputFolder, outputFileName);
-                    generator.Save(outputPath, BarCodeImageFormat.Png);
-                    Console.WriteLine($"Generated barcode: {outputPath}");
+                    string outputFile = Path.Combine(outputFolder, Path.GetFileNameWithoutExtension(xmlPath) + ".png");
+                    generator.Save(outputFile, BarCodeImageFormat.Png);
+                    Console.WriteLine($"Generated barcode for '{Path.GetFileName(xmlPath)}' -> '{Path.GetFileName(outputFile)}'.");
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error processing file {Path.GetFileName(xmlFile)}: {ex.Message}");
+                Console.WriteLine($"Error processing '{Path.GetFileName(xmlPath)}': {ex.Message}");
             }
         }
 
         // --------------------------------------------------------------------
         // List all generated barcode image files
         // --------------------------------------------------------------------
-        Console.WriteLine("Barcode generation completed. Output files:");
-        string[] generatedFiles = Directory.GetFiles(outputFolder, "*.png");
-        for (int i = 0; i < generatedFiles.Length; i++)
+        Console.WriteLine("\nGenerated barcode files:");
+        foreach (string file in Directory.GetFiles(outputFolder, "*.png"))
         {
-            Console.WriteLine(generatedFiles[i]);
+            Console.WriteLine(file);
         }
     }
 }
