@@ -1,65 +1,86 @@
-// Title: Generate Code 39 Barcodes with Checksum and Save as SVG
-// Description: Demonstrates how to generate Code 39 barcodes with checksum enabled for a list of strings and save each as an SVG file in a temporary folder.
-// Category-Description: This example belongs to the Aspose.BarCode batch processing category. It shows how to use the BarcodeGenerator class together with EncodeTypes.Code39FullASCII to create multiple barcodes, enable checksum via the IsChecksumEnabled property, and export the results in SVG format. Typical use cases include automated document preparation, inventory labeling, and bulk barcode creation where developers need a repeatable job that processes collections of data.
+// Title: Generate Code 39 Barcodes with Checksum and Save as SVG from Folder
+// Description: The example reads text files from a temporary input folder, creates Code 39 barcodes with checksum enabled, and writes the barcodes as SVG files to an output folder.
+// Category-Description: This sample belongs to the Aspose.BarCode generation category, illustrating how to process multiple source files, configure barcode parameters (such as checksum), and export barcodes in vector format. It showcases the BarcodeGenerator class, EncodeTypes enumeration, and BarCodeImageFormat for SVG output—common tasks for developers automating barcode creation in batch workflows.
 // Prompt: Create a job that processes a folder, generates Code 39 barcodes with checksum enabled, and saves them as SVG.
-// Tags: code39, checksum, svg, barcode generation, aspose.barcode, batch processing
+// Tags: code39, checksum, svg, barcode generation, aspose.barcode, file processing
 
 using System;
 using System.IO;
 using System.Collections.Generic;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates Code 39 barcodes with checksum enabled
-/// and saves each barcode as an SVG file in a temporary output folder.
+/// Demonstrates batch generation of Code 39 barcodes with checksum enabled,
+/// reading source data from text files and saving the barcodes as SVG images.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Executes the barcode generation job.
+    /// Entry point that creates sample input files, generates barcodes, and saves them as SVG.
     /// </summary>
     static void Main()
     {
-        // Create a dedicated temporary folder for the job
-        string outputFolder = Path.Combine(Path.GetTempPath(), "BarcodeJob_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(outputFolder);
-        Console.WriteLine("Output folder: " + outputFolder);
+        // Create a dedicated temporary input folder and populate it with sample files
+        string inputFolder = Path.Combine(Path.GetTempPath(), "BarcodeInput_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(inputFolder);
 
         // Sample data to encode
-        List<string> codeTexts = new List<string>
+        var samples = new List<string> { "ABC123", "CODE39", "HELLO", "12345", "TEST" };
+        for (int i = 0; i < samples.Count; i++)
         {
-            "CODE39A",
-            "12345",
-            "HELLO-WORLD",
-            "ASP.NET",
-            "BARCODE123"
-        };
+            string filePath = Path.Combine(inputFolder, $"Sample{i + 1}.txt");
+            File.WriteAllText(filePath, samples[i]);
+        }
 
-        // Process each text string, generate a barcode, and save it as SVG
-        foreach (string text in codeTexts)
+        // Create a dedicated temporary output folder for SVG files
+        string outputFolder = Path.Combine(Path.GetTempPath(), "BarcodeOutput_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputFolder);
+
+        // Process each .txt file in the input folder
+        string[] files = Directory.GetFiles(inputFolder, "*.txt");
+        foreach (string file in files)
         {
-            string filePath = Path.Combine(outputFolder, text + ".svg");
             try
             {
-                // Initialize the barcode generator with Code 39 Full ASCII symbology
-                using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code39FullASCII, text))
+                // Read the code text from the file and trim whitespace
+                string codeText = File.ReadAllText(file).Trim();
+                if (string.IsNullOrEmpty(codeText))
                 {
-                    // Enable checksum for Code 39
+                    Console.WriteLine($"Skipping empty file: {Path.GetFileName(file)}");
+                    continue;
+                }
+
+                // Initialize the barcode generator for Code39 with full ASCII support
+                using (var generator = new BarcodeGenerator(EncodeTypes.Code39FullASCII, codeText))
+                {
+                    // Enable checksum calculation for the barcode
                     generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
 
-                    // Save the generated barcode as an SVG file
-                    generator.Save(filePath, BarCodeImageFormat.Svg);
+                    // Determine the output SVG file path
+                    string outputFileName = Path.GetFileNameWithoutExtension(file) + ".svg";
+                    string outputPath = Path.Combine(outputFolder, outputFileName);
+
+                    // Save the generated barcode as an SVG image
+                    try
+                    {
+                        generator.Save(outputPath, BarCodeImageFormat.Svg);
+                        Console.WriteLine($"Generated barcode: {outputPath}");
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Failed to save SVG for {file}: {ex.Message}");
+                    }
                 }
-                Console.WriteLine($"Generated barcode for \"{text}\" at {filePath}");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Failed to generate barcode for \"{text}\": {ex.Message}");
+                Console.WriteLine($"Error processing file {file}: {ex.Message}");
             }
         }
 
-        Console.WriteLine("Barcode generation job completed.");
+        // Cleanup: optionally delete temporary folders (commented out to allow inspection)
+        // Directory.Delete(inputFolder, true);
+        // Directory.Delete(outputFolder, true);
     }
 }

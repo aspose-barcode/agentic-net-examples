@@ -1,8 +1,8 @@
-// Title: Generate Code39 Barcodes from CSV and Save as BMP
-// Description: This example reads a CSV file containing code texts, generates Code 39 barcodes with visible checksums, and saves each barcode as a BMP image.
-// Category-Description: Demonstrates Aspose.BarCode barcode generation using the BarcodeGenerator class. It shows how to configure checksum visibility, set code text location, and export images in BMP format—common tasks when integrating barcode creation into batch processing or reporting workflows. Ideal for developers needing to automate barcode production from data sources such as CSV files.
+// Title: Generate Code 39 Barcodes from CSV and Save BMP Images
+// Description: This example reads a CSV file containing text values, creates Code 39 barcodes with visible checksums, and saves each barcode as a BMP image.
+// Category-Description: Demonstrates Aspose.BarCode barcode generation for the Code 39 symbology, covering CSV data ingestion, checksum configuration, and BMP image output. It uses BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes, typical for batch barcode creation tasks in inventory, shipping, or labeling applications.
 // Prompt: Develop a process that reads a CSV, creates visible‑checksum Code 39 barcodes, and saves BMP files.
-// Tags: code39, barcode, generation, csv, bmp, checksum, aspose.barcode, aspose.drawing
+// Tags: code39,barcode generation,checksum,csv,output bmp,aspose.barcode,aspose.drawing
 
 using System;
 using System.IO;
@@ -12,39 +12,32 @@ using Aspose.BarCode.Generation;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Reads a CSV file, generates Code 39 barcodes with visible checksums, and saves each barcode as a BMP image.
+/// Reads a CSV file, generates Code 39 barcodes with visible checksums,
+/// and saves each barcode as a BMP image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Prepares temporary folders, ensures a sample CSV exists,
-    /// processes each line to create a barcode, and writes the output files.
+    /// Entry point of the example. Executes the CSV‑to‑barcode workflow.
     /// </summary>
     static void Main()
     {
         // --------------------------------------------------------------------
-        // Prepare temporary folders for input CSV and output barcode images
+        // 1. Prepare a temporary folder and write a sample CSV file.
         // --------------------------------------------------------------------
-        string tempRoot = Path.GetTempPath();
-        string csvPath = Path.Combine(tempRoot, "sample_codes.csv");
-        string outputDir = Path.Combine(tempRoot, "Barcodes_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(outputDir);
-
-        // --------------------------------------------------------------------
-        // Create a sample CSV file if it does not already exist
-        // --------------------------------------------------------------------
-        if (!File.Exists(csvPath))
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeCsvDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
+        string csvPath = Path.Combine(tempFolder, "data.csv");
+        File.WriteAllLines(csvPath, new[]
         {
-            var sb = new StringBuilder();
-            sb.AppendLine("CodeText");
-            sb.AppendLine("ABC123");
-            sb.AppendLine("CODE39");
-            sb.AppendLine("HELLO");
-            File.WriteAllText(csvPath, sb.ToString());
-        }
+            "ABC123",
+            "XYZ789",
+            "CODE39",
+            "HELLO WORLD"
+        }, Encoding.UTF8);
 
         // --------------------------------------------------------------------
-        // Verify that the CSV file exists before attempting to read it
+        // 2. Verify that the CSV file exists before proceeding.
         // --------------------------------------------------------------------
         if (!File.Exists(csvPath))
         {
@@ -53,52 +46,57 @@ class Program
         }
 
         // --------------------------------------------------------------------
-        // Read all lines from the CSV file
+        // 3. Create an output folder for the generated BMP images.
         // --------------------------------------------------------------------
-        string[] lines = File.ReadAllLines(csvPath);
-        if (lines.Length <= 1)
-        {
-            Console.WriteLine("CSV file contains no data.");
-            return;
-        }
+        string outputFolder = Path.Combine(tempFolder, "Barcodes");
+        Directory.CreateDirectory(outputFolder);
 
         // --------------------------------------------------------------------
-        // Process each code text (skip header row)
+        // 4. Read each line from the CSV and generate a corresponding barcode.
         // --------------------------------------------------------------------
-        for (int i = 1; i < lines.Length; i++)
+        string[] lines = File.ReadAllLines(csvPath, Encoding.UTF8);
+        foreach (string rawLine in lines)
         {
-            string line = lines[i];
-            if (string.IsNullOrWhiteSpace(line))
-                continue; // Skip empty lines
-
-            // Split CSV line (comma‑separated) and trim the first column as the code text
-            string[] parts = line.Split(',');
-            string codeText = parts[0].Trim();
+            string codeText = rawLine.Trim();
             if (string.IsNullOrEmpty(codeText))
-                continue; // Skip rows without a code text
+                continue; // Skip empty lines.
 
-            // Determine output file path for the current barcode image
-            string outputPath = Path.Combine(outputDir, $"barcode_{i}.bmp");
-
-            // ----------------------------------------------------------------
-            // Generate the barcode with checksum enabled and visible
-            // ----------------------------------------------------------------
+            // Create a barcode generator for Code39 with full ASCII support.
             using (var generator = new BarcodeGenerator(EncodeTypes.Code39FullASCII, codeText))
             {
-                // Enable checksum calculation and force its display
+                // Enable checksum calculation and make it visible in the human‑readable text.
                 generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
                 generator.Parameters.Barcode.ChecksumAlwaysShow = true;
 
-                // Position the human‑readable text below the barcode
+                // Show the code text below the barcode (explicitly set location).
                 generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.Below;
 
-                // Save the generated barcode as a BMP image
-                generator.Save(outputPath, BarCodeImageFormat.Bmp);
-            }
+                // Build a safe file name for the BMP image.
+                string safeFileName = GetSafeFileName(codeText) + ".bmp";
+                string outputPath = Path.Combine(outputFolder, safeFileName);
 
-            Console.WriteLine($"Generated barcode for '{codeText}' at: {outputPath}");
+                // Save the barcode as a BMP file.
+                generator.Save(outputPath, BarCodeImageFormat.Bmp);
+                Console.WriteLine($"Saved barcode for \"{codeText}\" to {outputPath}");
+            }
         }
 
         Console.WriteLine("Barcode generation completed.");
+    }
+
+    // ------------------------------------------------------------------------
+    // Helper method: creates a file‑system safe file name from arbitrary text.
+    // ------------------------------------------------------------------------
+    private static string GetSafeFileName(string input)
+    {
+        var sb = new StringBuilder();
+        foreach (char c in input)
+        {
+            if (char.IsLetterOrDigit(c) || c == '_' || c == '-')
+                sb.Append(c);
+            else
+                sb.Append('_');
+        }
+        return sb.ToString();
     }
 }

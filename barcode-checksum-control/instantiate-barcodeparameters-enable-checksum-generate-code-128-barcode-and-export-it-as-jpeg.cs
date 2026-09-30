@@ -1,8 +1,8 @@
-// Title: Generate Code 128 barcode with checksum and save as JPEG
-// Description: Demonstrates how to create a Code 128 barcode, enable its checksum, and export the image as a JPEG file using Aspose.BarCode.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator, BarcodeParameters, and image export APIs. Developers commonly need to generate barcodes for inventory, shipping, or labeling, configure checksum validation, and produce image files in formats like JPEG, PNG, or BMP. The snippet shows the typical workflow for creating a barcode, adjusting parameters, and saving the result.
+// Title: Generate Code 128 Barcode with Checksum and Save as JPEG
+// Description: Demonstrates creating a Code 128 barcode, enabling its checksum, and exporting the result as a JPEG image using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to use the BarcodeGenerator class with EncodeTypes, configure barcode parameters such as checksum, and save the output in common image formats. Developers building labeling, inventory, or tracking solutions frequently need to generate barcodes programmatically and control format‑specific options.
 // Prompt: Instantiate BarcodeParameters, enable checksum, generate a Code 128 barcode, and export it as JPEG.
-// Tags: code128, checksum, jpeg, barcode generation, aspose.barcode, encode types
+// Tags: code128, barcode, checksum, jpeg, generation, aspose.barcode, encode, image
 
 using System;
 using System.IO;
@@ -10,20 +10,21 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Entry point for the barcode generation example.
+/// Example program that generates a Code 128 barcode with checksum enabled
+/// and saves it as a JPEG image using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Generates a Code 128 barcode with checksum enabled and saves it as a JPEG image.
+    /// Entry point of the application.
     /// </summary>
     static void Main()
     {
-        // Determine the full path for the output JPEG file.
-        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "code128.jpg");
+        // Define the full path for the output JPEG file.
+        string outputPath = Path.Combine(Environment.CurrentDirectory, "code128.jpg");
 
-        // Create a BarcodeGenerator for Code128 symbology with the desired data.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
+        // Create a BarcodeGenerator for Code 128 with the desired text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456789"))
         {
             // Enable checksum calculation for the barcode.
             generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
@@ -32,7 +33,7 @@ class Program
             generator.Save(outputPath, BarCodeImageFormat.Jpeg);
         }
 
-        // Output the location of the saved barcode image.
-        Console.WriteLine($"Barcode saved to {outputPath}");
+        // Inform the user where the barcode image was saved.
+        Console.WriteLine($"Barcode saved to: {outputPath}");
     }
 }

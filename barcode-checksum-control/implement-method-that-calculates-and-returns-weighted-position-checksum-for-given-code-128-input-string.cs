@@ -1,73 +1,63 @@
-// Title: Code 128 Weighted‑Position Checksum Calculation and Barcode Generation
-// Description: Demonstrates how to compute the weighted‑position checksum for a Code 128 string and generate a barcode image with the checksum displayed.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating checksum handling for Code 128 symbology. It uses the BarcodeGenerator class with EncodeTypes.Code128 and shows how to enable checksum display via Parameters.Barcode.ChecksumAlwaysShow. Developers working with barcode creation often need to validate data integrity and render barcodes with explicit checksum symbols, making this pattern useful for inventory, shipping, and labeling applications.
+// Title: Calculate weighted‑position checksum for Code 128 (Subset B) strings
+// Description: Demonstrates how to compute the Code 128 subset B checksum using the weighted‑position algorithm, useful for validating barcode data before encoding.
+// Category-Description: This example belongs to the Aspose.BarCode checksum calculation category, illustrating how to generate a Code 128 checksum without generating the full barcode image. It highlights the use of basic .NET string handling and arithmetic to prepare data for barcode generation, a common step for developers integrating barcode validation into inventory or shipping systems. Typical use cases include pre‑validation of data, custom barcode generation pipelines, and ensuring data integrity before encoding with Aspose.BarCode classes such as BarcodeGenerator.
 // Prompt: Implement a method that calculates and returns the weighted‑position checksum for a given Code 128 input string.
-// Tags: code128, checksum, barcode, generation, aspose.barcode, c#
+// Tags: code128, checksum, console, aspose.barcode
 
 using System;
-using System.IO;
-using Aspose.BarCode;
-using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Provides functionality to compute a Code 128 weighted‑position checksum and generate a barcode image.
+/// Provides functionality to calculate the weighted‑position checksum for Code 128 (Subset B) strings and demonstrates its usage.
 /// </summary>
 class Program
 {
-    /// <summary>
-    /// Calculates the weighted‑position checksum for a Code 128 string using Code Set B.
-    /// </summary>
-    /// <param name="text">The input string to checksum (must be valid for Code Set B).</param>
-    /// <returns>The checksum value (0‑102) as defined by the Code 128 specification.</returns>
-    static int ComputeCode128Checksum(string text)
+    // Calculates the weighted‑position checksum for Code 128 (subset B) input string.
+    // The algorithm:
+    //   checksum = (StartCodeB + Σ(charValue * position)) mod 103
+    //   where charValue = ASCII code - 32 for characters 32‑127.
+    static int CalculateCode128Checksum(string input)
     {
-        // Start Code B value (per Code 128 specification)
-        const int startCodeB = 104;
-        int checksum = startCodeB;
+        if (input == null)
+            throw new ArgumentNullException(nameof(input));
 
-        // Iterate over each character, applying the weighted position factor (i + 1)
-        for (int i = 0; i < text.Length; i++)
+        const int startCodeB = 104; // Start Code B value
+        int sum = startCodeB;
+
+        // Iterate over each character, applying the weighted calculation.
+        for (int i = 0; i < input.Length; i++)
         {
-            // Convert character to Code Set B value (ASCII 32–127 maps to 0–95)
-            int charValue = text[i] - 32;
+            char c = input[i];
+            if (c < 32 || c > 127)
+                throw new ArgumentException("Input contains characters not supported by Code128 subset B.", nameof(input));
 
-            // Validate that the character is within the allowed range for Set B
-            if (charValue < 0 || charValue > 95)
-                throw new ArgumentException($"Character '{text[i]}' at position {i} is not valid for Code128 Set B.");
-
-            // Add weighted value to checksum
-            checksum += charValue * (i + 1);
+            int charValue = c - 32;          // Code128 B character value
+            int weight = i + 1;              // Position index starts at 1
+            sum += charValue * weight;
         }
 
-        // Reduce checksum modulo 103 as required by the specification
-        checksum %= 103;
+        int checksum = sum % 103;
         return checksum;
     }
 
     /// <summary>
-    /// Entry point of the example. Computes the checksum for a sample string, displays it,
-    /// generates a Code 128 barcode with the checksum shown, and saves the image to a temporary file.
+    /// Entry point of the program that demonstrates checksum calculation for a sample input string.
     /// </summary>
     static void Main()
     {
-        // Sample text to encode and checksum
-        string sampleText = "Aspose1234";
+        // Sample input
+        string sample = "Hello123";
 
-        // Compute and display the weighted‑position checksum
-        int checksum = ComputeCode128Checksum(sampleText);
-        Console.WriteLine($"Weighted‑position checksum for \"{sampleText}\" is {checksum}");
-
-        // Define output path for the generated barcode image
-        string outputPath = Path.Combine(Path.GetTempPath(), "Code128_WithChecksum.png");
-
-        // Create a barcode generator for Code 128 and enable explicit checksum display
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, sampleText))
+        try
         {
-            generator.Parameters.Barcode.ChecksumAlwaysShow = true;
-            generator.Save(outputPath, BarCodeImageFormat.Png);
+            // Compute checksum for the sample string.
+            int checksum = CalculateCode128Checksum(sample);
+            Console.WriteLine($"Input: \"{sample}\"");
+            Console.WriteLine($"Code128 weighted‑position checksum (subset B): {checksum}");
         }
-
-        // Inform the user where the image was saved
-        Console.WriteLine($"Barcode image saved to: {outputPath}");
+        catch (Exception ex)
+        {
+            // Output any validation errors.
+            Console.WriteLine($"Error: {ex.Message}");
+        }
     }
 }

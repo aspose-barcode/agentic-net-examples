@@ -1,103 +1,69 @@
-// Title: Generate Barcodes for All Symbologies with Checksum Variations and Logging
-// Description: This example creates PNG barcodes for every supported symbology, demonstrates default, checksum‑enabled and checksum‑disabled generation, and logs any errors.
-// Category-Description: Aspose.BarCode barcode generation examples – shows how to enumerate EncodeTypes, create BarcodeGenerator instances, toggle checksum using EnableChecksum, save images, and capture exceptions. Useful for developers needing batch barcode creation across all symbologies, handling default behavior and checksum settings.
+// Title: Generate Barcodes for All Supported Symbologies with Checksum and Error Logging
+// Description: The example creates a temporary folder, iterates through every barcode symbology defined in Aspose.BarCode's EncodeTypes, generates a PNG image with checksum enabled, and logs any errors encountered.
+// Category-Description: This sample belongs to the Aspose.BarCode generation category, demonstrating how to use the BarcodeGenerator class together with EncodeTypes to produce barcodes across all supported symbologies. Typical use cases include bulk barcode creation, testing symbology support, or preparing assets for printing. Developers often need to toggle checksum settings, specify output formats, and handle exceptions during batch processing.
 // Prompt: Write a script that generates barcodes for all symbologies, toggles checksum per default behavior, and logs exceptions.
-// Tags: barcode, symbology, generation, checksum, logging, aspose.barcode, example
+// Tags: barcode, symbology, generation, checksum, error handling, aspose.barcode, png, batch processing
 
 using System;
 using System.IO;
 using System.Reflection;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates batch generation of barcodes for every supported symbology,
-/// toggling checksum settings and logging successes or failures.
+/// Demonstrates generating barcodes for every supported symbology using Aspose.BarCode,
+/// enabling checksum where applicable, and logging any exceptions.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates an output folder, iterates over all
-    /// EncodeTypes, generates default, checksum‑enabled and checksum‑disabled
-    /// barcodes, and writes a log file with the results.
+    /// Entry point that creates a temporary output directory, iterates over all EncodeTypes,
+    /// generates PNG barcodes with checksum enabled, and writes status messages to the console.
     /// </summary>
     static void Main()
     {
-        // Prepare a unique temporary directory for output files and a log file.
-        string outputDir = Path.Combine(Path.GetTempPath(), "Barcodes_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(outputDir);
-        string logPath = Path.Combine(outputDir, "log.txt");
+        // Create a dedicated temporary folder for the generated barcodes
+        string outputFolder = Path.Combine(Path.GetTempPath(), "Barcodes_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputFolder);
+        Console.WriteLine($"Barcodes will be saved to: {outputFolder}");
 
-        // Local helper to write messages to console and append them to the log file.
-        void Log(string message)
-        {
-            Console.WriteLine(message);
-            File.AppendAllText(logPath, message + Environment.NewLine);
-        }
+        // Retrieve all public static fields of EncodeTypes (each represents a symbology)
+        FieldInfo[] symbologyFields = typeof(EncodeTypes).GetFields(BindingFlags.Public | BindingFlags.Static);
 
-        // Retrieve all public static fields of EncodeTypes (each represents a symbology).
-        FieldInfo[] fields = typeof(EncodeTypes).GetFields(BindingFlags.Public | BindingFlags.Static);
-        foreach (FieldInfo field in fields)
+        // Iterate through each symbology and generate a barcode
+        foreach (FieldInfo field in symbologyFields)
         {
-            string symName = field.Name;
+            string symbologyName = field.Name;
             BaseEncodeType encodeType = (BaseEncodeType)field.GetValue(null);
+
+            // Use a generic code text; some symbologies may require specific formats
             string codeText = "1234567890";
 
-            // -----------------------------------------------------------------
-            // 1. Default generation (no explicit checksum setting)
-            // -----------------------------------------------------------------
-            string defaultPath = Path.Combine(outputDir, $"{symName}_Default.png");
-            try
-            {
-                using (var generator = new BarcodeGenerator(encodeType, codeText))
-                {
-                    generator.Save(defaultPath, BarCodeImageFormat.Png);
-                }
-                Log($"Generated default barcode for {symName}");
-            }
-            catch (Exception ex)
-            {
-                Log($"Error generating default barcode for {symName}: {ex.Message}");
-            }
+            // Build the full file path for the PNG image
+            string filePath = Path.Combine(outputFolder, $"{symbologyName}.png");
 
-            // -----------------------------------------------------------------
-            // 2. Generation with checksum explicitly enabled
-            // -----------------------------------------------------------------
-            string checksumYesPath = Path.Combine(outputDir, $"{symName}_ChecksumYes.png");
             try
             {
+                // Create the barcode generator for the current symbology
                 using (var generator = new BarcodeGenerator(encodeType, codeText))
                 {
+                    // Enable checksum (default behavior) where supported
                     generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
-                    generator.Save(checksumYesPath, BarCodeImageFormat.Png);
-                }
-                Log($"Generated checksum-enabled barcode for {symName}");
-            }
-            catch (Exception ex)
-            {
-                Log($"Error generating checksum-enabled barcode for {symName}: {ex.Message}");
-            }
 
-            // -----------------------------------------------------------------
-            // 3. Generation with checksum explicitly disabled
-            // -----------------------------------------------------------------
-            string checksumNoPath = Path.Combine(outputDir, $"{symName}_ChecksumNo.png");
-            try
-            {
-                using (var generator = new BarcodeGenerator(encodeType, codeText))
-                {
-                    generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.No;
-                    generator.Save(checksumNoPath, BarCodeImageFormat.Png);
+                    // Save the barcode image as PNG
+                    generator.Save(filePath, BarCodeImageFormat.Png);
                 }
-                Log($"Generated checksum-disabled barcode for {symName}");
+
+                Console.WriteLine($"Generated {symbologyName} barcode: {filePath}");
             }
             catch (Exception ex)
             {
-                Log($"Error generating checksum-disabled barcode for {symName}: {ex.Message}");
+                // Log any exception that occurs during generation or saving
+                Console.WriteLine($"Error generating {symbologyName}: {ex.Message}");
             }
         }
 
-        // Final log entry indicating completion and location of generated files.
-        Log($"Barcode generation completed. Files are located at: {outputDir}");
+        Console.WriteLine("Barcode generation completed.");
     }
 }
