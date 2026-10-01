@@ -1,38 +1,42 @@
-// Title: Generate QR Code PNG with 300 DPI using Aspose.BarCode
-// Description: This example creates a QR code containing the text "Hello World", sets the image resolution to 300 DPI, and saves it as a PNG file.
-// Category-Description: Demonstrates the use of Aspose.BarCode's generation API to produce high‑resolution QR codes. The example utilizes the BarcodeGenerator class with EncodeTypes.QR, configures image parameters such as resolution, and saves the result in PNG format. Developers commonly employ these APIs for creating scannable graphics for marketing, authentication, or data sharing scenarios where image quality and format are important.
+// Title: Generate QR Code and Save as PNG with 300 DPI
+// Description: This example creates a QR code containing a URL and saves it as a PNG image with a resolution of 300 DPI.
+// Category-Description: Demonstrates Aspose.BarCode generation capabilities, focusing on the BarcodeGenerator class to encode QR symbology. Typical use cases include creating scannable QR codes for marketing, authentication, or product information, where developers need control over image format and resolution. This snippet belongs to a collection of examples illustrating barcode creation, format selection, and image output settings.
 // Prompt: Generate a QR code and save it as a PNG file with 300 DPI resolution.
-// Tags: qr code, png, resolution, aspose.barcode, generation, barcode
+// Tags: qr code, barcode generation, png, resolution, aspose.barcode, aspose.drawing
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Sample program that generates a QR code image with a specified DPI resolution.
+/// Demonstrates generating a QR code and saving it as a PNG file with 300 DPI resolution using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a QR code, sets its resolution to 300 DPI, and saves it as a PNG file.
+    /// Entry point that creates the QR code and writes the output file path to the console.
     /// </summary>
     static void Main()
     {
-        // Build the full path for the output PNG file in the current directory.
-        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "qr_code.png");
+        // Define the text to encode in the QR code.
+        string codeText = "https://example.com";
 
-        // Create a BarcodeGenerator for QR encoding with the desired text.
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Hello World"))
+        // Build the full path for the output PNG file in the system's temporary folder.
+        string outputPath = Path.Combine(Path.GetTempPath(), "qr_code.png");
+
+        // Initialize the QR code generator with the desired symbology and content.
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, codeText))
         {
-            // Set the image resolution to 300 DPI.
+            // Configure the image resolution to 300 DPI for high-quality output.
             generator.Parameters.Resolution = 300f;
 
-            // Save the generated QR code as a PNG image.
+            // Save the generated QR code as a PNG image to the specified path.
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Output the location of the saved QR code image.
+        // Inform the user where the QR code image has been saved.
         Console.WriteLine($"QR code saved to: {outputPath}");
     }
 }

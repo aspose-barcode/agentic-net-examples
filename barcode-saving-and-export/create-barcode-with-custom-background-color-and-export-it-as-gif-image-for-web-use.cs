@@ -1,8 +1,8 @@
-// Title: Create barcode with custom background color and export as GIF
-// Description: Demonstrates how to generate a Code128 barcode with a custom light‑blue background and dark‑blue bars, then save it as a GIF image suitable for web pages.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and BarCodeImageFormat to customize barcode appearance (background and bar colors) and export to web‑friendly formats. Developers often need to adjust visual styling of barcodes for branding or UI integration and require GIF output for lightweight web delivery.
+// Title: Generate a Code128 barcode with a custom background and save as GIF
+// Description: Demonstrates creating a Code128 barcode, applying a light gray background, and exporting it as a GIF image suitable for web usage.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to customize barcode appearance using the BarcodeGenerator class. Typical use cases include branding barcodes with corporate colors and producing web‑friendly image formats. Developers often need to adjust colors, select symbologies, and choose appropriate image formats for online deployment.
 // Prompt: Create a barcode with custom background color and export it as a GIF image for web use.
-// Tags: barcode, code128, background color, gif, aspose.barcode, generation, image format
+// Tags: code128, background color, gif, barcode generation, aspose.barcode, aspose.drawing
 
 using System;
 using System.IO;
@@ -11,38 +11,36 @@ using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Generates a Code128 barcode with a custom background color and saves it as a GIF image.
+/// Example program that generates a Code128 barcode with a custom background color
+/// and saves it as a GIF image, demonstrating basic Aspose.BarCode customization.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates the barcode, applies styling, and writes the file to a temporary location.
+    /// Entry point of the application. Creates the output directory, configures the barcode,
+    /// and writes the resulting GIF file to disk.
     /// </summary>
     static void Main()
     {
-        // Define the output file path in the system temporary folder.
-        string outputPath = Path.Combine(Path.GetTempPath(), "custom_bg_barcode.gif");
-        string directory = Path.GetDirectoryName(outputPath);
+        // Prepare output directory and file path
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Output");
+        Directory.CreateDirectory(outputDir);
+        string outputPath = Path.Combine(outputDir, "custom_bg_barcode.gif");
 
-        // Ensure the target directory exists.
-        if (!Directory.Exists(directory))
-        {
-            Directory.CreateDirectory(directory);
-        }
-
-        // Initialize the barcode generator with Code128 symbology and sample data.
+        // Create a barcode generator for Code128 with sample text
         using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
         {
-            // Set a light blue background for the entire image.
-            generator.Parameters.BackColor = Color.FromArgb(255, 173, 216, 230);
-            // Set the barcode bars to dark blue.
-            generator.Parameters.Barcode.BarColor = Color.DarkBlue;
+            // Set custom background color (e.g., LightGray)
+            generator.Parameters.BackColor = Color.LightGray;
 
-            // Save the generated barcode as a GIF file.
+            // Set bar (foreground) color if desired
+            generator.Parameters.Barcode.BarColor = Color.Black;
+
+            // Save the barcode as a GIF image suitable for web use
             generator.Save(outputPath, BarCodeImageFormat.Gif);
         }
 
-        // Inform the user where the barcode image was saved.
+        // Inform the user where the barcode image was saved
         Console.WriteLine($"Barcode saved to: {outputPath}");
     }
 }

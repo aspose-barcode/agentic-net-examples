@@ -1,53 +1,57 @@
-// Title: Generate and save an EAN13 barcode using async file I/O
-// Description: Demonstrates creating an EAN13 barcode with Aspose.BarCode and writing the PNG image directly to a file using asynchronous streams.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use BarcodeGenerator, set barcode parameters, and employ async I/O for efficient file output. Developers often need to generate barcodes on the fly and store them without blocking the thread, especially in web or service applications.
+// Title: Generate EAN13 Barcode and Save Asynchronously to File
+// Description: Demonstrates creating an EAN13 barcode with Aspose.BarCode, storing it in a memory stream, and writing the PNG image to disk using async file I/O.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category. It showcases the use of the BarcodeGenerator class together with EncodeTypes and BarCodeImageFormat to produce product barcodes such as EAN13. Typical scenarios include generating printable barcodes for inventory, retail, or shipping labels and persisting them to image files. Developers often need to combine barcode creation with asynchronous file operations for scalable, non‑blocking applications.
 // Prompt: Generate an EAN13 barcode and write it directly to a FileStream using asynchronous I/O.
-// Tags: ean13, barcode, generation, async, filestream, aspose.barcode, png
+// Tags: ean13, barcode, generation, async, filestream, png, aspose.barcode, csharp
 
 using System;
 using System.IO;
 using System.Threading.Tasks;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating an EAN13 barcode and saving it asynchronously to a PNG file.
+/// Example program that generates an EAN13 barcode and writes it to a file using asynchronous I/O.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates the barcode, writes it to a memory stream, then copies it asynchronously to a file.
+    /// Asynchronously creates an EAN13 barcode image and saves it as a PNG file.
     /// </summary>
     /// <param name="args">Command‑line arguments (not used).</param>
-    /// <returns>A task representing the asynchronous operation.</returns>
     static async Task Main(string[] args)
     {
-        // Define the output file path for the generated PNG image.
-        string outputPath = "ean13.png";
+        // Define the barcode data (12 digits; checksum is added automatically).
+        string codeText = "123456789012";
 
-        // Create a BarcodeGenerator for the EAN13 symbology with the specified data.
-        using (var generator = new BarcodeGenerator(EncodeTypes.EAN13, "1234567890128"))
+        // Determine the full path for the output PNG file.
+        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "ean13.png");
+
+        // Initialize the barcode generator for the EAN13 symbology.
+        using (var generator = new BarcodeGenerator(EncodeTypes.EAN13, codeText))
         {
-            // Adjust the X-dimension (module width) to 2 pixels for better readability.
-            generator.Parameters.Barcode.XDimension.Pixels = 2;
-
             // Render the barcode into a memory stream in PNG format.
-            using (var memory = new MemoryStream())
+            using (var memoryStream = new MemoryStream())
             {
-                generator.Save(memory, BarCodeImageFormat.Png);
-                // Reset the stream position to the beginning before reading.
-                memory.Position = 0;
+                generator.Save(memoryStream, BarCodeImageFormat.Png);
+                memoryStream.Position = 0; // Reset stream position for reading.
 
-                // Open a file stream with asynchronous support to write the image.
-                using (var fileStream = new FileStream(outputPath, FileMode.Create, FileAccess.Write, FileShare.None, 4096, useAsync: true))
+                // Open a FileStream with async support to write the image to disk.
+                using (var fileStream = new FileStream(
+                    outputPath,
+                    FileMode.Create,
+                    FileAccess.Write,
+                    FileShare.None,
+                    bufferSize: 4096,
+                    useAsync: true))
                 {
-                    // Asynchronously copy the PNG data from memory to the file.
-                    await memory.CopyToAsync(fileStream);
+                    // Asynchronously copy the image data from memory to the file.
+                    await memoryStream.CopyToAsync(fileStream);
                 }
             }
         }
 
-        // Inform the user that the barcode has been saved.
-        Console.WriteLine($"EAN13 barcode saved to {outputPath}");
+        Console.WriteLine($"EAN13 barcode saved to: {outputPath}");
     }
 }

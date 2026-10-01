@@ -1,94 +1,67 @@
-// Title: Save PDF417 barcode as EMF and embed in Word document
-// Description: Demonstrates generating a PDF417 barcode, exporting it as an EMF vector image, and inserting it into a Word document.
-// Category-Description: This example belongs to the Aspose.BarCode and Aspose.Words integration category, showing how to use BarcodeGenerator to create PDF417 barcodes, export them in vector formats (EMF) and embed the resulting image into a Word document using DocumentBuilder. Typical use cases include generating printable barcodes for reports, invoices, or forms where high‑resolution vector graphics are required. Developers often need to combine barcode generation with document automation to produce dynamic documents.
+// Title: Save PDF417 barcode as EMF and embed into Word document
+// Description: Demonstrates generating a PDF417 barcode, exporting it as an EMF vector image, and inserting that image into a Word document.
+// Category-Description: This example belongs to the Aspose.BarCode generation and Aspose.Words document manipulation category. It showcases the use of BarcodeGenerator (Aspose.BarCode.Generation) to create a PDF417 symbology, the BarCodeImageFormat.Emf format for vector graphics, and Document/DocumentBuilder (Aspose.Words) for embedding images into Word files. Developers often need to create high‑resolution, scalable barcodes for print or digital documents and then programmatically insert them into Office documents.
 // Prompt: Save a PDF417 barcode as an EMF vector file and embed it into a Word document.
-// Tags: pdf417, barcode, emf, vector, word, aspose.barcode, aspose.words, document generation, image insertion
+// Tags: pdf417, barcode, emf, word, aspose.barcode, aspose.words, image-embedding, vector-format
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Words;
-using Aspose.Words.Drawing;
-using Aspose.Drawing;
 
 /// <summary>
-/// Example program that creates a PDF417 barcode, saves it as an EMF vector image,
-/// and embeds the image into a Word document.
+/// Generates a PDF417 barcode, saves it as an EMF vector file, and embeds the image into a Word document.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
+    /// Entry point of the example. Executes the barcode generation, EMF export, and Word insertion steps.
     /// </summary>
     static void Main()
     {
-        // Barcode generation settings
-        const int resolution = 300;               // DPI for the generated barcode image
-        const int leftBarcodePosition = 10;       // Horizontal position (points) in the Word document
-        const int topBarcodePosition = 20;        // Vertical position (points) in the Word document
-        const string codeText = "Aspose.BarCode Pdf417 Example";
+        // Define output file paths for the EMF image and the Word document.
+        string emfPath = "Pdf417Barcode.emf";
+        string docPath = "Pdf417Barcode.docx";
 
-        // Prepare output directory and document path
-        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Output");
-        Directory.CreateDirectory(outputDir);
-        string docPath = Path.Combine(outputDir, "Pdf417Barcode.docx");
-
-        // Initialize the barcode generator for PDF417 symbology
-        using (var generator = new BarcodeGenerator(EncodeTypes.Pdf417, codeText))
+        // Initialize a BarcodeGenerator for PDF417 with sample text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Pdf417, "Sample PDF417 Text"))
         {
-            // Set the image resolution (affects size conversion later)
-            generator.Parameters.Resolution = resolution;
-
-            // Generate the barcode as a bitmap (required for size calculations)
-            using (Bitmap image = generator.GenerateBarCodeImage())
+            // -----------------------------------------------------------------
+            // Save the generated barcode as an EMF file (vector format) on disk.
+            // -----------------------------------------------------------------
+            try
             {
-                // Export the barcode to an EMF stream
-                using (MemoryStream imageStream = new MemoryStream())
+                generator.Save(emfPath, BarCodeImageFormat.Emf);
+                Console.WriteLine($"EMF file saved to: {Path.GetFullPath(emfPath)}");
+            }
+            catch (Exception ex)
+            {
+                // EMF export requires a licensed version of Aspose.BarCode.
+                if (ex.Message.Contains("evaluation"))
                 {
-                    try
-                    {
-                        generator.Save(imageStream, BarCodeImageFormat.Emf);
-                    }
-                    catch (Exception ex)
-                    {
-                        // EMF export is only available with a licensed version
-                        if (ex.Message.Contains("evaluation"))
-                        {
-                            Console.WriteLine("EMF export requires a valid Aspose.BarCode license.");
-                            return;
-                        }
-                        throw;
-                    }
-
-                    // Retrieve the EMF byte array
-                    byte[] emfBytes = imageStream.ToArray();
-
-                    // Create a new Word document and a builder for content insertion
-                    var doc = new Document();
-                    var builder = new DocumentBuilder(doc);
-
-                    // Write introductory text
-                    builder.Write("First Sentence.");
-
-                    // Insert the EMF barcode image at the specified position
-                    builder.InsertImage(
-                        emfBytes,
-                        RelativeHorizontalPosition.Page,
-                        leftBarcodePosition,
-                        RelativeVerticalPosition.Page,
-                        topBarcodePosition,
-                        (image.Width * 72.0) / resolution,   // Convert width from pixels to points
-                        (image.Height * 72.0) / resolution, // Convert height from pixels to points
-                        WrapType.Square);
-
-                    // Write trailing text
-                    builder.Write("Second Sentence.");
-
-                    // Save the document in DOCX format
-                    doc.Save(docPath, SaveFormat.Docx);
-                    Console.WriteLine($"Document saved to {docPath}");
+                    Console.WriteLine("EMF export requires a valid Aspose.BarCode license.");
+                    return;
                 }
+                throw;
+            }
+
+            // ---------------------------------------------------------------
+            // Save the barcode to a memory stream for embedding into a Word doc.
+            // ---------------------------------------------------------------
+            using (var ms = new MemoryStream())
+            {
+                generator.Save(ms, BarCodeImageFormat.Emf);
+                ms.Position = 0; // Reset stream position before reading.
+
+                // Create a new Word document and insert the EMF image.
+                var doc = new Document();
+                var builder = new DocumentBuilder(doc);
+                builder.InsertImage(ms);
+
+                // Save the Word document to the specified path.
+                doc.Save(docPath);
+                Console.WriteLine($"Word document saved to: {Path.GetFullPath(docPath)}");
             }
         }
     }
