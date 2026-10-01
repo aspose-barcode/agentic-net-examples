@@ -1,131 +1,166 @@
 // Title: Read barcodes from a zip archive and aggregate metadata
-// Description: Demonstrates extracting image files from a zip, scanning each for barcodes using Aspose.BarCode, and outputting the collected barcode data as JSON.
-// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, showcasing how to work with the BarCodeReader class to process multiple images. Typical use cases include batch processing of scanned documents, inventory images, or any collection of pictures stored in archives. Developers often need to extract barcode information from bulk files and aggregate results for reporting or further processing.
+// Description: Generates sample barcode images, zips them, extracts the archive, reads each barcode, and outputs aggregated metadata as CSV.
+// Category-Description: This example demonstrates Aspose.BarCode generation and recognition APIs. It shows how to create barcodes with BarcodeGenerator, package them using System.IO.Compression, and then read them with BarCodeReader. Typical scenarios include batch processing of scanned documents, automated inventory checks, and bulk data extraction where developers need to handle multiple images stored in archives.
 // Prompt: Read barcodes from a zip archive containing multiple image files and aggregate metadata.
-// Tags: barcode, recognition, zip, batch processing, json, aspose.barcode, metadata
+// Tags: barcode generation, barcode recognition, zip archive, metadata aggregation, csv output, aspose.barcode, c#
 
 using System;
 using System.IO;
 using System.IO.Compression;
 using System.Collections.Generic;
-using System.Text.Json;
 using Aspose.BarCode;
+using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Program that extracts images from a zip archive, reads barcodes from each image, and outputs aggregated metadata as JSON.
+/// Demonstrates how to generate barcodes, package them into a zip file,
+/// extract the archive, read each barcode, and aggregate its metadata.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Performs extraction, barcode reading, and JSON aggregation.
+    /// Entry point of the example. Executes the full workflow from generation to cleanup.
     /// </summary>
     static void Main()
     {
-        // Path to the zip file containing barcode images
-        string zipPath = "barcodes.zip";
+        // --------------------------------------------------------------------
+        // 1. Create a temporary folder for generated barcode images.
+        // --------------------------------------------------------------------
+        string generateFolder = Path.Combine(Path.GetTempPath(), "Barcodes_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(generateFolder);
 
-        // Verify the zip file exists before proceeding
-        if (!File.Exists(zipPath))
+        // --------------------------------------------------------------------
+        // 2. Define sample barcodes to be generated.
+        // --------------------------------------------------------------------
+        var samples = new List<(BaseEncodeType encodeType, string codeText, string fileName)>
         {
-            Console.WriteLine($"Zip file not found: {zipPath}");
-            return;
-        }
+            (EncodeTypes.Code128, "ABC123456", "code128.png"),
+            (EncodeTypes.QR, "https://example.com", "qr.png"),
+            (EncodeTypes.DataMatrix, "DM12345", "datamatrix.png")
+        };
 
-        // Create a temporary folder to extract images
-        string tempFolder = Path.Combine(Path.GetTempPath(), "Barcodes_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
-
-        // Collect full paths of extracted image files
-        var imageFiles = new List<string>();
-
-        // Open the zip archive for reading
-        using (ZipArchive archive = ZipFile.OpenRead(zipPath))
+        // --------------------------------------------------------------------
+        // 3. Generate barcode images and save them as PNG files.
+        // --------------------------------------------------------------------
+        foreach (var (encodeType, codeText, fileName) in samples)
         {
-            foreach (ZipArchiveEntry entry in archive.Entries)
+            string filePath = Path.Combine(generateFolder, fileName);
+            using (var generator = new BarcodeGenerator(encodeType, codeText))
             {
-                // Skip directory entries
-                if (string.IsNullOrEmpty(entry.Name))
-                    continue;
-
-                // Determine destination path for the extracted file
-                string destinationPath = Path.Combine(tempFolder, entry.FullName);
-                string destinationDir = Path.GetDirectoryName(destinationPath);
-
-                // Ensure the destination directory exists
-                if (!Directory.Exists(destinationDir))
-                {
-                    Directory.CreateDirectory(destinationDir);
-                }
-
-                // Extract the file, overwriting if it already exists
-                entry.ExtractToFile(destinationPath, overwrite: true);
-                imageFiles.Add(destinationPath);
+                // Save the generated barcode image.
+                generator.Save(filePath, BarCodeImageFormat.Png);
             }
         }
 
-        // Prepare a list to hold barcode metadata records
-        var records = new List<MetadataRecord>();
+        // --------------------------------------------------------------------
+        // 4. Create a zip archive that contains the generated images.
+        // --------------------------------------------------------------------
+        string zipPath = Path.Combine(Path.GetTempPath(),
+            "BarcodesArchive_" + Guid.NewGuid().ToString("N") + ".zip");
+        ZipFile.CreateFromDirectory(generateFolder, zipPath);
 
-        // Use all supported barcode types for decoding
-        BaseDecodeType decodeType = DecodeType.AllSupportedTypes;
+        // --------------------------------------------------------------------
+        // 5. Extract the zip archive to a new temporary folder for reading.
+        // --------------------------------------------------------------------
+        string extractFolder = Path.Combine(Path.GetTempPath(),
+            "Extracted_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(extractFolder);
+        ZipFile.ExtractToDirectory(zipPath, extractFolder);
 
-        // Process each extracted image file
-        foreach (string filePath in imageFiles)
+        // --------------------------------------------------------------------
+        // 6. Prepare a collection to hold aggregated barcode metadata.
+        // --------------------------------------------------------------------
+        var aggregated = new List<BarcodeMetadata>();
+
+        // --------------------------------------------------------------------
+        // 7. Iterate over each extracted file and attempt to read barcodes.
+        // --------------------------------------------------------------------
+        string[] files = Directory.GetFiles(extractFolder);
+        foreach (string file in files)
         {
-            // Verify the image file still exists
-            if (!File.Exists(filePath))
+            if (!File.Exists(file))
             {
-                Console.WriteLine($"File not found (skipped): {filePath}");
+                Console.WriteLine($"File not found: {file}");
                 continue;
             }
 
             try
             {
-                // Initialize the barcode reader for the current image
-                using (BarCodeReader reader = new BarCodeReader(filePath, decodeType))
+                // Initialize the reader for all supported barcode types.
+                using (var reader = new BarCodeReader(file, DecodeType.AllSupportedTypes))
                 {
-                    // Iterate over all detected barcodes in the image
-                    foreach (BarCodeResult result in reader.ReadBarCodes())
+                    // Read all barcodes present in the image.
+                    BarCodeResult[] results = reader.ReadBarCodes();
+                    foreach (var result in results)
                     {
-                        // Create a metadata record for each barcode
-                        var record = new MetadataRecord
+                        // Capture required metadata for each barcode.
+                        var meta = new BarcodeMetadata
                         {
-                            FileName = Path.GetFileName(filePath),
-                            CodeTypeName = result.CodeTypeName,
-                            CodeText = result.CodeText
+                            FileName = Path.GetFileName(file),
+                            CodeText = result.CodeText,
+                            Symbology = result.CodeTypeName,
+                            ReadingQuality = result.ReadingQuality,
+                            RegionX = result.Region.Rectangle.X,
+                            RegionY = result.Region.Rectangle.Y,
+                            RegionWidth = result.Region.Rectangle.Width,
+                            RegionHeight = result.Region.Rectangle.Height,
+                            Angle = result.Region.Angle
                         };
-                        records.Add(record);
+                        aggregated.Add(meta);
                     }
                 }
             }
-            // Handle cases where the image cannot be loaded as a barcode source
             catch (ArgumentException ex) when (ex.Message.Contains("Image loading failed"))
             {
-                Console.WriteLine($"Unable to load image (skipped): {filePath}");
+                // Skip files that cannot be loaded as images (e.g., non‑image entries).
+                Console.WriteLine($"Skipping unsupported file: {file}");
             }
-            // Catch any other unexpected errors during processing
             catch (Exception ex)
             {
-                Console.WriteLine($"Error processing {filePath}: {ex.Message}");
+                // Log any unexpected errors but continue processing remaining files.
+                Console.WriteLine($"Error processing file '{file}': {ex.Message}");
             }
         }
 
-        // Serialize the collected metadata to formatted JSON
-        string json = JsonSerializer.Serialize(records, new JsonSerializerOptions { WriteIndented = true });
+        // --------------------------------------------------------------------
+        // 8. Output the aggregated metadata as CSV to the console.
+        // --------------------------------------------------------------------
+        Console.WriteLine("FileName,CodeText,Symbology,ReadingQuality,RegionX,RegionY,RegionWidth,RegionHeight,Angle");
+        foreach (var meta in aggregated)
+        {
+            Console.WriteLine($"{meta.FileName},{meta.CodeText},{meta.Symbology},{meta.ReadingQuality}," +
+                              $"{meta.RegionX},{meta.RegionY},{meta.RegionWidth},{meta.RegionHeight},{meta.Angle}");
+        }
 
-        // Output the aggregated barcode metadata
-        Console.WriteLine("Aggregated Barcode Metadata:");
-        Console.WriteLine(json);
+        // --------------------------------------------------------------------
+        // 9. Clean up temporary directories and the zip file.
+        // --------------------------------------------------------------------
+        try
+        {
+            Directory.Delete(generateFolder, true);
+            Directory.Delete(extractFolder, true);
+            if (File.Exists(zipPath))
+                File.Delete(zipPath);
+        }
+        catch
+        {
+            // Ignored – cleanup failures should not crash the program.
+        }
     }
 
-    /// <summary>
-    /// Simple DTO representing barcode metadata extracted from an image file.
-    /// </summary>
-    class MetadataRecord
+    // Simple DTO for aggregated barcode information.
+    class BarcodeMetadata
     {
         public string FileName { get; set; }
-        public string CodeTypeName { get; set; }
         public string CodeText { get; set; }
+        public string Symbology { get; set; }
+        public double ReadingQuality { get; set; }
+        public float RegionX { get; set; }
+        public float RegionY { get; set; }
+        public float RegionWidth { get; set; }
+        public float RegionHeight { get; set; }
+        public double Angle { get; set; }
     }
 }

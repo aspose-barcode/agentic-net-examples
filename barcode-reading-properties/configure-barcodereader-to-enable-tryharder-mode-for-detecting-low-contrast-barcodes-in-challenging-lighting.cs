@@ -1,77 +1,63 @@
-// Title: Enable tryHarder mode for low‑contrast QR barcode detection using BarCodeReader
-// Description: Demonstrates configuring BarCodeReader's quality settings to improve detection of low‑contrast QR codes in challenging lighting conditions.
-// Category-Description: This example belongs to the Aspose.BarCode reading category, showcasing how to adjust BarCodeReader's QualitySettings (BarcodeQuality, Deconvolution, ComplexBackground) for robust barcode recognition. Developers often need to read barcodes from poor‑quality images, low‑contrast prints, or complex backgrounds; this pattern provides a practical approach using the Aspose.BarCode API.
-// Prompt: Configure BarCodeReader to enable tryHarder mode for detecting low‑contrast barcodes in challenging lighting.
-// Tags: qr, low-contrast, tryharder, barcode reading, quality settings, aspose.barcode, csharp
-
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
-/// <summary>
-/// Demonstrates configuring BarCodeReader to improve detection of low‑contrast QR barcodes.
-/// </summary>
 class Program
 {
-    /// <summary>
-    /// Entry point that generates a QR barcode, reads it with enhanced quality settings, and outputs the result.
-    /// </summary>
     static void Main()
     {
-        // --------------------------------------------------------------------
-        // Prepare a temporary folder and file path for the generated barcode image
-        // --------------------------------------------------------------------
-        string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        // Create a temporary folder for the sample barcode image
+        string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcode_TryHarder_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
-        string barcodePath = Path.Combine(tempFolder, "barcode.png");
 
-        // --------------------------------------------------------------
-        // Generate a simple QR barcode image and save it to the temp file
-        // --------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "LowContrastTest"))
+        string barcodePath = Path.Combine(tempFolder, "low_contrast.png");
+
+        // Generate a low‑contrast barcode (dark gray on light gray)
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "LowContrast"))
         {
+            // Set foreground and background colors that are close to each other
+            generator.Parameters.Barcode.BarColor = Color.FromArgb(100, 100, 100); // dark gray
+            generator.Parameters.BackColor = Color.FromArgb(150, 150, 150); // light gray
+
+            // Save the barcode image
             generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        // --------------------------------------------------------------
-        // Verify that the barcode image was created successfully
-        // --------------------------------------------------------------
+        // Verify that the image file exists before attempting to read it
         if (!File.Exists(barcodePath))
         {
-            Console.WriteLine("Failed to create barcode image.");
+            Console.WriteLine("Barcode image was not created.");
             return;
         }
 
-        // --------------------------------------------------------------
-        // Read the barcode using BarCodeReader with enhanced settings
-        // (equivalent to a 'tryHarder' mode for low‑contrast detection)
-        // --------------------------------------------------------------
-        using (var reader = new BarCodeReader(barcodePath, DecodeType.QR))
+        // Create a BarCodeReader to detect all supported types
+        using (var reader = new BarCodeReader(barcodePath, DecodeType.AllSupportedTypes))
         {
-            // Aspose.BarCode does not expose a direct 'TryHarder' flag.
-            // Instead, configure quality settings to improve detection of low‑contrast barcodes.
-            reader.QualitySettings.BarcodeQuality = BarcodeQualityMode.Low;               // Thorough analysis mode
-            reader.QualitySettings.Deconvolution = DeconvolutionMode.Slow;               // Heavy deconvolution preprocessing
-            reader.QualitySettings.ComplexBackground = ComplexBackgroundMode.Enabled;   // Handle colored/complex backgrounds
+            // Optionally, use a high‑performance quality preset for faster processing
+            reader.QualitySettings = QualitySettings.HighPerformance;
 
-            // Perform the barcode reading operation
+            // Read barcodes from the image
             BarCodeResult[] results = reader.ReadBarCodes();
 
-            // Output the number of barcodes detected and their details
-            Console.WriteLine($"Barcodes read: {results.Length}");
-            foreach (BarCodeResult result in results)
+            if (results.Length == 0)
             {
-                Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
+                Console.WriteLine("No barcode detected.");
+            }
+            else
+            {
+                foreach (var result in results)
+                {
+                    Console.WriteLine($"Detected CodeText: {result.CodeText}");
+                    Console.WriteLine($"Detected Symbology: {result.CodeTypeName}");
+                    Console.WriteLine($"Reading Quality: {result.ReadingQuality}");
+                }
             }
         }
 
-        // --------------------------------------------------------------
-        // Clean up temporary files and directories
-        // --------------------------------------------------------------
+        // Clean up temporary files (optional)
         try
         {
             File.Delete(barcodePath);
@@ -79,7 +65,7 @@ class Program
         }
         catch
         {
-            // Ignored – cleanup failure should not affect program outcome
+            // Ignore any cleanup errors
         }
     }
 }
