@@ -1,81 +1,101 @@
-// Title: Barcode Generation, Recognition, and Logging Example
-// Description: Demonstrates generating a Code128 barcode image, reading it with BarCodeReader, exporting the reader state to XML, and logging the file paths used.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, showcasing the use of BarcodeGenerator for creating barcodes, BarCodeReader for image recognition, and ExportToXml for persisting recognition state. Developers often need to generate barcodes, validate them programmatically, and keep audit logs of file operations; this snippet illustrates typical API classes and workflow for such tasks.
+// Title: Barcode generation, XML export, and decoding with Aspose.BarCode
+// Description: Demonstrates creating a Code128 barcode image, exporting the generator configuration to XML, and decoding the barcode using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It shows how to use BarcodeGenerator to create barcodes, export its settings to XML via ExportToXml, and employ BarCodeReader with SetBarCodeImage for decoding. Developers often need to persist barcode configurations, log file paths, and perform read‑back verification in automated workflows.
 // Prompt: Design a logging mechanism that records the file path used in SetBarCodeImage alongside the exported XML state.
-// Tags: barcode, generation, recognition, logging, xml, code128, aspose.barcode
+// Tags: barcode generation, barcode recognition, code128, xml export, logging, aspose.barcode, csharp
 
 using System;
 using System.IO;
+using System.Text;
+using System.Xml.Linq;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates barcode creation, recognition, XML export, and logging of file paths.
+/// Demonstrates barcode creation, configuration export, and decoding using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a barcode, reads it, exports state to XML, and logs file locations.
+    /// Entry point of the example. Generates a barcode, exports its XML configuration,
+    /// logs relevant information, and decodes the barcode from the saved image.
     /// </summary>
     static void Main()
     {
-        // -----------------------------------------------------------------
-        // Prepare a unique temporary working directory for all generated files.
-        // -----------------------------------------------------------------
-        string workDir = Path.Combine(Path.GetTempPath(), "BarcodeLogDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(workDir);
+        // Create a unique temporary folder for this demo
+        string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
 
-        // Define file paths for the barcode image, XML export, and log file.
-        string imagePath = Path.Combine(workDir, "sample_barcode.png");
-        string readerXmlPath = Path.Combine(workDir, "reader_state.xml");
-        string logPath = Path.Combine(workDir, "log.txt");
+        // Define paths for the barcode image and the exported XML
+        string barcodeImagePath = Path.Combine(tempFolder, "barcode.png");
+        string exportedXmlPath = Path.Combine(tempFolder, "barcode_config.xml");
 
-        // -----------------------------------------------------------------
-        // Generate a Code128 barcode image and save it as PNG.
-        // -----------------------------------------------------------------
+        // Generate a barcode and save it as an image
         using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456789"))
         {
-            // Set barcode module size (X-dimension) to 2 points.
-            generator.Parameters.Barcode.XDimension.Point = 2f;
-            generator.Save(imagePath, BarCodeImageFormat.Png);
+            // Optional: set barcode appearance
+            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
+
+            // Save the barcode image to the specified path
+            generator.Save(barcodeImagePath, BarCodeImageFormat.Png);
+
+            // Export the generator configuration to XML (in-memory)
+            using (var xmlStream = new MemoryStream())
+            {
+                generator.ExportToXml(xmlStream);
+                xmlStream.Position = 0;
+
+                // Write XML to a physical file for inspection (optional)
+                using (var fileStream = new FileStream(exportedXmlPath, FileMode.Create, FileAccess.Write))
+                {
+                    xmlStream.CopyTo(fileStream);
+                }
+
+                // Read XML as a string for logging purposes
+                xmlStream.Position = 0;
+                using (var reader = new StreamReader(xmlStream, Encoding.UTF8, leaveOpen: true))
+                {
+                    string xmlContent = reader.ReadToEnd();
+                    Console.WriteLine("=== Exported Barcode XML Configuration ===");
+                    Console.WriteLine(xmlContent);
+                }
+            }
         }
 
-        // Verify that the barcode image was successfully created.
-        if (!File.Exists(imagePath))
-        {
-            Console.WriteLine("Failed to create barcode image.");
-            return;
-        }
+        // Log the file path used in SetBarCodeImage
+        Console.WriteLine($"SetBarCodeImage called with path: {barcodeImagePath}");
 
-        // -----------------------------------------------------------------
-        // Initialize BarCodeReader, load the generated image, and export its state.
-        // -----------------------------------------------------------------
+        // Create a BarCodeReader and assign the image via SetBarCodeImage
         using (var reader = new BarCodeReader())
         {
-            // Record the image path used in SetBarCodeImage for later logging.
-            reader.SetBarCodeImage(imagePath);
-            // Export the recognition state to an XML file.
-            reader.ExportToXml(readerXmlPath);
+            // Assign the barcode image file to the reader
+            reader.SetBarCodeImage(barcodeImagePath);
+
+            // Optionally specify a decode type (default detection works for Code128)
+            BaseDecodeType decodeType = DecodeType.Code128;
+
+            // Read barcodes from the image
+            BarCodeResult[] results = reader.ReadBarCodes();
+
+            Console.WriteLine("=== Decoding Results ===");
+            if (results != null && results.Length > 0)
+            {
+                foreach (var result in results)
+                {
+                    Console.WriteLine($"CodeText: {result.CodeText}");
+                    Console.WriteLine($"CodeType: {result.CodeTypeName}");
+                    Console.WriteLine($"ReadingQuality: {result.ReadingQuality}");
+                }
+            }
+            else
+            {
+                Console.WriteLine("No barcode detected.");
+            }
         }
 
-        // Verify that the XML export succeeded.
-        if (!File.Exists(readerXmlPath))
-        {
-            Console.WriteLine("Failed to export reader state to XML.");
-            return;
-        }
-
-        // -----------------------------------------------------------------
-        // Log the file paths used during SetBarCodeImage and ExportToXml.
-        // -----------------------------------------------------------------
-        string logContent = $"SetBarCodeImage path: {imagePath}{Environment.NewLine}" +
-                            $"Exported XML path: {readerXmlPath}{Environment.NewLine}";
-        File.AppendAllText(logPath, logContent);
-
-        // Output the locations of the generated files for verification.
-        Console.WriteLine("Barcode image saved to: " + imagePath);
-        Console.WriteLine("Reader state XML saved to: " + readerXmlPath);
-        Console.WriteLine("Log written to: " + logPath);
+        // Cleanup: optionally delete temporary files (commented out to allow inspection)
+        // Directory.Delete(tempFolder, true);
     }
 }

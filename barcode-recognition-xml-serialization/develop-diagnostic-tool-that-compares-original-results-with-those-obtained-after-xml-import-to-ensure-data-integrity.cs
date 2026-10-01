@@ -1,88 +1,143 @@
-// Title: Barcode generation, XML export/import, and validation
-// Description: Demonstrates generating a Code128 barcode, exporting its configuration to XML, re-importing it, and verifying that the regenerated barcode matches the original.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, showcasing how to use BarcodeGenerator, its ExportToXml/ImportFromXml methods, and BarCodeReader to create, persist, and validate barcodes. Typical use cases include diagnostic tools, migration of barcode settings, and automated integrity checks where developers need to ensure that exported configurations produce identical barcodes when re-imported.
+// Title: Barcode XML configuration integrity diagnostic tool
+// Description: Demonstrates generating a barcode, exporting its configuration to XML, re‑importing it, and comparing detection results to verify data integrity.
+// Category-Description: This example belongs to the Aspose.BarCode configuration management category, illustrating how to use BarcodeGenerator, ExportToXml, ImportFromXml, and BarCodeReader to persist and restore barcode settings. Typical use cases include automated testing, migration of barcode generation settings, and ensuring that exported XML retains all necessary parameters. Developers often need to compare original and re‑generated barcodes to confirm that configuration round‑tripping does not alter output.
 // Prompt: Develop a diagnostic tool that compares original results with those obtained after XML import to ensure data integrity.
-// Tags: barcode symbology, generation, import, export, xml, validation, codetype, codetext, aspose.barcode, code128, png
+// Tags: barcode, xml, configuration, integrity, code128, generation, recognition, aspose.barcode
 
 using System;
 using System.IO;
+using System.Text;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates a diagnostic workflow that generates a barcode, exports its settings to XML,
-/// re‑imports the configuration, regenerates the barcode, and compares the read results
-/// to ensure data integrity.
+/// Demonstrates a diagnostic workflow that generates a barcode, exports its configuration to XML,
+/// re‑imports the configuration, regenerates the barcode, and compares the detection results
+/// to ensure that the XML round‑trip preserves data integrity.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Executes the barcode generation, XML export/import, and result comparison steps.
+    /// Entry point of the example. Executes the generation, export, import, and comparison steps.
     /// </summary>
     static void Main()
     {
-        // Prepare a temporary working folder for all generated files
-        string workFolder = Path.Combine(Path.GetTempPath(), "BarcodeDiag_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(workFolder);
+        // Create a unique temporary folder for all intermediate files
+        string tempFolder = Path.Combine(Path.GetTempPath(), "DiagTool_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
 
-        // Define file paths for the original image, XML configuration, and the imported image
-        string originalImagePath = Path.Combine(workFolder, "original.png");
-        string xmlPath = Path.Combine(workFolder, "generator.xml");
-        string importedImagePath = Path.Combine(workFolder, "imported.png");
+        // Define file paths for the original barcode image, the imported barcode image, and the XML configuration
+        string originalImagePath = Path.Combine(tempFolder, "original.png");
+        string importedImagePath = Path.Combine(tempFolder, "imported.png");
+        string xmlPath = Path.Combine(tempFolder, "config.xml");
 
-        const string codeText = "ABC123XYZ";
-
-        // Step 1: Generate the original barcode and export its generation state to XML
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+        // 1. Generate the original barcode using Code128 symbology
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Test123"))
         {
-            generator.Parameters.Barcode.XDimension.Pixels = 2f;
+            // Save the original barcode image to disk
             generator.Save(originalImagePath, BarCodeImageFormat.Png);
-            generator.ExportToXml(xmlPath); // Persist generator settings
-        }
 
-        // Step 2: Import the generator from the saved XML and generate a second barcode
-        using (var importedGenerator = BarcodeGenerator.ImportFromXml(xmlPath))
-        {
-            importedGenerator.Save(importedImagePath, BarCodeImageFormat.Png);
-        }
+            // 2. Read the original barcode from the saved image
+            BarCodeResult[] originalResults = ReadBarcodes(originalImagePath);
 
-        // Step 3: Read both barcode images using BarCodeReader
-        BarCodeResult originalResult = null;
-        BarCodeResult importedResult = null;
-
-        if (File.Exists(originalImagePath))
-        {
-            using (var reader = new BarCodeReader(originalImagePath, DecodeType.Code128))
+            // 3. Export the generator's configuration to an XML stream
+            using (var xmlStream = new MemoryStream())
             {
-                var results = reader.ReadBarCodes();
-                if (results.Length > 0)
-                    originalResult = results[0];
+                generator.ExportToXml(xmlStream);
+                xmlStream.Position = 0;
+
+                // Convert the XML stream to a string for optional inspection and file saving
+                using (var reader = new StreamReader(xmlStream, Encoding.UTF8, true, 1024, leaveOpen: true))
+                {
+                    string xmlContent = reader.ReadToEnd();
+
+                    // Save the XML configuration to a file (optional, useful for debugging)
+                    File.WriteAllText(xmlPath, xmlContent);
+
+                    // 4. Import the configuration from the XML string into a new generator instance
+                    using (var importStream = new MemoryStream(Encoding.UTF8.GetBytes(xmlContent)))
+                    {
+                        using (var importedGenerator = BarcodeGenerator.ImportFromXml(importStream))
+                        {
+                            // Save the barcode generated from the imported configuration
+                            importedGenerator.Save(importedImagePath, BarCodeImageFormat.Png);
+                        }
+                    }
+                }
+            }
+
+            // 5. Read the barcode generated from the imported configuration
+            BarCodeResult[] importedResults = ReadBarcodes(importedImagePath);
+
+            // 6. Compare detection results between the original and imported barcodes
+            Console.WriteLine("=== Comparison Results ===");
+            bool originalHasResult = originalResults != null && originalResults.Length > 0;
+            bool importedHasResult = importedResults != null && importedResults.Length > 0;
+
+            Console.WriteLine($"Original barcode detected: {originalHasResult}");
+            Console.WriteLine($"Imported barcode detected: {importedHasResult}");
+
+            if (originalHasResult && importedHasResult)
+            {
+                var orig = originalResults[0];
+                var imp = importedResults[0];
+
+                bool sameType = string.Equals(orig.CodeTypeName, imp.CodeTypeName, StringComparison.OrdinalIgnoreCase);
+                bool bothHaveText = !string.IsNullOrEmpty(orig.CodeText) && !string.IsNullOrEmpty(imp.CodeText);
+
+                Console.WriteLine($"Same symbology: {sameType}");
+                Console.WriteLine($"Both have non‑empty CodeText: {bothHaveText}");
+                Console.WriteLine($"Original CodeText (may contain watermark): {orig.CodeText}");
+                Console.WriteLine($"Imported CodeText (may contain watermark): {imp.CodeText}");
+            }
+            else
+            {
+                Console.WriteLine("One of the reads failed; cannot compare detailed data.");
             }
         }
 
-        if (File.Exists(importedImagePath))
+        // Cleanup temporary files and folder (optional)
+        try
         {
-            using (var reader = new BarCodeReader(importedImagePath, DecodeType.Code128))
-            {
-                var results = reader.ReadBarCodes();
-                if (results.Length > 0)
-                    importedResult = results[0];
-            }
+            if (File.Exists(originalImagePath)) File.Delete(originalImagePath);
+            if (File.Exists(importedImagePath)) File.Delete(importedImagePath);
+            if (File.Exists(xmlPath)) File.Delete(xmlPath);
+            Directory.Delete(tempFolder, true);
+        }
+        catch
+        {
+            // Ignore any errors during cleanup
+        }
+    }
+
+    /// <summary>
+    /// Reads all barcodes from the specified image file using Aspose.BarCode's <see cref="BarCodeReader"/>.
+    /// </summary>
+    /// <param name="imagePath">Path to the image file containing barcodes.</param>
+    /// <returns>An array of <see cref="BarCodeResult"/> objects; empty if none are found or an error occurs.</returns>
+    private static BarCodeResult[] ReadBarcodes(string imagePath)
+    {
+        if (!File.Exists(imagePath))
+        {
+            Console.WriteLine($"File not found: {imagePath}");
+            return Array.Empty<BarCodeResult>();
         }
 
-        // Step 4: Compare the read results for type and text consistency
-        bool typeMatch = originalResult?.CodeTypeName == importedResult?.CodeTypeName;
-        bool textPresent = !string.IsNullOrEmpty(originalResult?.CodeText) && !string.IsNullOrEmpty(importedResult?.CodeText);
-
-        // Output a summary of the comparison
-        Console.WriteLine("Original barcode image: " + (File.Exists(originalImagePath) ? "found" : "missing"));
-        Console.WriteLine("Imported barcode image: " + (File.Exists(importedImagePath) ? "found" : "missing"));
-        Console.WriteLine("Original read result: " + (originalResult != null ? "available" : "none"));
-        Console.WriteLine("Imported read result: " + (importedResult != null ? "available" : "none"));
-        Console.WriteLine("Code type match: " + (typeMatch ? "YES" : "NO"));
-        Console.WriteLine("Both have readable text: " + (textPresent ? "YES" : "NO"));
-        Console.WriteLine("Original CodeText: " + (originalResult?.CodeText ?? "N/A"));
-        Console.WriteLine("Imported CodeText: " + (importedResult?.CodeText ?? "N/A"));
+        // Initialize the reader to decode all supported barcode types
+        using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
+        {
+            try
+            {
+                // Perform the detection and return the results
+                return reader.ReadBarCodes();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error reading barcode: {ex.Message}");
+                return Array.Empty<BarCodeResult>();
+            }
+        }
     }
 }

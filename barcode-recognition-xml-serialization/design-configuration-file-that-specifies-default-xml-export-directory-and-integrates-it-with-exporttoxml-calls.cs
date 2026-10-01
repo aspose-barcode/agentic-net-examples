@@ -1,86 +1,107 @@
-// Title: Export Barcode Generator State to XML Using Configured Directory
-// Description: Demonstrates reading a default export directory from a configuration file, generating a QR barcode, exporting its state to XML, and recreating the barcode image from the XML.
-// Category-Description: This example belongs to the Aspose.BarCode generation and persistence category. It showcases key API classes such as BarcodeGenerator, EncodeTypes, and BarCodeImageFormat for creating barcodes, as well as ExportToXml and ImportFromXml for persisting and restoring generator state. Typical use cases include saving barcode configurations for later reuse, batch processing, and integrating barcode generation into automated workflows. Developers often need to manage export locations via configuration files to keep environments flexible and maintainable.
-/// Prompt: Design a configuration file that specifies the default XML export directory and integrates it with ExportToXml calls.
-/// Tags: barcode symbology, generation, export, xml, configuration, aspose.barcode, qr
+// Title: Export barcode generator settings to XML using a configurable directory
+// Description: Demonstrates loading a JSON configuration to determine the default export folder and exporting Aspose.BarCode generator settings to an XML file.
+// Category-Description: This example belongs to the Aspose.BarCode configuration management category, illustrating how to persist generator parameters via ExportToXml. It showcases key API classes such as BarcodeGenerator, EncodeTypes, and the Parameters property. Developers often need to store barcode settings for reuse, auditing, or batch processing, and this pattern provides a simple way to manage export locations through external configuration.
+// Prompt: Design a configuration file that specifies the default XML export directory and integrates it with ExportToXml calls.
+// Tags: barcode, export, xml, configuration, json, aspose.barcode, code128, generator
 
 using System;
 using System.IO;
+using System.Text.Json;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Provides a simple demonstration of configuring an export directory,
-/// generating a QR barcode, exporting its state to XML, and recreating the barcode image from the XML.
+/// Represents application configuration, currently holding the default export directory for XML files.
+/// </summary>
+class Config
+{
+    public string ExportDirectory { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// Sample console application that loads a JSON configuration, ensures the export directory exists,
+/// generates a Code128 barcode, and exports the generator settings to an XML file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Executes the configuration handling,
-    /// barcode generation, XML export/import, and image saving steps.
+    /// Entry point. Loads configuration, creates export folder, generates a barcode, and writes its settings to XML.
     /// </summary>
     static void Main()
     {
-        // --------------------------------------------------------------------
-        // Define base paths and configuration file location
-        // --------------------------------------------------------------------
-        string basePath = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
-        string configPath = Path.Combine(basePath, "config.txt");
-        string defaultExportDir = Path.Combine(basePath, "ExportedXml");
+        // Determine the path of the JSON configuration file located beside the executable.
+        string configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "appconfig.json");
 
-        // --------------------------------------------------------------------
-        // Ensure the base directory exists
-        // --------------------------------------------------------------------
-        if (!Directory.Exists(basePath))
-            Directory.CreateDirectory(basePath);
+        // Load existing configuration or create a default one if the file is missing or invalid.
+        Config config = LoadOrCreateConfig(configPath);
 
-        // --------------------------------------------------------------------
-        // Create a simple config file with the default export directory if it does not exist
-        // --------------------------------------------------------------------
-        if (!File.Exists(configPath))
+        // Ensure the configured export directory exists; create it if necessary.
+        if (!Directory.Exists(config.ExportDirectory))
         {
-            Directory.CreateDirectory(defaultExportDir);
-            File.WriteAllText(configPath, defaultExportDir);
+            Directory.CreateDirectory(config.ExportDirectory);
         }
 
-        // --------------------------------------------------------------------
-        // Read the export directory from the config file
-        // --------------------------------------------------------------------
-        string exportDir = File.ReadAllText(configPath).Trim();
-        if (string.IsNullOrEmpty(exportDir))
+        // Generate a simple Code128 barcode with the text "123456".
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
         {
-            Console.WriteLine("Export directory not specified in config. Using default.");
-            exportDir = defaultExportDir;
-        }
+            // Adjust the font size of the barcode's human‑readable text.
+            generator.Parameters.Barcode.CodeTextParameters.Font.Size.Point = 12f;
 
-        // --------------------------------------------------------------------
-        // Ensure the export directory exists
-        // --------------------------------------------------------------------
-        if (!Directory.Exists(exportDir))
-            Directory.CreateDirectory(exportDir);
+            // Build the full file path for the XML export using the configured directory.
+            string xmlFilePath = Path.Combine(config.ExportDirectory, "barcode_config.xml");
 
-        // --------------------------------------------------------------------
-        // Generate a QR barcode and export its generator state to an XML file
-        // --------------------------------------------------------------------
-        string xmlFilePath = Path.Combine(exportDir, "barcode_state.xml");
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Aspose.BarCode"))
-        {
-            // Set a specific X-dimension for better visual quality
-            generator.Parameters.Barcode.XDimension.Pixels = 4f;
+            // Export the generator's current settings to the specified XML file.
             generator.ExportToXml(xmlFilePath);
         }
 
-        Console.WriteLine($"Barcode generation state exported to: {xmlFilePath}");
+        // Inform the user that the export completed successfully.
+        Console.WriteLine("Barcode configuration exported to XML successfully.");
+    }
 
-        // --------------------------------------------------------------------
-        // Import the barcode generator state from the XML and save the barcode image
-        // --------------------------------------------------------------------
-        string imagePath = Path.Combine(exportDir, "barcode_image.png");
-        using (var importedGenerator = BarcodeGenerator.ImportFromXml(xmlFilePath))
+    /// <summary>
+    /// Loads configuration from the given path or creates a default configuration file if none exists.
+    /// </summary>
+    /// <param name="path">Full path to the JSON configuration file.</param>
+    /// <returns>A <see cref="Config"/> instance with a valid ExportDirectory.</returns>
+    static Config LoadOrCreateConfig(string path)
+    {
+        if (File.Exists(path))
         {
-            importedGenerator.Save(imagePath, BarCodeImageFormat.Png);
+            try
+            {
+                // Read the JSON content and deserialize it into a Config object.
+                string json = File.ReadAllText(path);
+                Config? cfg = JsonSerializer.Deserialize<Config>(json);
+                if (cfg != null && !string.IsNullOrWhiteSpace(cfg.ExportDirectory))
+                {
+                    return cfg;
+                }
+            }
+            catch (Exception ex)
+            {
+                // Log any errors encountered while reading or deserializing the config.
+                Console.WriteLine($"Failed to read config: {ex.Message}");
+            }
         }
 
-        Console.WriteLine($"Barcode image generated from imported state: {imagePath}");
+        // Define a default configuration with an ExportDirectory under the application base folder.
+        var defaultConfig = new Config
+        {
+            ExportDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ExportXml")
+        };
+
+        try
+        {
+            // Serialize the default configuration to formatted JSON and write it to disk.
+            string json = JsonSerializer.Serialize(defaultConfig, new JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText(path, json);
+        }
+        catch (Exception ex)
+        {
+            // Log any errors encountered while writing the default config file.
+            Console.WriteLine($"Failed to write default config: {ex.Message}");
+        }
+
+        return defaultConfig;
     }
 }
