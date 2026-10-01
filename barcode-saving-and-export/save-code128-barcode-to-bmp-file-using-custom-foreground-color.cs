@@ -1,8 +1,8 @@
 // Title: Save Code128 barcode as BMP with custom foreground color
-// Description: Demonstrates generating a Code128 barcode and saving it as a BMP image using a custom foreground color.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use the BarcodeGenerator class with EncodeTypes, BarCodeImageFormat, and color customization. Typical use cases include creating barcodes for product labeling, inventory tracking, and packaging where specific visual styling is required. Developers often need to adjust barcode colors and output formats to match branding or printing specifications.
-// Prompt: Save a Code128 barcode to a BMP file using a custom foreground color.
-// Tags: code128, barcode, bmp, color, generation, aspose.barcode
+// Description: Demonstrates generating a Code128 barcode, applying a custom dark‑green bar color, and saving it as a BMP image file.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use the BarcodeGenerator class together with EncodeTypes, BarCodeImageFormat, and color customization. Typical use cases include creating printable barcodes for product labeling, inventory tracking, or shipping documentation where specific visual styling (e.g., brand colors) is required. Developers often need to adjust bar colors, output formats, and encoding types to meet branding or system integration needs.
+/// Prompt: Save a Code128 barcode to a BMP file using a custom foreground color.
+/// Tags: code128, barcode, generation, bmp, color, aspose.barcode, aspnet
 
 using System;
 using System.IO;
@@ -11,29 +11,30 @@ using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Generates a Code128 barcode, applies a custom foreground color, and saves it as a BMP file.
+/// Example program that creates a Code128 barcode, sets a custom foreground color,
+/// and saves the result as a BMP image file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates the barcode and writes the output path to the console.
+    /// Entry point of the example. Generates the barcode and writes the output file path to the console.
     /// </summary>
     static void Main()
     {
-        // Define the full path for the output BMP file.
-        string outputPath = Path.Combine(Environment.CurrentDirectory, "Code128_CustomColor.bmp");
+        // Define the full path for the output BMP file in the current working directory.
+        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "code128.bmp");
 
-        // Initialize the barcode generator with Code128 symbology and the desired data.
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "12345678"))
+        // Initialize a BarcodeGenerator for Code128 with the sample text "Sample123".
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
         {
-            // Set the barcode's foreground (bar) color to red.
-            generator.Parameters.Barcode.BarColor = Color.Red;
+            // Apply a custom dark‑green color to the barcode bars (foreground).
+            generator.Parameters.Barcode.BarColor = Color.FromArgb(0, 100, 0);
 
-            // Save the generated barcode as a BMP image to the specified path.
+            // Save the generated barcode image as a BMP file at the specified location.
             generator.Save(outputPath, BarCodeImageFormat.Bmp);
         }
 
-        // Output the location of the saved barcode image.
+        // Inform the user where the barcode image has been saved.
         Console.WriteLine($"Barcode saved to: {outputPath}");
     }
 }

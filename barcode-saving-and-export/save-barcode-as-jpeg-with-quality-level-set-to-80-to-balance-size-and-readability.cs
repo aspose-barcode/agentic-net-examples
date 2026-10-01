@@ -1,48 +1,52 @@
-// Title: Save Barcode as JPEG with Specified Quality
-// Description: Demonstrates generating a Code128 barcode and saving it as a JPEG image, highlighting resolution and anti-aliasing settings while noting that JPEG quality cannot be set directly via the Aspose.BarCode API.
-// Category-Description: This example belongs to the Aspose.BarCode generation and image export category. It showcases the use of BarcodeGenerator, EncodeTypes, and BarCodeImageFormat to create barcodes and export them to common image formats. Developers often need to adjust image resolution, anti‑aliasing, and compression settings to balance file size and readability when integrating barcodes into documents, web pages, or mobile apps.
+// Title: Save Code128 barcode as JPEG with controlled quality settings
+// Description: Demonstrates generating a Code128 barcode and saving it as a JPEG image while adjusting resolution and anti‑aliasing to influence file size and readability.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to use BarcodeGenerator, EncodeTypes, and BarCodeImageFormat to create barcodes. Typical use cases include creating printable labels, inventory tags, or embedding barcodes in documents where image size matters. Developers often need to balance image quality with file size, using resolution and rendering options to achieve optimal results.
 // Prompt: Save a barcode as a JPEG with quality level set to 80 to balance size and readability.
-// Tags: barcode, code128, generation, jpeg, image format, quality, resolution, anti-aliasing, aspose.barcode
+// Tags: code128, generation, jpeg, barcodegenerator, barcodimageformat
 
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a Code128 barcode and saving it as a JPEG image.
+/// Demonstrates barcode generation and JPEG export with quality considerations.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates the barcode, configures image parameters, and saves the result.
+    /// Entry point. Generates a Code128 barcode and saves it as a JPEG file.
     /// </summary>
     static void Main()
     {
-        // Define the output file path in the system's temporary directory.
-        string outputFile = Path.Combine(Path.GetTempPath(), "sample_barcode.jpg");
+        // Define the full path for the output JPEG file in the temporary folder.
+        string outputPath = Path.Combine(Path.GetTempPath(), "barcode_sample.jpg");
 
-        // The data to encode in the barcode.
-        string codeText = "12345678";
-
-        // Initialize the barcode generator with Code128 symbology and the sample data.
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+        // Ensure the target directory exists; create it if necessary.
+        string outputDir = Path.GetDirectoryName(outputPath);
+        if (!Directory.Exists(outputDir))
         {
-            // Reduce image resolution to lower file size (optional).
-            generator.Parameters.Resolution = 72f;
+            Directory.CreateDirectory(outputDir);
+        }
 
-            // Disable anti‑aliasing to further reduce size (optional).
+        // Initialize a BarcodeGenerator for Code128 with the desired text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+        {
+            // Set image resolution (DPI). Higher DPI improves readability but increases file size.
+            generator.Parameters.Resolution = 300f; // 300 DPI for good readability
+
+            // Disable anti‑aliasing to reduce file size further (optional).
             generator.Parameters.UseAntiAlias = false;
 
             // Note: Aspose.BarCode does not expose a direct JPEG quality setting.
-            // The generated JPEG will use the default compression quality.
+            // Adjusting resolution and anti‑aliasing are the primary ways to influence size and clarity.
 
-            // Save the generated barcode as a JPEG file.
-            generator.Save(outputFile, BarCodeImageFormat.Jpeg);
+            // Save the generated barcode as a JPEG image.
+            generator.Save(outputPath, BarCodeImageFormat.Jpeg);
         }
 
-        // Inform the user where the file was saved and the limitation regarding JPEG quality.
-        Console.WriteLine($"Barcode saved to: {outputFile}");
-        Console.WriteLine("Note: JPEG quality level cannot be set explicitly with Aspose.BarCode API.");
+        // Inform the user where the file was saved.
+        Console.WriteLine($"Barcode saved to: {outputPath}");
     }
 }
