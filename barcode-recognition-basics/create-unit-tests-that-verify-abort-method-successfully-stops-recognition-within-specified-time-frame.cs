@@ -1,11 +1,12 @@
-// Title: Demonstrate aborting barcode recognition using Aspose.BarCode
-// Description: This example generates a QR barcode, runs recognition on a separate thread, aborts the operation, and verifies that the abort was caught.
-// Category-Description: Shows how to use Aspose.BarCode's BarCodeReader to perform asynchronous barcode recognition and control it with the Abort method. Typical scenarios include long‑running scans where a user may cancel the operation. Developers often need to handle RecognitionAbortedException and clean up resources, making this pattern essential for responsive applications.
+// Title: Abort Barcode Recognition Test
+// Description: Demonstrates how to abort a barcode recognition operation using Aspose.BarCode and verifies it completes within a defined time.
+// Category-Description: This example belongs to the Aspose.BarCode recognition category, showcasing the use of BarCodeReader, its Abort method, and timeout handling. Developers often need to stop long-running barcode scans in responsive applications or unit tests; this snippet illustrates typical patterns for aborting and measuring recognition duration.
 // Prompt: Create unit tests that verify Abort method successfully stops recognition within a specified time frame.
-// Tags: qr, abort, barcode recognition, aspose.barcode, multithreading, unit-test, exception handling
+// Tags: barcode recognition, abort, timeout, aspose.barcode, code128, unit test, performance
 
 using System;
 using System.IO;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using Aspose.BarCode;
@@ -13,84 +14,110 @@ using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates aborting a barcode recognition operation using Aspose.BarCode.
+/// Demonstrates aborting a barcode recognition operation and validates its timing.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Generates a QR code, starts recognition on a background thread, aborts it,
-    /// and reports whether the abort was successfully detected.
+    /// Entry point that generates a sample barcode, runs the abort test, and reports the outcome.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder for test artifacts
+        // Create a temporary folder for test files
         string tempFolder = Path.Combine(Path.GetTempPath(), "AbortTest_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
 
-        // Generate a QR barcode image and save it to the temporary folder
-        string imagePath = Path.Combine(tempFolder, "qr.png");
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "TestAbort"))
+        // Generate a sample barcode image
+        string barcodePath = Path.Combine(tempFolder, "sample.png");
+        GenerateSampleBarcode(barcodePath);
+
+        // Run the abort test
+        bool testResult = RunAbortTest(barcodePath, expectedMaxDurationMs: 1000);
+
+        // Report result
+        if (testResult)
         {
-            generator.Save(imagePath, BarCodeImageFormat.Png);
+            Console.WriteLine("PASSED: Abort stopped recognition within the expected time.");
+        }
+        else
+        {
+            Console.WriteLine("FAILED: Abort did not stop recognition as expected.");
         }
 
-        bool abortCaught = false;          // Indicates whether the abort exception was caught
-        Exception threadException = null;  // Captures any unexpected exception from the worker thread
+        // Clean up temporary files
+        try { Directory.Delete(tempFolder, true); } catch { /* ignore cleanup errors */ }
+    }
 
-        // Initialize the barcode reader for QR codes
-        using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.QR))
+    // Generates a simple Code128 barcode and saves it to the specified path
+    private static void GenerateSampleBarcode(string path)
+    {
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            // Start recognition in a separate thread to allow aborting from the main thread
-            Thread readThread = new Thread(() =>
+            generator.Save(path, BarCodeImageFormat.Png);
+        }
+    }
+
+    // Starts recognition, aborts it after a short delay, and verifies it stops quickly
+    private static bool RunAbortTest(string imagePath, int expectedMaxDurationMs)
+    {
+        if (!File.Exists(imagePath))
+        {
+            Console.WriteLine("Test image not found.");
+            return false;
+        }
+
+        bool abortCaught = false;
+        long elapsedMs = 0;
+
+        using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
+        {
+            // Set a long timeout so that abort is the only way to stop early
+            reader.Timeout = 10000; // 10 seconds
+
+            // Task that performs the reading
+            Task readTask = Task.Run(() =>
             {
+                Stopwatch sw = Stopwatch.StartNew();
                 try
                 {
-                    // This call blocks until recognition finishes or is aborted
-                    var results = reader.ReadBarCodes();
-                    // If completed without abort, nothing further is required
+                    // This call blocks until reading finishes, timeout expires, or abort is invoked
+                    BarCodeResult[] results = reader.ReadBarCodes();
+                    // If we get results before abort, treat as failure for this test
+                    abortCaught = false;
                 }
                 catch (RecognitionAbortedException)
                 {
-                    // Expected path when Abort is invoked
+                    // Expected when abort is triggered
                     abortCaught = true;
                 }
                 catch (Exception ex)
                 {
-                    // Capture any unexpected errors for later reporting
-                    threadException = ex;
+                    // Any other exception is unexpected
+                    Console.WriteLine($"Unexpected exception: {ex.GetType().Name} - {ex.Message}");
+                    abortCaught = false;
+                }
+                finally
+                {
+                    sw.Stop();
+                    elapsedMs = sw.ElapsedMilliseconds;
                 }
             });
 
-            readThread.Start();
-
-            // Allow the recognition to run briefly before aborting
-            Task.Delay(200).Wait();
-
-            // Request abortion of the ongoing recognition operation
+            // Wait a short period before aborting
+            Thread.Sleep(200); // 200 ms
             reader.Abort();
 
-            // Wait for the background thread to finish processing
-            readThread.Join();
-
-            // Output the result of the abort test
-            Console.WriteLine(abortCaught ? "Abort succeeded" : "Abort not triggered");
-            if (threadException != null)
+            // Wait for the reading task to complete (with a safety timeout)
+            if (!readTask.Wait(5000))
             {
-                Console.WriteLine("Unexpected error: " + threadException);
+                Console.WriteLine("Read task did not complete in expected time.");
+                return false;
             }
         }
 
-        // Clean up temporary files and folder; ignore any cleanup errors
-        try
-        {
-            if (File.Exists(imagePath))
-                File.Delete(imagePath);
-            if (Directory.Exists(tempFolder))
-                Directory.Delete(tempFolder, true);
-        }
-        catch
-        {
-            // Cleanup failures are non‑critical for the test outcome
-        }
+        // Verify that abort was caught and that the operation finished quickly
+        bool durationOk = elapsedMs <= expectedMaxDurationMs;
+        Console.WriteLine($"Abort caught: {abortCaught}, Elapsed ms: {elapsedMs}, Duration OK: {durationOk}");
+        return abortCaught && durationOk;
     }
 }

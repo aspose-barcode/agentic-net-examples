@@ -1,77 +1,99 @@
-// Title: Multi-Decode Barcode Generation and Recognition for UPC-A, UPC-E, and EAN-8
-// Description: Demonstrates generating PNG images for UPC-A, UPC-E, and EAN-8 barcodes and reading them using a MultiDecodeType configuration.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes and BarCodeReader with MultiDecodeType for decoding multiple symbologies in a single pass. Developers often need to batch‑process retail barcodes such as UPC‑A, UPC‑E, and EAN‑8, and this pattern provides a concise solution.
+// Title: Configure MultiDecodeType for UPC-A, UPC-E, and EAN-8 Barcode Scanning
+// Description: Demonstrates generating UPC-A, UPC-E, and EAN-8 barcodes, then decoding them using a custom MultiDecodeType array.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes and BarCodeReader with a specified BaseDecodeType[] to limit decoding to particular symbologies. Developers often need to generate retail barcodes and then scan them efficiently, selecting only the required decode types to improve performance and accuracy.
 // Prompt: Configure MultyDecodeType to include UPC-A, UPC-E, and EAN-8 for comprehensive retail barcode scanning.
-// Tags: barcode symbology, multi-decode, generation, recognition, png, aspose.barcode
+// Tags: barcode symbology, generation, recognition, upc-a, upc-e, ean-8, multidecodetype, aspose.barcode
 
 using System;
 using System.IO;
+using System.Collections.Generic;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating and reading UPC-A, UPC-E, and EAN-8 barcodes using Aspose.BarCode.
+/// Example program that generates UPC-A, UPC-E, and EAN-8 barcodes,
+/// then decodes them using a specified set of decode types.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates temporary barcode images, configures MultiDecodeType, reads the barcodes, and cleans up.
+    /// Entry point. Generates barcode images, decodes them, and cleans up temporary files.
     /// </summary>
     static void Main()
     {
-        // Create a temporary folder for barcode images
-        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        // Create a temporary folder for sample barcode images
+        string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
 
-        // Define sample data for each barcode type (encode type, text, output file name)
-        var samples = new (BaseEncodeType encodeType, string codeText, string fileName)[]
+        // Define barcode specifications: type, text, and output file name
+        var barcodeInfos = new List<(BaseEncodeType type, string text, string fileName)>
         {
-            (EncodeTypes.UPCA, "012345678905", "upca.png"),
-            (EncodeTypes.UPCE, "01234565", "upce.png"),
-            (EncodeTypes.EAN8, "12345670", "ean8.png")
+            (EncodeTypes.UPCA, "012345678905", "upca.png"),   // UPC-A (12 digits)
+            (EncodeTypes.UPCE, "012345", "upce.png"),         // UPC-E (6 digits)
+            (EncodeTypes.EAN8, "12345670", "ean8.png")        // EAN-8 (8 digits)
         };
 
-        // Generate barcode images and save them as PNG files
-        foreach (var sample in samples)
+        // Generate barcode images for each specification
+        foreach (var info in barcodeInfos)
         {
-            string filePath = Path.Combine(tempFolder, sample.fileName);
-            using (var generator = new BarcodeGenerator(sample.encodeType, sample.codeText))
+            string filePath = Path.Combine(tempFolder, info.fileName);
+            using (var generator = new BarcodeGenerator(info.type, info.text))
             {
+                // Optional visual settings
+                generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
+                generator.Parameters.BackColor = Aspose.Drawing.Color.White;
+
+                // Save the barcode image as PNG
                 generator.Save(filePath, BarCodeImageFormat.Png);
+                Console.WriteLine($"Generated {info.type} barcode at: {filePath}");
             }
         }
 
-        // Configure MultiDecodeType to include UPC-A, UPC-E, and EAN-8 symbologies
-        var multiDecode = new MultiDecodeType(DecodeType.UPCA, DecodeType.UPCE, DecodeType.EAN8);
-
-        // Read each generated barcode using the configured MultiDecodeType
-        foreach (var sample in samples)
+        // Prepare the decode types to include UPC-A, UPC-E, and EAN-8
+        BaseDecodeType[] decodeTypes = new BaseDecodeType[]
         {
-            string filePath = Path.Combine(tempFolder, sample.fileName);
+            DecodeType.UPCA,
+            DecodeType.UPCE,
+            DecodeType.EAN8
+        };
+
+        // Read and decode each barcode using the specified decode types
+        foreach (var info in barcodeInfos)
+        {
+            string filePath = Path.Combine(tempFolder, info.fileName);
             if (!File.Exists(filePath))
             {
                 Console.WriteLine($"File not found: {filePath}");
                 continue;
             }
 
-            using (var reader = new BarCodeReader(filePath, multiDecode))
+            using (var reader = new BarCodeReader(filePath, decodeTypes))
             {
-                foreach (BarCodeResult result in reader.ReadBarCodes())
+                foreach (var result in reader.ReadBarCodes())
                 {
-                    Console.WriteLine($"{Path.GetFileName(filePath)} => Type: {result.CodeTypeName}, Text: {result.CodeText}");
+                    Console.WriteLine($"File: {info.fileName}");
+                    Console.WriteLine($"  Detected Type : {result.CodeType}");
+                    Console.WriteLine($"  Code Text     : {result.CodeText}");
                 }
             }
         }
 
-        // Clean up temporary files and folder
+        // Cleanup: delete temporary files and folder
         try
         {
-            Directory.Delete(tempFolder, true);
+            foreach (var info in barcodeInfos)
+            {
+                string filePath = Path.Combine(tempFolder, info.fileName);
+                if (File.Exists(filePath))
+                    File.Delete(filePath);
+            }
+            Directory.Delete(tempFolder);
         }
-        catch
+        catch (Exception ex)
         {
-            // Ignore cleanup errors
+            Console.WriteLine($"Cleanup warning: {ex.Message}");
         }
     }
 }

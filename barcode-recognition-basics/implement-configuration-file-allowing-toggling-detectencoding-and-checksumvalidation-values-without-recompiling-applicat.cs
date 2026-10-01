@@ -1,111 +1,113 @@
-// Title: Barcode Generation and Reading with Configurable Detection Settings
-// Description: Demonstrates generating a QR code, saving it as PNG, and reading it back while allowing DetectEncoding and ChecksumValidation to be toggled via a simple text configuration file.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes and BarCodeReader for decoding them. Developers often need to adjust settings such as encoding detection and checksum validation to handle diverse barcode data sources, making this pattern useful for configurable barcode processing pipelines.
+// Title: Barcode Reader Configuration Demo
+// Description: Demonstrates loading a JSON configuration to toggle DetectEncoding and ChecksumValidation for Aspose.BarCode barcode reading without recompiling.
+// Category-Description: This example belongs to the Aspose.BarCode configuration and decoding category, showing how to use BarCodeReader, BarcodeGenerator, and related settings. Developers often need to adjust reader behavior such as encoding detection and checksum validation via external config files for flexible deployments.
 // Prompt: Implement a configuration file allowing toggling DetectEncoding and ChecksumValidation values without recompiling the application.
-// Tags: barcode, qr, configuration, detectencoding, checksumvalidation, generation, recognition, aspose.barcode
+// Tags: barcode, configuration, json, detectencoding, checksumvalidation, aspose.barcode, generation, recognition
 
 using System;
 using System.IO;
+using System.Text.Json;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
-/// <summary>
-/// Demonstrates barcode generation, configuration-driven reading settings, and cleanup.
-/// </summary>
-class Program
+namespace BarcodeConfigDemo
 {
     /// <summary>
-    /// Entry point of the application.
+    /// Represents reader configuration options that can be loaded from a JSON file.
     /// </summary>
-    static void Main()
+    public class ReaderConfig
     {
-        // ------------------------------------------------------------
-        // Prepare configuration file (creates default if missing)
-        // ------------------------------------------------------------
-        string configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "barcodeConfig.txt");
-        if (!File.Exists(configPath))
+        // Determines whether the reader should attempt to detect the encoding of the barcode.
+        public bool DetectEncoding { get; set; } = true;
+
+        // Controls whether checksum validation is performed during barcode reading.
+        public bool ChecksumValidation { get; set; } = true;
+    }
+
+    class Program
+    {
+        /// <summary>
+        /// Entry point of the demo. Loads configuration, generates a sample barcode, reads it using the configured settings, and cleans up.
+        /// </summary>
+        static void Main()
         {
-            File.WriteAllText(configPath,
-                "DetectEncoding=true\r\nChecksumValidation=On");
-        }
+            // Determine the full path to the configuration file located alongside the executable.
+            string configPath = Path.Combine(AppContext.BaseDirectory, "config.json");
 
-        // ------------------------------------------------------------
-        // Load configuration values into variables
-        // ------------------------------------------------------------
-        bool detectEncoding = true;
-        ChecksumValidation checksumValidation = ChecksumValidation.Default;
-        foreach (string line in File.ReadAllLines(configPath))
-        {
-            if (string.IsNullOrWhiteSpace(line) || !line.Contains("="))
-                continue;
-
-            string[] parts = line.Split(new[] { '=' }, 2);
-            string key = parts[0].Trim();
-            string value = parts[1].Trim();
-
-            if (key.Equals("DetectEncoding", StringComparison.OrdinalIgnoreCase))
+            // If the configuration file does not exist, create one with default values.
+            if (!File.Exists(configPath))
             {
-                if (bool.TryParse(value, out bool boolVal))
-                    detectEncoding = boolVal;
+                var defaultConfig = new ReaderConfig();
+                string json = JsonSerializer.Serialize(defaultConfig, new JsonSerializerOptions { WriteIndented = true });
+                File.WriteAllText(configPath, json);
+                Console.WriteLine($"Created default config at: {configPath}");
             }
-            else if (key.Equals("ChecksumValidation", StringComparison.OrdinalIgnoreCase))
+
+            // Load configuration from the JSON file, falling back to defaults on error.
+            ReaderConfig config;
+            try
             {
-                try
+                string json = File.ReadAllText(configPath);
+                config = JsonSerializer.Deserialize<ReaderConfig>(json) ?? new ReaderConfig();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to read config. Using defaults. Error: {ex.Message}");
+                config = new ReaderConfig();
+            }
+
+            // Generate a temporary barcode image that will be used for reading.
+            string barcodePath = Path.Combine(Path.GetTempPath(), "sample_barcode.png");
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
+            {
+                // Save the generated barcode as a PNG file.
+                generator.Save(barcodePath, BarCodeImageFormat.Png);
+            }
+
+            // Specify the expected barcode symbology for the reader.
+            BaseDecodeType decodeType = DecodeType.Code128;
+
+            // Initialize the barcode reader with the generated image and decode type.
+            using (var reader = new BarCodeReader(barcodePath, decodeType))
+            {
+                // Apply configuration settings to the reader.
+                reader.BarcodeSettings.DetectEncoding = config.DetectEncoding;
+                reader.BarcodeSettings.ChecksumValidation = config.ChecksumValidation ? ChecksumValidation.On : ChecksumValidation.Off;
+
+                // Perform the barcode reading operation.
+                BarCodeResult[] results = reader.ReadBarCodes();
+
+                // Output results or indicate that no barcode was detected/validated.
+                if (results.Length == 0)
                 {
-                    checksumValidation = (ChecksumValidation)Enum.Parse(typeof(ChecksumValidation), value, true);
+                    Console.WriteLine("No barcode detected or checksum validation failed.");
                 }
-                catch
+                else
                 {
-                    // Ignore invalid enum value; keep default
+                    foreach (var result in results)
+                    {
+                        Console.WriteLine($"Code Text: {result.CodeText}");
+                        Console.WriteLine($"Symbology: {result.CodeTypeName}");
+                        Console.WriteLine($"Reading Quality: {result.ReadingQuality}");
+                    }
                 }
             }
-        }
 
-        // ------------------------------------------------------------
-        // Generate a QR barcode and save it as PNG
-        // ------------------------------------------------------------
-        string tempDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempDir);
-        string barcodePath = Path.Combine(tempDir, "sample.png");
-
-        using (BarcodeGenerator gen = new BarcodeGenerator(EncodeTypes.QR, "Sample Text"))
-        {
-            gen.Parameters.Barcode.XDimension.Pixels = 4;
-            gen.Save(barcodePath, BarCodeImageFormat.Png);
-        }
-
-        // ------------------------------------------------------------
-        // Read the barcode using the configured settings
-        // ------------------------------------------------------------
-        using (BarCodeReader reader = new BarCodeReader(barcodePath, DecodeType.QR))
-        {
-            reader.BarcodeSettings.DetectEncoding = detectEncoding;
-            reader.BarcodeSettings.ChecksumValidation = checksumValidation;
-
-            Console.WriteLine("Reading barcode with settings:");
-            Console.WriteLine($"DetectEncoding = {reader.BarcodeSettings.DetectEncoding}");
-            Console.WriteLine($"ChecksumValidation = {reader.BarcodeSettings.ChecksumValidation}");
-
-            foreach (BarCodeResult result in reader.ReadBarCodes())
+            // Attempt to delete the temporary barcode image; ignore any errors.
+            try
             {
-                Console.WriteLine($"CodeType: {result.CodeTypeName}");
-                Console.WriteLine($"CodeText: {result.CodeText}");
+                if (File.Exists(barcodePath))
+                {
+                    File.Delete(barcodePath);
+                }
             }
-        }
+            catch
+            {
+                // Ignored - cleanup failure should not affect program exit.
+            }
 
-        // ------------------------------------------------------------
-        // Clean up temporary files and directories
-        // ------------------------------------------------------------
-        try
-        {
-            if (File.Exists(barcodePath))
-                File.Delete(barcodePath);
-            Directory.Delete(tempDir, true);
-        }
-        catch
-        {
-            // Ignored - cleanup failure should not affect program exit
+            Console.WriteLine("Demo completed.");
         }
     }
 }

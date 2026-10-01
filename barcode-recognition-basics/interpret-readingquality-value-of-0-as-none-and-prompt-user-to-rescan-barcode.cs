@@ -1,78 +1,75 @@
-// Title: ReadingQuality Evaluation and Rescan Prompt for Code128 Barcode
-// Description: Demonstrates generating a Code128 barcode, reading it with Aspose.BarCode, and interpreting a ReadingQuality value of 0 as none, prompting the user to rescan.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator to create a barcode image and BarCodeReader to decode it. Developers often need to assess the ReadingQuality of scanned barcodes to decide whether a rescan is required, especially in automated data‑capture scenarios.
+// Title: QR Code Generation and Reading with ReadingQuality Check
+// Description: Generates a QR code, saves it to a temporary file, reads it back, and interprets a ReadingQuality of 0 as no reliable reading, prompting the user to rescan.
+// Category-Description: This example demonstrates core Aspose.BarCode operations: barcode generation using BarcodeGenerator and barcode recognition using BarCodeReader. It shows how to create a QR code, persist it as an image, and evaluate the ReadingQuality property of detection results. Developers working with barcode scanning, quality assessment, or automated rescan workflows will find these patterns useful.
 // Prompt: Interpret a ReadingQuality value of 0 as none and prompt the user to rescan the barcode.
-// Tags: barcode symbology, generation, recognition, readingquality, code128, aspose.barcode
+// Tags: qr code, generation, recognition, readingquality, aspose.barcode, csharp
 
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Example program that creates a Code128 barcode, reads it, and checks the reading quality.
+/// Demonstrates generating a QR code, reading it, and handling low reading quality.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a barcode, reads it, and evaluates the <c>ReadingQuality</c>.
+    /// Entry point of the sample. Generates a QR code, reads it, and checks the ReadingQuality.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder to store the barcode image.
-        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        // Create a unique temporary folder for the sample barcode image
+        string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeSample_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
 
-        // Define the full path for the barcode image file.
+        // Full path for the generated barcode image
         string barcodePath = Path.Combine(tempFolder, "sample.png");
 
-        // Generate a simple Code128 barcode and save it as a PNG file.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Aspose123"))
+        // Generate a simple QR code barcode and save it as PNG
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Hello Aspose"))
         {
             generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        // Verify that the barcode image was created successfully before attempting to read it.
+        // Verify the file exists before attempting to read it
         if (!File.Exists(barcodePath))
         {
-            Console.WriteLine("Failed to create barcode image.");
+            Console.WriteLine($"Barcode image not found at '{barcodePath}'.");
             return;
         }
 
-        // Read the barcode from the image file and evaluate its reading quality.
-        using (var reader = new BarCodeReader(barcodePath, DecodeType.Code128))
+        // Read the barcode from the generated image using QR decode type
+        using (var reader = new BarCodeReader(barcodePath, DecodeType.QR))
         {
-            BarCodeResult[] results = reader.ReadBarCodes();
+            bool anyResult = false;
 
-            // If no barcodes were detected, inform the user and exit.
-            if (results.Length == 0)
+            // Iterate through all detected barcodes (should be one in this sample)
+            foreach (BarCodeResult result in reader.ReadBarCodes())
             {
-                Console.WriteLine("No barcode detected.");
-                return;
-            }
+                anyResult = true;
 
-            // Iterate through all detected barcodes (typically one in this example).
-            foreach (BarCodeResult result in results)
-            {
-                Console.WriteLine($"CodeType: {result.CodeTypeName}");
-                Console.WriteLine($"CodeText: {result.CodeText}");
-                Console.WriteLine($"ReadingQuality: {result.ReadingQuality}");
-
-                // Interpret a ReadingQuality of 0 as "none" and suggest a rescan.
+                // ReadingQuality: 0 means none (no reliable reading)
                 if (result.ReadingQuality == 0)
                 {
-                    Console.WriteLine("Reading quality is none, please rescan the barcode.");
+                    Console.WriteLine("ReadingQuality is none. Please rescan the barcode.");
                 }
                 else
                 {
-                    Console.WriteLine("Barcode read successfully with acceptable quality.");
+                    Console.WriteLine($"Decoded Text: {result.CodeText}");
+                    Console.WriteLine($"ReadingQuality: {result.ReadingQuality}");
                 }
+            }
+
+            // If no barcode was detected at all, inform the user
+            if (!anyResult)
+            {
+                Console.WriteLine("No barcode detected. Please rescan the image.");
             }
         }
 
-        // Clean up temporary files (optional). Errors during cleanup are ignored.
+        // Clean up temporary files (optional)
         try
         {
             File.Delete(barcodePath);
@@ -80,7 +77,7 @@ class Program
         }
         catch
         {
-            // Ignored: cleanup failures should not affect program flow.
+            // Ignore cleanup errors in this sample
         }
     }
 }

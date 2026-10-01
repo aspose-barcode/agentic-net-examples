@@ -1,8 +1,8 @@
-// Title: High‑Resolution DataMatrix Barcode Generation and Recognition
-// Description: Demonstrates generating a 600 DPI DataMatrix barcode and recognizing it with quality settings to improve detection of small symbols.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating high‑resolution bitmap barcodes and BarCodeReader with QualitySettings for accurate detection of tiny DataMatrix codes. Developers working with scanning small barcodes, printing high‑quality labels, or needing precise image‑based recognition will find these APIs essential.
+// Title: High‑Resolution Bitmap Improves Small DataMatrix Detection
+// Description: Demonstrates generating a small DataMatrix barcode, increasing its bitmap resolution to 300 DPI, and reading it back to show improved detection accuracy.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator, BarCodeReader, and image manipulation classes (Bitmap, ImageFormat) to enhance detection of tiny DataMatrix symbols. Developers often need to adjust image resolution when scanning low‑size barcodes to achieve reliable decoding in real‑world applications.
 // Prompt: Apply a high‑resolution bitmap source to improve detection accuracy of small‑sized DataMatrix codes.
-// Tags: datamatrix, high-resolution, barcode-generation, barcode-recognition, aspose.barcode
+// Tags: datamatrix, high resolution, barcode generation, barcode recognition, aspose.barcode, bitmap, dpi
 
 using System;
 using System.IO;
@@ -13,80 +13,66 @@ using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Generates a high‑resolution DataMatrix barcode, saves it to a temporary file,
-/// and then reads it back using enhanced quality settings to demonstrate improved
-/// detection of small‑sized codes.
+/// Generates a small DataMatrix barcode, upsamples its bitmap resolution,
+/// and reads it back to demonstrate improved detection accuracy.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Executes barcode creation, verification, recognition,
-    /// and optional cleanup of temporary resources.
+    /// Entry point of the example. Executes barcode generation, resolution enhancement,
+    /// and recognition steps.
     /// </summary>
     static void Main()
     {
-        // --------------------------------------------------------------------
-        // Create a temporary directory for the sample files
-        // --------------------------------------------------------------------
-        string tempDir = Path.Combine(Path.GetTempPath(), "DataMatrixSample_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempDir);
+        // Define the text to encode in the DataMatrix barcode (small size)
+        const string codeText = "ABC123";
 
-        // Define the output path and the text to encode
-        string barcodePath = Path.Combine(tempDir, "datamatrix.png");
-        string codeText = "ABC123";
-
-        // --------------------------------------------------------------------
-        // Generate a high‑resolution DataMatrix barcode
-        // --------------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, codeText))
+        // Create a memory stream to hold the generated barcode image
+        using (var generationStream = new MemoryStream())
         {
-            // Set a high resolution (e.g., 600 DPI) to produce a high‑resolution bitmap
-            generator.Parameters.Resolution = 600f;
-
-            // Optionally increase XDimension for clearer modules
-            generator.Parameters.Barcode.XDimension.Point = 2f;
-
-            // Save the barcode as a PNG image
-            generator.Save(barcodePath, BarCodeImageFormat.Png);
-        }
-
-        // --------------------------------------------------------------------
-        // Verify the generated file exists
-        // --------------------------------------------------------------------
-        if (!File.Exists(barcodePath))
-        {
-            Console.WriteLine("Failed to generate the barcode image.");
-            return;
-        }
-
-        // --------------------------------------------------------------------
-        // Read the barcode using high‑resolution recognition settings
-        // --------------------------------------------------------------------
-        using (var reader = new BarCodeReader(barcodePath, DecodeType.DataMatrix))
-        {
-            // Configure quality settings to improve detection of small barcodes
-            reader.QualitySettings.XDimension = XDimensionMode.Small;
-            reader.QualitySettings.MinimalXDimension = 1f; // 1 pixel minimal element
-
-            // Perform recognition and output results
-            foreach (BarCodeResult result in reader.ReadBarCodes())
+            // Generate the DataMatrix barcode and write it to the stream as PNG
+            using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, codeText))
             {
-                Console.WriteLine($"Detected Type: {result.CodeType}");
-                Console.WriteLine($"Decoded Text: {result.CodeText}");
+                // Set a small XDimension to keep the barcode compact
+                generator.Parameters.Barcode.XDimension.Point = 1f;
+                generator.Save(generationStream, BarCodeImageFormat.Png);
             }
-        }
 
-        // --------------------------------------------------------------------
-        // Clean up temporary files (optional)
-        // --------------------------------------------------------------------
-        try
-        {
-            File.Delete(barcodePath);
-            Directory.Delete(tempDir);
-        }
-        catch
-        {
-            // Ignore cleanup errors
+            // Reset the stream position so it can be read from the beginning
+            generationStream.Position = 0;
+
+            // Load the generated PNG into a Bitmap for resolution manipulation
+            using (var bitmap = new Bitmap(generationStream))
+            {
+                // Apply a high resolution (e.g., 300 DPI) to improve detection of small barcodes
+                bitmap.SetResolution(300f, 300f);
+
+                // Save the high‑resolution bitmap into a second memory stream
+                using (var highResStream = new MemoryStream())
+                {
+                    bitmap.Save(highResStream, ImageFormat.Png);
+                    highResStream.Position = 0;
+
+                    // Initialize a barcode reader for DataMatrix on the high‑resolution image
+                    using (var reader = new BarCodeReader(highResStream, DecodeType.DataMatrix))
+                    {
+                        bool found = false;
+
+                        // Iterate through all detected barcodes (should be one)
+                        foreach (BarCodeResult result in reader.ReadBarCodes())
+                        {
+                            Console.WriteLine($"Detected CodeText: {result.CodeText}");
+                            found = true;
+                        }
+
+                        // Inform the user if no barcode was detected
+                        if (!found)
+                        {
+                            Console.WriteLine("No DataMatrix barcode was detected.");
+                        }
+                    }
+                }
+            }
         }
     }
 }

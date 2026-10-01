@@ -1,74 +1,75 @@
-// Title: Barcode Generation, Recognition, and Quality Threshold Evaluation
-// Description: This example generates barcode images, reads them back, and flags any barcode with a reading quality below 50 for manual review.
-// Category-Description: Demonstrates core Aspose.BarCode operations including barcode generation (BarcodeGenerator) and recognition (BarCodeReader, BarCodeResult). Typical for quality‑control workflows where developers need to assess scan reliability and isolate low‑quality reads for further inspection. Useful for batch processing, automated verification, and integration into inventory or document management systems.
+// Title: Custom ReadingQuality Threshold for Barcode Validation
+// Description: Demonstrates generating Code128 barcodes, reading them, and flagging any with a ReadingQuality below 50 for manual review.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It shows how to use BarcodeGenerator, BarCodeReader, and BarCodeResult to create barcodes, decode them, and evaluate the ReadingQuality metric. Developers often need to assess scan quality and automatically identify low‑quality reads for further inspection.
 // Prompt: Apply a custom threshold treating ReadingQuality below 50 as unacceptable and flag those barcodes for manual review.
-// Tags: barcode, generation, recognition, quality, readingquality, aspose.barcode, csharp
+// Tags: barcode symbology, generation, recognition, readingquality, manual review, aspose.barcode
 
 using System;
 using System.IO;
 using System.Collections.Generic;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates creating barcode images, recognizing them, and flagging low‑quality reads.
+/// Generates sample Code128 barcodes, reads them back, and flags low‑quality scans.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates sample barcodes, reads them, and evaluates reading quality.
+    /// Entry point. Creates temporary barcode images, evaluates their ReadingQuality, and cleans up.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder for barcode images
-        string tempFolder = Path.Combine(Path.GetTempPath(), "Barcodes_" + Guid.NewGuid().ToString("N"));
+        // Create a dedicated temporary folder for sample barcodes
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeSample_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
 
-        // Define sample barcodes to generate (type, text, output file name)
-        var samples = new List<(BaseEncodeType Encode, string Text, string FileName)>
+        // List to hold generated file paths
+        List<string> barcodeFiles = new List<string>();
+
+        // Sample data for barcode generation
+        var samples = new[]
         {
-            (EncodeTypes.Code128, "1234567890", "code128.png"),
-            (EncodeTypes.QR, "https://example.com", "qr.png")
+            new { Text = "1234567890", Symbology = EncodeTypes.Code128 },
+            new { Text = "ABCDEFGHIJ", Symbology = EncodeTypes.Code128 }
         };
 
-        // Generate barcode images and save them to the temporary folder
+        // Generate barcode images and store their file paths
         foreach (var sample in samples)
         {
-            string filePath = Path.Combine(tempFolder, sample.FileName);
-            using (var generator = new BarcodeGenerator(sample.Encode, sample.Text))
+            string filePath = Path.Combine(tempFolder, $"{sample.Symbology}_{sample.Text}.png");
+            using (var generator = new BarcodeGenerator(sample.Symbology, sample.Text))
             {
-                // Set visual parameters (optional)
-                generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-                generator.Parameters.BackColor = Aspose.Drawing.Color.White;
+                // Save as PNG
                 generator.Save(filePath, BarCodeImageFormat.Png);
             }
+            barcodeFiles.Add(filePath);
         }
 
-        // Read barcodes from the generated files and evaluate their ReadingQuality
-        Console.WriteLine("Barcode recognition results:");
-        foreach (var sample in samples)
+        // Read each barcode and evaluate ReadingQuality
+        foreach (string file in barcodeFiles)
         {
-            string filePath = Path.Combine(tempFolder, sample.FileName);
-            if (!File.Exists(filePath))
+            if (!File.Exists(file))
             {
-                Console.WriteLine($"File not found: {filePath}");
+                Console.WriteLine($"File not found: {file}");
                 continue;
             }
 
-            using (var reader = new BarCodeReader(filePath))
+            using (var reader = new BarCodeReader(file, DecodeType.Code128))
             {
                 foreach (BarCodeResult result in reader.ReadBarCodes())
                 {
-                    Console.WriteLine($"File: {sample.FileName}");
-                    Console.WriteLine($"  Code Type: {result.CodeTypeName}");
-                    Console.WriteLine($"  Code Text: {result.CodeText}");
-                    Console.WriteLine($"  Reading Quality: {result.ReadingQuality}");
+                    // ReadingQuality is a double value (0-100). Lower values indicate poorer quality.
+                    double quality = result.ReadingQuality;
+                    Console.WriteLine($"File: {Path.GetFileName(file)} | CodeText: {result.CodeText} | ReadingQuality: {quality}");
 
-                    // Flag barcodes with quality below the custom threshold (50)
-                    if (result.ReadingQuality < 50)
+                    // Flag barcodes with quality below the custom threshold
+                    if (quality < 50.0)
                     {
-                        Console.WriteLine("  --> Flagged for manual review (quality below threshold)");
+                        Console.WriteLine("=> Flagged for manual review (ReadingQuality below threshold).");
                     }
                 }
             }
@@ -77,11 +78,15 @@ class Program
         // Clean up temporary files (optional)
         try
         {
-            Directory.Delete(tempFolder, true);
+            foreach (string file in barcodeFiles)
+            {
+                File.Delete(file);
+            }
+            Directory.Delete(tempFolder);
         }
-        catch
+        catch (Exception ex)
         {
-            // Ignore any cleanup errors
+            Console.WriteLine($"Cleanup warning: {ex.Message}");
         }
     }
 }

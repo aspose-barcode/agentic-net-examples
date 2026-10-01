@@ -1,115 +1,54 @@
-// Title: Barcode checksum validation for multiple symbologies in a single read
-// Description: This example generates Code11 (mandatory checksum) and Code39 (optional checksum) barcodes, merges them into one image, and reads both barcodes in a single operation with checksum validation turned on.
-// Category-Description: Demonstrates Aspose.BarCode generation and recognition APIs, focusing on BarcodeGenerator, BarCodeReader, and the ChecksumValidation setting. Useful for developers who need to validate mandatory and optional checksum symbologies during batch scanning or combined image processing. Typical scenarios include inventory systems, document automation, and quality control where multiple barcode types are read together.
-// Prompt: Configure BarcodeSettings.ChecksumValidation to On for both obligatory and optional checksum symbologies in a single read operation.
-// Tags: barcode symbology, checksum validation, read operation, generation, aspose.barcode, .net
+// Title: Barcode checksum validation during read operation
+// Description: Demonstrates enabling checksum validation for both obligatory and optional checksum symbologies when reading a barcode.
+// Category-Description: This example belongs to the Aspose.BarCode reading category, showcasing how to configure BarcodeSettings.ChecksumValidation to ensure data integrity across all supported symbologies. It highlights the use of BarCodeReader, BarcodeSettings, and related result classes, which developers commonly employ when validating scanned barcodes in inventory, logistics, or point‑of‑sale systems. The snippet serves as a reference for configuring checksum checks in bulk read scenarios.
+/// Prompt: Configure BarcodeSettings.ChecksumValidation to On for both obligatory and optional checksum symbologies in a single read operation.
+/// Tags: barcode symbology, checksum validation, read operation, aspose.barcode, csharp
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating barcodes with different checksum requirements,
-/// combining them into a single image, and reading them with checksum validation enabled.
+/// Example program that generates a barcode (if needed) and reads it with checksum validation enabled.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates, combines, reads, and cleans up barcode images.
+    /// Entry point of the example. Generates a Code128 barcode image if it does not exist,
+    /// then reads the image while enforcing checksum validation for all symbologies.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder for all generated files
-        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeChecksumDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
+        // Define a temporary file path for the barcode image
+        string imagePath = Path.Combine(Path.GetTempPath(), "checksum_demo.png");
 
-        // Define file paths for the individual and combined barcode images
-        string code11Path = Path.Combine(tempFolder, "code11.png");
-        string code39Path = Path.Combine(tempFolder, "code39.png");
-        string combinedPath = Path.Combine(tempFolder, "combined.png");
-
-        // -------------------------------------------------
-        // Generate Code11 barcode (checksum is obligatory)
-        // -------------------------------------------------
-        using (var gen11 = new BarcodeGenerator(EncodeTypes.Code11, "123456"))
+        // Ensure the barcode image exists; generate it if missing
+        if (!File.Exists(imagePath))
         {
-            gen11.Parameters.Barcode.XDimension.Pixels = 2f; // Set module size
-            gen11.Save(code11Path, BarCodeImageFormat.Png);
-        }
-
-        // -------------------------------------------------
-        // Generate Code39 barcode (checksum is optional) and enable it
-        // -------------------------------------------------
-        using (var gen39 = new BarcodeGenerator(EncodeTypes.Code39, "123456"))
-        {
-            gen39.Parameters.Barcode.XDimension.Pixels = 2f; // Set module size
-            gen39.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes; // Enable optional checksum
-            gen39.Save(code39Path, BarCodeImageFormat.Png);
-        }
-
-        // Verify that both barcode images were created successfully
-        if (!File.Exists(code11Path) || !File.Exists(code39Path))
-        {
-            Console.WriteLine("Failed to generate barcode images.");
-            return;
-        }
-
-        // -------------------------------------------------
-        // Combine the two barcode images side by side
-        // -------------------------------------------------
-        using (var bmp11 = new Bitmap(code11Path))
-        using (var bmp39 = new Bitmap(code39Path))
-        {
-            int spacing = 20; // Space between images
-            int combinedWidth = bmp11.Width + bmp39.Width + spacing;
-            int combinedHeight = Math.Max(bmp11.Height, bmp39.Height);
-
-            using (var combinedBmp = new Bitmap(combinedWidth, combinedHeight))
-            using (var graphics = Graphics.FromImage(combinedBmp))
+            // Create a Code128 barcode (has an obligatory checksum) with sample data
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456789"))
             {
-                graphics.Clear(Aspose.Drawing.Color.White);
-                graphics.DrawImage(bmp11, 0, 0, bmp11.Width, bmp11.Height);
-                graphics.DrawImage(bmp39, bmp11.Width + spacing, 0, bmp39.Width, bmp39.Height);
-                combinedBmp.Save(combinedPath, ImageFormat.Png);
+                // Save the generated barcode as a PNG file
+                generator.Save(imagePath, BarCodeImageFormat.Png);
             }
         }
 
-        // -------------------------------------------------
-        // Read both barcodes from the combined image with checksum validation turned on
-        // -------------------------------------------------
-        if (!File.Exists(combinedPath))
+        // Initialize a barcode reader for the generated image, targeting Code128 symbology
+        using (var reader = new BarCodeReader(imagePath, DecodeType.Code128))
         {
-            Console.WriteLine("Combined image not found.");
-            return;
-        }
-
-        using (var reader = new BarCodeReader(combinedPath, DecodeType.AllSupportedTypes))
-        {
-            // Enable checksum validation for all supported symbologies
+            // Enable checksum validation for both obligatory and optional checksum symbologies
             reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
 
+            // Execute the read operation and iterate through all detected barcodes
             foreach (BarCodeResult result in reader.ReadBarCodes())
             {
-                Console.WriteLine($"CodeType: {result.CodeTypeName}");
+                // Output the decoded text, type, and reading quality to the console
                 Console.WriteLine($"CodeText: {result.CodeText}");
-                Console.WriteLine();
+                Console.WriteLine($"CodeType: {result.CodeTypeName}");
+                Console.WriteLine($"ReadingQuality: {result.ReadingQuality}");
             }
-        }
-
-        // -------------------------------------------------
-        // Cleanup temporary files and folder (optional)
-        // -------------------------------------------------
-        try
-        {
-            Directory.Delete(tempFolder, true);
-        }
-        catch
-        {
-            // Ignore any errors during cleanup
         }
     }
 }
