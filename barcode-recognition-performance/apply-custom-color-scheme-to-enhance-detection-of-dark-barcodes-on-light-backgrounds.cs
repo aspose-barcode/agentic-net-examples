@@ -1,8 +1,8 @@
-// Title: Custom Color Scheme for QR Barcodes on Light Backgrounds
-// Description: Demonstrates generating a QR barcode with a dark bar color on a light background and reading it using Aspose.BarCode with enhanced background detection.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator, BarCodeReader, and QualitySettings to handle colored backgrounds, a common requirement when integrating barcodes into visually rich documents or UI designs. Developers often need to customize bar and background colors and adjust detection settings for reliable scanning.
+// Title: Custom Color Scheme for Dark Barcode on Light Background
+// Description: Demonstrates how to generate a Code128 barcode with dark bars on a light background using Aspose.BarCode, then reads it back to verify detection.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, showcasing the use of BarcodeGenerator and BarCodeReader classes. Typical use cases include creating high‑contrast barcodes for printing or display and validating them programmatically. Developers often need to adjust colors, dimensions, and image formats to meet scanning environment requirements.
 // Prompt: Apply a custom color scheme to enhance detection of dark barcodes on light backgrounds.
-// Tags: qr, color, generation, recognition, png, aspose.barcode
+// Tags: code128, barcode generation, png, barcodereader, aspose.barcode
 
 using System;
 using System.IO;
@@ -12,68 +12,61 @@ using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates applying a custom color scheme to a QR barcode and reading it with enhanced background detection.
+/// Demonstrates generating a high‑contrast barcode image and verifying its readability.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a QR barcode with navy bars on a light yellow background,
-    /// saves it as PNG, reads it back using complex background detection, and outputs the results.
+    /// Entry point that creates a barcode with custom colors, saves it, and reads it back.
     /// </summary>
-    static void Main()
+    /// <param name="args">Command‑line arguments (not used).</param>
+    static void Main(string[] args)
     {
-        // Create a unique temporary folder for the demo files
-        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
+        // --------------------------------------------------------------------
+        // Set up a temporary folder to store the generated barcode image.
+        // --------------------------------------------------------------------
+        string outputFolder = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputFolder);
 
-        // Define the full path for the generated barcode image
-        string barcodePath = Path.Combine(tempFolder, "barcode.png");
+        // Define the full path for the output PNG file.
+        string barcodePath = Path.Combine(outputFolder, "dark_on_light.png");
 
-        // Generate a QR barcode with custom dark bar color on a light background
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "DarkOnLight"))
+        // --------------------------------------------------------------------
+        // Generate a Code128 barcode with a dark foreground on a light background.
+        // --------------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            // Set the bar (foreground) color to Navy
-            generator.Parameters.Barcode.BarColor = Color.Navy;
-            // Set the background color to LightYellow
-            generator.Parameters.BackColor = Color.LightYellow;
+            // Set the bar (foreground) color to black.
+            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
 
-            // Save the barcode image as a PNG file
+            // Set the background color to white.
+            generator.Parameters.BackColor = Aspose.Drawing.Color.White;
+
+            // Increase the module (X) dimension for better visibility.
+            generator.Parameters.Barcode.XDimension.Point = 2f;
+
+            // Save the barcode image as a PNG file.
             generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        // Verify that the barcode image file was successfully created
-        if (!File.Exists(barcodePath))
+        Console.WriteLine($"Barcode image saved to: {barcodePath}");
+
+        // --------------------------------------------------------------------
+        // Verify that the generated barcode can be detected and read.
+        // --------------------------------------------------------------------
+        if (File.Exists(barcodePath))
         {
-            Console.WriteLine("Failed to generate barcode image.");
-            return;
-        }
-
-        // Read the barcode using the generated image and enable complex background detection
-        using (BarCodeReader reader = new BarCodeReader(barcodePath, DecodeType.QR))
-        {
-            // Enable detection of barcodes on colored or complex backgrounds
-            reader.QualitySettings.ComplexBackground = ComplexBackgroundMode.Enabled;
-
-            // Perform the barcode recognition
-            BarCodeResult[] results = reader.ReadBarCodes();
-
-            // Output the number of barcodes detected and their details
-            Console.WriteLine($"Barcodes read: {results.Length}");
-            foreach (BarCodeResult result in results)
+            using (var reader = new BarCodeReader(barcodePath, DecodeType.Code128))
             {
-                Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
+                foreach (var result in reader.ReadBarCodes())
+                {
+                    Console.WriteLine($"Detected CodeText: {result.CodeText}");
+                }
             }
         }
-
-        // Clean up temporary files (optional)
-        try
+        else
         {
-            File.Delete(barcodePath);
-            Directory.Delete(tempFolder);
-        }
-        catch
-        {
-            // Ignore any errors that occur during cleanup
+            Console.WriteLine("Failed to locate the generated barcode image.");
         }
     }
 }

@@ -1,82 +1,71 @@
-// Title: Measure Barcode Detection vs Image Loading Time with Stopwatch
-// Description: Demonstrates generating a barcode image, loading it from disk, and measuring the time spent on image loading versus barcode detection using Aspose.BarCode.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, showcasing how to use BarcodeGenerator to create barcodes and BarCodeReader to decode them. Typical use cases include performance profiling of barcode processing pipelines, where developers need to assess loading and detection overhead. The key API classes demonstrated are BarcodeGenerator, BarCodeReader, EncodeTypes, DecodeType, and BarCodeImageFormat.
+// Title: Measure barcode detection vs image loading time using Stopwatch
+// Description: Demonstrates generating a Code128 barcode, loading the image, and measuring the time spent on image loading and barcode detection.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes and BarCodeReader for detecting them. Typical scenarios include performance benchmarking of barcode processing pipelines, where developers need to assess loading and detection overhead using classes like Stopwatch, MemoryStream, and DecodeType.
 // Prompt: Use a Stopwatch to measure time spent in barcode detection versus image loading.
-// Tags: barcode symbology, detection, generation, performance, stopwatch, aspose.barcode, code128, png
+// Tags: barcode symbology, barcode generation, barcode detection, performance measurement, stopwatch, aspose.barcode, c#
 
 using System;
-using System.IO;
 using System.Diagnostics;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Example program that creates a Code128 barcode, loads it from disk,
-/// and measures the time taken for image loading and barcode detection.
+/// Demonstrates measuring the time taken to load a barcode image and detect the barcode using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
+    /// Entry point of the sample. Generates a barcode, measures image loading and detection times, and cleans up resources.
     /// </summary>
     static void Main()
     {
-        // --------------------------------------------------------------------
-        // Prepare a temporary folder and file path for the generated barcode.
-        // --------------------------------------------------------------------
-        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        // Create a temporary folder for the sample barcode image
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeSample_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
         string barcodePath = Path.Combine(tempFolder, "sample.png");
 
-        // ---------------------------------------------------------------
-        // Generate a Code128 barcode image and save it as PNG.
-        // ---------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+        // Generate a simple Code128 barcode and save it as PNG
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
         {
+            generator.Parameters.Barcode.BarColor = Color.Black;
+            generator.Parameters.BackColor = Color.White;
             generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        // Verify that the barcode image was created successfully.
+        // Verify the file exists before proceeding
         if (!File.Exists(barcodePath))
         {
-            Console.WriteLine("Failed to create barcode image.");
+            Console.WriteLine("Failed to create the barcode image.");
             return;
         }
 
-        // ---------------------------------------------------------------
-        // Measure the time required to load the image bytes from disk.
-        // ---------------------------------------------------------------
-        Stopwatch loadWatch = Stopwatch.StartNew();
+        // Measure image loading time (reading file into a MemoryStream)
+        Stopwatch loadTimer = new Stopwatch();
+        loadTimer.Start();
         byte[] imageBytes = File.ReadAllBytes(barcodePath);
-        loadWatch.Stop();
-        Console.WriteLine($"Image loading time: {loadWatch.ElapsedMilliseconds} ms");
-
-        // ---------------------------------------------------------------
-        // Measure the time required to detect the barcode within the image.
-        // ---------------------------------------------------------------
-        using (var ms = new MemoryStream(imageBytes))
+        using (var imageStream = new MemoryStream(imageBytes))
         {
-            using (var reader = new BarCodeReader(ms, DecodeType.Code128))
+            loadTimer.Stop();
+            Console.WriteLine($"Image loading time: {loadTimer.Elapsed.TotalMilliseconds} ms");
+
+            // Measure barcode detection time
+            Stopwatch detectTimer = new Stopwatch();
+            detectTimer.Start();
+            using (var reader = new BarCodeReader(imageStream, DecodeType.Code128))
             {
-                Stopwatch detectWatch = Stopwatch.StartNew();
-                reader.ReadBarCodes();
-                detectWatch.Stop();
-
-                Console.WriteLine($"Barcode detection time: {detectWatch.ElapsedMilliseconds} ms");
-                Console.WriteLine($"Barcodes found: {reader.FoundCount}");
-
-                // Output each detected barcode's type and text.
-                foreach (BarCodeResult result in reader.FoundBarCodes)
+                foreach (BarCodeResult result in reader.ReadBarCodes())
                 {
-                    Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
+                    Console.WriteLine($"Detected code: {result.CodeText}");
                 }
             }
+            detectTimer.Stop();
+            Console.WriteLine($"Barcode detection time: {detectTimer.Elapsed.TotalMilliseconds} ms");
         }
 
-        // ---------------------------------------------------------------
-        // Clean up temporary files and directories.
-        // ---------------------------------------------------------------
+        // Clean up temporary files
         try
         {
             File.Delete(barcodePath);
@@ -84,7 +73,7 @@ class Program
         }
         catch
         {
-            // Ignore any errors that occur during cleanup.
+            // Ignored – cleanup failure should not affect the demo
         }
     }
 }

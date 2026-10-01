@@ -1,72 +1,84 @@
-// Title: Retrieve barcode confidence after allowing incorrect barcodes
-// Description: Demonstrates how to generate a QR code, read it with Aspose.BarCode while permitting incorrect barcodes, and obtain the detection confidence value.
-// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, showcasing the use of BarCodeReader, QualitySettings, and BarCodeResult to evaluate detection reliability. Developers often need to assess confidence scores when scanning imperfect or partially damaged barcodes, especially in quality‑control or inventory systems.
+// Title: Retrieve Barcode Detection Confidence Using AllowIncorrectBarcodes
+// Description: Demonstrates how to generate a Code128 barcode, read it while allowing incorrect barcodes, and obtain the confidence metric via BarCodeResult.ReadingQuality.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, illustrating the use of BarcodeGenerator for barcode creation and BarCodeReader with QualitySettings to enable AllowIncorrectBarcodes. Developers often need to assess detection reliability, especially when scanning imperfect images; the ReadingQuality property provides a confidence score (0‑100). The sample shows typical workflow for generating, reading, and evaluating barcode confidence.
 // Prompt: Retrieve BarCodeResult.Confidence after allowing incorrect barcodes to assess detection reliability.
-// Tags: qr, barcode, confidence, allowincorrectbarcodes, aspnet, aspnetcore, aspose.barcode, barcode-recognition
+// Tags: barcode, code128, confidence, readingquality, allowincorrectbarcodes, generation, recognition, aspose.barcode
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing.Imaging;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a QR barcode, reading it with incorrect barcode allowance, and retrieving confidence scores.
+/// Demonstrates barcode generation, reading with AllowIncorrectBarcodes enabled,
+/// and extraction of the confidence metric (ReadingQuality) from the detection result.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a temporary QR barcode image, reads it with confidence values, and cleans up resources.
+    /// Entry point of the example. Generates a barcode, reads it while allowing incorrect barcodes,
+    /// prints the detected text and confidence, then cleans up temporary files.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary directory for demo files
-        string tempDir = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempDir);
+        // Create a unique temporary folder for this demo
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
 
-        // Define the full path for the barcode image
-        string barcodePath = Path.Combine(tempDir, "barcode.png");
+        // Path for the generated barcode image
+        string barcodePath = Path.Combine(tempFolder, "barcode.png");
 
-        // Generate a QR barcode image
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Sample123"))
+        // Generate a simple Code128 barcode and save it as PNG
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "ABC123"))
         {
-            // Save the generated barcode as a PNG file
+            // No additional parameters are required for this demo
             generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        // Read the barcode while allowing incorrect barcodes and retrieve confidence values
-        using (var reader = new BarCodeReader(barcodePath, DecodeType.QR))
+        // Verify that the image was created before attempting to read it
+        if (!File.Exists(barcodePath))
         {
-            // Enable the setting that permits detection of potentially incorrect barcodes
+            Console.WriteLine("Failed to generate the barcode image.");
+            Cleanup(tempFolder);
+            return;
+        }
+
+        // Read the barcode allowing incorrect barcodes to assess detection reliability
+        using (var reader = new BarCodeReader(barcodePath, DecodeType.Code128))
+        {
+            // Apply a high‑performance preset (optional) and enable incorrect barcode allowance
+            reader.QualitySettings = QualitySettings.HighPerformance;
             reader.QualitySettings.AllowIncorrectBarcodes = true;
 
-            // Perform the read operation and obtain all results
-            BarCodeResult[] results = reader.ReadBarCodes();
-
-            // Output the number of barcodes detected
-            Console.WriteLine($"Barcodes read: {results.Length}");
-
-            // Iterate through each result and display its details
-            foreach (BarCodeResult result in results)
+            // Iterate over all detected barcodes (there should be only one in this case)
+            foreach (BarCodeResult result in reader.ReadBarCodes())
             {
-                Console.WriteLine($"CodeType: {result.CodeTypeName}");
-                Console.WriteLine($"CodeText: {result.CodeText}");
-                Console.WriteLine($"Confidence: {result.Confidence}");
+                Console.WriteLine($"Detected CodeText: {result.CodeText}");
+                // ReadingQuality (0‑100) serves as the confidence metric
+                Console.WriteLine($"Confidence (ReadingQuality): {result.ReadingQuality}");
             }
         }
 
-        // Cleanup temporary files and directories
+        // Clean up temporary files
+        Cleanup(tempFolder);
+    }
+
+    // Helper method to delete the temporary folder and its contents
+    private static void Cleanup(string folderPath)
+    {
         try
         {
-            if (File.Exists(barcodePath))
-                File.Delete(barcodePath);
-
-            if (Directory.Exists(tempDir))
-                Directory.Delete(tempDir, true);
+            if (Directory.Exists(folderPath))
+            {
+                Directory.Delete(folderPath, true);
+            }
         }
-        catch
+        catch (Exception ex)
         {
-            // Ignored - cleanup failure should not affect program exit
+            Console.WriteLine($"Cleanup failed: {ex.Message}");
         }
     }
 }

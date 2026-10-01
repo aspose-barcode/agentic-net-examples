@@ -1,58 +1,67 @@
 // Title: Measure barcode recognition time for a high‑resolution PNG image
-// Description: Demonstrates loading a high‑resolution PNG file and using Aspose.BarCode to recognize all supported barcode types while timing the operation.
-// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, illustrating how to use BarCodeReader with default settings to process image files. It shows typical usage of DecodeType, BarCodeReader, and BarCodeResult classes for developers who need to quickly evaluate recognition performance on high‑resolution images.
+// Description: This example generates a high‑resolution QR code PNG, saves it, and measures how long the Aspose.BarCode reader takes to recognize the barcode using default settings.
+// Category-Description: Demonstrates Aspose.BarCode generation and recognition performance scenarios. It uses BarcodeGenerator to create a high‑DPI image and BarCodeReader to detect all supported symbologies, a common workflow for developers who need to benchmark barcode scanning speed or validate image quality. These examples help when integrating barcode processing into imaging pipelines, quality‑control systems, or mobile capture apps.
 // Prompt: Load a high‑resolution PNG image and measure barcode recognition time using default settings.
-// Tags: barcode recognition, png, performance, decode type, barcodereader, aspnet, csharp
+// Tags: qr, barcode, recognition, performance, png, high-resolution, aspose.barcode, generation, reading
 
 using System;
 using System.Diagnostics;
 using System.IO;
-using Aspose.BarCode;
+using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates loading a high‑resolution PNG image and measuring barcode recognition time using Aspose.BarCode.
+/// Demonstrates loading a high‑resolution PNG barcode image and measuring recognition time using Aspose.BarCode default settings.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Reads the image, performs barcode detection, and outputs timing and results.
+    /// Entry point of the example. Generates a QR code PNG at 600 DPI, saves it to a temporary file, and times the barcode detection process.
     /// </summary>
     static void Main()
     {
-        // Path to the high‑resolution PNG image
-        string imagePath = "high_res_barcode.png";
+        // Define a temporary path for the sample high‑resolution PNG image
+        string imagePath = Path.Combine(Path.GetTempPath(), "highres_barcode.png");
 
-        // Verify that the image file exists before attempting to read it
+        // Generate a sample QR barcode with high resolution (600 DPI) and save as PNG
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "SampleBarcode"))
+        {
+            // Set a high resolution for the generated image
+            generator.Parameters.Resolution = 600f;
+
+            // Save the barcode image to the specified path
+            generator.Save(imagePath, BarCodeImageFormat.Png);
+        }
+
+        // Verify that the image file exists before attempting recognition
         if (!File.Exists(imagePath))
         {
-            Console.WriteLine($"File not found: {imagePath}");
+            Console.WriteLine($"Image file not found: {imagePath}");
             return;
         }
 
-        // Initialize BarCodeReader to detect all supported barcode types using default settings
-        using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
-        {
-            // Start the stopwatch to measure recognition time
-            Stopwatch watch = Stopwatch.StartNew();
+        // Start measuring the time taken to recognize barcodes in the image using default settings
+        Stopwatch stopwatch = Stopwatch.StartNew();
 
-            // Perform barcode detection
+        // Create a BarCodeReader for all supported symbologies
+        using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
+        {
+            // Perform the recognition
             BarCodeResult[] results = reader.ReadBarCodes();
 
-            // Stop the stopwatch after detection completes
-            watch.Stop();
-
-            // Output the elapsed time in milliseconds
-            Console.WriteLine($"Recognition time: {watch.ElapsedMilliseconds} ms");
-
-            // Output the total number of barcodes found
-            Console.WriteLine($"Barcodes found: {reader.FoundCount}");
-
-            // Iterate through each detected barcode and display its type and text
-            foreach (BarCodeResult result in results)
+            // Output the recognized barcodes (if any)
+            foreach (var result in results)
             {
-                Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
+                Console.WriteLine($"Detected: {result.CodeText} (Type: {result.CodeTypeName})");
+                Console.WriteLine($"Reading Quality: {result.ReadingQuality}");
             }
         }
+
+        // Stop the timer after recognition completes
+        stopwatch.Stop();
+
+        // Output the elapsed time in milliseconds
+        Console.WriteLine($"Barcode recognition time: {stopwatch.ElapsedMilliseconds} ms");
     }
 }

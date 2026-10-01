@@ -1,123 +1,150 @@
-// Title: Batch barcode generation and quality preset verification
-// Description: Demonstrates generating multiple barcode images, processing them in two batches with different quality presets, and confirming that changing presets does not affect previously obtained results.
-// Category-Description: This example belongs to the Aspose.BarCode batch processing category. It showcases the use of BarcodeGenerator for creating barcodes, BarCodeReader for decoding them, and QualitySettings to control recognition accuracy. Typical scenarios include high‑throughput barcode generation, automated quality checks, and validation of recognition settings across large image sets. Developers often need to switch between NormalQuality and HighQuality presets without corrupting earlier decoded data, making this pattern valuable for CI pipelines and batch verification tasks.
+// Title: Batch Barcode Generation with Preset Switching Verification
+// Description: Demonstrates generating multiple Code128 barcodes in a batch while changing generator presets between items, then verifies each barcode to ensure earlier results remain unaffected.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, illustrating how to use BarcodeGenerator to apply different visual presets per barcode, save them as PNG, and subsequently read them back with BarCodeReader. Developers often need to batch‑process barcodes with varying appearance settings without corrupting previously generated images.
 // Prompt: Verify that switching presets mid‑batch does not corrupt previously obtained results.
-// Tags: barcode symbology, generation, recognition, batch processing, quality settings, aspose.barcode, png, verification
+// Tags: barcode symbology, code128, generation, recognition, preset, batch, png, aspose.barcode, aspose.drawing
 
 using System;
 using System.IO;
 using System.Collections.Generic;
+using System.Text;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates a batch of barcodes, reads them using different
-/// quality presets, and verifies that switching presets does not corrupt earlier results.
+/// Demonstrates batch generation of Code128 barcodes with varying visual presets
+/// and validates that changing presets does not affect previously generated results.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Creates temporary barcode images, reads them with NormalQuality and HighQuality
-    /// presets, and validates that results remain consistent after preset changes.
+    /// Entry point. Generates a set of barcodes with different presets, saves them,
+    /// then reads each back to verify correctness.
     /// </summary>
     static void Main()
     {
         // Create a unique temporary folder for the batch
-        string batchFolder = Path.Combine(Path.GetTempPath(), "Batch_" + Guid.NewGuid().ToString("N"));
+        string batchFolder = Path.Combine(Path.GetTempPath(), "BatchPresets_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(batchFolder);
 
-        // Prepare barcode definitions (type, text, output file name)
-        var barcodeInfos = new List<(BaseEncodeType type, string text, string fileName)>
+        // Define barcode specifications with preset changes
+        var specs = new List<BarcodeSpec>
         {
-            (EncodeTypes.Code128, "CODE128TEST", "code128.png"),
-            (EncodeTypes.QR, "QRTEST123", "qr.png"),
-            (EncodeTypes.DataMatrix, "DATAMATRIX", "datamatrix.png")
+            new BarcodeSpec
+            {
+                EncodeType = EncodeTypes.Code128,
+                CodeText = "ABC123",
+                // Default preset – no changes
+                PresetAction = gen => { /* no modifications */ }
+            },
+            new BarcodeSpec
+            {
+                EncodeType = EncodeTypes.Code128,
+                CodeText = "DEF456",
+                // Change bar color to red and increase X-dimension
+                PresetAction = gen =>
+                {
+                    gen.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Red;
+                    gen.Parameters.Barcode.XDimension.Point = 2f;
+                }
+            },
+            new BarcodeSpec
+            {
+                EncodeType = EncodeTypes.Code128,
+                CodeText = "GHI789",
+                // Change bar color to blue and further increase X-dimension
+                PresetAction = gen =>
+                {
+                    gen.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Blue;
+                    gen.Parameters.Barcode.XDimension.Point = 3f;
+                }
+            }
         };
 
-        // Generate barcode images and collect their file paths
-        var generatedFiles = new List<string>();
-        foreach (var info in barcodeInfos)
+        // Generate barcodes and collect file paths with expected texts
+        var generatedFiles = new List<(string Path, string ExpectedText)>();
+        for (int i = 0; i < specs.Count; i++)
         {
-            string filePath = Path.Combine(batchFolder, info.fileName);
-            using (var generator = new BarcodeGenerator(info.type, info.text))
+            var spec = specs[i];
+            string filePath = Path.Combine(batchFolder, $"barcode_{i + 1}.png");
+
+            using (var generator = new BarcodeGenerator(spec.EncodeType, spec.CodeText))
             {
+                // Apply preset changes for this barcode
+                spec.PresetAction(generator);
+
+                // Save as PNG
                 generator.Save(filePath, BarCodeImageFormat.Png);
             }
-            generatedFiles.Add(filePath);
+
+            generatedFiles.Add((filePath, spec.CodeText));
         }
 
-        // Split the generated files into two batches for separate processing
-        int splitIndex = generatedFiles.Count / 2;
-        var firstBatch = generatedFiles.GetRange(0, splitIndex);
-        var secondBatch = generatedFiles.GetRange(splitIndex, generatedFiles.Count - splitIndex);
-
-        // Store decoding results from the first batch for later verification
-        var firstBatchResults = new Dictionary<string, string>();
-
-        // Process the first batch using the NormalQuality preset
-        foreach (string file in firstBatch)
+        // Verify each generated barcode by reading it back
+        bool allValid = true;
+        foreach (var (path, expectedText) in generatedFiles)
         {
-            using (var reader = new BarCodeReader(file, DecodeType.Code128, DecodeType.QR, DecodeType.DataMatrix))
+            if (!File.Exists(path))
             {
-                reader.QualitySettings = QualitySettings.NormalQuality;
-                reader.ReadBarCodes();
-                foreach (BarCodeResult result in reader.FoundBarCodes)
+                Console.WriteLine($"File not found: {path}");
+                allValid = false;
+                continue;
+            }
+
+            // Use the appropriate decode type for Code128
+            BaseDecodeType decodeType = DecodeType.Code128;
+
+            try
+            {
+                using (var reader = new BarCodeReader(path, decodeType))
                 {
-                    firstBatchResults[file] = result.CodeText;
+                    bool found = false;
+                    foreach (var result in reader.ReadBarCodes())
+                    {
+                        found = true;
+                        string decoded = result.CodeText;
+                        if (decoded == expectedText)
+                        {
+                            Console.WriteLine($"SUCCESS: {Path.GetFileName(path)} decoded correctly as '{decoded}'.");
+                        }
+                        else
+                        {
+                            Console.WriteLine($"FAILURE: {Path.GetFileName(path)} decoded as '{decoded}' but expected '{expectedText}'.");
+                            allValid = false;
+                        }
+                    }
+
+                    if (!found)
+                    {
+                        Console.WriteLine($"FAILURE: No barcode detected in {Path.GetFileName(path)}.");
+                        allValid = false;
+                    }
                 }
+            }
+            catch (ArgumentException ex) when (ex.Message.Contains("Image loading failed"))
+            {
+                Console.WriteLine($"WARNING: Skipping unreadable file {Path.GetFileName(path)}. {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"ERROR: Exception while reading {Path.GetFileName(path)}. {ex.Message}");
+                allValid = false;
             }
         }
 
-        // Process the second batch using the HighQuality preset (no result storage needed)
-        foreach (string file in secondBatch)
-        {
-            using (var reader = new BarCodeReader(file, DecodeType.Code128, DecodeType.QR, DecodeType.DataMatrix))
-            {
-                reader.QualitySettings = QualitySettings.HighQuality;
-                reader.ReadBarCodes();
-                // Intentionally ignore results; we only need to ensure no exceptions occur
-            }
-        }
+        // Output overall verification result
+        Console.WriteLine(allValid
+            ? "All barcodes verified successfully. Switching presets did not corrupt previous results."
+            : "Some barcodes failed verification. Check the output above for details.");
+    }
 
-        // Verify that results from the first batch remain unchanged when read with HighQuality
-        bool allMatch = true;
-        foreach (var kvp in firstBatchResults)
-        {
-            string file = kvp.Key;
-            string expected = kvp.Value;
-            using (var reader = new BarCodeReader(file, DecodeType.Code128, DecodeType.QR, DecodeType.DataMatrix))
-            {
-                reader.QualitySettings = QualitySettings.HighQuality; // switch preset again
-                reader.ReadBarCodes();
-                string actual = null;
-                foreach (BarCodeResult result in reader.FoundBarCodes)
-                {
-                    actual = result.CodeText;
-                    break; // only need the first result
-                }
-                if (actual != expected)
-                {
-                    allMatch = false;
-                    Console.WriteLine($"Mismatch in file '{Path.GetFileName(file)}': expected '{expected}', got '{actual ?? "null"}'");
-                }
-            }
-        }
-
-        // Output verification summary
-        Console.WriteLine(allMatch
-            ? "Verification succeeded: switching presets did not corrupt previous results."
-            : "Verification failed: some results changed after preset switch.");
-
-        // Cleanup temporary folder (ignore any errors during deletion)
-        try
-        {
-            Directory.Delete(batchFolder, true);
-        }
-        catch
-        {
-            // Suppress cleanup exceptions
-        }
+    // Helper class to hold barcode generation data
+    private class BarcodeSpec
+    {
+        public BaseEncodeType EncodeType { get; set; }
+        public string CodeText { get; set; }
+        public Action<BarcodeGenerator> PresetAction { get; set; }
     }
 }

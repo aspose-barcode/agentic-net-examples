@@ -1,8 +1,8 @@
-// Title: Barcode Quality Settings Performance Comparison
-// Description: Demonstrates how resetting Aspose.BarCode QualitySettings to default (NormalQuality) affects CPU consumption by measuring recognition time for a QR code.
-// Category-Description: Shows Aspose.BarCode barcode generation and recognition workflow, focusing on QualitySettings presets. Uses BarcodeGenerator, BarCodeReader, and QualitySettings classes to illustrate typical performance tuning scenarios for developers optimizing barcode processing speed versus accuracy.
+// Title: Reset QualitySettings to default after high‑performance barcode reading
+// Description: Demonstrates generating a Code128 barcode, reading it with a high‑performance QualitySettings preset, then resetting to NormalQuality and comparing processing times.
+// Category-Description: This example belongs to the Aspose.BarCode performance tuning category, illustrating how to use the QualitySettings class with BarCodeReader to balance speed and accuracy. Developers often need to adjust QualitySettings for bulk scanning or resource‑constrained environments, and this snippet shows the typical workflow of applying a preset, measuring performance, and reverting to defaults.
 // Prompt: Validate that resetting QualitySettings to defaults restores original CPU consumption patterns during processing.
-// Tags: qr, barcode, qualitysettings, performance, generation, recognition, aspnet, csharp
+// Tags: code128, barcode generation, barcode recognition, qualitysettings, performance, aspose.barcode
 
 using System;
 using System.Diagnostics;
@@ -10,99 +10,71 @@ using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates a QR barcode, then measures recognition time using different
-/// QualitySettings presets to verify that the default (NormalQuality) yields lower CPU consumption.
+/// Example program that generates a barcode, reads it with different QualitySettings presets,
+/// and validates that resetting to the default restores original processing performance.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a barcode image, measures recognition times with high and normal quality,
-    /// compares the results, and cleans up temporary files.
+    /// Entry point of the example. Generates a barcode, performs high‑performance reading,
+    /// resets QualitySettings to default, and compares the read times.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary working directory
-        string tempDir = Path.Combine(Path.GetTempPath(), "BarcodeQualityTest_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempDir);
-
-        // Path for the generated barcode image
-        string imagePath = Path.Combine(tempDir, "sample.png");
-
-        // Generate a simple QR barcode image and save as PNG
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "SampleText"))
+        // Generate a simple Code128 barcode and store it in a memory stream.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            generator.Save(imagePath, BarCodeImageFormat.Png);
+            using (var barcodeStream = new MemoryStream())
+            {
+                // Save the generated barcode as PNG into the stream.
+                generator.Save(barcodeStream, BarCodeImageFormat.Png);
+                // Rewind the stream so it can be read from the beginning.
+                barcodeStream.Position = 0;
+
+                // Create a BarCodeReader to decode the barcode from the stream.
+                using (var reader = new BarCodeReader(barcodeStream, DecodeType.AllSupportedTypes))
+                {
+                    // Apply a high‑performance preset to prioritize speed.
+                    reader.QualitySettings = QualitySettings.HighPerformance;
+
+                    // Measure the time taken to read barcodes with high‑performance settings.
+                    var swHighPerf = new Stopwatch();
+                    swHighPerf.Start();
+                    var resultsHighPerf = reader.ReadBarCodes();
+                    swHighPerf.Stop();
+
+                    Console.WriteLine($"HighPerformance preset read time: {swHighPerf.ElapsedMilliseconds} ms");
+                    Console.WriteLine($"Barcodes detected: {resultsHighPerf.Length}");
+
+                    // Reset QualitySettings to the default (NormalQuality) for a fair comparison.
+                    reader.QualitySettings = QualitySettings.NormalQuality;
+
+                    // Reset stream position for the second read operation.
+                    barcodeStream.Position = 0;
+
+                    // Measure the time taken to read barcodes with default settings.
+                    var swDefault = new Stopwatch();
+                    swDefault.Start();
+                    var resultsDefault = reader.ReadBarCodes();
+                    swDefault.Stop();
+
+                    Console.WriteLine($"Default (NormalQuality) preset read time: {swDefault.ElapsedMilliseconds} ms");
+                    Console.WriteLine($"Barcodes detected: {resultsDefault.Length}");
+
+                    // Simple validation that resetting restores original (or slower) performance characteristics.
+                    if (swDefault.ElapsedMilliseconds >= swHighPerf.ElapsedMilliseconds)
+                    {
+                        Console.WriteLine("Reset to default QualitySettings restored original (or slower) processing time.");
+                    }
+                    else
+                    {
+                        Console.WriteLine("Unexpected: default read was faster than high‑performance preset.");
+                    }
+                }
+            }
         }
-
-        // Verify that the image was created successfully
-        if (!File.Exists(imagePath))
-        {
-            Console.WriteLine("Failed to generate barcode image.");
-            return;
-        }
-
-        // Measure recognition time with the HighQuality preset
-        long highQualityTicks = MeasureRecognitionTime(imagePath, QualitySettings.HighQuality);
-
-        // Measure recognition time with the default (NormalQuality) preset
-        long normalQualityTicks = MeasureRecognitionTime(imagePath, QualitySettings.NormalQuality);
-
-        // Output the measured times
-        Console.WriteLine($"HighQuality recognition time: {highQualityTicks} ticks");
-        Console.WriteLine($"NormalQuality (default) recognition time: {normalQualityTicks} ticks");
-
-        // Evaluate whether resetting to defaults reduced processing time
-        if (normalQualityTicks <= highQualityTicks)
-        {
-            Console.WriteLine("Success: Resetting QualitySettings to defaults restored lower CPU consumption (faster processing).");
-        }
-        else
-        {
-            Console.WriteLine("Warning: Resetting QualitySettings did not reduce processing time as expected.");
-        }
-
-        // Clean up temporary files and directory
-        try
-        {
-            File.Delete(imagePath);
-            Directory.Delete(tempDir);
-        }
-        catch
-        {
-            // Ignore cleanup errors
-        }
-    }
-
-    /// <summary>
-    /// Measures the time required to read barcodes from an image using a specified QualitySettings preset.
-    /// </summary>
-    /// <param name="imagePath">Full path to the barcode image.</param>
-    /// <param name="preset">QualitySettings preset to apply during recognition.</param>
-    /// <returns>Elapsed ticks measured by Stopwatch.</returns>
-    static long MeasureRecognitionTime(string imagePath, QualitySettings preset)
-    {
-        Stopwatch sw = new Stopwatch();
-
-        // Specify the barcode type to decode (QR in this case)
-        BaseDecodeType decode = DecodeType.QR;
-
-        // Initialize the barcode reader with the image and decode type
-        using (var reader = new BarCodeReader(imagePath, decode))
-        {
-            // Apply the specified quality preset
-            reader.QualitySettings = preset;
-
-            // Start timing, read barcodes, then stop timing
-            sw.Start();
-            BarCodeResult[] results = reader.ReadBarCodes();
-            sw.Stop();
-
-            // Output result count for verification (optional)
-            Console.WriteLine($"Preset {preset.GetType().Name}.{preset}: Detected {results?.Length ?? 0} barcode(s).");
-        }
-
-        return sw.ElapsedTicks;
     }
 }

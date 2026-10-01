@@ -1,8 +1,8 @@
-// Title: Barcode detection accuracy comparison between grayscale and color images
-// Description: Demonstrates generating barcodes in grayscale and colored formats, then detecting them to compare accuracy across multiple symbologies.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It shows how to use BarcodeGenerator to create images, configure colors, and BarCodeReader with quality settings to recognize barcodes. Developers often need to evaluate detection performance for different image types, such as grayscale versus full‑color, across various symbologies like QR, Code128, DataMatrix, and PDF417.
+// Title: Compare barcode detection accuracy between color and grayscale images
+// Description: Generates barcodes in full‑color and grayscale, then uses Aspose.BarCode recognition to compare detection success rates across multiple symbologies.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, demonstrating how to create barcode images with different visual properties and evaluate their readability. It showcases the BarcodeGenerator, BarCodeReader, and related parameter classes, which developers commonly use for testing scan reliability, preparing assets for varied printing conditions, and validating barcode quality across diverse symbologies.
 // Prompt: Compare barcode detection accuracy between grayscale and full‑color input images across multiple symbologies.
-// Tags: barcode detection, grayscale, color, symbology, qrcode, code128, datamatrix, pdf417, aspose.barcode, generation, recognition
+// Tags: barcode symbology, detection, comparison, color, grayscale, aspose.barcode, generation, recognition
 
 using System;
 using System.IO;
@@ -13,137 +13,115 @@ using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating barcodes in grayscale and colored images and comparing detection accuracy.
+/// Demonstrates how to generate color and grayscale barcode images,
+/// detect them using Aspose.BarCode, and compare detection accuracy.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates barcode images, runs detection, and prints a comparison summary.
+    /// Entry point of the example. Generates barcodes, runs detection,
+    /// outputs accuracy statistics, and cleans up temporary files.
     /// </summary>
     static void Main()
     {
-        // Prepare a temporary working folder for generated images
-        string workFolder = Path.Combine(Path.GetTempPath(), "BarcodeCompare_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(workFolder);
+        // Create a unique temporary folder for generated images
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeCompare_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
 
-        // Define the set of symbologies and the text to encode for each
-        var symbologies = new List<(BaseEncodeType Encode, string Text)>
+        // Define the set of symbologies to test
+        var symbologies = new List<(BaseEncodeType Encode, string Name)>
         {
-            (EncodeTypes.QR, "TestQR123"),
-            (EncodeTypes.Code128, "TestC128"),
-            (EncodeTypes.DataMatrix, "TestDM"),
-            (EncodeTypes.Pdf417, "TestPDF417")
+            (EncodeTypes.QR, "QR"),
+            (EncodeTypes.Code128, "Code128"),
+            (EncodeTypes.DataMatrix, "DataMatrix"),
+            (EncodeTypes.Aztec, "Aztec")
         };
 
-        // Lists to hold file paths for generated grayscale and color images
-        var grayscaleFiles = new List<string>();
+        // Sample text to encode in all barcodes
+        const string sampleText = "Test123";
+
+        // Lists to hold file paths for later detection
         var colorFiles = new List<string>();
+        var grayFiles = new List<string>();
 
         // Generate barcode images for each symbology
-        foreach (var (encode, text) in symbologies)
+        foreach (var (encode, name) in symbologies)
         {
-            string grayPath = Path.Combine(workFolder, $"{text}_gray.png");
-            string colorPath = Path.Combine(workFolder, $"{text}_color.png");
-
-            // Create a grayscale barcode (default colors)
-            using (var generator = new BarcodeGenerator(encode, text))
+            // ----- Color barcode (blue bars on yellow background) -----
+            using (var generator = new BarcodeGenerator(encode, sampleText))
             {
-                generator.Save(grayPath, BarCodeImageFormat.Png);
-            }
-            grayscaleFiles.Add(grayPath);
-
-            // Create a colored barcode (blue bars on yellow background)
-            using (var generator = new BarcodeGenerator(encode, text))
-            {
-                generator.Parameters.Barcode.BarColor = Color.Blue;
-                generator.Parameters.BackColor = Color.Yellow;
+                generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Blue;
+                generator.Parameters.BackColor = Aspose.Drawing.Color.Yellow;
+                string colorPath = Path.Combine(tempFolder, $"{name}_color.png");
                 generator.Save(colorPath, BarCodeImageFormat.Png);
+                colorFiles.Add(colorPath);
             }
-            colorFiles.Add(colorPath);
-        }
 
-        // Output header for the comparison results
-        Console.WriteLine("Barcode Detection Accuracy Comparison");
-        Console.WriteLine("------------------------------------");
-
-        int total = symbologies.Count;
-        int graySuccess = 0;
-        int colorSuccess = 0;
-
-        // Iterate over each generated image pair and evaluate detection
-        for (int i = 0; i < total; i++)
-        {
-            string expectedText = symbologies[i].Text;
-            string grayFile = grayscaleFiles[i];
-            string colorFile = colorFiles[i];
-
-            bool grayDetected = DetectBarcode(grayFile, expectedText, false);
-            bool colorDetected = DetectBarcode(colorFile, expectedText, true);
-
-            if (grayDetected) graySuccess++;
-            if (colorDetected) colorSuccess++;
-
-            // Display per‑symbology results
-            Console.WriteLine($"Symbology: {symbologies[i].Encode.GetType().Name.Replace("EncodeType", "")}");
-            Console.WriteLine($"  Grayscale detection: {(grayDetected ? "Success" : "Fail")}");
-            Console.WriteLine($"  Color detection:     {(colorDetected ? "Success" : "Fail")}");
-        }
-
-        // Summarize overall detection success rates
-        Console.WriteLine();
-        Console.WriteLine($"Summary: Grayscale success {graySuccess}/{total}, Color success {colorSuccess}/{total}");
-    }
-
-    /// <summary>
-    /// Attempts to read a barcode from the specified image and verifies it matches the expected text.
-    /// </summary>
-    /// <param name="imagePath">Path to the barcode image.</param>
-    /// <param name="expectedText">The text that should be encoded in the barcode.</param>
-    /// <param name="isColor">Indicates whether the image is a colored barcode (enables complex background handling).</param>
-    /// <returns>True if the expected barcode is found; otherwise, false.</returns>
-    static bool DetectBarcode(string imagePath, string expectedText, bool isColor)
-    {
-        if (!File.Exists(imagePath))
-        {
-            Console.WriteLine($"File not found: {imagePath}");
-            return false;
-        }
-
-        try
-        {
-            // Initialize the reader for all supported barcode types
-            using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
+            // ----- Grayscale barcode (default black on white) -----
+            using (var generator = new BarcodeGenerator(encode, sampleText))
             {
-                if (isColor)
+                string grayPath = Path.Combine(tempFolder, $"{name}_gray.png");
+                generator.Save(grayPath, BarCodeImageFormat.Png);
+                grayFiles.Add(grayPath);
+            }
+        }
+
+        // Counters for detection results
+        int total = symbologies.Count;
+        int successColor = 0;
+        int successGray = 0;
+
+        // Local function: attempts to read a barcode image and returns true if detection succeeds
+        bool TryDetect(string filePath)
+        {
+            if (!File.Exists(filePath))
+                return false;
+
+            try
+            {
+                using (var reader = new BarCodeReader(filePath, DecodeType.AllSupportedTypes))
                 {
-                    // Enable complex background mode for colored images to improve detection
-                    reader.QualitySettings.ComplexBackground = ComplexBackgroundMode.Enabled;
+                    var results = reader.ReadBarCodes();
+                    return results != null && results.Length > 0;
                 }
-
-                // Perform detection
-                var results = reader.ReadBarCodes();
-
-                // Check each detected barcode against the expected text
-                foreach (BarCodeResult result in reader.FoundBarCodes)
-                {
-                    if (result.CodeText == expectedText)
-                    {
-                        return true;
-                    }
-                }
-
+            }
+            catch (ArgumentException)
+            {
+                // Image loading failed; treat as detection failure
                 return false;
             }
         }
-        catch (ArgumentException ex) when (ex.Message.Contains("Image loading failed"))
+
+        // Evaluate detection on color images
+        foreach (var file in colorFiles)
         {
-            Console.WriteLine($"Unable to load image: {imagePath}");
-            return false;
+            if (TryDetect(file))
+                successColor++;
         }
-        catch (Exception ex)
+
+        // Evaluate detection on grayscale images
+        foreach (var file in grayFiles)
         {
-            Console.WriteLine($"Error processing {imagePath}: {ex.Message}");
-            return false;
+            if (TryDetect(file))
+                successGray++;
+        }
+
+        // Output comparison results
+        Console.WriteLine("Barcode Detection Accuracy Comparison");
+        Console.WriteLine($"Total symbologies tested: {total}");
+        Console.WriteLine($"Color images detected: {successColor}/{total} ({(successColor * 100.0 / total):F1}%)");
+        Console.WriteLine($"Grayscale images detected: {successGray}/{total} ({(successGray * 100.0 / total):F1}%)");
+
+        // Cleanup temporary files and folder
+        try
+        {
+            foreach (var file in colorFiles) File.Delete(file);
+            foreach (var file in grayFiles) File.Delete(file);
+            Directory.Delete(tempFolder, true);
+        }
+        catch
+        {
+            // Ignored - cleanup failure should not affect program exit
         }
     }
 }

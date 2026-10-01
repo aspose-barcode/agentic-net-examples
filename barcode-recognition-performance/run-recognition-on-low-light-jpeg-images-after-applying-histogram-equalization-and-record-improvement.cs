@@ -1,179 +1,197 @@
 // Title: Barcode recognition improvement on low‑light images using histogram equalization
-// Description: Demonstrates generating a QR barcode, creating a low‑light JPEG, applying histogram equalization, and comparing recognition results before and after enhancement.
-// Category-Description: This example belongs to the Aspose.BarCode image preprocessing and recognition category. It shows how to use Aspose.BarCode.Generation to create barcodes, Aspose.Drawing for image manipulation, and Aspose.BarCode.BarCodeRecognition to read barcodes from degraded images. Developers often need to improve detection on low‑quality scans by applying image processing techniques such as histogram equalization before recognition.
+// Description: Demonstrates generating a QR code, simulating a low‑light JPEG, enhancing it with histogram equalization, and comparing barcode recognition results before and after enhancement.
+// Category-Description: This example belongs to the Aspose.BarCode image preprocessing and recognition category. It showcases the use of BarcodeGenerator, BarCodeReader, and image manipulation classes (Bitmap, Color) to improve detection of barcodes in challenging lighting conditions. Developers often need to preprocess captured images—adjust brightness, apply contrast enhancement, or histogram equalization—to increase decoding success rates in real‑world scanning applications.
 // Prompt: Run recognition on low‑light JPEG images after applying histogram equalization and record improvement.
-// Tags: qr, low-light, histogram-equalization, barcode-recognition, image-processing, aspose.barcode, aspose.drawing
+// Tags: qr, low-light, histogram-equalization, barcode-recognition, image-preprocessing, aspose.barcode, csharp
 
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates barcode generation, low‑light image simulation, histogram equalization,
-/// and recognition comparison using Aspose.BarCode.
+/// Demonstrates barcode generation, low‑light simulation, histogram equalization, and recognition comparison.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a QR code, creates a dimmed version,
-    /// enhances it with histogram equalization, and reports detection results.
+    /// Entry point. Executes the workflow: generate barcode, darken image, enhance, and recognize.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder for all generated files
-        string tempDir = Path.Combine(Path.GetTempPath(), "BarcodeLowLight_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempDir);
+        // Create a temporary working folder
+        string workFolder = Path.Combine(Path.GetTempPath(), "BarcodeLowLightDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(workFolder);
 
-        // Define file paths for the original, low‑light, and equalized images
-        string originalPath = Path.Combine(tempDir, "barcode.png");
-        string lowLightPath = Path.Combine(tempDir, "lowlight.jpg");
-        string equalizedPath = Path.Combine(tempDir, "equalized.jpg");
+        // Paths for images
+        string originalBarcodePath = Path.Combine(workFolder, "barcode_original.png");
+        string lowLightPath = Path.Combine(workFolder, "barcode_lowlight.jpg");
+        string enhancedPath = Path.Combine(workFolder, "barcode_enhanced.jpg");
 
-        // ------------------------------------------------------------
-        // Generate a QR barcode and save it as PNG
-        // ------------------------------------------------------------
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "Test123"))
+        // 1. Generate a sample barcode
+        GenerateSampleBarcode(originalBarcodePath);
+
+        // 2. Simulate low‑light condition by darkening the image
+        ApplyDarkening(originalBarcodePath, lowLightPath, 0.3f); // 30% brightness
+
+        // 3. Apply histogram equalization to improve visibility
+        ApplyHistogramEqualization(lowLightPath, enhancedPath);
+
+        // 4. Recognize barcodes before and after enhancement
+        Console.WriteLine("=== Recognition on low‑light image ===");
+        RecognizeAndReport(lowLightPath);
+
+        Console.WriteLine("\n=== Recognition on enhanced image ===");
+        RecognizeAndReport(enhancedPath);
+
+        // Cleanup (optional)
+        // Directory.Delete(workFolder, true);
+    }
+
+    // Generates a simple QR code and saves it as PNG
+    private static void GenerateSampleBarcode(string outputPath)
+    {
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
         {
+            // Set a modest size
             generator.Parameters.Barcode.XDimension.Point = 2f;
-            generator.Save(originalPath, BarCodeImageFormat.Png);
+            generator.Save(outputPath, BarCodeImageFormat.Png);
+        }
+    }
+
+    // Darkens an image by multiplying each RGB component by a factor (0..1)
+    private static void ApplyDarkening(string inputPath, string outputPath, float factor)
+    {
+        if (!File.Exists(inputPath))
+        {
+            Console.WriteLine($"Input file not found: {inputPath}");
+            return;
         }
 
-        // ------------------------------------------------------------
-        // Load the original image and create a low‑light JPEG version
-        // ------------------------------------------------------------
-        using (Bitmap original = new Bitmap(originalPath))
+        using (var bitmap = new Bitmap(inputPath))
         {
-            using (Bitmap lowLight = new Bitmap(original.Width, original.Height, PixelFormat.Format24bppRgb))
+            int width = bitmap.Width;
+            int height = bitmap.Height;
+
+            for (int y = 0; y < height; y++)
             {
-                for (int y = 0; y < original.Height; y++)
+                for (int x = 0; x < width; x++)
                 {
-                    for (int x = 0; x < original.Width; x++)
-                    {
-                        Color c = original.GetPixel(x, y);
-                        // Dim each color channel to simulate low lighting (30% brightness)
-                        int r = (int)(c.R * 0.3);
-                        int g = (int)(c.G * 0.3);
-                        int b = (int)(c.B * 0.3);
-                        Color dark = Color.FromArgb(r, g, b);
-                        lowLight.SetPixel(x, y, dark);
-                    }
+                    var pixel = bitmap.GetPixel(x, y);
+                    int r = (int)(pixel.R * factor);
+                    int g = (int)(pixel.G * factor);
+                    int b = (int)(pixel.B * factor);
+                    var darkPixel = Color.FromArgb(r, g, b);
+                    bitmap.SetPixel(x, y, darkPixel);
                 }
-                lowLight.Save(lowLightPath, ImageFormat.Jpeg);
             }
 
-            // ------------------------------------------------------------
-            // Apply histogram equalization to the low‑light image
-            // ------------------------------------------------------------
-            using (Bitmap lowLight = new Bitmap(lowLightPath))
-            {
-                int width = lowLight.Width;
-                int height = lowLight.Height;
-                int totalPixels = width * height;
-                int[] histogram = new int[256];
+            // Save as JPEG to emulate low‑light photo capture
+            bitmap.Save(outputPath, ImageFormat.Jpeg);
+        }
+    }
 
-                // Build histogram of grayscale intensities
-                for (int y = 0; y < height; y++)
-                {
-                    for (int x = 0; x < width; x++)
-                    {
-                        Color c = lowLight.GetPixel(x, y);
-                        int intensity = (c.R + c.G + c.B) / 3;
-                        histogram[intensity]++;
-                    }
-                }
-
-                // Compute cumulative distribution function (CDF)
-                int[] cdf = new int[256];
-                cdf[0] = histogram[0];
-                for (int i = 1; i < 256; i++)
-                {
-                    cdf[i] = cdf[i - 1] + histogram[i];
-                }
-
-                // Find the minimum non‑zero CDF value
-                int cdfMin = 0;
-                for (int i = 0; i < 256; i++)
-                {
-                    if (cdf[i] != 0)
-                    {
-                        cdfMin = cdf[i];
-                        break;
-                    }
-                }
-
-                // Build lookup table (LUT) for equalization
-                byte[] lut = new byte[256];
-                for (int i = 0; i < 256; i++)
-                {
-                    lut[i] = (byte)Math.Round(((double)(cdf[i] - cdfMin) / (totalPixels - cdfMin)) * 255.0);
-                }
-
-                // Apply the LUT to create the equalized image
-                using (Bitmap equalized = new Bitmap(width, height, PixelFormat.Format24bppRgb))
-                {
-                    for (int y = 0; y < height; y++)
-                    {
-                        for (int x = 0; x < width; x++)
-                        {
-                            Color c = lowLight.GetPixel(x, y);
-                            int intensity = (c.R + c.G + c.B) / 3;
-                            byte newVal = lut[intensity];
-                            Color newColor = Color.FromArgb(newVal, newVal, newVal);
-                            equalized.SetPixel(x, y, newColor);
-                        }
-                    }
-                    equalized.Save(equalizedPath, ImageFormat.Jpeg);
-                }
-            }
+    // Performs histogram equalization on a JPEG image and saves the result
+    private static void ApplyHistogramEqualization(string inputPath, string outputPath)
+    {
+        if (!File.Exists(inputPath))
+        {
+            Console.WriteLine($"Input file not found: {inputPath}");
+            return;
         }
 
-        // ------------------------------------------------------------
-        // Local function: reads a barcode from an image and reports the result
-        // ------------------------------------------------------------
-        void ReadAndReport(string imagePath, string label)
+        using (var bitmap = new Bitmap(inputPath))
         {
-            if (!File.Exists(imagePath))
+            int width = bitmap.Width;
+            int height = bitmap.Height;
+            int pixelCount = width * height;
+
+            // Compute histogram of luminance (0‑255)
+            int[] histogram = new int[256];
+            for (int y = 0; y < height; y++)
             {
-                Console.WriteLine($"{label}: File not found.");
+                for (int x = 0; x < width; x++)
+                {
+                    var pixel = bitmap.GetPixel(x, y);
+                    // Convert to grayscale using luminance formula
+                    int lum = (int)(0.299 * pixel.R + 0.587 * pixel.G + 0.114 * pixel.B);
+                    histogram[lum]++;
+                }
+            }
+
+            // Compute cumulative distribution function (CDF)
+            int[] cdf = new int[256];
+            cdf[0] = histogram[0];
+            for (int i = 1; i < 256; i++)
+            {
+                cdf[i] = cdf[i - 1] + histogram[i];
+            }
+
+            // Build lookup table
+            byte[] lut = new byte[256];
+            for (int i = 0; i < 256; i++)
+            {
+                // Normalize to [0,255]
+                lut[i] = (byte)Math.Round(((double)(cdf[i] - cdf[0]) / (pixelCount - cdf[0])) * 255.0);
+            }
+
+            // Apply mapping
+            for (int y = 0; y < height; y++)
+            {
+                for (int x = 0; x < width; x++)
+                {
+                    var pixel = bitmap.GetPixel(x, y);
+                    int lum = (int)(0.299 * pixel.R + 0.587 * pixel.G + 0.114 * pixel.B);
+                    byte newLum = lut[lum];
+                    // Preserve original color hue by scaling RGB proportionally
+                    float scale = newLum / (float)lum;
+                    if (float.IsNaN(scale) || float.IsInfinity(scale)) scale = 0f;
+                    int r = Math.Clamp((int)(pixel.R * scale), 0, 255);
+                    int g = Math.Clamp((int)(pixel.G * scale), 0, 255);
+                    int b = Math.Clamp((int)(pixel.B * scale), 0, 255);
+                    bitmap.SetPixel(x, y, Color.FromArgb(r, g, b));
+                }
+            }
+
+            // Save enhanced image
+            bitmap.Save(outputPath, ImageFormat.Jpeg);
+        }
+    }
+
+    // Reads barcodes from an image and prints details
+    private static void RecognizeAndReport(string imagePath)
+    {
+        if (!File.Exists(imagePath))
+        {
+            Console.WriteLine($"File not found: {imagePath}");
+            return;
+        }
+
+        // Use all supported decode types
+        BaseDecodeType decodeType = DecodeType.AllSupportedTypes;
+
+        using (var reader = new BarCodeReader(imagePath, decodeType))
+        {
+            // Optional: set high‑performance quality preset
+            reader.QualitySettings = QualitySettings.HighPerformance;
+
+            BarCodeResult[] results = reader.ReadBarCodes();
+
+            if (results == null || results.Length == 0)
+            {
+                Console.WriteLine("No barcode detected.");
                 return;
             }
 
-            using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
+            foreach (var result in results)
             {
-                // Adjust quality settings for low‑quality images
-                reader.QualitySettings.Deconvolution = DeconvolutionMode.Fast;
-
-                BarCodeResult[] results = reader.ReadBarCodes();
-                bool detected = results.Length > 0 && !string.IsNullOrEmpty(results[0].CodeText);
-                Console.WriteLine($"{label}: {(detected ? "Detected" : "Not detected")}");
-                if (detected)
-                {
-                    Console.WriteLine($"  CodeText: {results[0].CodeText}");
-                    Console.WriteLine($"  Quality: {results[0].ReadingQuality}");
-                }
+                Console.WriteLine($"Code Text   : {result.CodeText}");
+                Console.WriteLine($"Symbology   : {result.CodeTypeName}");
+                Console.WriteLine($"Quality (0‑100): {result.ReadingQuality}");
+                Console.WriteLine(new string('-', 30));
             }
-        }
-
-        // ------------------------------------------------------------
-        // Perform recognition on the low‑light and equalized images
-        // ------------------------------------------------------------
-        ReadAndReport(lowLightPath, "Low‑light image");
-        ReadAndReport(equalizedPath, "Equalized image");
-
-        // ------------------------------------------------------------
-        // Cleanup temporary files (optional)
-        // ------------------------------------------------------------
-        try
-        {
-            Directory.Delete(tempDir, true);
-        }
-        catch
-        {
-            // Ignore any errors during cleanup
         }
     }
 }

@@ -1,8 +1,8 @@
-// Title: Demonstrate logging of XDimension and MinimalXDimension for generated barcodes
-// Description: This example generates Code128 barcodes with different XDimension values, reads them back while applying MinimalXDimension settings, and logs the exact dimensions used during generation and recognition.
-// Category-Description: Shows how to work with Aspose.BarCode generation and recognition APIs, focusing on XDimension handling. It covers BarcodeGenerator for creating barcodes, BarCodeReader with QualitySettings for fine‑tuning recognition, and typical use cases such as validating dimension parameters across the generation‑recognition pipeline. Developers looking for barcode dimension control, quality settings, or sample code for Code128 PNG output will find this example useful.
+// Title: Demonstrates setting and logging XDimension and MinimalXDimension for Code128 barcodes
+// Description: Shows how to generate Code128 barcodes with specific XDimension values, save them as PNG, and recognize them using a defined MinimalXDimension, logging both parameters.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It illustrates the use of BarcodeGenerator for creating barcodes with custom dimensions and BarCodeReader with QualitySettings to control recognition sensitivity. Developers often need to fine‑tune XDimension and MinimalXDimension to ensure reliable scanning across different image resolutions and printing conditions.
 // Prompt: Implement a feature that logs the exact XDimension and MinimalXDimension values used for each image.
-// Tags: barcode, code128, generation, recognition, xdimension, minimalxdimension, png, aspose.barcode
+// Tags: code128, barcode generation, barcode recognition, xdimension, minimalxdimension, png, aspose.barcode
 
 using System;
 using System.IO;
@@ -11,16 +11,17 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating barcodes with specific XDimension values,
-/// reading them back with MinimalXDimension settings, and logging the dimensions.
+/// Example program that generates Code128 barcodes with custom XDimension values,
+/// saves them as PNG images, and reads them back using a specified MinimalXDimension.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the demo. Generates barcode images, reads them, logs dimension information,
-    /// and cleans up temporary files.
+    /// Entry point of the demo. Generates barcodes, logs dimension settings,
+    /// and attempts to decode each image.
     /// </summary>
     static void Main()
     {
@@ -28,60 +29,55 @@ class Program
         string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeXDimDemo_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
 
-        // Define XDimension values to use (in points)
-        List<float> xDimensions = new List<float> { 2f, 3f, 4f };
-        // Store file paths together with the XDimension used for generation
-        List<(string FilePath, float XDim)> generatedFiles = new List<(string, float)>();
+        // Define a set of XDimension values (in points) to be applied during generation
+        float[] xDimensions = new float[] { 2f, 3f, 4f };
+        List<string> generatedFiles = new List<string>();
 
-        // Generate barcode images with the specified XDimension values
-        int index = 1;
-        foreach (float xDim in xDimensions)
+        // Iterate over each XDimension value, generate a barcode, and read it back
+        for (int i = 0; i < xDimensions.Length; i++)
         {
-            string filePath = Path.Combine(tempFolder, $"barcode_{index}.png");
-            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, $"Test{index}"))
+            string codeText = $"Sample{i + 1}";
+            string filePath = Path.Combine(tempFolder, $"barcode_{i + 1}.png");
+
+            // ---------- Barcode Generation ----------
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
             {
-                // Set the XDimension for barcode generation (points)
-                generator.Parameters.Barcode.XDimension.Point = xDim;
-                // Save the barcode as a PNG image
+                // Apply the specific XDimension for this barcode
+                generator.Parameters.Barcode.XDimension.Point = xDimensions[i];
+                // Save the generated barcode as a PNG image
                 generator.Save(filePath, BarCodeImageFormat.Png);
             }
-            generatedFiles.Add((filePath, xDim));
-            index++;
-        }
 
-        // Read each generated image and log both generation and recognition dimensions
-        foreach (var (filePath, xDim) in generatedFiles)
-        {
-            using (BarCodeReader reader = new BarCodeReader(filePath, DecodeType.Code128))
+            generatedFiles.Add(filePath);
+            Console.WriteLine($"Generated barcode '{codeText}' with XDimension = {xDimensions[i]} point(s). Saved to: {filePath}");
+
+            // ---------- Barcode Recognition ----------
+            using (var reader = new BarCodeReader(filePath, DecodeType.AllSupportedTypes))
             {
-                // Configure recognition to use MinimalXDimension mode
-                reader.QualitySettings.XDimension = XDimensionMode.UseMinimalXDimension;
-                // Apply the same value as used during generation for demonstration purposes
-                reader.QualitySettings.MinimalXDimension = xDim;
+                // Define MinimalXDimension for recognition (example value)
+                float minimalXDim = 1f;
+                reader.QualitySettings.MinimalXDimension = minimalXDim;
 
-                // Perform barcode reading (results are not further processed)
+                Console.WriteLine($"Set MinimalXDimension for recognition to {minimalXDim} point(s).");
+
+                // Attempt to read barcodes from the image
                 BarCodeResult[] results = reader.ReadBarCodes();
-
-                // Log dimension information and detection results
-                Console.WriteLine($"Image: {Path.GetFileName(filePath)}");
-                Console.WriteLine($"  Generation XDimension (points): {xDim}");
-                Console.WriteLine($"  Recognition MinimalXDimension (pixels): {reader.QualitySettings.MinimalXDimension}");
-                Console.WriteLine($"  Barcodes detected: {results.Length}");
-                foreach (BarCodeResult result in results)
+                foreach (var result in results)
                 {
-                    Console.WriteLine($"    Type: {result.CodeTypeName}, Text: {result.CodeText}");
+                    Console.WriteLine($"Decoded CodeText: {result.CodeText}");
+                }
+
+                if (results.Length == 0)
+                {
+                    Console.WriteLine("No barcode detected (this may happen if the image does not contain a recognizable barcode).");
                 }
             }
+
+            Console.WriteLine(new string('-', 60));
         }
 
-        // Cleanup: delete the temporary folder and all its contents
-        try
-        {
-            Directory.Delete(tempFolder, true);
-        }
-        catch
-        {
-            // If deletion fails, ignore – not critical for the demo
-        }
+        // Optional cleanup: delete generated files and temporary folder
+        // foreach (var file in generatedFiles) File.Delete(file);
+        // Directory.Delete(tempFolder);
     }
 }

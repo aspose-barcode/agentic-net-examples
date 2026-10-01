@@ -1,99 +1,99 @@
-// Title: Effect of Deconvolution Mode on Low‑Contrast Barcode Recognition
-// Description: Demonstrates how disabling deconvolution impacts the detection accuracy of a low‑contrast Code128 barcode using Aspose.BarCode.
-// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, illustrating the use of BarCodeReader with different DeconvolutionMode settings. It shows how to generate a low‑contrast barcode, configure quality settings, and compare recognition results. Developers working with image preprocessing, barcode quality tuning, and low‑contrast scanning can use similar patterns.
+// Title: Effect of Deconvolution Settings on Low‑Contrast Barcode Recognition
+// Description: Demonstrates how disabling deconvolution (Fast mode) influences the recognition accuracy of a low‑contrast Code128 barcode using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, showcasing the use of BarCodeReader, QualitySettings, and DeconvolutionMode to adjust image preprocessing. Developers often need to fine‑tune deconvolution for challenging images such as low‑contrast or noisy barcodes to improve detection speed and accuracy.
 // Prompt: Evaluate the effect of disabling deconvolution on recognition accuracy for low‑contrast barcodes.
-// Tags: code128, low-contrast, deconvolution, barcode recognition, quality settings, aspose.barcode, image preprocessing
+// Tags: code128, low-contrast, deconvolution, barcode recognition, qualitysettings, aspose.barcode, image preprocessing
 
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates the impact of disabling deconvolution on recognition accuracy for low‑contrast barcodes.
+/// Demonstrates the impact of deconvolution settings on the recognition of a low‑contrast barcode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a low‑contrast barcode, reads it with normal and fast deconvolution modes, and outputs detection statistics.
+    /// Entry point of the demo. Generates a low‑contrast barcode, reads it with default and fast deconvolution settings,
+    /// and prints the recognition results to the console.
     /// </summary>
     static void Main()
     {
-        // Create a temporary directory for generated images
-        string tempDir = Path.Combine(Path.GetTempPath(), "DeconvTest_" + Guid.NewGuid().ToString("N"));
+        // Create a unique temporary folder for the demo files
+        string tempDir = Path.Combine(Path.GetTempPath(), "BarcodeDeconvDemo_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempDir);
+        string barcodePath = Path.Combine(tempDir, "lowcontrast.png");
 
-        // Define the path for the barcode image and the text to encode
-        string barcodePath = Path.Combine(tempDir, "low_contrast.png");
-        string codeText = "LowContrastTest";
-
-        // Generate a low‑contrast Code128 barcode
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+        // ------------------------------------------------------------
+        // Generate a low‑contrast Code128 barcode image
+        // ------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "LowContrastTest"))
         {
-            // Set low contrast colors (gray on light gray)
-            generator.Parameters.Barcode.BarColor = Color.Gray;
-            generator.Parameters.BackColor = Color.LightGray;
-
-            // Use a small XDimension for a clearer image
-            generator.Parameters.Barcode.XDimension.Point = 2f;
-
-            // Save the barcode as a PNG file
+            // Set dark gray bars on a light gray background to simulate low contrast
+            generator.Parameters.Barcode.BarColor = Color.FromArgb(100, 100, 100);
+            generator.Parameters.BackColor = Color.FromArgb(200, 200, 200);
             generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        // Verify that the barcode image was created successfully
-        if (!File.Exists(barcodePath))
+        // ------------------------------------------------------------
+        // Read the barcode with default deconvolution (Normal mode)
+        // ------------------------------------------------------------
+        using (var readerDefault = new BarCodeReader(barcodePath, DecodeType.AllSupportedTypes))
         {
-            Console.WriteLine("Failed to generate barcode image.");
-            return;
+            BarCodeResult[] results = readerDefault.ReadBarCodes();
+            Console.WriteLine("=== Default Deconvolution (Normal) ===");
+            PrintResults(results);
         }
 
-        // Local function to read a barcode with a specified deconvolution mode
-        int ReadBarcode(string path, DeconvolutionMode deconvMode, out double avgQuality)
+        // ------------------------------------------------------------
+        // Read the barcode with deconvolution minimized (Fast mode)
+        // ------------------------------------------------------------
+        using (var readerFast = new BarCodeReader(barcodePath, DecodeType.AllSupportedTypes))
         {
-            avgQuality = 0.0;
-            using (var reader = new BarCodeReader(path, DecodeType.AllSupportedTypes))
-            {
-                // Configure low quality settings for low‑contrast images
-                reader.QualitySettings.BarcodeQuality = BarcodeQualityMode.Low;
-                reader.QualitySettings.Deconvolution = deconvMode;
-
-                // Perform the recognition
-                BarCodeResult[] results = reader.ReadBarCodes();
-                if (results.Length == 0)
-                    return 0;
-
-                // Calculate the average reading quality across all detected barcodes
-                double total = 0.0;
-                foreach (var result in results)
-                {
-                    total += result.ReadingQuality;
-                }
-                avgQuality = total / results.Length;
-                return results.Length;
-            }
+            // Fast deconvolution reduces processing; useful for low‑contrast images
+            readerFast.QualitySettings.Deconvolution = DeconvolutionMode.Fast;
+            BarCodeResult[] results = readerFast.ReadBarCodes();
+            Console.WriteLine("=== Deconvolution set to Fast (minimized) ===");
+            PrintResults(results);
         }
 
-        // Read the barcode using normal deconvolution (more processing)
-        int countNormal = ReadBarcode(barcodePath, DeconvolutionMode.Normal, out double avgQualityNormal);
-        // Read the barcode using fast deconvolution (minimal processing, effectively "disabled")
-        int countFast = ReadBarcode(barcodePath, DeconvolutionMode.Fast, out double avgQualityFast);
-
-        // Output the detection results for both modes
-        Console.WriteLine($"Deconvolution = Normal: Detected {countNormal} barcode(s), Avg. Quality = {avgQualityNormal:F2}");
-        Console.WriteLine($"Deconvolution = Fast  : Detected {countFast} barcode(s), Avg. Quality = {avgQualityFast:F2}");
-
-        // Clean up temporary files and directory
+        // ------------------------------------------------------------
+        // Cleanup temporary files (optional)
+        // ------------------------------------------------------------
         try
         {
-            File.Delete(barcodePath);
-            Directory.Delete(tempDir);
+            if (File.Exists(barcodePath))
+                File.Delete(barcodePath);
+            if (Directory.Exists(tempDir))
+                Directory.Delete(tempDir);
         }
         catch
         {
-            // Ignore cleanup errors
+            // Ignore cleanup errors in demo
+        }
+    }
+
+    /// <summary>
+    /// Prints barcode recognition results to the console.
+    /// </summary>
+    /// <param name="results">Array of <see cref="BarCodeResult"/> objects returned by the reader.</param>
+    static void PrintResults(BarCodeResult[] results)
+    {
+        if (results.Length == 0)
+        {
+            Console.WriteLine("No barcode detected.");
+            return;
+        }
+
+        foreach (var result in results)
+        {
+            Console.WriteLine($"CodeText: {result.CodeText}");
+            Console.WriteLine($"Symbology: {result.CodeTypeName}");
+            Console.WriteLine($"ReadingQuality: {result.ReadingQuality}");
+            Console.WriteLine();
         }
     }
 }

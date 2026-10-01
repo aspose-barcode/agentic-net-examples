@@ -1,23 +1,23 @@
-// Title: High-Performance barcode reading from PNG images
-// Description: Demonstrates how to set QualitySettings.Preset to HighPerformance when reading a batch of PNG barcode images, improving processing speed.
-// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category. It shows how to use BarCodeReader with QualitySettings to optimize performance for bulk image processing. Developers commonly need to read many barcodes quickly, and this snippet illustrates configuring the HighPerformance preset, generating sample barcodes, and cleaning up resources.
+// Title: Read PNG Barcodes with HighPerformance Quality Settings
+// Description: Demonstrates generating a set of PNG barcode images and then reading them using Aspose.BarCode with the HighPerformance quality preset to maximize processing speed.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes, BarCodeReader for decoding them, and QualitySettings for tuning performance. Typical scenarios include batch processing of scanned images, high‑throughput barcode scanning, and automated verification pipelines where speed is critical. Developers often need to adjust quality presets to balance accuracy and performance.
 // Prompt: Set QualitySettings.Preset to HighPerformance before reading a batch of PNG barcode images.
-// Tags: barcode symbology, performance, png, reading, qualitysettings, aspose.barcode, batch processing
+// Tags: barcode symbology, generation, recognition, png, highperformance, qualitysettings, aspose.barcode
 
 using System;
 using System.IO;
 using System.Collections.Generic;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates setting QualitySettings to HighPerformance before reading a batch of PNG barcode images.
+/// Generates sample PNG barcodes, then reads them using a high‑performance quality preset.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates sample PNG barcodes, reads them with high‑performance settings, and cleans up.
+    /// Entry point of the example. Creates a temporary folder, generates barcodes, reads them, and cleans up.
     /// </summary>
     static void Main()
     {
@@ -25,22 +25,55 @@ class Program
         string batchFolder = Path.Combine(Path.GetTempPath(), "Batch_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(batchFolder);
 
-        // Generate sample PNG barcode images
+        // List to hold generated PNG file paths
         List<string> barcodeFiles = new List<string>();
-        for (int i = 1; i <= 5; i++)
+
+        try
         {
-            string codeText = $"Sample{i:D3}";
-            string filePath = Path.Combine(batchFolder, $"barcode_{i}.png");
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+            // Generate sample barcode images and collect their file paths
+            GenerateSampleBarcodes(batchFolder, barcodeFiles);
+
+            // Read the generated barcodes with HighPerformance quality preset
+            ReadBarcodes(batchFolder, barcodeFiles);
+        }
+        finally
+        {
+            // Clean up: delete generated files and folder
+            foreach (string file in barcodeFiles)
             {
-                // Save each barcode as a PNG file
+                try { File.Delete(file); } catch { /* ignore */ }
+            }
+            try { Directory.Delete(batchFolder, true); } catch { /* ignore */ }
+        }
+    }
+
+    // Generates a few sample PNG barcodes and records their file paths
+    private static void GenerateSampleBarcodes(string folder, List<string> fileList)
+    {
+        // Sample data: tuple of (symbology, code text, file name)
+        var samples = new (BaseEncodeType encodeType, string text, string fileName)[]
+        {
+            (EncodeTypes.Code128, "ABC123", "code128.png"),
+            (EncodeTypes.QR, "https://example.com", "qr.png"),
+            (EncodeTypes.DataMatrix, "DM12345", "datamatrix.png")
+        };
+
+        foreach (var sample in samples)
+        {
+            string filePath = Path.Combine(folder, sample.fileName);
+            using (var generator = new BarcodeGenerator(sample.encodeType, sample.text))
+            {
+                // Save the generated barcode as a PNG image
                 generator.Save(filePath, BarCodeImageFormat.Png);
             }
-            barcodeFiles.Add(filePath);
+            fileList.Add(filePath);
         }
+    }
 
-        // Read the generated barcodes with HighPerformance quality preset
-        foreach (string file in barcodeFiles)
+    // Reads each PNG barcode file using HighPerformance quality settings
+    private static void ReadBarcodes(string folder, List<string> files)
+    {
+        foreach (string file in files)
         {
             if (!File.Exists(file))
             {
@@ -52,38 +85,21 @@ class Program
             {
                 using (var reader = new BarCodeReader(file, DecodeType.AllSupportedTypes))
                 {
-                    // Apply the high‑performance quality setting before reading
+                    // Apply the HighPerformance preset before decoding
                     reader.QualitySettings = QualitySettings.HighPerformance;
 
-                    // Perform barcode detection
-                    BarCodeResult[] results = reader.ReadBarCodes();
-                    Console.WriteLine($"File: {Path.GetFileName(file)} - Barcodes found: {results.Length}");
-                    foreach (BarCodeResult result in results)
+                    // Iterate over all detected barcodes in the image
+                    foreach (var result in reader.ReadBarCodes())
                     {
-                        Console.WriteLine($"  Type: {result.CodeTypeName}, Text: {result.CodeText}");
+                        Console.WriteLine($"File: {Path.GetFileName(file)} | CodeText: {result.CodeText} | Type: {result.CodeTypeName}");
                     }
                 }
             }
-            catch (ArgumentException ex) when (ex.Message.Contains("Image loading failed"))
+            catch (ArgumentException ex)
             {
                 // Skip files that cannot be loaded as images
-                Console.WriteLine($"Skipping unreadable file: {file}");
+                Console.WriteLine($"Skipping file {Path.GetFileName(file)}: {ex.Message}");
             }
-            catch (Exception ex)
-            {
-                // Log any other processing errors
-                Console.WriteLine($"Error processing file {file}: {ex.Message}");
-            }
-        }
-
-        // Clean up temporary folder
-        try
-        {
-            Directory.Delete(batchFolder, true);
-        }
-        catch
-        {
-            // Ignore cleanup errors
         }
     }
 }
