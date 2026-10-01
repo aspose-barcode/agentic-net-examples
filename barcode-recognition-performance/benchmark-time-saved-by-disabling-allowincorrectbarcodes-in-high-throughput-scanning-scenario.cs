@@ -1,140 +1,104 @@
-// Title: Benchmarking AllowIncorrectBarcodes Impact on Scan Performance
-// Description: Demonstrates measuring the time difference when the AllowIncorrectBarcodes setting is toggled while scanning a set of corrupted barcodes.
-// Category-Description: This example belongs to the Aspose.BarCode scanning and quality settings category. It showcases the BarCodeReader class with its QualitySettings, particularly the AllowIncorrectBarcodes property, which controls whether the reader tolerates damaged or partially unreadable barcodes. Developers often benchmark such settings to optimize high‑throughput scanning pipelines, ensuring maximum speed without sacrificing accuracy.
+// Title: Benchmarking barcode reading performance with AllowIncorrectBarcodes disabled
+// Description: Demonstrates how disabling AllowIncorrectBarcodes impacts the time required to read a set of Code128 barcodes in a high‑throughput scenario.
+// Category-Description: This example belongs to the Aspose.BarCode performance benchmarking category, showcasing the use of BarcodeGenerator for image creation and BarCodeReader with QualitySettings to control validation. Developers often need to measure the effect of strict barcode validation on processing speed when handling large volumes of scans.
 // Prompt: Benchmark the time saved by disabling AllowIncorrectBarcodes in a high‑throughput scanning scenario.
-// Tags: barcode, scanning, performance, benchmark, allowincorrectbarcodes, aspose.barcode, qr, pdf417, c#
+// Tags: barcode symbology, generation, recognition, performance, benchmark, allowincorrectbarcodes, png, aspose.barcode
 
 using System;
-using System.IO;
-using System.Diagnostics;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates benchmarking the effect of the AllowIncorrectBarcodes setting on barcode scanning performance.
+/// Provides a benchmark that compares barcode reading times with and without allowing incorrect barcodes.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Runs the benchmark and outputs timing results.
+    /// Entry point of the benchmark application.
+    /// Generates sample Code128 barcodes, measures read performance, and outputs the results.
     /// </summary>
     static void Main()
     {
-        // Create a temporary directory to store generated and corrupted barcode images
-        string tempDir = Path.Combine(Path.GetTempPath(), "Benchmark_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempDir);
-        var imagePaths = new List<string>();
+        // Create a temporary folder for generated barcode images
+        string tempFolder = Path.Combine(Path.GetTempPath(), "Benchmark_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
 
+        // Define sample code texts to encode
+        var codeTexts = new List<string> { "1234567890", "ABCDEFGHIJ", "9876543210", "ZXCVBNMASD", "QWERTYUIOP" };
+        var barcodeFiles = new List<string>();
+
+        // Generate PNG barcode images for each sample text
+        foreach (var text in codeTexts)
+        {
+            string filePath = Path.Combine(tempFolder, $"{text}.png");
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, text))
+            {
+                // Save the barcode directly as a PNG file
+                generator.Save(filePath, BarCodeImageFormat.Png);
+            }
+            barcodeFiles.Add(filePath);
+        }
+
+        // Benchmark reading without allowing incorrect barcodes
+        long timeWithoutAllow = BenchmarkReading(barcodeFiles, allowIncorrect: false);
+        // Benchmark reading while allowing incorrect barcodes
+        long timeWithAllow = BenchmarkReading(barcodeFiles, allowIncorrect: true);
+
+        // Output the measured times
+        Console.WriteLine($"Reading time without AllowIncorrectBarcodes: {timeWithoutAllow} ms");
+        Console.WriteLine($"Reading time with AllowIncorrectBarcodes:    {timeWithAllow} ms");
+
+        // Clean up temporary files and folder
         try
         {
-            // ------------------------------------------------------------
-            // Generate sample QR and PDF417 barcodes, then corrupt them
-            // ------------------------------------------------------------
-            for (int i = 0; i < 5; i++)
-            {
-                // Generate QR code image
-                string qrPath = Path.Combine(tempDir, $"qr_{i}.png");
-                using (var generator = new BarcodeGenerator(EncodeTypes.QR, $"SampleQR{i}"))
-                {
-                    generator.Save(qrPath, BarCodeImageFormat.Png);
-                }
-                // Introduce visual corruption
-                CorruptImage(qrPath);
-                imagePaths.Add(qrPath);
-
-                // Generate PDF417 code image
-                string pdfPath = Path.Combine(tempDir, $"pdf_{i}.png");
-                using (var generator = new BarcodeGenerator(EncodeTypes.Pdf417, $"SamplePDF417{i}"))
-                {
-                    generator.Save(pdfPath, BarCodeImageFormat.Png);
-                }
-                // Introduce visual corruption
-                CorruptImage(pdfPath);
-                imagePaths.Add(pdfPath);
-            }
-
-            // ------------------------------------------------------------
-            // Benchmark scanning with AllowIncorrectBarcodes set to false
-            // ------------------------------------------------------------
-            var swFalse = new Stopwatch();
-            int countFalse = 0;
-            swFalse.Start();
-            foreach (var path in imagePaths)
-            {
-                using (var reader = new BarCodeReader(path, DecodeType.AllSupportedTypes))
-                {
-                    reader.QualitySettings.AllowIncorrectBarcodes = false;
-                    var results = reader.ReadBarCodes();
-                    countFalse += results.Length;
-                }
-            }
-            swFalse.Stop();
-
-            // ------------------------------------------------------------
-            // Benchmark scanning with AllowIncorrectBarcodes set to true
-            // ------------------------------------------------------------
-            var swTrue = new Stopwatch();
-            int countTrue = 0;
-            swTrue.Start();
-            foreach (var path in imagePaths)
-            {
-                using (var reader = new BarCodeReader(path, DecodeType.AllSupportedTypes))
-                {
-                    reader.QualitySettings.AllowIncorrectBarcodes = true;
-                    var results = reader.ReadBarCodes();
-                    countTrue += results.Length;
-                }
-            }
-            swTrue.Stop();
-
-            // Output benchmark results
-            Console.WriteLine($"AllowIncorrectBarcodes = false: Time = {swFalse.ElapsedMilliseconds} ms, Barcodes read = {countFalse}");
-            Console.WriteLine($"AllowIncorrectBarcodes = true : Time = {swTrue.ElapsedMilliseconds} ms, Barcodes read = {countTrue}");
+            Directory.Delete(tempFolder, true);
         }
-        finally
+        catch
         {
-            // ------------------------------------------------------------
-            // Clean up temporary files and directory
-            // ------------------------------------------------------------
-            if (Directory.Exists(tempDir))
-            {
-                try
-                {
-                    Directory.Delete(tempDir, true);
-                }
-                catch
-                {
-                    // Suppress any cleanup exceptions
-                }
-            }
+            // Suppress any cleanup errors
         }
     }
 
-    /// <summary>
-    /// Corrupts an image by drawing a diagonal black line across it and overwriting the original file.
-    /// </summary>
-    /// <param name="imagePath">Full path to the image to corrupt.</param>
-    static void CorruptImage(string imagePath)
+    // Performs repeated reading of the provided barcode files and returns elapsed milliseconds
+    static long BenchmarkReading(List<string> files, bool allowIncorrect)
     {
-        using (var bitmap = new Bitmap(imagePath))
+        const int readsPerFile = 200; // Number of reads per file to simulate high‑throughput
+        var stopwatch = new Stopwatch();
+        stopwatch.Start();
+
+        foreach (var file in files)
         {
-            using (var graphics = Graphics.FromImage(bitmap))
+            if (!File.Exists(file))
+                continue; // Skip missing files gracefully
+
+            for (int i = 0; i < readsPerFile; i++)
             {
-                using (var pen = new Pen(Color.Black))
+                try
                 {
-                    // Draw a line from the top‑left to the bottom‑right corner
-                    graphics.DrawLine(pen, 0, 0, bitmap.Width, bitmap.Height);
+                    using (var reader = new BarCodeReader(file, DecodeType.AllSupportedTypes))
+                    {
+                        // Configure whether to allow incorrect barcodes during decoding
+                        reader.QualitySettings.AllowIncorrectBarcodes = allowIncorrect;
+
+                        // Force decoding; results are not processed further
+                        foreach (var result in reader.ReadBarCodes())
+                        {
+                            // No operation needed; iteration ensures decoding occurs
+                        }
+                    }
+                }
+                catch (ArgumentException)
+                {
+                    // Image loading failed; skip this iteration
                 }
             }
-
-            // Save the corrupted bitmap back to the original file
-            using (var stream = new FileStream(imagePath, FileMode.Create, FileAccess.Write))
-            {
-                bitmap.Save(stream, ImageFormat.Png);
-            }
         }
+
+        stopwatch.Stop();
+        return stopwatch.ElapsedMilliseconds;
     }
 }

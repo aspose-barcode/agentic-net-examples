@@ -1,101 +1,126 @@
-// Title: Batch barcode image processing with CSV timing report
-// Description: Demonstrates how to generate sample barcode images, recognize them in batch, and produce a CSV file containing recognition times and barcode counts.
-// Category-Description: This example belongs to the Aspose.BarCode batch processing category, showcasing the use of BarcodeGenerator for image creation and BarCodeReader for multi‑format barcode recognition. Typical use cases include automated scanning of large image sets, performance measurement, and reporting. Developers often need to handle various symbologies, measure processing speed, and export results, which this sample illustrates.
-// Prompt: Batch process a directory of mixed‑format images and generate a CSV report of recognition times.
-// Tags: barcode, generation, recognition, csv, batch, aspose.barcode, aspose.drawing, performance
+// Title: Batch barcode recognition and CSV timing report
+// Description: Demonstrates generating multiple barcode images, recognizing them in a batch, and creating a CSV file that records the processing time and number of barcodes detected per image.
+// Category-Description: This example belongs to the Aspose.BarCode batch processing category, showcasing how to use BarcodeGenerator to create barcodes, BarCodeReader for multi‑format recognition, and standard .NET I/O for handling files and CSV output. Typical use cases include automated scanning pipelines, performance benchmarking, and bulk data extraction where developers need to process many images efficiently.
+/// Prompt: Batch process a directory of mixed‑format images and generate a CSV report of recognition times.
+/// Tags: barcode, batch processing, csv, performance, recognition, aspose.barcode, barcodegenerator, barcodereader, decode
 
 using System;
 using System.IO;
 using System.Diagnostics;
 using System.Collections.Generic;
-using System.Text;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates batch generation, recognition, and reporting of barcodes using Aspose.BarCode.
+/// Demonstrates batch generation and recognition of barcodes, producing a CSV report with timing information.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates sample barcode images, reads them, measures recognition time, and writes a CSV report.
+    /// Entry point that creates sample barcode images, reads them, measures recognition time, and writes results to a CSV file.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder for generated images and the report
-        string tempFolder = Path.Combine(Path.GetTempPath(), "Batch_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
+        // Create a unique temporary working folder
+        string workFolder = Path.Combine(Path.GetTempPath(), "Batch_" + Guid.NewGuid().ToString("N"));
+        string imagesFolder = Path.Combine(workFolder, "Images");
+        Directory.CreateDirectory(imagesFolder);
 
-        // Generate sample barcode images of different symbologies
-        List<string> imageFiles = new List<string>();
-        GenerateBarcodeImage(tempFolder, "QR_Sample.png", EncodeTypes.QR, "QR12345");
-        imageFiles.Add(Path.Combine(tempFolder, "QR_Sample.png"));
-        GenerateBarcodeImage(tempFolder, "Code128_Sample.png", EncodeTypes.Code128, "CODE128TEXT");
-        imageFiles.Add(Path.Combine(tempFolder, "Code128_Sample.png"));
-        GenerateBarcodeImage(tempFolder, "DataMatrix_Sample.png", EncodeTypes.DataMatrix, "DM123");
-        imageFiles.Add(Path.Combine(tempFolder, "DataMatrix_Sample.png"));
-
-        // Prepare CSV report header
-        StringBuilder csvBuilder = new StringBuilder();
-        csvBuilder.AppendLine("FileName,RecognitionTimeMs,BarcodesFound");
-
-        // Process each generated image
-        foreach (string filePath in imageFiles)
+        // Define sample barcodes to generate (file name, symbology, text)
+        var samples = new List<(string FileName, BaseEncodeType Encode, string Text)>
         {
-            if (!File.Exists(filePath))
-            {
-                Console.WriteLine($"File not found: {filePath}");
-                continue;
-            }
+            ("qr.png", EncodeTypes.QR, "Sample QR"),
+            ("code128.png", EncodeTypes.Code128, "CODE128"),
+            ("datamatrix.png", EncodeTypes.DataMatrix, "DM12345"),
+            ("aztec.png", EncodeTypes.Aztec, "AZTEC"),
+            ("pdf417.png", EncodeTypes.Pdf417, "PDF417 Sample")
+        };
 
-            Stopwatch sw = new Stopwatch();
-            int foundCount = 0;
-
-            try
+        // Generate barcode images and collect their file paths
+        var imageFiles = new List<string>();
+        foreach (var (fileName, encode, text) in samples)
+        {
+            string filePath = Path.Combine(imagesFolder, fileName);
+            using (var generator = new BarcodeGenerator(encode, text))
             {
-                // Initialize reader for all supported barcode types
-                using (BarCodeReader reader = new BarCodeReader(filePath, DecodeType.AllSupportedTypes))
+                // Set common barcode parameters
+                generator.Parameters.Barcode.XDimension.Point = 2.0f;
+                generator.Parameters.Barcode.FilledBars = true;
+                generator.Parameters.Barcode.ThrowExceptionWhenCodeTextIncorrect = false;
+
+                // Save the generated barcode to a memory stream, then to a file
+                using (var ms = new MemoryStream())
                 {
-                    sw.Start(); // Start timing
-                    BarCodeResult[] results = reader.ReadBarCodes();
-                    sw.Stop(); // Stop timing
-
-                    if (results != null)
-                        foundCount = results.Length;
+                    generator.Save(ms, BarCodeImageFormat.Png);
+                    ms.Position = 0;
+                    using (var fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write))
+                    {
+                        ms.CopyTo(fileStream);
+                    }
                 }
             }
-            catch (ArgumentException ex)
-            {
-                Console.WriteLine($"Failed to load image '{Path.GetFileName(filePath)}': {ex.Message}");
-                continue;
-            }
-
-            // Append result line to CSV
-            csvBuilder.AppendLine($"{Path.GetFileName(filePath)},{sw.ElapsedMilliseconds},{foundCount}");
+            imageFiles.Add(filePath);
         }
 
-        // Write CSV report to the temporary folder
-        string reportPath = Path.Combine(tempFolder, "RecognitionReport.csv");
-        File.WriteAllText(reportPath, csvBuilder.ToString());
-
-        Console.WriteLine($"Report generated at: {reportPath}");
-    }
-
-    /// <summary>
-    /// Generates a barcode image using the specified encoding type and text.
-    /// </summary>
-    /// <param name="folder">Destination folder for the image.</param>
-    /// <param name="fileName">File name of the generated image.</param>
-    /// <param name="encodeType">Barcode symbology to encode.</param>
-    /// <param name="codeText">Text to encode in the barcode.</param>
-    static void GenerateBarcodeImage(string folder, string fileName, BaseEncodeType encodeType, string codeText)
-    {
-        string fullPath = Path.Combine(folder, fileName);
-        using (BarcodeGenerator generator = new BarcodeGenerator(encodeType, codeText))
+        // Prepare CSV report file
+        string reportPath = Path.Combine(workFolder, "Report.csv");
+        using (var writer = new StreamWriter(reportPath, false))
         {
-            // Optional: set additional parameters if needed
-            generator.Save(fullPath, BarCodeImageFormat.Png);
+            // Write CSV header
+            writer.WriteLine("FileName,ElapsedMilliseconds,BarcodesDetected");
+
+            // Process each generated image
+            foreach (string imagePath in imageFiles)
+            {
+                if (!File.Exists(imagePath))
+                {
+                    Console.WriteLine($"File not found: {imagePath}");
+                    continue;
+                }
+
+                Stopwatch sw = new Stopwatch();
+                int detectedCount = 0;
+
+                try
+                {
+                    // Initialize reader for all supported barcode types
+                    using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
+                    {
+                        // Use high‑performance quality settings
+                        reader.QualitySettings = QualitySettings.HighPerformance;
+
+                        // Measure recognition time
+                        sw.Start();
+                        BarCodeResult[] results = reader.ReadBarCodes();
+                        sw.Stop();
+
+                        // Count detected barcodes
+                        if (results != null)
+                        {
+                            detectedCount = results.Length;
+                        }
+                    }
+                }
+                catch (ArgumentException ex)
+                {
+                    // Image loading failed – skip this file
+                    Console.WriteLine($"Skipping file due to load error: {ex.Message}");
+                    continue;
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Unexpected error processing {imagePath}: {ex.Message}");
+                    continue;
+                }
+
+                // Write result line to CSV and console
+                string line = $"{Path.GetFileName(imagePath)},{sw.ElapsedMilliseconds},{detectedCount}";
+                writer.WriteLine(line);
+                Console.WriteLine(line);
+            }
         }
+
+        Console.WriteLine($"CSV report generated at: {reportPath}");
     }
 }

@@ -1,148 +1,112 @@
 // Title: Multi‑Threaded vs Single‑Threaded Barcode Recognition Throughput
-// Description: Demonstrates how to enable multi‑threaded barcode recognition using Aspose.BarCode and compares its performance against single‑threaded execution on a set of generated images.
-// Category-Description: This example belongs to the Aspose.BarCode recognition category, showcasing the use of BarCodeReader, ProcessorSettings, and threading configuration to optimize scanning speed. Developers often need to process large batches of barcode images efficiently; this snippet illustrates typical use cases such as adjusting thread pool limits, toggling core usage, and measuring throughput for performance tuning.
+// Description: Demonstrates how to enable multi‑threaded barcode recognition using Aspose.BarCode and compares processing time against single‑threaded execution on a set of generated barcode images.
+// Category-Description: This example belongs to the Aspose.BarCode recognition category, showcasing the use of BarCodeReader.ProcessorSettings to control CPU core utilization. Typical use cases include performance benchmarking, high‑volume scanning, and optimizing server‑side barcode processing. Developers often need to toggle between single‑ and multi‑core execution to balance resource usage and throughput.
 // Prompt: Enable multi‑threaded recognition and compare throughput against single‑threaded execution on a set of images.
-// Tags: barcode, recognition, multithreading, performance, aspose.barcode, processorsettings, threadpool
+// Tags: barcode symbology, recognition, multithreading, performance, aspose.barcode, code128, png
 
 using System;
 using System.IO;
-using System.Diagnostics;
 using System.Collections.Generic;
-using System.Threading;
+using System.Diagnostics;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates single‑ and multi‑threaded barcode recognition using Aspose.BarCode and measures performance.
+/// Demonstrates multi‑threaded barcode recognition performance comparison using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates sample barcodes, runs recognition in single‑ and multi‑threaded modes, and outputs timing results.
+    /// Entry point. Generates sample barcodes, runs single‑ and multi‑threaded recognition, and outputs timing results.
     /// </summary>
     static void Main()
     {
-        // Create a dedicated temporary folder for generated barcode images
+        // Create a temporary folder for sample barcodes
         string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeBatch_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
 
-        // Generate a set of sample barcode images
-        List<string> imageFiles = GenerateSampleBarcodes(tempFolder, 5);
+        // Generate sample barcode images (PNG format, Code128 symbology)
+        List<string> barcodeFiles = GenerateSampleBarcodes(tempFolder, 5);
 
-        // -------------------------------------------------
-        // Single‑threaded recognition
-        // -------------------------------------------------
-        Console.WriteLine("Single‑threaded recognition:");
-        // Configure processor to use only one core and no additional threads
+        // ---------- Single‑threaded recognition ----------
+        // Configure processor to use only one core
         BarCodeReader.ProcessorSettings.UseAllCores = false;
         BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount = 1;
-        BarCodeReader.ProcessorSettings.MaxAdditionalAllowedThreads = 0;
 
-        // Perform recognition and capture results
-        var singleResult = RecognizeBarcodes(imageFiles);
-        Console.WriteLine($"Total barcodes found: {singleResult.TotalFound}");
-        Console.WriteLine($"Elapsed time: {singleResult.ElapsedMilliseconds} ms");
-        Console.WriteLine();
+        var singleResult = RecognizeBarcodes(barcodeFiles);
+        Console.WriteLine($"Single‑threaded: Processed {singleResult.TotalCount} barcodes in {singleResult.ElapsedMilliseconds} ms");
 
-        // -------------------------------------------------
-        // Multi‑threaded recognition (all available cores)
-        // -------------------------------------------------
-        Console.WriteLine("Multi‑threaded recognition:");
-        // Optionally adjust ThreadPool limits to provide more worker threads
-        int workerThreads, completionPortThreads;
-        ThreadPool.GetMaxThreads(out workerThreads, out completionPortThreads);
-        ThreadPool.SetMaxThreads(Math.Max(Environment.ProcessorCount * 4, workerThreads), completionPortThreads);
-        ThreadPool.GetMinThreads(out workerThreads, out completionPortThreads);
-        ThreadPool.SetMinThreads(Math.Max(Environment.ProcessorCount * 4, workerThreads), completionPortThreads);
-
-        // Enable use of all cores and allow additional threads for processing
+        // ---------- Multi‑threaded recognition ----------
+        // Enable use of all available cores
         BarCodeReader.ProcessorSettings.UseAllCores = true;
-        BarCodeReader.ProcessorSettings.MaxAdditionalAllowedThreads = Environment.ProcessorCount * 2;
 
-        // Perform recognition and capture results
-        var multiResult = RecognizeBarcodes(imageFiles);
-        Console.WriteLine($"Total barcodes found: {multiResult.TotalFound}");
-        Console.WriteLine($"Elapsed time: {multiResult.ElapsedMilliseconds} ms");
-        Console.WriteLine();
+        var multiResult = RecognizeBarcodes(barcodeFiles);
+        Console.WriteLine($"Multi‑threaded: Processed {multiResult.TotalCount} barcodes in {multiResult.ElapsedMilliseconds} ms");
 
-        // -------------------------------------------------
-        // Cleanup temporary files
-        // -------------------------------------------------
-        try
+        // Clean up temporary files
+        foreach (var file in barcodeFiles)
         {
-            Directory.Delete(tempFolder, true);
+            try { File.Delete(file); } catch { /* ignore */ }
         }
-        catch
-        {
-            // Ignore cleanup errors (e.g., files in use)
-        }
+        try { Directory.Delete(tempFolder, true); } catch { /* ignore */ }
     }
 
-    /// <summary>
-    /// Generates a specified number of PDF417 barcode images and returns their file paths.
-    /// </summary>
-    /// <param name="folder">Folder where images will be saved.</param>
-    /// <param name="count">Number of barcode images to generate.</param>
-    /// <returns>List of generated image file paths.</returns>
+    // Generates a given number of barcode PNG files and returns their paths
     static List<string> GenerateSampleBarcodes(string folder, int count)
     {
         var files = new List<string>();
         for (int i = 0; i < count; i++)
         {
-            string text = $"Sample{i + 1}";
+            string codeText = $"Sample{i + 1}";
             string filePath = Path.Combine(folder, $"barcode_{i + 1}.png");
-            using (var generator = new BarcodeGenerator(EncodeTypes.Pdf417, text))
+
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
             {
-                // Default parameters are sufficient for this demo
+                // No additional parameters needed for this simple example
                 generator.Save(filePath, BarCodeImageFormat.Png);
             }
+
             files.Add(filePath);
         }
         return files;
     }
 
-    /// <summary>
-    /// Holds aggregated recognition results.
-    /// </summary>
-    struct RecognitionResult
+    // Reads all barcodes from the provided file list and returns total count and elapsed time
+    static (int TotalCount, long ElapsedMilliseconds) RecognizeBarcodes(List<string> files)
     {
-        public int TotalFound;
-        public long ElapsedMilliseconds;
-    }
+        int totalDetected = 0;
+        var stopwatch = Stopwatch.StartNew();
 
-    /// <summary>
-    /// Recognizes barcodes in the provided list of image files and returns total count and elapsed time.
-    /// </summary>
-    /// <param name="files">List of image file paths to process.</param>
-    /// <returns>RecognitionResult containing total barcodes found and processing time.</returns>
-    static RecognitionResult RecognizeBarcodes(List<string> files)
-    {
-        int totalFound = 0;
-        Stopwatch watch = Stopwatch.StartNew();
-
-        // Iterate through each file and read barcodes
-        foreach (string file in files)
+        foreach (var file in files)
         {
             if (!File.Exists(file))
+            {
+                Console.WriteLine($"File not found: {file}");
                 continue;
+            }
 
             using (var reader = new BarCodeReader(file, DecodeType.AllSupportedTypes))
             {
                 try
                 {
-                    // Perform barcode detection
-                    reader.ReadBarCodes();
-                    totalFound += reader.FoundCount;
+                    BarCodeResult[] results = reader.ReadBarCodes();
+                    totalDetected += results.Length;
+
+                    foreach (var result in results)
+                    {
+                        Console.WriteLine($"File: {Path.GetFileName(file)} | CodeText: {result.CodeText} | Type: {result.CodeTypeName}");
+                    }
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Error reading '{Path.GetFileName(file)}': {ex.Message}");
+                    Console.WriteLine($"Error reading '{file}': {ex.Message}");
                 }
             }
         }
 
-        watch.Stop();
-        return new RecognitionResult { TotalFound = totalFound, ElapsedMilliseconds = watch.ElapsedMilliseconds };
+        stopwatch.Stop();
+        return (totalDetected, stopwatch.ElapsedMilliseconds);
     }
 }

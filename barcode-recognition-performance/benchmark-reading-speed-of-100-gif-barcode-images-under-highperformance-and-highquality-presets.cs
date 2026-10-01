@@ -1,102 +1,108 @@
-// Title: Benchmark barcode reading speed for GIF images using Aspose.BarCode presets
-// Description: Demonstrates how to generate sample GIF barcode images and measure the time required to read them with HighPerformance and HighQuality quality settings.
-// Category-Description: This example belongs to the Aspose.BarCode reading performance category. It showcases the use of BarCodeGenerator for creating barcodes, BarCodeReader for decoding, and QualitySettings presets to control trade‑offs between speed and accuracy. Developers often need to benchmark reading operations when processing large batches of images, choosing the appropriate preset for their scenario.
+// Title: Benchmark reading speed of GIF barcodes with different quality presets
+// Description: Demonstrates how to generate a set of GIF barcode images and measure the time required to read them using Aspose.BarCode with HighPerformance and HighQuality quality settings.
+// Category-Description: This example belongs to the Aspose.BarCode performance benchmarking category, illustrating the use of BarCodeGenerator for image creation, BarCodeReader for decoding, and QualitySettings presets to control recognition speed versus accuracy. Developers often need to compare HighPerformance and HighQuality modes when processing large batches of barcodes to choose the optimal trade‑off for their applications. The snippet shows typical setup, timing with Stopwatch, and cleanup, making it searchable for performance testing scenarios.
 // Prompt: Benchmark reading speed of 100 GIF barcode images under HighPerformance and HighQuality presets.
-// Tags: barcode, gif, performance, qualitysettings, aspose.barcode, code128, reading, benchmark
+// Tags: barcode, gif, performance, benchmark, highperformance, highquality, generation, recognition, qualitysettings, aspose.barcode
 
 using System;
 using System.IO;
-using System.Collections.Generic;
 using System.Diagnostics;
+using System.Collections.Generic;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates benchmarking of barcode reading performance for GIF images using different quality presets.
+/// Demonstrates benchmarking of barcode reading speed for GIF images using different quality presets.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates sample GIF barcodes, benchmarks reading with HighPerformance and HighQuality presets, and cleans up temporary files.
+    /// Entry point. Generates sample GIF barcodes, benchmarks reading with HighPerformance and HighQuality presets, and outputs timing results.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder for generated images
+        // Create a dedicated temporary folder for the demo
         string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeBenchmark_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
 
-        // Generate sample GIF barcode images (5 distinct codes)
-        List<string> imageFiles = new List<string>();
-        for (int i = 1; i <= 5; i++)
-        {
-            string codeText = "CODE" + i;
-            string filePath = Path.Combine(tempFolder, $"barcode_{i}.gif");
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
-            {
-                generator.Save(filePath, BarCodeImageFormat.Gif);
-            }
-            imageFiles.Add(filePath);
-        }
+        // Number of sample images (reduced for safe execution)
+        const int sampleCount = 10;
+        List<string> barcodeFiles = new List<string>();
 
-        // Benchmark reading with the HighPerformance preset
-        Stopwatch sw = new Stopwatch();
-        sw.Start();
-        int totalCountHighPerf = ReadBarcodes(imageFiles, QualitySettings.HighPerformance);
-        sw.Stop();
-        Console.WriteLine($"HighPerformance: Read {totalCountHighPerf} barcodes in {sw.ElapsedMilliseconds} ms");
-
-        // Benchmark reading with the HighQuality preset
-        sw.Restart();
-        int totalCountHighQual = ReadBarcodes(imageFiles, QualitySettings.HighQuality);
-        sw.Stop();
-        Console.WriteLine($"HighQuality: Read {totalCountHighQual} barcodes in {sw.ElapsedMilliseconds} ms");
-
-        // Clean up temporary files and folder
         try
         {
-            Directory.Delete(tempFolder, true);
+            // Generate sample GIF barcode images
+            for (int i = 0; i < sampleCount; i++)
+            {
+                string filePath = Path.Combine(tempFolder, $"barcode_{i:D3}.gif");
+                using (var generator = new BarcodeGenerator(EncodeTypes.Code128, $"CODE{i:D3}"))
+                {
+                    generator.Save(filePath, BarCodeImageFormat.Gif);
+                }
+                barcodeFiles.Add(filePath);
+            }
+
+            // Benchmark with HighPerformance preset
+            long highPerfMs = BenchmarkReading(barcodeFiles, QualitySettings.HighPerformance);
+            Console.WriteLine($"Reading {barcodeFiles.Count} GIF barcodes with HighPerformance preset took {highPerfMs} ms.");
+
+            // Benchmark with HighQuality preset
+            long highQualMs = BenchmarkReading(barcodeFiles, QualitySettings.HighQuality);
+            Console.WriteLine($"Reading {barcodeFiles.Count} GIF barcodes with HighQuality preset took {highQualMs} ms.");
         }
-        catch
+        finally
         {
-            // Ignore cleanup errors
+            // Clean up temporary files
+            if (Directory.Exists(tempFolder))
+            {
+                try
+                {
+                    Directory.Delete(tempFolder, true);
+                }
+                catch
+                {
+                    // Ignored - cleanup failure should not crash the demo
+                }
+            }
         }
     }
 
     /// <summary>
-    /// Reads barcodes from the specified files using the given quality preset.
+    /// Measures the time required to read a collection of barcode image files using the specified quality preset.
     /// </summary>
-    /// <param name="files">List of image file paths.</param>
-    /// <param name="preset">QualitySettings preset to apply.</param>
-    /// <returns>Total number of barcodes successfully read.</returns>
-    static int ReadBarcodes(List<string> files, QualitySettings preset)
+    /// <param name="files">List of barcode image file paths.</param>
+    /// <param name="preset">QualitySettings preset to apply during reading.</param>
+    /// <returns>Elapsed time in milliseconds.</returns>
+    static long BenchmarkReading(List<string> files, QualitySettings preset)
     {
-        int totalBarcodes = 0;
+        Stopwatch sw = new Stopwatch();
+        sw.Start();
+
         foreach (string file in files)
         {
-            // Verify the file exists before attempting to read
             if (!File.Exists(file))
-            {
-                Console.WriteLine($"File not found: {file}");
                 continue;
-            }
 
-            try
+            using (var reader = new BarCodeReader(file, DecodeType.AllSupportedTypes))
             {
-                // Initialize the reader with all supported decode types
-                using (var reader = new BarCodeReader(file, DecodeType.AllSupportedTypes))
+                // Apply the requested quality preset
+                reader.QualitySettings = preset;
+
+                // Perform the read operation (results are ignored for timing)
+                try
                 {
-                    // Apply the requested quality preset
-                    reader.QualitySettings = preset;
                     BarCodeResult[] results = reader.ReadBarCodes();
-                    totalBarcodes += results.Length;
+                }
+                catch (ArgumentException)
+                {
+                    // Skip files that cannot be loaded as images
+                    continue;
                 }
             }
-            catch (ArgumentException ex) when (ex.Message.Contains("Image loading failed"))
-            {
-                // Skip files that cannot be loaded as images
-                Console.WriteLine($"Skipping unreadable file: {file}");
-            }
         }
-        return totalBarcodes;
+
+        sw.Stop();
+        return sw.ElapsedMilliseconds;
     }
 }

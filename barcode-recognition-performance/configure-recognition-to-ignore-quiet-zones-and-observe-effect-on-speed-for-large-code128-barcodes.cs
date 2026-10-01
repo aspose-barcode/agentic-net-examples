@@ -1,101 +1,134 @@
-// Title: Demonstrate high‑performance barcode recognition ignoring quiet zones for large Code128
-// Description: Shows how to generate a large Code128 barcode, then compare default and high‑performance recognition settings, illustrating the impact on processing speed.
-// Category-Description: This example belongs to the Aspose.BarCode recognition category, focusing on performance tuning. It uses BarCodeGenerator for barcode creation and BarCodeReader with QualitySettings to adjust decoding speed. Developers often need to balance accuracy and speed when processing large or high‑volume barcode images, especially when quiet zones are irrelevant.
-// Prompt: Configure recognition to ignore quiet zones and observe effect on speed for large Code128 barcodes.
-// Tags: code128, barcode, recognition, performance, quiet zone, highperformance, aspose.barcode, csharp
+// Title: Code128 Barcode Generation and Recognition Performance Comparison
+// Description: Demonstrates generating large Code128 barcodes, then measuring recognition time with default and high‑performance settings, highlighting the impact of quality presets on speed.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes and BarCodeReader with QualitySettings for fast recognition. Typical scenarios include bulk barcode processing, performance tuning, and evaluating trade‑offs between accuracy and speed. Developers often need to adjust quality presets, deconvolution modes, and validation options to meet high‑throughput requirements.
+/// Prompt: Configure recognition to ignore quiet zones and observe effect on speed for large Code128 barcodes.
+/// Tags: code128, barcode, generation, recognition, performance, qualitysettings, aspose.barcode
 
 using System;
-using System.Diagnostics;
 using System.IO;
-using Aspose.BarCode;
+using System.Diagnostics;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
+using Aspose.BarCode;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Generates a large Code128 barcode and compares default vs. high‑performance
-/// recognition settings to demonstrate speed differences when quiet zones are ignored.
+/// Generates large Code128 barcodes, then compares recognition performance using default
+/// and high‑performance quality settings. Demonstrates how quality presets affect processing speed.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates a barcode image, reads it with two
-    /// different quality presets, prints timing results, and cleans up temporary files.
+    /// Entry point of the demo. Creates temporary barcode images, measures recognition times,
+    /// and cleans up generated files.
     /// </summary>
     static void Main()
     {
-        // --------------------------------------------------------------------
-        // Prepare a temporary folder for the generated barcode image
-        // --------------------------------------------------------------------
-        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        // Create a dedicated temporary folder for this demo
+        string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
-        string imagePath = Path.Combine(tempFolder, "large_code128.png");
 
-        // --------------------------------------------------------------------
-        // Generate a large Code128 barcode (100 characters) and save as PNG
-        // --------------------------------------------------------------------
-        string codeText = new string('A', 100);
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+        // Prepare a few large Code128 strings (e.g., 500 characters each)
+        int barcodeCount = 5;
+        int codeLength = 500;
+        string[] codeTexts = new string[barcodeCount];
+        for (int i = 0; i < barcodeCount; i++)
         {
-            // Aspose.BarCode does not expose an explicit ignore‑quiet‑zone option;
-            // the default generation includes standard quiet zones.
-            generator.Save(imagePath, BarCodeImageFormat.Png);
+            codeTexts[i] = new string('A', codeLength);
         }
 
-        // --------------------------------------------------------------------
-        // Decode using default (NormalQuality) settings and measure elapsed time
-        // --------------------------------------------------------------------
-        BaseDecodeType decodeType = DecodeType.Code128;
-        long defaultTimeMs;
-        int defaultCount;
-        using (BarCodeReader reader = new BarCodeReader(imagePath, decodeType))
+        // Generate barcode images and store their file paths
+        string[] imagePaths = new string[barcodeCount];
+        for (int i = 0; i < barcodeCount; i++)
         {
-            Stopwatch sw = Stopwatch.StartNew();
-            BarCodeResult[] results = reader.ReadBarCodes();
-            sw.Stop();
-
-            defaultTimeMs = sw.ElapsedMilliseconds;
-            defaultCount = results.Length;
+            string imagePath = Path.Combine(tempFolder, $"barcode_{i}.png");
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeTexts[i]))
+            {
+                // No need to set size; default auto-sizing works for large code texts
+                generator.Save(imagePath, BarCodeImageFormat.Png);
+            }
+            imagePaths[i] = imagePath;
         }
 
-        // --------------------------------------------------------------------
-        // Decode using HighPerformance preset (faster) and measure elapsed time
-        // --------------------------------------------------------------------
-        long highPerfTimeMs;
-        int highPerfCount;
-        using (BarCodeReader reader = new BarCodeReader(imagePath, decodeType))
+        // ------------------------------------------------------------
+        // Measure recognition time using default quality settings
+        // ------------------------------------------------------------
+        Stopwatch swDefault = Stopwatch.StartNew();
+        foreach (string path in imagePaths)
         {
-            // Apply high‑performance quality settings to reduce processing overhead
-            reader.QualitySettings = QualitySettings.HighPerformance;
-            // Optional: speed up deconvolution step
-            reader.QualitySettings.Deconvolution = DeconvolutionMode.Fast;
+            if (!File.Exists(path))
+            {
+                Console.WriteLine($"File not found: {path}");
+                continue;
+            }
 
-            Stopwatch sw = Stopwatch.StartNew();
-            BarCodeResult[] results = reader.ReadBarCodes();
-            sw.Stop();
-
-            highPerfTimeMs = sw.ElapsedMilliseconds;
-            highPerfCount = results.Length;
+            using (var reader = new BarCodeReader(path, DecodeType.Code128))
+            {
+                // Default quality settings (no modifications)
+                foreach (BarCodeResult result in reader.ReadBarCodes())
+                {
+                    Console.WriteLine($"[Default] Detected: {result.CodeText?.Length} chars");
+                }
+            }
         }
+        swDefault.Stop();
+        Console.WriteLine($"Total recognition time (default settings): {swDefault.ElapsedMilliseconds} ms");
 
-        // --------------------------------------------------------------------
-        // Output timing and detection results to the console
-        // --------------------------------------------------------------------
-        Console.WriteLine($"Default (NormalQuality) - Time: {defaultTimeMs} ms, Barcodes detected: {defaultCount}");
-        Console.WriteLine($"HighPerformance preset - Time: {highPerfTimeMs} ms, Barcodes detected: {highPerfCount}");
+        // ------------------------------------------------------------
+        // Measure recognition time using high‑performance quality settings
+        // ------------------------------------------------------------
+        Stopwatch swFast = Stopwatch.StartNew();
+        foreach (string path in imagePaths)
+        {
+            if (!File.Exists(path))
+            {
+                Console.WriteLine($"File not found: {path}");
+                continue;
+            }
 
-        // --------------------------------------------------------------------
+            using (var reader = new BarCodeReader(path, DecodeType.Code128))
+            {
+                // Apply high‑performance preset to speed up processing
+                reader.QualitySettings = QualitySettings.HighPerformance;
+                // Reduce deconvolution effort for faster recognition
+                reader.QualitySettings.Deconvolution = DeconvolutionMode.Fast;
+                // Allow incorrect barcodes to avoid extra validation overhead
+                reader.QualitySettings.AllowIncorrectBarcodes = true;
+
+                // NOTE: Aspose.BarCode does not expose a property to ignore quiet zones.
+                // Quiet zone handling is internal to the recognition engine and cannot be disabled via API.
+
+                foreach (BarCodeResult result in reader.ReadBarCodes())
+                {
+                    Console.WriteLine($"[Fast] Detected: {result.CodeText?.Length} chars");
+                }
+            }
+        }
+        swFast.Stop();
+        Console.WriteLine($"Total recognition time (high‑performance settings): {swFast.ElapsedMilliseconds} ms");
+
+        // ------------------------------------------------------------
         // Clean up temporary files and folder
-        // --------------------------------------------------------------------
+        // ------------------------------------------------------------
+        foreach (string path in imagePaths)
+        {
+            try
+            {
+                File.Delete(path);
+            }
+            catch
+            {
+                // Ignore any deletion errors
+            }
+        }
+
         try
         {
-            if (File.Exists(imagePath))
-                File.Delete(imagePath);
             Directory.Delete(tempFolder, true);
         }
         catch
         {
-            // Ignored – cleanup failures should not affect program outcome
+            // Ignore any deletion errors
         }
     }
 }

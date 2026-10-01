@@ -1,59 +1,70 @@
 // Title: Barcode Generation with Raw Pixel Matrix Output
-// Description: Generates a Code128 barcode and prints its bitmap pixel matrix, where 1 represents black and 0 represents white, useful for debugging detection algorithms.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, demonstrating how to create a barcode image using BarcodeGenerator, configure colors, and access the underlying bitmap. Developers often need to inspect raw pixel data for custom detection, image processing, or diagnostic purposes. Key API classes include BarcodeGenerator, EncodeTypes, and Aspose.Drawing.Bitmap.
+// Description: Generates a Code128 barcode, saves it as PNG, and prints the image dimensions followed by a binary pixel matrix where bright pixels are shown as 1 and dark pixels as 0.
+// Category-Description: This example belongs to the Aspose.BarCode generation and image processing category. It demonstrates using BarcodeGenerator (Aspose.BarCode.Generation) to create a barcode, saving it with BarCodeImageFormat, and loading the result with Aspose.Drawing.Bitmap for pixel-level analysis. Developers often need such diagnostics to verify barcode rendering, troubleshoot detection algorithms, or visualize raw image data during debugging.
 // Prompt: Develop a diagnostic mode that outputs the raw pixel matrix used for barcode detection when debugging.
-// Tags: barcode symbology, generation, debug, pixel matrix, aspose.barcode, code128, console output
+// Tags: barcode, symbology, generation, debug, pixel matrix, aspose.barcode, aspose.drawing, png, console
 
 using System;
+using System.IO;
 using System.Text;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates barcode generation and outputs the raw pixel matrix for diagnostic purposes.
+/// Demonstrates generating a Code128 barcode and outputting its raw pixel matrix for diagnostic purposes.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a Code128 barcode, prints its dimensions,
-    /// and writes the binary pixel matrix (1 = black, 0 = white) to the console.
+    /// Entry point of the example. Generates a barcode, writes its size, and prints a binary representation of its pixel brightness.
     /// </summary>
-    static void Main()
+    /// <param name="args">Command‑line arguments (not used).</param>
+    static void Main(string[] args)
     {
-        // Define the data to encode in the barcode.
-        string codeText = "1234567890";
+        // Define the barcode text and symbology to use.
+        string codeText = "HelloWorld";
 
         // Create a BarcodeGenerator for Code128 with the specified text.
         using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
         {
-            // Set barcode and background colors for a clear black‑on‑white image.
-            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-            generator.Parameters.BackColor = Aspose.Drawing.Color.White;
-
-            // Generate the barcode as a bitmap image.
-            using (Bitmap bitmap = generator.GenerateBarCodeImage())
+            // Save the generated barcode image into a memory stream in PNG format.
+            using (var ms = new MemoryStream())
             {
-                int width = bitmap.Width;
-                int height = bitmap.Height;
+                generator.Save(ms, BarCodeImageFormat.Png);
+                ms.Position = 0; // Reset stream position for reading.
 
-                // Output image dimensions.
-                Console.WriteLine($"Bitmap size: {width}x{height}");
-                Console.WriteLine("Raw pixel matrix (1 = black, 0 = white):");
-
-                // Iterate over each pixel row to build and display the binary matrix.
-                for (int y = 0; y < height; y++)
+                // Load the PNG image as an Aspose.Drawing.Bitmap for pixel access.
+                using (var bitmap = new Bitmap(ms))
                 {
-                    var line = new StringBuilder(width);
-                    for (int x = 0; x < width; x++)
-                    {
-                        // Retrieve the pixel color at (x, y).
-                        var pixelColor = bitmap.GetPixel(x, y);
+                    int width = bitmap.Width;
+                    int height = bitmap.Height;
 
-                        // Append '1' for black pixels, otherwise '0'.
-                        line.Append(pixelColor.ToArgb() == Aspose.Drawing.Color.Black.ToArgb() ? '1' : '0');
+                    // Output image dimensions.
+                    Console.WriteLine($"Barcode image size: {width}x{height}");
+                    Console.WriteLine("Raw pixel matrix (1 = bright, 0 = dark):");
+
+                    // Iterate over each pixel row.
+                    for (int y = 0; y < height; y++)
+                    {
+                        var line = new StringBuilder();
+
+                        // Iterate over each pixel column.
+                        for (int x = 0; x < width; x++)
+                        {
+                            // Retrieve the pixel color.
+                            Color color = bitmap.GetPixel(x, y);
+
+                            // Compute average brightness (simple luminance approximation).
+                            int brightness = (color.R + color.G + color.B) / 3;
+
+                            // Append '1' for bright pixels, '0' for dark pixels.
+                            line.Append(brightness > 128 ? '1' : '0');
+                        }
+
+                        // Write the binary line representing the current row.
+                        Console.WriteLine(line.ToString());
                     }
-                    // Write the constructed line for the current row.
-                    Console.WriteLine(line.ToString());
                 }
             }
         }

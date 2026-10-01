@@ -1,74 +1,93 @@
 // Title: Detect Large Barcodes in High‑Resolution Scans Using XDimension Settings
-// Description: Demonstrates generating a high‑resolution barcode image and configuring QualitySettings to detect large barcodes by setting XDimension mode to Large and MinimalXDimension to 6 pixels.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes and BarCodeReader with QualitySettings for accurate detection in high‑resolution scans. Developers working with barcode imaging often need to adjust XDimension and resolution settings to reliably read large or dense barcodes; this snippet provides a concise reference for those scenarios.
+// Description: Demonstrates how to generate a Code128 barcode, save it as PNG, and configure QualitySettings.XDimension to 6 pixels for reliable detection of large barcodes in high‑resolution images.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, illustrating the use of BarCodeReader with custom QualitySettings to handle large‑module barcodes. It showcases key API classes such as BarcodeGenerator, BarCodeReader, and QualitySettings, which developers commonly use when processing high‑resolution scans where default module size detection may fail. Ideal for scenarios like inventory imaging, document scanning, and industrial automation where barcode size varies.
 // Prompt: Set QualitySettings.XDimension to 6 pixels for detecting large barcodes in high‑resolution scans.
-// Tags: barcode symbology, generation, recognition, qualitysettings, xdimension, highresolution, png, csharp
+// Tags: barcode, code128, qualitysettings, xdimension, recognition, highresolution, aspose.barcode, generation, png
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates a high‑resolution Code128 barcode,
-/// then reads it using QualitySettings configured for large barcodes.
+/// Example program that generates a Code128 barcode, saves it, and reads it using custom XDimension settings to detect large barcodes in high‑resolution scans.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates a temporary folder, generates a barcode,
-    /// reads it with adjusted XDimension settings, and cleans up resources.
+    /// Entry point. Generates a barcode image, configures reader quality settings, performs recognition, and cleans up.
     /// </summary>
     static void Main()
     {
         // --------------------------------------------------------------------
-        // Create a temporary folder for the demo files
+        // Prepare a temporary file path for the sample barcode image
         // --------------------------------------------------------------------
-        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
-        string imagePath = Path.Combine(tempFolder, "barcode.png");
+        string tempImagePath = Path.Combine(Path.GetTempPath(), "sample_barcode.png");
+        string codeText = "1234567890";
 
         // --------------------------------------------------------------------
-        // Generate a high‑resolution barcode image (300 DPI) and save as PNG
+        // Generate a Code128 barcode and save it as PNG
         // --------------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
         {
-            generator.Parameters.Resolution = 300; // high DPI for better scan quality
-            generator.Save(imagePath, BarCodeImageFormat.Png);
+            // Optional: adjust the module size (XDimension) if needed; default is 2 points
+            generator.Parameters.Barcode.XDimension.Point = 2f;
+
+            // Save the generated barcode to the temporary PNG file
+            generator.Save(tempImagePath, BarCodeImageFormat.Png);
         }
 
         // --------------------------------------------------------------------
-        // Read the barcode with QualitySettings tuned for large barcodes
+        // Verify that the barcode image was successfully created
         // --------------------------------------------------------------------
-        using (var reader = new BarCodeReader(imagePath, DecodeType.Code128))
+        if (!File.Exists(tempImagePath))
         {
-            // Configure XDimension mode to Large and set minimal element size to 6 pixels
-            reader.QualitySettings.XDimension = XDimensionMode.Large;
-            reader.QualitySettings.MinimalXDimension = 6f;
+            Console.WriteLine("Failed to create barcode image.");
+            return;
+        }
 
-            // Perform the read operation
+        // --------------------------------------------------------------------
+        // Read the barcode using custom quality settings for large XDimension
+        // --------------------------------------------------------------------
+        using (var reader = new BarCodeReader(tempImagePath, DecodeType.Code128))
+        {
+            // Enable minimal XDimension mode and set the minimal dimension to 6 pixels
+            reader.QualitySettings.XDimension = XDimensionMode.UseMinimalXDimension;
+            reader.QualitySettings.MinimalXDimension = 6f; // pixels
+
+            // Perform barcode recognition
             BarCodeResult[] results = reader.ReadBarCodes();
 
-            // Output the results to the console
-            Console.WriteLine($"Barcodes read: {results.Length}");
-            foreach (BarCodeResult result in results)
+            // ----------------------------------------------------------------
+            // Output recognition results
+            // ----------------------------------------------------------------
+            if (results.Length == 0)
             {
-                Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
+                Console.WriteLine("No barcode detected.");
+            }
+            else
+            {
+                foreach (BarCodeResult result in results)
+                {
+                    Console.WriteLine($"Code Text: {result.CodeText}");
+                    Console.WriteLine($"Code Type: {result.CodeTypeName}");
+                    Console.WriteLine($"Reading Quality: {result.ReadingQuality}");
+                }
             }
         }
 
         // --------------------------------------------------------------------
-        // Optional cleanup of temporary files and folder
+        // Clean up the temporary barcode image file
         // --------------------------------------------------------------------
         try
         {
-            File.Delete(imagePath);
-            Directory.Delete(tempFolder);
+            File.Delete(tempImagePath);
         }
         catch
         {
-            // Ignore any cleanup errors (e.g., file still in use)
+            // Ignore any cleanup errors
         }
     }
 }

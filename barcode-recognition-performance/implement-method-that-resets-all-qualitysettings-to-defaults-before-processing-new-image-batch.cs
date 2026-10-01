@@ -1,53 +1,62 @@
-// Title: Reset QualitySettings and Process a Batch of QR Barcodes
-// Description: Demonstrates resetting the BarCodeReader quality settings to defaults before reading a batch of generated QR code images.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It shows how to use BarcodeGenerator to create barcodes, BarCodeReader to decode them, and how to reset QualitySettings (using the NormalQuality preset) between reads. Developers working with image batches often need to ensure consistent decoding performance, making this pattern common for batch processing scenarios.
+// Title: Resetting BarCodeReader QualitySettings for Batch Processing
+// Description: Demonstrates how to reset all QualitySettings of a BarCodeReader to their default values before reading each image in a batch of barcode files.
+// Category-Description: This example belongs to the Aspose.BarCode image processing and recognition category. It shows how to use the BarCodeReader class together with QualitySettings to ensure consistent decoding performance across multiple images. Developers often need to adjust or reset quality presets such as XDimension, Deconvolution, and InverseImage when processing large batches of barcodes, making this pattern useful for batch automation scripts.
 // Prompt: Implement a method that resets all QualitySettings to defaults before processing a new image batch.
-// Tags: barcode, qr, qualitysettings, batch processing, generation, recognition, aspose.barcode, csharp
+// Tags: barcode, qualitysettings, batch processing, aspose.barcode, barcode generation, barcode recognition
 
 using System;
 using System.IO;
 using System.Collections.Generic;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates resetting QualitySettings and reading a batch of QR barcodes using Aspose.BarCode.
+/// Sample program that generates a batch of barcode images, resets quality settings for each reader,
+/// and reads the barcodes while outputting their details.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Resets the reader's quality settings to the default NormalQuality preset.
+    /// Resets all QualitySettings of the provided BarCodeReader to their default values.
     /// </summary>
-    /// <param name="reader">The BarCodeReader instance whose settings are to be reset.</param>
+    /// <param name="reader">The BarCodeReader whose quality settings will be reset.</param>
     static void ResetQualitySettings(BarCodeReader reader)
     {
-        // Apply the default NormalQuality preset
+        // Set the preset to the default NormalQuality.
         reader.QualitySettings = QualitySettings.NormalQuality;
+
+        // Reset individual quality-related properties to their defaults.
+        reader.QualitySettings.XDimension = XDimensionMode.Auto;
+        reader.QualitySettings.Deconvolution = DeconvolutionMode.Normal;
+        reader.QualitySettings.InverseImage = InverseImageMode.Auto;
     }
 
     /// <summary>
-    /// Entry point. Generates sample QR barcodes, resets reader quality settings, reads them, and cleans up.
+    /// Entry point of the program. Generates sample barcodes, processes them in a batch,
+    /// and cleans up temporary files.
     /// </summary>
-    static void Main()
+    /// <param name="args">Command‑line arguments (not used).</param>
+    static void Main(string[] args)
     {
-        // Create a unique temporary folder for the batch
+        // Create a unique temporary folder for the sample batch.
         string batchFolder = Path.Combine(Path.GetTempPath(), "Batch_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(batchFolder);
 
-        // Generate sample barcode images
+        // Generate a few sample barcode images.
         List<string> barcodeFiles = new List<string>();
-        for (int i = 0; i < 3; i++)
+        for (int i = 1; i <= 5; i++)
         {
-            BaseEncodeType encodeType = EncodeTypes.QR;
-            string codeText = $"Sample{i}";
-            BarcodeGenerator generator = new BarcodeGenerator(encodeType, codeText);
-            string filePath = Path.Combine(batchFolder, $"barcode{i}.png");
+            string filePath = Path.Combine(batchFolder, $"barcode_{i}.png");
+            var generator = new BarcodeGenerator(EncodeTypes.Code128, $"Sample{i}");
+            // Example setting for XDimension.
+            generator.Parameters.Barcode.XDimension.Point = 2.5f;
             generator.Save(filePath, BarCodeImageFormat.Png);
             barcodeFiles.Add(filePath);
         }
 
-        // Process the batch: read each barcode with reset quality settings
+        // Process each barcode image in the batch.
         foreach (string file in barcodeFiles)
         {
             if (!File.Exists(file))
@@ -56,33 +65,31 @@ class Program
                 continue;
             }
 
-            using (BarCodeReader reader = new BarCodeReader(file, DecodeType.QR))
+            // Create a reader for the current image.
+            using (var reader = new BarCodeReader(file, DecodeType.Code128))
             {
-                // Ensure the reader uses default quality before each read
+                // Reset quality settings before processing this image.
                 ResetQualitySettings(reader);
-                try
+
+                // Read barcodes and output their details.
+                foreach (BarCodeResult result in reader.ReadBarCodes())
                 {
-                    BarCodeResult[] results = reader.ReadBarCodes();
-                    foreach (BarCodeResult result in results)
-                    {
-                        Console.WriteLine($"File: {Path.GetFileName(file)} | CodeText: {result.CodeText}");
-                    }
-                }
-                catch (ArgumentException ex)
-                {
-                    Console.WriteLine($"Failed to read {Path.GetFileName(file)}: {ex.Message}");
+                    Console.WriteLine($"File: {Path.GetFileName(file)}");
+                    Console.WriteLine($"  Code Text: {result.CodeText}");
+                    Console.WriteLine($"  Code Type: {result.CodeTypeName}");
+                    Console.WriteLine($"  Reading Quality: {result.ReadingQuality}");
                 }
             }
         }
 
-        // Clean up temporary files (optional)
+        // Clean up temporary files.
         try
         {
             Directory.Delete(batchFolder, true);
         }
-        catch
+        catch (Exception ex)
         {
-            // Ignore cleanup errors
+            Console.WriteLine($"Cleanup failed: {ex.Message}");
         }
     }
 }

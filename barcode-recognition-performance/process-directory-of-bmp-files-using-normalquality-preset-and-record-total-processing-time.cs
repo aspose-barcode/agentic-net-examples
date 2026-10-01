@@ -1,96 +1,103 @@
 // Title: Process BMP barcode images with NormalQuality preset and measure execution time
-// Description: Generates sample BMP barcode files, reads them using Aspose.BarCode with NormalQuality settings, and reports total processing duration.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, showcasing how to create barcodes with BarcodeGenerator, read them with BarCodeReader, and adjust QualitySettings for performance tuning. Typical use cases include batch processing of image files, performance benchmarking, and automated barcode validation in enterprise applications. Developers often need to generate test images, apply specific quality presets, and measure processing times for optimization.
+// Description: Demonstrates loading BMP files containing barcodes, reading them using Aspose.BarCode, and timing the overall processing.
+// Category-Description: This example belongs to the Aspose.BarCode image processing and recognition category. It showcases the BarCodeReader class for detecting barcodes in bitmap images, typical for batch processing scenarios where developers need to read multiple files efficiently. Common use cases include inventory scanning, document automation, and bulk image analysis, where performance measurement is essential.
 // Prompt: Process a directory of BMP files using NormalQuality preset and record total processing time.
-// Tags: barcode, bmp, normalquality, generation, recognition, performance, aspose.barcode
+// Tags: bmp, barcode, recognition, performance, batch-processing, aspose.barcode, normalquality
 
 using System;
 using System.IO;
 using System.Diagnostics;
+using System.Collections.Generic;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates processing a directory of BMP barcode images using the NormalQuality preset
-/// and records the total processing time.
+/// Demonstrates generating sample QR code BMP files, reading them with <see cref="BarCodeReader"/>, and measuring total processing time.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example.
+    /// Entry point of the example. Generates sample BMP files, reads barcodes, and reports processing duration.
     /// </summary>
-    static void Main()
+    /// <param name="args">Command‑line arguments (not used).</param>
+    static void Main(string[] args)
     {
-        // Create a dedicated temporary folder for generated barcode images
-        string tempFolder = Path.Combine(Path.GetTempPath(), "Barcodes_" + Guid.NewGuid().ToString("N"));
+        // Create a unique temporary folder for sample BMP files
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BmpProcess_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
 
-        // Generate sample BMP barcode images using BarcodeGenerator
-        string[] sampleTexts = { "123456", "ABCDEF", "987654", "ZXCVBN", "HELLO" };
-        for (int i = 0; i < sampleTexts.Length; i++)
+        // Generate a few sample barcode BMP images
+        List<string> bmpFiles = new List<string>();
+        for (int i = 1; i <= 5; i++)
         {
-            string filePath = Path.Combine(tempFolder, $"sample{i + 1}.bmp");
-            using (BarcodeGenerator gen = new BarcodeGenerator(EncodeTypes.Code128, sampleTexts[i]))
-            {
-                gen.Save(filePath, BarCodeImageFormat.Bmp);
-            }
+            string filePath = Path.Combine(tempFolder, $"Sample{i}.bmp");
+            GenerateSampleBarcode(filePath, $"Sample{i}");
+            bmpFiles.Add(filePath);
         }
 
-        // Retrieve all BMP files from the temporary folder
-        string[] bmpFiles = Directory.GetFiles(tempFolder, "*.bmp");
+        // Start timing the batch processing of BMP files
+        Stopwatch sw = Stopwatch.StartNew();
 
-        // Start measuring total processing time
-        Stopwatch sw = new Stopwatch();
-        sw.Start();
-
-        // Process each BMP file with NormalQuality preset
+        // Iterate through each generated BMP file and attempt to read barcodes
         foreach (string file in bmpFiles)
         {
+            if (!File.Exists(file))
+            {
+                Console.WriteLine($"File not found: {file}");
+                continue;
+            }
+
             try
             {
-                using (BarCodeReader reader = new BarCodeReader(
-                    file,
-                    DecodeType.Code128,
-                    DecodeType.QR,
-                    DecodeType.DataMatrix,
-                    DecodeType.Aztec,
-                    DecodeType.Pdf417,
-                    DecodeType.Codabar,
-                    DecodeType.Code39,
-                    DecodeType.Code93))
+                // Use BarCodeReader to detect all barcodes in the current image
+                using (var reader = new BarCodeReader(file))
                 {
-                    // Apply NormalQuality settings for balanced speed and accuracy
-                    reader.QualitySettings = QualitySettings.NormalQuality;
+                    var barcodes = reader.ReadBarCodes();
+                    Console.WriteLine($"File: {Path.GetFileName(file)} - Detected {barcodes.Length} barcode(s).");
 
-                    // Read all barcodes present in the image
-                    BarCodeResult[] results = reader.ReadBarCodes();
-
-                    // Output each detected barcode's type and text
-                    foreach (BarCodeResult result in results)
+                    // Output details of each detected barcode
+                    foreach (var result in barcodes)
                     {
-                        Console.WriteLine($"{Path.GetFileName(file)}: {result.CodeTypeName} - {result.CodeText}");
+                        Console.WriteLine($"  Type: {result.CodeTypeName}, Text: {result.CodeText}");
                     }
                 }
             }
-            catch (ArgumentException ex)
+            catch (ArgumentException ex) when (ex.Message.Contains("Image loading failed"))
             {
-                // Handle cases where the file cannot be processed
-                Console.WriteLine($"Failed to read {Path.GetFileName(file)}: {ex.Message}");
+                // Handle cases where the file format is unsupported or corrupted
+                Console.WriteLine($"Skipping unsupported file: {file} ({ex.Message})");
+            }
+            catch (Exception ex)
+            {
+                // Log any unexpected errors during processing
+                Console.WriteLine($"Error processing file {file}: {ex.Message}");
             }
         }
 
-        // Stop timing and display total elapsed time
+        // Stop the timer and report total elapsed time
         sw.Stop();
-        Console.WriteLine($"Total processing time: {sw.ElapsedMilliseconds} ms");
+        Console.WriteLine($"Total processing time: {sw.Elapsed.TotalSeconds:F3} seconds");
 
-        // Cleanup: delete the temporary folder and its contents
+        // Clean up temporary files (optional)
         try
         {
             Directory.Delete(tempFolder, true);
         }
         catch
         {
-            // Ignore any errors during cleanup
+            // Ignore cleanup errors
+        }
+    }
+
+    // Generates a simple QR barcode and saves it as a BMP file
+    private static void GenerateSampleBarcode(string filePath, string codeText)
+    {
+        BaseEncodeType encodeType = EncodeTypes.QR;
+
+        using (var generator = new BarcodeGenerator(encodeType, codeText))
+        {
+            generator.Save(filePath, BarCodeImageFormat.Bmp);
         }
     }
 }

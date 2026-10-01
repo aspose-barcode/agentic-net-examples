@@ -1,8 +1,8 @@
-// Title: Adjust XDimension for 1D Barcode Generation and Recognition
-// Description: Demonstrates setting XDimension to 3 pixels for a Code128 barcode and configuring the reader's quality settings to match, ensuring accurate detection of typical 1D barcode element widths.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes and BarCodeReader for decoding them. Developers often need to control XDimension to align with printing or scanning requirements, and the QualitySettings API helps fine‑tune recognition parameters for reliable results.
+// Title: Adjust XDimension for 1D Barcode Reading
+// Description: Demonstrates how to set the XDimension quality setting to 3 pixels when reading a Code128 barcode, ensuring accurate detection of typical 1D barcode element widths.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, illustrating the use of BarCodeReader and QualitySettings to fine‑tune XDimension for 1D symbologies such as Code128. Developers often need to adjust XDimension to match the physical size of barcode modules, improving reading reliability in varied imaging conditions. The sample shows generating a barcode, configuring minimal XDimension, and extracting decoded information.
 // Prompt: Adjust QualitySettings.XDimension to 3 pixels to match typical 1D barcode element widths.
-// Tags: barcode, code128, generation, recognition, xdimension, qualitysettings, png, aspose.barcode
+// Tags: code128, xdimension, qualitysettings, barcode recognition, aspose.barcode, image processing
 
 using System;
 using System.IO;
@@ -10,66 +10,75 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates adjusting XDimension for 1D barcode generation and recognition using Aspose.BarCode.
+/// Generates a Code128 barcode, configures minimal XDimension for reading, and outputs the decoded result.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates a Code128 barcode with a 3‑pixel XDimension, reads it using matching quality settings, and cleans up temporary files.
+    /// Entry point of the sample. Creates a temporary barcode image, reads it with custom XDimension settings, and cleans up resources.
     /// </summary>
     static void Main()
     {
-        // Prepare a unique temporary directory for the demo files
-        string tempDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        // Create a temporary directory for sample files
+        string tempDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeSample_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempDir);
+
+        // Define the full path for the barcode image
         string barcodePath = Path.Combine(tempDir, "barcode.png");
 
-        // Generate a simple Code128 barcode with XDimension set to 3 pixels
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "ASPOSE"))
+        // Generate a simple Code128 barcode and save it as PNG
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            // Typical XDimension for 1D barcodes (3 pixels)
-            generator.Parameters.Barcode.XDimension.Pixels = 3f;
             generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        // Read the barcode using QualitySettings that match the generated XDimension
-        using (var reader = new BarCodeReader(barcodePath, DecodeType.AllSupportedTypes))
+        // Verify that the barcode image was successfully created
+        if (!File.Exists(barcodePath))
         {
-            // Configure the reader to use a minimal X dimension of 3 pixels
-            reader.QualitySettings.XDimension = XDimensionMode.UseMinimalXDimension;
-            reader.QualitySettings.MinimalXDimension = 3f;
+            Console.WriteLine("Failed to create barcode image.");
+            return;
+        }
 
-            // Perform barcode detection
+        // Specify the decode type matching the generated barcode
+        BaseDecodeType decodeType = DecodeType.Code128;
+
+        // Read the barcode using a BarCodeReader with custom QualitySettings
+        using (var reader = new BarCodeReader(barcodePath, decodeType))
+        {
+            // Configure XDimension to use a minimal value of 3 pixels
+            reader.QualitySettings.XDimension = XDimensionMode.UseMinimalXDimension;
+            reader.QualitySettings.MinimalXDimension = 3f; // pixels
+
+            // Perform the barcode reading operation
             BarCodeResult[] results = reader.ReadBarCodes();
-            if (results.Length == 0)
-            {
-                Console.WriteLine("No barcode detected.");
-            }
-            else
+
+            // Output the decoding results to the console
+            if (results != null && results.Length > 0)
             {
                 foreach (var result in results)
                 {
                     Console.WriteLine($"CodeText: {result.CodeText}");
-                    Console.WriteLine($"Symbology: {result.CodeTypeName}");
+                    Console.WriteLine($"CodeType: {result.CodeTypeName}");
                     Console.WriteLine($"ReadingQuality: {result.ReadingQuality}");
                 }
+            }
+            else
+            {
+                Console.WriteLine("No barcode detected.");
             }
         }
 
         // Clean up temporary files and directory
         try
         {
-            if (File.Exists(barcodePath))
-                File.Delete(barcodePath);
-            if (Directory.Exists(tempDir))
-                Directory.Delete(tempDir, true);
+            File.Delete(barcodePath);
+            Directory.Delete(tempDir);
         }
         catch
         {
-            // Ignore cleanup errors
+            // Ignore any errors during cleanup
         }
     }
 }
