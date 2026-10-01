@@ -1,70 +1,82 @@
-// Title: Extract barcodes from encrypted PDF using Aspose.BarCode
-// Description: Demonstrates opening a password‑protected PDF, converting each page to an image, and reading all supported barcodes with Aspose.BarCodeReader.
-// Category-Description: This example belongs to the Aspose.BarCode for .NET PDF processing collection. It shows how to work with encrypted PDF documents, use Aspose.Pdf to render pages to images, and employ BarCodeReader (DecodeType.AllSupportedTypes) to detect any barcode symbology. Developers often need to batch‑process secured PDFs to extract embedded barcodes for inventory, shipping, or document verification workflows.
+// Title: Extract Barcodes from Encrypted PDF Using Aspose.BarCodeReader
+// Description: Demonstrates how to open a password‑protected PDF with Aspose.Pdf, render its pages to images, and read any barcodes using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode PDF processing category, showing how to combine Aspose.Pdf and Aspose.BarCode to decode barcodes from encrypted PDF documents. It highlights key classes such as Document, PdfConverter, BarCodeReader, and DecodeType, which developers use to render protected PDFs to images and extract barcode data for inventory, document management, or scanning workflows.
 // Prompt: Process encrypted PDF files by providing password to BarCodeReader and extracting barcode data.
-// Tags: pdf, encryption, barcode, extraction, decode, all-supported-types, aspose.barcode, aspose.pdf
+// Tags: pdf, encryption, barcode, decoding, aspose.pdf, aspose.barcode, c#
 
 using System;
 using System.IO;
-using Aspose.BarCode;
-using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Pdf;
 using Aspose.Pdf.Facades;
-using Aspose.Pdf.Devices;
+using Aspose.BarCode.BarCodeRecognition;
+using Aspose.BarCode;
 
 /// <summary>
-/// Example program that reads an encrypted PDF, converts each page to an image,
-/// and extracts any barcode data using Aspose.BarCode.
+/// Demonstrates processing of an encrypted PDF file to extract barcode data using Aspose.Pdf and Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Accepts optional command‑line arguments for the PDF path and password.
+    /// Entry point that opens the encrypted PDF, renders each page to an image, and reads all supported barcodes.
     /// </summary>
-    /// <param name="args">args[0] = PDF file path (default: sample_encrypted.pdf), args[1] = password (default: password)</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Resolve PDF file path and password from command‑line or use defaults.
-        string pdfPath = args.Length > 0 ? args[0] : "sample_encrypted.pdf";
-        string password = args.Length > 1 ? args[1] : "password";
+        // Path to the encrypted PDF and its password.
+        string pdfPath = "sample_encrypted.pdf";
+        string password = "myPassword";
 
-        // Verify that the specified PDF file exists.
+        // Ensure the PDF file exists before attempting to open it.
         if (!File.Exists(pdfPath))
         {
-            Console.WriteLine($"PDF file not found: {pdfPath}");
+            Console.WriteLine($"File not found: {pdfPath}");
             return;
         }
 
         // Open the encrypted PDF document using the supplied password.
-        using (Document pdfDoc = new Document(pdfPath, password))
+        using (var pdfDocument = new Document(pdfPath, password))
         {
-            // Initialize a PDF converter to render pages as images.
-            using (PdfConverter pdfConverter = new PdfConverter(pdfDoc))
+            // Initialize a PDF converter to render PDF pages as images.
+            using (var pdfConverter = new PdfConverter(pdfDocument))
             {
-                // Enable barcode‑specific optimizations and set image resolution.
+                // Enable barcode optimization to improve detection performance.
                 pdfConverter.RenderingOptions.BarcodeOptimization = true;
-                pdfConverter.Resolution = new Resolution(300);
 
-                // Process each page individually.
-                for (int pageNumber = 1; pageNumber <= pdfDoc.Pages.Count; pageNumber++)
+                // Restrict processing to a maximum of 4 pages (evaluation mode limitation).
+                int maxPages = Math.Min(pdfDocument.Pages.Count, 4);
+
+                // Iterate through each page to render and scan for barcodes.
+                for (int pageNumber = 1; pageNumber <= maxPages; pageNumber++)
                 {
-                    // Configure the converter to work on a single page.
+                    // Configure the converter to process only the current page.
                     pdfConverter.StartPage = pageNumber;
                     pdfConverter.EndPage = pageNumber;
+
+                    // Perform the conversion for the selected page.
                     pdfConverter.DoConvert();
 
-                    // Capture the rendered page image into a memory stream.
-                    using (MemoryStream ms = new MemoryStream())
+                    // Capture the rendered image into a memory stream.
+                    using (var imageStream = new MemoryStream())
                     {
-                        pdfConverter.GetNextImage(ms);
-                        ms.Position = 0; // Reset stream position for reading.
+                        pdfConverter.GetNextImage(imageStream);
+                        imageStream.Position = 0;
 
-                        // Use BarCodeReader to detect all supported barcode types in the image.
-                        using (BarCodeReader reader = new BarCodeReader(ms, DecodeType.AllSupportedTypes))
+                        // Create a barcode reader that scans for all supported symbologies.
+                        BaseDecodeType decodeType = DecodeType.AllSupportedTypes;
+                        using (var reader = new BarCodeReader(imageStream, decodeType))
                         {
-                            foreach (BarCodeResult result in reader.ReadBarCodes())
+                            // Read all barcodes detected on the current page.
+                            BarCodeResult[] results = reader.ReadBarCodes();
+
+                            // Output each detected barcode's text and type.
+                            foreach (var result in results)
                             {
-                                Console.WriteLine($"Page {pageNumber}: Type={result.CodeTypeName}, Data={result.CodeText}");
+                                Console.WriteLine($"Page {pageNumber}: CodeText = {result.CodeText}, CodeType = {result.CodeTypeName}");
+                            }
+
+                            // Inform the user if no barcodes were found on the page.
+                            if (results.Length == 0)
+                            {
+                                Console.WriteLine($"Page {pageNumber}: No barcodes detected.");
                             }
                         }
                     }

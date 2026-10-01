@@ -1,133 +1,103 @@
-// Title: Read QR Code Structured-Append Segments and Validate Parity
-// Description: Demonstrates generating two QR code segments using Structured Append, calculating a combined parity byte, and validating each segment's index and parity data.
-// Category-Description: This example belongs to the Aspose.BarCode QR code operations collection, showcasing the use of BarcodeGenerator for QR code creation with Structured Append settings and BarCodeReader for extracting extended QR metadata. Developers working with multi-part QR codes can learn how to configure segment count, sequence indicators, and parity bytes, then verify the encoded information during recognition.
+// Title: Read QR Code Structured‑Append Parity Data and Validate Segments
+// Description: Demonstrates generating QR code segments with structured‑append information, then reading each segment to verify total count, sequence index, and parity byte.
+// Category-Description: This example belongs to the Aspose.BarCode QR code generation and recognition category. It showcases the use of BarcodeGenerator for creating QR codes with StructuredAppend settings and BarCodeReader for extracting QR extended data. Developers working with multi‑segment QR codes—such as those used in inventory, ticketing, or data‑splitting scenarios—can use these APIs to assemble, validate, and process structured‑append barcodes efficiently.
 // Prompt: Read QR Code structured‑append parity data and validate against expected values for each segment.
-// Tags: qr code,structured append,parity,validation,barcode generation,barcode recognition,aspose.barcode
+// Tags: qr, structured-append, barcode, generation, recognition, parity, csharp, aspose.barcode
 
 using System;
 using System.IO;
+using System.Collections.Generic;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Generates QR code segments with Structured Append, calculates parity, and validates the
-/// encoded segment metadata using Aspose.BarCode APIs.
+/// Generates QR code segments with Structured‑Append information, reads them back,
+/// and validates the total segment count, sequence index, and parity byte.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates a temporary folder, generates two QR code segments,
-    /// validates each segment, and cleans up the temporary files.
+    /// Entry point of the example. Creates temporary QR images, validates their
+    /// Structured‑Append metadata, and optionally cleans up the generated files.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary directory for the generated QR images.
-        string tempFolder = Path.Combine(Path.GetTempPath(), "QrStructuredAppend_" + Guid.NewGuid().ToString("N"));
+        // Create a unique temporary folder for generated QR codes
+        string tempFolder = Path.Combine(Path.GetTempPath(), "QR_SA_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
 
-        // Messages to encode in the two QR code segments.
-        string firstMessage = "Aspose";
-        string secondMessage = "常に先を行く";
+        // Define Structured‑Append parameters
+        const byte totalSegments = 3;
+        const byte parityByte = 0xAA; // Example parity value
 
-        // Calculate the combined parity byte for both messages.
-        byte parity = CalculateParity(firstMessage);
-        parity ^= CalculateParity(secondMessage);
+        // Store expected values for validation (file path and expected 1‑based index)
+        var expectedData = new List<(string FilePath, byte Index)>();
 
-        // Generate QR code images for each segment with Structured Append settings.
-        GenerateQrSegment(firstMessage, 0, parity, tempFolder);
-        GenerateQrSegment(secondMessage, 1, parity, tempFolder);
-
-        // Validate the generated QR code images against expected index and parity.
-        ValidateQrSegment(Path.Combine(tempFolder, "segment0.png"), 0, parity);
-        ValidateQrSegment(Path.Combine(tempFolder, "segment1.png"), 1, parity);
-
-        // Attempt to delete the temporary folder; ignore any errors.
-        try
+        // Generate QR code segments with Structured‑Append information
+        for (byte i = 0; i < totalSegments; i++)
         {
-            Directory.Delete(tempFolder, true);
-        }
-        catch
-        {
-        }
-    }
+            string codeText = $"Segment{i + 1}";
+            string filePath = Path.Combine(tempFolder, $"qr_{i + 1}.png");
 
-    /// <summary>
-    /// Calculates a simple parity byte for a given text string by XOR‑ing each character's byte value.
-    /// </summary>
-    /// <param name="text">The text to calculate parity for.</param>
-    /// <returns>The resulting parity byte.</returns>
-    static byte CalculateParity(string text)
-    {
-        byte parity = 0;
-        foreach (char ch in text)
-        {
-            if (ch <= 255)
-                parity ^= (byte)ch;
-            else
-                parity ^= (byte)(((byte)ch) ^ ((int)ch >> 8));
-        }
-        return parity;
-    }
-
-    /// <summary>
-    /// Generates a QR code image for a single Structured Append segment.
-    /// </summary>
-    /// <param name="message">The text to encode.</param>
-    /// <param name="index">The zero‑based sequence indicator for this segment.</param>
-    /// <param name="parity">The shared parity byte for all segments.</param>
-    /// <param name="folder">The folder where the image will be saved.</param>
-    static void GenerateQrSegment(string message, int index, byte parity, string folder)
-    {
-        string filePath = Path.Combine(folder, $"segment{index}.png");
-        using (BarcodeGenerator gen = new BarcodeGenerator(EncodeTypes.QR, message))
-        {
-            // Set QR code visual density.
-            gen.Parameters.Barcode.XDimension.Pixels = 4;
-
-            // Configure Structured Append parameters.
-            gen.Parameters.Barcode.QR.StructuredAppend.TotalCount = 2;          // Total number of segments.
-            gen.Parameters.Barcode.QR.StructuredAppend.SequenceIndicator = index; // This segment's index.
-            gen.Parameters.Barcode.QR.StructuredAppend.ParityByte = parity;   // Shared parity byte.
-
-            // Save the generated QR code as a PNG image.
-            gen.Save(filePath, BarCodeImageFormat.Png);
-        }
-    }
-
-    /// <summary>
-    /// Validates a QR code image by reading its Structured Append metadata and comparing it to expected values.
-    /// </summary>
-    /// <param name="filePath">Path to the QR code image file.</param>
-    /// <param name="expectedIndex">The expected sequence indicator for this segment.</param>
-    /// <param name="expectedParity">The expected parity byte shared across all segments.</param>
-    static void ValidateQrSegment(string filePath, int expectedIndex, byte expectedParity)
-    {
-        if (!File.Exists(filePath))
-        {
-            Console.WriteLine($"File not found: {filePath}");
-            return;
-        }
-
-        // Use BarCodeReader to decode the QR code and extract extended QR metadata.
-        using (BarCodeReader reader = new BarCodeReader(filePath, DecodeType.QR))
-        {
-            foreach (BarCodeResult result in reader.ReadBarCodes())
+            using (var generator = new BarcodeGenerator(EncodeTypes.QR, codeText))
             {
-                int quantity = result.Extended.QR.StructuredAppendModeBarCodesQuantity; // Total segments.
-                int index = result.Extended.QR.StructuredAppendModeBarCodeIndex;        // Detected segment index.
-                byte parity = (byte)result.Extended.QR.StructuredAppendModeParityData; // Detected parity byte.
+                // Configure Structured‑Append settings
+                generator.Parameters.Barcode.QR.StructuredAppend.TotalCount = totalSegments;
+                generator.Parameters.Barcode.QR.StructuredAppend.SequenceIndicator = (byte)(i + 1); // 1‑based index
+                generator.Parameters.Barcode.QR.StructuredAppend.ParityByte = parityByte;
 
-                bool isValid = quantity == 2 && index == expectedIndex && parity == expectedParity;
+                // Save the barcode image as PNG
+                generator.Save(filePath, BarCodeImageFormat.Png);
+            }
 
-                Console.WriteLine($"File: {Path.GetFileName(filePath)}");
-                Console.WriteLine($"  Expected Index: {expectedIndex}, Detected Index: {index}");
-                Console.WriteLine($"  Expected Parity: {expectedParity}, Detected Parity: {parity}");
-                Console.WriteLine($"  Total Segments: {quantity}");
-                Console.WriteLine($"  Validation: {(isValid ? "PASS" : "FAIL")}");
-                Console.WriteLine($"  CodeText: {result.CodeText}");
+            // Record the expected index for later validation
+            expectedData.Add((filePath, (byte)(i + 1)));
+        }
+
+        // Read each generated QR code and validate Structured‑Append data
+        foreach (var (filePath, expectedIndex) in expectedData)
+        {
+            if (!File.Exists(filePath))
+            {
+                Console.WriteLine($"File not found: {filePath}");
+                continue;
+            }
+
+            try
+            {
+                using (var reader = new BarCodeReader(filePath, DecodeType.QR))
+                {
+                    var results = reader.ReadBarCodes();
+
+                    if (results.Length == 0)
+                    {
+                        Console.WriteLine($"No barcode detected in {Path.GetFileName(filePath)}");
+                        continue;
+                    }
+
+                    var result = results[0];
+                    var qrExt = result.Extended.QR;
+
+                    // Validate total segment count, index, and parity byte
+                    bool totalOk = qrExt.StructuredAppendModeBarCodesQuantity == totalSegments;
+                    bool indexOk = qrExt.StructuredAppendModeBarCodeIndex == expectedIndex;
+                    bool parityOk = qrExt.StructuredAppendModeParityData == parityByte;
+
+                    // Output validation results
+                    Console.WriteLine($"File: {Path.GetFileName(filePath)}");
+                    Console.WriteLine($"  Expected TotalSegments: {totalSegments}, Detected: {qrExt.StructuredAppendModeBarCodesQuantity} => {(totalOk ? "OK" : "FAIL")}");
+                    Console.WriteLine($"  Expected Index: {expectedIndex}, Detected: {qrExt.StructuredAppendModeBarCodeIndex} => {(indexOk ? "OK" : "FAIL")}");
+                    Console.WriteLine($"  Expected Parity: 0x{parityByte:X2}, Detected: 0x{qrExt.StructuredAppendModeParityData:X2} => {(parityOk ? "OK" : "FAIL")}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error processing {Path.GetFileName(filePath)}: {ex.Message}");
             }
         }
+
+        // Cleanup: optionally delete the temporary folder
+        // Directory.Delete(tempFolder, true);
     }
 }

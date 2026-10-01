@@ -1,87 +1,77 @@
 // Title: Asynchronous QR Code Generation and Reading Example
-// Description: Demonstrates generating a QR code image and reading it asynchronously using Aspose.BarCode, suitable for responsive desktop UI scenarios.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category, showcasing the use of BarcodeGenerator for creating barcodes and BarCodeReader for decoding them. It highlights asynchronous processing with Task.Run to keep UI threads responsive, a common requirement for desktop applications that need non‑blocking barcode scanning.
+// Description: Demonstrates generating a QR barcode image and reading it asynchronously using Aspose.BarCode to keep UI responsive.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes and BarCodeReader for decoding them, highlighting asynchronous reading with Task.Run to avoid blocking the UI thread. Developers building desktop or mobile applications often need non‑blocking barcode processing for smooth user experiences.
 // Prompt: Implement async barcode reading using BarCodeReader.ReadBarCodesAsync for responsive UI in desktop applications.
-// Tags: qr, barcode generation, barcode recognition, async, task, aspose.barcode, desktop ui
+// Tags: qr, barcode, async, generation, recognition, aspose.barcode
 
 using System;
 using System.IO;
 using System.Threading.Tasks;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates asynchronous barcode generation and reading using Aspose.BarCode.
+/// Demonstrates asynchronous barcode generation and recognition using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a QR code, saves it to a temporary file, reads it asynchronously, and cleans up.
+    /// Entry point. Generates a QR code, saves it, then reads it asynchronously.
     /// </summary>
+    /// <param name="args">Command‑line arguments (not used).</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
     static async Task Main(string[] args)
     {
-        // Create a unique temporary folder for the demo files
-        string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        // Create a unique temporary folder for the demo
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeAsyncDemo_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
 
-        // Define the full path for the generated barcode image
+        // Path for the generated barcode image
         string barcodePath = Path.Combine(tempFolder, "sample.png");
 
-        // Generate a QR code with the text "Hello Aspose" and save it as PNG
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Hello Aspose"))
+        // Generate a QR barcode and save it as PNG
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "Hello Aspose"))
         {
             generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        // Asynchronously read the barcode from the saved image
-        await ReadBarcodeAsync(barcodePath);
-
-        // Clean up temporary files and folder; ignore any errors during deletion
-        try
+        // Verify that the file was created
+        if (!File.Exists(barcodePath))
         {
-            File.Delete(barcodePath);
-            Directory.Delete(tempFolder);
-        }
-        catch
-        {
-            // ignore cleanup errors
-        }
-    }
-
-    /// <summary>
-    /// Reads barcodes from the specified image file asynchronously.
-    /// </summary>
-    /// <param name="imagePath">Full path to the image containing barcodes.</param>
-    static async Task ReadBarcodeAsync(string imagePath)
-    {
-        // Verify that the image file exists before attempting to read
-        if (!File.Exists(imagePath))
-        {
-            Console.WriteLine("File not found: " + imagePath);
+            Console.WriteLine("Failed to create barcode image.");
             return;
         }
 
-        // Initialize the barcode reader for all supported symbologies
-        using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
+        // Asynchronously read the barcode from the image
+        using (BarCodeReader reader = new BarCodeReader(barcodePath, DecodeType.AllSupportedTypes))
         {
-            // Use high‑performance quality settings for faster processing
-            reader.QualitySettings = QualitySettings.HighPerformance;
-
-            // Perform the synchronous read operation on a background thread to avoid blocking
+            // Offload the synchronous ReadBarCodes call to a background thread
             BarCodeResult[] results = await Task.Run(() => reader.ReadBarCodes());
 
-            // Check if any barcodes were detected
-            if (results == null || results.Length == 0)
+            if (results.Length == 0)
             {
-                Console.WriteLine("No barcodes detected.");
-                return;
+                Console.WriteLine("No barcode detected.");
             }
+            else
+            {
+                foreach (BarCodeResult result in results)
+                {
+                    Console.WriteLine($"CodeText: {result.CodeText}");
+                    Console.WriteLine($"Symbology: {result.CodeTypeName}");
+                }
+            }
+        }
 
-            // Output each detected barcode's type and decoded text
-            foreach (var result in results)
-            {
-                Console.WriteLine($"Detected {result.CodeTypeName}: {result.CodeText}");
-            }
+        // Clean up temporary files
+        try
+        {
+            Directory.Delete(tempFolder, true);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Cleanup failed: {ex.Message}");
         }
     }
 }
