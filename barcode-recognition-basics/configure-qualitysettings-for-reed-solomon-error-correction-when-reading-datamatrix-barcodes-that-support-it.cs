@@ -1,54 +1,74 @@
-// Title: Read DataMatrix barcode with Reed‑Solomon error correction using QualitySettings
-// Description: Demonstrates configuring QualitySettings to enable high‑quality Reed‑Solomon error correction when reading a DataMatrix barcode.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator for creating DataMatrix symbols and BarCodeReader with QualitySettings to decode them. Developers working with error‑prone scans, such as low‑resolution images or damaged codes, commonly need to enable Reed‑Solomon error correction to improve read reliability.
+// Title: Configure Reed‑Solomon QualitySettings for DataMatrix barcode reading
+// Description: Demonstrates how to generate a DataMatrix barcode and tune QualitySettings to improve Reed‑Solomon error‑correction detection during reading.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator, BarCodeReader, and QualitySettings classes to create a DataMatrix (ECC200) image and read it with high‑quality settings. Developers working with error‑correction‑enabled symbologies often need to adjust quality presets, XDimension handling, and deconvolution modes to achieve reliable scans.
 // Prompt: Configure QualitySettings for Reed‑Solomon error correction when reading DataMatrix barcodes that support it.
-// Tags: datamatrix, reed-solomon, error-correction, qualitysettings, barcode-reading, barcode-generation, aspnet, c#
+// Tags: datamatrix, reading, png, barcodegenerator, barcodereader, qualitysettings
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates a DataMatrix barcode, then reads it using high‑quality
-/// settings to enable Reed‑Solomon error correction.
+/// Generates a DataMatrix barcode, then reads it using high‑quality settings optimized for Reed‑Solomon error correction.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a temporary DataMatrix image, reads it with
-    /// <see cref="QualitySettings.HighQuality"/>, and outputs detection details to the console.
+    /// Entry point of the sample. Creates a temporary DataMatrix image, configures QualitySettings, reads the barcode, and cleans up.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder for the barcode image
-        string tempDir = Path.Combine(Path.GetTempPath(), "DataMatrixDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempDir);
-        string barcodePath = Path.Combine(tempDir, "datamatrix.png");
+        // --------------------------------------------------------------------
+        // Create a temporary folder for the sample barcode image
+        // --------------------------------------------------------------------
+        string tempFolder = Path.Combine(Path.GetTempPath(), "DataMatrixSample_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
 
-        // Generate a DataMatrix barcode with specific version and ECC type
-        string codeText = "HelloWorld123";
+        string barcodePath = Path.Combine(tempFolder, "datamatrix.png");
+        string codeText = "ABC123";
+
+        // --------------------------------------------------------------------
+        // Generate a DataMatrix barcode (ECC200 uses Reed‑Solomon error correction by default)
+        // --------------------------------------------------------------------
         using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, codeText))
         {
-            generator.Parameters.Barcode.DataMatrix.Version = DataMatrixVersion.ECC200_32x32;
-            generator.Parameters.Barcode.DataMatrix.EccType = DataMatrixEccType.Ecc200;
+            // Optional: set a modest XDimension for clearer image
+            generator.Parameters.Barcode.XDimension.Point = 2f;
+
+            // Save the barcode image as PNG
             generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        // Verify that the barcode image was successfully created
+        // --------------------------------------------------------------------
+        // Verify the image was created before attempting to read it
+        // --------------------------------------------------------------------
         if (!File.Exists(barcodePath))
         {
-            Console.WriteLine("Failed to generate the barcode image.");
+            Console.WriteLine("Failed to create barcode image.");
             return;
         }
 
-        // Read the barcode using high‑quality settings (enables full Reed‑Solomon error correction)
+        // --------------------------------------------------------------------
+        // Read the DataMatrix barcode with QualitySettings tuned for robust Reed‑Solomon handling
+        // --------------------------------------------------------------------
         using (var reader = new BarCodeReader(barcodePath, DecodeType.DataMatrix))
         {
+            // Apply a high‑quality preset to improve error‑correction detection
             reader.QualitySettings = QualitySettings.HighQuality;
 
+            // Use minimal XDimension to allow the engine to adapt to small modules
+            reader.QualitySettings.XDimension = XDimensionMode.UseMinimalXDimension;
+
+            // Fast deconvolution reduces processing time while keeping sufficient quality
+            reader.QualitySettings.Deconvolution = DeconvolutionMode.Fast;
+
+            // Perform the read operation
             BarCodeResult[] results = reader.ReadBarCodes();
+
             if (results.Length == 0)
             {
                 Console.WriteLine("No barcode detected.");
@@ -58,13 +78,23 @@ class Program
                 foreach (var result in results)
                 {
                     Console.WriteLine($"Detected CodeText: {result.CodeText}");
+                    Console.WriteLine($"Detected Symbology: {result.CodeTypeName}");
                     Console.WriteLine($"Reading Quality: {result.ReadingQuality}");
-                    Console.WriteLine($"Confidence: {result.Confidence}");
                 }
             }
         }
 
-        // Optional cleanup: uncomment to delete the temporary folder after execution
-        // Directory.Delete(tempDir, true);
+        // --------------------------------------------------------------------
+        // Clean up temporary files (optional)
+        // --------------------------------------------------------------------
+        try
+        {
+            File.Delete(barcodePath);
+            Directory.Delete(tempFolder);
+        }
+        catch
+        {
+            // Ignore cleanup errors
+        }
     }
 }

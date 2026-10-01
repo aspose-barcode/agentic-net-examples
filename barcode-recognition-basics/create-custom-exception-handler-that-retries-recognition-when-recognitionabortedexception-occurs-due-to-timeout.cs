@@ -1,103 +1,117 @@
 // Title: Barcode Recognition with Retry on Timeout
-// Description: Demonstrates generating a QR code and recognizing it with a custom retry mechanism that handles RecognitionAbortedException caused by timeout.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator to create barcodes and BarCodeReader to decode them, handling common scenarios such as timeouts. Developers often need to implement retry logic when reading barcodes from images that may be processed slowly or under constrained resources. The key API classes demonstrated are BarcodeGenerator, BarCodeReader, BarCodeResult, and RecognitionAbortedException.
+// Description: Demonstrates generating a QR barcode, then reading it with a short timeout and retrying when a RecognitionAbortedException occurs.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator to create barcodes and BarCodeReader to decode them, highlighting typical scenarios such as handling timeouts and implementing retry logic. Developers working with barcode imaging often need to generate barcodes, read them from files or streams, and gracefully handle recognition failures using key API classes like BarcodeGenerator, BarCodeReader, and related result types.
 // Prompt: Create a custom exception handler that retries recognition when RecognitionAbortedException occurs due to timeout.
-// Tags: qr, barcode, recognition, timeout, retry, exception handling, aspose.barcode, generation, reading
+// Tags: qr,barcode,generation,recognition,retry,timeout,exception handling,aspose.barcode
 
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates barcode generation and recognition with retry logic for timeout exceptions.
+/// Sample program that generates a QR barcode, attempts to read it with a forced timeout,
+/// and retries the recognition when a <see cref="RecognitionAbortedException"/> is thrown.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a QR code, attempts to read it with retry handling for timeouts, and cleans up temporary files.
+    /// Entry point of the application. Executes the barcode generation, reading with retry logic,
+    /// and cleanup of temporary resources.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder for storing the generated barcode image.
-        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        // Create a temporary folder for the sample barcode image
+        string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeSample_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
+        string barcodePath = Path.Combine(tempFolder, "sample.png");
 
-        // Define the full path for the sample barcode image.
-        string imagePath = Path.Combine(tempFolder, "sample.png");
-
-        // Generate a simple QR barcode and save it as a PNG file.
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "Hello"))
+        // Generate a QR barcode and save it to the file
+        BaseEncodeType encodeType = EncodeTypes.QR;
+        using (var generator = new BarcodeGenerator(encodeType, "RetryDemo"))
         {
-            generator.Save(imagePath, BarCodeImageFormat.Png);
+            generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        const int maxAttempts = 3;
-        bool success = false;
+        // Verify the file was created
+        if (!File.Exists(barcodePath))
+        {
+            Console.WriteLine("Failed to create barcode image.");
+            return;
+        }
 
-        // Attempt to read the barcode, retrying on timeout up to the maximum number of attempts.
+        // Set up reader with a short timeout to force a timeout scenario
+        BaseDecodeType decodeType = DecodeType.QR;
+        int maxAttempts = 3;
+        int timeoutMs = 100; // 0.1 second timeout for demonstration
+
+        // Retry loop: attempt to read the barcode up to maxAttempts times
         for (int attempt = 1; attempt <= maxAttempts; attempt++)
         {
-            // Use a short timeout on the first attempt to intentionally trigger a timeout, then increase it.
-            int timeout = attempt == 1 ? 1 : 2000;
+            Console.WriteLine($"Attempt {attempt} of {maxAttempts}...");
 
-            using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
+            using (var reader = new BarCodeReader(barcodePath, decodeType))
             {
-                reader.Timeout = timeout;
+                reader.Timeout = timeoutMs; // Apply the short timeout
+
                 try
                 {
-                    // Perform barcode recognition.
+                    // Attempt to read barcodes from the image
                     BarCodeResult[] results = reader.ReadBarCodes();
-                    Console.WriteLine($"Attempt {attempt}: Read {results?.Length ?? 0} barcode(s).");
 
-                    // Output details of each recognized barcode.
-                    if (results != null)
+                    if (results != null && results.Length > 0)
                     {
-                        foreach (BarCodeResult result in results)
+                        // Successful read – output details and exit the retry loop
+                        foreach (var result in results)
                         {
-                            Console.WriteLine($"Type: {result.CodeTypeName}, Text: {result.CodeText}");
+                            Console.WriteLine($"CodeText: {result.CodeText}");
+                            Console.WriteLine($"CodeType: {result.CodeTypeName}");
+                            Console.WriteLine($"ReadingQuality: {result.ReadingQuality}");
                         }
+                        break;
                     }
-
-                    // Mark success and exit the retry loop.
-                    success = true;
-                    break;
+                    else
+                    {
+                        // No barcode detected – no point in further retries
+                        Console.WriteLine("No barcode detected.");
+                        break;
+                    }
                 }
                 catch (RecognitionAbortedException ex)
                 {
-                    // Handle timeout-specific exception and decide whether to retry.
-                    Console.WriteLine($"Attempt {attempt} aborted due to timeout: {ex.Message}");
+                    // Handle timeout-specific exception and decide whether to retry
+                    Console.WriteLine($"Recognition aborted due to timeout after {ex.ExecutionTime} ms.");
                     if (attempt == maxAttempts)
                     {
-                        Console.WriteLine("All retry attempts failed.");
+                        Console.WriteLine("Maximum retry attempts reached. Giving up.");
                     }
+                    else
+                    {
+                        Console.WriteLine("Retrying...");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // Handle any unexpected errors and abort further retries
+                    Console.WriteLine($"Unexpected error: {ex.Message}");
+                    break;
                 }
             }
         }
 
-        // Clean up temporary files and directories.
+        // Clean up temporary files and directories
         try
         {
-            if (File.Exists(imagePath))
-                File.Delete(imagePath);
+            if (File.Exists(barcodePath))
+                File.Delete(barcodePath);
             if (Directory.Exists(tempFolder))
                 Directory.Delete(tempFolder, true);
         }
         catch
         {
-            // Ignored - cleanup failure should not affect program exit.
+            // Ignored – cleanup failure should not affect program exit
         }
 
-        // Report final outcome of the recognition process.
-        if (success)
-        {
-            Console.WriteLine("Barcode recognition succeeded.");
-        }
-        else
-        {
-            Console.WriteLine("Barcode recognition did not succeed.");
-        }
+        Console.WriteLine("Program completed.");
     }
 }

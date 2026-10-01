@@ -1,63 +1,83 @@
-// Title: Barcode detection from an uploaded image stream using Aspose.BarCode
-// Description: Demonstrates generating a QR code, then reading it from a stream as if it were uploaded to a web API, showing instant barcode detection.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator to create barcodes and BarCodeReader with DecodeType to recognize multiple symbologies. Typical scenarios include processing uploaded images in web services, validating scanned codes, and extracting data from various barcode formats. Developers often need to quickly generate sample barcodes and then detect them from streams using these core API classes.
+// Title: Barcode detection from image stream in a simulated web API
+// Description: Demonstrates how to detect barcodes in an image stream using Aspose.BarCode, mimicking a web API endpoint that receives uploaded images.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category. It showcases the BarCodeReader class together with System.Drawing.Bitmap to read any supported symbology from an image stream. Typical use cases include server‑side processing of uploaded photos, document scanning pipelines, and real‑time mobile uploads where developers need to extract barcode data quickly.
 // Prompt: Integrate barcode detection into a web API endpoint that accepts uploaded image streams for instant processing.
-// Tags: qr,code128,barcode detection,barcode recognition,aspose.barcode,web api,stream processing
+// Tags: barcode detection, image stream, aspnet, aspose.barcode, qr, barcode recognition, web api, c#
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates how to generate a QR barcode, simulate receiving it as an uploaded image stream,
-/// and detect barcodes using Aspose.BarCode's recognition API.
+/// Provides a simple demonstration of barcode detection from an image stream,
+/// representing a typical web API endpoint implementation.
 /// </summary>
 class Program
 {
-    /// <summary>
-    /// Entry point of the demo. Generates a barcode, reads it from a stream, and outputs detected results.
-    /// </summary>
-    static void Main()
+    // Simulated web API endpoint: accepts an image stream and returns detected barcodes.
+    static List<(string CodeType, string CodeText)> DetectBarcodes(Stream imageStream)
     {
-        // Create a unique temporary folder for the demo files
-        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
+        var results = new List<(string, string)>();
 
-        // Define the full path for the generated barcode image
-        string barcodePath = Path.Combine(tempFolder, "sample.png");
-
-        // Generate a sample QR barcode image and save it as PNG
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Hello Aspose"))
+        // Load the image from the stream into a Bitmap.
+        using (var bitmap = new Bitmap(imageStream))
         {
-            generator.Save(barcodePath, BarCodeImageFormat.Png);
-        }
-
-        // Simulate receiving an uploaded image stream (e.g., from a web API endpoint)
-        using (FileStream stream = new FileStream(barcodePath, FileMode.Open, FileAccess.Read))
-        {
-            // Initialize the barcode reader with the desired decode types (QR and Code128)
-            using (var reader = new BarCodeReader(stream, DecodeType.QR, DecodeType.Code128))
+            // Use the default constructor that detects all supported barcode types.
+            using (var reader = new BarCodeReader(bitmap))
             {
-                Console.WriteLine("Detected barcodes:");
-                // Iterate through all detected barcodes in the stream
+                // Iterate through all detected barcodes.
                 foreach (BarCodeResult result in reader.ReadBarCodes())
                 {
-                    Console.WriteLine($"Type: {result.CodeTypeName}, Text: {result.CodeText}");
+                    // result.CodeTypeName provides a readable symbology name.
+                    results.Add((result.CodeTypeName, result.CodeText));
                 }
             }
         }
 
-        // Optional cleanup of temporary files and folder
-        try
+        return results;
+    }
+
+    /// <summary>
+    /// Generates a sample QR code, feeds it to the detection routine,
+    /// and writes the detection results to the console.
+    /// </summary>
+    static void Main()
+    {
+        // Simulate a client uploading an image by generating a barcode in memory.
+        const string sampleText = "Hello World";
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, sampleText))
         {
-            File.Delete(barcodePath);
-            Directory.Delete(tempFolder);
-        }
-        catch
-        {
-            // Ignored – cleanup may fail if files are still in use
+            // Optional: customize appearance.
+            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
+            generator.Parameters.Barcode.QR.Version = QRVersion.Auto;
+            generator.Parameters.Barcode.BarColor = Color.Black;
+            generator.Parameters.BackColor = Color.White;
+
+            using (var ms = new MemoryStream())
+            {
+                // Save generated barcode as PNG into the memory stream.
+                generator.Save(ms, BarCodeImageFormat.Png);
+                ms.Position = 0; // Reset stream for reading.
+
+                // Call the simulated API method.
+                List<(string CodeType, string CodeText)> detected = DetectBarcodes(ms);
+
+                // Output detection results.
+                if (detected.Count == 0)
+                {
+                    Console.WriteLine("No barcodes detected.");
+                }
+                else
+                {
+                    foreach (var item in detected)
+                    {
+                        Console.WriteLine($"Detected {item.CodeType}: {item.CodeText}");
+                    }
+                }
+            }
         }
     }
 }

@@ -1,90 +1,100 @@
 // Title: Real‑time barcode detection demo using Aspose.BarCode
-// Description: Generates sample Code128 barcodes and reads them sequentially, showing how the FoundBarCodes collection updates after each read operation.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It demonstrates the use of BarcodeGenerator for creating barcodes and BarCodeReader for detecting them in images. Typical scenarios include scanning documents, processing camera feeds, or updating UI components with detection results. Developers often need to access FoundBarCodes and FoundCount to display real‑time detection information.
+// Description: Generates a Code128 barcode image, then reads it multiple times to simulate real‑time detection, displaying detection results and the FoundBarCodes count.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category. It demonstrates how to use BarcodeGenerator to create barcodes and BarCodeReader with QualitySettings to detect barcodes in images. Typical use cases include scanning images in a loop, updating UI components with detection results, and handling multiple symbologies. Developers often need to retrieve the FoundBarCodes property and barcode region information for UI overlays.
 // Prompt: Design a UI component that displays real‑time barcode detection results using FoundBarCodes property updates.
-// Tags: barcode, generation, recognition, code128, foundbarcodes, realtime, aspose.barcode, csharp
+// Tags: barcode, code128, detection, realtime, foundbarcodes, qualitysettings, aspose.barcode, generation, recognition
 
 using System;
 using System.IO;
-using System.Collections.Generic;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating barcodes, reading them, and displaying detection results using Aspose.BarCode.
+/// Demonstrates generating a barcode and performing repeated detection to simulate real‑time updates.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates sample barcodes, reads them, and outputs detection details.
+    /// Entry point of the example. Generates a barcode image, reads it multiple times,
+    /// and outputs detection details including the FoundBarCodes count.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder for storing generated barcode images
-        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
+        // Create a temporary directory for generated files
+        string tempDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
 
-        var barcodeFiles = new List<string>();
+        // Define barcode parameters
+        string codeText = "ABC1234567890";
+        string barcodePath = Path.Combine(tempDir, "sample.png");
 
-        // Generate three sample Code128 barcodes and save them as PNG files
-        for (int i = 0; i < 3; i++)
+        // Generate a Code128 barcode image using default sizing
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
         {
-            string codeText = $"CODE{i + 1}";
-            string filePath = Path.Combine(tempFolder, $"barcode{i + 1}.png");
-
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
-            {
-                generator.Save(filePath, BarCodeImageFormat.Png);
-            }
-
-            barcodeFiles.Add(filePath);
+            generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        // Simulate real‑time detection by reading each generated barcode file
-        foreach (string file in barcodeFiles)
+        // Simulate real‑time detection by reading the image multiple times
+        const int readAttempts = 3;
+        for (int attempt = 1; attempt <= readAttempts; attempt++)
         {
-            if (!File.Exists(file))
+            Console.WriteLine($"--- Detection attempt {attempt} ---");
+
+            // Verify the image file exists before attempting to read
+            if (!File.Exists(barcodePath))
             {
-                Console.WriteLine($"File not found: {file}");
-                continue;
+                Console.WriteLine("Barcode image not found.");
+                break;
             }
 
-            using (var reader = new BarCodeReader(file, DecodeType.AllSupportedTypes))
+            // Create a reader for all supported symbologies
+            using (var reader = new BarCodeReader(barcodePath, DecodeType.AllSupportedTypes))
             {
-                // Perform recognition; this updates FoundBarCodes and FoundCount
-                reader.ReadBarCodes();
+                // Optional: improve performance with a preset quality setting
+                reader.QualitySettings = QualitySettings.HighPerformance;
 
-                Console.WriteLine($"Processed: {Path.GetFileName(file)}");
-                Console.WriteLine($"FoundCount: {reader.FoundCount}");
+                // Perform the detection
+                BarCodeResult[] results = reader.ReadBarCodes();
 
-                // Iterate over each detected barcode and display its details
-                foreach (BarCodeResult result in reader.FoundBarCodes)
+                // Display the number of barcodes found (FoundBarCodes property)
+                Console.WriteLine($"FoundBarCodes: {reader.FoundBarCodes}");
+
+                // Iterate over each detected barcode and output details
+                int index = 0;
+                foreach (var result in results)
                 {
-                    var rect = result.Region.Rectangle;
-                    Console.WriteLine($"  Type: {result.CodeTypeName}");
-                    Console.WriteLine($"  Text: {result.CodeText}");
-                    Console.WriteLine($"  Region: X={rect.X}, Y={rect.Y}, Width={rect.Width}, Height={rect.Height}");
-                    Console.WriteLine($"  Angle: {result.Region.Angle}");
+                    Console.WriteLine($"Result #{++index}:");
+                    Console.WriteLine($"  CodeText      : {result.CodeText}");
+                    Console.WriteLine($"  Symbology     : {result.CodeTypeName}");
+                    Console.WriteLine($"  ReadingQuality: {result.ReadingQuality}");
+                    var bounds = result.Region.Rectangle;
+                    Console.WriteLine($"  Region (X,Y,W,H): {bounds.X}, {bounds.Y}, {bounds.Width}, {bounds.Height}");
+                    Console.WriteLine($"  Angle (degrees): {result.Region.Angle}");
+                }
+
+                if (results.Length == 0)
+                {
+                    Console.WriteLine("No barcode detected.");
                 }
             }
+
+            Console.WriteLine();
         }
 
-        // Clean up temporary files and directory
+        // Clean up temporary files
         try
         {
-            foreach (string file in barcodeFiles)
-            {
-                if (File.Exists(file))
-                {
-                    File.Delete(file);
-                }
-            }
-            Directory.Delete(tempFolder, true);
+            if (File.Exists(barcodePath))
+                File.Delete(barcodePath);
+            if (Directory.Exists(tempDir))
+                Directory.Delete(tempDir, true);
         }
-        catch
+        catch (Exception ex)
         {
-            // Ignored – cleanup failure should not affect program exit
+            Console.WriteLine($"Cleanup warning: {ex.Message}");
         }
     }
 }

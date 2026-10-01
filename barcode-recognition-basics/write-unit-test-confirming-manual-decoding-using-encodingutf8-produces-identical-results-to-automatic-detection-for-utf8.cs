@@ -1,8 +1,8 @@
-// Title: UTF-8 Barcode Decoding Comparison Test
-// Description: Demonstrates generating a QR code with UTF‑8 text and verifies that manual decoding using Encoding.UTF8 yields the same result as automatic encoding detection.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, showcasing how to create a QR code, control text encoding, and read it back. It highlights the use of BarcodeGenerator for encoding, BarCodeReader for detection, and the interplay between automatic encoding detection and manual UTF‑8 decoding—common tasks when handling multilingual barcodes in .NET applications.
+// Title: UTF-8 QR Code Generation and Decoding Comparison
+// Description: Demonstrates generating a QR barcode with UTF‑8 encoding and verifying that manual decoding using Encoding.UTF8 yields the same text as automatic encoding detection.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator to create a QR code with explicit ECI UTF‑8 encoding, and BarCodeReader to read the barcode both with automatic encoding detection and with manual UTF‑8 decoding. Developers working with multilingual data often need to ensure that automatic detection and manual decoding produce identical results, making this pattern useful for unit testing and validation scenarios.
 // Prompt: Write a unit test confirming manual decoding using Encoding.UTF8 produces identical results to automatic detection for UTF8 barcodes.
-// Tags: qr, utf-8, encoding, barcode, generation, recognition, unit-test, aspose.barcode
+// Tags: qr code,utf-8,encoding,barcode generation,barcode recognition,aspose.barcode,unit test
 
 using System;
 using System.IO;
@@ -12,104 +12,84 @@ using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Generates a QR code with UTF‑8 text, reads it back using both automatic and manual decoding,
-/// and validates that the decoded values are identical.
+/// Generates a QR barcode encoded in UTF‑8, reads it using both automatic detection and manual decoding,
+/// and compares the results to demonstrate that they are identical.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Executes the generation, recognition, comparison, and cleanup steps.
+    /// Entry point of the example. Performs barcode generation, reading, comparison, and cleanup.
     /// </summary>
     static void Main()
     {
-        // --------------------------------------------------------------------
-        // Prepare a unique temporary folder and file path for the barcode image.
-        // --------------------------------------------------------------------
-        string tempFolder = Path.Combine(Path.GetTempPath(), "Utf8BarcodeTest_" + Guid.NewGuid().ToString("N"));
+        // ------------------------------------------------------------
+        // Prepare a temporary folder and file path for the barcode image
+        // ------------------------------------------------------------
+        string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeUtf8Test_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
-        string imagePath = Path.Combine(tempFolder, "utf8_qr.png");
+        string barcodePath = Path.Combine(tempFolder, "utf8_qr.png");
 
-        // --------------------------------------------------------------
-        // Define the Unicode text that will be encoded into the QR code.
-        // --------------------------------------------------------------
-        string unicodeText = "Aspose常に先を行";
+        // ------------------------------------------------------------
+        // Define the original text containing Unicode characters
+        // ------------------------------------------------------------
+        string originalText = "Привет мир";
 
-        // --------------------------------------------------------------
-        // Generate a QR code using UTF‑8 encoding (manual encoding).
-        // --------------------------------------------------------------
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR))
+        // ------------------------------------------------------------
+        // Generate a QR barcode with explicit UTF‑8 (ECI) encoding
+        // ------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, originalText))
         {
-            generator.Parameters.Barcode.XDimension.Pixels = 8;
-            generator.Parameters.Barcode.QR.EncodeMode = QREncodeMode.Auto;
-            generator.SetCodeText(unicodeText, Encoding.UTF8);
-            generator.Parameters.Barcode.CodeTextParameters.TwoDDisplayText = unicodeText;
-            generator.Save(imagePath, BarCodeImageFormat.Png);
+            generator.Parameters.Barcode.QR.EncodeMode = QREncodeMode.ECI;
+            generator.Parameters.Barcode.QR.ECIEncoding = ECIEncodings.UTF8;
+            generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        // Verify that the barcode image was successfully created.
-        if (!File.Exists(imagePath))
-        {
-            Console.WriteLine("FAILED: Barcode image was not created.");
-            return;
-        }
-
-        // --------------------------------------------------------------
-        // Read the barcode with automatic encoding detection enabled.
-        // --------------------------------------------------------------
+        // ------------------------------------------------------------
+        // Automatic detection (default DetectEncoding = true)
+        // ------------------------------------------------------------
         string autoDecoded = null;
-        using (BarCodeReader readerAuto = new BarCodeReader(imagePath, DecodeType.QR))
+        using (var reader = new BarCodeReader(barcodePath, DecodeType.QR))
         {
-            readerAuto.BarcodeSettings.DetectEncoding = true;
-            foreach (BarCodeResult result in readerAuto.ReadBarCodes())
-            {
-                autoDecoded = result.CodeText;
-                break; // Only one barcode is expected.
-            }
+            reader.BarcodeSettings.DetectEncoding = true;
+            BarCodeResult[] results = reader.ReadBarCodes();
+            if (results.Length > 0)
+                autoDecoded = results[0].CodeText;
         }
 
-        // --------------------------------------------------------------
-        // Read the same barcode with automatic detection disabled and decode manually using UTF‑8.
-        // --------------------------------------------------------------
+        // ------------------------------------------------------------
+        // Manual decoding using UTF‑8 (DetectEncoding = false)
+        // ------------------------------------------------------------
         string manualDecoded = null;
-        using (BarCodeReader readerManual = new BarCodeReader(imagePath, DecodeType.QR))
+        using (var reader = new BarCodeReader(barcodePath, DecodeType.QR))
         {
-            readerManual.BarcodeSettings.DetectEncoding = false;
-            foreach (BarCodeResult result in readerManual.ReadBarCodes())
-            {
-                manualDecoded = result.GetCodeText(Encoding.UTF8);
-                break; // Only one barcode is expected.
-            }
+            reader.BarcodeSettings.DetectEncoding = false;
+            BarCodeResult[] results = reader.ReadBarCodes();
+            if (results.Length > 0 && results[0].CodeBytes != null)
+                manualDecoded = Encoding.UTF8.GetString(results[0].CodeBytes);
         }
 
-        // --------------------------------------------------------------
-        // Compare the two decoded strings and output the test result.
-        // --------------------------------------------------------------
-        if (autoDecoded == null || manualDecoded == null)
-        {
-            Console.WriteLine("FAILED: Could not read barcode.");
-        }
-        else if (autoDecoded == manualDecoded)
-        {
-            Console.WriteLine("PASS: Manual UTF8 decoding matches automatic detection.");
-        }
-        else
-        {
-            Console.WriteLine("FAIL: Mismatch between manual and automatic decoding.");
-            Console.WriteLine($"Automatic: {autoDecoded}");
-            Console.WriteLine($"Manual   : {manualDecoded}");
-        }
+        // ------------------------------------------------------------
+        // Compare the two results for equality
+        // ------------------------------------------------------------
+        bool identical = string.Equals(autoDecoded, manualDecoded, StringComparison.Ordinal);
+        Console.WriteLine("Original text : " + originalText);
+        Console.WriteLine("Auto decoded  : " + (autoDecoded ?? "null"));
+        Console.WriteLine("Manual decoded: " + (manualDecoded ?? "null"));
+        Console.WriteLine("Results are identical: " + (identical ? "YES" : "NO"));
 
-        // --------------------------------------------------------------
-        // Clean up temporary files and directories.
-        // --------------------------------------------------------------
+        // ------------------------------------------------------------
+        // Clean up temporary files and directories
+        // ------------------------------------------------------------
         try
         {
-            File.Delete(imagePath);
-            Directory.Delete(tempFolder);
+            if (File.Exists(barcodePath))
+                File.Delete(barcodePath);
+            if (Directory.Exists(tempFolder))
+                Directory.Delete(tempFolder, true);
         }
         catch
         {
-            // Cleanup failures are non‑critical for the test outcome.
+            // Ignored - cleanup failure should not affect test outcome
         }
     }
 }

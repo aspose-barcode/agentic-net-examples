@@ -1,78 +1,81 @@
-// Title: Read barcodes from JPEG using BarCodeReader
-// Description: Demonstrates generating a Code128 barcode, saving it as a JPEG, and then reading it back with BarCodeReader to obtain detection results.
-// Category-Description: This example belongs to the Aspose.BarCode barcode reading and generation category. It shows how to use BarcodeGenerator to create an image and BarCodeReader to decode all supported symbologies from a file. Developers often need to process scanned images, extract barcode data, and retrieve positional information for further processing such as inventory management or document automation.
+// Title: Read barcodes from a JPEG file using BarCodeReader
+// Description: Demonstrates generating a QR barcode, saving it as a JPEG image, and then reading the barcode back to retrieve detection results.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator to create barcodes and BarCodeReader to detect and decode them from image files. Typical scenarios include scanning printed or digital images for QR codes, product barcodes, or other symbologies in desktop or server applications. Developers often need to combine these APIs to automate barcode processing pipelines.
 // Prompt: Read barcodes from a JPEG file using BarCodeReader constructor and retrieve detection results.
-// Tags: barcode, code128, jpeg, read, generation, aspose.barcode, barcodereader, barcodegenerator, detection, region
+// Tags: qr, barcode, read, jpeg, aspose.barcode, generation, recognition, detection
 
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that creates a barcode image, saves it as JPEG, and reads it back using Aspose.BarCode.
+/// Sample program that creates a QR barcode image, saves it as JPEG, and reads it back using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a Code128 barcode, writes it to a temporary JPEG file, then reads and displays detection results.
+    /// Entry point of the application. Generates a QR code, saves it as JPEG, reads it, and outputs detection details.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder for the demo files
-        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeReadDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
+        // Create a temporary folder for the sample barcode image
+        string tempDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeSample_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        string barcodePath = Path.Combine(tempDir, "sample.jpg");
 
-        // Define the full path for the sample JPEG image
-        string imagePath = Path.Combine(tempFolder, "sample.jpg");
-
-        // Generate a Code128 barcode and save it as a JPEG image
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456789"))
+        // Generate a simple QR barcode and save it as JPEG
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Hello Aspose"))
         {
-            generator.Save(imagePath, BarCodeImageFormat.Jpeg);
+            generator.Save(barcodePath, BarCodeImageFormat.Jpeg);
         }
 
-        // Verify that the image file was created before attempting to read it
-        if (!File.Exists(imagePath))
+        // Verify that the image file was created
+        if (!File.Exists(barcodePath))
         {
-            Console.WriteLine($"File not found: {imagePath}");
+            Console.WriteLine("Failed to create the barcode image.");
             return;
         }
 
-        // Read all supported barcodes from the JPEG file
-        using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
+        // Read barcodes from the JPEG file
+        using (var reader = new BarCodeReader(barcodePath, DecodeType.AllSupportedTypes))
         {
-            Console.WriteLine("ReadFromFile:");
+            // Optional: set a quality preset for faster processing
+            reader.QualitySettings = QualitySettings.HighPerformance;
+
+            // Perform the detection
             BarCodeResult[] results = reader.ReadBarCodes();
 
-            // Output detection results or indicate that none were found
             if (results.Length == 0)
             {
                 Console.WriteLine("No barcodes detected.");
             }
             else
             {
-                foreach (BarCodeResult result in results)
+                // Output details for each detected barcode
+                foreach (var result in results)
                 {
-                    // Display the type and text of each detected barcode
-                    Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
+                    Console.WriteLine($"Code Text       : {result.CodeText}");
+                    Console.WriteLine($"Symbology       : {result.CodeTypeName}");
+                    Console.WriteLine($"Reading Quality : {result.ReadingQuality}");
 
-                    // Show the region (position and size) of the barcode within the image
-                    var bounds = result.Region.Rectangle;
-                    Console.WriteLine($"Region - X:{bounds.X}, Y:{bounds.Y}, Width:{bounds.Width}, Height:{bounds.Height}, Angle:{result.Region.Angle}");
+                    var rect = result.Region.Rectangle;
+                    Console.WriteLine($"Region - X:{rect.X}, Y:{rect.Y}, Width:{rect.Width}, Height:{rect.Height}");
+                    Console.WriteLine($"Orientation Angle: {result.Region.Angle}");
+                    Console.WriteLine(new string('-', 40));
                 }
             }
         }
 
-        // Optional cleanup of temporary files (comment out if inspection of files is needed)
+        // Clean up temporary files
         try
         {
-            Directory.Delete(tempFolder, true);
+            Directory.Delete(tempDir, true);
         }
         catch
         {
-            // Suppress any errors that occur during cleanup
+            // Ignored – cleanup failure should not affect program exit
         }
     }
 }

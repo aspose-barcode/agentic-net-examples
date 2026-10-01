@@ -1,81 +1,81 @@
-// Title: Generate and Read a Code128 Barcode with Confidence Scores
-// Description: This example creates a Code128 barcode image, saves it to a temporary directory, then reads the image using Aspose.BarCode's BarCodeReader to output the decoded text along with confidence and reading quality values.
-// Category-Description: Demonstrates Aspose.BarCode generation and recognition APIs. The sample uses BarcodeGenerator to produce a barcode image and BarCodeReader to decode it, retrieving BarCodeResult details such as confidence scores. Typical scenarios include automated barcode validation, quality assessment, and integration into CI pipelines where confidence metrics guide downstream processing. Developers often need to generate test barcodes, read them programmatically, and evaluate reading reliability using these core classes.
+// Title: Generate and Read Barcode with Confidence Scores using Aspose.BarCode
+// Description: Demonstrates creating a Code128 barcode image, saving it as PNG, then reading it with Aspose.BarCode to output the decoded text, symbology, and reading quality (confidence score).
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator for encoding barcodes and BarCodeReader for decoding them, including quality settings to improve confidence scores. Developers working with barcode automation, inventory systems, or document processing often need to generate barcodes and later verify them programmatically; this snippet provides a concise reference for those common tasks.
 // Prompt: Create a PowerShell script that invokes BarCodeReader via .NET Core to process barcode images and output confidence scores.
-// Tags: barcode symbology, generation, recognition, confidence, aspnet, aspose.barcode, csharp, .net core
+// Tags: barcode generation, barcode recognition, confidence score, code128, aspose.barcode, .net core
 
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates barcode generation, reading, and extraction of confidence metrics using Aspose.BarCode.
+/// Demonstrates barcode generation and reading using Aspose.BarCode, outputting confidence scores.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the sample. Generates a Code128 barcode, reads it, and prints confidence information.
+    /// Entry point. Generates a Code128 barcode, reads it, and prints decoding results with quality scores.
     /// </summary>
-    static void Main()
+    /// <param name="args">Command‑line arguments (not used).</param>
+    static void Main(string[] args)
     {
-        // Create a unique temporary folder for the sample files
-        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeSample_" + Guid.NewGuid().ToString("N"));
+        // Create a temporary folder for sample files
+        string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeSample_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
 
-        // Define the full path for the generated barcode image
-        string imagePath = Path.Combine(tempFolder, "sample.png");
+        // Define sample barcode parameters
+        string barcodePath = Path.Combine(tempFolder, "sample.png");
+        string codeText = "1234567890";
+        BaseEncodeType encodeType = EncodeTypes.Code128;
 
-        // Generate a Code128 barcode with the text "Aspose123" and save it as PNG
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Aspose123"))
+        // Generate a barcode image and save it as PNG
+        using (var generator = new BarcodeGenerator(encodeType, codeText))
         {
-            generator.Save(imagePath, BarCodeImageFormat.Png);
+            generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        // Verify that the image file was successfully created
-        if (!File.Exists(imagePath))
+        // Verify the file exists before attempting to read
+        if (!File.Exists(barcodePath))
         {
-            Console.WriteLine("Failed to create barcode image.");
+            Console.WriteLine($"Barcode image not found: {barcodePath}");
             return;
         }
 
-        // Set the decode type to all supported barcode symbologies
-        BaseDecodeType decodeType = DecodeType.AllSupportedTypes;
-
-        // Read the barcode image and retrieve decoding results
-        using (var reader = new BarCodeReader(imagePath, decodeType))
+        // Read the barcode and output confidence scores
+        using (var reader = new BarCodeReader(barcodePath, DecodeType.AllSupportedTypes))
         {
-            BarCodeResult[] results = reader.ReadBarCodes();
+            // Optional: set quality settings for higher accuracy
+            reader.QualitySettings = QualitySettings.HighQuality;
 
-            // If no barcodes were detected, inform the user
+            BarCodeResult[] results = reader.ReadBarCodes();
             if (results.Length == 0)
             {
-                Console.WriteLine("No barcodes detected.");
+                Console.WriteLine("No barcode detected.");
             }
             else
             {
-                // Iterate through each detected barcode and output its details
                 foreach (BarCodeResult result in results)
                 {
-                    Console.WriteLine($"CodeText: {result.CodeText}");
-                    Console.WriteLine($"CodeType: {result.CodeTypeName}");
-                    Console.WriteLine($"Confidence: {result.Confidence}");
-                    Console.WriteLine($"ReadingQuality: {result.ReadingQuality}");
-                    Console.WriteLine();
+                    Console.WriteLine($"Code Text       : {result.CodeText}");
+                    Console.WriteLine($"Symbology       : {result.CodeTypeName}");
+                    Console.WriteLine($"Reading Quality : {result.ReadingQuality}");
+                    Console.WriteLine(new string('-', 30));
                 }
             }
         }
 
-        // Attempt to clean up temporary files and directory
+        // Clean up temporary files
         try
         {
-            File.Delete(imagePath);
+            File.Delete(barcodePath);
             Directory.Delete(tempFolder);
         }
         catch
         {
-            // Ignored – cleanup failures should not affect program outcome
+            // Ignored - cleanup failure should not affect program exit
         }
     }
 }

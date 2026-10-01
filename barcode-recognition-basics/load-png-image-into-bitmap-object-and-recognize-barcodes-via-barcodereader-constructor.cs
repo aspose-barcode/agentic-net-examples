@@ -1,8 +1,8 @@
-// Title: Recognize Barcode from PNG Image Using Aspose.BarCodeReader
-// Description: Demonstrates loading a PNG file into a Bitmap and using BarCodeReader to detect barcodes. Shows how to generate a sample barcode, read it, and output the results.
-// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, illustrating how to work with image-based barcode detection using the BarCodeReader class. It covers generating a barcode image, loading it via Aspose.Drawing.Bitmap, and decoding all supported symbologies. Developers often need to process scanned images or files to extract barcode data in automation, inventory, or document processing scenarios.
+// Title: Load PNG into Bitmap and Recognize Barcodes with BarCodeReader
+// Description: Demonstrates loading a PNG image into an Aspose.Drawing.Bitmap and using BarCodeReader to detect all supported barcode types.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases key API classes such as BarcodeGenerator for creating barcodes, BarCodeReader for decoding, and BarCodeResult for accessing decoded data. Typical use cases include scanning barcode images from files or streams, extracting product codes, and integrating barcode processing into .NET applications. Developers often need quick samples that cover image handling, temporary file management, and cleanup.
 // Prompt: Load a PNG image into a Bitmap object and recognize barcodes via BarCodeReader constructor.
-// Tags: barcode recognition, png, bitmap, aspose.barcode, decode, alltypes, code128
+// Tags: barcode, png, bitmap, recognition, generation, aspose.barcode, decode, encode, csharp
 
 using System;
 using System.IO;
@@ -12,66 +12,78 @@ using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a Code128 barcode, saving it as PNG, loading it into a Bitmap,
-/// and recognizing it using Aspose.BarCode's BarCodeReader.
+/// Sample program that generates a barcode image, loads it into a Bitmap, and reads barcodes using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Performs barcode generation, image loading, recognition,
-    /// and cleanup of temporary resources.
+    /// Entry point. Creates a temporary barcode PNG, loads it as a Bitmap, and extracts barcode information.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder to store the sample barcode image
-        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        // Create a temporary folder for the sample image
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeSample_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
-        string imagePath = Path.Combine(tempFolder, "sample.png");
+        string imagePath = Path.Combine(tempFolder, "barcode.png");
 
-        // Generate a Code128 barcode and save it as a PNG file
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
-        {
-            generator.Save(imagePath, BarCodeImageFormat.Png);
-        }
-
-        // Verify that the image file was created successfully
+        // Generate a sample barcode image if it does not exist
         if (!File.Exists(imagePath))
         {
-            Console.WriteLine("Failed to create barcode image.");
-            return;
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+            {
+                // Save the generated barcode as a PNG file
+                generator.Save(imagePath, BarCodeImageFormat.Png);
+            }
         }
 
-        // Load the PNG image into a Bitmap and use BarCodeReader to detect barcodes
-        using (Bitmap bitmap = new Bitmap(imagePath))
+        // Load the PNG image into a Bitmap object
+        using (Aspose.Drawing.Bitmap bitmap = new Aspose.Drawing.Bitmap(imagePath))
         {
-            using (BarCodeReader reader = new BarCodeReader(bitmap, DecodeType.AllSupportedTypes))
+            // The bitmap is now loaded; it can be used for further processing if needed
+        }
+
+        // Recognize barcodes from the image using BarCodeReader
+        if (File.Exists(imagePath))
+        {
+            using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
             {
+                // Read all detected barcodes
                 BarCodeResult[] results = reader.ReadBarCodes();
 
-                // Output detection results
                 if (results.Length == 0)
                 {
                     Console.WriteLine("No barcodes detected.");
                 }
                 else
                 {
+                    // Output details for each detected barcode
                     foreach (BarCodeResult result in results)
                     {
-                        Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
+                        Console.WriteLine($"Code Text: {result.CodeText}");
+                        Console.WriteLine($"Symbology: {result.CodeTypeName}");
+                        Console.WriteLine($"Reading Quality: {result.ReadingQuality}");
+                        Console.WriteLine($"Region Angle: {result.Region.Angle}");
+                        Console.WriteLine();
                     }
                 }
             }
         }
+        else
+        {
+            Console.WriteLine($"Image file not found: {imagePath}");
+        }
 
-        // Attempt to clean up temporary files and folder
+        // Clean up temporary files
         try
         {
-            File.Delete(imagePath);
-            Directory.Delete(tempFolder);
+            if (Directory.Exists(tempFolder))
+            {
+                Directory.Delete(tempFolder, true);
+            }
         }
         catch
         {
-            // Ignored - cleanup failure should not affect program outcome
+            // Ignore cleanup errors
         }
     }
 }

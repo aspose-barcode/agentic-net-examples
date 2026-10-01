@@ -1,8 +1,8 @@
 // Title: Disable Checksum Validation for Code 11 Barcodes in Batch Processing
-// Description: Demonstrates how to generate a set of Code 11 barcode images and read them with checksum validation turned off using Aspose.BarCode.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes, BarCodeReader for decoding them, and BarcodeSettings.ChecksumValidation to control checksum verification. Typical scenarios include batch processing of barcodes where checksum errors must be ignored, such as legacy data migration or bulk scanning operations. Developers often need to adjust validation settings to handle imperfect or legacy symbologies efficiently.
+// Description: Demonstrates how to generate Code 11 barcodes, then decode them with checksum validation turned off using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It shows how to use BarcodeGenerator to create barcodes and BarCodeReader with BarcodeSettings to control checksum validation. Developers often need to process large batches of barcodes where checksum verification may be unnecessary or cause false negatives, especially for Code 11 symbology.
 // Prompt: Set BarcodeSettings.ChecksumValidation to Off to disable checksum verification for Code 11 during batch processing.
-// Tags: code11, checksumvalidation, batch-processing, barcode-generation, barcode-recognition, aspose.barcode, csharp
+// Tags: code11, checksum, batch processing, barcode generation, barcode recognition, aspose.barcode
 
 using System;
 using System.IO;
@@ -10,77 +10,82 @@ using System.Collections.Generic;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates Code 11 barcodes and reads them with checksum validation disabled.
+/// Generates a set of Code 11 barcode images, then reads them back with checksum validation disabled.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates temporary barcode images, reads them with checksum validation off, and cleans up.
+    /// Entry point of the example. Creates temporary barcode files, decodes them without checksum verification, and cleans up.
     /// </summary>
-    /// <param name="args">Command‑line arguments (not used).</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Create a unique temporary folder for batch processing
+        // --------------------------------------------------------------------
+        // Create a unique temporary folder for the batch processing
+        // --------------------------------------------------------------------
         string batchFolder = Path.Combine(Path.GetTempPath(), "Batch_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(batchFolder);
 
-        // Sample Code11 barcode texts
-        string[] codeTexts = new string[] { "123456", "12345", "1234567" };
+        // --------------------------------------------------------------------
+        // Generate sample Code 11 barcode images and collect their file paths
+        // --------------------------------------------------------------------
         List<string> barcodeFiles = new List<string>();
-
-        // Generate barcode images
-        for (int i = 0; i < codeTexts.Length; i++)
+        for (int i = 0; i < 3; i++)
         {
-            string filePath = Path.Combine(batchFolder, $"Code11_{i + 1}.png");
-            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code11, codeTexts[i]))
+            string codeText = "12345" + i; // Sample code text for each barcode
+            string filePath = Path.Combine(batchFolder, $"code11_{i}.png");
+
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code11, codeText))
             {
-                // Set X‑dimension to 2 pixels for better readability
-                generator.Parameters.Barcode.XDimension.Pixels = 2f;
+                // Save the generated barcode as a PNG image
                 generator.Save(filePath, BarCodeImageFormat.Png);
             }
+
             barcodeFiles.Add(filePath);
         }
 
-        Console.WriteLine("Batch reading Code11 barcodes with ChecksumValidation set to Off:");
-
-        // Read each barcode with checksum validation disabled
+        // --------------------------------------------------------------------
+        // Batch decode the generated barcodes with checksum validation turned off
+        // --------------------------------------------------------------------
         foreach (string file in barcodeFiles)
         {
-            if (!File.Exists(file))
-            {
-                Console.WriteLine($"File not found: {file}");
-                continue;
-            }
-
             try
             {
-                using (BarCodeReader reader = new BarCodeReader(file, DecodeType.Code11))
+                using (var reader = new BarCodeReader(file, DecodeType.Code11))
                 {
-                    // Disable checksum verification for Code 11
+                    // Disable checksum verification for Code 11
                     reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.Off;
 
-                    foreach (BarCodeResult result in reader.ReadBarCodes())
+                    // Read all barcodes found in the image
+                    foreach (var result in reader.ReadBarCodes())
                     {
-                        Console.WriteLine($"File: {Path.GetFileName(file)} | Type: {result.CodeTypeName} | Text: {result.CodeText}");
+                        Console.WriteLine($"File: {Path.GetFileName(file)} | CodeText: {result.CodeText} | Type: {result.CodeTypeName}");
                     }
                 }
             }
             catch (ArgumentException ex)
             {
-                Console.WriteLine($"Failed to read {Path.GetFileName(file)}: {ex.Message}");
+                // Skip files that cannot be loaded as images (e.g., corrupted or unsupported format)
+                Console.WriteLine($"Skipping file {Path.GetFileName(file)}: {ex.Message}");
             }
         }
 
-        // Cleanup (optional)
+        // --------------------------------------------------------------------
+        // Clean up temporary files and folder (optional)
+        // --------------------------------------------------------------------
         try
         {
-            Directory.Delete(batchFolder, true);
+            foreach (var file in barcodeFiles)
+            {
+                File.Delete(file);
+            }
+            Directory.Delete(batchFolder);
         }
         catch
         {
-            // Ignore cleanup errors
+            // Ignore any errors that occur during cleanup
         }
     }
 }
