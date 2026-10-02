@@ -1,8 +1,8 @@
 // Title: Generate barcode image with custom dimensions and unit using Aspose.BarCode
-// Description: Demonstrates how to create a barcode, set its size in various measurement units, and obtain the PNG image as a byte array.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and image size parameters. Developers often need to produce barcodes with specific dimensions for web APIs, reports, or printing, and this snippet shows how to configure width, height, and measurement units (pixels, millimeters, inches, points) before saving the image.
+// Description: Demonstrates how to create a Code128 barcode, set its size in various measurement units, and obtain the PNG image bytes.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing the BarcodeGenerator class for creating barcodes, configuring image dimensions via the Parameters.ImageWidth/Height properties, and exporting to common image formats. Developers often need to produce barcodes with specific size requirements for web APIs, reports, or label printing.
 // Prompt: Create web API endpoint accepting width, height, and unit, generating barcode and returning image bytes.
-// Tags: barcode, generation, dimensions, units, png, aspose.barcode, csharp, webapi
+// Tags: barcode, code128, generation, dimensions, unit, png, aspose.barcode, csharp
 
 using System;
 using System.IO;
@@ -10,63 +10,53 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates barcode generation with custom size and unit, returning image bytes.
+/// Demonstrates barcode generation with custom size settings using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that generates a sample barcode, saves it to disk, and outputs details.
+    /// Entry point that simulates a request, generates a barcode, and writes the image to a file.
     /// </summary>
     static void Main()
     {
-        // Sample parameters for demonstration
+        // Simulate a request with width, height, and unit
         int width = 300;
         int height = 150;
         string unit = "Pixels";
 
         try
         {
-            // Generate barcode image bytes using the specified dimensions and unit
-            byte[] imageBytes = GenerateBarcode(width, height, unit);
+            // Generate the barcode image bytes based on the supplied dimensions
+            byte[] barcodeBytes = GenerateBarcode(width, height, unit);
 
             // Save the generated image to a file for verification
-            string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "barcode.png");
-            File.WriteAllBytes(outputPath, imageBytes);
-
-            Console.WriteLine($"Barcode image saved to: {outputPath}");
-            Console.WriteLine($"Image byte size: {imageBytes.Length}");
+            string outputPath = "barcode.png";
+            File.WriteAllBytes(outputPath, barcodeBytes);
+            Console.WriteLine($"Barcode generated ({barcodeBytes.Length} bytes) and saved to '{outputPath}'.");
         }
         catch (Exception ex)
         {
-            // Output any errors that occur during generation or saving
+            // Output any errors that occur during generation
             Console.WriteLine($"Error: {ex.Message}");
         }
     }
 
     /// <summary>
-    /// Generates a barcode image with the given width, height, and measurement unit.
+    /// Generates a Code128 barcode image with the specified width, height, and measurement unit.
     /// </summary>
     /// <param name="width">The desired image width.</param>
     /// <param name="height">The desired image height.</param>
-    /// <param name="unit">The measurement unit (Pixels, Millimeters, Inches, Points).</param>
+    /// <param name="unit">The measurement unit (Pixels, Millimeters, Inches, or Point).</param>
     /// <returns>Byte array containing the PNG image data.</returns>
     static byte[] GenerateBarcode(int width, int height, string unit)
     {
-        // Validate input parameters
-        if (width <= 0)
-            throw new ArgumentOutOfRangeException(nameof(width), "Width must be positive.");
-        if (height <= 0)
-            throw new ArgumentOutOfRangeException(nameof(height), "Height must be positive.");
         if (string.IsNullOrWhiteSpace(unit))
             throw new ArgumentException("Unit must be provided.", nameof(unit));
 
-        // Create barcode generator with a sample symbology and code text
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample"))
+        // Initialize the barcode generator with Code128 symbology and sample data
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
         {
-            // Set manual image size mode to enforce explicit dimensions
-            generator.Parameters.AutoSizeMode = AutoSizeMode.Nearest;
-
-            // Apply the requested measurement unit to width and height
+            // Apply the requested measurement unit to the image dimensions
             switch (unit.Trim().ToLowerInvariant())
             {
                 case "pixels":
@@ -82,15 +72,14 @@ class Program
                     generator.Parameters.ImageHeight.Inches = height;
                     break;
                 case "point":
-                case "points":
                     generator.Parameters.ImageWidth.Point = width;
                     generator.Parameters.ImageHeight.Point = height;
                     break;
                 default:
-                    throw new ArgumentException($"Unsupported unit: {unit}", nameof(unit));
+                    throw new ArgumentException($"Unsupported unit '{unit}'. Supported units: Pixels, Millimeters, Inches, Point.", nameof(unit));
             }
 
-            // Generate the barcode image into a memory stream and return its bytes
+            // Save the barcode to a memory stream in PNG format and return the byte array
             using (var ms = new MemoryStream())
             {
                 generator.Save(ms, BarCodeImageFormat.Png);

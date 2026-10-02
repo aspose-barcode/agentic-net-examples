@@ -1,8 +1,8 @@
-// Title: Generate Code128 barcode with fixed width and automatic height
-// Description: Demonstrates creating a Code128 barcode image with a width of 40 mm while letting the library automatically calculate the height.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to configure image dimensions using the BarcodeGenerator.Parameters.ImageWidth and ImageHeight properties. Developers often need to produce barcodes that fit specific layout constraints, such as a fixed width for printing on labels, while allowing the height to adapt automatically. The key API classes shown are BarcodeGenerator, EncodeTypes, and BarCodeImageFormat, which are commonly used for barcode creation, format selection, and image export.
+// Title: Generate barcode with auto height and fixed width
+// Description: Demonstrates setting a barcode's width to 40 mm while leaving height to auto‑size, and shows handling of an invalid zero height.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to use BarcodeGenerator, AutoSizeMode, and image dimension properties. Typical use cases include creating barcodes that fit a specific layout width while allowing the library to calculate optimal height. Developers often need to control size constraints and validate automatic sizing behavior.
 // Prompt: Write code generating barcode with BarCodeHeight zero, BarCodeWidth 40 mm, and verify auto‑height behavior.
-// Tags: barcode, code128, image generation, width, auto height, aspose.barcode, png
+// Tags: barcode, code128, autoheight, width, png, aspose.barcode, generation
 
 using System;
 using System.IO;
@@ -12,42 +12,51 @@ using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a Code128 barcode with a fixed width of 40 mm and automatic height calculation.
+/// Example program that generates a Code128 barcode with a fixed width of 40 mm,
+/// lets the library determine the optimal height automatically, and demonstrates
+/// handling of an invalid zero‑height setting.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Creates a temporary folder, generates the barcode, saves it as PNG, and outputs image dimensions.
+    /// Entry point. Creates output directory, attempts an invalid height setting,
+    /// generates the barcode with auto height, saves it, and prints the resulting image size.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder for output
-        string outputDir = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(outputDir);
-        string imagePath = Path.Combine(outputDir, "barcode.png");
+        // Prepare output folder and file path
+        string outDir = Path.Combine(Path.GetTempPath(), "BarcodeDemo");
+        Directory.CreateDirectory(outDir);
+        string outPath = Path.Combine(outDir, "barcode.png");
 
-        // Initialize barcode generator (Code128) with sample text
-        var generator = new BarcodeGenerator(EncodeTypes.Code128, "ASPOSE");
-
-        // Set image width to 40 millimeters; height will be auto‑sized (BarCodeHeight = 0)
-        generator.Parameters.ImageWidth.Millimeters = 40f;
-
-        // Optionally set a higher resolution for more precise size calculations
-        generator.Parameters.Resolution = 300f;
-
-        // Save barcode image as PNG
-        generator.Save(imagePath, BarCodeImageFormat.Png);
-
-        // Load the saved image to verify dimensions
-        using (var bitmap = new Bitmap(imagePath))
+        // Attempt to set BarHeight to zero (expected to throw ArgumentException)
+        try
         {
-            Console.WriteLine($"Barcode image saved to: {imagePath}");
-            Console.WriteLine($"Image width (pixels): {bitmap.Width}");
-            Console.WriteLine($"Image height (pixels): {bitmap.Height}");
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
+            {
+                generator.Parameters.Barcode.BarHeight.Point = 0f;
+            }
+        }
+        catch (ArgumentException ex)
+        {
+            Console.WriteLine("Setting BarHeight to 0 threw: " + ex.Message);
+        }
 
-            // Calculate height in millimeters based on resolution
-            float heightMm = bitmap.Height * 25.4f / generator.Parameters.Resolution;
-            Console.WriteLine($"Calculated image height (mm): {heightMm:F2}");
+        // Generate barcode with auto height and fixed width of 40 mm
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
+        {
+            // Enable automatic sizing mode
+            generator.Parameters.AutoSizeMode = AutoSizeMode.Nearest;
+            // Set desired image width in millimeters
+            generator.Parameters.ImageWidth.Millimeters = 40f;
+            // Do not set BarHeight; library will calculate optimal height
+            generator.Save(outPath, BarCodeImageFormat.Png);
+        }
+
+        // Load the generated image and output its dimensions in pixels
+        using (var bitmap = new Bitmap(outPath))
+        {
+            Console.WriteLine($"Generated barcode size: {bitmap.Width}x{bitmap.Height} pixels");
         }
     }
 }

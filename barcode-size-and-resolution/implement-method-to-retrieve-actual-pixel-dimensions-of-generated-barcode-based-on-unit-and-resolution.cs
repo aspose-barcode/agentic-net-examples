@@ -1,74 +1,72 @@
-// Title: Retrieve Barcode Pixel Dimensions Based on Unit and Resolution
-// Description: Demonstrates how to generate a barcode with a specific X-dimension unit and resolution, then obtain its actual pixel width and height.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator, its Parameters, XDimension, and Resolution properties. Typical scenarios include rendering barcodes to bitmap images, calculating layout sizes, and integrating barcodes into graphics where exact pixel dimensions are required. Developers working with barcode rendering often need to convert logical units (pixels, millimeters, points) to physical pixel sizes based on a chosen DPI.
-// Prompt: Implement method to retrieve actual pixel dimensions of generated barcode based on unit and resolution.
-// Tags: barcode, dimensions, resolution, unit, aspose.barcode, generation, bitmap
+// Title: Retrieve Barcode Pixel Dimensions Based on X-Dimension and Resolution
+// Description: Demonstrates generating a barcode with a specific X‑dimension (in millimeters) and DPI resolution, then obtaining its actual pixel width and height.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to configure barcode parameters such as X‑dimension and resolution using the BarcodeGenerator class. Developers often need to know the exact pixel size of a rendered barcode for layout, printing, or image processing tasks. The code shows reflection‑based symbology resolution, parameter setting, and bitmap extraction—common steps in barcode creation workflows.
+/// Prompt: Implement method to retrieve actual pixel dimensions of generated barcode based on unit and resolution.
+/// Tags: barcode, datamatrix, dimensions, resolution, pixel, aspose.barcode, generation
 
 using System;
+using System.Reflection;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Provides an example that generates a barcode, configures its X‑dimension unit and resolution,
-/// and returns the resulting image's pixel dimensions.
+/// Provides an example of calculating the pixel dimensions of a generated barcode
+/// based on the specified X‑dimension (in millimeters) and image resolution (DPI).
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a barcode and prints its pixel width and height.
+    /// Entry point of the example. Sets sample parameters, invokes the dimension
+    /// calculation method, and writes the results to the console.
     /// </summary>
     static void Main()
     {
-        // Define sample barcode parameters
+        // Sample parameters
+        string symbology = "DataMatrix";
         string codeText = "ASPOSE";
-        BaseEncodeType encodeType = EncodeTypes.DataMatrix;
-        string unit = "Millimeters";
-        float resolution = 300f;
+        float xDimensionMillimeters = 1f;
+        float resolutionDpi = 300f;
 
-        // Retrieve pixel dimensions based on the specified unit and resolution
-        var (width, height) = GetBarcodePixelDimensions(codeText, encodeType, unit, resolution);
+        // Retrieve pixel dimensions for the configured barcode
+        var size = GetBarcodePixelDimensions(symbology, codeText, xDimensionMillimeters, resolutionDpi);
 
-        // Output the dimensions to the console
-        Console.WriteLine($"Generated barcode dimensions: {width} x {height} pixels (unit={unit}, resolution={resolution} dpi)");
+        // Output the results
+        Console.WriteLine($"Barcode '{symbology}' with text '{codeText}':");
+        Console.WriteLine($"Pixel Width = {size.width}, Pixel Height = {size.height}");
     }
 
     /// <summary>
-    /// Generates a barcode with the given text, symbology, unit, and resolution,
-    /// then returns the width and height of the resulting bitmap in pixels.
+    /// Generates a barcode using the specified symbology, text, X‑dimension, and resolution,
+    /// then returns its width and height in pixels.
     /// </summary>
-    /// <param name="codeText">The data to encode in the barcode.</param>
-    /// <param name="encodeType">The barcode symbology to use.</param>
-    /// <param name="unit">The unit for X‑dimension (e.g., Pixels, Millimeters, Points).</param>
-    /// <param name="resolution">The image resolution in DPI.</param>
+    /// <param name="symbologyName">Name of the barcode symbology (e.g., "DataMatrix").</param>
+    /// <param name="codeText">Text to encode in the barcode.</param>
+    /// <param name="xDimMillimeters">Desired X‑dimension in millimeters.</param>
+    /// <param name="resolutionDpi">Image resolution in dots per inch.</param>
     /// <returns>A tuple containing the bitmap width and height in pixels.</returns>
-    static (int width, int height) GetBarcodePixelDimensions(string codeText, BaseEncodeType encodeType, string unit, float resolution)
+    static (int width, int height) GetBarcodePixelDimensions(string symbologyName, string codeText, float xDimMillimeters, float resolutionDpi)
     {
-        // Initialize the barcode generator with the specified symbology and data
+        // Resolve symbology name to BaseEncodeType via reflection
+        FieldInfo field = typeof(EncodeTypes).GetField(symbologyName);
+        if (field == null)
+        {
+            Console.WriteLine($"Unknown symbology: {symbologyName}");
+            return (0, 0);
+        }
+
+        BaseEncodeType encodeType = (BaseEncodeType)field.GetValue(null);
+
+        // Initialize the barcode generator with the resolved type and text
         using (var generator = new BarcodeGenerator(encodeType, codeText))
         {
-            // Configure XDimension based on the requested unit
-            switch (unit?.Trim().ToLowerInvariant())
-            {
-                case "pixels":
-                    generator.Parameters.Barcode.XDimension.Pixels = 3f;
-                    break;
-                case "millimeters":
-                    generator.Parameters.Barcode.XDimension.Millimeters = 1f;
-                    break;
-                case "points":
-                    generator.Parameters.Barcode.XDimension.Point = 12f;
-                    break;
-                default:
-                    // Fallback to a default of 2 pixels for unrecognized units
-                    generator.Parameters.Barcode.XDimension.Pixels = 2f;
-                    break;
-            }
+            // Set the X‑dimension (module size) in millimeters
+            generator.Parameters.Barcode.XDimension.Millimeters = xDimMillimeters;
 
-            // Apply the desired resolution (dots per inch)
-            generator.Parameters.Resolution = resolution;
+            // Set the image resolution (DPI)
+            generator.Parameters.Resolution = resolutionDpi;
 
-            // Generate the barcode image and capture its pixel dimensions
+            // Generate the barcode image and retrieve its pixel dimensions
             using (Bitmap bitmap = generator.GenerateBarCodeImage())
             {
                 return (bitmap.Width, bitmap.Height);

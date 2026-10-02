@@ -1,8 +1,8 @@
-// Title: Generate barcodes at multiple DPI settings and compare file sizes
-// Description: Demonstrates how to create Code128 barcodes at 96, 150, and 300 dpi, save them as PNG files, and display each file’s size.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator, its Parameters.Resolution property, and image export via BarCodeImageFormat. Developers often need to adjust barcode resolution for printing or screen display and evaluate resulting file sizes for storage or transmission considerations. The snippet serves as a quick reference for DPI‑based barcode creation in .NET.
+// Title: Generate Code128 barcodes at multiple DPI settings and compare file sizes
+// Description: This example creates PNG images of a Code128 barcode at 96, 150, and 300 DPI, then reports each file's size.
+// Category-Description: Demonstrates Aspose.BarCode barcode generation with varying resolution settings. It uses the BarcodeGenerator class to encode a Code128 symbology, adjusts the Parameters.Resolution property, and saves the output as PNG files. Developers often need to control DPI for print quality or file size optimization, making this pattern common in image‑based barcode workflows.
 // Prompt: Write script generating barcodes at 96, 150, and 300 dpi and comparing output file sizes.
-// Tags: barcode, code128, dpi, file size, png, aspose.barcode, generation
+// Tags: code128, barcode generation, resolution, png, aspose.barcode, aspose.barcode.generation, file size comparison
 
 using System;
 using System.IO;
@@ -10,49 +10,45 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Generates Code128 barcodes at different DPI settings, saves them as PNG files,
-/// and prints each file’s size to the console.
+/// Demonstrates generating barcodes at different DPI values and comparing the resulting file sizes.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates a temporary output folder,
-    /// iterates over specified DPI values, generates barcodes, saves them,
-    /// and reports the resulting file sizes.
+    /// Entry point of the example. Creates barcode images at 96, 150, and 300 DPI, saves them as PNG,
+    /// and writes each file's size to the console.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary directory for the output files.
-        string outputDir = Path.Combine(Path.GetTempPath(), "BarcodeDpiComparison_" + Guid.NewGuid().ToString("N"));
+        // Create a unique temporary directory for the output images.
+        string outputDir = Path.Combine(Path.GetTempPath(), "BarcodeDpiDemo_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(outputDir);
 
         // Define the DPI values to test.
         float[] dpis = new float[] { 96f, 150f, 300f };
-        // Barcode content and symbology.
-        string codeText = "1234567890";
-        BaseEncodeType encodeType = EncodeTypes.Code128;
+        // Text to encode in the barcode.
+        string codeText = "Aspose123";
 
-        // Generate a barcode for each DPI setting.
+        // Iterate over each DPI, generate the barcode, save it, and report its size.
         foreach (float dpi in dpis)
         {
-            // Build the file name that includes the DPI value.
+            // Build the file path for the current DPI image.
             string filePath = Path.Combine(outputDir, $"barcode_{dpi}dpi.png");
 
-            // Create and configure the barcode generator.
-            using (BarcodeGenerator generator = new BarcodeGenerator(encodeType, codeText))
+            // Generate the barcode with the specified resolution.
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
             {
-                // Set the resolution (DPI) for the generated image.
-                generator.Parameters.Resolution = dpi;
-                // Save the barcode as a PNG file.
-                generator.Save(filePath, BarCodeImageFormat.Png);
+                generator.Parameters.Resolution = dpi; // Set DPI.
+                generator.Save(filePath, BarCodeImageFormat.Png); // Save as PNG.
             }
 
-            // Retrieve and display the file size.
+            // Retrieve the file size in bytes.
             long fileSize = new FileInfo(filePath).Length;
+            // Output DPI, file name, and size.
             Console.WriteLine($"DPI: {dpi}, File: {Path.GetFileName(filePath)}, Size: {fileSize} bytes");
         }
 
-        // Inform the user where the files were saved.
-        Console.WriteLine($"Barcodes saved to: {outputDir}");
+        // Inform the user where all images have been saved.
+        Console.WriteLine($"All barcode images saved to: {outputDir}");
     }
 }
