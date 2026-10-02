@@ -1,92 +1,129 @@
-// Title: Generate DataMatrix barcodes from CSV with size units and save as PNG
-// Description: This example reads barcode data from a CSV file, sets the X‑dimension using either pixels or millimeters, and saves each barcode as a PNG image.
-// Category-Description: Demonstrates Aspose.BarCode barcode generation using the BarcodeGenerator class. Shows how to configure barcode parameters such as XDimension, choose unit types, and export images in PNG format. Useful for developers needing batch barcode creation from data sources like CSV files.
+// Title: Console utility to generate DataMatrix barcodes from CSV input
+// Description: Reads barcode data from a CSV file or sample data, sets X‑dimension size units, and saves each barcode as a PNG image.
+// Category-Description: Demonstrates Aspose.BarCode barcode generation with size unit handling. Shows how to use BarcodeGenerator, set XDimension in pixels or millimeters, configure resolution, and save images. Useful for developers needing batch barcode creation from data sources.
 // Prompt: Create console utility reading CSV values, assigning size units, and outputting PNG files.
-// Tags: datamatrix, barcode generation, png, csv, xdimension, console
+// Tags: datamatrix, barcode generation, png output, size unit, aspose.barcode, console utility
 
 using System;
 using System.IO;
 using System.Collections.Generic;
+using System.Globalization;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing;
 
 /// <summary>
-/// Console utility that reads barcode specifications from a CSV file,
-/// applies size units to the X‑dimension, and generates PNG images for each entry.
+/// Generates DataMatrix barcodes based on CSV input (or sample data) and saves them as PNG files.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Creates a temporary folder, writes sample CSV data,
-    /// processes each line to generate a DataMatrix barcode with the specified size unit,
-    /// and outputs the paths of the generated PNG files.
+    /// Entry point of the console application.
     /// </summary>
-    static void Main()
+    /// <param name="args">Command‑line arguments; the first argument may be a path to a CSV file.</param>
+    static void Main(string[] args)
     {
-        // Create a dedicated temporary folder for output
-        string outputFolder = Path.Combine(Path.GetTempPath(), "Barcodes_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(outputFolder);
+        // Determine CSV source: use provided file path or fall back to built‑in sample data.
+        string csvPath = args.Length > 0 ? args[0] : null;
+        List<string> lines = new List<string>();
 
-        // Sample CSV content: CodeText,UnitType,UnitValue
-        string csvPath = Path.Combine(outputFolder, "data.csv");
-        string[] csvLines = new[]
+        if (!string.IsNullOrEmpty(csvPath) && File.Exists(csvPath))
         {
-            "ABC123,Pixels,3",
-            "XYZ789,Millimeters,2",
-            "HELLO,Pixels,5"
-        };
-        File.WriteAllLines(csvPath, csvLines);
+            // Load all lines from the specified CSV file.
+            lines.AddRange(File.ReadAllLines(csvPath));
+        }
+        else
+        {
+            // Sample CSV data format: CodeText,Unit,Value,Resolution(optional)
+            lines.Add("ABC123,Pixels,3,96");
+            lines.Add("XYZ789,Millimeters,2,300");
+            lines.Add("HELLO,Pixels,5,150");
+        }
 
-        // Read and process CSV
-        List<string> createdFiles = new List<string>();
-        foreach (string line in File.ReadAllLines(csvPath))
+        // Create a unique temporary output directory for the generated PNG files.
+        string outputDir = Path.Combine(Path.GetTempPath(), "Barcodes_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputDir);
+        Console.WriteLine($"Output directory: {outputDir}");
+
+        // Process each CSV line.
+        for (int i = 0; i < lines.Count; i++)
         {
-            // Skip empty lines
+            string line = lines[i];
             if (string.IsNullOrWhiteSpace(line))
-                continue;
+                continue; // Skip empty lines.
 
-            // Split line into parts: code text, unit type, unit value
+            // Split the CSV line into its components.
             string[] parts = line.Split(',');
-            if (parts.Length != 3)
-                continue; // skip malformed lines
+            if (parts.Length < 3)
+                continue; // Not enough data to process.
 
             string codeText = parts[0].Trim();
-            string unitType = parts[1].Trim().ToLowerInvariant();
+            string unit = parts[1].Trim();
+            string valueStr = parts[2].Trim();
 
-            // Parse unit value; ignore non‑positive or invalid numbers
-            if (!float.TryParse(parts[2].Trim(), out float unitValue) || unitValue <= 0f)
-                continue; // skip invalid unit values
+            // Parse the X‑dimension value.
+            if (!float.TryParse(valueStr, NumberStyles.Float, CultureInfo.InvariantCulture, out float value))
+                continue; // Invalid numeric value.
 
-            string outputPath = Path.Combine(outputFolder, $"{codeText}.png");
+            // Parse optional resolution; default to 96 DPI if omitted or invalid.
+            int resolution = 96;
+            if (parts.Length >= 4 && int.TryParse(parts[3].Trim(), out int res))
+                resolution = res;
 
-            // Generate barcode with specified X‑dimension unit
+            // Create a barcode generator for DataMatrix symbology.
             using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, codeText))
             {
-                if (unitType == "pixels")
+                // Assign X‑dimension based on the specified unit.
+                if (unit.Equals("Pixels", StringComparison.OrdinalIgnoreCase))
                 {
-                    generator.Parameters.Barcode.XDimension.Pixels = unitValue;
+                    generator.Parameters.Barcode.XDimension.Pixels = value;
                 }
-                else if (unitType == "millimeters")
+                else if (unit.Equals("Millimeters", StringComparison.OrdinalIgnoreCase))
                 {
-                    generator.Parameters.Barcode.XDimension.Millimeters = unitValue;
+                    generator.Parameters.Barcode.XDimension.Millimeters = value;
                 }
                 else
                 {
-                    // Unknown unit type, skip this entry
-                    continue;
+                    // Default to pixels if the unit is unrecognized.
+                    generator.Parameters.Barcode.XDimension.Pixels = value;
                 }
 
-                // Save barcode as PNG
-                generator.Save(outputPath, BarCodeImageFormat.Png);
-                createdFiles.Add(outputPath);
+                // Set the image resolution.
+                generator.Parameters.Resolution = resolution;
+
+                // Build a safe file name by replacing invalid characters.
+                string safeCode = codeText.Replace(Path.GetInvalidFileNameChars(), '_');
+                string fileName = $"{safeCode}_{unit}_{value}.png";
+                string filePath = Path.Combine(outputDir, fileName);
+
+                // Save the barcode image as PNG.
+                generator.Save(filePath, BarCodeImageFormat.Png);
+                Console.WriteLine($"Generated: {filePath}");
             }
         }
 
-        // Output result summary
-        Console.WriteLine("Generated barcode files:");
-        foreach (string file in createdFiles)
+        Console.WriteLine("Processing completed.");
+    }
+}
+
+/// <summary>
+/// Extension methods for <see cref="string"/>.
+/// </summary>
+static class PathExtensions
+{
+    /// <summary>
+    /// Replaces each character in <paramref name="chars"/> with the specified <paramref name="replacement"/>.
+    /// </summary>
+    /// <param name="source">The original string.</param>
+    /// <param name="chars">Array of characters to replace.</param>
+    /// <param name="replacement">The character to insert in place of each found character.</param>
+    /// <returns>A new string with the replacements applied.</returns>
+    public static string Replace(this string source, char[] chars, char replacement)
+    {
+        foreach (char c in chars)
         {
-            Console.WriteLine(file);
+            source = source.Replace(c.ToString(), replacement.ToString());
         }
+        return source;
     }
 }

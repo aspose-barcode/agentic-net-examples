@@ -1,8 +1,8 @@
-// Title: Generate and Resize Barcode Image with Preserved DPI
-// Description: Creates a Code128 barcode, saves it as PNG, then doubles its pixel dimensions while keeping the original DPI.
-// Category-Description: This example belongs to the Aspose.BarCode generation and image processing category. It demonstrates using BarcodeGenerator (Aspose.BarCode.Generation) to create a barcode, saving it with Aspose.Drawing.Bitmap, and then resizing the bitmap using Aspose.Drawing.Graphics while preserving the original resolution. Developers often need to generate barcodes for labeling and then adjust image size for different display or print requirements without altering DPI.
+// Title: Generate Code128 barcode and double its pixel dimensions while preserving DPI
+// Description: Creates a Code128 barcode image, saves it, then produces a resized version with twice the pixel width and height without changing the original DPI.
+// Category-Description: This example belongs to the Aspose.BarCode generation and image processing category. It demonstrates using BarcodeGenerator (Aspose.BarCode.Generation) to create a barcode, and Aspose.Drawing (Bitmap, Graphics) to manipulate the resulting image. Typical scenarios include preparing barcodes for high‑resolution printing or scaling them for different display requirements, where developers need to maintain DPI consistency while adjusting pixel size.
 // Prompt: Generate barcode image, then resize bitmap to double pixel dimensions while preserving original DPI.
-// Tags: barcode, code128, generate, resize, dpi, bitmap, png, aspose.barcode, aspose.drawing
+// Tags: code128, barcode generation, png, aspose.barcode, aspose.drawing
 
 using System;
 using System.IO;
@@ -12,53 +12,61 @@ using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a barcode image and resizing it while preserving DPI.
+/// Demonstrates generating a Code128 barcode, saving the original image,
+/// resizing it to double the pixel dimensions while preserving DPI,
+/// and saving the resized image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a Code128 barcode, saves original and resized images.
+    /// Entry point of the example. Executes barcode generation and image resizing.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary directory for output files
-        string outputDir = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(outputDir);
+        // Define output directory and file paths for original and resized images
+        string outputDir = Directory.GetCurrentDirectory();
+        string originalPath = Path.Combine(outputDir, "original.png");
+        string resizedPath = Path.Combine(outputDir, "resized.png");
 
-        // Define file paths for the original and resized barcode images
-        string originalPath = Path.Combine(outputDir, "barcode_original.png");
-        string resizedPath = Path.Combine(outputDir, "barcode_resized.png");
-
-        // Initialize the barcode generator with Code128 symbology and sample data
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+        // Initialize the barcode generator with Code128 symbology and data "123456"
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
         {
-            // Set the image resolution (DPI) for the generated barcode
+            // Set a high resolution (300 DPI) for better image quality
             generator.Parameters.Resolution = 300f;
 
-            // Generate the barcode as a bitmap
-            using (Bitmap original = generator.GenerateBarCodeImage())
+            // Generate the barcode as a bitmap image
+            using (Bitmap originalBitmap = generator.GenerateBarCodeImage())
             {
-                // Save the original barcode image to PNG
-                original.Save(originalPath, ImageFormat.Png);
+                // Save the original barcode image to PNG format
+                originalBitmap.Save(originalPath, ImageFormat.Png);
+
+                // Capture original dimensions and DPI values
+                int originalWidth = originalBitmap.Width;
+                int originalHeight = originalBitmap.Height;
+                float dpiX = originalBitmap.HorizontalResolution;
+                float dpiY = originalBitmap.VerticalResolution;
+                PixelFormat pixelFormat = originalBitmap.PixelFormat;
 
                 // Calculate new dimensions (double the width and height)
-                int newWidth = original.Width * 2;
-                int newHeight = original.Height * 2;
+                int newWidth = originalWidth * 2;
+                int newHeight = originalHeight * 2;
 
-                // Create a new bitmap with the enlarged dimensions
-                using (Bitmap resized = new Bitmap(newWidth, newHeight))
+                // Create a new bitmap with the enlarged dimensions and same pixel format
+                using (Bitmap resizedBitmap = new Bitmap(newWidth, newHeight, pixelFormat))
                 {
-                    // Preserve the original DPI settings
-                    resized.SetResolution(original.HorizontalResolution, original.VerticalResolution);
+                    // Preserve the original DPI on the resized bitmap
+                    resizedBitmap.SetResolution(dpiX, dpiY);
 
-                    // Draw the original image onto the resized bitmap, scaling it
-                    using (Graphics graphics = Graphics.FromImage(resized))
+                    // Draw the original image onto the resized bitmap, scaling it to fit
+                    using (Graphics graphics = Graphics.FromImage(resizedBitmap))
                     {
-                        graphics.DrawImage(original, 0, 0, newWidth, newHeight);
+                        graphics.DrawImage(
+                            originalBitmap,
+                            new Rectangle(0, 0, newWidth, newHeight));
                     }
 
-                    // Save the resized barcode image to PNG
-                    resized.Save(resizedPath, ImageFormat.Png);
+                    // Save the resized barcode image to PNG format
+                    resizedBitmap.Save(resizedPath, ImageFormat.Png);
                 }
             }
         }
