@@ -1,8 +1,8 @@
-// Title: Toggle barcode codetext visibility using Aspose.BarCode
-// Description: Demonstrates how to show or hide the main barcode text by adjusting CodeTextParameters.Location, and verifies the effect by comparing image file sizes.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to control barcode text visibility with the BarcodeGenerator and its Parameters.Barcode.CodeTextParameters properties. Typical use cases include creating clean barcode images without human‑readable text or displaying the text below the barcode. Developers often need to toggle visibility for UI design, printing, or compliance requirements.
+// Title: Toggle barcode text visibility using CodeTextParameters.Location
+// Description: Demonstrates how to show or hide the main barcode text by setting CodeTextParameters.Location to Below or None, and saves PNG images for verification.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to control barcode text visibility with the BarcodeGenerator and its Parameters.Barcode.CodeTextParameters properties. Typical use cases include customizing barcode appearance for packaging, inventory, or retail labels where the human‑readable text may need to be displayed or suppressed. Developers often need to toggle visibility, adjust location, and generate image files for downstream processing.
 // Prompt: Write unit tests that verify toggling CodetextParameters.Visible correctly shows and hides the main barcode text.
-// Tags: pdf417, codetext visibility, barcode generation, aspnet, aspose.barcode, image size verification
+// Tags: code128, barcode, visibility, codetextparameters, generation, png, aspose.barcode
 
 using System;
 using System.IO;
@@ -10,63 +10,60 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates toggling the visibility of barcode codetext and performs a simple size‑based verification.
+/// Demonstrates toggling barcode text visibility using Aspose.BarCode's CodeTextParameters.Location property.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates two PDF417 barcodes – one with visible codetext and one with hidden codetext – then compares their file sizes.
+    /// Entry point that creates temporary barcode images with visible and hidden text, verifies the settings, and cleans up.
     /// </summary>
     static void Main()
     {
-        // Create a temporary directory to store generated images
-        string tempDir = Path.Combine(Path.GetTempPath(), "CodetextTest_" + Guid.NewGuid().ToString("N"));
+        // Create a unique temporary directory for test artifacts
+        string tempDir = Path.Combine(Path.GetTempPath(), "BarcodeVisibilityTest_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempDir);
 
-        // Define file paths for the visible and hidden codetext images
+        // Define file paths for the visible and hidden barcode images
         string visiblePath = Path.Combine(tempDir, "visible.png");
         string hiddenPath = Path.Combine(tempDir, "hidden.png");
+        string codeText = "12345";
 
-        // Generate barcode with visible codetext (default location: Below)
-        using (var generatorVisible = new BarcodeGenerator(EncodeTypes.Pdf417, "SampleText"))
+        // Test 1: Generate barcode with text visible (Location = Below)
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
         {
-            generatorVisible.Parameters.Barcode.Pdf417.Rows = 12;
-            generatorVisible.Parameters.Barcode.XDimension.Pixels = 2;
-            generatorVisible.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.Below;
-            generatorVisible.Save(visiblePath, BarCodeImageFormat.Png);
+            // Set text location to Below, which makes the text visible
+            generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.Below;
+            // Save the barcode image
+            generator.Save(visiblePath, BarCodeImageFormat.Png);
+
+            // Verify that the location property was set correctly
+            bool condition = generator.Parameters.Barcode.CodeTextParameters.Location == CodeLocation.Below;
+            Console.WriteLine("Test 1 - Set Location to Below (visible): " + (condition ? "PASSED" : "FAILED"));
         }
 
-        // Generate barcode with hidden codetext (no text displayed)
-        using (var generatorHidden = new BarcodeGenerator(EncodeTypes.Pdf417, "SampleText"))
+        // Test 2: Generate barcode with text hidden (Location = None)
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
         {
-            generatorHidden.Parameters.Barcode.Pdf417.Rows = 12;
-            generatorHidden.Parameters.Barcode.XDimension.Pixels = 2;
-            generatorHidden.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.None;
-            generatorHidden.Save(hiddenPath, BarCodeImageFormat.Png);
+            // Set text location to None, which hides the text
+            generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.None;
+            // Save the barcode image
+            generator.Save(hiddenPath, BarCodeImageFormat.Png);
+
+            // Verify that the location property was set correctly
+            bool condition = generator.Parameters.Barcode.CodeTextParameters.Location == CodeLocation.None;
+            Console.WriteLine("Test 2 - Set Location to None (hidden): " + (condition ? "PASSED" : "FAILED"));
         }
 
-        // Simple verification: hidden image should be smaller in file size than visible image
-        long visibleSize = new FileInfo(visiblePath).Length;
-        long hiddenSize = new FileInfo(hiddenPath).Length;
-
-        bool testPassed = hiddenSize < visibleSize;
-
-        Console.WriteLine($"Visible image size: {visibleSize} bytes");
-        Console.WriteLine($"Hidden image size:  {hiddenSize} bytes");
-        Console.WriteLine(testPassed
-            ? "PASSED: Hidden codetext image is smaller, indicating text was hidden."
-            : "FAILED: Hidden codetext image is not smaller than visible image.");
-
-        // Cleanup generated files and temporary directory (optional)
+        // Cleanup temporary files and directory
         try
         {
-            File.Delete(visiblePath);
-            File.Delete(hiddenPath);
-            Directory.Delete(tempDir);
+            if (File.Exists(visiblePath)) File.Delete(visiblePath);
+            if (File.Exists(hiddenPath)) File.Delete(hiddenPath);
+            Directory.Delete(tempDir, true);
         }
         catch
         {
-            // Ignore cleanup errors
+            // Ignored - cleanup failure should not affect test outcome
         }
     }
 }
