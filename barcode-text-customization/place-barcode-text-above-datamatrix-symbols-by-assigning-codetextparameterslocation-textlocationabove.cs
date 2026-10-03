@@ -1,8 +1,8 @@
-// Title: Place Text Above DataMatrix Barcode Using Aspose.BarCode
-// Description: Demonstrates how to position the human‑readable text above a DataMatrix symbol and save the result as a PNG image.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to customize CodeTextParameters such as location for various symbologies. Developers commonly use BarcodeGenerator, Parameters, and CodeTextParameters to control visual aspects of barcodes like text placement, font, and alignment when creating images, PDFs, or other outputs.
+// Title: Place Text Above DataMatrix Barcode
+// Description: Demonstrates positioning the human‑readable text above a DataMatrix barcode using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to customize CodeTextParameters such as location for various symbologies. It shows the use of BarcodeGenerator, EncodeTypes, and BarCodeImageFormat to create and save a DataMatrix symbol with text placed above. Developers often need to adjust text placement for readability or branding in printed labels.
 // Prompt: Place barcode text above DataMatrix symbols by assigning CodetextParameters.Location = TextLocation.Above.
-// Tags: datamatrix, text placement, png, aspose.barcode, barcodegenerator, codetextparameters
+// Tags: datamatrix, text location, barcode generation, png, aspose.barcode, codetextparameters, barcodegenerator
 
 using System;
 using System.IO;
@@ -10,34 +10,33 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Example program that creates a DataMatrix barcode with the human‑readable text placed above the symbol.
+/// Example program that generates a DataMatrix barcode with the code text positioned above the symbol.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a DataMatrix barcode, sets the text location to above the symbol, saves it as PNG, and writes the output path to the console.
+    /// Entry point. Creates output directory, generates the barcode, saves it as PNG, and writes the file path.
     /// </summary>
     static void Main()
     {
-        // Define a temporary directory to store the generated image.
-        string outputDir = Path.Combine(Path.GetTempPath(), "DataMatrixAboveExample");
+        // Determine temporary output folder and ensure it exists
+        string outputDir = Path.Combine(Path.GetTempPath(), "DataMatrixAbove");
         Directory.CreateDirectory(outputDir);
 
-        // Full path for the output PNG file.
-        string outputPath = Path.Combine(outputDir, "DataMatrix_Above.png");
+        // Full path for the resulting PNG image
+        string outputPath = Path.Combine(outputDir, "DataMatrixAbove.png");
 
-        // Create a BarcodeGenerator for DataMatrix with initial code text.
+        // Initialize generator for DataMatrix with sample text
         using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, "Sample Text"))
         {
-            // Position the human‑readable text above the DataMatrix symbol.
+            // Set the code text location to appear above the DataMatrix symbol
             generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.Above;
 
-            // Save the barcode image in PNG format.
+            // Save the barcode image as PNG
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user where the image was saved.
-        Console.WriteLine($"DataMatrix barcode saved to: {outputPath}");
+        // Inform the user where the file was saved
+        Console.WriteLine($"Barcode saved to: {outputPath}");
     }
 }

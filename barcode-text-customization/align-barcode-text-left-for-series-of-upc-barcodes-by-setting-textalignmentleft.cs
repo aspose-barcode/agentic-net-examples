@@ -1,33 +1,31 @@
-// Title: Align UPC‑A barcode text to the left
-// Description: Demonstrates how to generate a series of UPC‑A barcodes with the human‑readable text aligned to the left side of the image.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and TextAlignment to control text placement. Typical use cases include customizing barcode appearance for retail labels or inventory systems where left‑aligned text is required. Developers often need to adjust code‑text parameters such as alignment, font, and color to meet branding or layout specifications.
+// Title: Left-align text for multiple UPC‑A barcodes
+// Description: Demonstrates generating a series of UPC‑A barcodes with the human‑readable text aligned to the left side of each barcode image.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to use BarcodeGenerator, EncodeTypes, and TextAlignment to create barcodes. Typical use cases include batch creation of product barcodes where label layout requires left‑aligned text. Developers often need to control text positioning, image format, and output folders when automating barcode production.
 // Prompt: Align barcode text left for a series of UPC‑A barcodes by setting TextAlignment.Left.
-// Tags: upc-a, barcode generation, text alignment, left alignment, aspnet, aspose.barcode, png output
+// Tags: upc-a, barcode, textalignment, left, generation, png, aspose.barcode, csharp
 
 using System;
 using System.IO;
-using System.Collections.Generic;
-using System.Reflection;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
+using Aspose.BarCode;
 
 /// <summary>
-/// Generates multiple UPC‑A barcode images with left‑aligned text and saves them as PNG files.
+/// Generates a set of UPC‑A barcodes with left‑aligned human‑readable text and saves them as PNG files.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates the output directory, generates barcodes, and saves the images.
+    /// Entry point of the example. Creates a temporary output folder, iterates over sample UPC‑A codes,
+    /// generates each barcode with left‑aligned text, and writes the resulting PNG files to disk.
     /// </summary>
     static void Main()
     {
-        // Prepare a unique temporary output directory
-        string outputDir = Path.Combine(Path.GetTempPath(), "UPCSeries_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(outputDir);
+        // Create a unique temporary folder for output images
+        string outputFolder = Path.Combine(Path.GetTempPath(), "UPCSeries_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputFolder);
 
-        // List of sample UPC‑A codes (each must contain 12 digits)
-        List<string> upcCodes = new List<string>
+        // Sample UPC‑A codes (12 digits each)
+        string[] upcCodes = new string[]
         {
             "012345678905",
             "123456789012",
@@ -36,32 +34,27 @@ class Program
             "070123456789"
         };
 
-        // Resolve the EncodeTypes.UPCA value via reflection (ensures compatibility with different library versions)
-        FieldInfo upcField = typeof(EncodeTypes).GetField("UPCA");
-        if (upcField == null)
-        {
-            Console.WriteLine("EncodeTypes does not contain UPCA symbology.");
-            return;
-        }
-        BaseEncodeType upcEncodeType = (BaseEncodeType)upcField.GetValue(null);
-
-        int index = 1;
-        // Iterate through each UPC‑A code, generate the barcode, and save it
+        // Process each UPC‑A code
         foreach (string code in upcCodes)
         {
-            using (var generator = new BarcodeGenerator(upcEncodeType, code))
+            // Generate UPC‑A barcode with left‑aligned text
+            using (var generator = new BarcodeGenerator(EncodeTypes.UPCA, code))
             {
-                // Set the human‑readable text alignment to the left side of the barcode
+                // Set the text alignment to left
                 generator.Parameters.Barcode.CodeTextParameters.Alignment = TextAlignment.Left;
 
-                // Build the output file path and save the image as PNG
-                string filePath = Path.Combine(outputDir, $"UPC_{index}_Left.png");
+                // Build the full file path for the PNG image
+                string filePath = Path.Combine(outputFolder, $"UPC_{code}.png");
+
+                // Save the barcode image in PNG format
                 generator.Save(filePath, BarCodeImageFormat.Png);
-                Console.WriteLine($"Saved: {filePath}");
+
+                // Inform the user about the saved file
+                Console.WriteLine($"Saved barcode for {code} to {filePath}");
             }
-            index++;
         }
 
+        // Indicate that all barcodes have been generated
         Console.WriteLine("Barcode generation completed.");
     }
 }

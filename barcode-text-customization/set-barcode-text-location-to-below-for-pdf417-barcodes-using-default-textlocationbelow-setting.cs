@@ -1,6 +1,6 @@
-// Title: Set PDF417 barcode text location below
+// Title: Set PDF417 Barcode Text Location Below
 // Description: Demonstrates how to generate a PDF417 barcode with the human‑readable text placed below the symbol using Aspose.BarCode.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing the use of BarcodeGenerator, EncodeTypes, and CodeLocation classes. Typical scenarios include creating barcodes for documents, labels, or tickets where the readable text needs to appear beneath the barcode. Developers often need to adjust text placement, dimensions, and other visual properties to meet layout requirements.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to configure barcode parameters such as EncodeTypes, CodeLocation, rows, and XDimension. Developers creating barcodes for documents, labels, or packaging often need to control the placement of the readable text. The example uses BarcodeGenerator, EncodeTypes, and CodeLocation classes, which are common in barcode creation scenarios.
 // Prompt: Set barcode text location to below for PDF417 barcodes, using the default TextLocation.Below setting.
 // Tags: pdf417, textlocation, below, barcode, generation, png, aspose.barcode
 
@@ -10,37 +10,43 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates setting the text location to below for a PDF417 barcode using Aspose.BarCode.
+/// Example program that creates a PDF417 barcode with the text displayed below the symbol.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a PDF417 barcode image with text displayed below the barcode.
+    /// Generates a PDF417 barcode, sets the text location to below, and saves it as a PNG file.
     /// </summary>
     static void Main()
     {
-        // Define a temporary output directory and ensure it exists
-        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
-        Directory.CreateDirectory(outputDir);
+        // Determine the output directory relative to the current working directory.
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Output");
 
-        // Full path for the generated PNG file
-        string outputPath = Path.Combine(outputDir, "Pdf417_Below.png");
-
-        // Initialize the barcode generator for PDF417 with sample text
-        using (var generator = new BarcodeGenerator(EncodeTypes.Pdf417, "SampleCodeText"))
+        // Ensure the output directory exists.
+        if (!Directory.Exists(outputDir))
         {
-            // Set the human‑readable text location to below the barcode (default value)
+            Directory.CreateDirectory(outputDir);
+        }
+
+        // Build the full path for the resulting PNG file.
+        string outputPath = Path.Combine(outputDir, "Pdf417_Below.png");
+        string codeText = "Sample PDF417 Text";
+
+        // Create a barcode generator for PDF417 with the specified code text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Pdf417, codeText))
+        {
+            // Explicitly set the human‑readable text location to below the barcode (default value).
             generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.Below;
 
-            // Optional: configure additional PDF417 specific settings
-            generator.Parameters.Barcode.Pdf417.Rows = 12;          // Number of rows in the symbol
-            generator.Parameters.Barcode.XDimension.Pixels = 2;    // Module width in pixels
+            // Optional: adjust the number of rows and the X‑dimension for visual refinement.
+            generator.Parameters.Barcode.Pdf417.Rows = 12;
+            generator.Parameters.Barcode.XDimension.Pixels = 2;
 
-            // Save the generated barcode as a PNG image
+            // Save the generated barcode as a PNG image.
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user where the barcode image was saved
+        // Inform the user where the barcode image was saved.
         Console.WriteLine($"Barcode saved to: {outputPath}");
     }
 }
