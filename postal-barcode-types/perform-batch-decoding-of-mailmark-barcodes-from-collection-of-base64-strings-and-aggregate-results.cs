@@ -1,12 +1,13 @@
 // Title: Batch decode Mailmark barcodes from Base64 strings
-// Description: Demonstrates generating Mailmark 4‑state barcodes, encoding them as Base64, then decoding the images in a batch and aggregating the ItemID values.
-// Category-Description: This example belongs to the Aspose.BarCode “Complex Barcode” category. It showcases the use of ComplexBarcodeGenerator to create Mailmark barcodes, BarCodeReader for image‑based decoding, and ComplexCodetextReader for extracting structured data. Typical scenarios include bulk processing of Mailmark labels in logistics, validating large shipments, or aggregating data from scanned images. Developers working with Mailmark, QR, or other complex symbologies often need to generate, serialize, and decode barcodes programmatically.
-/// Prompt: Perform batch decoding of Mailmark barcodes from a collection of base64 strings and aggregate results.
-/// Tags: mailmark, barcode, batch decoding, base64, aspose.barcode, complexbarcode, codetext, .net
+// Description: Demonstrates generating Mailmark 4‑state barcodes, converting them to Base64, decoding them in batch, and aggregating the results.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation and recognition category. It showcases the use of ComplexBarcodeGenerator for creating Mailmark barcodes, BarCodeReader for decoding, and helper classes such as MailmarkCodetext and ComplexCodetextReader. Typical scenarios include bulk processing of Mailmark images received as Base64 payloads in logistics or postal applications, where developers need to extract structured data efficiently.
+// Prompt: Perform batch decoding of Mailmark barcodes from a collection of base64 strings and aggregate results.
+// Tags: mailmark, barcode, batch, decoding, base64, aspose.barcode, complexbarcode
 
 using System;
-using System.Collections.Generic;
 using System.IO;
+using System.Collections.Generic;
+using System.Text;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
@@ -14,115 +15,130 @@ using Aspose.BarCode.ComplexBarcode;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates batch generation, Base64 serialization, and decoding of Mailmark barcodes using Aspose.BarCode.
+/// Demonstrates batch decoding of Mailmark barcodes that are supplied as Base64‑encoded images.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates sample Mailmark barcodes, encodes them to Base64, decodes them in a batch,
-    /// and aggregates the extracted ItemID values.
+    /// Entry point of the example. Generates sample Mailmark barcodes, encodes them to Base64,
+    /// decodes them in a batch, and prints a summary of the operation.
     /// </summary>
     static void Main()
     {
-        // ------------------------------------------------------------
-        // Step 1: Generate sample Mailmark 4‑state barcodes and collect their Base64 strings.
-        // ------------------------------------------------------------
-        var base64List = new List<string>();
-        var originalCodetexts = new List<string>();
+        // --------------------------------------------------------------------
+        // 1. Create a temporary folder for generated barcode images
+        // --------------------------------------------------------------------
+        string tempFolder = Path.Combine(Path.GetTempPath(), "MailmarkBatch_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
 
-        for (int i = 0; i < 3; i++)
+        // --------------------------------------------------------------------
+        // 2. Generate sample Mailmark 4‑state barcodes and save them as PNG files
+        // --------------------------------------------------------------------
+        List<string> imagePaths = new List<string>();
+        for (int i = 0; i < 5; i++)
         {
-            // Configure Mailmark codetext with incremental ItemID.
-            var mailmark = new MailmarkCodetext
+            MailmarkCodetext mailmark = new MailmarkCodetext
             {
                 Format = 4,
                 VersionID = 1,
                 Class = "0",
                 SupplychainID = 384224,
-                ItemID = 16563762 + i,
+                ItemID = 16563762 + i, // vary ItemID for each barcode
                 DestinationPostCodePlusDPS = "EF61AH8T "
             };
 
-            // Generate the barcode image.
-            using (var generator = new ComplexBarcodeGenerator(mailmark))
+            using (ComplexBarcodeGenerator generator = new ComplexBarcodeGenerator(mailmark))
             {
-                generator.Parameters.Barcode.XDimension.Pixels = 4f;
+                generator.Parameters.Barcode.XDimension.Pixels = 4;
+                string filePath = Path.Combine(tempFolder, $"mailmark_{i}.png");
+                generator.Save(filePath, BarCodeImageFormat.Png);
+                imagePaths.Add(filePath);
+            }
+        }
 
-                using (var ms = new MemoryStream())
+        // --------------------------------------------------------------------
+        // 3. Convert generated images to Base64 strings
+        // --------------------------------------------------------------------
+        List<string> base64Strings = new List<string>();
+        foreach (string path in imagePaths)
+        {
+            byte[] bytes = File.ReadAllBytes(path);
+            string b64 = Convert.ToBase64String(bytes);
+            base64Strings.Add(b64);
+        }
+
+        // --------------------------------------------------------------------
+        // 4. Batch decode the Base64‑encoded Mailmark barcodes
+        // --------------------------------------------------------------------
+        List<MailmarkCodetext> decodedResults = new List<MailmarkCodetext>();
+        int successCount = 0;
+
+        foreach (string b64 in base64Strings)
+        {
+            byte[] imgBytes;
+            try
+            {
+                imgBytes = Convert.FromBase64String(b64);
+            }
+            catch (FormatException ex)
+            {
+                Console.WriteLine($"Invalid Base64 string: {ex.Message}");
+                continue;
+            }
+
+            using (MemoryStream ms = new MemoryStream(imgBytes))
+            {
+                BaseDecodeType decodeType = DecodeType.Mailmark;
+                using (BarCodeReader reader = new BarCodeReader(ms, decodeType))
                 {
-                    generator.Save(ms, BarCodeImageFormat.Png);
-                    string base64 = Convert.ToBase64String(ms.ToArray());
+                    BarCodeResult[] results;
+                    try
+                    {
+                        results = reader.ReadBarCodes();
+                    }
+                    catch (ArgumentException ex)
+                    {
+                        Console.WriteLine($"Image loading failed: {ex.Message}");
+                        continue;
+                    }
 
-                    // Store Base64 representation and the original codetext for fallback decoding.
-                    base64List.Add(base64);
-                    originalCodetexts.Add(mailmark.GetConstructedCodetext());
+                    if (results.Length == 0)
+                    {
+                        // Mailmark recognition may return zero results in some environments.
+                        Console.WriteLine("No barcode detected (expected for Mailmark).");
+                        continue;
+                    }
+
+                    foreach (BarCodeResult result in results)
+                    {
+                        MailmarkCodetext decoded = ComplexCodetextReader.TryDecodeMailmark(result.CodeText);
+                        if (decoded != null)
+                        {
+                            decodedResults.Add(decoded);
+                            successCount++;
+                            Console.WriteLine($"Decoded Mailmark - ItemID: {decoded.ItemID}, SupplychainID: {decoded.SupplychainID}");
+                        }
+                    }
                 }
             }
         }
 
-        // ------------------------------------------------------------
-        // Step 2: Batch decode the Base64‑encoded images.
-        // ------------------------------------------------------------
-        var decodedItemIds = new List<long>();
-        int index = 0;
+        // --------------------------------------------------------------------
+        // 5. Output a summary of the batch operation
+        // --------------------------------------------------------------------
+        Console.WriteLine($"Processed {base64Strings.Count} barcode images.");
+        Console.WriteLine($"Successfully decoded {successCount} Mailmark barcodes.");
 
-        foreach (string b64 in base64List)
+        // --------------------------------------------------------------------
+        // 6. Cleanup temporary files and folder
+        // --------------------------------------------------------------------
+        try
         {
-            // Convert Base64 back to image bytes.
-            byte[] imgData = Convert.FromBase64String(b64);
-            BaseDecodeType decodeType = DecodeType.Mailmark;
-
-            using (var reader = new BarCodeReader(new MemoryStream(imgData), decodeType))
-            {
-                BarCodeResult[] results;
-                try
-                {
-                    // Attempt to read all barcodes from the image.
-                    results = reader.ReadBarCodes();
-                }
-                catch (ArgumentException ex)
-                {
-                    Console.WriteLine($"Image loading failed for item {index}: {ex.Message}");
-                    index++;
-                    continue;
-                }
-
-                if (results.Length == 0)
-                {
-                    Console.WriteLine($"No barcode detected in image {index} (Mailmark image reading is unsupported).");
-                    // Fallback: decode directly from the known codetext.
-                    string ct = originalCodetexts[index];
-                    var fallback = ComplexCodetextReader.TryDecodeMailmark(ct);
-                    if (fallback != null)
-                    {
-                        decodedItemIds.Add(fallback.ItemID);
-                    }
-                    index++;
-                    continue;
-                }
-
-                // Process each detected barcode.
-                foreach (var result in results)
-                {
-                    var decoded = ComplexCodetextReader.TryDecodeMailmark(result.CodeText);
-                    if (decoded != null)
-                    {
-                        decodedItemIds.Add(decoded.ItemID);
-                    }
-                }
-            }
-
-            index++;
+            Directory.Delete(tempFolder, true);
         }
-
-        // ------------------------------------------------------------
-        // Step 3: Aggregate and display results.
-        // ------------------------------------------------------------
-        Console.WriteLine($"Total barcodes decoded: {decodedItemIds.Count}");
-        Console.WriteLine("Decoded ItemIDs:");
-        foreach (long id in decodedItemIds)
+        catch (Exception ex)
         {
-            Console.WriteLine(id);
+            Console.WriteLine($"Failed to delete temporary folder: {ex.Message}");
         }
     }
 }

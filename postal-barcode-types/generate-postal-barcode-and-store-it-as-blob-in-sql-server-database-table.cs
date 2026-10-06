@@ -1,80 +1,78 @@
 // Title: Generate Australia Post barcode and store as BLOB
-// Description: Demonstrates creating an Australia Post (FCC 11) barcode, converting it to a PNG byte array, and persisting the image as a BLOB (simulated via file storage).
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use BarcodeGenerator to produce postal symbologies, retrieve raw image bytes, and handle binary data for database storage. Typical use cases include printing postal labels, archiving barcode images, and integrating barcode generation with SQL Server BLOB columns. Developers often need to convert generated barcodes to byte arrays for insertion into VARBINARY fields, and this snippet illustrates that workflow.
+// Description: Demonstrates creating an Australia Post postal barcode, saving it as a PNG image, and persisting the barcode bytes as a binary BLOB.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating how to use the BarcodeGenerator class with EncodeTypes.AustraliaPost to produce postal barcodes. Typical use cases include encoding mailing information for postal services and storing the resulting images in databases or files. Developers often need to customize barcode parameters, export images in various formats, and handle binary storage for later retrieval.
 // Prompt: Generate a postal barcode and store it as a BLOB in a SQL Server database table.
-// Tags: australia post,postal barcode,blob storage,sql server,aspose.barcode,generation,png,byte array
+// Tags: australia post, postal barcode, blob storage, sql server, barcode generation, aspose.barcode, png, binary
 
 using System;
 using System.IO;
-using System.Text.Json;
-using System.Collections.Generic;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates an Australia Post barcode and demonstrates how to store the image as a BLOB.
+/// Example program that generates an Australia Post postal barcode,
+/// saves the image to disk, and writes the barcode bytes as a BLOB file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates the barcode, writes the image bytes to a file (simulating a BLOB), and creates a mock JSON record.
+    /// Entry point of the application.
     /// </summary>
     static void Main()
     {
-        // Define the sample Australia Post barcode (FCC 11, no customer info)
-        string codeText = "1100000000";
-        BaseEncodeType encodeType = EncodeTypes.AustraliaPost;
+        // Define the sample postal code text (Australia Post format: FCC + DPID, 10 characters)
+        string postalCodeText = "1100000000";
 
-        // Create a BarcodeGenerator instance for the specified symbology and data
-        using (var generator = new BarcodeGenerator(encodeType, codeText))
+        // Generate the barcode image and capture its byte array
+        byte[] barcodeBytes;
+        using (var generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, postalCodeText))
         {
-            // Optional: set encoding table if needed (default is NTable)
-            // generator.Parameters.Barcode.AustralianPost.EncodingTable = CustomerInformationInterpretingType.NTable;
+            // Optional: customize barcode parameters here if needed (e.g., size, colors)
 
-            // Render the barcode to a memory stream in PNG format
+            // Save the generated barcode to a memory stream in PNG format
             using (var ms = new MemoryStream())
             {
                 generator.Save(ms, BarCodeImageFormat.Png);
-                byte[] imageBytes = ms.ToArray();
-
-                // Simulate storing the barcode image as a BLOB in a database by writing to a local file
-                string blobPath = "barcode_blob.bin";
-                File.WriteAllBytes(blobPath, imageBytes);
-                Console.WriteLine($"Barcode image saved to {blobPath} ({imageBytes.Length} bytes).");
-
-                // Create a simple record to represent a database row
-                var record = new
-                {
-                    Id = 1,
-                    CodeText = codeText,
-                    Symbology = encodeType.GetType().Name, // for illustration
-                    ImageData = Convert.ToBase64String(imageBytes)
-                };
-
-                // Serialize the mock record collection to a JSON file (acts as a mock table)
-                string jsonPath = "barcode_records.json";
-                var records = new List<object> { record };
-                string json = JsonSerializer.Serialize(records, new JsonSerializerOptions { WriteIndented = true });
-                File.WriteAllText(jsonPath, json);
-                Console.WriteLine($"Record saved to {jsonPath}.");
-
-                // Real SQL Server implementation (commented out - requires System.Data.SqlClient)
-                /*
-                using (var connection = new System.Data.SqlClient.SqlConnection("Data Source=SERVER;Initial Catalog=BarcodesDb;Integrated Security=True"))
-                {
-                    connection.Open();
-                    string insertSql = "INSERT INTO Barcodes (CodeText, Symbology, ImageData) VALUES (@CodeText, @Symbology, @ImageData)";
-                    using (var command = new System.Data.SqlClient.SqlCommand(insertSql, connection))
-                    {
-                        command.Parameters.AddWithValue("@CodeText", codeText);
-                        command.Parameters.AddWithValue("@Symbology", "AustraliaPost");
-                        command.Parameters.Add("@ImageData", System.Data.SqlDbType.VarBinary, imageBytes.Length).Value = imageBytes;
-                        command.ExecuteNonQuery();
-                    }
-                }
-                */
+                barcodeBytes = ms.ToArray(); // Extract the byte array from the stream
             }
         }
+
+        // Write the PNG image to a file for visual verification
+        const string imagePath = "postal.png";
+        using (var fileStream = new FileStream(imagePath, FileMode.Create, FileAccess.Write))
+        {
+            fileStream.Write(barcodeBytes, 0, barcodeBytes.Length);
+        }
+
+        Console.WriteLine($"Barcode image saved to '{imagePath}'.");
+        Console.WriteLine($"Barcode byte size: {barcodeBytes.Length} bytes.");
+
+        // Placeholder for storing the barcode bytes as a BLOB in a SQL Server database.
+        // The actual database code is commented out because the execution environment may lack a SQL Server instance.
+        /*
+        using System.Data.SqlClient;
+
+        const string connectionString = "Data Source=YOUR_SERVER;Initial Catalog=YOUR_DATABASE;Integrated Security=True;";
+        const string insertSql = "INSERT INTO Barcodes (CodeText, Symbology, ImageBlob) VALUES (@CodeText, @Symbology, @ImageBlob)";
+
+        using (var connection = new SqlConnection(connectionString))
+        {
+            connection.Open();
+            using (var command = new SqlCommand(insertSql, connection))
+            {
+                command.Parameters.AddWithValue("@CodeText", postalCodeText);
+                command.Parameters.AddWithValue("@Symbology", "AustraliaPost");
+                command.Parameters.Add("@ImageBlob", System.Data.SqlDbType.VarBinary, barcodeBytes.Length).Value = barcodeBytes;
+                command.ExecuteNonQuery();
+            }
+        }
+        */
+
+        // As an alternative to database storage, write the BLOB to a local binary file
+        const string blobPath = "postal_blob.bin";
+        File.WriteAllBytes(blobPath, barcodeBytes);
+        Console.WriteLine($"Barcode BLOB saved to '{blobPath}'.");
     }
 }

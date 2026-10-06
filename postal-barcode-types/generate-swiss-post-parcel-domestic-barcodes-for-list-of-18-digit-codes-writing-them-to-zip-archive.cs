@@ -1,8 +1,8 @@
-// Title: Generate Swiss Post Parcel barcodes and zip them
-// Description: Demonstrates creating Swiss Post Parcel domestic barcodes from 18‑digit identifiers and storing the PNG images in a ZIP archive.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to use the BarcodeGenerator class with EncodeTypes.SwissPostParcel to produce barcode images, configure dimensions, and package multiple outputs using System.IO.Compression. Typical use cases include batch creation of shipping labels or parcel tracking codes where developers need to automate barcode image creation and archive them for distribution.
+// Title: Generate Swiss Post Parcel Domestic Barcodes and Save to ZIP
+// Description: Demonstrates how to create Swiss Post Parcel domestic barcodes from a list of 18‑digit identifiers and store the PNG images in a ZIP archive.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing the use of BarcodeGenerator with EncodeTypes.SwissPostParcel. It illustrates typical bulk barcode creation, image formatting, and archiving workflows that developers often need when integrating barcode output into document management or shipping systems.
 // Prompt: Generate Swiss Post Parcel domestic barcodes for a list of 18‑digit codes, writing them to a ZIP archive.
-// Tags: swisspostparcel, barcode, generation, png, zip, aspose.barcode, csharp
+// Tags: barcode, swisspostparcel, bulk generation, zip, png, aspose.barcode, c#
 
 using System;
 using System.Collections.Generic;
@@ -12,17 +12,18 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Example program that generates Swiss Post Parcel domestic barcodes for a set of
-/// 18‑digit codes and saves each barcode image as a PNG file inside a ZIP archive.
+/// Provides an example that generates Swiss Post Parcel domestic barcodes
+/// and writes them to a ZIP archive as PNG images.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Creates barcode images and writes them to a temporary ZIP file.
+    /// Entry point that creates barcodes for a predefined set of 18‑digit codes
+    /// and packages them as PNG files in a ZIP archive.
     /// </summary>
     static void Main()
     {
-        // Define a sample collection of 18‑digit Swiss Post Parcel domestic codes.
+        // Define a sample list of 18‑digit Swiss Post Parcel domestic codes.
         List<string> codes = new List<string>
         {
             "983412345612345678",
@@ -32,21 +33,22 @@ class Program
             "983412345612345682"
         };
 
-        // Determine a temporary file path for the resulting ZIP archive.
-        string zipPath = Path.Combine(Path.GetTempPath(), "SwissPostBarcodes.zip");
+        // Determine the full path for the output ZIP file in the current directory.
+        string zipPath = Path.Combine(Directory.GetCurrentDirectory(), "SwissPostBarcodes.zip");
 
-        // Create the ZIP file and add each generated barcode image as a separate entry.
-        using (FileStream zipStream = new FileStream(zipPath, FileMode.Create))
+        // Create a FileStream for the ZIP archive.
+        using (FileStream zipFileStream = new FileStream(zipPath, FileMode.Create))
         {
-            using (ZipArchive archive = new ZipArchive(zipStream, ZipArchiveMode.Create))
+            // Initialize a ZipArchive in create mode.
+            using (ZipArchive zip = new ZipArchive(zipFileStream, ZipArchiveMode.Create, leaveOpen: false))
             {
-                // Iterate over each code, generate its barcode, and store it in the archive.
+                // Iterate over each code and generate a barcode image.
                 foreach (string code in codes)
                 {
-                    // Initialize the barcode generator for the Swiss Post Parcel symbology.
+                    // Initialize the barcode generator for Swiss Post Parcel symbology.
                     using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.SwissPostParcel, code))
                     {
-                        // Configure visual parameters: X‑dimension and bar height in pixels.
+                        // Configure visual parameters: X-dimension and bar height.
                         generator.Parameters.Barcode.XDimension.Pixels = 2f;
                         generator.Parameters.Barcode.BarHeight.Pixels = 40f;
 
@@ -56,8 +58,8 @@ class Program
                             generator.Save(imageStream, BarCodeImageFormat.Png);
                             imageStream.Position = 0; // Reset stream position for reading.
 
-                            // Create a new entry in the ZIP archive named after the code.
-                            ZipArchiveEntry entry = archive.CreateEntry($"{code}.png");
+                            // Create a new entry in the ZIP archive for this barcode image.
+                            ZipArchiveEntry entry = zip.CreateEntry($"{code}.png");
                             using (Stream entryStream = entry.Open())
                             {
                                 // Copy the PNG data into the ZIP entry.
@@ -69,7 +71,7 @@ class Program
             }
         }
 
-        // Inform the user where the ZIP archive has been saved.
-        Console.WriteLine($"Barcodes saved to ZIP archive: {zipPath}");
+        // Inform the user about the successful generation.
+        Console.WriteLine($"Generated {codes.Count} barcodes and saved to '{zipPath}'.");
     }
 }

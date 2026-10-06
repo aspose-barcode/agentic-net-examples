@@ -1,11 +1,10 @@
-// Title: Barcode generation with JSON logging of parameters and outcomes
-// Description: Demonstrates creating multiple barcodes using Aspose.BarCode, applying common and symbology‑specific settings, and logging generation details to a structured JSON file.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to configure barcode parameters, handle different symbologies, and persist results. It uses BarcodeGenerator, EncodeTypes, and related parameter classes, which developers frequently employ for automated barcode creation, customization, and error handling in batch processing scenarios.
+// Title: Barcode Generation with JSON Logging Example
+// Description: Demonstrates creating a Code128 barcode image and recording generation parameters and results to a structured JSON log file.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use the BarcodeGenerator class to produce barcodes, configure visual parameters, and persist operation details. Developers often need to log barcode creation settings and outcomes for auditing, debugging, or analytics; this snippet illustrates capturing those details in a JSON file using System.Text.Json.
 // Prompt: Implement logging of barcode generation parameters and outcomes to a structured JSON log file.
-// Tags: barcode generation, json logging, code128, qr, datamatrix, aspose.barcode, csharp
+// Tags: barcode, code128, json logging, aspose.barcode, image generation, parameters
 
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 using Aspose.BarCode;
@@ -13,131 +12,104 @@ using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates barcode generation with parameter logging to JSON using Aspose.BarCode.
+/// Holds visual parameter values of a generated barcode for logging purposes.
+/// </summary>
+class ParametersInfo
+{
+    public float XDimension { get; set; }
+    public float BarHeight { get; set; }
+    public string BarColor { get; set; }
+    public string BackColor { get; set; }
+    public float RotationAngle { get; set; }
+}
+
+/// <summary>
+/// Represents a complete log entry for a barcode generation operation.
+/// </summary>
+class BarcodeLog
+{
+    public DateTime Timestamp { get; set; }
+    public string Symbology { get; set; }
+    public string CodeText { get; set; }
+    public ParametersInfo Parameters { get; set; }
+    public string Outcome { get; set; }
+    public string OutputPath { get; set; }
+    public string ErrorMessage { get; set; }
+}
+
+/// <summary>
+/// Entry point for the barcode generation demo.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates sample barcodes, captures settings, saves images, and writes a JSON log.
+    /// Generates a barcode image, logs parameters and outcome to JSON, and saves both files.
     /// </summary>
     static void Main()
     {
-        // Prepare a unique temporary output folder for generated images and the log file.
+        // Create a unique temporary directory for output files.
         string outputDir = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(outputDir);
 
-        // Define the path for the JSON log file.
-        string logPath = Path.Combine(outputDir, "barcode_log.json");
-        var logEntries = new List<LogEntry>();
+        // Define paths for the barcode image and the JSON log file.
+        string imagePath = Path.Combine(outputDir, "barcode.png");
+        string logPath = Path.Combine(outputDir, "log.json");
 
-        // Define sample barcode data covering different symbologies.
-        var samples = new List<BarcodeSample>
+        // Choose barcode symbology and the text to encode.
+        BaseEncodeType encodeType = EncodeTypes.Code128;
+        string codeText = "1234567890";
+
+        // Initialize the log entry with static information.
+        var log = new BarcodeLog
         {
-            new BarcodeSample { SymbologyName = "Code128", CodeText = "ABC123" },
-            new BarcodeSample { SymbologyName = "QR", CodeText = "https://example.com" },
-            new BarcodeSample { SymbologyName = "DataMatrix", CodeText = "DMTest" }
+            Timestamp = DateTime.UtcNow,
+            Symbology = encodeType.TypeName,
+            CodeText = codeText,
+            Outcome = "Success",
+            OutputPath = imagePath
         };
 
-        // Process each sample barcode.
-        foreach (var sample in samples)
+        try
         {
-            // Initialize a log entry with default values.
-            var entry = new LogEntry
+            // Create the barcode generator with the selected symbology and data.
+            using (var generator = new BarcodeGenerator(encodeType, codeText))
             {
-                Timestamp = DateTime.UtcNow,
-                Symbology = sample.SymbologyName,
-                CodeText = sample.CodeText,
-                OutputPath = null,
-                Success = false,
-                ErrorMessage = null,
-                Parameters = new Dictionary<string, object>()
-            };
+                // Configure visual parameters of the barcode.
+                generator.Parameters.Barcode.XDimension.Point = 2f;
+                generator.Parameters.Barcode.BarHeight.Point = 30f;
+                generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
+                generator.Parameters.BackColor = Aspose.Drawing.Color.White;
+                generator.Parameters.RotationAngle = 0f;
 
-            try
-            {
-                // Resolve the EncodeTypes field that matches the symbology name.
-                var field = typeof(EncodeTypes).GetField(sample.SymbologyName);
-                if (field == null)
-                    throw new ArgumentException($"Unknown symbology: {sample.SymbologyName}");
-
-                BaseEncodeType encodeType = (BaseEncodeType)field.GetValue(null);
-
-                // Create a barcode generator for the resolved symbology and text.
-                using (var generator = new BarcodeGenerator(encodeType, sample.CodeText))
+                // Capture the configured parameters for logging.
+                log.Parameters = new ParametersInfo
                 {
-                    // Apply common appearance settings.
-                    generator.Parameters.Barcode.XDimension.Pixels = 4f;
-                    generator.Parameters.Barcode.BarColor = Color.Black;
-                    generator.Parameters.BackColor = Color.White;
-                    generator.Parameters.RotationAngle = 0f;
+                    XDimension = generator.Parameters.Barcode.XDimension.Point,
+                    BarHeight = generator.Parameters.Barcode.BarHeight.Point,
+                    BarColor = generator.Parameters.Barcode.BarColor.ToString(),
+                    BackColor = generator.Parameters.BackColor.ToString(),
+                    RotationAngle = generator.Parameters.RotationAngle
+                };
 
-                    // Record common parameters for logging.
-                    entry.Parameters["XDimensionPixels"] = generator.Parameters.Barcode.XDimension.Pixels;
-                    entry.Parameters["BarColor"] = generator.Parameters.Barcode.BarColor.ToString();
-                    entry.Parameters["BackColor"] = generator.Parameters.BackColor.ToString();
-                    entry.Parameters["RotationAngle"] = generator.Parameters.RotationAngle;
-
-                    // Apply and log symbology‑specific settings.
-                    if (encodeType == EncodeTypes.QR)
-                    {
-                        generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
-                        entry.Parameters["QRErrorLevel"] = generator.Parameters.Barcode.QR.ErrorLevel.ToString();
-                    }
-                    else if (encodeType == EncodeTypes.DataMatrix)
-                    {
-                        generator.Parameters.Barcode.DataMatrix.Version = DataMatrixVersion.ECC200_32x32;
-                        entry.Parameters["DataMatrixVersion"] = generator.Parameters.Barcode.DataMatrix.Version.ToString();
-                    }
-
-                    // Save the generated barcode image as PNG.
-                    string fileName = $"{sample.SymbologyName}_{Guid.NewGuid().ToString("N")}.png";
-                    string outputPath = Path.Combine(outputDir, fileName);
-                    generator.Save(outputPath, BarCodeImageFormat.Png);
-                    entry.OutputPath = outputPath;
-                    entry.Success = true;
-                }
+                // Save the generated barcode image to the specified path.
+                generator.Save(imagePath, BarCodeImageFormat.Png);
             }
-            catch (Exception ex)
-            {
-                // Capture any errors that occurred during generation.
-                entry.Success = false;
-                entry.ErrorMessage = ex.Message;
-            }
-
-            // Add the completed entry to the log collection.
-            logEntries.Add(entry);
+        }
+        catch (Exception ex)
+        {
+            // Record failure details in the log if an exception occurs.
+            log.Outcome = "Failure";
+            log.ErrorMessage = ex.Message;
         }
 
-        // Serialize the log entries to a formatted JSON string.
-        var jsonOptions = new JsonSerializerOptions { WriteIndented = true };
-        string json = JsonSerializer.Serialize(logEntries, jsonOptions);
+        // Serialize the log object to a formatted JSON string.
+        string json = JsonSerializer.Serialize(log, new JsonSerializerOptions { WriteIndented = true });
+
+        // Write the JSON log to the file system.
         File.WriteAllText(logPath, json);
 
-        // Output locations of generated barcodes and the log file.
-        Console.WriteLine($"Barcodes generated in: {outputDir}");
-        Console.WriteLine($"Log file created at: {logPath}");
-    }
-
-    /// <summary>
-    /// Simple DTO representing a barcode sample to be generated.
-    /// </summary>
-    class BarcodeSample
-    {
-        public string SymbologyName { get; set; }
-        public string CodeText { get; set; }
-    }
-
-    /// <summary>
-    /// DTO for logging the outcome and parameters of a barcode generation attempt.
-    /// </summary>
-    class LogEntry
-    {
-        public DateTime Timestamp { get; set; }
-        public string Symbology { get; set; }
-        public string CodeText { get; set; }
-        public string OutputPath { get; set; }
-        public bool Success { get; set; }
-        public string ErrorMessage { get; set; }
-        public Dictionary<string, object> Parameters { get; set; }
+        // Output the locations of the generated files for user reference.
+        Console.WriteLine($"Barcode image saved to: {imagePath}");
+        Console.WriteLine($"Log written to: {logPath}");
     }
 }
