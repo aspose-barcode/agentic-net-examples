@@ -1,8 +1,8 @@
-// Title: Embed Code128 barcode into PDF at specific coordinates
-// Description: This example generates a Code128 barcode image and embeds it into a PDF document at defined X/Y positions. It demonstrates converting the barcode to an image stream and placing it precisely on a PDF page.
-// Category-Description: Shows how to work with Aspose.BarCode and Aspose.Pdf to create barcodes, convert them to images, and insert them into PDF files. Typical use cases include adding product codes, shipping labels, or QR codes to generated PDFs. Developers often need to control barcode resolution, colors, and placement using BarcodeGenerator, image handling, and PDF page graphics APIs.
+// Title: Embed Barcode Image into PDF at Specific Coordinates
+// Description: Demonstrates generating a Code128 barcode with Aspose.BarCode, converting it to PNG, and placing it at defined X/Y positions inside a PDF using Aspose.Pdf.
+// Category-Description: This example belongs to the Aspose.BarCode and Aspose.Pdf integration category, showcasing how to generate barcodes (using BarcodeGenerator, EncodeTypes) and embed them into PDF documents (using Document, Page, Rectangle). Typical use cases include adding product identifiers, shipping labels, or QR codes to generated PDFs. Developers often need to control image resolution and exact placement coordinates when combining barcode generation with PDF creation.
 // Prompt: Implement feature to embed barcode image into PDF document at specified coordinates using Aspose.PDF
-// Tags: code128, barcode, embed, pdf, aspose.barcode, aspose.pdf, image, coordinates, generation
+// Tags: barcode, code128, embed, pdf, aspose.barcode, aspose.pdf, image, coordinates, generation
 
 using System;
 using System.IO;
@@ -11,74 +11,73 @@ using Aspose.BarCode.Generation;
 using Aspose.Pdf;
 
 /// <summary>
-/// Demonstrates embedding a Code128 barcode image into a PDF document at specified coordinates using Aspose.BarCode and Aspose.Pdf.
+/// Example program that creates a Code128 barcode and embeds it into a PDF document at specified coordinates.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Generates a barcode, converts it to a PNG stream, and places it on a new PDF page at the given position.
+    /// Entry point. Generates the barcode, converts it to an image, and inserts it into a new PDF file.
     /// </summary>
     static void Main()
     {
-        // Output PDF file name
-        string outputPdf = "BarcodeEmbedded.pdf";
-
-        // Barcode configuration
-        string codeText = "1234567890";
+        // Sample parameters
+        string barcodeText = "1234567890";
+        string outputPdfPath = "BarcodeOutput.pdf";
         int resolution = 300; // DPI
-        float leftPosition = 50f;   // points from left edge
-        float topPosition = 700f;   // points from bottom edge
+        double leftPosition = 10.0; // points from left edge
+        double topPosition = 20.0;  // points from top edge
 
-        // Create a barcode generator for Code128
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+        // Ensure the output directory exists
+        string outputDir = Path.GetDirectoryName(Path.GetFullPath(outputPdfPath));
+        if (!Directory.Exists(outputDir))
         {
-            // Set barcode image resolution and colors
+            Directory.CreateDirectory(outputDir);
+        }
+
+        // Generate the barcode and embed it into a PDF
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, barcodeText))
+        {
+            // Set image resolution (dots per inch)
             generator.Parameters.Resolution = resolution;
-            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-            generator.Parameters.BackColor = Aspose.Drawing.Color.White;
 
-            // Save barcode as PNG into a memory stream
-            using (var imageStream = new MemoryStream())
+            // Generate barcode image as a bitmap
+            using (var bitmap = generator.GenerateBarCodeImage())
             {
-                generator.Save(imageStream, BarCodeImageFormat.Png);
-                imageStream.Position = 0;
-
-                // Determine image dimensions in pixels
-                int imgWidth;
-                int imgHeight;
-                using (var bitmap = new Aspose.Drawing.Bitmap(imageStream))
+                // Save bitmap to a memory stream in PNG format
+                using (var imageStream = new MemoryStream())
                 {
-                    imgWidth = bitmap.Width;
-                    imgHeight = bitmap.Height;
-                }
-                imageStream.Position = 0; // Reset stream for PDF insertion
+                    generator.Save(imageStream, BarCodeImageFormat.Png);
+                    imageStream.Position = 0; // Reset stream position for reading
 
-                // Create a new PDF document and add a page
-                using (var pdfDoc = new Document())
-                {
-                    var page = pdfDoc.Pages.Add();
+                    // Create a new PDF document
+                    using (var pdfDoc = new Document())
+                    {
+                        // Add a blank page to the document
+                        var page = pdfDoc.Pages.Add();
 
-                    // Convert pixel dimensions to PDF points (1 point = 1/72 inch)
-                    double widthPoints = (imgWidth * 72.0) / resolution;
-                    double heightPoints = (imgHeight * 72.0) / resolution;
+                        // Convert image size from pixels to PDF points (1 inch = 72 points)
+                        double imgWidthPt = (bitmap.Width * 72.0) / resolution;
+                        double imgHeightPt = (bitmap.Height * 72.0) / resolution;
 
-                    // Calculate rectangle coordinates for image placement
-                    double llx = leftPosition;                     // lower-left X
-                    double lly = topPosition - heightPoints;       // lower-left Y
-                    double urx = leftPosition + widthPoints;       // upper-right X
-                    double ury = topPosition;                      // upper-right Y
+                        // PDF coordinate system origin is at the lower-left corner
+                        double llx = leftPosition; // lower-left X
+                        double lly = page.PageInfo.Height - (topPosition + imgHeightPt); // lower-left Y
+                        double urx = leftPosition + imgWidthPt; // upper-right X
+                        double ury = page.PageInfo.Height - topPosition; // upper-right Y
 
-                    var rect = new Aspose.Pdf.Rectangle(llx, lly, urx, ury);
+                        // Define rectangle where the image will be placed
+                        var pdfRect = new Rectangle(llx, lly, urx, ury);
 
-                    // Add the barcode image to the PDF page within the defined rectangle
-                    page.AddImage(imageStream, rect);
+                        // Add the barcode image to the page within the defined rectangle
+                        page.AddImage(imageStream, pdfRect);
 
-                    // Save the resulting PDF file
-                    pdfDoc.Save(outputPdf);
+                        // Save the PDF to the specified path
+                        pdfDoc.Save(outputPdfPath);
+                    }
                 }
             }
         }
 
-        Console.WriteLine($"PDF saved to {Path.GetFullPath(outputPdf)}");
+        Console.WriteLine($"Barcode embedded into PDF: {outputPdfPath}");
     }
 }

@@ -1,81 +1,61 @@
 // Title: Generate QR Code barcode and embed it into a PowerPoint slide
-// Description: Demonstrates how to create a QR Code barcode image with Aspose.BarCode, save it as PNG, and insert the image into a new PowerPoint presentation using Aspose.Slides (Open XML).
-// Category-Description: This example belongs to the Aspose.BarCode and Aspose.Slides integration category, showcasing the use of BarcodeGenerator for QR Code creation and Presentation for Open XML slide manipulation. Developers often need to embed barcodes into office documents for marketing, inventory tracking, or event ticketing; this snippet illustrates the typical workflow and key API classes (BarcodeGenerator, Presentation, ISlide, IPPImage) required for such tasks.
+// Description: Demonstrates creating a QR Code barcode with Aspose.BarCode, converting it to an image, and inserting that image into a PowerPoint presentation using Aspose.Slides.
+// Category-Description: This example belongs to the Aspose.BarCode and Aspose.Slides integration category, illustrating how to generate barcodes (QR, DataMatrix, etc.) and embed them into Office documents via Open XML. Key API classes include BarcodeGenerator, BarCodeImageFormat, Presentation, and PictureFrame. Developers often need to automate report generation, marketing materials, or data‑rich presentations that contain scannable barcodes.
 // Prompt: Generate QR Code barcode and embed barcode into PowerPoint slide using Open XML.
-// Tags: qr code, barcode generation, powerpoint, openxml, aspose.barcode, aspose.slides, image embedding, png, presentation
+// Tags: qr code, barcode generation, powerpoint, openxml, aspose.barcode, aspose.slides, image embedding
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 using Aspose.Slides;
 using Aspose.Slides.Export;
 
 /// <summary>
-/// Example program that generates a QR Code barcode image and embeds it into a PowerPoint slide.
+/// Entry point for the QR Code to PowerPoint example.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
+    /// Generates a QR Code, embeds it into a new PowerPoint slide, and saves the presentation.
     /// </summary>
     static void Main()
     {
-        // --------------------------------------------------------------------
-        // Set up temporary working directory and file paths
-        // --------------------------------------------------------------------
-        string tempDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
-        Directory.CreateDirectory(tempDir);
-        string barcodePath = Path.Combine(tempDir, "qr.png");
-        string presentationPath = Path.Combine(tempDir, "BarcodePresentation.pptx");
+        // Define output file path for the PowerPoint presentation
+        string outputPath = Path.Combine(Path.GetTempPath(), "QrPresentation.pptx");
 
-        // --------------------------------------------------------------------
-        // Generate QR Code barcode and save it as a PNG image
-        // --------------------------------------------------------------------
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "Hello Aspose"))
+        // Generate QR Code barcode and save to a memory stream
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Hello Aspose"))
         {
-            // Optional appearance settings: pixel size and error correction level
-            generator.Parameters.Barcode.XDimension.Pixels = 4f;
+            // Set QR error correction level (optional)
             generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
 
-            // Save the generated barcode to the specified PNG file
-            generator.Save(barcodePath, BarCodeImageFormat.Png);
-        }
-
-        // --------------------------------------------------------------------
-        // Verify that the barcode image was successfully created
-        // --------------------------------------------------------------------
-        if (!File.Exists(barcodePath))
-        {
-            Console.WriteLine("Failed to generate barcode image.");
-            return;
-        }
-
-        // --------------------------------------------------------------------
-        // Create a new PowerPoint presentation and embed the barcode image
-        // --------------------------------------------------------------------
-        using (Presentation pres = new Presentation())
-        {
-            // Get the first (default) slide
-            ISlide slide = pres.Slides[0];
-
-            // Load the barcode image into the presentation's image collection
-            using (FileStream imgStream = new FileStream(barcodePath, FileMode.Open, FileAccess.Read))
+            using (var ms = new MemoryStream())
             {
-                IPPImage pptImage = pres.Images.AddImage(imgStream);
+                // Save the generated barcode image as PNG into the memory stream
+                generator.Save(ms, BarCodeImageFormat.Png);
+                byte[] barcodeBytes = ms.ToArray();
 
-                // Add a picture frame containing the barcode image at position (50,50) with size 300x300 points
-                slide.Shapes.AddPictureFrame(ShapeType.Rectangle, 50f, 50f, 300f, 300f, pptImage);
+                // Create a new PowerPoint presentation
+                using (var presentation = new Presentation())
+                {
+                    // Get the first slide (a default slide exists)
+                    var slide = presentation.Slides[0];
+
+                    // Add the barcode image to the presentation's image collection
+                    var pptImage = presentation.Images.AddImage(barcodeBytes);
+
+                    // Insert the image onto the slide as a picture frame
+                    slide.Shapes.AddPictureFrame(ShapeType.Rectangle, 50, 50, 300, 300, pptImage);
+
+                    // Save the presentation to the specified path
+                    presentation.Save(outputPath, SaveFormat.Pptx);
+                }
             }
-
-            // Save the presentation to the specified PPTX file
-            pres.Save(presentationPath, SaveFormat.Pptx);
         }
 
-        // --------------------------------------------------------------------
-        // Output the locations of the generated files
-        // --------------------------------------------------------------------
-        Console.WriteLine($"Barcode image saved to: {barcodePath}");
-        Console.WriteLine($"Presentation saved to: {presentationPath}");
+        Console.WriteLine($"Presentation saved to: {outputPath}");
     }
 }

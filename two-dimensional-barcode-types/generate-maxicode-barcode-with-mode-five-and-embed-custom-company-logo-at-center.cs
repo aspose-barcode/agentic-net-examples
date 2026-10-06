@@ -1,8 +1,8 @@
-// Title: Generate MaxiCode Mode 5 barcode with embedded logo
-// Description: Demonstrates creating a MaxiCode barcode in mode 5 and overlaying a custom company logo at its center, then saving as PNG.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on MaxiCode symbology and image manipulation. It showcases the use of BarcodeGenerator, MaxiCodeMode, and Aspose.Drawing classes to produce a barcode, embed graphics, and export the result. Developers often need to combine barcodes with branding elements for packaging or shipping labels, and this snippet provides a clear pattern for such tasks.
-// Prompt: Generate a MaxiCode barcode with mode five and embed a custom company logo at the center.
-// Tags: maxicode, barcode generation, logo overlay, png output, aspose.barcode, aspose.drawing
+// Title: Generate MaxiCode Mode 5 Barcode with Embedded Logo
+// Description: This example creates a MaxiCode barcode in mode 5, overlays a custom company logo at the center of the barcode image, and saves the result as a PNG file.
+// Category-Description: Demonstrates Aspose.BarCode generation of MaxiCode symbology combined with image compositing using Aspose.Drawing. Typical scenarios include adding branding to shipping labels or product packaging where MaxiCode is required. Developers often use BarcodeGenerator, MaxiCodeMode, and Graphics objects to customize barcode appearance.
+/// Prompt: Generate a MaxiCode barcode with mode five and embed a custom company logo at the center.
+/// Tags: maxicode, barcode generation, logo overlay, png, aspose.barcode, image processing
 
 using System;
 using System.IO;
@@ -12,56 +12,62 @@ using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that creates a MaxiCode barcode (mode 5) and embeds a logo image at its center.
+/// Demonstrates how to generate a MaxiCode barcode (mode 5) and embed a custom logo at its center.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates the barcode, overlays the logo if present, and saves the image.
+    /// Entry point of the example. Generates the barcode, adds the logo, and saves the image.
     /// </summary>
     static void Main()
     {
-        // Define file paths for the output image and the optional logo
-        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "MaxiCodeMode5.png");
-        string logoPath = Path.Combine(Directory.GetCurrentDirectory(), "logo.png");
-        string codeText = "Sample Text";
+        // Define the output file path in the current working directory.
+        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "MaxiCodeMode5_WithLogo.png");
 
-        // Initialize the barcode generator for MaxiCode with the desired text
-        using (var generator = new BarcodeGenerator(EncodeTypes.MaxiCode, codeText))
+        // --------------------------------------------------------------------
+        // Create a simple placeholder logo (a solid red square) as a bitmap.
+        // In real scenarios, replace this with a company logo loaded from a file.
+        // --------------------------------------------------------------------
+        using (Bitmap logo = new Bitmap(100, 100))
         {
-            // Configure the generator to use MaxiCode mode 5
-            generator.Parameters.Barcode.MaxiCode.Mode = MaxiCodeMode.Mode5;
-
-            // Generate the barcode image as a Bitmap
-            using (Bitmap barcodeBitmap = generator.GenerateBarCodeImage())
+            using (Graphics gLogo = Graphics.FromImage(logo))
             {
-                // If a logo file exists, overlay it onto the barcode
-                if (File.Exists(logoPath))
+                // Fill the entire bitmap with red color.
+                gLogo.Clear(Color.Red);
+            }
+
+            // --------------------------------------------------------------
+            // Initialise the MaxiCode generator with the desired text payload.
+            // --------------------------------------------------------------
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.MaxiCode, "Sample MaxiCode Mode5"))
+            {
+                // Set the MaxiCode mode to Mode5 (used for specific data structures).
+                generator.Parameters.Barcode.MaxiCode.Mode = MaxiCodeMode.Mode5;
+
+                // Generate the barcode image as a bitmap.
+                using (Bitmap barcodeBmp = generator.GenerateBarCodeImage())
                 {
-                    // Load the logo image
-                    using (Bitmap logoBitmap = (Bitmap)Image.FromFile(logoPath))
+                    // --------------------------------------------------------------
+                    // Calculate logo dimensions: 25 % of the smaller barcode side.
+                    // --------------------------------------------------------------
+                    int logoSize = Math.Min(barcodeBmp.Width, barcodeBmp.Height) / 4;
+                    int logoX = (barcodeBmp.Width - logoSize) / 2;
+                    int logoY = (barcodeBmp.Height - logoSize) / 2;
+
+                    // Draw the logo onto the barcode bitmap, centered.
+                    using (Graphics g = Graphics.FromImage(barcodeBmp))
                     {
-                        // Calculate coordinates to center the logo on the barcode
-                        int x = (barcodeBitmap.Width - logoBitmap.Width) / 2;
-                        int y = (barcodeBitmap.Height - logoBitmap.Height) / 2;
-
-                        // Draw the logo onto the barcode bitmap
-                        using (Graphics graphics = Graphics.FromImage(barcodeBitmap))
-                        {
-                            graphics.DrawImage(logoBitmap, x, y, logoBitmap.Width, logoBitmap.Height);
-                        }
+                        Rectangle destRect = new Rectangle(logoX, logoY, logoSize, logoSize);
+                        g.DrawImage(logo, destRect);
                     }
-                }
 
-                // Save the final image to the specified output path in PNG format
-                using (FileStream fs = new FileStream(outputPath, FileMode.Create, FileAccess.Write))
-                {
-                    barcodeBitmap.Save(fs, ImageFormat.Png);
+                    // Save the combined image to the specified PNG file.
+                    barcodeBmp.Save(outputPath, ImageFormat.Png);
                 }
             }
         }
 
-        // Inform the user where the barcode image was saved
-        Console.WriteLine($"MaxiCode barcode saved to: {outputPath}");
+        // Inform the user where the file was saved.
+        Console.WriteLine($"MaxiCode barcode with logo saved to: {outputPath}");
     }
 }

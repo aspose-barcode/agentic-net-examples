@@ -1,34 +1,32 @@
-// Title: Benchmark DotCode barcode generation speed across encoding modes
-// Description: Demonstrates how to measure the time required to generate DotCode barcodes using different encoding modes in parallel. Useful for performance testing and optimization.
-// Category-Description: This example belongs to the Aspose.BarCode performance benchmarking category, showcasing the use of BarcodeGenerator, EncodeTypes, and DotCodeEncodeMode classes. Developers often need to compare generation speeds for various symbology settings, especially when processing large batches in multithreaded environments. The snippet illustrates typical patterns for parallel execution, timing with Stopwatch, and temporary file handling.
+// Title: Benchmark DotCode barcode generation speed with parallel encoding modes
+// Description: Demonstrates how to measure the time required to generate DotCode barcodes using various encoding modes in parallel. Useful for performance testing and optimization.
+// Category-Description: This example belongs to the Aspose.BarCode performance benchmarking collection, illustrating the use of BarcodeGenerator with DotCode symbology, configuring DotCodeEncodeMode, and executing parallel generation to assess throughput. Developers often need to evaluate generation speed for different symbologies and encoding options when integrating barcode creation into high‑volume applications.
 // Prompt: Benchmark generation speed of DotCode barcodes using different encoding modes in parallel.
-// Tags: dotcode, barcode, performance, benchmark, parallel, aspose.barcode, generation
+// Tags: dotcode, barcode, performance, benchmark, parallel, aspose.barcode, generation, encode-mode, png
 
 using System;
-using System.IO;
-using System.Diagnostics;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Threading.Tasks;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates benchmarking of DotCode barcode generation speed using different encoding modes in parallel.
+/// Contains the entry point for benchmarking DotCode barcode generation speed across different encoding modes.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates temporary DotCode barcodes, measures generation time per encoding mode, outputs results, and cleans up.
+    /// Executes the benchmark: generates a set of DotCode barcodes for each encoding mode in parallel and reports the elapsed time.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder for generated barcode images
-        string tempFolder = Path.Combine(Path.GetTempPath(), "DotCodeBenchmark_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
+        // Create a temporary folder for any generated files (kept for safety, though not used for output)
+        string tempPath = Path.Combine(Path.GetTempPath(), "DotCodeBenchmark_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempPath);
 
-        // Define the set of DotCode encoding modes to benchmark
+        // Define the DotCode encoding modes that will be benchmarked
         var modes = new List<DotCodeEncodeMode>
         {
             DotCodeEncodeMode.Auto,
@@ -37,57 +35,57 @@ class Program
             DotCodeEncodeMode.Extended
         };
 
-        // Number of barcodes to generate for each mode
+        // Number of barcodes to generate per mode (small safe sample)
         const int barcodesPerMode = 5;
-        // Sample text to encode (identical for all barcodes)
-        const string sampleText = "AsposeBenchmark";
 
-        // Dictionary to store elapsed time per encoding mode
-        var results = new Dictionary<DotCodeEncodeMode, TimeSpan>();
-
-        // Execute the benchmark for each mode in parallel
+        // Run the benchmark for each mode concurrently
         Parallel.ForEach(modes, mode =>
         {
-            var sw = Stopwatch.StartNew();
+            var stopwatch = Stopwatch.StartNew();
 
-            // Generate the specified number of barcodes for the current mode
             for (int i = 0; i < barcodesPerMode; i++)
             {
-                string filePath = Path.Combine(tempFolder, $"DotCode_{mode}_{i}.png");
-                using (var generator = new BarcodeGenerator(EncodeTypes.DotCode, sampleText))
+                // Create distinct code text for each iteration
+                string text = $"Sample_{mode}_{i}";
+
+                using (var generator = new BarcodeGenerator(EncodeTypes.DotCode))
                 {
-                    // Apply the specific DotCode encoding mode
+                    // Apply the current encoding mode to the generator
                     generator.Parameters.Barcode.DotCode.EncodeMode = mode;
 
-                    // Save the generated barcode as a PNG image
-                    generator.Save(filePath, BarCodeImageFormat.Png);
+                    // Set the code text based on the encoding mode
+                    if (mode == DotCodeEncodeMode.Binary)
+                    {
+                        // Example binary data for Binary mode
+                        byte[] binaryData = { 0xFF, 0xFE, 0xFD, 0xFC, 0xFB, 0xFA, 0xF9 };
+                        generator.SetCodeText(binaryData);
+                    }
+                    else
+                    {
+                        generator.CodeText = text;
+                    }
+
+                    // Save the generated barcode to a memory stream (no file I/O)
+                    using (var ms = new MemoryStream())
+                    {
+                        generator.Save(ms, BarCodeImageFormat.Png);
+                        // The stream could be processed further; here it is simply discarded.
+                    }
                 }
             }
 
-            sw.Stop();
-
-            // Record the elapsed time for this mode (thread‑safe)
-            lock (results)
-            {
-                results[mode] = sw.Elapsed;
-            }
+            stopwatch.Stop();
+            Console.WriteLine($"Mode {mode}: generated {barcodesPerMode} barcodes in {stopwatch.ElapsedMilliseconds} ms");
         });
 
-        // Display benchmark results to the console
-        Console.WriteLine("DotCode generation benchmark (time for {0} barcodes per mode):", barcodesPerMode);
-        foreach (var kvp in results)
-        {
-            Console.WriteLine($"{kvp.Key}: {kvp.Value.TotalMilliseconds} ms");
-        }
-
-        // Attempt to delete the temporary folder and its contents
+        // Attempt to clean up the temporary folder; ignore any errors that occur
         try
         {
-            Directory.Delete(tempFolder, true);
+            Directory.Delete(tempPath, true);
         }
         catch
         {
-            // If deletion fails, ignore – the OS will eventually clean up the files
+            // Suppress cleanup exceptions
         }
     }
 }

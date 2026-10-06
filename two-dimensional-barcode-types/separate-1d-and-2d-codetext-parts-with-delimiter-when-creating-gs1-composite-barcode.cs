@@ -1,8 +1,8 @@
-// Title: GS1 Composite Barcode Generation with Separate 1D and 2D CodeText Parts
-// Description: Demonstrates how to create a GS1 Composite barcode by separating the linear (1D) and 2D components using the ‘|’ delimiter in the CodeText, and how to read back each component.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category, focusing on GS1 Composite symbology. It showcases the use of BarcodeGenerator with EncodeTypes.GS1CompositeBar, configuration of linear and 2D component types, and BarCodeReader with DecodeType.GS1CompositeBar to extract individual component data. Developers working with retail, logistics, or healthcare often need to encode product identifiers in a composite format and later parse each part separately.
+// Title: Create and Decode a GS1 Composite Barcode with Separate 1D and 2D Parts
+// Description: Demonstrates how to generate a GS1 Composite barcode by separating the linear (1D) and two‑dimensional (2D) components with a ‘|’ delimiter, then reads back the barcode to retrieve each part.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, showcasing the use of BarcodeGenerator for GS1 Composite barcodes and BarCodeReader for decoding. Developers working with product identification, inventory, or logistics often need to create GS1 Composite symbols that combine a linear component (e.g., GS1‑128) with a 2D component (e.g., QR Code). The key API classes demonstrated are BarcodeGenerator, BarCodeReader, EncodeTypes, TwoDComponentType, and DecodeType, which are commonly used for creating, customizing, and interpreting composite barcodes.
 // Prompt: Separate 1D and 2D CodeText parts with ‘|’ delimiter when creating a GS1 Composite barcode.
-// Tags: gs1 composite barcode, 1d 2d components, code text delimiter, aspose.barcode, barcode generation, barcode recognition, png output
+// Tags: gs1 composite, barcode generation, barcode recognition, c#, aspose.barcode, encode types, decode types
 
 using System;
 using System.IO;
@@ -11,68 +11,57 @@ using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Example program that generates a GS1 Composite barcode with distinct 1D and 2D parts,
-/// saves it as an image, and then reads back the individual components.
+/// Example program that creates a GS1 Composite barcode with distinct 1D and 2D components,
+/// saves it as an image, and then reads back the barcode to display each component separately.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
+    /// Entry point of the example. Generates the barcode, saves it, and decodes it.
     /// </summary>
     static void Main()
     {
-        // --------------------------------------------------------------------
-        // Prepare the output folder where the barcode image will be saved.
-        // --------------------------------------------------------------------
-        string outputFolder = Path.Combine(Path.GetTempPath(), "GS1CompositeDemo");
-        Directory.CreateDirectory(outputFolder);
-        string barcodePath = Path.Combine(outputFolder, "gs1composite.png");
+        // Prepare the output file path in the temporary directory.
+        string outputPath = Path.Combine(Path.GetTempPath(), "GS1Composite.png");
 
-        // --------------------------------------------------------------------
-        // Define the CodeText using the '|' delimiter:
-        //   - Left side contains the linear (1D) component.
-        //   - Right side contains the 2D component.
-        // --------------------------------------------------------------------
-        string codeText = "(01)12345678901231|(10)ABCD0123";
+        // Define the linear (1D) component – GTIN‑14 with a valid check digit.
+        string linearComponent = "(01)01234567890128";
 
-        // --------------------------------------------------------------------
-        // Generate the GS1 Composite barcode with specific component settings.
-        // --------------------------------------------------------------------
+        // Define the two‑dimensional (2D) component – includes a lot number and a custom data field.
+        string twoDComponent = "(10)ABCD0123(240)0123456789";
+
+        // Combine the components using the '|' delimiter required for GS1 Composite barcodes.
+        string codeText = $"{linearComponent}|{twoDComponent}";
+
+        // Generate the GS1 Composite barcode using the specified encoding types.
         using (var generator = new BarcodeGenerator(EncodeTypes.GS1CompositeBar, codeText))
         {
-            // Set the module size (X-dimension) in pixels.
+            // Set visual parameters: X‑dimension and hide the human‑readable text.
             generator.Parameters.Barcode.XDimension.Pixels = 2f;
-
-            // Hide the human‑readable text because we are focusing on component data.
             generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.None;
 
-            // Specify the linear (1D) component type.
+            // Specify the types for the linear and 2D components.
             generator.Parameters.Barcode.GS1CompositeBar.LinearComponentType = EncodeTypes.GS1Code128;
-
-            // Specify the 2D component type (Composite Component A).
             generator.Parameters.Barcode.GS1CompositeBar.TwoDComponentType = TwoDComponentType.CC_A;
 
-            // Allow non‑GS1 encoding for demonstration purposes.
+            // Allow non‑GS1 encoding if needed (set to false to enforce strict GS1 rules).
             generator.Parameters.Barcode.GS1CompositeBar.AllowOnlyGS1Encoding = false;
 
             // Save the generated barcode as a PNG image.
-            generator.Save(barcodePath, BarCodeImageFormat.Png);
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        Console.WriteLine($"Barcode saved to: {barcodePath}");
+        Console.WriteLine($"Barcode saved to: {outputPath}");
 
-        // --------------------------------------------------------------------
-        // Read the saved barcode and display the separated component information.
-        // --------------------------------------------------------------------
-        using (var reader = new BarCodeReader(barcodePath, DecodeType.GS1CompositeBar))
+        // Read back the saved barcode and output the separated 1D and 2D components.
+        using (var reader = new BarCodeReader(outputPath, DecodeType.GS1CompositeBar))
         {
             foreach (var result in reader.ReadBarCodes())
             {
-                Console.WriteLine($"Full CodeText: {result.CodeText}");
-                Console.WriteLine($"1D Component Type: {result.Extended.GS1CompositeBar.OneDType}");
-                Console.WriteLine($"1D CodeText: {result.Extended.GS1CompositeBar.OneDCodeText}");
-                Console.WriteLine($"2D Component Type: {result.Extended.GS1CompositeBar.TwoDType}");
-                Console.WriteLine($"2D CodeText: {result.Extended.GS1CompositeBar.TwoDCodeText}");
+                Console.WriteLine("Decoded 1D Component: " + result.Extended.GS1CompositeBar.OneDCodeText);
+                Console.WriteLine("Decoded 2D Component: " + result.Extended.GS1CompositeBar.TwoDCodeText);
+                Console.WriteLine("1D Component Type: " + result.Extended.GS1CompositeBar.OneDType);
+                Console.WriteLine("2D Component Type: " + result.Extended.GS1CompositeBar.TwoDType);
             }
         }
     }

@@ -1,41 +1,41 @@
 // Title: Generate and Save a Rotated QR Code as PNG
-// Description: Demonstrates creating a QR Code barcode, rotating it 90 degrees clockwise, and exporting it to a PNG file.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to use the BarcodeGenerator class with EncodeTypes.QR to produce QR Code barcodes. It shows setting rotation via Parameters.RotationAngle and saving the image with BarCodeImageFormat. Developers often need to customize barcode orientation and export formats for integration into reports, labels, or UI assets.
+// Description: Demonstrates creating a QR Code barcode, rotating it 90 degrees clockwise, and exporting it to a PNG image file.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to use the BarcodeGenerator class with EncodeTypes.QR to produce QR Code barcodes. It shows setting barcode parameters such as rotation and saving the result in a common image format (PNG). Developers working with barcode creation for marketing, inventory, or authentication often need to customize orientation and export options, and this snippet provides a concise reference.
 // Prompt: Generate a QR Code barcode rotated ninety degrees clockwise and export as PNG.
-// Tags: qr code, rotation, png, aspose.barcode, barcodegenerator, encode types
+// Tags: qr code, rotation, png, aspose.barcode, barcode generation, encode types, image export
 
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generating a QR Code barcode, rotating it 90 degrees clockwise, and saving it as a PNG image.
+/// Demonstrates generating a QR Code, rotating it, and saving as PNG using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates output directory, generates the barcode, applies rotation, saves the image, and writes the result path to the console.
+    /// Entry point. Creates output directory, generates QR Code, rotates, saves, and writes path to console.
     /// </summary>
     static void Main()
     {
-        // Determine the output directory path and ensure it exists
-        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Output");
+        // Define output directory in the system temporary folder
+        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarCodeDemo");
+        // Ensure the directory exists
         Directory.CreateDirectory(outputDir);
+        // Build the full path for the PNG file
+        string outputPath = Path.Combine(outputDir, "QrRotated.png");
 
-        // Build the full file path for the PNG image
-        string outputPath = Path.Combine(outputDir, "QrRotated90.png");
-
-        // Initialize BarcodeGenerator with QR encoding and the desired data
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "Hello Aspose QR"))
+        // Initialize the barcode generator with QR symbology and the desired text
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Hello, Aspose!"))
         {
-            // Set rotation angle to 90 degrees clockwise
+            // Rotate the barcode 90 degrees clockwise
             generator.Parameters.RotationAngle = 90f;
-
-            // Save the generated barcode as a PNG file
+            // Save the generated barcode as a PNG image
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user of the saved file location
+        // Output the location of the saved QR Code image
         Console.WriteLine($"QR Code saved to: {outputPath}");
     }
 }

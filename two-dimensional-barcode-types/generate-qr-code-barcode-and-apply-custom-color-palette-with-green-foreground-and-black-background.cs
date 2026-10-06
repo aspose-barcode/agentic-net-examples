@@ -1,49 +1,46 @@
-// Title: Generate QR Code with Custom Green Foreground and Black Background
-// Description: Demonstrates creating a QR Code barcode using Aspose.BarCode, applying a green bar color and black background, and saving it as a PNG image.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, showcasing how to use the BarcodeGenerator class with EncodeTypes to produce QR Code symbology. It illustrates setting visual properties such as BarColor and BackColor, then saving the result in a common image format (PNG). Developers working on inventory, marketing, or authentication solutions often need to customize barcode appearance for branding or readability, making this pattern a frequent requirement.
+// Title: Generate QR Code with custom green foreground and black background
+// Description: Demonstrates creating a QR Code barcode using Aspose.BarCode, setting a green foreground color and a black background, and saving it as a PNG image.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on visual customization of generated barcodes. It showcases the use of BarcodeGenerator, EncodeTypes, and color properties (BarColor, BackColor) to apply custom color palettes. Developers often need to match branding or UI themes by adjusting foreground and background colors when generating QR codes or other symbologies, and this snippet illustrates the typical steps.
 // Prompt: Generate QR Code barcode and apply custom color palette with green foreground and black background.
-// Tags: qr code, barcode generation, color customization, png, aspose.barcode, barcode generation
+// Tags: qr code, barcode generation, color customization, png output, aspose.barcode, aspose.drawing
 
 using System;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates a QR Code barcode with a custom color palette.
+/// Demonstrates generating a QR Code barcode with a green foreground and black background using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Generates the QR Code and saves it to a file.
+    /// Entry point that creates the output directory, generates the QR Code with custom colors, saves it as PNG, and writes the file path to console.
     /// </summary>
     static void Main()
     {
-        // Output file path for the generated barcode image
-        string outputPath = "qr_green.png";
+        // Define the output directory and ensure it exists
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Output");
+        Directory.CreateDirectory(outputDir);
 
-        try
+        // Build the full path for the output PNG file
+        string outputPath = Path.Combine(outputDir, "qr_green_foreground_black_background.png");
+
+        // Initialize the barcode generator for QR encoding with the desired text
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Hello World"))
         {
-            // Initialize the barcode generator for QR Code with the desired text
-            using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Hello World"))
-            {
-                // Set the foreground (bars) color to green
-                generator.Parameters.Barcode.BarColor = Color.Green;
+            // Set the barcode (foreground) color to green
+            generator.Parameters.Barcode.BarColor = Color.Green;
 
-                // Set the background color to black
-                generator.Parameters.BackColor = Color.Black;
+            // Set the background color to black
+            generator.Parameters.BackColor = Color.Black;
 
-                // Save the generated barcode as a PNG image
-                generator.Save(outputPath, BarCodeImageFormat.Png);
-            }
-
-            // Inform the user that the barcode was created successfully
-            Console.WriteLine($"QR Code generated and saved to: {outputPath}");
+            // Save the generated barcode as a PNG image
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
-        catch (Exception ex)
-        {
-            // Output any errors that occur during barcode generation
-            Console.WriteLine($"Error generating QR Code: {ex.Message}");
-        }
+
+        // Output the location of the saved QR Code image
+        Console.WriteLine($"QR Code saved to: {outputPath}");
     }
 }

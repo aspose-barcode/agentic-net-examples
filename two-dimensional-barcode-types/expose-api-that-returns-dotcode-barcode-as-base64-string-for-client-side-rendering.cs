@@ -1,58 +1,56 @@
 // Title: Generate DotCode barcode and return as Base64 string
-// Description: Demonstrates creating a DotCode barcode using Aspose.BarCode, encoding the PNG image to a Base64 string for client‑side rendering.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use the BarcodeGenerator class with EncodeTypes.DotCode to produce barcode images. Typical use cases include generating barcodes on the fly for web APIs, embedding them in HTML, or sending them to client applications as Base64 strings. Developers often need to convert barcode images to Base64 for seamless integration with front‑end frameworks without handling file I/O.
+// Description: Demonstrates how to create a DotCode barcode using Aspose.BarCode, encode it as PNG, and return the image as a Base64 string for client‑side rendering.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing the use of BarcodeGenerator, EncodeTypes, and BarCodeImageFormat to produce barcodes. Typical scenarios include web services that need to supply barcode images to browsers without storing files, enabling client‑side rendering via data URIs. Developers often need quick, in‑memory barcode creation and conversion to common formats such as PNG or Base64.
 // Prompt: Expose an API that returns DotCode barcode as base64 string for client‑side rendering.
-// Tags: dotcode, barcode, generation, base64, png, aspose.barcode, api
+// Tags: dotcode, barcode, generation, base64, aspnet, aspose.barcode, png
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Provides functionality to generate a DotCode barcode and output it as a Base64‑encoded PNG string.
+/// Provides an example of generating a DotCode barcode and returning it as a Base64 string.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a DotCode barcode for a sample text and prints the Base64 string.
+    /// Entry point. Generates a barcode for a sample text and writes the Base64 string to console.
     /// </summary>
     static void Main()
     {
-        // Sample text to encode in the barcode
-        string sampleText = "Aspose";
+        // Sample data to encode in the barcode
+        string codeText = "Aspose";
 
-        // Generate Base64 representation of the barcode image
-        string base64 = GenerateDotCodeBase64(sampleText);
+        // Generate the Base64 representation of the DotCode barcode
+        string base64 = GenerateDotCodeBase64(codeText);
 
-        // Output the result to the console
-        Console.WriteLine("Base64 PNG of DotCode barcode:");
+        // Output the Base64 string (can be used as a data URI on the client side)
         Console.WriteLine(base64);
     }
 
     /// <summary>
-    /// Generates a DotCode barcode image from the provided text and returns it as a Base64‑encoded PNG string.
+    /// Generates a DotCode barcode image in PNG format and returns it as a Base64 string.
     /// </summary>
-    /// <param name="codeText">The text to encode in the DotCode barcode.</param>
-    /// <returns>Base64 string representing the PNG image of the generated barcode.</returns>
+    /// <param name="codeText">The text to encode in the barcode.</param>
+    /// <returns>Base64‑encoded PNG image of the generated barcode.</returns>
     static string GenerateDotCodeBase64(string codeText)
     {
-        // MemoryStream will hold the generated PNG image
-        using (MemoryStream ms = new MemoryStream())
+        // Initialize the barcode generator with DotCode symbology and the provided text
+        using (var generator = new BarcodeGenerator(EncodeTypes.DotCode, codeText))
         {
-            // Initialize the barcode generator with DotCode symbology and the input text
-            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.DotCode, codeText))
+            // Use a memory stream to avoid writing to disk
+            using (var ms = new MemoryStream())
             {
-                // Save the barcode image directly to the memory stream in PNG format
+                // Save the barcode image to the memory stream in PNG format
                 generator.Save(ms, BarCodeImageFormat.Png);
+
+                // Convert the stream contents to a byte array
+                byte[] imageBytes = ms.ToArray();
+
+                // Encode the byte array to a Base64 string
+                return Convert.ToBase64String(imageBytes);
             }
-
-            // Convert the memory stream contents to a byte array
-            byte[] imageBytes = ms.ToArray();
-
-            // Encode the byte array to a Base64 string
-            return Convert.ToBase64String(imageBytes);
         }
     }
 }

@@ -1,31 +1,27 @@
 // Title: Generate QR Code with Structured Append (3 symbols) and save as PNG
-// Description: Demonstrates how to create a QR Code barcode split across three structured‑append symbols and save each part as a PNG image.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, focusing on QR Code creation with Structured Append. It showcases the use of BarcodeGenerator, EncodeTypes.QR, and QR-specific parameters (StructuredAppend) to split data across multiple symbols. Developers often need this pattern for encoding long messages that exceed a single QR Code capacity, ensuring seamless scanning of sequential parts.
+// Description: Demonstrates creating a QR Code barcode split into three structured‑append symbols and saving each part as a PNG image.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on QR Code creation with Structured Append. It showcases the use of BarcodeGenerator, EncodeTypes, and QR‑specific parameters such as StructuredAppend.TotalCount, SequenceIndicator, and ParityByte. Developers often need to split large data across multiple QR symbols while preserving a single logical message, and this snippet illustrates the typical workflow for that scenario.
 // Prompt: Generate a QR Code barcode with structured append across three symbols and save as PNG.
-// Tags: qr code, structured append, barcode generation, png, aspose.barcode, encode types
+// Tags: qr code, structured append, barcode generation, png, aspose.barcode, encode types, barcodegenerator
 
 using System;
 using System.IO;
-using System.Text;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Example program that generates three QR Code symbols using Structured Append
+/// Example program that creates three QR Code symbols using Structured Append
 /// and saves each symbol as a separate PNG file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
+    /// Entry point of the example. Generates QR Code parts, calculates parity,
+    /// configures Structured Append parameters, and writes PNG files to disk.
     /// </summary>
     static void Main()
     {
-        // Prepare the output directory where PNG files will be stored.
-        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Output");
-        Directory.CreateDirectory(outputDir);
-
-        // Define the three message parts that will be encoded across separate QR symbols.
+        // Define the three data fragments that will be combined via Structured Append.
         string[] messages = new string[]
         {
             "First part of the data",
@@ -33,45 +29,41 @@ class Program
             "Third part of the data"
         };
 
-        // Calculate the parity byte required for Structured Append (XOR of all UTF‑16BE bytes).
+        // Calculate the parity byte required by Structured Append (XOR of UTF‑16BE bytes).
         byte parity = 0;
         foreach (string msg in messages)
         {
             foreach (char ch in msg)
             {
-                int val = ch;
-                if (val <= 0xFF)
-                {
-                    parity ^= (byte)val;
-                }
-                else
-                {
-                    parity ^= (byte)val;
-                    parity ^= (byte)(val >> 8);
-                }
+                // Split each character into low and high bytes (UTF‑16BE order) and XOR them.
+                byte low = (byte)ch;
+                byte high = (byte)(ch >> 8);
+                parity ^= (byte)(low ^ high);
             }
         }
 
-        // Generate each QR Code part with appropriate Structured Append settings.
+        // Generate each QR Code part with the appropriate Structured Append settings.
         for (int i = 0; i < messages.Length; i++)
         {
             using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, messages[i]))
             {
-                // Set visual size of the QR modules.
+                // Set module size (pixel dimension) for better readability.
                 generator.Parameters.Barcode.XDimension.Pixels = 4;
 
-                // Configure Structured Append parameters.
-                generator.Parameters.Barcode.QR.StructuredAppend.TotalCount = messages.Length;
+                // Configure Structured Append: total parts, sequence index, and parity byte.
+                generator.Parameters.Barcode.QR.StructuredAppend.TotalCount = 3;
                 generator.Parameters.Barcode.QR.StructuredAppend.SequenceIndicator = i;
                 generator.Parameters.Barcode.QR.StructuredAppend.ParityByte = parity;
 
-                // Build the file path for the current QR part and save it as PNG.
-                string filePath = Path.Combine(outputDir, $"qr_part_{i + 1}.png");
-                generator.Save(filePath, BarCodeImageFormat.Png);
-                Console.WriteLine($"Saved QR part {i + 1} to: {filePath}");
+                // Build the output file path (qr_part1.png, qr_part2.png, ...).
+                string fileName = Path.Combine(Directory.GetCurrentDirectory(), $"qr_part{i + 1}.png");
+
+                // Save the QR Code part as a PNG image.
+                generator.Save(fileName, BarCodeImageFormat.Png);
+
+                // Inform the user about the saved file.
+                Console.WriteLine($"Saved QR part {i + 1} to {fileName}");
             }
         }
-
-        Console.WriteLine("QR Code generation with Structured Append completed.");
     }
 }

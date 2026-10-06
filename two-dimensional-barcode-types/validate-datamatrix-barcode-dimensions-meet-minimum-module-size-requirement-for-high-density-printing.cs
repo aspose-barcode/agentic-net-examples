@@ -1,65 +1,60 @@
 // Title: Validate DataMatrix Module Size for High‑Density Printing
-// Description: Demonstrates how to generate a DataMatrix barcode, retrieve its XDimension (module size), and verify it meets a minimum size required for high‑density printing.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and validation category. It shows how to use BarcodeGenerator, EncodeTypes, and BarCodeImageFormat to create a DataMatrix symbol, access barcode parameters such as XDimension, and perform simple validation checks. Developers working with barcode rendering, quality control, or print preparation often need to ensure module dimensions meet printer specifications.
+// Description: Demonstrates how to generate a DataMatrix barcode with a specific version and verify that its module size meets a minimum pixel requirement for high‑density print output.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on DataMatrix symbology. It shows how to configure the barcode version, set X‑dimension, generate an image, and programmatically validate module dimensions. Developers working with high‑resolution printing, label design, or quality control often need to ensure barcode modules meet size thresholds, and this snippet illustrates the typical API usage (BarcodeGenerator, EncodeTypes, DataMatrixVersion, Parameters.Barcode).
 // Prompt: Validate DataMatrix barcode dimensions meet minimum module size requirement for high‑density printing.
-// Tags: datamatrix, module size, validation, high-density printing, barcode generation, aspose.barcode, c#
+// Tags: datamatrix, barcode, validation, module size, high density printing, aspose.barcode, generation, image
 
 using System;
-using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates a DataMatrix barcode, reads its module size,
-/// and validates the size against a minimum requirement for high‑density printing.
+/// Demonstrates validation of DataMatrix barcode module dimensions against a minimum size requirement.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates the barcode, saves it, and performs the size validation.
+    /// Generates a DataMatrix barcode, calculates its module size, and validates it meets the specified minimum.
     /// </summary>
     static void Main()
     {
-        // Sample data for validation
-        string codeText = "ASPOSE";
-        float minimumModuleSizePoints = 2f; // Minimum XDimension in points
+        // Sample data for DataMatrix barcode
+        const string codeText = "ASPOSE";
 
-        // Prepare a temporary output directory and file path
-        string outputDir = Path.Combine(Path.GetTempPath(), "DataMatrixValidation_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(outputDir);
-        string imagePath = Path.Combine(outputDir, "datamatrix.png");
+        // Minimum required module size (in pixels) for high‑density printing
+        const float minimumModuleSize = 2f;
 
-        // ------------------------------------------------------------
-        // Generate DataMatrix barcode and save it to a PNG file
-        // ------------------------------------------------------------
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.DataMatrix, codeText))
+        // Create and configure the DataMatrix generator
+        using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, codeText))
         {
-            // Set a module size (XDimension) for the barcode; this value is for demonstration
-            generator.Parameters.Barcode.XDimension.Point = 1f;
+            // Use a known square version: 32 × 32 modules
+            generator.Parameters.Barcode.DataMatrix.Version = DataMatrixVersion.ECC200_32x32;
 
-            // Save the generated barcode image
-            generator.Save(imagePath, BarCodeImageFormat.Png);
-        }
+            // Set the intended module (X‑dimension) size
+            generator.Parameters.Barcode.XDimension.Pixels = 2f;
 
-        // ------------------------------------------------------------
-        // Load the generated barcode parameters to inspect the XDimension value
-        // ------------------------------------------------------------
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.DataMatrix, codeText))
-        {
-            float actualModuleSize = generator.Parameters.Barcode.XDimension.Point;
-
-            Console.WriteLine($"Generated DataMatrix barcode at: {imagePath}");
-            Console.WriteLine($"Actual module size (XDimension): {actualModuleSize} points");
-
-            // Validate the module size against the minimum requirement
-            if (actualModuleSize < minimumModuleSizePoints)
+            // Generate the barcode image
+            using (var bitmap = generator.GenerateBarCodeImage())
             {
-                Console.WriteLine($"Warning: Module size is below the minimum required of {minimumModuleSizePoints} points for high‑density printing.");
-            }
-            else
-            {
-                Console.WriteLine("Module size meets the minimum requirement for high‑density printing.");
+                // Image width in pixels (square barcode, so width == height)
+                int imageWidth = bitmap.Width;
+
+                // Number of modules per side for the selected version
+                const int modulesPerSide = 32;
+
+                // Actual module size derived from the rendered image
+                float actualModuleSize = (float)imageWidth / modulesPerSide;
+
+                // Validate against the minimum requirement
+                if (actualModuleSize >= minimumModuleSize)
+                {
+                    Console.WriteLine($"Valid DataMatrix: module size {actualModuleSize:F2}px meets the minimum of {minimumModuleSize}px.");
+                }
+                else
+                {
+                    Console.WriteLine($"Invalid DataMatrix: module size {actualModuleSize:F2}px is below the minimum of {minimumModuleSize}px.");
+                }
             }
         }
     }

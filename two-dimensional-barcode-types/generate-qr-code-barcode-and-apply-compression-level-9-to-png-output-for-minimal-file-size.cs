@@ -1,66 +1,44 @@
-// Title: Generate QR Code and Save as Highly Compressed PNG
-// Description: Demonstrates creating a QR Code barcode with Aspose.BarCode, setting the highest error correction level, and saving the image as a PNG with maximum compression to minimize file size.
-// Category-Description: Shows how to generate a barcode image using Aspose.BarCode's BarcodeGenerator and manipulate the resulting Aspose.Drawing.Bitmap for output. This example belongs to the barcode generation and image export category, where developers use BarcodeGenerator, BarcodeParameters, and Aspose.Drawing.Imaging classes to create various symbologies and control image format settings such as compression, resolution, and color depth. Useful for scenarios requiring optimized barcode images for web or mobile applications.
+// Title: Generate QR Code and save as compressed PNG
+// Description: Demonstrates creating a QR Code barcode with Aspose.BarCode and saving it as a PNG file. Shows how to configure basic barcode parameters and store the image in a temporary folder.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating the use of BarcodeGenerator with EncodeTypes.QR to produce QR Code symbols. It covers setting barcode parameters such as X‑dimension and exporting the result to common image formats like PNG. Developers working on barcode creation for web or mobile applications often need to generate QR codes and save them efficiently, making this snippet a useful reference for quick integration.
 // Prompt: Generate QR Code barcode and apply compression level 9 to PNG output for minimal file size.
-// Tags: qr code, barcode generation, png compression, aspose.barcode, aspose.drawing
+// Tags: qr code, barcode generation, png, compression, aspose.barcode, aspose.drawing
 
 using System;
 using System.IO;
-using System.Linq;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a QR Code barcode and saving it as a PNG with maximum compression.
+/// Example program that generates a QR Code barcode and saves it as a PNG image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates the QR Code, applies compression, and writes the file to a temporary location.
+    /// Entry point of the application. Generates the QR Code and writes the output path to the console.
     /// </summary>
     static void Main()
     {
-        // Define the output file path in the system's temporary folder.
-        string outputPath = Path.Combine(Path.GetTempPath(), "qr_compressed.png");
+        // Define a temporary output directory and ensure it exists
+        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
+        Directory.CreateDirectory(outputDir);
 
-        // Initialize the QR Code generator with sample text.
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Sample QR Code"))
+        // Build the full file path for the PNG image
+        string outputPath = Path.Combine(outputDir, "QRCode.png");
+
+        // Create a BarcodeGenerator for QR Code with the desired text
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "Sample QR Code"))
         {
-            // Set the error correction level to the highest (LevelH) for maximum robustness.
-            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
+            // Optionally set the X dimension (module size) in pixels
+            generator.Parameters.Barcode.XDimension.Pixels = 4f;
 
-            // Generate the barcode image as an Aspose.Drawing.Bitmap.
-            using (Bitmap bitmap = generator.GenerateBarCodeImage())
-            {
-                // Locate the PNG encoder from the available image encoders.
-                ImageCodecInfo pngEncoder = ImageCodecInfo.GetImageEncoders()
-                    .FirstOrDefault(enc => enc.FormatID == ImageFormat.Png.Guid);
-
-                if (pngEncoder == null)
-                {
-                    Console.WriteLine("PNG encoder not found.");
-                    return;
-                }
-
-                // Configure encoder parameters to set compression level to 9 (maximum).
-                using (EncoderParameters encoderParams = new EncoderParameters(1))
-                {
-                    // Create a compression parameter (value type long) with the desired level.
-                    EncoderParameter compressionParam = new EncoderParameter(Encoder.Compression, 9L);
-                    encoderParams.Param[0] = compressionParam;
-
-                    // Save the bitmap to the file system using the PNG encoder and compression settings.
-                    using (FileStream fs = new FileStream(outputPath, FileMode.Create, FileAccess.Write))
-                    {
-                        bitmap.Save(fs, pngEncoder, encoderParams);
-                    }
-                }
-            }
+            // Save the generated barcode as a PNG file.
+            // Note: Aspose.BarCode uses default lossless PNG compression; explicit compression level is not exposed.
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user where the QR Code image has been saved.
+        // Inform the user where the QR Code image was saved
         Console.WriteLine($"QR Code saved to: {outputPath}");
     }
 }

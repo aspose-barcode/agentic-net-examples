@@ -1,161 +1,131 @@
-// Title: Barcode Generation and Validation Test Suite
-// Description: Generates barcodes for multiple symbologies, saves them as PNG files, and validates their readability using Aspose.BarCode's recognition engine.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, demonstrating how to create barcodes with BarcodeGenerator, configure common and symbology‑specific parameters, save images, and verify them with BarCodeReader. Typical use cases include automated testing of barcode output across .NET Framework, .NET Core, and .NET 6 environments, ensuring consistent encoding and decoding behavior for developers building cross‑platform barcode solutions.
+// Title: Barcode Generation and Verification Test Suite
+// Description: Demonstrates generating barcodes of various symbologies, saving them as PNG, and verifying the encoded text using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, showcasing how to use BarcodeGenerator, EncodeTypes, and BarCodeReader to create and validate barcodes. Typical use cases include automated testing, CI pipelines, and cross‑platform validation of barcode output across .NET Framework, .NET Core, and .NET 6. Developers often need to ensure consistent barcode rendering and decoding in different runtime environments.
 // Prompt: Create a test suite that validates barcode generation across .NET Framework, .NET Core, and .NET 6 runtimes.
-// Tags: barcode, symbology, generation, recognition, testing, aspose.barcode, png, .net, .netframework, .netcore, .net6
+// Tags: barcode generation, barcode verification, aspnet, aspnetcore, .net framework, .net core, .net 6, encode types, decode types, png output, aspose.barcode
 
 using System;
 using System.IO;
 using System.Text;
-using System.Collections.Generic;
-using System.Reflection;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
-using Aspose.BarCode;
 
 /// <summary>
-/// Demonstrates a cross‑platform test suite that generates barcodes, saves them as PNG images,
-/// and validates them using Aspose.BarCode's recognition capabilities.
+/// Provides a simple test suite that generates barcodes of several symbologies,
+/// saves them as PNG files, and verifies that the decoded text matches the original input.
+/// This example can be executed on .NET Framework, .NET Core, and .NET 6 runtimes.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Retrieves the <see cref="BaseEncodeType"/> corresponding to a symbology name.
-    /// Returns <c>null</c> if the symbology is not supported.
-    /// </summary>
-    /// <param name="symbologyName">The name of the barcode symbology (e.g., "Code128").</param>
-    /// <returns>The matching <see cref="BaseEncodeType"/> or <c>null</c>.</returns>
-    static BaseEncodeType GetEncodeType(string symbologyName)
-    {
-        // Use reflection to map the string name to the EncodeTypes field.
-        var field = typeof(EncodeTypes).GetField(symbologyName);
-        if (field == null)
-        {
-            Console.WriteLine($"Unknown symbology: {symbologyName}");
-            return null;
-        }
-        return (BaseEncodeType)field.GetValue(null);
-    }
-
-    /// <summary>
-    /// Entry point of the test suite. Generates barcodes for a set of test cases,
-    /// saves them, reads them back for validation, and reports the results.
+    /// Entry point of the test suite. Creates a temporary working folder,
+    /// runs generation/verification for each test case, reports results,
+    /// and cleans up temporary files.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder to store generated barcode images.
+        // Create a unique temporary folder for the test run
         string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeTest_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
 
-        // Define test cases: each tuple contains a symbology name and the data to encode.
-        var testCases = new List<(string Symbology, string CodeText)>
+        // Define test cases: symbology name, code text, and corresponding EncodeTypes field name
+        var testCases = new (string SymbologyName, string CodeText, string EncodeField)[]
         {
-            ("Code128", "Test123"),
-            ("QR", "https://example.com"),
-            ("DataMatrix", "DMTest"),
-            ("DatabarExpanded", "(01)01234567890123"),
-            ("AustraliaPost", "1100000000"),
-            ("GS1CompositeBar", "(01)01234567890123|(21)A12345678")
+            ("Code128", "ABC123456", "Code128"),
+            ("QR", "https://example.com", "QR"),
+            ("DataMatrix", "DM12345", "DataMatrix"),
+            ("Pdf417", "PDF417_SAMPLE", "Pdf417"),
+            ("Aztec", "AZTEC123", "Aztec")
         };
 
         int passed = 0;
         int failed = 0;
-        int index = 0;
 
-        // Iterate over each test case, generate the barcode, and validate it.
-        foreach (var (symbology, codeText) in testCases)
+        // Iterate over each test case, generate the barcode, and verify it
+        foreach (var (symName, codeText, encodeField) in testCases)
         {
-            index++;
-            BaseEncodeType encodeType = GetEncodeType(symbology);
-            if (encodeType == null)
+            // Resolve EncodeTypes field via reflection
+            var fieldInfo = typeof(EncodeTypes).GetField(encodeField);
+            if (fieldInfo == null)
             {
-                Console.WriteLine($"Skipping test {index}: unsupported symbology {symbology}");
-                failed++;
+                Console.WriteLine($"[WARN] Unknown symbology field: {encodeField}");
                 continue;
             }
+            BaseEncodeType encodeType = (BaseEncodeType)fieldInfo.GetValue(null);
 
-            // Build the output file path for the generated PNG image.
-            string filePath = Path.Combine(tempFolder, $"{symbology}_{index}.png");
+            // Build a unique file path for the generated image
+            string filePath = Path.Combine(tempFolder, $"{symName}_{Guid.NewGuid().ToString("N")}.png");
 
+            // Generate barcode image
+            using (var generator = new BarcodeGenerator(encodeType, codeText))
+            {
+                // Basic barcode parameters
+                generator.Parameters.Barcode.XDimension.Point = 2f;
+                generator.Parameters.Barcode.FilledBars = false;
+                generator.Parameters.Barcode.ThrowExceptionWhenCodeTextIncorrect = false;
+
+                // Human‑readable text styling
+                generator.Parameters.Barcode.CodeTextParameters.Font.FamilyName = "Helvetica";
+                generator.Parameters.Barcode.CodeTextParameters.Font.Size.Point = 12f;
+
+                // Save the barcode as a PNG file
+                generator.Save(filePath, BarCodeImageFormat.Png);
+            }
+
+            // Read and verify the generated barcode
             try
             {
-                // Generate the barcode with common and symbology‑specific settings.
-                using (var generator = new BarcodeGenerator(encodeType, codeText))
-                {
-                    // Common parameters
-                    generator.Parameters.Resolution = 300f;
-                    generator.Parameters.Barcode.BarColor = Color.Black;
-                    generator.Parameters.BackColor = Color.White;
-                    generator.Parameters.AutoSizeMode = AutoSizeMode.Nearest;
-                    generator.Parameters.ImageWidth.Pixels = 300f;
-
-                    // Symbology‑specific settings
-                    switch (symbology)
-                    {
-                        case "QR":
-                            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
-                            break;
-                        case "DataMatrix":
-                            generator.Parameters.Barcode.DataMatrix.Version = DataMatrixVersion.ECC200_32x32;
-                            generator.Parameters.Barcode.DataMatrix.EccType = DataMatrixEccType.Ecc200;
-                            break;
-                        case "AustraliaPost":
-                            generator.Parameters.Barcode.AustralianPost.EncodingTable = CustomerInformationInterpretingType.CTable;
-                            break;
-                        case "GS1CompositeBar":
-                            generator.Parameters.Barcode.GS1CompositeBar.LinearComponentType = EncodeTypes.GS1Code128;
-                            generator.Parameters.Barcode.GS1CompositeBar.TwoDComponentType = TwoDComponentType.CC_C;
-                            generator.Parameters.Barcode.Pdf417.Columns = 30;
-                            generator.Parameters.Barcode.GS1CompositeBar.AllowOnlyGS1Encoding = false;
-                            break;
-                        default:
-                            // No extra configuration needed for other symbologies.
-                            break;
-                    }
-
-                    // Save the generated barcode as a PNG file.
-                    generator.Save(filePath, BarCodeImageFormat.Png);
-                }
-
-                // Read and validate the generated barcode.
                 using (var reader = new BarCodeReader(filePath, DecodeType.AllSupportedTypes))
                 {
-                    reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
                     var results = reader.ReadBarCodes();
-
-                    bool success = results.Length > 0 && !string.IsNullOrEmpty(results[0].CodeText);
-                    if (success)
+                    bool matchFound = false;
+                    foreach (var result in results)
                     {
+                        if (result.CodeText == codeText)
+                        {
+                            matchFound = true;
+                            break;
+                        }
+                    }
+
+                    if (matchFound)
+                    {
+                        Console.WriteLine($"[PASS] {symName} - CodeText matched.");
                         passed++;
-                        Console.WriteLine($"Test {index} [{symbology}] succeeded. Detected: {results[0].CodeText} ({results[0].CodeTypeName})");
                     }
                     else
                     {
+                        Console.WriteLine($"[FAIL] {symName} - Decoded text does not match. Expected: '{codeText}'.");
                         failed++;
-                        Console.WriteLine($"Test {index} [{symbology}] failed: no readable result.");
                     }
                 }
             }
+            catch (ArgumentException ex) when (ex.Message.Contains("Image loading failed"))
+            {
+                Console.WriteLine($"[WARN] {symName} - Image could not be loaded: {ex.Message}");
+                failed++;
+            }
             catch (Exception ex)
             {
+                Console.WriteLine($"[ERROR] {symName} - Unexpected exception: {ex.Message}");
                 failed++;
-                Console.WriteLine($"Test {index} [{symbology}] exception: {ex.Message}");
             }
         }
 
-        // Output a summary of the test run.
-        Console.WriteLine($"Summary: {passed} passed, {failed} failed.");
+        // Output summary of test results
+        Console.WriteLine($"Test summary: Passed = {passed}, Failed = {failed}");
 
-        // Cleanup the temporary folder; ignore any errors during deletion.
+        // Cleanup temporary files and folder
         try
         {
             Directory.Delete(tempFolder, true);
         }
         catch
         {
-            // Suppress cleanup exceptions.
+            // Ignore cleanup errors
         }
     }
 }

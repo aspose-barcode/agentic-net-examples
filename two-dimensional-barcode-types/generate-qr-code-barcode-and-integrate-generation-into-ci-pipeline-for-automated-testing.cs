@@ -1,81 +1,74 @@
-// Title: Generate QR Code and Verify in CI Pipeline
-// Description: Demonstrates generating a QR Code barcode, saving it as a PNG file, and reading it back to confirm correctness—ideal for automated CI testing scenarios.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator (for creating barcodes) and BarCodeReader (for decoding them). Typical use cases include automated quality checks, CI/CD pipelines, and batch processing where developers need to ensure barcode assets are produced correctly without manual intervention.
+// Title: Generate and Verify QR Code Barcode in CI Pipeline
+// Description: Demonstrates how to generate a QR Code barcode, save it as PNG, and verify it by reading back the encoded text. Useful for automated testing in CI environments.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, showcasing the use of BarcodeGenerator for QR code creation and BarCodeReader for decoding. Developers commonly use these APIs to produce barcodes for documents, integrate barcode validation into build pipelines, and ensure image output correctness across platforms. The snippet highlights temporary file handling and cleanup suitable for CI workflows.
 // Prompt: Generate QR Code barcode and integrate generation into CI pipeline for automated testing.
-// Tags: qr, barcode, generation, recognition, ci, testing, png, aspose.barcode
+// Tags: qr code, barcode generation, barcode recognition, ci pipeline, automated testing, png output, aspose.barcode
 
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Example program that creates a QR Code, validates it, and cleans up temporary files.
-/// Designed for use in continuous integration pipelines where interactive console input is unavailable.
+/// Demonstrates QR Code generation and verification using Aspose.BarCode, suitable for CI pipeline integration.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a QR Code, reads it back for verification, and removes all temporary artifacts.
+    /// Entry point. Generates a QR Code, saves it, verifies by decoding, and cleans up temporary files.
     /// </summary>
-    /// <param name="args">Command‑line arguments (not used).</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Create a unique temporary folder for the test to avoid collisions in parallel CI runs
-        string tempFolder = Path.Combine(Path.GetTempPath(), "QrTest_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
+        // Prepare a unique temporary output directory
+        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputDir);
 
-        // Define the text to encode and the output file path
-        string barcodeText = "CI Test QR";
-        string barcodePath = Path.Combine(tempFolder, "qr.png");
+        // Define QR code content and target file path
+        string qrText = "Hello Aspose QR";
+        string qrFile = Path.Combine(outputDir, "qr_code.png");
 
-        // ------------------------------------------------------------
-        // Generate QR Code
-        // ------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, barcodeText))
+        // Generate QR Code image using BarcodeGenerator
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, qrText))
         {
-            // Set module size (pixel dimension) for better readability
+            // Set module size (pixel dimension) and error correction level
             generator.Parameters.Barcode.XDimension.Pixels = 4f;
-            // Use the highest error correction level to ensure robustness
-            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
-            // Define image resolution (DPI) for high‑quality output
-            generator.Parameters.Resolution = 300f;
-            // Save the generated barcode as a PNG image
-            generator.Save(barcodePath, BarCodeImageFormat.Png);
+            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
+            // Save the generated QR code as a PNG file
+            generator.Save(qrFile, BarCodeImageFormat.Png);
         }
 
-        // ------------------------------------------------------------
-        // Verify the generated QR Code by reading it back
-        // ------------------------------------------------------------
-        BaseDecodeType decodeType = DecodeType.QR;
-        using (var reader = new BarCodeReader(barcodePath, decodeType))
+        // Verify that the QR code image was created successfully
+        if (!File.Exists(qrFile))
+        {
+            Console.WriteLine("FAILED: QR code image was not created.");
+            return;
+        }
+
+        // Read and decode the QR Code to confirm its content
+        using (var reader = new BarCodeReader(qrFile, DecodeType.QR))
         {
             var results = reader.ReadBarCodes();
-            if (results != null && results.Length > 0 && !string.IsNullOrEmpty(results[0].CodeText))
+            if (results.Length == 0)
             {
-                Console.WriteLine($"SUCCESS: QR code detected. CodeText: {results[0].CodeText}");
+                Console.WriteLine("FAILED: No barcode detected during verification.");
             }
             else
             {
-                Console.WriteLine("FAILURE: QR code not detected.");
+                Console.WriteLine("SUCCESS: QR code generated and verified.");
+                Console.WriteLine("Decoded text: " + results[0].CodeText);
             }
         }
 
-        // ------------------------------------------------------------
-        // Clean up temporary files and folder
-        // ------------------------------------------------------------
+        // Clean up temporary files and directory (optional in CI)
         try
         {
-            if (File.Exists(barcodePath))
-                File.Delete(barcodePath);
-            if (Directory.Exists(tempFolder))
-                Directory.Delete(tempFolder, true);
+            File.Delete(qrFile);
+            Directory.Delete(outputDir);
         }
         catch
         {
-            // Ignored – cleanup failures should not affect CI test results
+            // Ignore cleanup errors in CI environment
         }
     }
 }

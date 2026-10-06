@@ -1,43 +1,45 @@
-// Title: Generate QR Code barcode and save as PNG
-// Description: Demonstrates creating a QR Code from alphanumeric text using Aspose.BarCode and saving it as a PNG image file.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to use the BarcodeGenerator class with EncodeTypes.QR to produce QR Code barcodes. Typical use cases include encoding URLs, contact information, or product data for scanning by mobile devices. Developers often need to configure error correction levels and export the barcode to common image formats such as PNG, JPEG, or BMP.
+// Title: Generate QR Code and Save as PNG using Aspose.BarCode
+// Description: This example creates a QR Code barcode from an alphanumeric string and saves it as a PNG image file.
+// Category-Description: Demonstrates the Aspose.BarCode generation workflow for QR Code symbology. It showcases the use of EncodeTypes, BarcodeGenerator, and BarCodeImageFormat classes to encode data, configure QR parameters (error correction, module size), and output the result as a PNG image. Ideal for developers needing quick QR Code creation for URLs, product IDs, or authentication tokens.
 // Prompt: Generate a QR Code barcode from alphanumeric text and save as PNG image file.
-// Tags: qr code, barcode generation, png output, aspose.barcode, encode types, qrcode
+// Tags: qr code, barcode generation, png, aspose.barcode, aspose.barcode.generation
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates a QR Code barcode from a text string and saves it as a PNG file.
+/// Example program that generates a QR Code barcode from a given text and saves it as a PNG file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Creates a BarcodeGenerator for QR encoding, sets error correction level, and writes the image to disk.
+    /// Entry point of the application.
     /// </summary>
     static void Main()
     {
-        // Determine output file path in the current directory
-        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "qr_code.png");
-        try
+        // Define the output file path in the current directory.
+        string outputPath = Path.Combine(Environment.CurrentDirectory, "qr_code.png");
+
+        // Text to be encoded into the QR Code.
+        string codeText = "ABC123XYZ";
+
+        // Create a BarcodeGenerator for QR Code with the specified text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, codeText))
         {
-            // Initialize generator with QR type and the data to encode
-            using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Hello World 123"))
-            {
-                // Set QR error correction level to Medium (Level M)
-                generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
-                // Save the generated barcode as PNG
-                generator.Save(outputPath, BarCodeImageFormat.Png);
-            }
-            // Inform user of successful save
-            Console.WriteLine($"QR Code saved to: {outputPath}");
+            // Set a high error correction level (Level H) to improve readability after damage.
+            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
+
+            // Define the size of each QR module (pixel dimension).
+            generator.Parameters.Barcode.XDimension.Pixels = 8f;
+
+            // Save the generated QR Code as a PNG image to the specified path.
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
-        catch (Exception ex)
-        {
-            // Output any errors that occur during generation
-            Console.WriteLine($"Error generating QR Code: {ex.Message}");
-        }
+
+        // Inform the user where the QR Code image has been saved.
+        Console.WriteLine($"QR Code saved to: {outputPath}");
     }
 }

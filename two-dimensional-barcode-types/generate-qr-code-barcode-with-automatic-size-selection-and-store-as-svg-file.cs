@@ -1,8 +1,8 @@
 // Title: Generate QR Code barcode and save as SVG with automatic size selection
-// Description: Demonstrates creating a QR Code using Aspose.BarCode, letting the library choose the optimal QR version automatically, and saving the result as an SVG file.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on QR Code creation. It showcases the BarcodeGenerator class, EncodeTypes enumeration, QRVersion auto‑selection, and saving to vector formats like SVG. Developers use these APIs to embed scannable QR codes in web pages, reports, or documents where scalable graphics are required.
+// Description: Demonstrates creating a QR Code barcode using Aspose.BarCode, automatically selecting module size, and saving the result as an SVG file.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating how to use the BarcodeGenerator class with EncodeTypes.QR to produce scalable vector graphics. Typical use cases include generating QR codes for web URLs, product information, or contact data, where developers need high‑quality, resolution‑independent output. The snippet shows setting optional parameters, handling file paths, and error handling, which are common tasks when integrating barcode creation into .NET applications.
 // Prompt: Generate a QR Code barcode with automatic size selection and store as SVG file.
-// Tags: qr code, barcode generation, automatic size, svg output, aspose.barcode, encode types, qrversion
+// Tags: qr code, barcode generation, svg output, aspose.barcode, encode types, automatic size selection
 
 using System;
 using System.IO;
@@ -10,34 +10,34 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generating a QR Code barcode with automatic version selection and saving it as an SVG file.
+/// Demonstrates generating a QR Code barcode and saving it as an SVG file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example.
+    /// Entry point that creates the QR Code and writes it to the file system.
     /// </summary>
     static void Main()
     {
-        // Define the full path for the output SVG file.
-        string outputPath = Path.Combine(Environment.CurrentDirectory, "qr.svg");
+        // Determine the full path for the output SVG file
+        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "qr_code.svg");
 
-        // Initialize the barcode generator for a QR Code with the desired text.
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
+        // Initialize the barcode generator with QR encoding and the desired data
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
         {
-            // Set QR version to Auto so the library selects the optimal size.
-            generator.Parameters.Barcode.QR.Version = QRVersion.Auto;
+            // Optional: set the module (X) dimension in pixels; Aspose.BarCode can auto‑select size if omitted
+            generator.Parameters.Barcode.XDimension.Pixels = 4f;
 
             try
             {
-                // Save the generated QR Code as an SVG image.
+                // Save the generated QR Code as an SVG image
                 generator.Save(outputPath, BarCodeImageFormat.Svg);
-                Console.WriteLine($"QR code saved to {outputPath}");
+                Console.WriteLine($"QR Code saved to: {outputPath}");
             }
             catch (Exception ex)
             {
-                // Output any errors that occur during the save operation.
-                Console.WriteLine($"Failed to save QR code as SVG: {ex.Message}");
+                // Report any errors that occur during the save operation
+                Console.WriteLine($"Failed to save QR Code as SVG: {ex.Message}");
             }
         }
     }
