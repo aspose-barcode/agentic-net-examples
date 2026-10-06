@@ -1,90 +1,83 @@
 // Title: BarWidthReduction Impact on Barcode Decode Speed
-// Description: Demonstrates how varying BarWidthReduction affects the decoding time of dense Code128 barcodes using Aspose.BarCode.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, showcasing the use of BarcodeGenerator for creating barcodes and BarCodeReader with QualitySettings for high‑performance decoding. Developers often need to benchmark barcode readability under different rendering parameters, such as BarWidthReduction, to optimize scanning speed in high‑density scenarios.
+// Description: Demonstrates how adjusting BarWidthReduction influences the time required to decode dense barcodes using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes with specific visual parameters and BarCodeReader for decoding them. Developers often need to fine‑tune barcode appearance (e.g., BarWidthReduction) and assess its effect on scanning performance, especially for high‑density symbologies.
 // Prompt: Test the effect of BarWidthReduction on barcode scanning speed by measuring decode times for dense barcodes.
-// Tags: code128, barwidthreduction, performance, decoding, aspose.barcode, barcode generation, barcode recognition, qualitysettings
+// Tags: barcode, barwidthreduction, performance, generation, recognition, aspose.barcode, code128, datamatrix, png
 
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
+using System.Diagnostics;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Generates Code128 barcodes with varying BarWidthReduction values,
-/// measures their decode times, and outputs the results.
+/// Provides an example that measures how BarWidthReduction affects barcode decoding time
+/// for dense Code128 and DataMatrix barcodes.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates temporary barcodes, decodes them,
-    /// reports performance metrics, and cleans up resources.
+    /// Entry point of the example. Generates barcodes with different BarWidthReduction values,
+    /// decodes them, and outputs the elapsed decode time for each case.
     /// </summary>
     static void Main()
     {
-        // Create a temporary folder for generated barcodes
-        string tempFolder = Path.Combine(Path.GetTempPath(), "BarWidthReductionTest_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
+        // Create a temporary directory to store generated barcode images
+        string tempDir = Path.Combine(Path.GetTempPath(), "BarWidthReductionTest_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
 
-        // Define test parameters
-        string codeText = new string('A', 50); // dense Code128 text
-        float xDimensionPixels = 2f;
-        List<float> barWidthReductions = new List<float> { 0f, 2f, 4f };
-        List<string> generatedFiles = new List<string>();
-
-        // Generate barcodes with different BarWidthReduction values
-        foreach (float reduction in barWidthReductions)
+        // Define symbologies and corresponding dense text payloads
+        var symbologies = new (BaseEncodeType Encode, string Text)[]
         {
-            string filePath = Path.Combine(tempFolder, $"Code128_BWR_{reduction}.png");
-            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
-            {
-                // Set barcode dimensions and reduction
-                generator.Parameters.Barcode.XDimension.Pixels = xDimensionPixels;
-                generator.Parameters.Barcode.BarWidthReduction.Pixels = reduction;
+            (EncodeTypes.Code128, new string('A', 30)),      // 30 characters of 'A' for Code128
+            (EncodeTypes.DataMatrix, new string('B', 50))   // 50 characters of 'B' for DataMatrix
+        };
 
-                // Save the barcode image
-                generator.Save(filePath, BarCodeImageFormat.Png);
-            }
-            generatedFiles.Add(filePath);
-        }
+        // Bar width reduction values to test (in pixels)
+        float[] reductions = { 0f, 4f };
 
-        // Measure decoding time for each generated barcode
-        Console.WriteLine("BarWidthReduction\tDecodeTimeMs\tDecodedText");
-        foreach (string file in generatedFiles)
+        // Iterate over each symbology and reduction setting
+        foreach (var (encode, text) in symbologies)
         {
-            if (!File.Exists(file))
+            foreach (float reduction in reductions)
             {
-                Console.WriteLine($"File not found: {file}");
-                continue;
-            }
+                // Build file name and full path for the generated image
+                string fileName = $"{encode}_{reduction}pix.png";
+                string filePath = Path.Combine(tempDir, fileName);
 
-            using (BarCodeReader reader = new BarCodeReader(file, DecodeType.AllSupportedTypes))
-            {
-                // Use high‑performance preset for speed measurement
-                reader.QualitySettings = QualitySettings.HighPerformance;
+                // Generate barcode with the specified BarWidthReduction
+                using (var generator = new BarcodeGenerator(encode, text))
+                {
+                    generator.Parameters.Barcode.XDimension.Pixels = 2f;               // Set base module width
+                    generator.Parameters.Barcode.BarWidthReduction.Pixels = reduction; // Apply reduction
+                    generator.Save(filePath, BarCodeImageFormat.Png);                  // Save as PNG
+                }
 
-                Stopwatch sw = Stopwatch.StartNew();
-                BarCodeResult[] results = reader.ReadBarCodes();
-                sw.Stop();
+                // Measure the time required to decode the generated barcode
+                long elapsedMs;
+                using (var reader = new BarCodeReader(filePath, DecodeType.AllSupportedTypes))
+                {
+                    var sw = Stopwatch.StartNew();
+                    var results = reader.ReadBarCodes(); // Perform decoding
+                    sw.Stop();
+                    elapsedMs = sw.ElapsedMilliseconds;
 
-                string decodedText = results.Length > 0 ? results[0].CodeText : "None";
-
-                // Extract reduction value from filename
-                string reductionValue = Path.GetFileNameWithoutExtension(file).Split('_')[2];
-                Console.WriteLine($"{reductionValue}\t\t{sw.ElapsedMilliseconds}\t\t{decodedText}");
+                    // Output decoding statistics
+                    Console.WriteLine($"Symbology: {encode}, Reduction: {reduction} px, DecodeTime: {elapsedMs} ms, Detected: {results.Length}");
+                }
             }
         }
 
-        // Cleanup temporary files
+        // Attempt to clean up the temporary directory; ignore any errors
         try
         {
-            Directory.Delete(tempFolder, true);
+            Directory.Delete(tempDir, true);
         }
         catch
         {
-            // Ignore cleanup errors
+            // Cleanup errors are non‑critical for this example
         }
     }
 }

@@ -1,8 +1,8 @@
-// Title: Generate non‑square barcode using interpolation mode
-// Description: Demonstrates how to create a barcode image with a non‑square aspect ratio by setting ImageHeight lower than ImageWidth while using the Interpolation auto‑size mode.
-// Category-Description: This example belongs to the Aspose.BarCode image generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and AutoSizeMode to control image dimensions. Developers often need to customize barcode size for UI layouts, printing, or embedding in documents, and this snippet shows typical API usage for adjusting width, height, and X‑dimension.
+// Title: Generate non‑square barcode using interpolation scaling
+// Description: Demonstrates how to create a barcode image with a rectangular aspect ratio by setting ImageHeight lower than ImageWidth and using the Interpolation auto‑size mode.
+// Category-Description: This example belongs to the Aspose.BarCode image generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and AutoSizeMode to control barcode dimensions. Developers often need to produce barcodes with custom sizes for UI layouts, printed labels, or web graphics, and this snippet shows the typical API calls for adjusting width, height, and scaling behavior.
 // Prompt: Generate a barcode with a non‑square aspect ratio by setting ImageHeight lower than ImageWidth in Interpolation mode.
-// Tags: code128, barcode generation, image size, interpolation, aspnet, aspose.barcode, png
+// Tags: code128, barcode generation, image scaling, interpolation, png, aspnet.barcode, aspose.barcode
 
 using System;
 using System.IO;
@@ -15,36 +15,37 @@ using Aspose.BarCode.Generation;
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates output directory, configures the barcode generator,
-    /// saves the image, and writes the output path to the console.
+    /// Entry point. Creates output directory, generates the barcode, saves as PNG, and writes the file path to console.
     /// </summary>
     static void Main()
     {
-        // Determine a temporary folder for output and ensure it exists
-        string outputDir = Path.Combine(Path.GetTempPath(), "BarcodeOutput");
-        Directory.CreateDirectory(outputDir);
+        // Determine a temporary directory for the output file
+        string outputDir = Path.Combine(Path.GetTempPath(), "BarcodeExample");
 
-        // Full path for the resulting PNG file
-        string outputFile = Path.Combine(outputDir, "NonSquareBarcode.png");
-
-        // Initialize the generator with Code128 symbology and sample data
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+        // Ensure the output directory exists
+        if (!Directory.Exists(outputDir))
         {
-            // Use interpolation to allow custom image dimensions
-            generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
-
-            // Set a wider width and a lower height to achieve a non‑square shape
-            generator.Parameters.ImageWidth.Pixels = 300f;
-            generator.Parameters.ImageHeight.Pixels = 150f; // lower height for non‑square aspect ratio
-
-            // Adjust the X‑dimension (module width) of the barcode bars
-            generator.Parameters.Barcode.XDimension.Pixels = 3f;
-
-            // Save the generated barcode as a PNG file
-            generator.Save(outputFile, BarCodeImageFormat.Png);
+            Directory.CreateDirectory(outputDir);
         }
 
-        // Inform the user where the file was saved
-        Console.WriteLine($"Barcode saved to: {outputFile}");
+        // Build the full path for the resulting PNG file
+        string outputPath = Path.Combine(outputDir, "NonSquareBarcode.png");
+
+        // Initialize the barcode generator with Code128 symbology and sample data
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+        {
+            // Use Interpolation mode to allow custom scaling of the image
+            generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
+
+            // Set a rectangular size: width larger than height
+            generator.Parameters.ImageWidth.Pixels = 300f;
+            generator.Parameters.ImageHeight.Pixels = 150f;
+
+            // Save the generated barcode as a PNG file
+            generator.Save(outputPath, BarCodeImageFormat.Png);
+        }
+
+        // Inform the user where the barcode image was saved
+        Console.WriteLine($"Barcode saved to: {outputPath}");
     }
 }

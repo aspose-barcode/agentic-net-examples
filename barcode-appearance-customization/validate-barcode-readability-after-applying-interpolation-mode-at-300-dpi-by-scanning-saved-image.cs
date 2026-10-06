@@ -1,8 +1,8 @@
 // Title: Validate barcode readability after applying interpolation mode at 300 dpi
-// Description: Generates a DataMatrix barcode using interpolation scaling at 300 dpi, saves it as PNG, and reads it back to confirm the barcode can be decoded.
-// Category-Description: Demonstrates Aspose.BarCode generation and recognition APIs. The example uses BarcodeGenerator to create a barcode with AutoSizeMode.Interpolation, sets image resolution, and then employs BarCodeReader to decode the saved image. This pattern is common for developers who need to ensure barcode quality after image processing or scaling operations, especially when preparing assets for high‑resolution printing or scanning.
+// Description: Generates a DataMatrix barcode using Aspose.BarCode with interpolation auto‑size mode at 300 dpi, saves it as PNG, then reads it back to verify readability.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It demonstrates how to use BarcodeGenerator to create a barcode with specific rendering settings (AutoSizeMode, Resolution, dimensions) and BarCodeReader to decode and validate the barcode. Typical use cases include automated testing of barcode quality, preparing high‑resolution images for printing, and ensuring scan reliability in production workflows. Developers often need to adjust rendering parameters and confirm that the resulting image can be successfully read by scanners or software libraries.
 // Prompt: Validate barcode readability after applying Interpolation mode at 300 dpi by scanning the saved image.
-// Tags: datamatrix, barcode generation, barcode recognition, interpolation, 300dpi, png, aspose.barcode
+// Tags: datamatrix, generation, recognition, interpolation, 300dpi, png, aspose.barcode, csharp
 
 using System;
 using System.IO;
@@ -11,89 +11,83 @@ using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates creating a DataMatrix barcode with interpolation scaling at 300 dpi,
-/// saving it to a temporary PNG file, and then verifying its readability using Aspose.BarCode's
-/// recognition engine.
+/// Demonstrates generating a DataMatrix barcode with interpolation mode at 300 dpi,
+/// saving it, and verifying its readability using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the demo. Generates the barcode, saves it, reads it back,
-    /// outputs the decoding result, and cleans up temporary files.
+    /// Entry point of the example. Generates, saves, reads, and validates a barcode,
+    /// then cleans up temporary files.
     /// </summary>
     static void Main()
     {
-        // --------------------------------------------------------------------
-        // Prepare a unique temporary folder and file path for the barcode image
-        // --------------------------------------------------------------------
-        string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        // Create a unique temporary folder for the barcode image.
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeTest_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
         string barcodePath = Path.Combine(tempFolder, "barcode.png");
 
-        // --------------------------------------------------------------
-        // Generate a DataMatrix barcode using interpolation mode at 300 dpi
-        // --------------------------------------------------------------
+        // Generate a DataMatrix barcode with interpolation auto‑size mode at 300 dpi.
         using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, "ASPOSE"))
         {
-            // Use interpolation scaling to fit the requested dimensions
-            generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
-
-            // Set the target image size (pixels) – 300 × 300
-            generator.Parameters.ImageWidth.Pixels = 300f;
-            generator.Parameters.ImageHeight.Pixels = 300f;
-
-            // Define module size (X dimension) for the DataMatrix
-            generator.Parameters.Barcode.XDimension.Pixels = 3f;
-
-            // Set the image resolution to 300 dpi
-            generator.Parameters.Resolution = 300f;
-
-            // Save the generated barcode as a PNG file
-            generator.Save(barcodePath, BarCodeImageFormat.Png);
+            generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation; // Use interpolation for scaling.
+            generator.Parameters.Resolution = 300f;                         // Set image resolution to 300 dpi.
+            generator.Parameters.ImageWidth.Pixels = 300f;                  // Define image width.
+            generator.Parameters.ImageHeight.Pixels = 300f;                 // Define image height.
+            generator.Parameters.Barcode.XDimension.Pixels = 3f;            // Set module size.
+            generator.Save(barcodePath, BarCodeImageFormat.Png);            // Save as PNG.
         }
 
-        // -------------------------------------------------
-        // Verify that the barcode image file was created
-        // -------------------------------------------------
+        // Verify that the barcode image file was created successfully.
         if (!File.Exists(barcodePath))
         {
             Console.WriteLine("Failed to create barcode image.");
+            Cleanup(tempFolder);
             return;
         }
 
-        // -------------------------------------------------
-        // Read and decode the barcode from the saved image
-        // -------------------------------------------------
-        BaseDecodeType decodeType = DecodeType.AllSupportedTypes;
-        using (var reader = new BarCodeReader(barcodePath, decodeType))
+        // Read and validate the barcode from the saved image.
+        using (var reader = new BarCodeReader(barcodePath, DecodeType.AllSupportedTypes))
         {
-            var results = reader.ReadBarCodes();
-
-            // Determine if decoding succeeded
-            bool success = results.Length > 0 && !string.IsNullOrEmpty(results[0].CodeText);
-            Console.WriteLine($"Barcode read {(success ? "successful" : "failed")}.");
-
-            // Output details for each decoded barcode
-            if (success)
+            bool anyFound = false;
+            foreach (BarCodeResult result in reader.ReadBarCodes())
             {
-                foreach (var result in results)
-                {
-                    Console.WriteLine($"Type: {result.CodeTypeName}, Text: {result.CodeText}, Quality: {result.ReadingQuality}");
-                }
+                anyFound = true;
+                Console.WriteLine($"CodeType: {result.CodeTypeName}");
+                Console.WriteLine($"CodeText: {result.CodeText}");
+                Console.WriteLine($"ReadingQuality: {result.ReadingQuality}");
+            }
+
+            if (!anyFound)
+            {
+                Console.WriteLine("No barcode detected in the image.");
+            }
+            else
+            {
+                Console.WriteLine("Barcode read successfully.");
             }
         }
 
-        // ---------------------------------
-        // Clean up temporary files and folder
-        // ---------------------------------
+        // Clean up temporary files and folder.
+        Cleanup(tempFolder);
+    }
+
+    /// <summary>
+    /// Deletes the specified folder and its contents, handling any exceptions.
+    /// </summary>
+    /// <param name="folderPath">The path of the folder to delete.</param>
+    static void Cleanup(string folderPath)
+    {
         try
         {
-            File.Delete(barcodePath);
-            Directory.Delete(tempFolder);
+            if (Directory.Exists(folderPath))
+            {
+                Directory.Delete(folderPath, true);
+            }
         }
-        catch
+        catch (Exception ex)
         {
-            // Ignored – cleanup is not critical for the demo
+            Console.WriteLine($"Cleanup failed: {ex.Message}");
         }
     }
 }
