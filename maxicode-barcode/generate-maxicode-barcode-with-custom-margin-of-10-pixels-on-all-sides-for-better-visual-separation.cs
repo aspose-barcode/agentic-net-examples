@@ -1,44 +1,47 @@
 // Title: Generate MaxiCode barcode with custom margins
-// Description: Demonstrates creating a MaxiCode barcode image with a 10‑pixel margin on all sides and saving it as a PNG file.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, showcasing how to configure barcode parameters such as padding, module size, and image format using the BarcodeGenerator class. Typical use cases include generating shipping labels, inventory tags, or any application requiring MaxiCode symbology. Developers often need to adjust margins and dimensions to fit layout constraints or improve visual separation in printed or digital media.
+// Description: Demonstrates creating a MaxiCode barcode and applying a 10-pixel margin on all sides for visual separation.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use the BarcodeGenerator class with EncodeTypes.MaxiCode. It covers setting barcode padding (margins), adjusting X‑dimension, and saving the result as an image. Developers working with barcode creation often need to control visual spacing and image output formats, making this a common pattern for generating printable or display‑ready barcodes.
 // Prompt: Generate a MaxiCode barcode with a custom margin of 10 pixels on all sides for better visual separation.
-// Tags: maxicode, barcode generation, margin, png, aspose.barcode, encode types, image output
+// Tags: maxicode, barcode, padding, margin, image, png, aspose.barcode, generation
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a MaxiCode barcode with custom margins and saving it as a PNG image.
+/// Example program that creates a MaxiCode barcode with a 10‑pixel margin on each side
+/// and saves it as a PNG image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates the barcode, applies a 10‑pixel padding on all sides, sets the module size, and writes the image to a temporary file.
+    /// Entry point of the application.
+    /// Generates the barcode, applies padding, and writes the output file path to the console.
     /// </summary>
     static void Main()
     {
-        // Build a unique temporary file path for the output PNG image
-        string outputPath = Path.Combine(Path.GetTempPath(), "MaxiCode_" + Guid.NewGuid().ToString("N") + ".png");
+        // Define the output file path in the temporary directory.
+        string outputPath = Path.Combine(Path.GetTempPath(), "maxicode.png");
 
-        // Initialize the barcode generator for MaxiCode symbology with sample data
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.MaxiCode, "Sample"))
+        // Initialize the barcode generator for MaxiCode with the sample text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.MaxiCode, "Sample"))
         {
-            // Apply a custom margin of 10 pixels on each side
+            // Set a uniform 10‑pixel margin on all sides of the barcode.
             generator.Parameters.Barcode.Padding.Left.Pixels = 10f;
             generator.Parameters.Barcode.Padding.Top.Pixels = 10f;
             generator.Parameters.Barcode.Padding.Right.Pixels = 10f;
             generator.Parameters.Barcode.Padding.Bottom.Pixels = 10f;
 
-            // Optional: define the module (dot) size for better readability
+            // Optionally adjust the X‑dimension (module size) of the barcode.
             generator.Parameters.Barcode.XDimension.Pixels = 5f;
 
-            // Save the generated barcode as a PNG file
+            // Save the generated barcode as a PNG image.
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user where the barcode image has been saved
+        // Inform the user where the barcode image has been saved.
         Console.WriteLine($"MaxiCode barcode saved to: {outputPath}");
     }
 }

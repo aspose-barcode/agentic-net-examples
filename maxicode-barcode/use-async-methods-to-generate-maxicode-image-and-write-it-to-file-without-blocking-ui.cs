@@ -1,8 +1,8 @@
-// Title: Generate MaxiCode barcode image asynchronously
-// Description: Demonstrates creating a MaxiCode barcode with Aspose.BarCode and saving it as a PNG file using async I/O to avoid UI blocking.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, showcasing the use of BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes. Typical scenarios include generating shipping labels, inventory tags, or any application requiring MaxiCode symbology. Developers often need non‑blocking image creation for responsive UI or high‑throughput services.
+// Title: Asynchronous MaxiCode barcode generation and file saving
+// Description: Demonstrates generating a MaxiCode barcode image using Aspose.BarCode and saving it asynchronously to avoid UI blocking.
+// Category-Description: This example belongs to the Aspose.BarCode image generation category, showcasing how to use BarcodeGenerator with EncodeTypes.MaxiCode, configure barcode parameters, and employ async file I/O. Developers often need to create barcode images in background tasks for responsive applications, and this snippet illustrates the key classes (BarcodeGenerator, BarCodeImageFormat) and async stream handling.
 // Prompt: Use async methods to generate a MaxiCode image and write it to a file without blocking the UI.
-// Tags: maxicode, barcode, generation, async, png, aspose.barcode
+// Tags: maxicode, barcode generation, async, file io, aspose.barcode, png
 
 using System;
 using System.IO;
@@ -12,58 +12,48 @@ using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates asynchronous generation of a MaxiCode barcode image and saving it to a file.
+/// Demonstrates asynchronous generation of a MaxiCode barcode image and saving it to a PNG file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Asynchronous entry point that determines the output path, generates the barcode, and reports the result.
+    /// Entry point of the example. Generates the barcode and writes it asynchronously.
     /// </summary>
-    /// <param name="args">Command‑line arguments; the first argument can specify the output file path.</param>
+    /// <param name="args">Command‑line arguments (not used).</param>
     static async Task Main(string[] args)
     {
-        // Determine the output file path: use the first argument if provided, otherwise default to the current directory.
-        string outputPath = args.Length > 0
-            ? args[0]
-            : Path.Combine(Directory.GetCurrentDirectory(), "MaxiCode.png");
+        // Define the output file path
+        string outputPath = "maxicode.png";
 
-        try
-        {
-            // Generate the MaxiCode barcode and save it asynchronously.
-            await GenerateMaxiCodeAsync(outputPath);
-            Console.WriteLine($"MaxiCode image saved to: {outputPath}");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error: {ex.Message}");
-        }
+        // Generate the MaxiCode image and save it asynchronously
+        await GenerateMaxiCodeAsync(outputPath);
+
+        // Inform the user that the operation completed
+        Console.WriteLine($"MaxiCode image saved to {outputPath}");
     }
 
     /// <summary>
-    /// Generates a MaxiCode barcode, writes it to a memory stream, and then copies it to a file using asynchronous I/O.
+    /// Generates a MaxiCode barcode, renders it to a memory stream, and writes the image to disk using async I/O.
     /// </summary>
-    /// <param name="filePath">The full path where the PNG image will be saved.</param>
-    private static async Task GenerateMaxiCodeAsync(string filePath)
+    /// <param name="outputPath">The file system path where the PNG image will be saved.</param>
+    private static async Task GenerateMaxiCodeAsync(string outputPath)
     {
-        // Simple code text for demonstration.
-        const string codeText = "Sample MaxiCode";
-
-        // Initialize the barcode generator with MaxiCode symbology.
-        using (var generator = new BarcodeGenerator(EncodeTypes.MaxiCode, codeText))
+        // Initialize the barcode generator for MaxiCode with sample text
+        using (var generator = new BarcodeGenerator(EncodeTypes.MaxiCode, "Sample MaxiCode"))
         {
-            // Configure visual parameters.
-            generator.Parameters.Barcode.XDimension.Pixels = 15f;          // Set module size.
-            generator.Parameters.Barcode.MaxiCode.AspectRatio = 1f;      // Optional: enforce a square aspect ratio.
+            // Configure visual appearance: set module size and bar color
+            generator.Parameters.Barcode.XDimension.Pixels = 15f;
+            generator.Parameters.Barcode.BarColor = Color.Black;
 
-            // Save the generated barcode to a memory stream in PNG format.
+            // Render the barcode into a memory stream in PNG format
             using (var memoryStream = new MemoryStream())
             {
                 generator.Save(memoryStream, BarCodeImageFormat.Png);
-                memoryStream.Position = 0; // Reset stream position for reading.
+                memoryStream.Position = 0; // Reset stream position for reading
 
-                // Asynchronously copy the memory stream to the target file.
+                // Asynchronously copy the memory stream to a file stream
                 using (var fileStream = new FileStream(
-                    filePath,
+                    outputPath,
                     FileMode.Create,
                     FileAccess.Write,
                     FileShare.None,
