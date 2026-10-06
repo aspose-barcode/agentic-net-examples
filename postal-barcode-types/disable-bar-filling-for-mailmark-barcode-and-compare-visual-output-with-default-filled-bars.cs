@@ -1,61 +1,57 @@
 // Title: Disable Bar Filling for Mailmark Barcode and Compare Outputs
 // Description: Demonstrates how to generate a Mailmark barcode with default filled bars and with empty bars, saving both images for visual comparison.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It shows how to work with the ComplexBarcodeGenerator and MailmarkCodetext classes to customize barcode appearance, such as toggling the FilledBars property. Developers creating postal or logistics solutions often need to render Mailmark barcodes with specific visual styles, and this snippet illustrates typical usage patterns for generating and saving PNG images.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It shows how to work with the MailmarkCodetext class and ComplexBarcodeGenerator to customize barcode appearance, such as toggling the FilledBars property. Developers creating postal or logistics solutions often need to render Mailmark symbols with different visual styles, and this snippet illustrates the typical steps: configure codetext, generate images, and adjust rendering parameters.
 // Prompt: Disable bar filling for a Mailmark barcode and compare visual output with default filled bars.
-// Tags: mailmark barcode, filledbars, complexbarcode, aspnet, png, aspose.barcode, barcode generation
+// Tags: mailmark, barcode, filledbars, complexbarcode, image, png, c#, aspose.barcode
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.ComplexBarcode;
-using Aspose.Drawing;
 
 /// <summary>
-/// Generates Mailmark barcodes with and without filled bars, then saves the images for comparison.
+/// Example program that generates Mailmark barcodes with and without filled bars
+/// to illustrate the visual difference using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates output directory, builds Mailmark codetext,
+    /// Entry point. Creates output directory, configures Mailmark codetext,
     /// generates two barcode images (filled and empty bars), and writes their paths to the console.
     /// </summary>
     static void Main()
     {
-        // Define output directory and ensure it exists
+        // Define output folder relative to the current working directory
         string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "MailmarkOutput");
         Directory.CreateDirectory(outputDir);
 
-        // Create Mailmark codetext with valid sample data
+        // Prepare Mailmark codetext with valid values
         var mailmark = new MailmarkCodetext
         {
-            Format = 4,
+            Format = 4,                     // 4-state Mailmark
             VersionID = 1,
             Class = "0",
             SupplychainID = 384224,
             ItemID = 16563762,
-            DestinationPostCodePlusDPS = "EF61AH8T "
+            DestinationPostCodePlusDPS = "EF61AH8T " // trailing space required
         };
 
-        // Paths for the two generated images
-        string filledPath = Path.Combine(outputDir, "Mailmark_FilledBars.png");
-        string emptyPath = Path.Combine(outputDir, "Mailmark_EmptyBars.png");
-
-        // Generate barcode with default filled bars (default is true)
+        // Generate barcode with default filled bars (FilledBars = true by default)
+        string filledPath = Path.Combine(outputDir, "MailmarkFilledBars.png");
         using (var generator = new ComplexBarcodeGenerator(mailmark))
         {
             generator.Save(filledPath, BarCodeImageFormat.Png);
         }
+        Console.WriteLine($"Saved default filled-bars barcode to: {filledPath}");
 
-        // Generate barcode with bars not filled
+        // Generate barcode with empty bars (FilledBars = false)
+        string emptyPath = Path.Combine(outputDir, "MailmarkEmptyBars.png");
         using (var generator = new ComplexBarcodeGenerator(mailmark))
         {
             generator.Parameters.Barcode.FilledBars = false;
             generator.Save(emptyPath, BarCodeImageFormat.Png);
         }
-
-        // Output the locations of the saved images
-        Console.WriteLine($"Mailmark barcode with filled bars saved to: {filledPath}");
-        Console.WriteLine($"Mailmark barcode with empty bars saved to: {emptyPath}");
+        Console.WriteLine($"Saved empty-bars barcode to: {emptyPath}");
     }
 }

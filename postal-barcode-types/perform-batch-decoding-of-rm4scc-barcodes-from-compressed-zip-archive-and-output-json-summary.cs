@@ -1,164 +1,139 @@
-// Title: Batch decode RM4SCC barcodes from a ZIP archive and generate JSON report
-// Description: Demonstrates generating RM4SCC barcode images, compressing them into a ZIP file, decoding each image, and outputting a JSON summary of detection results.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases how to use BarcodeGenerator to create barcodes, BarCodeReader to decode them, and System.IO.Compression to handle ZIP archives. Typical use cases include batch processing of barcode images stored in archives, automated quality checks, and reporting results in JSON for downstream systems.
+// Title: Batch decode RM4SCC barcodes from ZIP and output JSON
+// Description: Demonstrates generating RM4SCC barcode images, packaging them into a ZIP archive, decoding them in bulk, and producing a JSON summary.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It shows how to use BarcodeGenerator to create barcodes, BarCodeReader to recognize them, and System.IO.Compression to handle ZIP archives. Developers often need to process multiple barcode images stored in archives for inventory, logistics, or batch verification scenarios.
 // Prompt: Perform batch decoding of RM4SCC barcodes from a compressed ZIP archive and output JSON summary.
-// Tags: rm4scc, barcode, batch-decoding, zip, json, aspose.barcode, generation, recognition
+// Tags: rm4scc, barcode generation, barcode recognition, zip, json, aspose.barcode, batch processing
 
 using System;
 using System.IO;
 using System.IO.Compression;
 using System.Collections.Generic;
 using System.Text.Json;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates batch generation, archiving, decoding of RM4SCC barcodes and JSON reporting.
+/// Simple DTO that holds information about a decoded barcode.
+/// </summary>
+class BarcodeInfo
+{
+    public string FileName { get; set; }
+    public string CodeText { get; set; }
+    public string CodeType { get; set; }
+}
+
+/// <summary>
+/// Demonstrates batch generation, archiving, decoding of RM4SCC barcodes and JSON output.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates sample RM4SCC barcodes, archives them,
-    /// decodes each image from the ZIP, and prints a JSON summary to the console.
+    /// Entry point. Generates sample RM4SCC barcodes, zips them, decodes all images from the zip,
+    /// and prints a JSON summary of the results.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder for sample barcodes
-        string tempFolder = Path.Combine(Path.GetTempPath(), "RM4SCCBatch_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
+        // Create a unique temporary folder for all intermediate files.
+        string tempDir = Path.Combine(Path.GetTempPath(), "RM4SCCBatch_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
 
-        // Sample RM4SCC code texts
-        string[] sampleTexts = new string[]
-        {
-            "123456ASPOSE",
-            "ABCDEF",
-            "9876543210"
-        };
+        // Sample RM4SCC barcode texts to encode.
+        var sampleTexts = new List<string> { "123456ASPOSE", "ABCDEF", "9876543210" };
+        var imagePaths = new List<string>();
 
-        // Generate barcode images and save them to the temporary folder
-        for (int i = 0; i < sampleTexts.Length; i++)
+        // -----------------------------------------------------------------
+        // Generate barcode images and store their file paths.
+        // -----------------------------------------------------------------
+        foreach (var text in sampleTexts)
         {
-            using (var generator = new BarcodeGenerator(EncodeTypes.RM4SCC, sampleTexts[i]))
+            string imagePath = Path.Combine(tempDir, $"{text}.png");
+            using (var generator = new BarcodeGenerator(EncodeTypes.RM4SCC, text))
             {
                 generator.Parameters.Barcode.XDimension.Pixels = 4;
                 generator.Parameters.Barcode.BarHeight.Pixels = 50;
-                string imagePath = Path.Combine(tempFolder, $"barcode_{i + 1}.png");
                 generator.Save(imagePath, BarCodeImageFormat.Png);
+            }
+            imagePaths.Add(imagePath);
+        }
+
+        // -----------------------------------------------------------------
+        // Create a ZIP archive that contains all generated barcode images.
+        // -----------------------------------------------------------------
+        string zipPath = Path.Combine(tempDir, "barcodes.zip");
+        using (var zipToCreate = ZipFile.Open(zipPath, ZipArchiveMode.Create))
+        {
+            foreach (var imgPath in imagePaths)
+            {
+                zipToCreate.CreateEntryFromFile(imgPath, Path.GetFileName(imgPath));
             }
         }
 
-        // Create a ZIP archive containing the generated images
-        string zipPath = Path.Combine(Path.GetTempPath(), "RM4SCCBatch_" + Guid.NewGuid().ToString("N") + ".zip");
-        ZipFile.CreateFromDirectory(tempFolder, zipPath);
-
-        // Prepare a list to hold the JSON summary objects
-        var summary = new List<object>();
-
-        // Process each entry in the ZIP archive
+        // -----------------------------------------------------------------
+        // Batch decode barcodes from the ZIP archive.
+        // -----------------------------------------------------------------
+        var decodedResults = new List<BarcodeInfo>();
         using (var zip = ZipFile.OpenRead(zipPath))
         {
             foreach (var entry in zip.Entries)
             {
-                // Skip non‑image files
-                if (!entry.FullName.EndsWith(".png", StringComparison.OrdinalIgnoreCase) &&
-                    !entry.FullName.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) &&
-                    !entry.FullName.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase) &&
-                    !entry.FullName.EndsWith(".bmp", StringComparison.OrdinalIgnoreCase))
-                {
+                // Skip directory entries.
+                if (string.IsNullOrEmpty(entry.Name))
                     continue;
-                }
 
-                try
+                using (var entryStream = entry.Open())
+                using (var memory = new MemoryStream())
                 {
-                    // Load the entry into a memory stream for decoding
-                    using (var entryStream = entry.Open())
-                    using (var ms = new MemoryStream())
+                    // Copy entry data to a memory stream for the reader.
+                    entryStream.CopyTo(memory);
+                    memory.Position = 0;
+
+                    using (var reader = new BarCodeReader(memory, DecodeType.AllSupportedTypes))
                     {
-                        entryStream.CopyTo(ms);
-                        ms.Position = 0;
-
-                        // Initialize the barcode reader for all supported types
-                        using (var reader = new BarCodeReader(ms, DecodeType.AllSupportedTypes))
+                        try
                         {
-                            // Required by the API: reset stream position and set the image again
-                            ms.Position = 0;
-                            reader.SetBarCodeImage(ms);
-
-                            BarCodeResult[] results = reader.ReadBarCodes();
-
-                            // No barcode detected in this image
-                            if (results.Length == 0)
+                            BarCodeResult[] barcodes = reader.ReadBarCodes();
+                            foreach (var result in barcodes)
                             {
-                                summary.Add(new
+                                // Filter only RM4SCC results.
+                                if (result.CodeTypeName == "RM4SCC")
                                 {
-                                    ImageFile = entry.FullName,
-                                    Detected = false,
-                                    Message = "No barcode detected"
-                                });
-                                continue;
-                            }
-
-                            // Add detection details for each barcode found
-                            foreach (var result in results)
-                            {
-                                var bounds = result.Region.Rectangle;
-                                summary.Add(new
-                                {
-                                    ImageFile = entry.FullName,
-                                    Detected = true,
-                                    CodeText = result.CodeText,
-                                    CodeTypeName = result.CodeTypeName,
-                                    ReadingQuality = result.ReadingQuality,
-                                    Region = new
+                                    decodedResults.Add(new BarcodeInfo
                                     {
-                                        X = bounds.X,
-                                        Y = bounds.Y,
-                                        Width = bounds.Width,
-                                        Height = bounds.Height,
-                                        Angle = result.Region.Angle
-                                    }
-                                });
+                                        FileName = entry.Name,
+                                        CodeText = result.CodeText,
+                                        CodeType = result.CodeTypeName
+                                    });
+                                }
                             }
                         }
+                        catch (ArgumentException ex)
+                        {
+                            // Log and continue on unsupported file formats.
+                            Console.WriteLine($"Skipping {entry.Name}: {ex.Message}");
+                        }
                     }
-                }
-                catch (ArgumentException ex) when (ex.Message.Contains("Image loading failed"))
-                {
-                    // Handle files that cannot be interpreted as images
-                    summary.Add(new
-                    {
-                        ImageFile = entry.FullName,
-                        Detected = false,
-                        Message = "Invalid image format"
-                    });
-                }
-                catch (Exception ex)
-                {
-                    // General error handling for unexpected issues
-                    summary.Add(new
-                    {
-                        ImageFile = entry.FullName,
-                        Detected = false,
-                        Message = $"Error: {ex.Message}"
-                    });
                 }
             }
         }
 
-        // Serialize the summary to formatted JSON and write to console
-        string json = JsonSerializer.Serialize(summary, new JsonSerializerOptions { WriteIndented = true });
+        // -----------------------------------------------------------------
+        // Serialize the decoded results to a formatted JSON string and output.
+        // -----------------------------------------------------------------
+        string json = JsonSerializer.Serialize(decodedResults, new JsonSerializerOptions { WriteIndented = true });
         Console.WriteLine(json);
 
-        // Cleanup temporary files (ignore any errors)
+        // -----------------------------------------------------------------
+        // Clean up temporary files and directories.
+        // -----------------------------------------------------------------
         try
         {
-            Directory.Delete(tempFolder, true);
-            File.Delete(zipPath);
+            Directory.Delete(tempDir, true);
         }
         catch
         {
-            // Cleanup failures are non‑critical for this example
+            // Ignored – cleanup failure should not crash the program.
         }
     }
 }

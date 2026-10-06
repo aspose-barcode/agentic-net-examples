@@ -1,8 +1,8 @@
-// Title: Generate Swiss Post Parcel Additional Service Barcode with Metadata
-// Description: Demonstrates how to create a Swiss Post Parcel additional service code barcode and embed the service description as a caption.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator with EncodeTypes.SwissPostParcel. It shows setting barcode dimensions, hiding the code text, adding a custom caption, saving to PNG, and verifying the barcode using BarCodeReader. Developers working with postal barcode standards often need to generate service-specific barcodes and attach human‑readable metadata for printing and scanning workflows.
+// Title: Generate Swiss Post Parcel Additional Service Barcode with Caption
+// Description: Demonstrates how to create a Swiss Post Parcel barcode that encodes an additional service code and attaches a human‑readable service description as a caption.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category. It shows how to use the BarcodeGenerator class with EncodeTypes.SwissPostParcel, configure visual parameters such as X‑dimension, bar height, hide the code text, and add a caption. Typical use cases include generating shipping labels for Swiss Post parcels where additional service codes (e.g., return receipt) must be encoded and displayed. Developers often need to customize barcode appearance and attach metadata for downstream processing.
 // Prompt: Generate a Swiss Post Parcel additional service code barcode and attach the service description as metadata.
-// Tags: swisspostparcel, barcode generation, metadata caption, png output, aspose.barcode, encode types, barcode verification
+// Tags: swisspost, parcel, additionalservice, barcode generation, png, aspose.barcode, aspose.drawing
 
 using System;
 using System.IO;
@@ -10,57 +10,58 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates a Swiss Post Parcel additional service barcode,
-/// adds a service description as a caption, saves the image, and verifies the barcode.
+/// Example program that generates a Swiss Post Parcel barcode with an additional service code
+/// and adds a human‑readable service description as a caption. The barcode is saved as a PNG
+/// and then read back to verify the encoded data.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates the barcode, saves it, and reads it back for verification.
+    /// Entry point of the example. Creates the output folder, generates the barcode,
+    /// saves it, and reads it back for verification.
     /// </summary>
     static void Main()
     {
-        // Prepare the output directory where the barcode image will be saved.
-        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "output");
+        // Prepare output directory
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Output");
         Directory.CreateDirectory(outputDir);
 
-        // Define the additional service code and its human‑readable description.
-        string serviceCode = "0327";
+        // Service code and description (metadata)
+        string serviceCode = "0327"; // Return receipt (AR)
         string serviceDescription = "AR";
 
-        // Create a BarcodeGenerator for the Swiss Post Parcel symbology using the service code.
+        // Generate Swiss Post Parcel Additional Service barcode
+        string barcodePath = Path.Combine(outputDir, "SwissPostAdditionalService.png");
         using (var generator = new BarcodeGenerator(EncodeTypes.SwissPostParcel, serviceCode))
         {
-            // Configure visual appearance of the barcode.
-            generator.Parameters.Barcode.XDimension.Pixels = 2f;               // Width of a single barcode module.
-            generator.Parameters.Barcode.BarHeight.Pixels = 40f;              // Height of the barcode bars.
-            generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.None; // Hide the encoded text.
+            // Set visual parameters
+            generator.Parameters.Barcode.XDimension.Pixels = 2f;      // Width of a single module
+            generator.Parameters.Barcode.BarHeight.Pixels = 40f;    // Height of the bars
 
-            // Add a caption above the barcode to display the service description.
+            // Hide the encoded text (we will show description above)
+            generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.None;
+
+            // Configure caption above the barcode to display the service description
             generator.Parameters.CaptionAbove.Visible = true;
             generator.Parameters.CaptionAbove.Alignment = TextAlignment.Left;
             generator.Parameters.CaptionAbove.Text = serviceDescription;
             generator.Parameters.CaptionAbove.Font.Size.Pixels = 24f;
-            generator.Parameters.CaptionAbove.Font.Style = FontStyle.Bold;
+            generator.Parameters.CaptionAbove.Font.Style = Aspose.Drawing.FontStyle.Bold;
 
-            // Save the generated barcode as a PNG file.
-            string imagePath = Path.Combine(outputDir, "SwissPostAdditionalService.png");
-            generator.Save(imagePath, BarCodeImageFormat.Png);
-            Console.WriteLine($"Barcode saved to: {imagePath}");
+            // Save the barcode image as PNG
+            generator.Save(barcodePath, BarCodeImageFormat.Png);
+        }
 
-            // Verify the barcode by reading it back from the generated image.
-            using (Bitmap bitmap = generator.GenerateBarCodeImage())
+        Console.WriteLine($"Barcode saved to: {barcodePath}");
+
+        // Read back the barcode to verify the encoded data
+        using (var reader = new BarCodeReader(barcodePath, DecodeType.SwissPostParcel))
+        {
+            foreach (BarCodeResult result in reader.ReadBarCodes())
             {
-                using (var reader = new BarCodeReader(bitmap, DecodeType.SwissPostParcel))
-                {
-                    foreach (BarCodeResult result in reader.ReadBarCodes())
-                    {
-                        Console.WriteLine($"Read barcode type: {result.CodeTypeName}, Data: {result.CodeText}");
-                    }
-                }
+                Console.WriteLine($"Read barcode type: {result.CodeTypeName}, Data: {result.CodeText}");
             }
         }
     }
