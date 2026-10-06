@@ -1,8 +1,8 @@
-// Title: Generate UPC‑A barcode with Code128 coupon and supplement space
-// Description: Creates a UPC‑A barcode that includes a Code128 coupon, sets the supplement space to 40 pixels, and saves the result as a PNG image.
-// Category-Description: This example demonstrates Aspose.BarCode generation for retail and promotional use cases. It utilizes the BarcodeGenerator class with EncodeTypes.UpcaGs1Code128Coupon to embed a coupon in a UPC‑A symbology. Developers often need to customize supplement spacing, output formats, and file handling when creating barcodes for point‑of‑sale systems, marketing materials, or inventory tracking.
+// Title: Generate UPC‑A Barcode with Code128 Coupon and Supplement Space
+// Description: Creates a UPC‑A barcode that includes a Code128 coupon, configures a 40‑pixel supplement space, and saves the result as a PNG image.
+// Category-Description: This example demonstrates Aspose.BarCode generation for composite symbologies, specifically UPC‑A with an embedded Code128 coupon. It showcases the use of BarcodeGenerator, EncodeTypes, and the Coupon supplement settings to control spacing. Developers working with retail packaging, promotional coupons, or any scenario requiring combined barcode data can reference this pattern for creating and customizing such barcodes.
 // Prompt: Generate a UPC‑A barcode with a Code128 coupon, set supplement space to 40 pixels, and save as PNG.
-// Tags: upc-a,code128,coupon,supplement-space,png,barcode-generation,aspose.barcode
+// Tags: upc-a, code128, coupon, supplement-space, png, aspose.barcode, barcode-generation
 
 using System;
 using System.IO;
@@ -11,7 +11,7 @@ using Aspose.BarCode.Generation;
 
 /// <summary>
 /// Demonstrates how to generate a UPC‑A barcode with an embedded Code128 coupon,
-/// configure the supplement space, and save the result as a PNG file.
+/// configure the supplement space, and save the image as PNG using Aspose.BarCode.
 /// </summary>
 class Program
 {
@@ -20,21 +20,20 @@ class Program
     /// </summary>
     static void Main()
     {
-        // Build the full path for the output PNG file in the current directory.
-        string outputPath = Path.Combine(Environment.CurrentDirectory, "UpcA_Code128Coupon.png");
+        // Define the full path for the output PNG file.
+        string outputPath = Path.Combine(Environment.CurrentDirectory, "UpcA_Code128_Coupon.png");
 
-        // Create a BarcodeGenerator for the UPC‑A with GS1 Code128 coupon symbology,
-        // using the provided data string that includes the coupon information.
-        using (var generator = new BarcodeGenerator(EncodeTypes.UpcaGs1Code128Coupon, "123456789012(8110)ASPOSE"))
+        // Initialize the barcode generator with the composite symbology and data string.
+        using (var generator = new BarcodeGenerator(EncodeTypes.UpcaGs1Code128Coupon, "123456789012(8102)03"))
         {
-            // Set the supplement (coupon) space to 40 pixels.
-            generator.Parameters.Barcode.Coupon.SupplementSpace.Pixels = 40;
+            // Configure the supplement (coupon) space to 40 pixels.
+            generator.Parameters.Barcode.Coupon.SupplementSpace.Pixels = 40f;
 
-            // Save the generated barcode image as a PNG file.
+            // Render and save the barcode image as PNG.
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Output the location of the saved barcode image.
-        Console.WriteLine($"Barcode saved to {outputPath}");
+        // Inform the user where the barcode image has been saved.
+        Console.WriteLine($"Barcode saved to: {outputPath}");
     }
 }
