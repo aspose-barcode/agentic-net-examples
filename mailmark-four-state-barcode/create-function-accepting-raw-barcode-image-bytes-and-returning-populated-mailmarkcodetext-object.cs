@@ -1,29 +1,29 @@
 // Title: Generate and Decode Mailmark Barcode from Image Bytes
-// Description: Demonstrates creating a Mailmark 4-state barcode, converting it to a PNG byte array, and decoding it back to a MailmarkCodetext object.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation and recognition category. It showcases the use of ComplexBarcodeGenerator to create Mailmark barcodes, BarCodeReader for image decoding, and ComplexCodetextReader for extracting MailmarkCodetext. Developers commonly use these APIs to generate mail‑related barcodes for printing and later read them from scanned images or byte streams.
+// Description: Demonstrates creating a Mailmark barcode, converting it to a PNG byte array, and decoding the barcode back into a MailmarkCodetext object.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, showcasing the use of ComplexBarcodeGenerator for Mailmark symbology and BarCodeReader for decoding. Developers working with postal and logistics solutions often need to embed Mailmark barcodes in documents and later extract their data programmatically. The code illustrates typical steps: configure barcode parameters, render to an image stream, and read the codetext using the Mailmark decode type.
 // Prompt: Create a function accepting raw barcode image bytes and returning a populated MailmarkCodetext object.
-// Tags: mailmark, barcode, generation, recognition, png, aspose.barcode, csharp
+// Tags: mailmark, barcode, generation, recognition, aspose.barcode, complexbarcode, c#
 
 using System;
 using System.IO;
-using Aspose.BarCode.ComplexBarcode;
-using Aspose.BarCode.BarCodeRecognition;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode.BarCodeRecognition;
+using Aspose.BarCode.ComplexBarcode;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generation of a Mailmark barcode, conversion to a PNG byte array,
-/// and decoding the image bytes back to a <see cref="MailmarkCodetext"/> instance.
+/// Example program that generates a Mailmark barcode, converts it to a byte array,
+/// and then decodes the barcode back into a <see cref="MailmarkCodetext"/> object.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a Mailmark barcode, encodes it to PNG bytes,
-    /// then decodes those bytes back into a <see cref="MailmarkCodetext"/> object and prints its fields.
+    /// Entry point of the example. Generates a Mailmark barcode, saves it to a memory stream,
+    /// and decodes it from the raw image bytes.
     /// </summary>
     static void Main()
     {
-        // Create a Mailmark 4‑state codetext with sample data
+        // Prepare a sample MailmarkCodetext with required fields.
         var mailmark = new MailmarkCodetext
         {
             Format = 4,
@@ -34,78 +34,83 @@ class Program
             DestinationPostCodePlusDPS = "EF61AH8T "
         };
 
-        // Generate the barcode image and store it in a byte array
-        byte[] imageBytes;
+        // Use ComplexBarcodeGenerator to create the barcode image.
         using (var generator = new ComplexBarcodeGenerator(mailmark))
         {
-            // Set the X‑dimension (module size) in pixels
-            generator.Parameters.Barcode.XDimension.Pixels = 4;
+            // Set the X-dimension (module width) in pixels for better readability.
+            generator.Parameters.Barcode.XDimension.Pixels = 4f;
 
-            // Save the generated barcode to a memory stream in PNG format
+            // Render the barcode into a memory stream as PNG.
             using (var ms = new MemoryStream())
             {
                 generator.Save(ms, BarCodeImageFormat.Png);
-                imageBytes = ms.ToArray();
-            }
-        }
+                byte[] imageBytes = ms.ToArray();
 
-        // Decode the PNG byte array back to a MailmarkCodetext instance
-        var decoded = DecodeMailmarkFromImageBytes(imageBytes);
-        if (decoded != null)
-        {
-            // Output each property of the decoded MailmarkCodetext
-            Console.WriteLine($"Format: {decoded.Format}");
-            Console.WriteLine($"VersionID: {decoded.VersionID}");
-            Console.WriteLine($"Class: {decoded.Class}");
-            Console.WriteLine($"SupplychainID: {decoded.SupplychainID}");
-            Console.WriteLine($"ItemID: {decoded.ItemID}");
-            Console.WriteLine($"DestinationPostCodePlusDPS: '{decoded.DestinationPostCodePlusDPS}'");
-        }
-        else
-        {
-            Console.WriteLine("Failed to decode Mailmark barcode from image bytes.");
+                // Decode the barcode from the raw image bytes.
+                MailmarkCodetext decoded = DecodeMailmarkFromImageBytes(imageBytes);
+
+                // Output the decoded values if successful.
+                if (decoded != null)
+                {
+                    Console.WriteLine("Decoded MailmarkCodetext:");
+                    Console.WriteLine($"Format: {decoded.Format}");
+                    Console.WriteLine($"VersionID: {decoded.VersionID}");
+                    Console.WriteLine($"Class: {decoded.Class}");
+                    Console.WriteLine($"SupplychainID: {decoded.SupplychainID}");
+                    Console.WriteLine($"ItemID: {decoded.ItemID}");
+                    Console.WriteLine($"DestinationPostCodePlusDPS: '{decoded.DestinationPostCodePlusDPS}'");
+                }
+                else
+                {
+                    Console.WriteLine("Failed to decode Mailmark from image bytes.");
+                }
+            }
         }
     }
 
     /// <summary>
-    /// Decodes a Mailmark barcode from raw PNG image bytes.
+    /// Decodes a Mailmark barcode from a byte array containing the barcode image.
     /// </summary>
-    /// <param name="imageBytes">The PNG image data containing the Mailmark barcode.</param>
-    /// <returns>A populated <see cref="MailmarkCodetext"/> object if decoding succeeds; otherwise, <c>null</c>.</returns>
+    /// <param name="imageBytes">Raw PNG image bytes of the Mailmark barcode.</param>
+    /// <returns>A populated <see cref="MailmarkCodetext"/> object if decoding succeeds; otherwise, null.</returns>
     static MailmarkCodetext DecodeMailmarkFromImageBytes(byte[] imageBytes)
     {
-        // Write the image bytes to a temporary file because BarCodeReader works with file paths
-        string tempPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".png");
+        // BarCodeReader works with file paths, so write the bytes to a temporary file.
+        string tempPath = Path.Combine(Path.GetTempPath(), "temp_mailmark_" + Guid.NewGuid().ToString("N") + ".png");
+        File.WriteAllBytes(tempPath, imageBytes);
+
         try
         {
-            File.WriteAllBytes(tempPath, imageBytes);
-            if (!File.Exists(tempPath))
-                return null;
-
-            // Use BarCodeReader to read Mailmark barcodes from the temporary image file
+            // Initialize the reader for Mailmark symbology.
             using (var reader = new BarCodeReader(tempPath, DecodeType.Mailmark))
             {
-                var results = reader.ReadBarCodes();
-                if (results == null || results.Length == 0)
-                    return null;
+                BarCodeResult[] results = reader.ReadBarCodes();
 
-                // Extract the raw code text and attempt to parse it into a MailmarkCodetext object
+                // Verify that at least one barcode was detected.
+                if (results.Length == 0)
+                {
+                    Console.WriteLine("No barcode detected in the provided image.");
+                    return null;
+                }
+
+                // Extract the codetext and attempt to parse it into a MailmarkCodetext object.
                 string codeText = results[0].CodeText;
-                var mailmark = ComplexCodetextReader.TryDecodeMailmark(codeText);
-                return mailmark;
+                MailmarkCodetext decoded = ComplexCodetextReader.TryDecodeMailmark(codeText);
+                return decoded;
             }
+        }
+        catch (Exception ex)
+        {
+            // Log any exceptions that occur during reading.
+            Console.WriteLine($"Error during barcode reading: {ex.Message}");
+            return null;
         }
         finally
         {
-            // Clean up the temporary file, ignoring any errors during deletion
-            try
+            // Clean up the temporary file.
+            if (File.Exists(tempPath))
             {
-                if (File.Exists(tempPath))
-                    File.Delete(tempPath);
-            }
-            catch
-            {
-                // ignore cleanup errors
+                try { File.Delete(tempPath); } catch { /* ignore cleanup errors */ }
             }
         }
     }

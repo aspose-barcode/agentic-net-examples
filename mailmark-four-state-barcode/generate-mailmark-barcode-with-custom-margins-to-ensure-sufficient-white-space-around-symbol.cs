@@ -1,15 +1,13 @@
-// Title: Generate Mailmark 4‑State Barcode with Custom Margins
-// Description: Demonstrates how to create a Mailmark 4‑State barcode and apply custom white‑space margins around the symbol.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It showcases the use of ComplexBarcodeGenerator and MailmarkCodetext to produce Mailmark symbols, a postal barcode used in the UK. Developers working with postal barcodes often need to control module size and padding to meet printing specifications, and this snippet illustrates those typical tasks.
+// Title: Generate Mailmark 4-State Barcode with Custom Margins
+// Description: Demonstrates creating a Mailmark 4‑State barcode and applying custom white‑space margins around the symbol.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It showcases the use of Aspose.BarCode.ComplexBarcode and Aspose.BarCode.Generation APIs to build a Mailmark barcode, configure its visual parameters such as module size and padding, and export the result as a PNG image. Developers working with postal symbologies, custom barcode layouts, or needing precise control over barcode margins will find this pattern useful.
 // Prompt: Generate a Mailmark barcode with custom margins to ensure sufficient white space around the symbol.
-// Tags: mailmark, barcode, margin, png, aspose.barcode, complexbarcodegenerator, codetext
+// Tags: mailmark, barcode, custom-margins, png, aspose.barcode, complexbarcode, generation
 
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.ComplexBarcode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
 /// Example program that creates a Mailmark 4‑State barcode with custom padding and saves it as a PNG file.
@@ -17,17 +15,17 @@ using Aspose.Drawing.Imaging;
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates the barcode, applies custom margins, and writes the image to a temporary folder.
+    /// Entry point of the example. Generates the barcode, applies custom margins, and writes the image to disk.
     /// </summary>
     static void Main()
     {
-        // Prepare a unique temporary output directory.
-        string outputDir = Path.Combine(Path.GetTempPath(), "MailmarkDemo_" + Guid.NewGuid().ToString("N"));
+        // Prepare a temporary output directory for the generated image.
+        string outputDir = Path.Combine(Path.GetTempPath(), "MailmarkDemo");
         Directory.CreateDirectory(outputDir);
         string outputPath = Path.Combine(outputDir, "Mailmark4State.png");
 
-        // Build the Mailmark 4‑State codetext with required fields.
-        MailmarkCodetext mailmark = new MailmarkCodetext
+        // Define the Mailmark 4‑State codetext with required fields.
+        MailmarkCodetext mailmarkCode = new MailmarkCodetext
         {
             Format = 4,
             VersionID = 1,
@@ -37,23 +35,23 @@ class Program
             DestinationPostCodePlusDPS = "EF61AH8T "
         };
 
-        // Generate the barcode using ComplexBarcodeGenerator.
-        using (ComplexBarcodeGenerator generator = new ComplexBarcodeGenerator(mailmark))
+        // Initialize the complex barcode generator using the Mailmark codetext.
+        using (ComplexBarcodeGenerator generator = new ComplexBarcodeGenerator(mailmarkCode))
         {
-            // Define the module (dot) size in pixels.
+            // Optionally set the module (dot) size of the barcode.
             generator.Parameters.Barcode.XDimension.Pixels = 4f;
 
-            // Apply custom white‑space padding around the barcode.
+            // Apply custom white‑space padding around the barcode to ensure sufficient margins.
             generator.Parameters.Barcode.Padding.Left.Pixels = 20f;
             generator.Parameters.Barcode.Padding.Top.Pixels = 20f;
             generator.Parameters.Barcode.Padding.Right.Pixels = 20f;
             generator.Parameters.Barcode.Padding.Bottom.Pixels = 20f;
 
-            // Save the generated barcode image as PNG.
+            // Save the generated barcode image in PNG format.
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user where the barcode image was saved.
+        // Inform the user where the barcode image has been saved.
         Console.WriteLine($"Mailmark barcode saved to: {outputPath}");
     }
 }

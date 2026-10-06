@@ -1,110 +1,92 @@
-// Title: Mailmark 4-State Barcode Generation Helper
-// Description: Demonstrates how to generate a Mailmark 4‑state barcode using Aspose.BarCode by configuring individual data fields through a helper class.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It showcases the MailmarkCodetext model and ComplexBarcodeGenerator classes, which are commonly used to create high‑security Mailmark barcodes for postal services. Developers often need to set specific fields such as format, version ID, class, and destination postcode before rendering the barcode to an image.
+// Title: Mailmark Barcode Generation Helper Example
+// Description: Demonstrates how to generate a Mailmark barcode using Aspose.BarCode by configuring individual data fields through a helper class.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category, focusing on Mailmark symbology. It shows the use of MailmarkCodetext and ComplexBarcodeGenerator classes to build and render a Mailmark barcode, a common requirement for postal automation and tracking solutions. Developers often need to set specific Mailmark fields such as format, version, class, supply chain ID, item ID, and destination postcode before rendering the barcode to an image.
 // Prompt: Create a helper class abstracting Mailmark barcode generation, exposing methods to set individual data fields.
-// Tags: mailmark, barcode, generation, complexbarcode, aspose.barcode, png, csharp
+// Tags: mailmark, barcode, generation, complexbarcode, aspnet, csharp, aspose.barcode, image-output
 
 using System;
 using System.IO;
 using Aspose.BarCode.ComplexBarcode;
 using Aspose.BarCode.Generation;
 
-namespace MailmarkDemo
+namespace MailmarkDemoApp
 {
     /// <summary>
-    /// Provides a simple wrapper around <see cref="MailmarkCodetext"/> and <see cref="ComplexBarcodeGenerator"/>
-    /// to configure and generate a Mailmark 4‑state barcode.
+    /// Helper class for constructing and generating Mailmark barcodes.
     /// </summary>
     public class MailmarkHelper
     {
-        // Internal representation of the Mailmark data fields.
-        private readonly MailmarkCodetext _codetext = new MailmarkCodetext();
+        // Internal Mailmark codetext object that holds all field values.
+        private readonly MailmarkCodetext _code = new MailmarkCodetext();
 
         /// <summary>
-        /// Sets the Mailmark format. Only the 4‑state format (value 4) is supported.
+        /// Sets the Mailmark format (e.g., 4-state, 2-state).
         /// </summary>
-        /// <param name="format">The format identifier; must be 4.</param>
+        /// <param name="format">Integer representing the format.</param>
         public void SetFormat(int format)
         {
-            if (format != 4)
-                throw new ArgumentException("Mailmark 4-state format must be 4.", nameof(format));
-            _codetext.Format = format;
+            _code.Format = format;
         }
 
         /// <summary>
         /// Sets the version identifier of the Mailmark.
         /// </summary>
-        /// <param name="versionId">A non‑negative integer representing the version.</param>
+        /// <param name="versionId">Integer version ID.</param>
         public void SetVersionID(int versionId)
         {
-            if (versionId < 0)
-                throw new ArgumentOutOfRangeException(nameof(versionId));
-            _codetext.VersionID = versionId;
+            _code.VersionID = versionId;
         }
 
         /// <summary>
-        /// Sets the class field of the Mailmark.
+        /// Sets the class value of the Mailmark.
         /// </summary>
-        /// <param name="classValue">A non‑empty string representing the class.</param>
+        /// <param name="classValue">String representing the class.</param>
         public void SetClass(string classValue)
         {
-            if (string.IsNullOrEmpty(classValue))
-                throw new ArgumentException("Class cannot be null or empty.", nameof(classValue));
-            _codetext.Class = classValue;
+            _code.Class = classValue;
         }
 
         /// <summary>
-        /// Sets the supply‑chain identifier.
+        /// Sets the supply chain identifier.
         /// </summary>
-        /// <param name="supplyChainId">A non‑negative integer representing the supply chain ID.</param>
-        public void SetSupplyChainID(int supplyChainId)
+        /// <param name="id">Integer supply chain ID.</param>
+        public void SetSupplyChainID(int id)
         {
-            if (supplyChainId < 0)
-                throw new ArgumentOutOfRangeException(nameof(supplyChainId));
-            _codetext.SupplychainID = supplyChainId;
+            _code.SupplychainID = id;
         }
 
         /// <summary>
         /// Sets the item identifier.
         /// </summary>
-        /// <param name="itemId">A non‑negative integer representing the item ID.</param>
-        public void SetItemID(int itemId)
+        /// <param name="id">Integer item ID.</param>
+        public void SetItemID(int id)
         {
-            if (itemId < 0)
-                throw new ArgumentOutOfRangeException(nameof(itemId));
-            _codetext.ItemID = itemId;
+            _code.ItemID = id;
         }
 
         /// <summary>
         /// Sets the destination postcode plus DPS (Delivery Point Suffix).
         /// </summary>
-        /// <param name="value">A non‑empty string containing the postcode and DPS.</param>
+        /// <param name="value">String containing postcode and DPS.</param>
         public void SetDestinationPostCodePlusDPS(string value)
         {
-            if (string.IsNullOrEmpty(value))
-                throw new ArgumentException("DestinationPostCodePlusDPS cannot be null or empty.", nameof(value));
-            _codetext.DestinationPostCodePlusDPS = value;
+            _code.DestinationPostCodePlusDPS = value;
         }
 
         /// <summary>
         /// Generates the Mailmark barcode image and saves it to the specified path.
         /// </summary>
-        /// <param name="outputPath">Full file path where the PNG image will be saved.</param>
-        public void Generate(string outputPath)
+        /// <param name="filePath">Full file path where the PNG image will be saved.</param>
+        public void Generate(string filePath)
         {
-            if (string.IsNullOrEmpty(outputPath))
-                throw new ArgumentException("Output path cannot be null or empty.", nameof(outputPath));
-
-            // Ensure the output directory exists.
-            string directory = Path.GetDirectoryName(outputPath);
-            if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
-                Directory.CreateDirectory(directory);
-
-            // Create the generator, configure X‑dimension, and save as PNG.
-            using (var generator = new ComplexBarcodeGenerator(_codetext))
+            // Create a generator using the configured Mailmark codetext.
+            using (var generator = new ComplexBarcodeGenerator(_code))
             {
-                generator.Parameters.Barcode.XDimension.Pixels = 4;
-                generator.Save(outputPath, BarCodeImageFormat.Png);
+                // Set the X-dimension (module size) in pixels for better readability.
+                generator.Parameters.Barcode.XDimension.Pixels = 4f;
+
+                // Save the generated barcode as a PNG image.
+                generator.Save(filePath, BarCodeImageFormat.Png);
             }
         }
     }
@@ -112,17 +94,17 @@ namespace MailmarkDemo
     class Program
     {
         /// <summary>
-        /// Entry point of the demo application. Configures a MailmarkHelper instance,
-        /// generates a 4‑state Mailmark barcode, and writes the output location to the console.
+        /// Entry point that demonstrates usage of MailmarkHelper.
         /// </summary>
-        static void Main()
+        /// <param name="args">Command-line arguments (not used).</param>
+        static void Main(string[] args)
         {
-            // Prepare a temporary output folder.
-            string outputFolder = Path.Combine(Path.GetTempPath(), "MailmarkDemo_" + Guid.NewGuid().ToString("N"));
-            Directory.CreateDirectory(outputFolder);
-            string outputFile = Path.Combine(outputFolder, "Mailmark4State.png");
+            // Prepare a temporary directory for the output image.
+            string outputDir = Path.Combine(Path.GetTempPath(), "MailmarkDemo");
+            Directory.CreateDirectory(outputDir);
+            string outputPath = Path.Combine(outputDir, "Mailmark4State.png");
 
-            // Create helper and set required Mailmark fields.
+            // Instantiate the helper and configure Mailmark fields.
             var helper = new MailmarkHelper();
             helper.SetFormat(4);
             helper.SetVersionID(1);
@@ -131,11 +113,11 @@ namespace MailmarkDemo
             helper.SetItemID(16563762);
             helper.SetDestinationPostCodePlusDPS("EF61AH8T ");
 
-            // Generate the barcode image.
-            helper.Generate(outputFile);
+            // Generate the barcode and save it to the file system.
+            helper.Generate(outputPath);
 
-            // Inform the user where the image was saved.
-            Console.WriteLine($"Mailmark 4-state barcode generated at: {outputFile}");
+            // Inform the user where the barcode image was saved.
+            Console.WriteLine($"Mailmark barcode generated at: {outputPath}");
         }
     }
 }

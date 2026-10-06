@@ -1,82 +1,73 @@
-// Title: Parse Mailmark barcode raw CodeText using ComplexCodetextReader
-// Description: Demonstrates generating a Mailmark barcode, reading it, and decoding its raw CodeText with ComplexCodetextReader.TryDecodeMailmark to extract individual fields.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation and recognition category. It showcases key API classes such as MailmarkCodetext, ComplexBarcodeGenerator, BarCodeReader, and ComplexCodetextReader. Typical use cases include creating Mailmark barcodes for logistics, reading them from images, and parsing the encoded data for downstream processing. Developers working with postal or supply‑chain solutions often need to generate Mailmark symbols and reliably extract their constituent fields.
+// Title: Parse Mailmark barcode and decode raw CodeText using ComplexCodetextReader
+// Description: Demonstrates generating a Mailmark barcode, reading it back, and extracting its fields by parsing the raw CodeText with ComplexCodetextReader.TryDecodeMailmark.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category, focusing on complex barcode types such as Mailmark. It showcases the use of ComplexBarcodeGenerator for creating a Mailmark barcode, BarCodeReader for detection, and ComplexCodetextReader for parsing raw codetext into a MailmarkCodetext object. Developers working with postal or logistics solutions often need to generate and decode Mailmark barcodes to exchange item and routing information.
 // Prompt: Parse raw CodeText from BarCodeReader using ComplexCodetextReader.TryDecodeMailmark to retrieve fields.
-// Tags: mailmark, barcode, complexbarcode, decoding, codetext, aspose.barcode
+// Tags: mailmark, barcode, generation, recognition, complexcodetextreader, decoding, csharp, aspose.barcode
 
 using System;
 using System.IO;
-using System.Text;
-using Aspose.BarCode.ComplexBarcode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.BarCode.ComplexBarcode;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates Mailmark barcode generation, reading, and raw CodeText decoding using Aspose.BarCode.
+/// Demonstrates generating a Mailmark barcode, reading it, and decoding its raw CodeText into individual fields.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a Mailmark barcode, reads it back, decodes the raw CodeText, and prints the extracted fields.
+    /// Entry point of the example. Generates a temporary Mailmark barcode image, reads it, decodes the codetext, outputs the fields, and cleans up.
     /// </summary>
     static void Main()
     {
-        // Ensure Unicode characters are displayed correctly in the console.
-        Console.OutputEncoding = Encoding.Unicode;
+        // Prepare a temporary file path for the generated Mailmark barcode image
+        string imagePath = Path.Combine(Path.GetTempPath(), "MailmarkSample.png");
 
-        // Create a unique temporary directory to store the generated barcode image.
-        string tempDir = Path.Combine(Path.GetTempPath(), "MailmarkDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempDir);
-        string imagePath = Path.Combine(tempDir, "mailmark.png");
-
-        // Define the Mailmark codetext with required fields.
+        // Create Mailmark codetext with required fields
         var mailmark = new MailmarkCodetext
         {
-            Format = 4,
+            Format = 4,                         // 4-state Mailmark
             VersionID = 1,
-            Class = "1",
+            Class = "0",
             SupplychainID = 384224,
             ItemID = 16563762,
-            DestinationPostCodePlusDPS = "EF61AH8T "
+            DestinationPostCodePlusDPS = "EF61AH8T " // exact valid value with trailing space
         };
 
-        // Generate the Mailmark barcode image and save it as PNG.
+        // Generate the Mailmark barcode image
         using (var generator = new ComplexBarcodeGenerator(mailmark))
         {
+            generator.Parameters.Barcode.XDimension.Pixels = 4;
             generator.Save(imagePath, BarCodeImageFormat.Png);
         }
 
-        // Verify that the image file was created successfully.
+        // Verify the image file exists before attempting to read
         if (!File.Exists(imagePath))
         {
             Console.WriteLine("Failed to create barcode image.");
             return;
         }
 
-        // Read the generated barcode using the Mailmark decode type.
+        // Read the barcode and decode the raw CodeText using ComplexCodetextReader
         using (var reader = new BarCodeReader(imagePath, DecodeType.Mailmark))
         {
-            var results = reader.ReadBarCodes();
-
-            // If no barcode is detected, inform the user and exit.
+            BarCodeResult[] results = reader.ReadBarCodes();
             if (results.Length == 0)
             {
-                Console.WriteLine("No barcode detected (expected for unsupported recognition).");
+                Console.WriteLine("No Mailmark barcode detected (recognition may be unsupported).");
                 return;
             }
 
-            // Retrieve the raw CodeText from the first detected barcode.
-            var rawCodeText = results[0].CodeText;
-
-            // Decode the raw CodeText into a strongly‑typed Mailmark object.
-            var decoded = ComplexCodetextReader.TryDecodeMailmark(rawCodeText);
+            // Parse the raw CodeText into a MailmarkCodetext object
+            MailmarkCodetext decoded = ComplexCodetextReader.TryDecodeMailmark(results[0].CodeText);
             if (decoded == null)
             {
                 Console.WriteLine("Failed to decode Mailmark codetext.");
                 return;
             }
 
-            // Output each decoded field to the console.
+            // Output the decoded fields
             Console.WriteLine($"Format: {decoded.Format}");
             Console.WriteLine($"VersionID: {decoded.VersionID}");
             Console.WriteLine($"Class: {decoded.Class}");
@@ -85,16 +76,14 @@ class Program
             Console.WriteLine($"DestinationPostCodePlusDPS: {decoded.DestinationPostCodePlusDPS}");
         }
 
-        // Cleanup temporary files and directories.
+        // Clean up the temporary image file
         try
         {
-            if (File.Exists(imagePath))
-                File.Delete(imagePath);
-            Directory.Delete(tempDir, true);
+            File.Delete(imagePath);
         }
         catch
         {
-            // Suppress any cleanup exceptions.
+            // Ignore any cleanup errors
         }
     }
 }
