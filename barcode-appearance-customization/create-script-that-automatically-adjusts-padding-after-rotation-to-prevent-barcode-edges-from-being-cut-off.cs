@@ -1,78 +1,55 @@
-// Title: Adjust Barcode Padding After Rotation
-// Description: This example rotates a Code128 barcode and automatically adjusts its padding to prevent the barcode edges from being cut off when saved as an image.
-// Category-Description: Demonstrates Aspose.BarCode generation features such as setting rotation angles, customizing padding, and exporting to PNG. It showcases the BarcodeGenerator class, its Parameters.RotationAngle property, and the Padding settings within Parameters.Barcode. Developers working with barcode rendering often need to rotate barcodes for layout purposes while ensuring the full barcode remains visible; this example provides a reusable pattern for handling that scenario.
+// Title: Adjust Barcode Padding After Rotation to Prevent Clipping
+// Description: Demonstrates how to rotate a barcode image and add sufficient padding so that the rotated barcode edges are not cut off.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing the use of BarcodeGenerator, rotation, and padding APIs. Developers often need to rotate barcodes for layout constraints while ensuring the full barcode remains visible; this snippet illustrates setting rotation angles, applying uniform padding, and optionally drawing a border for visual reference.
 // Prompt: Create a script that automatically adjusts padding after rotation to prevent barcode edges from being cut off.
-// Tags: barcode symbology, rotation, padding, image output, aspose.barcode, code128, png
+// Tags: barcode symbology, rotation, padding, clipping, png, aspose.barcode, code128, image generation
 
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates automatic padding adjustment for a rotated barcode using Aspose.BarCode.
+/// Generates a Code128 barcode, rotates it, and adds padding to avoid clipping of the barcode edges.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a rotated Code128 barcode, adjusts its padding, and saves it as a PNG file.
+    /// Entry point of the example. Creates a temporary directory, generates the barcode, applies rotation and padding,
+    /// saves the image, and writes the output path to the console.
     /// </summary>
     static void Main()
     {
-        // Define a temporary output folder and ensure it exists
-        string outputFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
-        Directory.CreateDirectory(outputFolder);
+        // Define output directory in the system temporary folder and ensure it exists
+        string outputDir = Path.Combine(Path.GetTempPath(), "BarcodePaddingDemo");
+        Directory.CreateDirectory(outputDir);
 
-        // Full path for the resulting image file
-        string outputPath = Path.Combine(outputFolder, "rotated_barcode.png");
+        // Full path for the resulting PNG image
+        string outputPath = Path.Combine(outputDir, "rotated_barcode.png");
 
-        // Create a barcode generator for Code128 with sample data
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+        // Initialize the barcode generator with Code128 symbology and sample data
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
         {
-            // Set rotation angle (allowed values: 0, 90, 180, 270)
-            generator.Parameters.RotationAngle = 90f;
+            // Rotate the barcode by 45 degrees
+            generator.Parameters.RotationAngle = 45f;
 
-            // Adjust padding automatically after rotation to avoid clipping
-            AdjustPadding(generator);
+            // Apply uniform padding (30 points) on all sides to prevent clipping after rotation
+            float paddingPoints = 30f;
+            generator.Parameters.Barcode.Padding.Left.Point = paddingPoints;
+            generator.Parameters.Barcode.Padding.Top.Point = paddingPoints;
+            generator.Parameters.Barcode.Padding.Right.Point = paddingPoints;
+            generator.Parameters.Barcode.Padding.Bottom.Point = paddingPoints;
 
-            // Save the barcode image in PNG format
+            // Optional: make the border visible for visual reference and set its width
+            generator.Parameters.Border.Visible = true;
+            generator.Parameters.Border.Width.Point = 1f;
+
+            // Save the generated barcode image as PNG
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user where the file was saved
+        // Output the location of the saved barcode image
         Console.WriteLine($"Barcode saved to: {outputPath}");
-    }
-
-    /// <summary>
-    /// Adjusts individual padding values based on the current rotation angle
-    /// to ensure that barcode edges are not cut off.
-    /// </summary>
-    /// <param name="generator">The BarcodeGenerator instance to modify.</param>
-    static void AdjustPadding(BarcodeGenerator generator)
-    {
-        // Base padding in points
-        float basePadding = 10f;
-
-        // Retrieve the current rotation angle
-        float angle = generator.Parameters.RotationAngle;
-
-        // For 90° or 270° rotation the barcode dimensions swap,
-        // so we increase horizontal padding slightly.
-        if (Math.Abs(angle - 90f) < 0.001f || Math.Abs(angle - 270f) < 0.001f)
-        {
-            generator.Parameters.Barcode.Padding.Left.Point = basePadding + 5f;
-            generator.Parameters.Barcode.Padding.Right.Point = basePadding + 5f;
-            generator.Parameters.Barcode.Padding.Top.Point = basePadding;
-            generator.Parameters.Barcode.Padding.Bottom.Point = basePadding;
-        }
-        else // 0° or 180°
-        {
-            generator.Parameters.Barcode.Padding.Left.Point = basePadding;
-            generator.Parameters.Barcode.Padding.Right.Point = basePadding;
-            generator.Parameters.Barcode.Padding.Top.Point = basePadding;
-            generator.Parameters.Barcode.Padding.Bottom.Point = basePadding;
-        }
     }
 }

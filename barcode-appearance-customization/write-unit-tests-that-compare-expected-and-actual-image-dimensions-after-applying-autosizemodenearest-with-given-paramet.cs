@@ -1,8 +1,8 @@
-// Title: Barcode AutoSizeMode.Nearest dimension verification example
-// Description: Demonstrates generating Code128 barcodes with specific pixel dimensions using AutoSizeMode.Nearest and validates that the produced image matches the expected width and height.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to control barcode image size with the AutoSizeMode property. It uses BarcodeGenerator, AutoSizeMode, and image dimension properties, common tasks for developers needing precise barcode rendering for UI or printing scenarios. Suitable for search queries about barcode image sizing and verification.
+// Title: AutoSizeMode.Nearest Barcode Image Dimension Verification
+// Description: Demonstrates generating DataMatrix barcodes with Aspose.BarCode using AutoSizeMode.Nearest and verifies that the resulting image dimensions match the specified width and height.
+// Category-Description: This example belongs to the Aspose.BarCode image generation category, showcasing how to control barcode image size with AutoSizeMode, set pixel dimensions, and validate output. It uses BarcodeGenerator, AutoSizeMode, and image handling classes, typical for developers needing precise barcode sizing for UI or printing.
 // Prompt: Write unit tests that compare expected and actual image dimensions after applying AutoSizeMode.Nearest with given parameters.
-// Tags: barcode, code128, autosizemode, image-dimensions, aspose.barcode, generation, unit-test
+// Tags: datamatrix, autosizemode, image-dimensions, png, aspose.barcode, generation, testing
 
 using System;
 using System.IO;
@@ -12,86 +12,99 @@ using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates barcodes with AutoSizeMode.Nearest and verifies image dimensions.
+/// Example program that generates DataMatrix barcodes with specific pixel dimensions
+/// using <c>AutoSizeMode.Nearest</c> and validates the actual image size against the expected values.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Executes two dimension verification tests.
+    /// Entry point. Executes a series of dimension verification tests.
     /// </summary>
     static void Main()
     {
-        // Test 1: Verify a 300x100 pixel barcode
-        RunTest(
-            testName: "Test1",
-            codeText: "12345",
-            encodeType: EncodeTypes.Code128,
-            widthPixels: 300f,
-            heightPixels: 100f,
-            expectedWidth: 300,
-            expectedHeight: 100);
-
-        // Test 2: Verify a 250x150 pixel barcode
-        RunTest(
-            testName: "Test2",
-            codeText: "ABCDE",
-            encodeType: EncodeTypes.Code128,
-            widthPixels: 250f,
-            heightPixels: 150f,
-            expectedWidth: 250,
-            expectedHeight: 150);
+        // Define test cases: expected width, expected height, XDimension in pixels
+        RunTest("Test1", 300, 300, 3);
+        RunTest("Test2", 200, 150, 2);
+        RunTest("Test3", 500, 400, 5);
     }
 
     /// <summary>
-    /// Generates a barcode with the specified parameters, applies AutoSizeMode.Nearest,
-    /// and compares the actual image dimensions to the expected values.
+    /// Generates a barcode image with the specified parameters, saves it temporarily,
+    /// and checks whether the actual bitmap dimensions match the expected ones.
     /// </summary>
     /// <param name="testName">Identifier for the test case.</param>
-    /// <param name="codeText">Text to encode in the barcode.</param>
-    /// <param name="encodeType">Symbology type (e.g., Code128).</param>
-    /// <param name="widthPixels">Target image width in pixels.</param>
-    /// <param name="heightPixels">Target image height in pixels.</param>
-    /// <param name="expectedWidth">Expected width of the generated image.</param>
-    /// <param name="expectedHeight">Expected height of the generated image.</param>
-    static void RunTest(string testName, string codeText, BaseEncodeType encodeType, float widthPixels, float heightPixels, int expectedWidth, int expectedHeight)
+    /// <param name="expectedWidth">Desired image width in pixels.</param>
+    /// <param name="expectedHeight">Desired image height in pixels.</param>
+    /// <param name="xDimensionPixels">X-dimension (module size) in pixels.</param>
+    static void RunTest(string testName, int expectedWidth, int expectedHeight, int xDimensionPixels)
     {
+        // Create a unique temporary folder for this test
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeTest_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
+        string barcodePath = Path.Combine(tempFolder, testName + ".png");
+
         try
         {
-            // Initialize the barcode generator with the chosen symbology and data
-            using (var generator = new BarcodeGenerator(encodeType, codeText))
+            // Initialize the barcode generator for DataMatrix symbology
+            using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, "ASPOSE"))
             {
-                // Configure AutoSizeMode to automatically adjust to the nearest size
+                // Configure auto‑size mode and explicit pixel dimensions
                 generator.Parameters.AutoSizeMode = AutoSizeMode.Nearest;
+                generator.Parameters.ImageWidth.Pixels = expectedWidth;
+                generator.Parameters.ImageHeight.Pixels = expectedHeight;
+                generator.Parameters.Barcode.XDimension.Pixels = xDimensionPixels;
 
-                // Set the desired image dimensions (in pixels)
-                generator.Parameters.ImageWidth.Pixels = widthPixels;
-                generator.Parameters.ImageHeight.Pixels = heightPixels;
-
-                // Generate the barcode image
+                // Generate the barcode bitmap
                 using (Bitmap bitmap = generator.GenerateBarCodeImage())
                 {
+                    // Save the bitmap to disk for optional visual verification
+                    using (FileStream fs = new FileStream(barcodePath, FileMode.Create, FileAccess.Write))
+                    {
+                        bitmap.Save(fs, ImageFormat.Png);
+                    }
+
+                    // Retrieve actual dimensions from the generated bitmap
                     int actualWidth = bitmap.Width;
                     int actualHeight = bitmap.Height;
 
+                    // Compare actual dimensions with expected values
                     bool widthMatch = actualWidth == expectedWidth;
                     bool heightMatch = actualHeight == expectedHeight;
 
                     if (widthMatch && heightMatch)
                     {
-                        Console.WriteLine($"{testName}: PASSED (Width={actualWidth}, Height={actualHeight})");
+                        Console.WriteLine($"{testName}: PASS (Width={actualWidth}, Height={actualHeight})");
                     }
                     else
                     {
-                        Console.WriteLine($"{testName}: FAILED");
-                        Console.WriteLine($"  Expected Width={expectedWidth}, Height={expectedHeight}");
-                        Console.WriteLine($"  Actual   Width={actualWidth}, Height={actualHeight}");
+                        Console.WriteLine($"{testName}: FAIL (Expected Width={expectedWidth}, Height={expectedHeight}; Actual Width={actualWidth}, Height={actualHeight})");
                     }
                 }
             }
         }
         catch (Exception ex)
         {
+            // Report any unexpected exceptions during generation or validation
             Console.WriteLine($"{testName}: EXCEPTION - {ex.Message}");
+        }
+        finally
+        {
+            // Cleanup temporary files and folder
+            try
+            {
+                if (File.Exists(barcodePath))
+                {
+                    File.Delete(barcodePath);
+                }
+                if (Directory.Exists(tempFolder))
+                {
+                    Directory.Delete(tempFolder, true);
+                }
+            }
+            catch
+            {
+                // Ignored cleanup errors
+            }
         }
     }
 }

@@ -1,8 +1,8 @@
-// Title: Generate Code128 Barcode with Interpolation Mode at 150 DPI
-// Description: Demonstrates creating a Code128 barcode using Aspose.BarCode with interpolation auto‑size mode at 150 dpi, then reads the saved PNG to report its pixel dimensions.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, showcasing how to configure resolution and AutoSizeMode (Interpolation) for high‑quality output. It uses BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes, typical for developers needing precise control over barcode image size and DPI in automated reporting or printing pipelines.
+// Title: Generate DataMatrix barcode with interpolation at 150 DPI
+// Description: Demonstrates generating a DataMatrix barcode using Aspose.BarCode with interpolation auto‑size mode at 150 dpi, then saves it as a PNG image.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, showcasing how to configure AutoSizeMode, resolution, and image dimensions. It uses BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes—common tools for developers who need to produce high‑quality barcodes for printing or digital display while evaluating DPI settings.
 // Prompt: Test barcode generation with Interpolation mode at 150 dpi to confirm distortion thresholds before recommending higher DPI.
-// Tags: barcode, code128, generation, png, interpolation, resolution, aspose.barcode, aspose.drawing
+// Tags: datamatrix, barcode generation, interpolation, dpi, png, aspose.barcode, autosizemode
 
 using System;
 using System.IO;
@@ -12,55 +12,65 @@ using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates barcode generation with interpolation auto‑size mode at a specific DPI
-/// and reports the resulting image dimensions.
+/// Example program that creates a DataMatrix barcode using interpolation auto‑size mode at 150 dpi
+/// and writes the resulting PNG file to a temporary folder.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Calls the method that creates and tests the barcode.
+    /// Entry point. Generates the barcode, saves it, and outputs basic verification information.
     /// </summary>
     static void Main()
     {
-        // Generate a barcode with Interpolation mode at 150 dpi and report its pixel size.
-        GenerateAndTestBarcode();
-    }
-
-    /// <summary>
-    /// Creates a Code128 barcode, saves it as PNG using a fixed canvas and 150 dpi resolution,
-    /// then loads the image to display its actual pixel dimensions.
-    /// </summary>
-    static void GenerateAndTestBarcode()
-    {
-        // Prepare output path in the system's temporary folder.
-        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
-        Directory.CreateDirectory(outputDir);
-        string outputPath = Path.Combine(outputDir, "barcode_interpolation.png");
-
-        // Create a BarcodeGenerator for Code128 with sample text.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Test123"))
+        // --------------------------------------------------------------------
+        // Prepare output directory in the system temporary folder
+        // --------------------------------------------------------------------
+        string outputDir = Path.Combine(Path.GetTempPath(), "BarcodeInterpolationTest");
+        if (!Directory.Exists(outputDir))
         {
-            // Set the image resolution to 150 dpi.
-            generator.Parameters.Resolution = 150f;
-
-            // Use Interpolation auto‑size mode with a fixed canvas.
-            generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
-
-            // Define a fixed canvas size (points). These values are arbitrary for the demo.
-            generator.Parameters.ImageWidth.Point = 300f;
-            generator.Parameters.ImageHeight.Point = 150f;
-
-            // Save the barcode image to a file in PNG format.
-            generator.Save(outputPath, BarCodeImageFormat.Png);
+            Directory.CreateDirectory(outputDir);
         }
 
-        // Load the saved image to obtain its actual pixel dimensions.
-        using (var bitmap = new Bitmap(outputPath))
+        // Full path for the generated PNG image
+        string barcodePath = Path.Combine(outputDir, "barcode_interpolation_150dpi.png");
+
+        // --------------------------------------------------------------------
+        // Generate barcode with Interpolation auto‑size mode at 150 dpi
+        // --------------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, "ASPOSE"))
         {
-            Console.WriteLine($"Barcode saved to: {outputPath}");
-            Console.WriteLine($"Image dimensions (pixels): Width = {bitmap.Width}, Height = {bitmap.Height}");
-            Console.WriteLine($"Resolution used: 150 dpi (set via Parameters.Resolution)");
-            Console.WriteLine("If the barcode appears distorted, consider increasing the DPI.");
+            // Set auto‑size mode to use interpolation for scaling
+            generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
+
+            // Define resolution (dots per inch)
+            generator.Parameters.Resolution = 150f;
+
+            // Set explicit image dimensions (pixels)
+            generator.Parameters.ImageWidth.Pixels = 300f;
+            generator.Parameters.ImageHeight.Pixels = 300f;
+
+            // Define module size for the DataMatrix barcode
+            generator.Parameters.Barcode.XDimension.Pixels = 3f;
+
+            // Save the barcode as a PNG file
+            generator.Save(barcodePath, BarCodeImageFormat.Png);
+        }
+
+        // --------------------------------------------------------------------
+        // Verify that the image was saved and display its properties
+        // --------------------------------------------------------------------
+        if (File.Exists(barcodePath))
+        {
+            using (var bitmap = new Bitmap(barcodePath))
+            {
+                Console.WriteLine($"Barcode generated at: {barcodePath}");
+                Console.WriteLine($"Image dimensions (pixels): Width = {bitmap.Width}, Height = {bitmap.Height}");
+                Console.WriteLine("Resolution set to 150 dpi with Interpolation mode. Review the image for distortion before recommending higher DPI.");
+            }
+        }
+        else
+        {
+            Console.WriteLine("Failed to generate barcode image.");
         }
     }
 }

@@ -1,8 +1,8 @@
-// Title: Generate High‑Density DataMatrix Barcode with Reduced XDimension and BarWidthReduction
-// Description: Demonstrates how to create a high‑density DataMatrix barcode by decreasing the XDimension and disabling bar width reduction for optimal readability.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to configure barcode parameters such as XDimension and BarWidthReduction using the BarcodeGenerator class. Typical use cases include producing compact barcodes for limited space applications, where developers need fine‑tuned control over module size and visual clarity. The snippet shows saving the barcode as a PNG image, a common requirement for web and print integration.
+// Title: Generate High‑Density DataMatrix Barcode with Reduced XDimension
+// Description: Demonstrates creating a DataMatrix barcode with a smaller XDimension and enabled BarWidthReduction to achieve higher density and better readability.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to configure barcode parameters such as XDimension and BarWidthReduction using the BarcodeGenerator class. Typical use cases include producing compact barcodes for limited space labels or improving scan reliability after printing. Developers often need to adjust these settings when optimizing barcode size and quality.
 // Prompt: Produce a high‑density DataMatrix barcode by reducing XDimension and enabling BarWidthReduction for optimal readability.
-// Tags: datamatrix, barcode, high density, xdimension, barwidthreduction, png, aspose.barcode, generation
+// Tags: datamatrix, highdensity, xdimension, barwidthreduction, barcode, generation, png, aspose.barcode
 
 using System;
 using System.IO;
@@ -11,32 +11,42 @@ using Aspose.BarCode.Generation;
 
 /// <summary>
 /// Example program that generates a high‑density DataMatrix barcode
-/// with customized XDimension and BarWidthReduction settings.
+/// by reducing the XDimension and applying BarWidthReduction for
+/// improved readability after printing.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates and saves the barcode image.
+    /// Generates the barcode, saves it as a PNG file, and writes the output path to the console.
     /// </summary>
     static void Main()
     {
-        // Define the output file path for the generated barcode image
-        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "datamatrix.png");
+        // Determine the output directory relative to the current working directory.
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Output");
 
-        // Initialize a DataMatrix barcode generator with the desired text
-        using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, "HighDensity123"))
+        // Ensure the output directory exists.
+        if (!Directory.Exists(outputDir))
         {
-            // Reduce the module size (XDimension) to increase barcode density
-            generator.Parameters.Barcode.XDimension.Point = 0.5f;
+            Directory.CreateDirectory(outputDir);
+        }
 
-            // Disable bar width reduction to maintain readability at high density
-            generator.Parameters.Barcode.BarWidthReduction.Point = 0f;
+        // Build the full file path for the generated barcode image.
+        string outputPath = Path.Combine(outputDir, "HighDensityDataMatrix.png");
 
-            // Save the generated barcode as a PNG file
+        // Create a BarcodeGenerator for DataMatrix with the desired text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, "HighDensity"))
+        {
+            // Reduce XDimension to increase barcode density.
+            generator.Parameters.Barcode.XDimension.Pixels = 2f;
+
+            // Enable bar width reduction to improve readability after printing.
+            generator.Parameters.Barcode.BarWidthReduction.Pixels = 4f;
+
+            // Save the generated barcode as a PNG image.
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user where the barcode image has been saved
-        Console.WriteLine($"DataMatrix barcode saved to: {outputPath}");
+        // Inform the user where the barcode image was saved.
+        Console.WriteLine($"Barcode saved to: {outputPath}");
     }
 }

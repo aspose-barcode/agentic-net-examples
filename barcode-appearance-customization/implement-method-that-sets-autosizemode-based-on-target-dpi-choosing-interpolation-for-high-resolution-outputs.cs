@@ -1,33 +1,31 @@
-// Title: Set AutoSizeMode based on DPI for barcode generation
-// Description: Demonstrates how to configure a barcode generator's resolution and automatically select the appropriate AutoSizeMode, using interpolation for high‑resolution outputs.
-// Category-Description: This example belongs to the Aspose.BarCode image rendering category, illustrating the use of BarcodeGenerator, its Parameters, and AutoSizeMode settings. Developers often need to adjust DPI and scaling behavior when generating barcodes for print or high‑quality displays; this snippet shows typical configuration steps and saving the result as PNG.
+// Title: Set AutoSizeMode Based on Target DPI for Barcode Generation
+// Description: Demonstrates how to configure the AutoSizeMode of Aspose.BarCode's BarcodeGenerator according to the desired output DPI, using interpolation for high‑resolution images.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to adjust image scaling behavior via the AutoSizeMode property. It covers the use of BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes to produce barcodes at different resolutions. Developers often need to control scaling for print‑ready or screen‑display barcodes, making this pattern useful for high‑DPI output scenarios.
 // Prompt: Implement a method that sets AutoSizeMode based on target DPI, choosing Interpolation for high‑resolution outputs.
-// Tags: barcode, autosizemode, dpi, interpolation, generation, png, aspose.barcode
+// Tags: barcode, autosizemode, dpi, interpolation, generation, aspose.barcode
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates configuring AutoSizeMode based on DPI for barcode generation using Aspose.BarCode.
+/// Demonstrates configuring AutoSizeMode based on target DPI and generating barcodes at different resolutions.
 /// </summary>
 class Program
 {
-    // Configures the barcode generator's resolution and AutoSizeMode.
-    // For high‑resolution (DPI > 200) outputs, Interpolation mode is used.
+    /// <summary>
+    /// Sets the AutoSizeMode of the provided <see cref="BarcodeGenerator"/> according to the target DPI.
+    /// Uses <see cref="AutoSizeMode.Interpolation"/> for high‑resolution (≥300 DPI) outputs; otherwise disables auto‑sizing.
+    /// Also assigns the requested resolution to the generator parameters.
+    /// </summary>
+    /// <param name="generator">The barcode generator to configure.</param>
+    /// <param name="targetDpi">Desired output DPI.</param>
     static void ConfigureAutoSizeMode(BarcodeGenerator generator, float targetDpi)
     {
-        if (generator == null) throw new ArgumentNullException(nameof(generator));
-        if (targetDpi <= 0f) throw new ArgumentOutOfRangeException(nameof(targetDpi));
-
-        // Set the desired resolution (DPI).
-        generator.Parameters.Resolution = targetDpi;
-
-        // Choose AutoSizeMode based on DPI.
-        if (targetDpi > 200f)
+        // Choose interpolation for high‑resolution images, otherwise no auto‑sizing.
+        if (targetDpi >= 300f)
         {
             generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
         }
@@ -35,38 +33,51 @@ class Program
         {
             generator.Parameters.AutoSizeMode = AutoSizeMode.None;
         }
+
+        // Apply the target DPI to the generator.
+        generator.Parameters.Resolution = targetDpi;
     }
 
     /// <summary>
-    /// Entry point that creates a Code128 barcode, applies DPI‑based AutoSizeMode, and saves it as a PNG file.
+    /// Generates two barcode images—one high‑resolution and one low‑resolution—showcasing the AutoSizeMode configuration.
     /// </summary>
     static void Main()
     {
-        // Sample barcode data.
-        string codeText = "1234567890";
-
-        // Create a barcode generator for Code128.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+        // Prepare output directory.
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Output");
+        if (!Directory.Exists(outputDir))
         {
-            // Target DPI for the output image.
-            float targetDpi = 300f;
+            Directory.CreateDirectory(outputDir);
+        }
 
-            // Apply configuration (resolution and AutoSizeMode).
-            ConfigureAutoSizeMode(generator, targetDpi);
+        // -------------------- High‑resolution example (300 DPI) --------------------
+        float highDpi = 300f;
+        string highPath = Path.Combine(outputDir, $"barcode_{highDpi}dpi.png");
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "ASPOSE_HIGH"))
+        {
+            // Configure generator for high DPI.
+            ConfigureAutoSizeMode(generator, highDpi);
+            generator.Parameters.ImageWidth.Pixels = 400f;
+            generator.Parameters.ImageHeight.Pixels = 150f;
 
-            // Define output path.
-            string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "barcode.png");
+            // Save the barcode image.
+            generator.Save(highPath, BarCodeImageFormat.Png);
+            Console.WriteLine($"Saved high‑resolution barcode to {highPath} with AutoSizeMode {generator.Parameters.AutoSizeMode}");
+        }
 
-            // Ensure the directory exists.
-            Directory.CreateDirectory(Path.GetDirectoryName(outputPath));
+        // -------------------- Low‑resolution example (96 DPI) --------------------
+        float lowDpi = 96f;
+        string lowPath = Path.Combine(outputDir, $"barcode_{lowDpi}dpi.png");
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "ASPOSE_LOW"))
+        {
+            // Configure generator for low DPI.
+            ConfigureAutoSizeMode(generator, lowDpi);
+            generator.Parameters.ImageWidth.Pixels = 400f;
+            generator.Parameters.ImageHeight.Pixels = 150f;
 
-            // Save the barcode image as PNG.
-            generator.Save(outputPath, BarCodeImageFormat.Png);
-
-            // Output diagnostic information.
-            Console.WriteLine($"Barcode saved to: {outputPath}");
-            Console.WriteLine($"Resolution set to {generator.Parameters.Resolution} DPI");
-            Console.WriteLine($"AutoSizeMode set to {generator.Parameters.AutoSizeMode}");
+            // Save the barcode image.
+            generator.Save(lowPath, BarCodeImageFormat.Png);
+            Console.WriteLine($"Saved low‑resolution barcode to {lowPath} with AutoSizeMode {generator.Parameters.AutoSizeMode}");
         }
     }
 }

@@ -1,48 +1,52 @@
-// Title: Generate High‑Resolution PNG Barcode with Interpolation AutoSizeMode
-// Description: Demonstrates how to configure Aspose.BarCode to produce a high‑resolution PNG barcode using Interpolation auto‑size mode and fixed image dimensions.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category. It showcases the use of BarcodeGenerator, EncodeTypes, and BarCodeImageFormat to create barcodes suitable for printing, scanning, and embedding in documents. Developers often need to control resolution, image size, and scaling behavior to meet quality and layout requirements.
+// Title: Generate High‑Resolution PNG DataMatrix Barcode with Interpolation AutoSizeMode
+// Description: Demonstrates how to configure AutoSizeMode to Interpolation, set image dimensions and resolution, and save a high‑resolution PNG barcode using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode image generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and parameter settings such as AutoSizeMode, ImageWidth, ImageHeight, and Resolution. Developers commonly need to produce high‑quality barcodes for print media, packaging, or digital documents, and this snippet shows the typical API calls required.
 // Prompt: Configure AutoSizeMode to Interpolation, set ImageWidth and ImageHeight, and generate a high‑resolution PNG barcode.
-// Tags: barcode, code128, highresolution, png, autosizemode, interpolation, aspose.barcode
+// Tags: datamatrix, barcode generation, high resolution, png, autosizemode, interpolation, aspose.barcode
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates a high‑resolution PNG barcode using Aspose.BarCode.
+/// Demonstrates generating a high‑resolution PNG DataMatrix barcode with interpolation auto‑size mode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Creates a Code128 barcode with specified resolution,
-    /// auto‑size mode, and image dimensions, then saves it as a PNG file.
+    /// Entry point. Creates output folder, configures barcode generator, and saves the image.
     /// </summary>
     static void Main()
     {
-        // Define the full path for the output PNG file in the current working directory.
-        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "high_res_barcode.png");
+        // Define a temporary directory for the output file.
+        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
+        Directory.CreateDirectory(outputDir);
 
-        // Initialize a BarcodeGenerator for the Code128 symbology with sample data.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
+        // Build the full path for the generated PNG barcode.
+        string outputPath = Path.Combine(outputDir, "HighResBarcode.png");
+
+        // Initialize the barcode generator for a DataMatrix symbology with the desired text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, "ASPOSE"))
         {
-            // Set the desired resolution (dots per inch) for high‑quality output.
-            generator.Parameters.Resolution = 300f;
-
-            // Configure the auto‑size mode to use interpolation scaling.
+            // Set auto‑size mode to use interpolation for smoother scaling.
             generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
 
-            // Specify fixed image dimensions in pixels (width x height).
-            generator.Parameters.ImageWidth.Pixels = 2400f;   // Width: 2400 pixels
-            generator.Parameters.ImageHeight.Pixels = 1200f; // Height: 1200 pixels
+            // Define the target image dimensions in pixels.
+            generator.Parameters.ImageWidth.Pixels = 1200f;
+            generator.Parameters.ImageHeight.Pixels = 1200f;
 
-            // Save the generated barcode as a PNG image at the defined path.
+            // Adjust the X‑dimension (module size) for better visual quality.
+            generator.Parameters.Barcode.XDimension.Pixels = 3f;
+
+            // Set the output resolution (DPI) for high‑resolution printing.
+            generator.Parameters.Resolution = 300f;
+
+            // Save the barcode as a PNG file.
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user where the barcode image has been saved.
-        Console.WriteLine($"Barcode image saved to: {outputPath}");
+        // Inform the user where the barcode image was saved.
+        Console.WriteLine($"Barcode saved to: {outputPath}");
     }
 }

@@ -1,56 +1,49 @@
 // Title: Set Individual Padding for a DataMatrix Barcode
 // Description: Demonstrates how to specify left, top, right, and bottom padding values for a DataMatrix barcode using Aspose.BarCode and save it as a PNG image.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating layout customization of barcodes. It shows how to use the BarcodeGenerator class with EncodeTypes.DataMatrix, adjust padding via the Parameters.Barcode.Padding properties, and render the result to a Bitmap for saving. Developers frequently need to fine‑tune barcode positioning within documents or UI layouts, and this snippet provides a concise reference for those common tasks.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and barcode parameter settings such as Padding and XDimension. Developers often need to control barcode layout within images for precise positioning in documents, labels, or UI components. The snippet shows typical API usage for creating, configuring, and exporting barcodes.
 // Prompt: Specify individual left, top, right, and bottom paddings to align a DataMatrix barcode within a layout.
-// Tags: datamatrix, padding, png, barcodegenerator, bitmap
+// Tags: datamatrix, padding, barcode-generation, png, aspose.barcode, image-output
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates setting individual padding values for a DataMatrix barcode and saving it as a PNG file.
+/// Generates a DataMatrix barcode with custom padding on each side and saves it as a PNG file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a DataMatrix barcode with custom padding and writes the image to disk.
+    /// Entry point of the example. Creates the output directory, configures barcode padding,
+    /// optionally sets the module size, and writes the image to disk.
     /// </summary>
     static void Main()
     {
-        // Text to encode in the DataMatrix barcode
-        string codeText = "ABC123";
+        // Define a temporary folder for the generated image
+        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
+        Directory.CreateDirectory(outputDir);
 
-        // Determine the output file path in the current working directory
-        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "DataMatrix.png");
+        // Full path for the resulting PNG file
+        string outputPath = Path.Combine(outputDir, "DataMatrixPadding.png");
 
-        // Initialize the barcode generator for the DataMatrix symbology
-        using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, codeText))
+        // Initialize the barcode generator for a DataMatrix symbology with sample data
+        using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, "1234567890"))
         {
-            // Configure individual padding values (points)
-            generator.Parameters.Barcode.Padding.Left.Point = 5f;
-            generator.Parameters.Barcode.Padding.Top.Point = 10f;
-            generator.Parameters.Barcode.Padding.Right.Point = 5f;
-            generator.Parameters.Barcode.Padding.Bottom.Point = 10f;
+            // Set individual paddings (in points) for precise alignment
+            generator.Parameters.Barcode.Padding.Left.Point = 10f;
+            generator.Parameters.Barcode.Padding.Top.Point = 5f;
+            generator.Parameters.Barcode.Padding.Right.Point = 15f;
+            generator.Parameters.Barcode.Padding.Bottom.Point = 20f;
 
-            // Optional: set the module (X) dimension for the barcode
+            // Optional: define the size of a single module (pixel density)
             generator.Parameters.Barcode.XDimension.Point = 2f;
 
-            // Generate the barcode image as a Bitmap
-            using (Bitmap bitmap = generator.GenerateBarCodeImage())
-            {
-                // Save the Bitmap to a PNG file using a file stream
-                using (var stream = new FileStream(outputPath, FileMode.Create, FileAccess.Write))
-                {
-                    bitmap.Save(stream, ImageFormat.Png);
-                }
-            }
+            // Render and save the barcode image as PNG
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user where the image was saved
-        Console.WriteLine($"DataMatrix barcode saved to: {outputPath}");
+        // Inform the user where the file was saved
+        Console.WriteLine($"Barcode saved to: {outputPath}");
     }
 }
