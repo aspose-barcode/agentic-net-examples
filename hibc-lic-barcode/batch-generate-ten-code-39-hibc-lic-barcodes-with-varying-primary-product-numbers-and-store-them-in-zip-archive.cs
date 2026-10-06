@@ -1,78 +1,56 @@
-// Title: Batch generation of HIBC Code 39 LIC barcodes into a ZIP archive
-// Description: Demonstrates how to create ten HIBC Code 39 LIC barcodes with different product numbers using Aspose.BarCode and store them as PNG files in a zip file.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It showcases the use of ComplexBarcodeGenerator, HIBCLICPrimaryDataCodetext, and related classes to produce HIBC Code 39 LIC symbology. Typical use cases include batch creation of product identification labels for healthcare or logistics, where each barcode encodes unique primary product data. Developers often need to generate multiple barcodes programmatically and package them for distribution or archival.
-// Prompt: Batch generate ten Code 39 HIBC LIC barcodes with varying primary product numbers and store them in a zip archive.
-// Tags: barcode, code39, hibc, lic, batch, zip, png, aspose.barcode, complexbarcode
-
 using System;
 using System.IO;
 using System.IO.Compression;
-using Aspose.BarCode;
-using Aspose.BarCode.Generation;
+using System.Collections.Generic;
 using Aspose.BarCode.ComplexBarcode;
+using Aspose.BarCode.Generation;
 
-/// <summary>
-/// Generates a set of HIBC Code 39 LIC barcodes with unique product numbers
-/// and saves them as PNG images inside a ZIP archive.
-/// </summary>
 class Program
 {
-    /// <summary>
-    /// Entry point of the example. Creates ten barcodes, writes them to a zip file,
-    /// and outputs the location of the generated archive.
-    /// </summary>
     static void Main()
     {
-        // Define the output ZIP file path in the current working directory
-        string zipPath = Path.Combine(Directory.GetCurrentDirectory(), "HIBCLIC_Code39.zip");
+        // Create a unique temporary folder for barcode images
+        string tempFolder = Path.Combine(Path.GetTempPath(), "HIBCLICBatch_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
 
-        // Create a FileStream for the ZIP archive
-        using (FileStream zipFileStream = new FileStream(zipPath, FileMode.Create, FileAccess.Write, FileShare.None))
+        List<string> generatedFiles = new List<string>();
+
+        // Generate 10 HIBC Code 39 LIC barcodes with varying product numbers
+        for (int i = 1; i <= 10; i++)
         {
-            // Initialize the ZipArchive for adding entries
-            using (ZipArchive zipArchive = new ZipArchive(zipFileStream, ZipArchiveMode.Create, leaveOpen: false))
+            // Prepare primary data
+            HIBCLICPrimaryDataCodetext complexCodetext = new HIBCLICPrimaryDataCodetext();
+            complexCodetext.BarcodeType = EncodeTypes.HIBCCode39LIC;
+            complexCodetext.Data = new PrimaryData
             {
-                // Loop to generate ten barcodes with sequential product numbers
-                for (int i = 1; i <= 10; i++)
-                {
-                    // Prepare primary data codetext for the current barcode
-                    HIBCLICPrimaryDataCodetext complexCodetext = new HIBCLICPrimaryDataCodetext
-                    {
-                        BarcodeType = EncodeTypes.HIBCCode39LIC,
-                        Data = new PrimaryData
-                        {
-                            ProductOrCatalogNumber = $"PN{i:D4}",
-                            LabelerIdentificationCode = "A999",
-                            UnitOfMeasureID = 1
-                        }
-                    };
+                ProductOrCatalogNumber = $"P{i:D4}",
+                LabelerIdentificationCode = "A999",
+                UnitOfMeasureID = 1
+            };
 
-                    // Generate the barcode image in memory
-                    using (ComplexBarcodeGenerator generator = new ComplexBarcodeGenerator(complexCodetext))
-                    {
-                        // Set image resolution (pixel size of X-dimension)
-                        generator.Parameters.Barcode.XDimension.Pixels = 10;
+            string filePath = Path.Combine(tempFolder, $"HIBCLIC_Code39_{i}.png");
 
-                        // Save the generated barcode to a memory stream as PNG
-                        using (MemoryStream imageStream = new MemoryStream())
-                        {
-                            generator.Save(imageStream, BarCodeImageFormat.Png);
-                            imageStream.Position = 0; // Reset stream position for reading
+            // Generate and save barcode
+            using (ComplexBarcodeGenerator generator = new ComplexBarcodeGenerator(complexCodetext))
+            {
+                generator.Parameters.Barcode.XDimension.Pixels = 10;
+                generator.Save(filePath);
+            }
 
-                            // Create a new entry in the ZIP archive for this barcode image
-                            ZipArchiveEntry entry = zipArchive.CreateEntry($"barcode_{i:D2}.png");
-                            using (Stream entryStream = entry.Open())
-                            {
-                                // Copy the PNG data into the ZIP entry
-                                imageStream.CopyTo(entryStream);
-                            }
-                        }
-                    }
-                }
+            generatedFiles.Add(filePath);
+        }
+
+        // Create zip archive containing the generated barcodes
+        string zipPath = Path.Combine(Directory.GetCurrentDirectory(), "HIBCLIC_Code39_Batch.zip");
+        using (ZipArchive zip = ZipFile.Open(zipPath, ZipArchiveMode.Create))
+        {
+            foreach (string file in generatedFiles)
+            {
+                zip.CreateEntryFromFile(file, Path.GetFileName(file));
             }
         }
 
-        // Inform the user where the ZIP file has been saved
-        Console.WriteLine($"Generated 10 HIBC Code 39 LIC barcodes and saved to: {zipPath}");
+        Console.WriteLine($"Generated {generatedFiles.Count} barcodes in folder: {tempFolder}");
+        Console.WriteLine($"Zip archive created at: {zipPath}");
     }
 }

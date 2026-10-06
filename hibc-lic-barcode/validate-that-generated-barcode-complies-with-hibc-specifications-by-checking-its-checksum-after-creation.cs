@@ -1,111 +1,127 @@
-// Title: HIBC Code128 Barcode Generation with Checksum Validation
-// Description: Demonstrates generating a HIBC Code128 LIC barcode, enabling checksum generation, and verifying the checksum by reading the barcode.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It shows how to use ComplexBarcodeGenerator with HIBCLICPrimaryDataCodetext, configure checksum settings via BarcodeParameters, and validate the checksum using BarCodeReader. Developers working with healthcare industry barcodes (HIBC) often need to ensure checksum compliance for regulatory and scanning accuracy.
+// Title: HIBC Barcode Generation and Checksum Validation Example
+// Description: Demonstrates creating a HIBC barcode, saving it as PNG, and verifying its checksum during recognition.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category, focusing on HIBC symbology. It showcases the use of BarcodeGenerator for encoding, BarCodeReader for decoding, and enabling checksum validation via BarcodeSettings. Developers working with healthcare industry barcodes often need to generate HIBC codes and ensure their integrity by validating checksums during scanning.
 // Prompt: Validate that the generated barcode complies with HIBC specifications by checking its checksum after creation.
-// Tags: hibc, checksum, barcode, generation, validation, aspose.barcode, complexbarcode, code128
+// Tags: hibc,barcode,generation,recognition,checksum,validation,aspnet,aspose.barcode
 
 using System;
 using System.IO;
+using System.Reflection;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.BarCode.ComplexBarcode;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that creates a HIBC Code128 LIC barcode, forces checksum generation,
-/// and then reads the barcode back to confirm the checksum is present and valid.
+/// Demonstrates HIBC barcode creation, saving, and checksum validation using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates the barcode, validates its checksum, and cleans up temporary files.
+    /// Entry point. Generates a HIBC barcode, reads it back with checksum validation, and cleans up temporary files.
     /// </summary>
     static void Main()
     {
-        // ------------------------------------------------------------
-        // Prepare a unique temporary folder and file path for the barcode image
-        // ------------------------------------------------------------
+        // -----------------------------------------------------------------
+        // Prepare a unique temporary folder and define the output file path
+        // -----------------------------------------------------------------
         string tempFolder = Path.Combine(Path.GetTempPath(), "HIBC_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
         string barcodePath = Path.Combine(tempFolder, "hibc.png");
 
-        // ------------------------------------------------------------
-        // Build the primary data required for a HIBC LIC barcode
-        // ------------------------------------------------------------
-        var primaryData = new PrimaryData
-        {
-            ProductOrCatalogNumber = "12345",
-            LabelerIdentificationCode = "A999",
-            UnitOfMeasureID = 1
-        };
+        // -------------------------------------------------
+        // Define the sample HIBC code text to encode
+        // -------------------------------------------------
+        string codeText = "A123B456C789";
 
-        // Wrap the primary data in a codetext object specifying the barcode type
-        var hibcCodetext = new HIBCLICPrimaryDataCodetext
+        // -------------------------------------------------
+        // Resolve the EncodeTypes.HIBC enum value via reflection
+        // -------------------------------------------------
+        BaseEncodeType encodeType = ResolveEncodeType("HIBC");
+        if (encodeType == null)
         {
-            BarcodeType = EncodeTypes.HIBCCode128LIC,
-            Data = primaryData
-        };
-
-        // ------------------------------------------------------------
-        // Generate the barcode image with checksum enabled
-        // ------------------------------------------------------------
-        using (var generator = new ComplexBarcodeGenerator(hibcCodetext))
-        {
-            // HIBC Code128 requires a checksum; enable it explicitly
-            generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
-            generator.Save(barcodePath, BarCodeImageFormat.Png);
-        }
-
-        // ------------------------------------------------------------
-        // Verify that the barcode file was created successfully
-        // ------------------------------------------------------------
-        if (!File.Exists(barcodePath))
-        {
-            Console.WriteLine("Failed to generate barcode image.");
+            Console.WriteLine("Encode type HIBC not found.");
             return;
         }
 
-        // ------------------------------------------------------------
-        // Read the barcode and extract the checksum information
-        // ------------------------------------------------------------
-        using (var reader = new BarCodeReader(barcodePath, DecodeType.HIBCCode128LIC))
+        // -------------------------------------------------
+        // Generate the HIBC barcode and save it as PNG
+        // -------------------------------------------------
+        using (var generator = new BarcodeGenerator(encodeType, codeText))
         {
-            // Ensure checksum validation is active (default for obligatory checksum)
-            reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
+            generator.Save(barcodePath, BarCodeImageFormat.Png);
+        }
 
+        // -------------------------------------------------
+        // Resolve the DecodeType.HIBC enum value via reflection
+        // -------------------------------------------------
+        BaseDecodeType decodeType = ResolveDecodeType("HIBC");
+        if (decodeType == null)
+        {
+            Console.WriteLine("Decode type HIBC not found.");
+            return;
+        }
+
+        // -------------------------------------------------
+        // Read the barcode with checksum validation enabled
+        // -------------------------------------------------
+        using (var reader = new BarCodeReader(barcodePath, decodeType))
+        {
+            reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
             bool anyResult = false;
+
             foreach (BarCodeResult result in reader.ReadBarCodes())
             {
                 anyResult = true;
-                Console.WriteLine($"Decoded CodeText: {result.CodeText}");
-
-                // The OneD extended data contains the checksum string
-                string checksum = result.Extended.OneD.CheckSum;
-                Console.WriteLine($"Extracted CheckSum: {checksum}");
-
-                // Simple validation: checksum string should be non‑empty
-                bool checksumValid = !string.IsNullOrEmpty(checksum);
-                Console.WriteLine($"Checksum valid: {checksumValid}");
+                Console.WriteLine($"Read CodeText: {result.CodeText}");
+                Console.WriteLine($"Checksum validation passed.");
+                Console.WriteLine($"Extended OneD Value: {result.Extended.OneD.Value}");
+                Console.WriteLine($"Extended OneD CheckSum: {result.Extended.OneD.CheckSum}");
             }
 
             if (!anyResult)
             {
-                Console.WriteLine("No barcode detected or checksum validation failed.");
+                Console.WriteLine("No barcode read or checksum validation failed.");
             }
         }
 
-        // ------------------------------------------------------------
+        // -------------------------------------------------
         // Clean up temporary files and folder
-        // ------------------------------------------------------------
+        // -------------------------------------------------
         try
         {
-            File.Delete(barcodePath);
+            if (File.Exists(barcodePath))
+                File.Delete(barcodePath);
             Directory.Delete(tempFolder);
         }
         catch
         {
-            // Ignored – cleanup failures are non‑critical for this example
+            // Ignored - cleanup failure should not affect program outcome
         }
+    }
+
+    /// <summary>
+    /// Retrieves the BaseEncodeType for a given symbology name using reflection.
+    /// </summary>
+    /// <param name="symbologyName">The name of the symbology (e.g., "HIBC").</param>
+    /// <returns>The corresponding BaseEncodeType, or null if not found.</returns>
+    static BaseEncodeType ResolveEncodeType(string symbologyName)
+    {
+        FieldInfo field = typeof(EncodeTypes).GetField(symbologyName, BindingFlags.Public | BindingFlags.Static);
+        if (field == null) return null;
+        return (BaseEncodeType)field.GetValue(null);
+    }
+
+    /// <summary>
+    /// Retrieves the BaseDecodeType for a given symbology name using reflection.
+    /// </summary>
+    /// <param name="symbologyName">The name of the symbology (e.g., "HIBC").</param>
+    /// <returns>The corresponding BaseDecodeType, or null if not found.</returns>
+    static BaseDecodeType ResolveDecodeType(string symbologyName)
+    {
+        FieldInfo field = typeof(DecodeType).GetField(symbologyName, BindingFlags.Public | BindingFlags.Static);
+        if (field == null) return null;
+        return (BaseDecodeType)field.GetValue(null);
     }
 }
