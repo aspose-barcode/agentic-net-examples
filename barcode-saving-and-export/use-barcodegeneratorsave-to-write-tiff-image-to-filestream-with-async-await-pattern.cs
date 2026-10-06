@@ -1,51 +1,41 @@
-// Title: Generate a Code128 barcode and save as TIFF using async FileStream
-// Description: Demonstrates creating a barcode with Aspose.BarCode, writing it to a TIFF file via an asynchronous FileStream using async/await.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to use BarcodeGenerator and BarCodeImageFormat to produce barcode images. Typical use cases include generating shipping labels, inventory tags, or QR codes for mobile apps. Developers often need to save barcodes to various image formats asynchronously for web or cloud services.
+// Title: Save barcode as TIFF using async FileStream
+// Description: Demonstrates generating a Code128 barcode and saving it as a TIFF image using Aspose.BarCode's BarcodeGenerator.Save method with async/await.
+// Category-Description: This example belongs to the Aspose.BarCode image generation category, showing how to create barcodes and write them to a file stream asynchronously. It highlights the use of BarcodeGenerator, EncodeTypes, BarCodeImageFormat, and the Save method, which developers commonly need when integrating barcode creation into web or desktop applications that require non‑blocking I/O.
 // Prompt: Use BarcodeGenerator.Save to write a TIFF image to a FileStream with async/await pattern.
-// Tags: barcode generation, code128, tiff, async, filestream, aspose.barcode
+// Tags: barcode, code128, tiff, async, await, filestream, aspose.barcode, image-generation
 
 using System;
 using System.IO;
 using System.Threading.Tasks;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generating a Code128 barcode and saving it as a TIFF image using an asynchronous file stream.
+/// Provides the entry point for the barcode generation example.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Asynchronously creates a barcode image and writes it to a temporary TIFF file.
+    /// Generates a Code128 barcode and saves it as a TIFF file asynchronously.
     /// </summary>
     /// <param name="args">Command‑line arguments (not used).</param>
-    /// <returns>A task that represents the asynchronous operation.</returns>
     static async Task Main(string[] args)
     {
-        // Define the barcode text and the output file location.
-        string codeText = "1234567890";
+        // Define the temporary output file path for the TIFF image.
         string outputPath = Path.Combine(Path.GetTempPath(), "barcode.tiff");
 
-        // Initialize the barcode generator for Code128 symbology.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+        // Create a FileStream for writing the barcode image.
+        using (FileStream fileStream = new FileStream(outputPath, FileMode.Create, FileAccess.Write, FileShare.None))
         {
-            // Optional: configure additional barcode parameters here.
-            // e.g., generator.Parameters.Barcode.XDimension.Point = 2f;
-
-            // Open a FileStream configured for asynchronous operations.
-            using (var fileStream = new FileStream(
-                outputPath,
-                FileMode.Create,
-                FileAccess.Write,
-                FileShare.None,
-                bufferSize: 4096,
-                useAsync: true))
+            // Initialize the BarcodeGenerator with Code128 symbology and the desired data.
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "12345678"))
             {
-                // The Save method is synchronous; wrap it in Task.Run to avoid blocking the async flow.
+                // Save the barcode image to the stream asynchronously using Task.Run to avoid blocking.
                 await Task.Run(() => generator.Save(fileStream, BarCodeImageFormat.Tiff));
             }
         }
 
-        // Inform the user where the barcode image was saved.
-        Console.WriteLine($"Barcode saved to: {outputPath}");
+        // Inform the user where the barcode image has been saved.
+        Console.WriteLine($"Barcode image saved to: {outputPath}");
     }
 }

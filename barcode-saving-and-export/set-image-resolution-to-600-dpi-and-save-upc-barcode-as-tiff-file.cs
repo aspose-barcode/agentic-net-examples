@@ -1,8 +1,8 @@
-// Title: Generate a UPC‑A barcode at 600 DPI and save as TIFF
-// Description: Demonstrates how to create a UPC‑A barcode, set the image resolution to 600 DPI, and save the result as a TIFF file using Aspose.BarCode.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category. It showcases the use of the BarcodeGenerator class together with EncodeTypes and BarCodeImageFormat to produce high‑resolution barcode images. Typical scenarios include printing barcodes on product packaging, labels, or documents where precise image quality is required. Developers often need to adjust resolution, select symbology, and choose an appropriate output format for downstream processing.
+// Title: Generate UPC‑A barcode at 600 DPI and save as TIFF
+// Description: Demonstrates creating a UPC‑A barcode, configuring the image resolution to 600 DPI, and saving the result as a TIFF file using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category. It showcases the BarcodeGenerator class together with EncodeTypes and BarCodeImageFormat to produce high‑resolution barcodes for product labeling, packaging, and print‑ready assets. Developers frequently need to adjust resolution for printing quality, select appropriate symbologies, and export to common image formats such as TIFF.
 // Prompt: Set image resolution to 600 DPI and save a UPC‑A barcode as a TIFF file.
-// Tags: upc-a, barcode, generation, tiff, resolution, aspose.barcode, aspose.barcode.generation
+// Tags: upc-a, barcode, generation, resolution, tiff, aspose.barcode, c#
 
 using System;
 using System.IO;
@@ -10,33 +10,31 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Example program that generates a UPC‑A barcode, configures a 600 DPI image resolution,
-/// and saves the barcode as a TIFF file.
+/// Example program that generates a UPC‑A barcode, sets a 600 DPI resolution,
+/// and saves the image as a TIFF file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates the output folder, generates the barcode,
-    /// sets the desired resolution, and writes the image to disk.
+    /// Entry point of the application.
     /// </summary>
-    static void Main()
+    /// <param name="args">Command‑line arguments (not used).</param>
+    static void Main(string[] args)
     {
-        // Prepare the output directory and file path
-        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Output");
-        Directory.CreateDirectory(outputDir);
-        string outputPath = Path.Combine(outputDir, "upc_a.tiff");
+        // Build the full path for the output TIFF file in the current directory.
+        string outputFile = Path.Combine(Directory.GetCurrentDirectory(), "upc_a_600dpi.tiff");
 
-        // Create a UPC‑A barcode generator with a valid 12‑digit code
+        // Create a BarcodeGenerator for the UPC‑A symbology with the specified data.
         using (var generator = new BarcodeGenerator(EncodeTypes.UPCA, "123456789012"))
         {
-            // Set the image resolution to 600 DPI
+            // Set the image resolution to 600 dots per inch.
             generator.Parameters.Resolution = 600f;
 
-            // Save the generated barcode as a TIFF image
-            generator.Save(outputPath, BarCodeImageFormat.Tiff);
+            // Save the generated barcode as a TIFF image to the output path.
+            generator.Save(outputFile, BarCodeImageFormat.Tiff);
         }
 
-        // Inform the user where the barcode image was saved
-        Console.WriteLine($"Barcode saved to: {outputPath}");
+        // Write the location of the saved barcode to the console.
+        Console.WriteLine($"UPC-A barcode saved to: {outputFile}");
     }
 }

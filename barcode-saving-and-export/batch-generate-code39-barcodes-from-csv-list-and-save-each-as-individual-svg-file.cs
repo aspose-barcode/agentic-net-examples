@@ -1,77 +1,79 @@
-// Title: Batch generation of Code39 barcodes from CSV to SVG files
-// Description: Demonstrates how to read a list of Code39 values from a CSV file, generate a barcode for each entry, and save the results as individual SVG images.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating the use of BarcodeGenerator with EncodeTypes.Code39. Typical use cases include bulk creation of barcodes for inventory, shipping labels, or product catalogs, where developers need to automate reading data sources and exporting vector graphics. The key API classes shown are BarcodeGenerator, EncodeTypes, and BarCodeImageFormat, commonly used for programmatic barcode creation and format selection.
+// Title: Batch generate Code39 barcodes from CSV and save as SVG
+// Description: Demonstrates reading a list of Code39 values from a CSV file and creating individual SVG barcode images using Aspose.BarCode.
+// Category-Description: This example belongs to the batch barcode generation category of Aspose.BarCode, showcasing how to use BarcodeGenerator with EncodeTypes.Code39 and BarCodeImageFormat.Svg to produce multiple barcode files from data sources. Typical scenarios include inventory labeling, bulk ticket creation, and automated document processing where developers need to export barcodes to vector formats. The pattern is common for reading input files (CSV, database) and iterating over records to generate visual barcode assets.
 // Prompt: Batch generate Code39 barcodes from a CSV list and save each as an individual SVG file.
-// Tags: code39, barcode, generation, svg, aspose.barcode
+// Tags: code39, barcode, batch, csv, svg, generation, aspose.barcode
 
 using System;
 using System.IO;
 using System.Text;
+using System.Collections.Generic;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Example program that reads Code39 values from a CSV file,
-/// generates a barcode for each value, and saves each barcode as an SVG file.
+/// Example program that reads Code39 values from a CSV file and generates individual SVG barcode files.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
+    /// Entry point. Creates a temporary CSV, reads each line, and saves a Code39 SVG barcode for each entry.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary working directory for the demo files.
-        string workDir = Path.Combine(Path.GetTempPath(), "Code39Batch_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(workDir);
+        // Create a unique temporary folder for output SVG files
+        string outputFolder = Path.Combine(Path.GetTempPath(), "Barcodes_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputFolder);
 
-        // Prepare a sample CSV file containing the code texts to be encoded.
-        string csvPath = Path.Combine(workDir, "codes.csv");
-        string[] sampleCodes = new string[] { "ABC123", "XYZ789", "CODE39", "HELLO-WORLD", "12345" };
-        File.WriteAllLines(csvPath, sampleCodes);
-
-        // Create an output folder where the generated SVG files will be stored.
-        string outputDir = Path.Combine(workDir, "Output");
-        Directory.CreateDirectory(outputDir);
-
-        // Verify that the CSV file exists before attempting to read it.
-        if (!File.Exists(csvPath))
+        // Create a temporary CSV file with sample Code39 values
+        string csvPath = Path.Combine(outputFolder, "codes.csv");
+        var sampleCodes = new List<string> { "ABC123", "12345", "HELLO", "CODE39", "TEST123" };
+        using (var writer = new StreamWriter(csvPath, false, Encoding.UTF8))
         {
-            Console.WriteLine("CSV file not found.");
-            return;
-        }
-
-        // Read all lines from the CSV file.
-        string[] lines = File.ReadAllLines(csvPath);
-        foreach (string rawLine in lines)
-        {
-            // Trim whitespace and skip empty lines.
-            string codeText = rawLine.Trim();
-            if (string.IsNullOrEmpty(codeText))
-                continue;
-
-            // Generate a Code39 barcode for the current text and save it as an SVG file.
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code39))
+            foreach (var code in sampleCodes)
             {
-                // Assign the code text using UTF-8 encoding.
-                generator.SetCodeText(codeText, Encoding.UTF8);
-
-                // Build the full path for the output SVG file.
-                string outputPath = Path.Combine(outputDir, $"{codeText}.svg");
-                try
-                {
-                    // Save the barcode image in SVG format.
-                    generator.Save(outputPath, BarCodeImageFormat.Svg);
-                    Console.WriteLine($"Saved barcode for '{codeText}' to '{outputPath}'.");
-                }
-                catch (Exception ex)
-                {
-                    // Handle potential licensing or format restrictions.
-                    Console.WriteLine($"Failed to save barcode for '{codeText}': {ex.Message}");
-                }
+                writer.WriteLine(code);
             }
         }
 
-        Console.WriteLine("Batch barcode generation completed.");
+        // Read the CSV and generate an SVG barcode for each entry
+        using (var reader = new StreamReader(csvPath, Encoding.UTF8))
+        {
+            int index = 0;
+            while (!reader.EndOfStream)
+            {
+                string line = reader.ReadLine();
+                if (string.IsNullOrWhiteSpace(line))
+                    continue; // Skip empty lines
+
+                // Assume the first column contains the code text
+                string[] parts = line.Split(',');
+                string codeText = parts[0].Trim();
+                if (string.IsNullOrEmpty(codeText))
+                    continue; // Skip lines without a code
+
+                // Build a safe file name for the SVG output
+                string safeFileName = $"barcode_{index}_{codeText}.svg";
+                string outputPath = Path.Combine(outputFolder, safeFileName);
+
+                try
+                {
+                    // Initialize the barcode generator for Code39
+                    var generator = new BarcodeGenerator(EncodeTypes.Code39);
+                    generator.SetCodeText(codeText, Encoding.UTF8);
+                    // Save the barcode as an SVG file
+                    generator.Save(outputPath, BarCodeImageFormat.Svg);
+                    Console.WriteLine($"Generated: {outputPath}");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error generating barcode for '{codeText}': {ex.Message}");
+                }
+
+                index++;
+            }
+        }
+
+        Console.WriteLine($"All barcodes saved to: {outputFolder}");
     }
 }

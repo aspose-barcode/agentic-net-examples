@@ -1,8 +1,8 @@
-// Title: Batch overlay barcode onto images and save as BMP
-// Description: Demonstrates generating a Code128 barcode for each input image, overlaying it onto the image, and saving the combined result as a BMP file.
-// Category-Description: This example belongs to the Aspose.BarCode image processing category, showcasing how to use BarcodeGenerator (Aspose.BarCode.Generation) together with Aspose.Drawing to create barcodes, overlay them on existing images, and export the final composition. Typical use cases include batch labeling of product photos, adding QR or linear barcodes to documents, and preparing assets for printing or archival. Developers often need to automate barcode generation, manipulate graphics, and handle multiple file formats in bulk.
+// Title: Batch overlay of barcodes onto images and save as BMP
+// Description: Demonstrates how to batch‑process image files, overlay each with a Code128 barcode, and store the results in BMP format.
+// Category-Description: This example belongs to the Aspose.BarCode image manipulation category, showcasing the use of BarcodeGenerator, Bitmap, and Graphics classes to embed barcodes onto existing images. Typical use cases include batch labeling, document stamping, and automated asset tagging where developers need to programmatically add barcodes to multiple images.
 // Prompt: Batch process image files, overlay each with a generated barcode, and save the results as BMP.
-// Tags: barcode, code128, overlay, batch processing, bmp, aspose.barcode, aspose.drawing, image processing
+// Tags: code128, overlay, bmp, barcodegenerator, bitmap, aspose.barcode, aspose.drawing
 
 using System;
 using System.IO;
@@ -13,103 +13,102 @@ using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Provides a console application that batch processes images, adds a generated barcode to each,
-/// and saves the resulting composition as BMP files.
+/// Demonstrates batch processing of images by overlaying a generated barcode onto each image and saving the result as BMP.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Creates temporary input/output folders, generates sample images,
-    /// overlays each with a Code128 barcode derived from the file name, and saves the results as BMP.
+    /// Entry point. Creates sample images, generates a barcode, overlays it, and writes the output files.
     /// </summary>
     static void Main()
     {
-        // Create dedicated temporary input and output folders
+        // Create temporary input and output folders for the batch operation
         string inputFolder = Path.Combine(Path.GetTempPath(), "BatchInput_" + Guid.NewGuid().ToString("N"));
         string outputFolder = Path.Combine(Path.GetTempPath(), "BatchOutput_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(inputFolder);
         Directory.CreateDirectory(outputFolder);
 
-        // Generate sample input images (PNG) for demonstration purposes
+        // Generate a few sample PNG images to act as input files
         List<string> inputFiles = new List<string>();
         for (int i = 1; i <= 3; i++)
         {
-            string filePath = Path.Combine(inputFolder, $"SampleImage{i}.png");
+            string filePath = Path.Combine(inputFolder, $"sample{i}.png");
             using (Bitmap bmp = new Bitmap(300, 200))
             {
                 using (Graphics g = Graphics.FromImage(bmp))
                 {
-                    // Fill background with a distinct color for each image
-                    g.Clear(i % 2 == 0 ? Color.LightBlue : Color.LightGreen);
+                    // Fill the image with a white background
+                    g.Clear(Aspose.Drawing.Color.White);
                 }
-                bmp.Save(filePath, ImageFormat.Png);
+
+                // Save the bitmap as a PNG file
+                using (FileStream fs = new FileStream(filePath, FileMode.Create, FileAccess.Write))
+                {
+                    bmp.Save(fs, ImageFormat.Png);
+                }
             }
             inputFiles.Add(filePath);
         }
 
-        // Process each image: overlay with a barcode and save as BMP
-        foreach (string imagePath in inputFiles)
+        // Process each image: overlay a barcode and save the result as BMP
+        foreach (string inputPath in inputFiles)
         {
-            if (!File.Exists(imagePath))
+            if (!File.Exists(inputPath))
             {
-                Console.WriteLine($"File not found: {imagePath}");
+                Console.WriteLine($"File not found: {inputPath}");
                 continue;
             }
 
             try
             {
-                // Load the original image from file
-                using (Bitmap baseImage = (Bitmap)Image.FromFile(imagePath))
+                // Load the base image onto which the barcode will be drawn
+                using (Bitmap baseImage = new Bitmap(inputPath))
                 {
-                    // Prepare barcode text based on the image file name (without extension)
-                    string codeText = Path.GetFileNameWithoutExtension(imagePath);
-
-                    // Generate a Code128 barcode in memory
-                    using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+                    // Create a barcode generator for Code128 with sample data
+                    using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
                     {
-                        // Optional: adjust barcode dimensions
-                        generator.Parameters.Barcode.BarHeight.Point = 30f;
-                        generator.Parameters.Barcode.XDimension.Point = 1f;
+                        // Optional: adjust barcode appearance (e.g., X-dimension)
+                        generator.Parameters.Barcode.XDimension.Point = 2f;
 
-                        // Save barcode to a memory stream as PNG
-                        using (MemoryStream barcodeStream = new MemoryStream())
+                        // Generate the barcode as a bitmap
+                        using (Bitmap barcodeImage = generator.GenerateBarCodeImage())
                         {
-                            generator.Save(barcodeStream, BarCodeImageFormat.Png);
-                            barcodeStream.Position = 0;
+                            // Calculate bottom‑right position with a 10‑pixel margin
+                            int x = baseImage.Width - barcodeImage.Width - 10;
+                            int y = baseImage.Height - barcodeImage.Height - 10;
+                            if (x < 0) x = 0;
+                            if (y < 0) y = 0;
 
-                            // Load the barcode image from the stream
-                            using (Bitmap barcodeBmp = (Bitmap)Image.FromStream(barcodeStream))
+                            // Draw the barcode onto the base image
+                            using (Graphics graphics = Graphics.FromImage(baseImage))
                             {
-                                // Overlay the barcode onto the base image (bottom‑right corner with margin)
-                                using (Graphics graphics = Graphics.FromImage(baseImage))
-                                {
-                                    int x = baseImage.Width - barcodeBmp.Width - 10; // 10 px horizontal margin
-                                    int y = baseImage.Height - barcodeBmp.Height - 10; // 10 px vertical margin
-                                    graphics.DrawImage(barcodeBmp, x, y, barcodeBmp.Width, barcodeBmp.Height);
-                                }
+                                graphics.DrawImage(barcodeImage, x, y);
                             }
                         }
                     }
 
-                    // Save the combined image as BMP in the output folder
-                    string outputPath = Path.Combine(outputFolder, Path.GetFileNameWithoutExtension(imagePath) + ".bmp");
-                    baseImage.Save(outputPath, ImageFormat.Bmp);
+                    // Build the output file path and save the combined image as BMP
+                    string outputPath = Path.Combine(outputFolder, Path.GetFileNameWithoutExtension(inputPath) + "_with_barcode.bmp");
+                    using (FileStream outStream = new FileStream(outputPath, FileMode.Create, FileAccess.Write))
+                    {
+                        baseImage.Save(outStream, ImageFormat.Bmp);
+                    }
+
                     Console.WriteLine($"Processed and saved: {outputPath}");
                 }
             }
             catch (ArgumentException ex)
             {
-                // Handles image loading failures or other argument issues
-                Console.WriteLine($"Skipping file due to error: {imagePath}. Details: {ex.Message}");
+                // Handle cases where the input file cannot be loaded as an image
+                Console.WriteLine($"Skipping file due to load error: {inputPath}. Message: {ex.Message}");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Unexpected error processing {imagePath}: {ex.Message}");
+                // General error handling for unexpected issues
+                Console.WriteLine($"Error processing file {inputPath}: {ex.Message}");
             }
         }
 
-        // Cleanup: (optional) delete temporary folders if desired
-        // Directory.Delete(inputFolder, true);
-        // Directory.Delete(outputFolder, true);
+        Console.WriteLine("Batch processing completed.");
     }
 }

@@ -1,8 +1,8 @@
-// Title: Generate QR barcode with transparent background saved as PNG
-// Description: Demonstrates creating a QR code barcode with a transparent background and exporting it to a PNG file that retains the alpha channel.
-// Category-Description: This example belongs to the Aspose.BarCode image generation category, illustrating how to configure barcode appearance using the BarcodeGenerator class, set background colors, and save images in formats that support transparency such as PNG. Developers often need to embed barcodes into UI designs or documents where the background must blend with surrounding content, so controlling the alpha channel is essential.
+// Title: Generate Code128 barcode with transparent background and save as PNG
+// Description: Demonstrates how to create a Code128 barcode, set its background to transparent, and export it as a PNG image that retains the alpha channel.
+// Category-Description: This example belongs to the Aspose.BarCode image generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and BarCodeImageFormat to produce barcodes with custom visual properties. Typical scenarios include creating graphics for web pages or UI elements where a transparent background is required. Developers often need to control colors, formats, and image settings when integrating barcodes into applications.
 // Prompt: Produce a barcode with transparent background and export it as PNG preserving the alpha channel.
-// Tags: qr, barcode, transparent background, png, alpha channel, aspose.barcode, image generation
+// Tags: code128, barcode generation, png, transparent background, aspose.barcode, aspose.drawing
 
 using System;
 using System.IO;
@@ -12,44 +12,30 @@ using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that creates a QR code with a transparent background
+/// Example program that generates a Code128 barcode with a transparent background
 /// and saves it as a PNG image preserving the alpha channel.
 /// </summary>
 class Program
 {
     /// <summary>
     /// Entry point of the application.
-    /// Generates the barcode, configures colors, and writes the PNG file.
     /// </summary>
     static void Main()
     {
-        // Define the data to encode in the QR code.
-        string codeText = "https://example.com";
+        // Define the output file path in the system's temporary folder.
+        string outputPath = Path.Combine(Path.GetTempPath(), "BarcodeTransparent.png");
 
-        // Build a temporary file path for the output PNG.
-        string outputPath = Path.Combine(Path.GetTempPath(), "transparent_barcode.png");
-
-        // Ensure the target directory exists before saving.
-        string outputDir = Path.GetDirectoryName(outputPath);
-        if (!Directory.Exists(outputDir))
+        // Initialize the barcode generator with the desired symbology (Code128) and data.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
         {
-            Directory.CreateDirectory(outputDir);
-        }
-
-        // Initialize the barcode generator with QR symbology and the specified text.
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, codeText))
-        {
-            // Set the background color to transparent so the PNG retains alpha.
+            // Configure the barcode's background color to be fully transparent.
             generator.Parameters.BackColor = Color.Transparent;
 
-            // Optionally set the barcode (foreground) color to black for contrast.
-            generator.Parameters.Barcode.BarColor = Color.Black;
-
-            // Save the generated barcode as a PNG file; PNG supports alpha transparency.
+            // Save the generated barcode as a PNG file, preserving the alpha channel.
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user where the file was saved.
+        // Inform the user where the barcode image has been saved.
         Console.WriteLine($"Barcode saved to: {outputPath}");
     }
 }

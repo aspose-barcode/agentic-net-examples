@@ -1,8 +1,8 @@
-// Title: Generate a Code128 barcode with a custom background and save as GIF
-// Description: Demonstrates creating a Code128 barcode, applying a light gray background, and exporting it as a GIF image suitable for web usage.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to customize barcode appearance using the BarcodeGenerator class. Typical use cases include branding barcodes with corporate colors and producing web‑friendly image formats. Developers often need to adjust colors, select symbologies, and choose appropriate image formats for online deployment.
+// Title: Create a Code128 barcode with custom background color and save as GIF
+// Description: Demonstrates how to generate a Code128 barcode, apply a light gray background, and export it as a GIF image suitable for web pages.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating barcode creation, visual customization, and image format conversion. It uses BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes, common for developers who need to produce barcodes with specific styling and web‑friendly formats.
 // Prompt: Create a barcode with custom background color and export it as a GIF image for web use.
-// Tags: code128, background color, gif, barcode generation, aspose.barcode, aspose.drawing
+// Tags: code128, barcode generation, background color, gif, aspose.barcode, image export
 
 using System;
 using System.IO;
@@ -11,36 +11,30 @@ using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates a Code128 barcode with a custom background color
-/// and saves it as a GIF image, demonstrating basic Aspose.BarCode customization.
+/// Demonstrates creating a barcode with a custom background color and saving it as a GIF image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Creates the output directory, configures the barcode,
-    /// and writes the resulting GIF file to disk.
+    /// Entry point of the example. Generates a Code128 barcode, sets a light gray background,
+    /// saves it as a GIF file, and writes the output path to the console.
     /// </summary>
     static void Main()
     {
-        // Prepare output directory and file path
-        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Output");
-        Directory.CreateDirectory(outputDir);
-        string outputPath = Path.Combine(outputDir, "custom_bg_barcode.gif");
+        // Define the full path for the output GIF file
+        string outputFile = Path.Combine(Directory.GetCurrentDirectory(), "custom_background_barcode.gif");
 
-        // Create a barcode generator for Code128 with sample text
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
+        // Initialize the barcode generator with Code128 symbology and the desired data
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "12345678"))
         {
-            // Set custom background color (e.g., LightGray)
+            // Apply a custom light gray background color to the barcode image
             generator.Parameters.BackColor = Color.LightGray;
 
-            // Set bar (foreground) color if desired
-            generator.Parameters.Barcode.BarColor = Color.Black;
-
-            // Save the barcode as a GIF image suitable for web use
-            generator.Save(outputPath, BarCodeImageFormat.Gif);
+            // Save the generated barcode as a GIF image, ideal for web usage
+            generator.Save(outputFile, BarCodeImageFormat.Gif);
         }
 
-        // Inform the user where the barcode image was saved
-        Console.WriteLine($"Barcode saved to: {outputPath}");
+        // Inform the user where the barcode image has been saved
+        Console.WriteLine($"Barcode saved to: {outputFile}");
     }
 }
