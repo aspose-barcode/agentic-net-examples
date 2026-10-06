@@ -1,8 +1,8 @@
 // Title: Batch barcode generation and reading with confidence metrics
-// Description: Demonstrates generating multiple barcode images, storing them in a temporary folder, and reading them back to capture confidence and reading quality values for each file.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes and BarCodeReader for extracting information, including confidence and reading quality, from images. Typical scenarios include bulk processing of barcode assets, quality assessment, and automated verification in enterprise applications. Developers often need to batch‑process images, evaluate scan reliability, and handle various symbologies using the Aspose.BarCode API.
+// Description: Demonstrates generating multiple barcode images, storing them in a temporary folder, and reading each image to retrieve barcode type, text, confidence and reading quality.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes and BarCodeReader for extracting information, including confidence and reading quality, from images. Typical scenarios include bulk processing of barcode assets, quality assessment, and automated verification in inventory or logistics systems. Developers often need to handle multiple symbologies, manage temporary storage, and evaluate read reliability using these core API classes.
 // Prompt: Batch read multiple barcode images from a network share, capturing Confidence and ReadingQuality for each file.
-// Tags: barcode, batch, confidence, readingquality, generation, recognition, aspose.barcode, symbology
+// Tags: barcode, generation, recognition, confidence, readingquality, batch, aspose.barcode
 
 using System;
 using System.IO;
@@ -10,56 +10,58 @@ using System.Collections.Generic;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates creating a set of barcode images, reading them back, and reporting confidence and reading quality metrics.
+/// Generates a set of barcode images, reads them back, and displays confidence and reading quality metrics.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates barcodes, reads them, and outputs detailed results.
+    /// Entry point of the sample. Creates temporary barcode files, reads them, and outputs detailed results.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder for the batch operation
-        string batchFolder = Path.Combine(Path.GetTempPath(), "Batch_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(batchFolder);
+        // --------------------------------------------------------------------
+        // Create a unique temporary folder for the sample barcodes
+        // --------------------------------------------------------------------
+        string tempFolder = Path.Combine(Path.GetTempPath(), "Batch_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
 
-        // List to hold the full paths of generated barcode image files
-        List<string> barcodeFiles = new List<string>();
-
-        // Sample data: each tuple contains the symbology, the text to encode, and the target file name
-        var samples = new (BaseEncodeType encode, string text, string fileName)[]
+        // --------------------------------------------------------------------
+        // Define sample barcodes to generate (symbology, text, file name)
+        // --------------------------------------------------------------------
+        var samples = new List<(BaseEncodeType encodeType, string codeText, string fileName)>
         {
-            (EncodeTypes.Code128, "Sample128", "code128.png"),
+            (EncodeTypes.Code128, "SampleCode128", "code128.png"),
             (EncodeTypes.QR, "SampleQR", "qr.png"),
-            (EncodeTypes.DataMatrix, "DM12345", "datamatrix.png"),
-            (EncodeTypes.Pdf417, "PDF417Sample", "pdf417.png"),
-            (EncodeTypes.Aztec, "AztecSample", "aztec.png")
+            (EncodeTypes.DataMatrix, "SampleDM", "datamatrix.png"),
+            (EncodeTypes.Aztec, "SampleAztec", "aztec.png"),
+            (EncodeTypes.Pdf417, "SamplePdf417", "pdf417.png")
         };
 
-        // -----------------------------------------------------------------
-        // Generate barcode images and store their paths in the list
-        // -----------------------------------------------------------------
-        foreach (var sample in samples)
+        var generatedFiles = new List<string>();
+
+        // --------------------------------------------------------------------
+        // Generate barcode images and collect their file paths
+        // --------------------------------------------------------------------
+        foreach (var (encodeType, codeText, fileName) in samples)
         {
-            string filePath = Path.Combine(batchFolder, sample.fileName);
-            using (var generator = new BarcodeGenerator(sample.encode, sample.text))
+            string filePath = Path.Combine(tempFolder, fileName);
+            using (var generator = new BarcodeGenerator(encodeType, codeText))
             {
                 // Save each barcode as a PNG image
                 generator.Save(filePath, BarCodeImageFormat.Png);
             }
-            barcodeFiles.Add(filePath);
+            generatedFiles.Add(filePath);
         }
 
         Console.WriteLine("Batch barcode reading results:");
+        Console.WriteLine();
 
-        // -----------------------------------------------------------------
-        // Read each generated barcode image and display its properties
-        // -----------------------------------------------------------------
-        foreach (string file in barcodeFiles)
+        // --------------------------------------------------------------------
+        // Read each generated barcode and output Confidence and ReadingQuality
+        // --------------------------------------------------------------------
+        foreach (string file in generatedFiles)
         {
             if (!File.Exists(file))
             {
@@ -72,40 +74,41 @@ class Program
                 using (var reader = new BarCodeReader(file, DecodeType.AllSupportedTypes))
                 {
                     BarCodeResult[] results = reader.ReadBarCodes();
-
                     if (results.Length == 0)
                     {
                         Console.WriteLine($"No barcode detected in file: {Path.GetFileName(file)}");
-                        continue;
                     }
-
-                    foreach (BarCodeResult result in results)
+                    else
                     {
-                        Console.WriteLine($"File: {Path.GetFileName(file)}");
-                        Console.WriteLine($"  CodeType: {result.CodeTypeName}");
-                        Console.WriteLine($"  CodeText: {result.CodeText}");
-                        Console.WriteLine($"  Confidence: {result.Confidence}");
-                        Console.WriteLine($"  ReadingQuality: {result.ReadingQuality}");
+                        foreach (BarCodeResult result in results)
+                        {
+                            Console.WriteLine($"File: {Path.GetFileName(file)}");
+                            Console.WriteLine($"  CodeType: {result.CodeTypeName}");
+                            Console.WriteLine($"  CodeText: {result.CodeText}");
+                            Console.WriteLine($"  Confidence: {result.Confidence}");
+                            Console.WriteLine($"  ReadingQuality: {result.ReadingQuality}");
+                            Console.WriteLine();
+                        }
                     }
                 }
             }
             catch (ArgumentException ex)
             {
-                // Handles image loading failures (e.g., unsupported format)
+                // Handles image loading failures or unsupported formats
                 Console.WriteLine($"Failed to read file '{Path.GetFileName(file)}': {ex.Message}");
             }
         }
 
-        // -----------------------------------------------------------------
-        // Cleanup: delete the temporary folder and its contents
-        // -----------------------------------------------------------------
+        // --------------------------------------------------------------------
+        // Cleanup: delete temporary folder and its contents
+        // --------------------------------------------------------------------
         try
         {
-            Directory.Delete(batchFolder, true);
+            Directory.Delete(tempFolder, true);
         }
         catch
         {
-            // If cleanup fails, ignore – the OS will eventually remove the temp folder
+            // If deletion fails, ignore – folder may be in use or permission restricted
         }
     }
 }

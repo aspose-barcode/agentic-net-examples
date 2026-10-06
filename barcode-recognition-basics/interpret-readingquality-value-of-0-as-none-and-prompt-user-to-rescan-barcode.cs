@@ -1,6 +1,6 @@
-// Title: ReadingQuality Evaluation and Rescan Prompt for Code128 Barcode
-// Description: Demonstrates generating a Code128 barcode, reading it with Aspose.BarCode, and interpreting a ReadingQuality value of 0 as none, prompting the user to rescan.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator to create a barcode image and BarCodeReader to decode it. Developers often need to assess the ReadingQuality of scanned barcodes to decide whether a rescan is required, especially in automated data‑capture scenarios.
+// Title: Barcode generation, reading, and quality evaluation example
+// Description: Demonstrates creating a Code128 barcode image, reading it with Aspose.BarCode, and interpreting the ReadingQuality value to inform the user when the scan quality is none.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes and BarCodeReader for decoding them. Developers often need to generate barcodes for labeling, then read them back to verify data integrity and assess scan quality using BarCodeResult.ReadingQuality.
 // Prompt: Interpret a ReadingQuality value of 0 as none and prompt the user to rescan the barcode.
 // Tags: barcode symbology, generation, recognition, readingquality, code128, aspose.barcode
 
@@ -9,78 +9,57 @@ using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Example program that creates a Code128 barcode, reads it, and checks the reading quality.
+/// Provides a simple demonstration of barcode generation, reading, and quality assessment using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a barcode, reads it, and evaluates the <c>ReadingQuality</c>.
+    /// Entry point of the example. Generates a barcode, reads it, evaluates the reading quality, and cleans up temporary files.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder to store the barcode image.
+        // Create a temporary folder for the barcode image
         string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
+        string imagePath = Path.Combine(tempFolder, "barcode.png");
 
-        // Define the full path for the barcode image file.
-        string barcodePath = Path.Combine(tempFolder, "sample.png");
-
-        // Generate a simple Code128 barcode and save it as a PNG file.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Aspose123"))
+        // Generate a simple Code128 barcode image and save it as PNG
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
         {
-            generator.Save(barcodePath, BarCodeImageFormat.Png);
+            generator.Save(imagePath, BarCodeImageFormat.Png);
         }
 
-        // Verify that the barcode image was created successfully before attempting to read it.
-        if (!File.Exists(barcodePath))
-        {
-            Console.WriteLine("Failed to create barcode image.");
-            return;
-        }
-
-        // Read the barcode from the image file and evaluate its reading quality.
-        using (var reader = new BarCodeReader(barcodePath, DecodeType.Code128))
+        // Read the barcode from the generated image and evaluate its reading quality
+        using (var reader = new BarCodeReader(imagePath, DecodeType.Code128))
         {
             BarCodeResult[] results = reader.ReadBarCodes();
-
-            // If no barcodes were detected, inform the user and exit.
-            if (results.Length == 0)
-            {
-                Console.WriteLine("No barcode detected.");
-                return;
-            }
-
-            // Iterate through all detected barcodes (typically one in this example).
             foreach (BarCodeResult result in results)
             {
-                Console.WriteLine($"CodeType: {result.CodeTypeName}");
-                Console.WriteLine($"CodeText: {result.CodeText}");
-                Console.WriteLine($"ReadingQuality: {result.ReadingQuality}");
-
-                // Interpret a ReadingQuality of 0 as "none" and suggest a rescan.
                 if (result.ReadingQuality == 0)
                 {
+                    // ReadingQuality of 0 indicates no quality; prompt for a rescan
                     Console.WriteLine("Reading quality is none, please rescan the barcode.");
                 }
                 else
                 {
-                    Console.WriteLine("Barcode read successfully with acceptable quality.");
+                    Console.WriteLine($"Reading quality: {result.ReadingQuality}");
                 }
             }
         }
 
-        // Clean up temporary files (optional). Errors during cleanup are ignored.
+        // Clean up temporary files and directories
         try
         {
-            File.Delete(barcodePath);
-            Directory.Delete(tempFolder);
+            if (File.Exists(imagePath))
+                File.Delete(imagePath);
+            if (Directory.Exists(tempFolder))
+                Directory.Delete(tempFolder);
         }
         catch
         {
-            // Ignored: cleanup failures should not affect program flow.
+            // Ignore cleanup errors
         }
     }
 }

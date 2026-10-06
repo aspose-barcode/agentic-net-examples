@@ -1,78 +1,113 @@
-// Title: DataMatrix Barcode Reading Quality Extraction and CSV Storage
-// Description: Demonstrates how to generate DataMatrix barcodes, read them back, retrieve the ReadingQuality metric, and store the values in a CSV file (simulating database storage).
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator for creating DataMatrix symbols, BarCodeReader for decoding them, and the BarCodeResult.ReadingQuality property to assess scan quality. Developers working with barcode quality analysis, inventory systems, or automated data capture often need to extract such metrics for logging or database persistence.
+// Title: Access DataMatrix ReadingQuality and store results
+// Description: Demonstrates generating DataMatrix barcodes, reading each barcode's ReadingQuality property, and persisting the values to a JSON file (as a stand‑in for a database).
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It shows how to use BarcodeGenerator to create DataMatrix symbols, BarCodeReader to decode them, and BarCodeResult.ReadingQuality to evaluate scan quality. Developers working with barcode quality metrics, data capture validation, or database logging will find this pattern useful for integrating barcode reading results into storage systems.
 // Prompt: Access BarCodeResult.ReadingQuality for each DataMatrix barcode and store the numeric value in a database.
-// Tags: datamatrix,readingquality,barcode,recognition,generation,csv,aspnet,aspose.barcode
+// Tags: datamatrix, readingquality, barcode, generation, recognition, json, aspnet, aspnetcore, aspose.barcode
 
 using System;
 using System.IO;
 using System.Collections.Generic;
-using Aspose.BarCode;
+using System.Text.Json;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.BarCode;
 
 /// <summary>
-/// Demonstrates generating DataMatrix barcodes, reading them, extracting ReadingQuality, and saving results.
+/// Demonstrates generating DataMatrix barcodes, reading their quality metrics,
+/// and persisting the results (simulating database storage).
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example.
+    /// Entry point. Generates sample DataMatrix images, reads them to obtain
+    /// ReadingQuality values, and writes the collected data to a JSON file.
     /// </summary>
     static void Main()
     {
-        // Create a dedicated temporary folder for generated images and output CSV
-        string tempFolder = Path.Combine(Path.GetTempPath(), "DataMatrixDemo_" + Guid.NewGuid().ToString("N"));
+        // Create a temporary folder for sample DataMatrix images
+        string tempFolder = Path.Combine(Path.GetTempPath(), "DataMatrixSample_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
 
-        // Define sample texts to encode into DataMatrix barcodes
-        List<string> texts = new List<string>
+        // Sample data texts for DataMatrix barcodes
+        List<string> dataTexts = new List<string>
         {
             "Sample1",
-            "DataMatrixTest",
-            "1234567890"
+            "DataMatrix2",
+            "Test12345"
         };
 
         // Generate barcode images and collect their file paths
-        List<string> imageFiles = new List<string>();
-        foreach (string txt in texts)
+        List<string> imagePaths = new List<string>();
+        foreach (string text in dataTexts)
         {
-            string filePath = Path.Combine(tempFolder, txt + ".png");
-            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.DataMatrix, txt))
+            string imagePath = Path.Combine(tempFolder, $"{text}.png");
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.DataMatrix, text))
             {
-                // Set module size (pixel dimension) for better readability
+                // Optional: set XDimension for better visibility
                 generator.Parameters.Barcode.XDimension.Pixels = 4;
-                generator.Save(filePath, BarCodeImageFormat.Png);
+                generator.Save(imagePath, BarCodeImageFormat.Png);
             }
-            imageFiles.Add(filePath);
+            imagePaths.Add(imagePath);
         }
 
-        // Prepare CSV output (simulating database storage) with header row
-        string csvPath = Path.Combine(tempFolder, "ReadingQuality.csv");
-        File.WriteAllText(csvPath, "CodeText,ReadingQuality\r\n");
-
-        // Read each generated barcode, extract ReadingQuality, and append to CSV
-        foreach (string file in imageFiles)
+        // Read each barcode and collect ReadingQuality values
+        List<BarcodeRecord> records = new List<BarcodeRecord>();
+        foreach (string path in imagePaths)
         {
-            if (!File.Exists(file))
+            if (!File.Exists(path))
             {
-                Console.WriteLine($"File not found: {file}");
+                Console.WriteLine($"File not found: {path}");
                 continue;
             }
 
-            using (BarCodeReader reader = new BarCodeReader(file, DecodeType.DataMatrix))
+            using (BarCodeReader reader = new BarCodeReader(path, DecodeType.DataMatrix))
             {
                 foreach (BarCodeResult result in reader.ReadBarCodes())
                 {
                     double quality = result.ReadingQuality;
-                    string line = $"{result.CodeText},{quality}\r\n";
-                    File.AppendAllText(csvPath, line);
-                    Console.WriteLine($"Processed {result.CodeText}: Quality={quality}");
+                    records.Add(new BarcodeRecord
+                    {
+                        FilePath = path,
+                        ReadingQuality = quality
+                    });
+                    Console.WriteLine($"File: {Path.GetFileName(path)} | ReadingQuality: {quality}");
                 }
             }
         }
 
-        // Note: In a real application, replace the CSV file write with actual database insertion logic.
-        Console.WriteLine($"Reading qualities saved to: {csvPath}");
+        // Store results locally as JSON (substitute for a database)
+        string outputJson = Path.Combine(tempFolder, "ReadingQualityResults.json");
+        string json = JsonSerializer.Serialize(records, new JsonSerializerOptions { WriteIndented = true });
+        File.WriteAllText(outputJson, json);
+        Console.WriteLine($"Results saved to: {outputJson}");
+
+        // ----------------------------------------------------------------------
+        // Real database storage (e.g., SQL Server) would look like this:
+        // ----------------------------------------------------------------------
+        // using (var connection = new System.Data.SqlClient.SqlConnection("your-connection-string"))
+        // {
+        //     connection.Open();
+        //     foreach (var rec in records)
+        //     {
+        //         using (var command = new System.Data.SqlClient.SqlCommand(
+        //             "INSERT INTO BarcodeReadings (FilePath, ReadingQuality) VALUES (@path, @quality)", connection))
+        //         {
+        //             command.Parameters.AddWithValue("@path", rec.FilePath);
+        //             command.Parameters.AddWithValue("@quality", rec.ReadingQuality);
+        //             command.ExecuteNonQuery();
+        //         }
+        //     }
+        // }
+        // Note: The required NuGet package (System.Data.SqlClient) is not available in the snippet runner,
+        // so the example uses local JSON storage instead.
+    }
+
+    /// <summary>
+    /// Simple DTO for persisting barcode file path and its reading quality.
+    /// </summary>
+    class BarcodeRecord
+    {
+        public string FilePath { get; set; }
+        public double ReadingQuality { get; set; }
     }
 }

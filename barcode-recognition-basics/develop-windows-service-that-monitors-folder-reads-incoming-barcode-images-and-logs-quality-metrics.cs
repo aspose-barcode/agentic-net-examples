@@ -1,8 +1,8 @@
-// Title: Generate, Recognize, and Log Barcode Quality Metrics in a Temporary Folder
-// Description: This example creates several barcode images, reads them back with Aspose.BarCode, and records detection quality metrics to a log file.
-// Category-Description: Demonstrates core Aspose.BarCode operations—barcode generation (BarcodeGenerator), barcode recognition (BarCodeReader), and quality‑settings configuration. Typical for developers building scanning utilities, quality‑control pipelines, or services that need to validate barcode readability. The example shows how to produce PNG images, apply high‑quality recognition settings, and extract detailed region and quality information.
+// Title: Barcode Generation, Recognition, and Quality Logging Example
+// Description: Demonstrates generating multiple barcode images, recognizing them, and logging quality metrics to a file.
+// Category-Description: This example belongs to the Aspose.BarCode barcode processing category, showcasing the use of BarcodeGenerator for encoding, BarCodeReader for decoding, and QualitySettings for controlling recognition accuracy. Typical use cases include batch barcode creation, automated scanning pipelines, and quality analysis in manufacturing or logistics applications. Developers often need to generate barcodes, read them from images, and evaluate reading quality, which this sample illustrates.
 // Prompt: Develop a Windows service that monitors a folder, reads incoming barcode images, and logs quality metrics.
-// Tags: barcode generation, barcode recognition, quality metrics, png, aspose.barcode, aspose.drawing
+// Tags: barcode generation, barcode recognition, quality settings, aspose.barcode, qr, code128, datamatrix, logging
 
 using System;
 using System.IO;
@@ -14,49 +14,67 @@ using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates creating barcode images, recognizing them, and logging quality metrics.
+/// Demonstrates batch barcode creation, recognition, and quality logging using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the demo. Generates sample barcodes, reads them back, and writes a quality‑metrics log.
+    /// Entry point of the application. Generates sample barcodes, reads them back, and logs quality metrics.
     /// </summary>
-    /// <param name="args">Command‑line arguments (not used).</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Create a unique temporary folder for the demo files
-        string folder = Path.Combine(Path.GetTempPath(), "Barcodes_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(folder);
+        // --------------------------------------------------------------------
+        // 1. Create a dedicated temporary folder for generated images and logs.
+        // --------------------------------------------------------------------
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeBatch_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
 
-        // Define sample barcodes to generate (type, text, file name)
-        var samples = new List<(BaseEncodeType encode, string text, string fileName)>
+        // --------------------------------------------------------------
+        // 2. Prepare sample data: a list of barcode symbologies and texts.
+        // --------------------------------------------------------------
+        var samples = new List<(BaseEncodeType encode, string text)>
         {
-            (EncodeTypes.Code128, "Sample123", "code128.png"),
-            (EncodeTypes.QR, "https://example.com", "qr.png"),
-            (EncodeTypes.DataMatrix, "DM12345", "datamatrix.png")
+            (EncodeTypes.QR, "SampleQR123"),
+            (EncodeTypes.Code128, "CODE128ABC"),
+            (EncodeTypes.DataMatrix, "DMATRIX")
         };
 
-        var filePaths = new List<string>();
+        var generatedFiles = new List<string>();
 
-        // Generate barcode images and collect their file paths
-        foreach (var sample in samples)
+        // --------------------------------------------------------------
+        // 3. Generate barcode images for each sample and store file paths.
+        // --------------------------------------------------------------
+        for (int i = 0; i < samples.Count; i++)
         {
-            string path = Path.Combine(folder, sample.fileName);
-            using (var generator = new BarcodeGenerator(sample.encode, sample.text))
+            var (encode, text) = samples[i];
+            string filePath = Path.Combine(tempFolder, $"barcode_{i + 1}.png");
+
+            using (var generator = new BarcodeGenerator(encode, text))
             {
-                // Set X‑dimension for better visual quality
+                // Optional encoding parameters.
                 generator.Parameters.Barcode.XDimension.Point = 2f;
-                // Save as PNG
-                generator.Save(path, BarCodeImageFormat.Png);
+                generator.Parameters.Barcode.FilledBars = false;
+                generator.Parameters.Barcode.ThrowExceptionWhenCodeTextIncorrect = false;
+
+                // Save the generated barcode as PNG.
+                generator.Save(filePath, BarCodeImageFormat.Png);
             }
-            filePaths.Add(path);
+
+            generatedFiles.Add(filePath);
         }
 
-        // Path for the log file that will contain quality metrics
-        string logPath = Path.Combine(folder, "log.txt");
+        // --------------------------------------------------------------
+        // 4. Initialize a log file to capture processing details.
+        // --------------------------------------------------------------
+        string logPath = Path.Combine(tempFolder, "log.txt");
+        File.WriteAllText(logPath, $"Barcode processing started at {DateTime.Now}{Environment.NewLine}");
 
-        // Process each generated image: read, evaluate quality, and log results
-        foreach (var file in filePaths)
+        // --------------------------------------------------------------
+        // 5. Process each generated barcode image: read, evaluate quality, and log.
+        // --------------------------------------------------------------
+        BaseDecodeType decodeType = DecodeType.AllSupportedTypes;
+
+        foreach (string file in generatedFiles)
         {
             if (!File.Exists(file))
             {
@@ -64,46 +82,55 @@ class Program
                 continue;
             }
 
-            // Use all supported barcode types for recognition
-            BaseDecodeType decode = DecodeType.AllSupportedTypes;
-            using (var reader = new BarCodeReader(file, decode))
+            try
             {
-                // Configure high‑quality recognition settings
-                reader.QualitySettings = QualitySettings.HighQuality;
-                reader.QualitySettings.Deconvolution = DeconvolutionMode.Fast;
+                using (var reader = new BarCodeReader(file, decodeType))
+                {
+                    // Configure high‑quality recognition settings.
+                    reader.QualitySettings = QualitySettings.HighQuality;
+                    reader.QualitySettings.Deconvolution = DeconvolutionMode.Fast;
+                    reader.QualitySettings.BarcodeQuality = BarcodeQualityMode.Normal;
+                    reader.QualitySettings.AllowIncorrectBarcodes = true;
 
-                BarCodeResult[] results;
-                try
-                {
-                    // Attempt to read barcodes from the image
-                    results = reader.ReadBarCodes();
-                }
-                catch (ArgumentException)
-                {
-                    // Log image‑loading failures (e.g., unsupported format)
-                    File.AppendAllText(logPath, $"Failed to load image: {file}{Environment.NewLine}");
-                    continue;
-                }
+                    // Perform barcode detection.
+                    BarCodeResult[] results = reader.ReadBarCodes();
 
-                if (results.Length == 0)
-                {
-                    // No barcode detected – log the outcome
-                    File.AppendAllText(logPath, $"No barcode detected in {Path.GetFileName(file)}{Environment.NewLine}");
-                    continue;
-                }
+                    if (results.Length == 0)
+                    {
+                        File.AppendAllText(logPath, $"No barcode detected in file: {Path.GetFileName(file)}{Environment.NewLine}");
+                        continue;
+                    }
 
-                // Log details for each detected barcode
-                foreach (var result in results)
-                {
-                    var rect = result.Region.Rectangle;
-                    string line = $"File: {Path.GetFileName(file)}, CodeText: {result.CodeText}, Symbology: {result.CodeTypeName}, Quality: {result.ReadingQuality}, Region: X={rect.X}, Y={rect.Y}, W={rect.Width}, H={rect.Height}, Angle={result.Region.Angle}";
-                    Console.WriteLine(line);
-                    File.AppendAllText(logPath, line + Environment.NewLine);
+                    // Log each detected barcode with its quality metrics.
+                    foreach (var result in results)
+                    {
+                        string codeText = result.CodeText ?? string.Empty;
+                        string symbology = result.CodeTypeName ?? string.Empty;
+                        double quality = result.ReadingQuality;
+                        var rect = result.Region.Rectangle;
+                        double angle = result.Region.Angle;
+
+                        string entry = $"File: {Path.GetFileName(file)} | Text: {codeText} | Symbology: {symbology} | Quality: {quality:F2} | Region: X={rect.X}, Y={rect.Y}, W={rect.Width}, H={rect.Height} | Angle: {angle:F2}";
+                        Console.WriteLine(entry);
+                        File.AppendAllText(logPath, entry + Environment.NewLine);
+                    }
                 }
+            }
+            catch (ArgumentException ex) when (ex.Message.Contains("Image loading failed"))
+            {
+                // Specific handling for image loading failures.
+                File.AppendAllText(logPath, $"Failed to load image {Path.GetFileName(file)}: {ex.Message}{Environment.NewLine}");
+            }
+            catch (Exception ex)
+            {
+                // General error handling for unexpected issues.
+                File.AppendAllText(logPath, $"Unexpected error processing {Path.GetFileName(file)}: {ex.Message}{Environment.NewLine}");
             }
         }
 
-        // Inform the user where the log file is located
-        Console.WriteLine($"Log written to: {logPath}");
+        // --------------------------------------------------------------
+        // 6. Indicate completion and provide the log file location.
+        // --------------------------------------------------------------
+        Console.WriteLine($"Processing completed. Log file: {logPath}");
     }
 }

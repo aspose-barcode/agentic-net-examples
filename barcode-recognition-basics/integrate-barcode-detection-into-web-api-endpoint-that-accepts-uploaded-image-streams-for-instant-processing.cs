@@ -1,63 +1,52 @@
-// Title: Barcode detection from an uploaded image stream using Aspose.BarCode
-// Description: Demonstrates generating a QR code, then reading it from a stream as if it were uploaded to a web API, showing instant barcode detection.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator to create barcodes and BarCodeReader with DecodeType to recognize multiple symbologies. Typical scenarios include processing uploaded images in web services, validating scanned codes, and extracting data from various barcode formats. Developers often need to quickly generate sample barcodes and then detect them from streams using these core API classes.
+// Title: Barcode generation and detection using Aspose.BarCode in a simulated web API
+// Description: This example generates a Code128 barcode, stores it in a memory stream, and then reads the same stream to detect and decode the barcode.
+// Category-Description: Demonstrates Aspose.BarCode generation and recognition APIs, focusing on BarcodeGenerator, BarCodeReader, and related image handling. Typical use cases include processing uploaded images in web APIs to instantly read barcodes. Developers often need to convert streams to images, detect multiple symbologies, and extract encoded data.
 // Prompt: Integrate barcode detection into a web API endpoint that accepts uploaded image streams for instant processing.
-// Tags: qr,code128,barcode detection,barcode recognition,aspose.barcode,web api,stream processing
+// Tags: barcode, code128, generation, detection, aspnet, aspose.barcode, memorystream, png
 
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates how to generate a QR barcode, simulate receiving it as an uploaded image stream,
-/// and detect barcodes using Aspose.BarCode's recognition API.
+/// Demonstrates barcode generation and immediate detection using Aspose.BarCode.
+/// In a real scenario this logic would reside in a web API endpoint that processes
+/// uploaded image streams.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the demo. Generates a barcode, reads it from a stream, and outputs detected results.
+    /// Entry point that creates a barcode, writes it to a memory stream,
+    /// and reads the stream to detect and decode the barcode.
     /// </summary>
-    static void Main()
+    static void Main(string[] args)
     {
-        // Create a unique temporary folder for the demo files
-        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
-
-        // Define the full path for the generated barcode image
-        string barcodePath = Path.Combine(tempFolder, "sample.png");
-
-        // Generate a sample QR barcode image and save it as PNG
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Hello Aspose"))
+        // Simulate receiving an uploaded image stream in a web API by generating a barcode into a MemoryStream.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
         {
-            generator.Save(barcodePath, BarCodeImageFormat.Png);
-        }
-
-        // Simulate receiving an uploaded image stream (e.g., from a web API endpoint)
-        using (FileStream stream = new FileStream(barcodePath, FileMode.Open, FileAccess.Read))
-        {
-            // Initialize the barcode reader with the desired decode types (QR and Code128)
-            using (var reader = new BarCodeReader(stream, DecodeType.QR, DecodeType.Code128))
+            // Create a memory stream to hold the generated barcode image.
+            using (var barcodeStream = new MemoryStream())
             {
-                Console.WriteLine("Detected barcodes:");
-                // Iterate through all detected barcodes in the stream
-                foreach (BarCodeResult result in reader.ReadBarCodes())
+                // Save the barcode as a PNG image into the stream.
+                generator.Save(barcodeStream, BarCodeImageFormat.Png);
+
+                // Reset the stream position to the beginning before reading.
+                barcodeStream.Position = 0;
+
+                // Initialize the barcode reader with the image stream.
+                using (var reader = new BarCodeReader(barcodeStream))
                 {
-                    Console.WriteLine($"Type: {result.CodeTypeName}, Text: {result.CodeText}");
+                    // Iterate through all detected barcodes in the image.
+                    foreach (BarCodeResult result in reader.ReadBarCodes())
+                    {
+                        Console.WriteLine($"Detected Barcode Type: {result.CodeTypeName}");
+                        Console.WriteLine($"Decoded Text: {result.CodeText}");
+                    }
                 }
             }
-        }
-
-        // Optional cleanup of temporary files and folder
-        try
-        {
-            File.Delete(barcodePath);
-            Directory.Delete(tempFolder);
-        }
-        catch
-        {
-            // Ignored – cleanup may fail if files are still in use
         }
     }
 }

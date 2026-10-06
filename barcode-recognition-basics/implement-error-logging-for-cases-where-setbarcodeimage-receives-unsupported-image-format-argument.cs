@@ -1,71 +1,85 @@
-// Title: Demonstrate handling unsupported image format when setting barcode image
-// Description: Shows how BarCodeReader.SetBarCodeImage reacts to a non‑image file and logs the resulting exception.
-// Category-Description: This example belongs to the Aspose.BarCode recognition category, illustrating the use of the BarCodeReader class to read barcodes from image files. Developers often need to validate input image formats before processing; this snippet demonstrates typical error handling when an unsupported format is supplied, a common requirement in robust barcode scanning applications.
+// Title: Error handling for unsupported barcode image formats
+// Description: Demonstrates how to catch and log errors when SetBarCodeImage is called with a file that is not a supported image format.
+// Category-Description: This example belongs to the Aspose.BarCode image handling category, showcasing the use of BarCodeReader to load barcode images. It highlights typical scenarios where developers need to validate input files, handle unsupported formats, and log exceptions without crashing the application. Key API classes include BarCodeReader and standard .NET I/O utilities, useful for robust barcode processing pipelines.
 // Prompt: Implement error logging for cases where SetBarCodeImage receives an unsupported image format argument.
-// Tags: barcode, error-logging, unsupported-format, barcodereader, aspose.barcode
+// Tags: barcode, error-handling, image-format, setbarcodeimage, aspose.barcode, barcodereader
 
 using System;
 using System.IO;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Example program that attempts to load a non‑image file into <see cref="BarCodeReader"/> 
-/// and logs any errors that occur during the operation.
+/// Example program that attempts to load an unsupported image file into a <see cref="BarCodeReader"/>
+/// and logs any resulting errors to a file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates a temporary file with an unsupported format,
-    /// tries to set it as the barcode image, and logs any exception thrown.
+    /// Entry point of the example. Creates a temporary environment, triggers an error by
+    /// providing a non‑image file to <c>SetBarCodeImage</c>, logs the exception, and cleans up.
     /// </summary>
     static void Main()
     {
-        // --------------------------------------------------------------------
-        // Set up a temporary working directory for the demo
-        // --------------------------------------------------------------------
-        string tempDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempDir);
+        // ----------------------------------------------------------------------
+        // Set up a temporary folder and create an unsupported file (plain text)
+        // ----------------------------------------------------------------------
+        string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
+        string unsupportedFile = Path.Combine(tempFolder, "sample.txt");
+        File.WriteAllText(unsupportedFile, "This is not an image file.");
 
-        // --------------------------------------------------------------------
-        // Create a dummy file with an unsupported image format (e.g., .txt)
-        // --------------------------------------------------------------------
-        string unsupportedFile = Path.Combine(tempDir, "dummy.txt");
-        File.WriteAllText(unsupportedFile, "This is not an image.");
+        // Path for the error log file
+        string logPath = Path.Combine(tempFolder, "error.log");
 
-        // --------------------------------------------------------------------
-        // Attempt to load the unsupported file into BarCodeReader
-        // --------------------------------------------------------------------
+        // --------------------------------------------------------------
+        // Attempt to load the unsupported file into the barcode reader
+        // --------------------------------------------------------------
         using (var reader = new BarCodeReader())
         {
             try
             {
-                // This call is expected to throw because the file is not a valid image
-                reader.SetBarCodeImage(unsupportedFile);
-
-                // If no exception occurs, try to read any barcodes (unlikely to find any)
-                foreach (var result in reader.ReadBarCodes())
+                // Verify the file exists before attempting to load it
+                if (!File.Exists(unsupportedFile))
                 {
-                    Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
+                    throw new FileNotFoundException("File not found.", unsupportedFile);
                 }
+
+                // This call is expected to fail because the file is not a supported image format
+                reader.SetBarCodeImage(unsupportedFile);
+                Console.WriteLine("SetBarCodeImage succeeded unexpectedly.");
             }
             catch (Exception ex)
             {
-                // Log the error details for troubleshooting
-                Console.WriteLine($"Error setting barcode image: {ex.Message}");
+                // Build a descriptive error message
+                string message = $"Error setting barcode image: {ex.Message}";
+                Console.WriteLine(message);
+
+                // Attempt to append the error details to the log file
+                try
+                {
+                    File.AppendAllText(logPath, $"{DateTime.Now:u} - {message}{Environment.NewLine}");
+                }
+                catch
+                {
+                    // Swallow any logging exceptions to keep the program running
+                }
             }
         }
 
-        // --------------------------------------------------------------------
-        // Clean up temporary files and directory
-        // --------------------------------------------------------------------
+        // ----------------------------------------------
+        // Clean up temporary files and the working folder
+        // ----------------------------------------------
         try
         {
-            File.Delete(unsupportedFile);
-            Directory.Delete(tempDir);
+            if (File.Exists(unsupportedFile))
+                File.Delete(unsupportedFile);
+            if (File.Exists(logPath))
+                File.Delete(logPath);
+            Directory.Delete(tempFolder, true);
         }
         catch
         {
-            // Ignored – cleanup failures should not affect program exit
+            // Suppress any exceptions that occur during cleanup
         }
     }
 }
