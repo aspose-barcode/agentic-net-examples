@@ -1,96 +1,116 @@
-// Title: QR Code Generation with Gaussian Blur Simulation and Readability Test
-// Description: Demonstrates generating a QR barcode, applying a simple Gaussian‑like blur by down‑ and up‑scaling, and verifying that the barcode remains readable.
-// Category-Description: This example belongs to the Aspose.BarCode image processing category, showcasing how to generate barcodes (BarcodeGenerator), manipulate images (Aspose.Drawing), and recognize barcodes (BarCodeReader). Typical use cases include testing barcode robustness against printing defects, applying image filters, and evaluating recognition quality. Developers often need to simulate real‑world degradations and verify decoding success using quality settings.
+// Title: Test barcode readability after Gaussian blur
+// Description: Demonstrates generating a QR barcode, applying a Gaussian blur to simulate printing defects, and reading the blurred barcode.
+// Category-Description: This example belongs to the Aspose.BarCode image processing and recognition category. It shows how to generate a barcode with BarcodeGenerator, manipulate the image using Aspose.Drawing (applying a blur), and then decode it with BarCodeReader. Developers often need to test barcode robustness against image degradation such as blur, noise, or low resolution, and this snippet illustrates the typical workflow and key API classes (BarcodeGenerator, BarCodeReader, QualitySettings, DeconvolutionMode).
 // Prompt: Test barcode readability after applying Gaussian blur to the generated image to simulate printing defects.
-// Tags: qr, barcode, blur, image processing, generation, recognition, aspose.barcode, aspose.drawing
+// Tags: qr, barcode, blur, image-processing, recognition, aspose.barcode, aspose.drawing
 
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Entry point for the QR barcode blur readability demonstration.
+/// Demonstrates generating a QR code, applying Gaussian blur, and reading it back.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Generates a QR code, applies a blur effect, and attempts to read it back.
+    /// Entry point of the example. Generates a QR barcode, blurs it, attempts to read it, and cleans up temporary files.
     /// </summary>
     static void Main()
     {
-        // Define the text to encode in the QR barcode.
-        string codeText = "Test123";
+        // Create a unique temporary folder for generated files
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeBlurTest_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
 
-        // Create a QR barcode generator with high error correction level.
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, codeText))
+        // Define file paths for the original and blurred barcode images
+        string barcodePath = Path.Combine(tempFolder, "barcode.png");
+        string blurredPath = Path.Combine(tempFolder, "barcode_blur.png");
+
+        // Generate a QR barcode and save the original image
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
         {
-            // Increase error correction to improve readability after blur.
-            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
+            // Set module size (X dimension) for better visibility
+            generator.Parameters.Barcode.XDimension.Point = 2f;
+            generator.Save(barcodePath, BarCodeImageFormat.Png);
 
-            // Save the generated barcode image to a memory stream in PNG format.
-            using (var originalStream = new MemoryStream())
+            // Generate bitmap for further processing (blur)
+            using (Bitmap original = generator.GenerateBarCodeImage())
             {
-                generator.Save(originalStream, BarCodeImageFormat.Png);
-                originalStream.Position = 0; // Reset stream position for reading.
-
-                // Load the original image from the memory stream.
-                using (var originalBitmap = new Bitmap(originalStream))
+                // Apply Gaussian blur approximation
+                using (Bitmap blurred = ApplyGaussianBlur(original))
                 {
-                    // Calculate reduced dimensions for downscaling (simulates blur).
-                    int smallWidth = Math.Max(1, originalBitmap.Width / 2);
-                    int smallHeight = Math.Max(1, originalBitmap.Height / 2);
-
-                    // Create a smaller bitmap to downscale the original image.
-                    using (var smallBitmap = new Bitmap(smallWidth, smallHeight))
-                    {
-                        // Draw the original image onto the smaller bitmap.
-                        using (var gSmall = Graphics.FromImage(smallBitmap))
-                        {
-                            gSmall.DrawImage(originalBitmap, 0, 0, smallWidth, smallHeight);
-                        }
-
-                        // Create a bitmap with the original dimensions to upscale back.
-                        using (var blurredBitmap = new Bitmap(originalBitmap.Width, originalBitmap.Height))
-                        {
-                            // Upscale the small bitmap back to original size, creating a blur effect.
-                            using (var gBlur = Graphics.FromImage(blurredBitmap))
-                            {
-                                gBlur.DrawImage(smallBitmap, 0, 0, originalBitmap.Width, originalBitmap.Height);
-                            }
-
-                            // Save the blurred image to a new memory stream.
-                            using (var blurredStream = new MemoryStream())
-                            {
-                                blurredBitmap.Save(blurredStream, ImageFormat.Png);
-                                blurredStream.Position = 0; // Reset for reading.
-
-                                // Initialize a barcode reader for QR codes on the blurred image.
-                                using (var reader = new BarCodeReader(blurredStream, DecodeType.QR))
-                                {
-                                    // Apply a fast deconvolution mode to aid recognition of blurred images.
-                                    reader.QualitySettings.Deconvolution = DeconvolutionMode.Fast;
-
-                                    // Attempt to read barcodes from the blurred image.
-                                    BarCodeResult[] results = reader.ReadBarCodes();
-
-                                    // Output the result of the recognition attempt.
-                                    if (results.Length > 0 && !string.IsNullOrEmpty(results[0].CodeText))
-                                    {
-                                        Console.WriteLine($"Barcode read successfully: {results[0].CodeText}");
-                                    }
-                                    else
-                                    {
-                                        Console.WriteLine("Failed to read barcode from blurred image.");
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    // Save the blurred image to disk
+                    blurred.Save(blurredPath, Aspose.Drawing.Imaging.ImageFormat.Png);
                 }
             }
         }
+
+        // Read the blurred barcode using the reader
+        using (var reader = new BarCodeReader(blurredPath, DecodeType.AllSupportedTypes))
+        {
+            // Enable fast deconvolution to improve detection on blurred images
+            reader.QualitySettings.Deconvolution = DeconvolutionMode.Fast;
+
+            // Perform barcode detection
+            BarCodeResult[] results = reader.ReadBarCodes();
+            Console.WriteLine($"Barcodes read: {results.Length}");
+            foreach (BarCodeResult result in results)
+            {
+                Console.WriteLine($"Type: {result.CodeTypeName}, Text: {result.CodeText}, ReadingQuality: {result.ReadingQuality}");
+            }
+        }
+
+        // Clean up temporary files (optional)
+        try
+        {
+            File.Delete(barcodePath);
+            File.Delete(blurredPath);
+            Directory.Delete(tempFolder);
+        }
+        catch
+        {
+            // Ignore cleanup errors
+        }
+    }
+
+    // Simple 3x3 average blur (approximation of Gaussian blur)
+    static Bitmap ApplyGaussianBlur(Bitmap source)
+    {
+        int width = source.Width;
+        int height = source.Height;
+        Bitmap dest = new Bitmap(width, height);
+
+        for (int y = 0; y < height; y++)
+        {
+            for (int x = 0; x < width; x++)
+            {
+                int sumR = 0, sumG = 0, sumB = 0, count = 0;
+                for (int ky = -1; ky <= 1; ky++)
+                {
+                    int ny = y + ky;
+                    if (ny < 0 || ny >= height) continue;
+                    for (int kx = -1; kx <= 1; kx++)
+                    {
+                        int nx = x + kx;
+                        if (nx < 0 || nx >= width) continue;
+                        Color c = source.GetPixel(nx, ny);
+                        sumR += c.R;
+                        sumG += c.G;
+                        sumB += c.B;
+                        count++;
+                    }
+                }
+                int avgR = sumR / count;
+                int avgG = sumG / count;
+                int avgB = sumB / count;
+                dest.SetPixel(x, y, Color.FromArgb(avgR, avgG, avgB));
+            }
+        }
+
+        return dest;
     }
 }
