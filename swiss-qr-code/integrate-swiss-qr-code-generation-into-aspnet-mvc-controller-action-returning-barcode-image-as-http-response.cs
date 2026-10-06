@@ -1,39 +1,38 @@
-// Title: Generate Swiss QR Code Barcode in ASP.NET MVC
-// Description: Demonstrates how to create a Swiss QR Code (QR‑Bill) using Aspose.BarCode and save it as a PNG image, suitable for returning from an ASP.NET MVC controller action.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category, focusing on Swiss QR Code (QR‑Bill) creation. It showcases the use of ComplexBarcodeGenerator, SwissQRCodetext, and related parameter settings to produce a high‑resolution PNG. Developers building payment or invoicing solutions often need to generate QR‑Bills programmatically and deliver them via web APIs.
+// Title: Generate Swiss QR Code using Aspose.BarCode
+// Description: Demonstrates creating a Swiss QR Code (QR‑Bill) with Aspose.BarCode, configuring bill details, and saving the image as PNG.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It showcases the use of ComplexBarcodeGenerator, SwissQRCodetext, and related classes to produce QR‑Bill compliant Swiss QR Codes. Typical use cases include generating payment QR codes for invoices or financial documents in .NET applications. Developers often need to set bill parameters, adjust barcode appearance, and output the image for web or desktop consumption.
 // Prompt: Integrate Swiss QR Code generation into an ASP.NET MVC controller action returning the barcode image as HTTP response.
-// Tags: swiss qr code, barcode generation, asp.net mvc, png, aspose.barcode, complexbarcodegenerator
+// Tags: swiss qr, barcode generation, png, aspnet mvc, aspose.barcode, complexbarcode, qr-bill
 
 using System;
 using System.IO;
-using Aspose.BarCode.ComplexBarcode;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode.ComplexBarcode;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Console demo of Swiss QR Code generation using Aspose.BarCode.
-/// In a real ASP.NET MVC app, the same logic would be placed in a controller action.
+/// Example program that generates a Swiss QR Code (QR‑Bill) using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that builds a Swiss QR Code (QR‑Bill) and writes it to a temporary PNG file.
+    /// Generates the barcode, saves it to a temporary file, and outputs a Base64 string.
     /// </summary>
     static void Main()
     {
-        // NOTE: In a real ASP.NET MVC application this logic would be placed in a controller action
-        // that returns the image as an HTTP response. The console app demonstrates the core barcode
-        // generation logic required for such integration.
+        // Simulated request payload for Swiss QR Code
+        var swissQr = new SwissQRCodetext();
 
-        // Prepare Swiss QR Code data
-        SwissQRCodetext swissQr = new SwissQRCodetext();
+        // Populate bill details required for a Swiss QR‑Bill
         swissQr.Bill.Version = SwissQRBill.QrBillStandardVersion.V2_0;
         swissQr.Bill.Account = "CH4431999123000889012";
         swissQr.Bill.Amount = 1000.25m;
         swissQr.Bill.Currency = "CHF";
         swissQr.Bill.Reference = "210000000003139471430009017";
 
-        // Set creditor address details
+        // Creditor (payee) address information
         swissQr.Bill.Creditor = new Address
         {
             Name = "Muster & Söhne",
@@ -44,7 +43,7 @@ class Program
             CountryCode = "CH"
         };
 
-        // Set debtor address details
+        // Debtor (payer) address information
         swissQr.Bill.Debtor = new Address
         {
             Name = "Muster AG",
@@ -55,25 +54,27 @@ class Program
             CountryCode = "CH"
         };
 
-        // Generate the barcode using ComplexBarcodeGenerator
+        // Generate the barcode using the complex barcode generator
         using (var generator = new ComplexBarcodeGenerator(swissQr))
         {
-            // Configure barcode appearance and encoding
+            // Set visual parameters: module size and QR encoding mode
             generator.Parameters.Barcode.XDimension.Pixels = 4f;
             generator.Parameters.Barcode.QR.EncodeMode = QREncodeMode.ECI;
             generator.Parameters.Barcode.QR.ECIEncoding = ECIEncodings.UTF8;
 
-            // Define output file path in the temporary folder
-            string outputPath = Path.Combine(Path.GetTempPath(), "SwissQRBill.png");
+            // Save the barcode image to a temporary file (simulating an HTTP response body)
+            string outputPath = Path.Combine(Path.GetTempPath(), "SwissQR.png");
+            generator.Save(outputPath, BarCodeImageFormat.Png);
+            Console.WriteLine($"Swiss QR Code image saved to: {outputPath}");
 
-            // Save the barcode image to a memory stream, then write to file
-            using (var stream = new MemoryStream())
+            // Also output a Base64 representation of the image (simulating HTTP response content)
+            using (var ms = new MemoryStream())
             {
-                generator.Save(stream, BarCodeImageFormat.Png);
-                File.WriteAllBytes(outputPath, stream.ToArray());
+                generator.Save(ms, BarCodeImageFormat.Png);
+                string base64 = Convert.ToBase64String(ms.ToArray());
+                Console.WriteLine("Base64 representation of the image:");
+                Console.WriteLine(base64);
             }
-
-            Console.WriteLine($"Swiss QR Code barcode saved to: {outputPath}");
         }
     }
 }

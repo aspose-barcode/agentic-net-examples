@@ -1,32 +1,27 @@
-// Title: Customizing Foreground and Background Colors of a Swiss QR Barcode
-// Description: Demonstrates how to set the bar (foreground) and background colors of a Swiss QR barcode using Aspose.BarCode's ComplexBarcodeGenerator before saving the image.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on visual customization of complex barcodes. It showcases the use of ComplexBarcodeGenerator, SwissQRCodetext, and related parameter classes to modify colors, a common requirement when integrating barcodes into branded documents or UI. Developers often need to adjust foreground and background colors to match corporate style guidelines while generating PNG images.
+// Title: Generate Swiss QR Code with custom foreground and background colors
+// Description: Demonstrates how to set barcode and background colors using ComplexBarcodeGenerator before saving the image.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category, showcasing the use of ComplexBarcodeGenerator, SwissQRCodetext, and related parameter settings. Typical use cases include creating payment QR codes with customized visual appearance for branding or readability. Developers often need to adjust colors, sizes, and formats when integrating barcode generation into applications.
 // Prompt: Customize barcode foreground and background colors via ComplexBarcodeGenerator properties before generating the image.
-// Tags: barcode, swissqr, color customization, complexbarcodegenerator, png, aspnet, aspose.barcode, generation
+// Tags: swissqr, complexbarcode, color, foreground, background, png, aspnet, aspnetcore, aspose.barcode, generation
 
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.ComplexBarcode;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that creates a Swiss QR barcode with custom foreground and background colors.
+/// Demonstrates generating a Swiss QR Code with custom foreground and background colors using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a Swiss QR barcode, applies custom colors, and saves it as a PNG file.
+    /// Entry point. Creates a Swiss QR Code, sets custom colors, and saves it as a PNG file.
     /// </summary>
     static void Main()
     {
-        // Prepare a temporary output directory for the generated image
-        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
-        Directory.CreateDirectory(outputDir);
-        string outputPath = Path.Combine(outputDir, "SwissQR.png");
-
-        // Build the Swiss QR codetext with required bill information
+        // Initialize Swiss QR Code data (codetext) with creditor and payment details
         var swissQr = new SwissQRCodetext();
         swissQr.Bill.Creditor.Name = "John Doe";
         swissQr.Bill.Creditor.CountryCode = "CH";
@@ -34,19 +29,23 @@ class Program
         swissQr.Bill.Amount = 199.95m;
         swissQr.Bill.Version = SwissQRBill.QrBillStandardVersion.V2_0;
 
-        // Generate the barcode and apply custom colors
+        // Create a ComplexBarcodeGenerator using the Swiss QR Code codetext
         using (var generator = new ComplexBarcodeGenerator(swissQr))
         {
-            // Set the foreground (bars) color to blue
-            generator.Parameters.Barcode.BarColor = Color.Blue;
-            // Set the background color to yellow
-            generator.Parameters.BackColor = Color.Yellow;
+            // Set custom foreground (barcode) color
+            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Blue;
 
-            // Save the barcode image as PNG
+            // Set custom background color for the entire image
+            generator.Parameters.BackColor = Aspose.Drawing.Color.LightGray;
+
+            // Define output file path in the temporary folder
+            string outputPath = Path.Combine(Path.GetTempPath(), "complex_barcode.png");
+
+            // Save the generated barcode as a PNG image
             generator.Save(outputPath, BarCodeImageFormat.Png);
-        }
 
-        // Inform the user where the image was saved
-        Console.WriteLine($"Barcode image saved to: {outputPath}");
+            // Inform the user where the file was saved
+            Console.WriteLine($"Barcode saved to {outputPath}");
+        }
     }
 }
