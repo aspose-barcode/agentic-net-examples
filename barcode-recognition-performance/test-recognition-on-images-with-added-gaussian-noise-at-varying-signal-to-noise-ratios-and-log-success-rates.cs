@@ -1,8 +1,8 @@
-// Title: Barcode Recognition with Gaussian Noise Test
-// Description: Generates a Code128 barcode, adds Gaussian noise at various levels, and measures recognition success rates.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It demonstrates how to use BarcodeGenerator to create barcodes, manipulate images with Aspose.Drawing, and employ BarCodeReader to decode barcodes under adverse conditions. Developers often need to test robustness of barcode scanning in noisy environments, making this pattern useful for quality assurance and image preprocessing scenarios.
+// Title: Barcode recognition under Gaussian noise with success rate logging
+// Description: Generates a QR code, adds Gaussian noise at several standard deviations, attempts to read the barcode, and logs success or failure for each noise level.
+// Category-Description: This example demonstrates Aspose.BarCode generation and recognition APIs. It shows how to create a barcode image, manipulate pixel data, apply image noise, and use BarCodeReader with high‑quality settings. Developers working on image‑preprocessing, robustness testing, or automated scanning solutions often need to evaluate recognition performance under varying signal‑to‑noise ratios.
 // Prompt: Test recognition on images with added Gaussian noise at varying signal‑to‑noise ratios and log success rates.
-// Tags: barcode symbology, recognition, gaussian noise, code128, aspose.barcode, image processing
+// Tags: qr, barcode, recognition, gaussian noise, signal-to-noise ratio, aspose.barcode, image processing, qualitysettings
 
 using System;
 using System.IO;
@@ -14,138 +14,107 @@ using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates barcode generation, noise addition, and recognition success measurement.
+/// Demonstrates barcode recognition on images with added Gaussian noise and logs success rates.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a base barcode, creates noisy variants, attempts recognition, and logs success rates.
+    /// Entry point. Generates a QR code, adds noise at multiple levels, reads the barcode, and outputs results.
     /// </summary>
     static void Main()
     {
-        // Create a temporary folder to store generated images
-        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeNoiseTest_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
-
-        // Base barcode parameters
-        string baseText = "1234567890";
-        BaseEncodeType encodeType = EncodeTypes.Code128;
-        string baseImagePath = Path.Combine(tempFolder, "base.png");
-
-        // Generate the base barcode image and save as PNG
-        using (var generator = new BarcodeGenerator(encodeType, baseText))
+        // Generate a base QR code image in memory.
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Test123"))
         {
-            generator.Save(baseImagePath, BarCodeImageFormat.Png);
-        }
-
-        // Define noise levels (standard deviation) to test
-        float[] noiseLevels = new float[] { 0f, 5f, 10f, 20f, 30f };
-        int attemptsPerLevel = 5;
-        var random = new Random();
-
-        // Iterate over each noise level
-        foreach (float noiseStdDev in noiseLevels)
-        {
-            int successCount = 0;
-
-            // Perform multiple attempts per noise level
-            for (int attempt = 1; attempt <= attemptsPerLevel; attempt++)
+            using (var baseStream = new MemoryStream())
             {
-                string noisyPath = Path.Combine(tempFolder, $"noisy_{noiseStdDev}_{attempt}.png");
+                generator.Save(baseStream, BarCodeImageFormat.Png);
+                baseStream.Position = 0;
 
-                // Load the base image, add Gaussian noise, and save the noisy image
-                using (var bitmap = new Bitmap(baseImagePath))
+                // Load the generated QR code into a bitmap for pixel manipulation.
+                using (var baseBitmap = new Bitmap(baseStream))
                 {
-                    AddGaussianNoise(bitmap, noiseStdDev, random);
-                    using (var stream = new FileStream(noisyPath, FileMode.Create, FileAccess.Write))
-                    {
-                        bitmap.Save(stream, ImageFormat.Png);
-                    }
-                }
+                    // Define the noise levels (standard deviations) to test.
+                    float[] noiseStdDevs = new float[] { 0f, 5f, 10f, 20f, 30f };
+                    var random = new Random();
 
-                // Attempt to read the barcode from the noisy image
-                BaseDecodeType decodeType = DecodeType.AllSupportedTypes;
-                try
-                {
-                    using (var reader = new BarCodeReader(noisyPath, decodeType))
+                    var resultsLog = new List<string>();
+
+                    // Iterate over each noise level, create a noisy copy, and attempt recognition.
+                    foreach (float stdDev in noiseStdDevs)
                     {
-                        var results = reader.ReadBarCodes();
-                        if (results != null && results.Length > 0 && !string.IsNullOrEmpty(results[0].CodeText))
+                        // Create a new bitmap to hold the noisy image.
+                        using (var noisyBitmap = new Bitmap(baseBitmap.Width, baseBitmap.Height, baseBitmap.PixelFormat))
                         {
-                            successCount++;
+                            // Apply Gaussian noise to each pixel.
+                            for (int y = 0; y < baseBitmap.Height; y++)
+                            {
+                                for (int x = 0; x < baseBitmap.Width; x++)
+                                {
+                                    Color orig = baseBitmap.GetPixel(x, y);
+                                    int r = Clamp(orig.R + (int)NextGaussian(random, stdDev), 0, 255);
+                                    int g = Clamp(orig.G + (int)NextGaussian(random, stdDev), 0, 255);
+                                    int b = Clamp(orig.B + (int)NextGaussian(random, stdDev), 0, 255);
+                                    Color noisy = Color.FromArgb(r, g, b);
+                                    noisyBitmap.SetPixel(x, y, noisy);
+                                }
+                            }
+
+                            // Save the noisy bitmap to a memory stream for recognition.
+                            using (var noisyStream = new MemoryStream())
+                            {
+                                noisyBitmap.Save(noisyStream, ImageFormat.Png);
+                                noisyStream.Position = 0;
+
+                                // Initialize the barcode reader for QR codes.
+                                using (var reader = new BarCodeReader(noisyStream, DecodeType.QR))
+                                {
+                                    // Use high‑quality settings to improve detection on noisy images.
+                                    reader.QualitySettings = QualitySettings.HighQuality;
+                                    var results = reader.ReadBarCodes();
+
+                                    // Determine success based on whether a code was read.
+                                    bool success = results.Length > 0 && !string.IsNullOrEmpty(results[0].CodeText);
+                                    resultsLog.Add($"StdDev {stdDev}: {(success ? "Success" : "Failure")}");
+                                }
+                            }
                         }
                     }
+
+                    // Output the aggregated recognition results.
+                    Console.WriteLine("Recognition results with Gaussian noise:");
+                    foreach (var line in resultsLog)
+                    {
+                        Console.WriteLine(line);
+                    }
                 }
-                catch (ArgumentException)
-                {
-                    // Image loading failed; skip this attempt
-                }
-            }
-
-            // Log the success rate for the current noise level
-            Console.WriteLine($"NoiseStdDev {noiseStdDev}: {successCount}/{attemptsPerLevel} successes");
-        }
-
-        // Cleanup temporary files and folder
-        try
-        {
-            Directory.Delete(tempFolder, true);
-        }
-        catch
-        {
-            // Ignore any errors during cleanup
-        }
-    }
-
-    /// <summary>
-    /// Adds Gaussian noise to a bitmap image.
-    /// </summary>
-    /// <param name="bitmap">The bitmap to modify.</param>
-    /// <param name="stdDev">Standard deviation of the Gaussian noise.</param>
-    /// <param name="random">Random number generator.</param>
-    static void AddGaussianNoise(Bitmap bitmap, float stdDev, Random random)
-    {
-        if (stdDev <= 0f) return;
-
-        int width = bitmap.Width;
-        int height = bitmap.Height;
-
-        // Process each pixel and apply noise to RGB channels
-        for (int y = 0; y < height; y++)
-        {
-            for (int x = 0; x < width; x++)
-            {
-                Color original = bitmap.GetPixel(x, y);
-
-                byte r = AddNoiseToChannel(original.R, stdDev, random);
-                byte g = AddNoiseToChannel(original.G, stdDev, random);
-                byte b = AddNoiseToChannel(original.B, stdDev, random);
-                byte a = original.A; // Preserve alpha channel
-
-                Color noisy = Color.FromArgb(a, r, g, b);
-                bitmap.SetPixel(x, y, noisy);
             }
         }
     }
 
     /// <summary>
-    /// Adds Gaussian noise to a single color channel value.
+    /// Generates a Gaussian‑distributed random value using the Box‑Muller transform.
     /// </summary>
-    /// <param name="value">Original channel value (0‑255).</param>
-    /// <param name="stdDev">Standard deviation of the noise.</param>
-    /// <param name="random">Random number generator.</param>
-    /// <returns>Noisy channel value clamped to 0‑255.</returns>
-    static byte AddNoiseToChannel(byte value, float stdDev, Random random)
+    /// <param name="rng">Random number generator.</param>
+    /// <param name="sigma">Standard deviation of the distribution.</param>
+    /// <returns>Random value with the specified standard deviation.</returns>
+    static double NextGaussian(Random rng, double sigma)
     {
-        // Box‑Muller transform to generate normally distributed random value
-        double u1 = 1.0 - random.NextDouble();
-        double u2 = 1.0 - random.NextDouble();
-        double randStdNormal = Math.Sqrt(-2.0 * Math.Log(u1)) * Math.Sin(2.0 * Math.PI * u2);
-        double noise = randStdNormal * stdDev;
+        // Box-Muller transform
+        double u1 = 1.0 - rng.NextDouble(); // avoid 0
+        double u2 = 1.0 - rng.NextDouble();
+        double randStdNormal = Math.Sqrt(-2.0 * Math.Log(u1)) *
+                               Math.Sin(2.0 * Math.PI * u2);
+        return sigma * randStdNormal;
+    }
 
-        int newVal = (int)Math.Round(value + noise);
-        if (newVal < 0) newVal = 0;
-        if (newVal > 255) newVal = 255;
-        return (byte)newVal;
+    /// <summary>
+    /// Clamps an integer value to the inclusive range defined by <paramref name="min"/> and <paramref name="max"/>.
+    /// </summary>
+    static int Clamp(int value, int min, int max)
+    {
+        if (value < min) return min;
+        if (value > max) return max;
+        return value;
     }
 }

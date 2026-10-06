@@ -1,8 +1,8 @@
-// Title: Benchmark recognition of stacked vs single linear barcodes
-// Description: Demonstrates generating Code128 and DataBarStacked barcodes, then measuring recognition time for each type to assess scalability.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It shows how to use BarcodeGenerator to create linear and stacked barcodes, BarCodeReader to decode them, and Stopwatch to benchmark performance. Developers working on high‑volume scanning or performance testing can use these APIs to evaluate algorithm speed across different symbologies.
+// Title: Benchmark Recognition of Single vs Stacked Linear Barcodes
+// Description: Demonstrates generating Code128 and DataBarStacked barcodes, then measuring the time required to recognize each type using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the BarcodeGenerator class for creating barcodes and the BarCodeReader class for decoding them. Typical use cases include performance testing, scalability evaluation, and automated quality checks where developers need to compare processing times of different barcode symbologies.
 // Prompt: Benchmark recognition of stacked linear barcodes versus single barcodes to evaluate algorithm scalability.
-// Tags: barcode, generation, recognition, benchmark, linear, stacked, code128, databarstacked, performance, aspose.barcode
+// Tags: barcode symbology, performance, benchmark, generation, recognition, code128, databarstacked, aspose.barcode
 
 using System;
 using System.IO;
@@ -14,147 +14,97 @@ using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates barcode generation and recognition benchmarking for single and stacked linear barcodes.
+/// Provides a simple benchmark that compares recognition times for single linear (Code128) and stacked linear (DataBarStacked) barcodes.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates barcodes, measures recognition times, outputs averages, and cleans up temporary files.
+    /// Entry point. Generates sample barcodes, measures recognition performance, and cleans up temporary files.
     /// </summary>
     static void Main()
     {
         // Create a unique temporary folder for generated barcode images
-        string tempFolder = Path.Combine(Path.GetTempPath(), "Benchmark_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
+        string tempDir = Path.Combine(Path.GetTempPath(), "BarcodeBenchmark_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
 
-        // Prepare collections to hold file paths of generated barcodes
-        List<string> singleBarcodes = new List<string>();
-        List<string> stackedBarcodes = new List<string>();
+        // Prepare collections for single and stacked linear barcodes
+        var singleBarcodes = new List<(string FilePath, string CodeText)>();
+        var stackedBarcodes = new List<(string FilePath, string CodeText)>();
 
-        // -------------------------------------------------
-        // Generate single linear barcodes (Code128)
-        // -------------------------------------------------
+        // Generate sample single linear barcodes (Code128)
         for (int i = 0; i < 5; i++)
         {
-            string codeText = $"CODE128-{i:D4}";
-            string filePath = Path.Combine(tempFolder, $"single_{i}.png");
-
+            string codeText = $"CODE{i + 1}";
+            string filePath = Path.Combine(tempDir, $"single_{i}.png");
             using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
             {
-                generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-                generator.Parameters.BackColor = Aspose.Drawing.Color.White;
                 generator.Save(filePath, BarCodeImageFormat.Png);
             }
-
-            singleBarcodes.Add(filePath);
+            singleBarcodes.Add((filePath, codeText));
         }
 
-        // -------------------------------------------------
-        // Generate stacked linear barcodes (DataBarStacked)
-        // -------------------------------------------------
+        // Generate sample stacked linear barcodes (DataBarStacked) using a valid GTIN-14 payload
+        string stackedPayload = "(01)01234567890128";
         for (int i = 0; i < 5; i++)
         {
-            // DataBarStacked expects numeric data; use a 14‑digit number
-            string codeText = (12345678901234L + i).ToString();
-            string filePath = Path.Combine(tempFolder, $"stacked_{i}.png");
-
-            using (var generator = new BarcodeGenerator(EncodeTypes.DatabarStacked, codeText))
+            string filePath = Path.Combine(tempDir, $"stacked_{i}.png");
+            using (var generator = new BarcodeGenerator(EncodeTypes.DatabarStacked, stackedPayload))
             {
-                generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-                generator.Parameters.BackColor = Aspose.Drawing.Color.White;
                 generator.Save(filePath, BarCodeImageFormat.Png);
             }
-
-            stackedBarcodes.Add(filePath);
+            stackedBarcodes.Add((filePath, stackedPayload));
         }
 
-        // -------------------------------------------------
-        // Benchmark recognition for single barcodes
-        // -------------------------------------------------
-        long singleTotalTicks = 0;
-        int singleCount = 0;
-
-        foreach (string file in singleBarcodes)
+        // Benchmark recognition of single linear barcodes
+        var stopwatch = new Stopwatch();
+        stopwatch.Start();
+        foreach (var (filePath, _) in singleBarcodes)
         {
-            if (!File.Exists(file))
-            {
-                Console.WriteLine($"File not found: {file}");
+            if (!File.Exists(filePath))
                 continue;
-            }
 
-            using (var reader = new BarCodeReader(file, DecodeType.AllSupportedTypes))
+            BaseDecodeType decodeType = DecodeType.Code128;
+            using (var reader = new BarCodeReader(filePath, decodeType))
             {
-                Stopwatch sw = Stopwatch.StartNew();
                 var results = reader.ReadBarCodes();
-                sw.Stop();
-
-                singleTotalTicks += sw.ElapsedTicks;
-                singleCount++;
-
+                // Iterate results to ensure the reader processes each image
                 foreach (var result in results)
                 {
-                    Console.WriteLine($"Single: {Path.GetFileName(file)} => {result.CodeText}");
+                    Console.WriteLine($"Single: Detected {result.CodeTypeName} - {result.CodeText}");
                 }
             }
         }
+        stopwatch.Stop();
+        Console.WriteLine($"Single barcode recognition time for {singleBarcodes.Count} items: {stopwatch.ElapsedMilliseconds} ms");
 
-        // -------------------------------------------------
-        // Benchmark recognition for stacked barcodes
-        // -------------------------------------------------
-        long stackedTotalTicks = 0;
-        int stackedCount = 0;
-
-        foreach (string file in stackedBarcodes)
+        // Benchmark recognition of stacked linear barcodes
+        stopwatch.Restart();
+        foreach (var (filePath, _) in stackedBarcodes)
         {
-            if (!File.Exists(file))
-            {
-                Console.WriteLine($"File not found: {file}");
+            if (!File.Exists(filePath))
                 continue;
-            }
 
-            using (var reader = new BarCodeReader(file, DecodeType.AllSupportedTypes))
+            BaseDecodeType decodeType = DecodeType.DatabarStacked;
+            using (var reader = new BarCodeReader(filePath, decodeType))
             {
-                Stopwatch sw = Stopwatch.StartNew();
                 var results = reader.ReadBarCodes();
-                sw.Stop();
-
-                stackedTotalTicks += sw.ElapsedTicks;
-                stackedCount++;
-
                 foreach (var result in results)
                 {
-                    Console.WriteLine($"Stacked: {Path.GetFileName(file)} => {result.CodeText}");
+                    Console.WriteLine($"Stacked: Detected {result.CodeTypeName} - {result.CodeText}");
                 }
             }
         }
+        stopwatch.Stop();
+        Console.WriteLine($"Stacked barcode recognition time for {stackedBarcodes.Count} items: {stopwatch.ElapsedMilliseconds} ms");
 
-        // -------------------------------------------------
-        // Output benchmark summary
-        // -------------------------------------------------
-        if (singleCount > 0)
-        {
-            double singleAvgMs = (singleTotalTicks * 1000.0) / Stopwatch.Frequency / singleCount;
-            Console.WriteLine($"Average recognition time for single linear barcodes: {singleAvgMs:F3} ms");
-        }
-
-        if (stackedCount > 0)
-        {
-            double stackedAvgMs = (stackedTotalTicks * 1000.0) / Stopwatch.Frequency / stackedCount;
-            Console.WriteLine($"Average recognition time for stacked linear barcodes: {stackedAvgMs:F3} ms");
-        }
-
-        // -------------------------------------------------
-        // Clean up temporary files and folder
-        // -------------------------------------------------
+        // Clean up temporary files and directory
         try
         {
-            foreach (var file in singleBarcodes) File.Delete(file);
-            foreach (var file in stackedBarcodes) File.Delete(file);
-            Directory.Delete(tempFolder, true);
+            Directory.Delete(tempDir, true);
         }
-        catch (Exception ex)
+        catch
         {
-            Console.WriteLine($"Cleanup warning: {ex.Message}");
+            // Ignored - cleanup failure should not affect program exit
         }
     }
 }

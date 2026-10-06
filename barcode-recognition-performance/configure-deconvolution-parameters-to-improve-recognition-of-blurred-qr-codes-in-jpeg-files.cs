@@ -1,8 +1,8 @@
-// Title: Configure deconvolution for blurred QR code recognition
-// Description: Demonstrates how to set deconvolution and quality settings on Aspose.BarCode's BarCodeReader to improve detection of a blurred QR code stored in a JPEG image.
-// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, focusing on image preprocessing and quality configuration. It shows usage of BarCodeReader, DecodeType, QualitySettings, DeconvolutionMode, BarcodeQualityMode, and XDimensionMode to handle low‑quality or blurred barcodes. Developers often need to adjust these settings when scanning images captured under poor lighting or motion blur to achieve reliable decoding.
+// Title: Deconvolution Settings for Recognizing Blurred QR Codes in JPEG Images
+// Description: Demonstrates how to configure deconvolution and high‑quality settings to improve detection of blurred QR codes stored as JPEG files.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, focusing on image preprocessing options such as QualitySettings and DeconvolutionMode. It shows how to use BarCodeReader with DecodeType.QR, adjust QualitySettings.HighQuality, and set Deconvolution to Fast to enhance recognition of low‑quality or blurred images. Developers working with QR code scanning in challenging imaging conditions can reference this pattern for better results.
 // Prompt: Configure deconvolution parameters to improve recognition of blurred QR codes in JPEG files.
-// Tags: qr code, deconvolution, barcode recognition, quality settings, aspnet, aspose.barcode, jpeg
+// Tags: qr code, deconvolution, qualitysettings, barcode recognition, aspose.barcode, jpeg
 
 using System;
 using System.IO;
@@ -10,55 +10,61 @@ using Aspose.BarCode;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates configuring deconvolution and other quality settings to read a blurred QR code from a JPEG file.
+/// Demonstrates configuring deconvolution parameters to improve recognition of blurred QR codes in JPEG files.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Reads a JPEG image, applies quality settings, and outputs detected barcode information.
+    /// Entry point. Reads a JPEG image, applies high‑quality and fast deconvolution settings, and outputs detected QR code information.
     /// </summary>
     static void Main()
     {
-        // Define the path to the sample JPEG file containing a blurred QR code
-        string imagePath = Path.Combine(Directory.GetCurrentDirectory(), "blurred_qr.jpg");
+        // Path to the JPEG image containing a blurred QR code
+        string imagePath = "blurred_qr.jpg";
 
         // Verify that the image file exists before attempting to read it
         if (!File.Exists(imagePath))
         {
-            Console.WriteLine($"File not found: {imagePath}");
+            Console.WriteLine($"Image file not found: {imagePath}");
             return;
         }
 
-        // Initialize a BarCodeReader for all supported barcode types (including QR)
-        using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
+        // Specify that we are interested in decoding QR codes
+        BaseDecodeType decodeType = DecodeType.QR;
+
+        // Initialize the barcode reader with the image path and decode type
+        using (var reader = new BarCodeReader(imagePath, decodeType))
         {
-            // Configure quality settings to improve recognition of blurred images
-            reader.QualitySettings.Deconvolution = DeconvolutionMode.Slow; // heavy deconvolution for blurred images
-            reader.QualitySettings.BarcodeQuality = BarcodeQualityMode.Low; // optimize for low‑quality barcodes
+            // Apply quality settings suitable for blurred QR codes
+            reader.QualitySettings = QualitySettings.HighQuality;
+            // Use fast deconvolution to enhance image clarity for better recognition
+            reader.QualitySettings.Deconvolution = DeconvolutionMode.Fast;
 
-            // Optional: use minimal XDimension to help with small modules
-            reader.QualitySettings.XDimension = XDimensionMode.UseMinimalXDimension;
-            reader.QualitySettings.MinimalXDimension = 5f;
-
-            // Perform barcode recognition
-            BarCodeResult[] results = reader.ReadBarCodes();
-
-            // Output results
-            if (results.Length == 0)
+            try
             {
-                Console.WriteLine("No barcode detected.");
-            }
-            else
-            {
-                foreach (var result in results)
+                // Attempt to read all barcodes from the image
+                BarCodeResult[] results = reader.ReadBarCodes();
+
+                // Check if any barcodes were detected
+                if (results.Length == 0)
                 {
-                    Console.WriteLine($"Code Text: {result.CodeText}");
-                    Console.WriteLine($"Symbology: {result.CodeTypeName}");
-                    Console.WriteLine($"Reading Quality: {result.ReadingQuality}");
-                    var bounds = result.Region.Rectangle;
-                    Console.WriteLine($"Region - X:{bounds.X}, Y:{bounds.Y}, Width:{bounds.Width}, Height:{bounds.Height}, Angle:{result.Region.Angle}");
-                    Console.WriteLine(new string('-', 40));
+                    Console.WriteLine("No barcodes detected.");
                 }
+                else
+                {
+                    // Output details for each detected barcode
+                    foreach (var result in results)
+                    {
+                        Console.WriteLine($"CodeText: {result.CodeText}");
+                        Console.WriteLine($"CodeType: {result.CodeTypeName}");
+                        Console.WriteLine($"ReadingQuality: {result.ReadingQuality}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // Handle any errors that occur during barcode reading
+                Console.WriteLine($"Error during barcode reading: {ex.Message}");
             }
         }
     }

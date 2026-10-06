@@ -1,101 +1,85 @@
-// Title: Demonstrate false positives when MinimalXDimension is set too low
-// Description: This example creates a blank image and scans it with Aspose.BarCode using two different MinimalXDimension settings to show how a low value can produce false positive detections.
-// Category-Description: Shows how to use Aspose.BarCode's barcode recognition quality settings, specifically XDimensionMode and MinimalXDimension, to control false positive rates. Typical use cases include preprocessing scans of documents where background noise may be misinterpreted as barcodes. Developers often adjust these settings when working with BarCodeReader to balance detection sensitivity and accuracy.
+// Title: Demonstrate false positive detection with low MinimalXDimension
+// Description: Generates a Code128 barcode and reads it using a deliberately low MinimalXDimension setting to show how false positives can be recorded.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes and BarCodeReader with QualitySettings (XDimensionMode and MinimalXDimension) for decoding. Developers often adjust MinimalXDimension to balance detection sensitivity and false positive rates, especially in high‑throughput scanning scenarios.
 // Prompt: Record the number of false positives encountered when MinimalXDimension is set too low.
-// Tags: barcode, false positives, minimalxdimension, qualitysettings, barcodereader, aspnet, csharp
+// Tags: code128, barcode-generation, barcode-recognition, minimalxdimension, false-positives, aspose.barcode, png
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates the impact of MinimalXDimension on false positive barcode detection.
+/// Example program that generates a barcode, reads it with a low MinimalXDimension,
+/// and records any false positives that occur during decoding.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the demo. Generates a blank image and measures false positives at two MinimalXDimension values.
+    /// Entry point of the example. Generates a barcode, attempts to read it with
+    /// a minimal X-dimension setting, and reports false positive counts.
     /// </summary>
     static void Main()
     {
-        // Create a temporary folder for the demo files
-        string tempFolder = Path.Combine(Path.GetTempPath(), "FalsePositivesDemo_" + Guid.NewGuid().ToString("N"));
+        // Create a unique temporary folder for storing the generated barcode image
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeTest_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
 
-        // Build the path for a blank white PNG image (contains no barcode)
-        string blankImagePath = Path.Combine(tempFolder, "blank.png");
+        // Define the full path for the barcode image file
+        string barcodePath = Path.Combine(tempFolder, "barcode.png");
 
-        // Generate a 200x200 white bitmap and save it as PNG
-        using (Bitmap bmp = new Bitmap(200, 200, PixelFormat.Format24bppRgb))
+        // Generate a simple Code128 barcode and save it as a PNG file
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "AsposeTest"))
         {
-            using (Graphics g = Graphics.FromImage(bmp))
+            // Set the X-dimension (width of the narrowest bar) to 2 pixels
+            generator.Parameters.Barcode.XDimension.Pixels = 2f;
+            generator.Save(barcodePath, BarCodeImageFormat.Png);
+        }
+
+        // Expected number of barcodes in the image (we generated only one)
+        int expectedCount = 1;
+        int falsePositives = 0;
+
+        // Initialize the barcode reader for Code128 symbology
+        BaseDecodeType decodeType = DecodeType.Code128;
+        using (var reader = new BarCodeReader(barcodePath, decodeType))
+        {
+            // Configure the reader to use MinimalXDimension mode with an intentionally low value
+            reader.QualitySettings.XDimension = XDimensionMode.UseMinimalXDimension;
+            reader.QualitySettings.MinimalXDimension = 0.5f; // very low to provoke false positives
+
+            // Perform barcode detection
+            BarCodeResult[] results = reader.ReadBarCodes();
+            int readCount = results?.Length ?? 0;
+
+            // Calculate false positives if more barcodes were detected than expected
+            if (readCount > expectedCount)
             {
-                g.Clear(Color.White);
+                falsePositives = readCount - expectedCount;
             }
-            bmp.Save(blankImagePath, ImageFormat.Png);
+
+            // Output the detection results
+            Console.WriteLine($"Barcodes read: {readCount}");
+            foreach (var result in results)
+            {
+                Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
+            }
         }
 
-        // Verify that the image file was successfully created
-        if (!File.Exists(blankImagePath))
-        {
-            Console.WriteLine("Failed to create the test image.");
-            return;
-        }
+        // Report the number of false positives detected
+        Console.WriteLine($"False positives detected: {falsePositives}");
 
-        // Scan the blank image with a very low MinimalXDimension (likely to produce false positives)
-        int falsePositivesLow = ReadBarcodes(blankImagePath, 0.5f);
-
-        // Scan the same image with a reasonable MinimalXDimension (should yield zero false positives)
-        int falsePositivesHigh = ReadBarcodes(blankImagePath, 2.0f);
-
-        // Output the results
-        Console.WriteLine($"False positives with MinimalXDimension = 0.5: {falsePositivesLow}");
-        Console.WriteLine($"False positives with MinimalXDimension = 2.0: {falsePositivesHigh}");
-
-        // Attempt to clean up temporary files and folder
+        // Clean up temporary files and directories
         try
         {
-            File.Delete(blankImagePath);
-            Directory.Delete(tempFolder);
+            if (File.Exists(barcodePath))
+                File.Delete(barcodePath);
+            Directory.Delete(tempFolder, true);
         }
         catch
         {
-            // Cleanup failures are non‑critical for the demo
-        }
-    }
-
-    /// <summary>
-    /// Reads barcodes from the specified image using the given MinimalXDimension setting.
-    /// </summary>
-    /// <param name="imagePath">Path to the image file to be scanned.</param>
-    /// <param name="minimalXDimension">The MinimalXDimension value to apply to the reader's quality settings.</param>
-    /// <returns>The number of barcodes detected (false positives if the image contains none).</returns>
-    static int ReadBarcodes(string imagePath, float minimalXDimension)
-    {
-        // Ensure the image file exists before attempting to read
-        if (!File.Exists(imagePath))
-        {
-            Console.WriteLine($"Image not found: {imagePath}");
-            return 0;
-        }
-
-        // Configure the reader to look for Code128 barcodes
-        BaseDecodeType decodeType = DecodeType.Code128;
-
-        // Initialize the barcode reader with the image and decode type
-        using (BarCodeReader reader = new BarCodeReader(imagePath, decodeType))
-        {
-            // Apply quality settings: use MinimalXDimension mode and set the desired value
-            reader.QualitySettings.XDimension = XDimensionMode.UseMinimalXDimension;
-            reader.QualitySettings.MinimalXDimension = minimalXDimension;
-
-            // Perform the scan and return the count of detected barcodes
-            BarCodeResult[] results = reader.ReadBarCodes();
-            return results?.Length ?? 0;
+            // Ignore any errors that occur during cleanup
         }
     }
 }

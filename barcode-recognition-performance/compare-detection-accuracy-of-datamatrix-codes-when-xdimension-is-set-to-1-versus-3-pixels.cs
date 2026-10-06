@@ -1,8 +1,8 @@
-// Title: Compare DataMatrix detection accuracy with different XDimension values
-// Description: Demonstrates generating DataMatrix barcodes with XDimension set to 1 and 3 pixels, then reads them back to compare detection success rates.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It shows how to use BarcodeGenerator to create DataMatrix symbols, configure the XDimension property, and employ BarCodeReader to decode them. Developers working with high‑density or low‑density DataMatrix codes often need to tune XDimension for optimal scanning performance, making this pattern useful for testing and quality assurance.
-// Prompt: Compare detection accuracy of DataMatrix codes when XDimension is set to 1 versus 3 pixels.
-// Tags: datamatrix, xdimension, detection, accuracy, barcode generation, barcode recognition, aspnet, csharp
+// Title: DataMatrix detection accuracy comparison for different XDimension values
+// Description: Demonstrates generating DataMatrix barcodes with XDimension set to 1 and 3 pixels, then measuring detection success using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating DataMatrix symbols and BarCodeReader for decoding them. Typical scenarios include evaluating barcode readability under varying rendering parameters, such as XDimension, which developers often adjust to meet printing or scanning requirements. The code serves as a reference for batch processing and accuracy testing of barcode images.
+/// Prompt: Compare detection accuracy of DataMatrix codes when XDimension is set to 1 versus 3 pixels.
+// Tags: datamatrix, detection, accuracy, xdimension, barcode-generation, barcode-recognition, aspose.barcode
 
 using System;
 using System.IO;
@@ -12,96 +12,98 @@ using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates how XDimension affects DataMatrix detection accuracy.
+/// Example program that compares detection accuracy of DataMatrix barcodes
+/// generated with XDimension of 1 pixel versus 3 pixels.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Generates DataMatrix barcodes with XDimension 1 and 3 pixels, reads them back, and reports detection success.
+    /// Entry point. Generates barcodes, evaluates detection, outputs results, and cleans up.
     /// </summary>
-    /// <param name="args">Command‑line arguments (not used).</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Create a unique temporary folder for generated images
-        string tempFolder = Path.Combine(Path.GetTempPath(), "DataMatrixXDimTest_" + Guid.NewGuid().ToString("N"));
+        // Create a temporary folder to store generated barcode images
+        string tempFolder = Path.Combine(Path.GetTempPath(), "DMCompare_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
 
-        // Prepare a list of random code texts to encode
-        List<string> codeTexts = new List<string>();
-        for (int i = 0; i < 5; i++)
+        // Sample texts to encode into DataMatrix barcodes
+        string[] sampleTexts = new[] { "ABC123", "HELLO", "1234567890", "DATA", "XYZ" };
+
+        // Dictionary to hold file paths grouped by XDimension value
+        var filesByXDim = new Dictionary<int, List<string>>
         {
-            codeTexts.Add("DM" + Guid.NewGuid().ToString("N").Substring(0, 8));
-        }
+            { 1, new List<string>() },
+            { 3, new List<string>() }
+        };
 
-        // Define the XDimension values to test (1 pixel and 3 pixels)
-        var xDimensions = new float[] { 1f, 3f };
-        var successCounts = new Dictionary<float, int>();
-
-        // Iterate over each XDimension setting
-        foreach (float xDim in xDimensions)
+        // Generate DataMatrix barcodes with XDimension = 1 and 3 pixels
+        foreach (int xDim in new[] { 1, 3 })
         {
-            var generatedFiles = new List<string>();
-            int index = 0;
-
-            // Generate barcode images for each code text with the current XDimension
-            foreach (string text in codeTexts)
+            for (int i = 0; i < sampleTexts.Length; i++)
             {
-                string filePath = Path.Combine(tempFolder, $"DM_X{xDim}_{index}.png");
+                string text = sampleTexts[i];
+                string filePath = Path.Combine(tempFolder, $"DM_{xDim}_{i}.png");
+
+                // Create barcode generator, set XDimension, and save as PNG
                 using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, text))
                 {
                     generator.Parameters.Barcode.XDimension.Pixels = xDim;
                     generator.Save(filePath, BarCodeImageFormat.Png);
                 }
-                generatedFiles.Add(filePath);
-                index++;
+
+                filesByXDim[xDim].Add(filePath);
             }
+        }
 
-            // Attempt to read each generated image and count successful detections
-            int success = 0;
-            foreach (string file in generatedFiles)
+        // Local function to evaluate detection accuracy for a given XDimension
+        int Evaluate(int xDim, List<string> files)
+        {
+            int detected = 0;
+
+            for (int i = 0; i < files.Count; i++)
             {
-                if (!File.Exists(file))
-                {
-                    Console.WriteLine($"File not found: {file}");
-                    continue;
-                }
+                string file = files[i];
+                string expectedText = sampleTexts[i];
 
-                using (var reader = new BarCodeReader(file, DecodeType.DataMatrix))
+                try
                 {
-                    try
+                    // Read barcode from image file
+                    using (var reader = new BarCodeReader(file, DecodeType.DataMatrix))
                     {
                         var results = reader.ReadBarCodes();
-                        if (results != null && results.Length > 0)
+
+                        // Count as detected if a result matches the expected text
+                        if (results.Length > 0 && results[0].CodeText == expectedText)
                         {
-                            success++;
+                            detected++;
                         }
                     }
-                    catch (ArgumentException ex)
-                    {
-                        Console.WriteLine($"Failed to read {Path.GetFileName(file)}: {ex.Message}");
-                    }
+                }
+                catch (ArgumentException)
+                {
+                    // Image loading failed; skip this file
                 }
             }
 
-            // Store the detection count for the current XDimension
-            successCounts[xDim] = success;
+            return detected;
         }
 
-        // Output the comparison results
-        Console.WriteLine("Detection accuracy comparison for DataMatrix XDimension:");
-        foreach (var kvp in successCounts)
-        {
-            Console.WriteLine($"XDimension = {kvp.Key} pixels: {kvp.Value} out of {codeTexts.Count} detected");
-        }
+        // Perform detection evaluation for both XDimension settings
+        int detected1 = Evaluate(1, filesByXDim[1]);
+        int detected3 = Evaluate(3, filesByXDim[3]);
 
-        // Cleanup temporary files and folder
+        // Output detection results to the console
+        Console.WriteLine($"DataMatrix detection with XDimension = 1 pixel: {detected1}/{sampleTexts.Length} detected");
+        Console.WriteLine($"DataMatrix detection with XDimension = 3 pixels: {detected3}/{sampleTexts.Length} detected");
+
+        // Clean up temporary files and folder
         try
         {
             Directory.Delete(tempFolder, true);
         }
         catch
         {
-            // Ignore cleanup errors
+            // Ignore any errors during cleanup
         }
     }
 }

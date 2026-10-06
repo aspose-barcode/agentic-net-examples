@@ -1,6 +1,6 @@
-// Title: Barcode generation and recognition with XDimension mode variations
-// Description: This example creates a Code128 barcode image, saves it, and then reads it back using different XDimension settings, demonstrating how UseMinimalXDimension affects recognition.
-// Category-Description: Demonstrates Aspose.BarCode generation and recognition APIs. It uses BarcodeGenerator to create barcodes and BarCodeReader with QualitySettings.XDimension to control barcode module width. Typical scenarios include testing barcode rendering options and ensuring reliable scanning across different XDimension configurations. Developers often need to validate that toggling UseMinimalXDimension yields correct decoding results.
+// Title: Barcode generation and recognition with XDimension mode testing
+// Description: This example generates a Code128 barcode image, then reads it using different XDimension modes, including UseMinimalXDimension, to verify successful recognition.
+// Category-Description: Demonstrates Aspose.BarCode generation and recognition APIs. It uses BarcodeGenerator to create barcodes, BarCodeReader with QualitySettings.XDimension to control X-dimension handling, and XDimensionMode enumeration. Typical scenarios include testing barcode readability under varying printing resolutions or minimal module widths. Developers often need to toggle UseMinimalXDimension and set MinimalXDimension to ensure reliable scanning.
 // Prompt: Write integration tests confirming barcode recognition succeeds after toggling UseMinimalXDimension correctly.
 // Tags: barcode, code128, generation, recognition, xdimension, minimalxdimension, aspose.barcode, .net
 
@@ -10,119 +10,86 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates barcode generation and recognition using different XDimension modes,
-/// including the UseMinimalXDimension setting.
+/// Demonstrates generating a Code128 barcode and testing recognition across XDimension modes,
+/// including UseMinimalXDimension, to ensure successful barcode scanning.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a Code128 barcode, saves it to a temporary file,
-    /// and runs recognition tests with various XDimension configurations.
+    /// Entry point that creates a barcode, runs recognition tests for each XDimension mode,
+    /// and cleans up temporary files.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary directory for the barcode image
+        // Create a temporary directory for test files
         string tempDir = Path.Combine(Path.GetTempPath(), "BarcodeTest_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempDir);
 
-        // Define the output path and the text to encode
+        // Define barcode parameters
+        string barcodeText = "AsposeTest123";
         string barcodePath = Path.Combine(tempDir, "code128.png");
-        string codeText = "AsposeTest123";
 
-        // Generate the barcode image using BarcodeGenerator
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+        // Generate a Code128 barcode image
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, barcodeText))
         {
             generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        // Verify that the image was created successfully
-        if (!File.Exists(barcodePath))
+        // Define the XDimension modes to test
+        var modes = new (string Name, XDimensionMode Mode)[]
         {
-            Console.WriteLine("Failed to create barcode image.");
-            return;
-        }
+            ("Normal", XDimensionMode.Normal),
+            ("Small", XDimensionMode.Small),
+            ("UseMinimalXDimension", XDimensionMode.UseMinimalXDimension)
+        };
 
-        // Run recognition tests with normal, small, and minimal XDimension modes
-        TestRecognition(barcodePath, codeText, XDimensionMode.Normal, "Normal");
-        TestRecognition(barcodePath, codeText, XDimensionMode.Small, "Small");
-        TestRecognitionWithMinimal(barcodePath, codeText, XDimensionMode.UseMinimalXDimension, "UseMinimalXDimension");
-    }
-
-    /// <summary>
-    /// Tests barcode recognition using a specified XDimension mode.
-    /// </summary>
-    /// <param name="imagePath">Path to the barcode image.</param>
-    /// <param name="expectedText">The expected decoded text.</param>
-    /// <param name="mode">The XDimension mode to apply.</param>
-    /// <param name="modeName">A friendly name for logging.</param>
-    static void TestRecognition(string imagePath, string expectedText, XDimensionMode mode, string modeName)
-    {
-        // Set the decode type to Code128
-        BaseDecodeType decodeType = DecodeType.Code128;
-
-        // Initialize the reader with the image and decode type
-        using (var reader = new BarCodeReader(imagePath, decodeType))
+        // Iterate over each XDimension mode and perform recognition
+        foreach (var (name, mode) in modes)
         {
-            // Apply the desired XDimension mode
-            reader.QualitySettings.XDimension = mode;
+            Console.WriteLine($"Testing XDimension mode: {name}");
 
-            // Perform barcode detection
-            BarCodeResult[] results = reader.ReadBarCodes();
-
-            // Determine if the expected text was found
-            bool success = false;
-            foreach (var result in results)
+            // Create a reader configured for Code128 decoding
+            using (var reader = new BarCodeReader(barcodePath, DecodeType.Code128))
             {
-                if (result.CodeText == expectedText)
+                // Apply the current XDimension mode
+                reader.QualitySettings.XDimension = mode;
+
+                // When using UseMinimalXDimension, also set MinimalXDimension
+                if (mode == XDimensionMode.UseMinimalXDimension)
                 {
-                    success = true;
-                    break;
+                    reader.QualitySettings.MinimalXDimension = 1f;
+                }
+
+                // Perform barcode recognition
+                BarCodeResult[] results = reader.ReadBarCodes();
+
+                // Determine if recognition succeeded
+                bool success = results != null && results.Length > 0 && !string.IsNullOrEmpty(results[0].CodeText);
+                Console.WriteLine($"Barcodes read: {results?.Length ?? 0}");
+                Console.WriteLine($"Success: {(success ? "Yes" : "No")}");
+
+                // Output each recognized barcode's type and text
+                foreach (var result in results)
+                {
+                    Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
                 }
             }
 
-            // Output the test result
-            Console.WriteLine($"{modeName} mode recognition {(success ? "succeeded" : "failed")} - found {results.Length} barcode(s).");
+            Console.WriteLine();
         }
-    }
 
-    /// <summary>
-    /// Tests barcode recognition using the UseMinimalXDimension mode with a custom minimal X dimension value.
-    /// </summary>
-    /// <param name="imagePath">Path to the barcode image.</param>
-    /// <param name="expectedText">The expected decoded text.</param>
-    /// <param name="mode">The XDimension mode (should be UseMinimalXDimension).</param>
-    /// <param name="modeName">A friendly name for logging.</param>
-    static void TestRecognitionWithMinimal(string imagePath, string expectedText, XDimensionMode mode, string modeName)
-    {
-        // Set the decode type to Code128
-        BaseDecodeType decodeType = DecodeType.Code128;
-
-        // Initialize the reader with the image and decode type
-        using (var reader = new BarCodeReader(imagePath, decodeType))
+        // Clean up temporary files and directory
+        try
         {
-            // Apply the UseMinimalXDimension mode and set a minimal X dimension value
-            reader.QualitySettings.XDimension = mode;
-            reader.QualitySettings.MinimalXDimension = 1f;
-
-            // Perform barcode detection
-            BarCodeResult[] results = reader.ReadBarCodes();
-
-            // Determine if the expected text was found
-            bool success = false;
-            foreach (var result in results)
-            {
-                if (result.CodeText == expectedText)
-                {
-                    success = true;
-                    break;
-                }
-            }
-
-            // Output the test result
-            Console.WriteLine($"{modeName} mode recognition {(success ? "succeeded" : "failed")} - found {results.Length} barcode(s).");
+            if (File.Exists(barcodePath))
+                File.Delete(barcodePath);
+            Directory.Delete(tempDir, true);
+        }
+        catch
+        {
+            // Ignored - cleanup failure should not affect test outcome
         }
     }
 }

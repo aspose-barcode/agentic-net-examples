@@ -1,8 +1,8 @@
-// Title: Barcode Generation and Recognition with Minimal XDimension Diagnostic Logging
-// Description: Demonstrates generating a QR barcode, saving it as PNG, and recognizing it while logging element size information when UseMinimalXDimension is enabled.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, illustrating how to configure AutoSizeMode, XDimension, and QualitySettings for minimal XDimension mode. It shows typical use cases such as creating a barcode image, reading it, and extracting diagnostic information about element sizes—common tasks for developers needing precise control over barcode dimensions.
+// Title: QR Code Generation and Minimal X-Dimension Barcode Recognition
+// Description: This example generates a QR barcode, then reads it with the UseMinimalXDimension mode enabled, logging the element size used during detection.
+// Category-Description: Demonstrates Aspose.BarCode generation and recognition APIs, focusing on the XDimensionMode settings. It uses BarcodeGenerator for creating barcodes and BarCodeReader with QualitySettings to control minimal element dimensions, a common requirement for high‑density or low‑resolution scanning scenarios. Developers often need to adjust X‑dimension to improve detection accuracy and to diagnose element sizing.
 // Prompt: Create a diagnostic mode that logs each barcode element size when UseMinimalXDimension is active.
-// Tags: qr,barcode,generation,recognition,xdimension,diagnostic,aspose.barcode,imagemanipulation
+// Tags: qr, barcode, generation, recognition, minimalxdimension, diagnostics, aspose.barcode
 
 using System;
 using System.IO;
@@ -11,85 +11,64 @@ using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates barcode generation, saving, and recognition with diagnostic logging of element sizes when UseMinimalXDimension is active.
+/// Demonstrates generating a QR barcode, then reading it with UseMinimalXDimension enabled
+/// and logging diagnostic information about the element size used during detection.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a QR barcode, reads it with minimal XDimension mode, and logs size information.
+    /// Entry point of the example. Generates a QR code, configures minimal X‑dimension
+    /// for recognition, and outputs diagnostic details for each detected barcode.
     /// </summary>
     static void Main()
     {
-        // Prepare a temporary folder and file path for the generated barcode image
-        string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDiag_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
-        string barcodePath = Path.Combine(tempFolder, "barcode.png");
-
-        // Generate a sample QR barcode and save it as PNG
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Test123"))
+        // Generate a sample QR barcode and store it in a memory stream
+        using (var barcodeStream = new MemoryStream())
         {
-            // Ensure default sizing (AutoSizeMode.None) so XDimension influences size
-            generator.Parameters.AutoSizeMode = AutoSizeMode.None;
-            generator.Parameters.Barcode.XDimension.Point = 2f; // example module size
-            generator.Save(barcodePath, BarCodeImageFormat.Png);
-        }
-
-        // Verify that the image file was created successfully
-        if (!File.Exists(barcodePath))
-        {
-            Console.WriteLine("Failed to create barcode image.");
-            return;
-        }
-
-        // Load the generated image to log its pixel dimensions
-        using (var bitmap = new Bitmap(barcodePath))
-        {
-            Console.WriteLine($"Generated barcode image size: {bitmap.Width}x{bitmap.Height} pixels");
-        }
-
-        // Read the barcode with UseMinimalXDimension enabled for diagnostic logging
-        using (var reader = new BarCodeReader(barcodePath, DecodeType.AllSupportedTypes))
-        {
-            // Enable UseMinimalXDimension mode and set a minimal element size (in pixels)
-            reader.QualitySettings.XDimension = XDimensionMode.UseMinimalXDimension;
-            reader.QualitySettings.MinimalXDimension = 2f;
-
-            // Log the current recognition settings
-            Console.WriteLine($"Recognition XDimension mode: {reader.QualitySettings.XDimension}");
-            Console.WriteLine($"Recognition MinimalXDimension: {reader.QualitySettings.MinimalXDimension} pixels");
-
-            // Perform barcode recognition
-            BarCodeResult[] results = reader.ReadBarCodes();
-
-            if (results.Length == 0)
+            // Create a BarcodeGenerator for QR encoding with the text "HelloWorld"
+            using (var generator = new BarcodeGenerator(EncodeTypes.QR, "HelloWorld"))
             {
-                Console.WriteLine("No barcode detected (expected if unsupported or unreadable).");
+                // Disable automatic sizing to keep control over dimensions
+                generator.Parameters.AutoSizeMode = AutoSizeMode.None;
+                // Set the X‑dimension (module size) to 2 points
+                generator.Parameters.Barcode.XDimension.Point = 2f;
+                // Save the generated barcode as PNG into the memory stream
+                generator.Save(barcodeStream, BarCodeImageFormat.Png);
             }
-            else
+
+            // Reset stream position to the beginning for reading
+            barcodeStream.Position = 0;
+
+            // Initialize a BarCodeReader for QR decoding using the memory stream
+            using (var reader = new BarCodeReader(barcodeStream, DecodeType.QR))
             {
-                // Iterate through detected barcodes and log detailed information
-                foreach (var result in results)
+                // Enable UseMinimalXDimension mode and define the minimal element size (2 pixels)
+                reader.QualitySettings.XDimension = XDimensionMode.UseMinimalXDimension;
+                reader.QualitySettings.MinimalXDimension = 2f; // pixels
+
+                Console.WriteLine("UseMinimalXDimension is active. MinimalXDimension set to 2 pixels.");
+
+                // Perform barcode recognition
+                BarCodeResult[] results = reader.ReadBarCodes();
+
+                // Check if any barcodes were detected
+                if (results.Length == 0)
                 {
-                    Console.WriteLine("=== Detected Barcode ===");
-                    Console.WriteLine($"Code Text: {result.CodeText}");
-                    Console.WriteLine($"Symbology: {result.CodeTypeName}");
-                    Console.WriteLine($"Reading Quality: {result.ReadingQuality}");
-                    // Log element size information (XDimension and MinimalXDimension) used during recognition
-                    Console.WriteLine($"Used XDimension mode: {reader.QualitySettings.XDimension}");
-                    Console.WriteLine($"Used MinimalXDimension: {reader.QualitySettings.MinimalXDimension} pixels");
+                    Console.WriteLine("No barcodes detected.");
+                }
+                else
+                {
+                    // Iterate over each detected barcode and log diagnostic information
+                    foreach (BarCodeResult result in results)
+                    {
+                        Console.WriteLine($"Detected barcode:");
+                        Console.WriteLine($"  Code Text: {result.CodeText}");
+                        Console.WriteLine($"  Code Type: {result.CodeTypeName}");
+                        // Log the minimal X‑dimension used as a proxy for element size
+                        Console.WriteLine($"  MinimalXDimension used for detection: {reader.QualitySettings.MinimalXDimension} pixels");
+                    }
                 }
             }
-        }
-
-        // Clean up temporary files and directory
-        try
-        {
-            File.Delete(barcodePath);
-            Directory.Delete(tempFolder);
-        }
-        catch
-        {
-            // Ignored - cleanup failure should not affect program exit
         }
     }
 }

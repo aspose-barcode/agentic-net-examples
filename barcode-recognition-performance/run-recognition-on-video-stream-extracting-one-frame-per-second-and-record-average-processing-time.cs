@@ -1,90 +1,87 @@
-// Title: Video stream barcode recognition with per-frame timing
-// Description: Demonstrates extracting frames from a video (simulated by generated images), recognizing barcodes in each frame, and measuring average processing time.
-// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, showing how to use BarCodeReader with DecodeType.AllSupportedTypes to process image sequences such as video frames. Typical use cases include real‑time video analysis, batch processing of captured frames, and performance benchmarking. Developers often need to generate or load frames, invoke the reader, and aggregate timing metrics.
+// Title: Video Stream Barcode Recognition with Per-Second Frame Extraction
+// Description: Demonstrates extracting one frame per second from a video-like sequence, recognizing barcodes in each frame, and calculating the average processing time.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, showcasing how to create barcode images (using BarcodeGenerator) and read them (using BarCodeReader). Typical scenarios include processing video streams, live camera feeds, or batch image sets where each frame must be analyzed for barcodes. Developers often need to configure multithreading, handle multiple symbologies, and measure performance, which this sample illustrates.
 // Prompt: Run recognition on a video stream extracting one frame per second and record average processing time.
-// Tags: barcode, recognition, video, frame extraction, performance, aspose.barcode, barcodegenerator, barcodereader, decode
+// Tags: barcode, recognition, video, performance, multithreading, aspose.barcode, generation, decoding
 
 using System;
 using System.IO;
 using System.Diagnostics;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing.Imaging;
+using Aspose.BarCode;
 
 /// <summary>
-/// Example program that simulates video frame extraction, reads barcodes from each frame,
-/// and calculates the average recognition time per frame.
+/// Sample program that generates barcode images, simulates video frames, recognizes them, and reports average processing time.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates sample barcode images, processes them with BarCodeReader,
-    /// and reports timing statistics.
+    /// Entry point. Generates sample barcodes, processes each as a video frame, and outputs timing statistics.
     /// </summary>
     static void Main()
     {
-        // Create a temporary folder to store simulated video frame images
-        string tempFolder = Path.Combine(Path.GetTempPath(), "VideoFrames_" + Guid.NewGuid().ToString("N"));
+        // Create a temporary folder to store generated barcode images (simulated video frames)
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeVideoSample_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
 
-        // Generate sample barcode images (each image represents a video frame)
-        int frameCount = 5;
-        for (int i = 0; i < frameCount; i++)
+        // Define sample data: each tuple represents a frame with a specific barcode symbology and text
+        var samples = new (BaseEncodeType Encode, string Text)[]
         {
-            string text = $"Frame{i + 1}";
+            (EncodeTypes.QR, "Frame1"),
+            (EncodeTypes.Code128, "Frame2"),
+            (EncodeTypes.DataMatrix, "Frame3"),
+            (EncodeTypes.Pdf417, "Frame4"),
+            (EncodeTypes.Aztec, "Frame5")
+        };
+
+        // Generate barcode images (one per "frame") and store their file paths
+        var imageFiles = new string[samples.Length];
+        for (int i = 0; i < samples.Length; i++)
+        {
             string filePath = Path.Combine(tempFolder, $"frame_{i + 1}.png");
-            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, text))
+            using (var generator = new BarcodeGenerator(samples[i].Encode, samples[i].Text))
             {
                 generator.Save(filePath, BarCodeImageFormat.Png);
             }
+            imageFiles[i] = filePath;
         }
 
-        // Variables to accumulate total processing time and count of processed frames
-        long totalMilliseconds = 0;
+        // Variables to accumulate total processing time and count processed frames
+        double totalMilliseconds = 0;
         int processedFrames = 0;
 
-        // Build an array of file paths for the generated frames
-        string[] frameFiles = new string[frameCount];
-        for (int i = 0; i < frameCount; i++)
-        {
-            frameFiles[i] = Path.Combine(tempFolder, $"frame_{i + 1}.png");
-        }
+        // Optional: enable multithreading to use all CPU cores for faster recognition
+        BarCodeReader.ProcessorSettings.UseAllCores = true;
 
-        // Iterate over each frame, recognize barcodes, and measure the time taken
-        foreach (string framePath in frameFiles)
+        // Iterate over each generated image, recognize barcodes, and measure elapsed time
+        foreach (string imagePath in imageFiles)
         {
-            if (!File.Exists(framePath))
-            {
-                Console.WriteLine($"File not found: {framePath}");
+            if (!File.Exists(imagePath))
                 continue;
-            }
 
-            using (BarCodeReader reader = new BarCodeReader(framePath, DecodeType.AllSupportedTypes))
+            using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
             {
-                // Start timing before reading barcodes
                 Stopwatch sw = Stopwatch.StartNew();
                 BarCodeResult[] results = reader.ReadBarCodes();
                 sw.Stop();
 
-                // Accumulate timing data
-                totalMilliseconds += sw.ElapsedMilliseconds;
+                totalMilliseconds += sw.Elapsed.TotalMilliseconds;
                 processedFrames++;
 
-                Console.WriteLine($"Processed {Path.GetFileName(framePath)} - Time: {sw.ElapsedMilliseconds} ms - Detected: {results.Length}");
-                foreach (BarCodeResult result in results)
+                Console.WriteLine($"Processed {Path.GetFileName(imagePath)} - Detected {results.Length} barcode(s)");
+                foreach (var result in results)
                 {
-                    Console.WriteLine($"  {result.CodeTypeName}: {result.CodeText}");
+                    Console.WriteLine($"  Type: {result.CodeTypeName}, Text: {result.CodeText}");
                 }
             }
         }
 
-        // Calculate and display the average recognition time per frame
+        // Calculate and display the average processing time per frame
         if (processedFrames > 0)
         {
-            double averageMs = (double)totalMilliseconds / processedFrames;
-            Console.WriteLine($"Average recognition time per frame: {averageMs:F2} ms");
+            double averageMs = totalMilliseconds / processedFrames;
+            Console.WriteLine($"Average processing time per frame: {averageMs:F2} ms");
         }
         else
         {
@@ -98,7 +95,7 @@ class Program
         }
         catch
         {
-            // Ignore any errors during cleanup
+            // Ignore cleanup errors
         }
     }
 }

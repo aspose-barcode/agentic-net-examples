@@ -1,8 +1,8 @@
-// Title: Barcode generation, loading, detection, and decoding timing example
-// Description: Demonstrates how to generate a QR barcode, load it, and measure the time taken for each processing stage (loading, preprocessing, detection, decoding) using Aspose.BarCode.
-// Category-Description: This example belongs to the Aspose.BarCode performance profiling category, illustrating the use of BarcodeGenerator, BarCodeReader, and QualitySettings to evaluate processing speed. Developers often need to benchmark barcode operations to optimize applications that generate or read barcodes in high‑throughput scenarios.
+// Title: Barcode processing timing demo with Aspose.BarCode
+// Description: Demonstrates generating a QR code, loading it, configuring the reader, and measuring the time taken for each processing stage.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes and BarCodeReader with QualitySettings for fast, high‑performance detection. Typical use cases include performance profiling of barcode workflows, benchmarking different quality settings, and identifying bottlenecks in loading, preprocessing, detection, and decoding stages. Developers often need to log detailed timing to optimize barcode processing pipelines.
 // Prompt: Log detailed timing for each processing stage—loading, preprocessing, detection, and decoding—to identify bottlenecks.
-// Tags: qr, barcode, generation, recognition, timing, performance, aspose.barcode, barcodegenerator, barcodereader, qualitysettings
+// Tags: qr, barcode, timing, performance, generation, recognition, aspose.barcode
 
 using System;
 using System.Diagnostics;
@@ -11,91 +11,103 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Contains the program that measures barcode processing times.
+/// Demonstrates barcode generation, loading, preprocessing, detection, and decoding while logging detailed timing for each stage.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point for the barcode timing demonstration.
+    /// Entry point of the demo. Generates a QR barcode, measures loading, preprocessing, detection, and decoding times, and outputs results.
     /// </summary>
     static void Main()
     {
-        // Prepare temporary directory and file paths
-        string tempDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeTiming_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempDir);
-        string barcodePath = Path.Combine(tempDir, "sample.png");
+        // Prepare a temporary folder and define the path for the barcode image
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeTimingDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
+        string imagePath = Path.Combine(tempFolder, "sample.png");
 
-        // Stage 1: Generate a sample QR barcode and save it as PNG
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Aspose Timing Test"))
+        // Generate a sample QR barcode and save it as PNG
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Sample"))
         {
-            generator.Parameters.Barcode.XDimension.Point = 2f;
-            generator.Save(barcodePath, BarCodeImageFormat.Png);
+            generator.Save(imagePath, BarCodeImageFormat.Png);
         }
 
-        // Verify that the barcode image was created successfully
-        if (!File.Exists(barcodePath))
+        // Verify that the image was created successfully
+        if (!File.Exists(imagePath))
         {
             Console.WriteLine("Failed to create barcode image.");
             return;
         }
 
-        // Stage 2: Loading – read the image file into a byte array
+        // -------------------------------------------------
+        // Stage 1: Loading the image into memory
+        // -------------------------------------------------
         Stopwatch swLoad = Stopwatch.StartNew();
-        byte[] imageBytes;
-        using (var fs = new FileStream(barcodePath, FileMode.Open, FileAccess.Read))
-        using (var ms = new MemoryStream())
+        byte[] imageData;
+        using (FileStream fs = File.OpenRead(imagePath))
         {
-            fs.CopyTo(ms);
-            imageBytes = ms.ToArray();
+            imageData = new byte[fs.Length];
+            fs.Read(imageData, 0, imageData.Length);
         }
+        MemoryStream imageStream = new MemoryStream(imageData);
         swLoad.Stop();
         Console.WriteLine($"Loading time: {swLoad.ElapsedMilliseconds} ms");
 
-        // Stage 3: Preprocessing – create a reader, configure quality settings, and load the image
-        Stopwatch swPre = Stopwatch.StartNew();
-        BaseDecodeType decodeType = DecodeType.AllSupportedTypes;
-        using (var reader = new BarCodeReader(new MemoryStream(imageBytes), decodeType))
+        // -------------------------------------------------
+        // Stage 2: Preprocessing – configure the barcode reader
+        // -------------------------------------------------
+        Stopwatch swPrep = Stopwatch.StartNew();
+        using (var reader = new BarCodeReader(imageStream, DecodeType.AllSupportedTypes))
         {
             // Apply high‑performance quality settings to speed up detection
             reader.QualitySettings = QualitySettings.HighPerformance;
             reader.QualitySettings.Deconvolution = DeconvolutionMode.Fast;
             reader.QualitySettings.XDimension = XDimensionMode.UseMinimalXDimension;
-            reader.QualitySettings.MinimalXDimension = 2f;
-            swPre.Stop();
-            Console.WriteLine($"Preprocessing time: {swPre.ElapsedMilliseconds} ms");
+            reader.QualitySettings.MinimalXDimension = 1f;
+            swPrep.Stop();
+            Console.WriteLine($"Preprocessing time: {swPrep.ElapsedMilliseconds} ms");
 
-            // Stage 4: Detection – read all barcodes from the image
+            // -------------------------------------------------
+            // Stage 3: Detection & Decoding
+            // -------------------------------------------------
             Stopwatch swDetect = Stopwatch.StartNew();
             BarCodeResult[] results = reader.ReadBarCodes();
             swDetect.Stop();
-            Console.WriteLine($"Detection time: {swDetect.ElapsedMilliseconds} ms");
+            Console.WriteLine($"Detection/Decoding time: {swDetect.ElapsedMilliseconds} ms");
 
-            // Stage 5: Decoding – extract and display data from each detection result
-            Stopwatch swDecode = Stopwatch.StartNew();
-            foreach (var result in results)
+            // Output detection results
+            if (results.Length == 0)
             {
-                Console.WriteLine($"Detected Type: {result.CodeTypeName}");
-                Console.WriteLine($"Code Text: {result.CodeText}");
-                Console.WriteLine($"Reading Quality: {result.ReadingQuality}");
-                var bounds = result.Region.Rectangle;
-                Console.WriteLine($"Region - X:{bounds.X} Y:{bounds.Y} W:{bounds.Width} H:{bounds.Height} Angle:{result.Region.Angle}");
+                Console.WriteLine("No barcodes detected.");
             }
-            swDecode.Stop();
-            Console.WriteLine($"Decoding time: {swDecode.ElapsedMilliseconds} ms");
+            else
+            {
+                foreach (var result in results)
+                {
+                    Console.WriteLine($"Code Text: {result.CodeText}");
+                    Console.WriteLine($"Symbology: {result.CodeTypeName}");
+                    Console.WriteLine($"Reading Quality: {result.ReadingQuality}");
+                    var rect = result.Region.Rectangle;
+                    Console.WriteLine($"Region - X:{rect.X}, Y:{rect.Y}, Width:{rect.Width}, Height:{rect.Height}");
+                    Console.WriteLine($"Orientation Angle: {result.Region.Angle}");
+                    Console.WriteLine(new string('-', 40));
+                }
+            }
         }
 
-        // Cleanup temporary files and directory
+        // -------------------------------------------------
+        // Cleanup temporary files and resources
+        // -------------------------------------------------
         try
         {
-            File.Delete(barcodePath);
-            Directory.Delete(tempDir, true);
+            imageStream.Dispose();
+            File.Delete(imagePath);
+            Directory.Delete(tempFolder, true);
         }
         catch
         {
-            // Suppress any cleanup exceptions
+            // Ignored – cleanup failures should not affect program outcome
         }
     }
 }

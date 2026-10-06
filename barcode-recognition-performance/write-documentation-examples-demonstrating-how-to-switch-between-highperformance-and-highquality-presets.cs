@@ -1,8 +1,8 @@
-// Title: Switching Between HighPerformance and HighQuality Quality Settings in Aspose.BarCode
-// Description: Demonstrates how to read a barcode using the HighPerformance and HighQuality presets, showing the impact on recognition speed and accuracy.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes and BarCodeReader with QualitySettings presets (HighPerformance, HighQuality) for decoding. Developers often need to balance speed versus accuracy when processing large volumes of barcodes; these presets provide quick switches for common scenarios.
+// Title: Switching Between HighPerformance and HighQuality Presets in Aspose.BarCode
+// Description: Demonstrates how to read a barcode using the HighPerformance and HighQuality quality presets, illustrating their effect on recognition results.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator to create a barcode image and BarCodeReader with different QualitySettings presets (HighPerformance, HighQuality) to decode the image. Developers working with barcode scanning often need to balance speed versus accuracy; these presets provide quick ways to toggle between performance‑focused and quality‑focused recognition.
 // Prompt: Write documentation examples demonstrating how to switch between HighPerformance and HighQuality presets.
-// Tags: barcode symbology, barcode generation, barcode recognition, quality settings, highperformance, highquality, aspose.barcode, csharp
+// Tags: barcode symbology, quality preset, recognition, generation, aspose.barcode, highperformance, highquality
 
 using System;
 using System.IO;
@@ -12,63 +12,65 @@ using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates switching between HighPerformance and HighQuality quality settings
+/// Demonstrates switching between HighPerformance and HighQuality quality presets
 /// when reading a barcode with Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a Code128 barcode, then reads it twice
-    /// using different QualitySettings presets to illustrate their usage.
+    /// Entry point of the example. Generates a Code128 barcode, then reads it
+    /// using both HighPerformance and HighQuality presets, outputting the results.
     /// </summary>
     static void Main()
     {
-        // Create a temporary folder for the demo files
-        string demoFolder = Path.Combine(Path.GetTempPath(), "BarcodePresetDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(demoFolder);
-        string barcodePath = Path.Combine(demoFolder, "code128.png");
+        // Create a temporary directory to store the generated barcode image
+        string tempDir = Path.Combine(Path.GetTempPath(), "PresetDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        string barcodePath = Path.Combine(tempDir, "code128.png");
 
-        // Generate a simple Code128 barcode and save it as PNG
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "AsposeDemo"))
+        // Generate a sample Code128 barcode image
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
             generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        // Read the barcode using the HighPerformance preset (optimized for speed)
-        Console.WriteLine("Reading with HighPerformance preset:");
-        using (var reader = new BarCodeReader(barcodePath, DecodeType.Code128))
+        // Define the quality presets to demonstrate
+        var presets = new (string Name, QualitySettings Settings)[]
         {
-            reader.QualitySettings = QualitySettings.HighPerformance;
-            var results = reader.ReadBarCodes();
-            foreach (var result in results)
+            ("HighPerformance", QualitySettings.HighPerformance),
+            ("HighQuality", QualitySettings.HighQuality)
+        };
+
+        // Iterate over each preset, read the barcode, and display results
+        foreach (var preset in presets)
+        {
+            Console.WriteLine($"Reading with preset: {preset.Name}");
+            using (var reader = new BarCodeReader(barcodePath, DecodeType.Code128))
             {
-                Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
+                // Apply the selected quality preset
+                reader.QualitySettings = preset.Settings;
+
+                // Perform barcode recognition
+                BarCodeResult[] results = reader.ReadBarCodes();
+                Console.WriteLine($"Barcodes read: {results.Length}");
+                foreach (var result in results)
+                {
+                    Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
+                }
             }
+            Console.WriteLine();
         }
 
-        // Read the barcode using the HighQuality preset (optimized for accuracy)
-        Console.WriteLine("Reading with HighQuality preset:");
-        using (var reader = new BarCodeReader(barcodePath, DecodeType.Code128))
-        {
-            reader.QualitySettings = QualitySettings.HighQuality;
-            var results = reader.ReadBarCodes();
-            foreach (var result in results)
-            {
-                Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
-            }
-        }
-
-        // Optional: clean up the temporary files
+        // Cleanup temporary files and directory
         try
         {
             if (File.Exists(barcodePath))
                 File.Delete(barcodePath);
-            if (Directory.Exists(demoFolder))
-                Directory.Delete(demoFolder);
+            Directory.Delete(tempDir, true);
         }
         catch
         {
-            // Ignore any cleanup errors
+            // Ignored - cleanup failure should not affect program exit
         }
     }
 }

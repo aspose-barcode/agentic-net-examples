@@ -1,66 +1,86 @@
-// Title: Read High‑Resolution TIFF Barcode with MaxQuality Setting
-// Description: Demonstrates generating a Code128 barcode, saving it as a high‑resolution TIFF, and reading it using the MaxQuality preset for optimal accuracy.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator to create barcodes, BarCodeReader to decode them, and QualitySettings to control scanning precision. Developers often need to process high‑resolution image files (e.g., TIFF) where accuracy is critical, such as in inventory management or document scanning solutions. The code illustrates typical API usage for creating, saving, and reliably reading barcodes from complex image formats.
+// Title: Scanning High‑Resolution TIFF Barcode with MaxQuality Setting
+// Description: Demonstrates generating a QR barcode saved as a high‑resolution TIFF file and reading it using the MaxQuality preset for optimal scanning accuracy.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator to create barcodes, BarCodeReader for decoding, and QualitySettings to control scanning precision. Typical use cases include processing high‑resolution scanned documents where accurate barcode detection is critical. Developers often need to adjust quality presets, handle multiple symbologies, and manage temporary files when integrating barcode workflows.
 // Prompt: Switch QualitySettings.Preset to MaxQuality to prioritize accuracy when scanning high‑resolution TIFF files.
-// Tags: barcode symbology, generation, recognition, tiff, maxquality, aspose.barcode
+// Tags: qr, tiff, barcode generation, barcode recognition, maxquality, qualitysettings, aspnet, csharp, aspose.barcode
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates barcode generation, saving to a high‑resolution TIFF, and reading it with MaxQuality settings.
+/// Example program that creates a QR barcode, saves it as a TIFF image,
+/// and reads it back using the MaxQuality preset for high‑accuracy scanning.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a barcode, saves it as TIFF, reads it using MaxQuality, and cleans up temporary files.
+    /// Entry point of the example. Generates a barcode, reads it with high quality settings,
+    /// and cleans up temporary resources.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder for the sample TIFF file
-        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        // Create a temporary folder for the demo files
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeTiffDemo_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
+
+        // Define the full path for the generated TIFF file
         string tiffPath = Path.Combine(tempFolder, "sample.tiff");
 
-        // Generate a Code128 barcode and save it as a high‑resolution TIFF image
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "HighResTest123"))
+        // Generate a high‑resolution QR barcode and save it as a TIFF image
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "Sample Text"))
         {
+            // The generator uses default resolution; adjust size parameters here if needed
             generator.Save(tiffPath, BarCodeImageFormat.Tiff);
         }
 
-        // Verify that the TIFF file was created successfully
+        // Verify that the TIFF file was successfully created
         if (!File.Exists(tiffPath))
         {
             Console.WriteLine("Failed to create the TIFF file.");
             return;
         }
 
-        // Initialize a barcode reader for multiple symbologies and set the quality to MaxQuality for best accuracy
-        using (var reader = new BarCodeReader(tiffPath, DecodeType.Code128, DecodeType.QR, DecodeType.DataMatrix, DecodeType.Aztec, DecodeType.Pdf417))
+        // Initialize a barcode reader for multiple symbologies, targeting the generated TIFF
+        using (BarCodeReader reader = new BarCodeReader(
+            tiffPath,
+            DecodeType.QR,
+            DecodeType.Code128,
+            DecodeType.DataMatrix,
+            DecodeType.Aztec,
+            DecodeType.Pdf417))
         {
+            // Switch to MaxQuality for the highest detection accuracy
             reader.QualitySettings = QualitySettings.MaxQuality;
+
+            // Perform barcode detection
             BarCodeResult[] results = reader.ReadBarCodes();
 
-            // Output the number of barcodes detected and their details
-            Console.WriteLine($"Barcodes read: {results.Length}");
-            foreach (BarCodeResult result in results)
+            // Output detection results
+            if (results.Length == 0)
             {
-                Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
+                Console.WriteLine("No barcodes detected.");
+            }
+            else
+            {
+                foreach (BarCodeResult result in results)
+                {
+                    Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
+                }
             }
         }
 
-        // Attempt to delete the temporary folder and its contents; ignore any errors during cleanup
+        // Clean up temporary files and directory
         try
         {
-            Directory.Delete(tempFolder, true);
+            File.Delete(tiffPath);
+            Directory.Delete(tempFolder);
         }
         catch
         {
-            // Cleanup errors are non‑critical; they are intentionally ignored
+            // Ignored – cleanup failures should not affect program outcome
         }
     }
 }

@@ -1,8 +1,8 @@
-// Title: Detect QR barcode in a Gaussian‑noisy image using MinimalXDimension filtering
-// Description: This example generates a QR code, adds Gaussian noise to the image, and then detects the barcode using Aspose.BarCode with MinimalXDimension filtering.
-// Category-Description: Demonstrates Aspose.BarCode image preprocessing and high‑performance barcode recognition. It covers generating barcodes (BarcodeGenerator), image manipulation (Aspose.Drawing), adding noise, and configuring QualitySettings (HighPerformance, XDimensionMode.UseMinimalXDimension). Ideal for developers needing robust detection on degraded images, such as scanned documents or camera captures.
+// Title: Barcode detection with Gaussian noise and MinimalXDimension filtering
+// Description: Demonstrates generating a Code128 barcode, adding Gaussian noise, and detecting it using MinimalXDimension settings.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, showcasing how to use BarCodeGenerator, BarCodeReader, and quality settings such as XDimensionMode.UseMinimalXDimension. Typical use cases include testing barcode robustness against image degradation and configuring detection parameters for low‑resolution or noisy scans. Developers often need to fine‑tune these settings to improve read rates in challenging environments.
 // Prompt: Test barcode detection on images with added Gaussian noise while using MinimalXDimension filtering.
-// Tags: barcode, qr, gaussian noise, minimalxdimension, detection, aspose.barcode, image processing
+// Tags: barcode, code128, gaussian noise, minimalxdimension, detection, aspose.barcode, generation, recognition
 
 using System;
 using System.IO;
@@ -13,16 +13,16 @@ using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates barcode generation, noise addition, and detection with MinimalXDimension filtering.
+/// Demonstrates barcode generation, noise addition, and detection using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates a QR code, adds Gaussian noise, and attempts to read it using Aspose.BarCode.
+    /// Entry point. Generates a barcode, adds Gaussian noise, and attempts detection with MinimalXDimension filtering.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder for all generated files
+        // Create a unique temporary folder for intermediate files
         string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeNoiseTest_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
 
@@ -30,72 +30,56 @@ class Program
         string barcodePath = Path.Combine(tempFolder, "barcode.png");
         string noisyPath = Path.Combine(tempFolder, "barcode_noisy.png");
 
-        // Generate a simple QR barcode and save it as PNG
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Test123"))
+        // Generate a simple Code128 barcode and save it as PNG
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "AsposeTest123"))
         {
             generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        // Load the clean barcode image and add Gaussian noise pixel by pixel
-        using (var originalImage = (Bitmap)Image.FromFile(barcodePath))
+        // Verify that the barcode image was created
+        if (!File.Exists(barcodePath))
         {
-            int width = originalImage.Width;
-            int height = originalImage.Height;
-            var noisyImage = new Bitmap(width, height, originalImage.PixelFormat);
-
-            Random rng = new Random();
-            double sigma = 20.0; // Standard deviation for Gaussian noise
-
-            for (int y = 0; y < height; y++)
-            {
-                for (int x = 0; x < width; x++)
-                {
-                    Color origColor = originalImage.GetPixel(x, y);
-
-                    // Generate Gaussian noise for each color channel
-                    double noiseR = GenerateGaussian(rng, sigma);
-                    double noiseG = GenerateGaussian(rng, sigma);
-                    double noiseB = GenerateGaussian(rng, sigma);
-
-                    // Apply noise and clamp the result to valid byte range
-                    int r = Clamp(origColor.R + (int)Math.Round(noiseR), 0, 255);
-                    int g = Clamp(origColor.G + (int)Math.Round(noiseG), 0, 255);
-                    int b = Clamp(origColor.B + (int)Math.Round(noiseB), 0, 255);
-
-                    Color noisyColor = Color.FromArgb(r, g, b);
-                    noisyImage.SetPixel(x, y, noisyColor);
-                }
-            }
-
-            // Save the noisy image to disk
-            noisyImage.Save(noisyPath, ImageFormat.Png);
-            noisyImage.Dispose();
+            Console.WriteLine("Failed to generate barcode image.");
+            return;
         }
 
-        // Initialize a barcode reader for the noisy image with all supported types
-        BaseDecodeType decodeType = DecodeType.AllSupportedTypes;
-        using (var reader = new BarCodeReader(noisyPath, decodeType))
+        // Load the barcode image, add Gaussian noise, and save the noisy version
+        using (var bitmap = (Bitmap)Image.FromFile(barcodePath))
         {
-            // Use the high‑performance preset to speed up processing
-            reader.QualitySettings = QualitySettings.HighPerformance;
+            AddGaussianNoise(bitmap, sigma: 20.0);
+            bitmap.Save(noisyPath, Aspose.Drawing.Imaging.ImageFormat.Png);
+        }
 
-            // Enable MinimalXDimension mode to improve detection on degraded images
+        // Verify that the noisy image was created
+        if (!File.Exists(noisyPath))
+        {
+            Console.WriteLine("Failed to create noisy image.");
+            return;
+        }
+
+        // Read the noisy barcode using MinimalXDimension filtering
+        using (var reader = new BarCodeReader(noisyPath, DecodeType.AllSupportedTypes))
+        {
+            // Configure quality settings to use minimal X-dimension detection
             reader.QualitySettings.XDimension = XDimensionMode.UseMinimalXDimension;
-            reader.QualitySettings.MinimalXDimension = 1f; // Minimum X‑dimension in pixels
+            reader.QualitySettings.MinimalXDimension = 2f; // pixels
 
-            bool anyFound = false;
-            foreach (var result in reader.ReadBarCodes())
+            // Perform recognition
+            BarCodeResult[] results = reader.ReadBarCodes();
+
+            // Output detection results
+            if (results.Length == 0)
             {
-                anyFound = true;
-                Console.WriteLine($"Detected CodeText: {result.CodeText}");
-                Console.WriteLine($"Detected Type: {result.CodeTypeName}");
-                Console.WriteLine($"Reading Quality: {result.ReadingQuality}");
-                Console.WriteLine();
+                Console.WriteLine("No barcode detected.");
             }
-
-            if (!anyFound)
+            else
             {
-                Console.WriteLine("No barcodes were detected in the noisy image.");
+                foreach (var result in results)
+                {
+                    Console.WriteLine($"Detected Type: {result.CodeTypeName}");
+                    Console.WriteLine($"Code Text: {result.CodeText}");
+                    Console.WriteLine($"Reading Quality: {result.ReadingQuality}");
+                }
             }
         }
 
@@ -112,20 +96,40 @@ class Program
         }
     }
 
-    // Generates Gaussian-distributed random noise using the Box‑Muller transform
-    static double GenerateGaussian(Random rng, double sigma)
+    // Adds Gaussian noise to a bitmap. sigma defines the standard deviation of the noise.
+    static void AddGaussianNoise(Bitmap bitmap, double sigma)
     {
-        double u1 = 1.0 - rng.NextDouble();
-        double u2 = 1.0 - rng.NextDouble();
-        double randStdNormal = Math.Sqrt(-2.0 * Math.Log(u1)) * Math.Sin(2.0 * Math.PI * u2);
-        return randStdNormal * sigma;
+        int width = bitmap.Width;
+        int height = bitmap.Height;
+        Random rng = new Random();
+
+        for (int y = 0; y < height; y++)
+        {
+            for (int x = 0; x < width; x++)
+            {
+                Color original = bitmap.GetPixel(x, y);
+
+                int r = AddGaussian(original.R, sigma, rng);
+                int g = AddGaussian(original.G, sigma, rng);
+                int b = AddGaussian(original.B, sigma, rng);
+
+                Color noisy = Color.FromArgb(original.A, r, g, b);
+                bitmap.SetPixel(x, y, noisy);
+            }
+        }
     }
 
-    // Clamps an integer value to the specified inclusive range
-    static int Clamp(int value, int min, int max)
+    // Returns a channel value with added Gaussian noise, clamped to [0,255].
+    static int AddGaussian(int value, double sigma, Random rng)
     {
-        if (value < min) return min;
-        if (value > max) return max;
-        return value;
+        // Box-Muller transform to generate a standard normal value
+        double u1 = 1.0 - rng.NextDouble(); // avoid zero
+        double u2 = 1.0 - rng.NextDouble();
+        double randStdNormal = Math.Sqrt(-2.0 * Math.Log(u1)) * Math.Sin(2.0 * Math.PI * u2);
+        double noise = sigma * randStdNormal;
+        int result = (int)Math.Round(value + noise);
+        if (result < 0) result = 0;
+        if (result > 255) result = 255;
+        return result;
     }
 }
