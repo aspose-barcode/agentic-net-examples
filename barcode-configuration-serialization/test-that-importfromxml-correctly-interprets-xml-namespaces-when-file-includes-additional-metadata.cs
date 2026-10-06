@@ -1,97 +1,91 @@
-// Title: ImportFromXml with Custom XML Namespace Handling
-// Description: Demonstrates exporting a barcode configuration to XML, adding custom metadata with a namespace, and importing it back to verify settings.
-// Category-Description: Shows how to use Aspose.BarCode's ExportToXml and ImportFromXml methods, part of the configuration management category. Typical use cases include persisting barcode settings, editing XML manually, and ensuring namespace compatibility. Developers often need to manipulate XML for custom metadata while preserving barcode parameters.
+// Title: ImportFromXml with XML Namespace Handling
+// Description: Demonstrates importing a barcode configuration from an XML file that includes additional namespace elements, verifying that macro properties are correctly interpreted.
+// Category-Description: This example belongs to the Aspose.BarCode generation and configuration management category. It showcases the use of BarcodeGenerator for creating PDF417 barcodes with macro metadata, exporting the configuration to XML, modifying the XML (adding extra namespaces), and re-importing it. Developers working with barcode serialization, configuration persistence, or custom XML processing will find this pattern useful for ensuring robust import/export operations.
 // Prompt: Test that ImportFromXml correctly interprets XML namespaces when the file includes additional metadata.
-// Tags: barcode symbology, configuration, xml, namespace, import, export, qrcode, aspose.barcode
+// Tags: pdf417, macro, import, xml, barcode, generation, aspose.barcode
 
 using System;
 using System.IO;
 using System.Xml.Linq;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that exports a QR code configuration to XML, injects custom metadata with a custom namespace,
-/// and then imports the configuration back to verify that original settings are retained.
+/// Example program that creates a PDF417 barcode with macro metadata,
+/// exports its configuration to XML, augments the XML with an extra namespace,
+/// and then re-imports the configuration to verify correct handling of namespaces.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Executes the export‑modify‑import workflow and saves the generated barcode image.
+    /// Entry point of the example. Executes the barcode generation, XML manipulation,
+    /// and re-import verification steps.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder for the test files
-        string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeTest_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
+        // Prepare a temporary working directory for all generated files.
+        string workDir = Path.Combine(Path.GetTempPath(), "ImportFromXmlTest_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(workDir);
 
-        string xmlFilePath = Path.Combine(tempFolder, "barcode_config.xml");
-        string outputImagePath = Path.Combine(tempFolder, "generated_barcode.png");
+        // Define file paths for the XML configuration and barcode images.
+        string xmlPath = Path.Combine(workDir, "generator.xml");
+        string originalImagePath = Path.Combine(workDir, "original.png");
+        string importedImagePath = Path.Combine(workDir, "imported.png");
 
-        // Step 1: Generate a barcode and export its configuration to XML
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Test123"))
+        // --------------------------------------------------------------------
+        // Create a PDF417 barcode with macro metadata and save the original image.
+        // --------------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.Pdf417, "SampleMacroData"))
         {
-            // Set distinct parameters to verify after import
-            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Blue;
-            generator.Parameters.Barcode.XDimension.Point = 3f;
-            generator.Parameters.Barcode.CodeTextParameters.Font.FamilyName = "Arial";
-            generator.Parameters.Barcode.CodeTextParameters.Font.Size.Point = 14f;
+            // Set visual parameters.
+            generator.Parameters.Barcode.XDimension.Pixels = 2f;
 
-            // Export configuration to a memory stream
-            using (var exportStream = new MemoryStream())
-            {
-                generator.ExportToXml(exportStream);
+            // Configure macro properties specific to PDF417.
+            generator.Parameters.Barcode.Pdf417.MacroPdf417FileID = 12345678;
+            generator.Parameters.Barcode.Pdf417.MacroPdf417SegmentID = 12;
+            generator.Parameters.Barcode.Pdf417.MacroPdf417SegmentsCount = 20;
+            generator.Parameters.Barcode.Pdf417.MacroPdf417FileName = "file01";
+            generator.Parameters.Barcode.Pdf417.MacroPdf417Checksum = 1234;
 
-                // Reset stream position for reading
-                exportStream.Position = 0;
+            // Save the generated barcode image.
+            generator.Save(originalImagePath, BarCodeImageFormat.Png);
 
-                // Step 2: Load the XML, add extra metadata with a custom namespace
-                XDocument doc;
-                using (var reader = new StreamReader(exportStream, leaveOpen: true))
-                {
-                    string xmlContent = reader.ReadToEnd();
-                    doc = XDocument.Parse(xmlContent);
-                }
-
-                // Define a custom namespace for additional metadata
-                XNamespace customNs = "http://example.com/custom";
-
-                // Create and add custom metadata element under the root
-                XElement customMetadata = new XElement(customNs + "CustomMetadata",
-                    new XElement(customNs + "Info", "Additional test metadata"));
-                doc.Root.Add(customMetadata);
-
-                // Save the modified XML to another memory stream
-                using (var modifiedStream = new MemoryStream())
-                {
-                    doc.Save(modifiedStream);
-                    modifiedStream.Position = 0;
-
-                    // Step 3: Import the configuration from the modified XML
-                    using (var importedGenerator = BarcodeGenerator.ImportFromXml(modifiedStream))
-                    {
-                        // Output imported settings to verify they match the original values
-                        Console.WriteLine("Imported BarColor: " + importedGenerator.Parameters.Barcode.BarColor);
-                        Console.WriteLine("Imported XDimension (points): " + importedGenerator.Parameters.Barcode.XDimension.Point);
-                        Console.WriteLine("Imported Font Family: " + importedGenerator.Parameters.Barcode.CodeTextParameters.Font.FamilyName);
-                        Console.WriteLine("Imported Font Size (points): " + importedGenerator.Parameters.Barcode.CodeTextParameters.Font.Size.Point);
-
-                        // Generate the barcode image and save it to the temporary folder
-                        using (Bitmap bitmap = importedGenerator.GenerateBarCodeImage())
-                        {
-                            bitmap.Save(outputImagePath, ImageFormat.Png);
-                        }
-
-                        Console.WriteLine("Barcode image saved to: " + outputImagePath);
-                    }
-                }
-            }
+            // Export the generator's configuration to an XML file.
+            generator.ExportToXml(xmlPath);
         }
 
-        // Cleanup: optionally delete the temporary folder and its contents
-        // Commented out to allow inspection of generated files after execution
-        // Directory.Delete(tempFolder, true);
+        // --------------------------------------------------------------------
+        // Load the exported XML and add an extra namespace element to simulate
+        // additional metadata that is not part of the barcode configuration.
+        // --------------------------------------------------------------------
+        XDocument doc = XDocument.Load(xmlPath);
+        XNamespace extraNs = "http://example.com/extra";
+        XElement extraElement = new XElement(extraNs + "Extra", "AdditionalMetadata");
+        doc.Root.Add(extraElement);
+        doc.Save(xmlPath);
+
+        // --------------------------------------------------------------------
+        // Import the configuration from the modified XML and verify macro values.
+        // --------------------------------------------------------------------
+        using (var importedGenerator = BarcodeGenerator.ImportFromXml(xmlPath))
+        {
+            // Output imported macro properties to the console for verification.
+            Console.WriteLine("Imported MacroPdf417FileID: " + importedGenerator.Parameters.Barcode.Pdf417.MacroPdf417FileID);
+            Console.WriteLine("Imported MacroPdf417SegmentID: " + importedGenerator.Parameters.Barcode.Pdf417.MacroPdf417SegmentID);
+            Console.WriteLine("Imported MacroPdf417SegmentsCount: " + importedGenerator.Parameters.Barcode.Pdf417.MacroPdf417SegmentsCount);
+            Console.WriteLine("Imported MacroPdf417FileName: " + importedGenerator.Parameters.Barcode.Pdf417.MacroPdf417FileName);
+            Console.WriteLine("Imported MacroPdf417Checksum: " + importedGenerator.Parameters.Barcode.Pdf417.MacroPdf417Checksum);
+
+            // Generate and save a barcode image using the imported configuration.
+            importedGenerator.Save(importedImagePath, BarCodeImageFormat.Png);
+        }
+
+        // --------------------------------------------------------------------
+        // Display the locations of the generated files.
+        // --------------------------------------------------------------------
+        Console.WriteLine("Original image saved to: " + originalImagePath);
+        Console.WriteLine("Imported image saved to: " + importedImagePath);
+        Console.WriteLine("XML with extra namespace saved to: " + xmlPath);
     }
 }

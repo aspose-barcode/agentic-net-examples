@@ -1,58 +1,55 @@
 // Title: Batch Export of BarcodeGenerator Configurations to XML
-// Description: This example shows how to create multiple barcode generator settings and export each configuration to a separate XML file, useful for persisting barcode definitions.
-// Category-Description: Aspose.BarCode batch processing example that demonstrates using BarcodeGenerator, its Parameters, and the ExportToXml method to serialize barcode configurations. Typical scenarios include preparing barcode templates, sharing settings across services, or storing them for later reuse. Developers working with barcode generation often need to automate creation of many barcode types and persist their configurations in a searchable format.
+// Description: Demonstrates how to generate multiple barcode configurations and export each generator's settings to separate XML files using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode generation and configuration management category. It showcases the BarcodeGenerator class, its Parameters property, and the ExportToXml method for persisting settings. Typical use cases include batch processing of barcode definitions, automated configuration backups, and integration with external systems that consume XML representations of barcode setups. Developers often need to loop through various symbologies and export their configurations for later reuse or analysis.
 // Prompt: Implement batch processing to export multiple BarcodeGenerator configurations to separate XML files in a loop.
-// Tags: barcode, symbology, export, xml, batch, aspose.barcode, generator, configuration
+// Tags: barcode, symbology, export, xml, batch, aspose.barcode, generator
 
 using System;
 using System.IO;
-using System.Collections.Generic;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates batch exporting of various BarcodeGenerator configurations to XML files.
+/// Provides an example of batch exporting multiple BarcodeGenerator configurations to XML files.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates an output folder, defines barcode configurations, and writes each configuration to its own XML file.
+    /// Entry point of the example. Creates several barcode generators with different symbologies,
+    /// configures them, and exports each configuration to a separate XML file.
     /// </summary>
     static void Main()
     {
-        // Create a dedicated output folder for the XML files
-        string outputFolder = Path.Combine(Path.GetTempPath(), "BarcodeXmlBatch_" + Guid.NewGuid().ToString("N"));
+        // Create a dedicated temporary folder for the XML exports
+        string outputFolder = Path.Combine(Path.GetTempPath(), "BatchExport_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(outputFolder);
 
-        // Define a list of barcode configurations (symbology + code text + target file name)
-        var configs = new List<(BaseEncodeType EncodeType, string CodeText, string FileName)>
+        // Define sample barcode configurations (symbology and code text)
+        var configs = new (BaseEncodeType encodeType, string codeText)[]
         {
-            (EncodeTypes.Code128, "ABC123456", "Code128.xml"),
-            (EncodeTypes.QR, "https://example.com", "QR.xml"),
-            (EncodeTypes.DataMatrix, "DM12345", "DataMatrix.xml"),
-            (EncodeTypes.Pdf417, "PDF417 Sample Text", "Pdf417.xml"),
-            (EncodeTypes.Aztec, "AztecCode", "Aztec.xml")
+            (EncodeTypes.Code128, "ABC123456"),
+            (EncodeTypes.QR, "https://example.com"),
+            (EncodeTypes.Pdf417, "PDF417 Sample Text"),
+            (EncodeTypes.DataMatrix, "DM12345"),
+            (EncodeTypes.Aztec, "AztecCode")
         };
 
-        // Process each configuration and export its settings to an XML file
-        foreach (var (encodeType, codeText, fileName) in configs)
+        // Iterate over each configuration, generate the barcode, and export its settings to XML
+        for (int i = 0; i < configs.Length; i++)
         {
-            string xmlPath = Path.Combine(outputFolder, fileName);
+            var (encodeType, codeText) = configs[i];
+            string xmlPath = Path.Combine(outputFolder, $"BarcodeConfig_{i + 1}.xml");
 
-            // Create and configure the BarcodeGenerator for the current configuration
-            using (var generator = new BarcodeGenerator(encodeType, codeText))
+            using (BarcodeGenerator generator = new BarcodeGenerator(encodeType, codeText))
             {
-                // Example customizations (optional)
-                generator.Parameters.Barcode.BarColor = Color.Blue;
-                generator.Parameters.Barcode.XDimension.Point = 2f;
-                generator.Parameters.Resolution = 300f;
+                // Example parameter configuration
+                generator.Parameters.Barcode.XDimension.Pixels = 2f;
+                generator.Parameters.Barcode.Pdf417.Columns = 4; // applicable for PDF417, ignored otherwise
 
-                // Export the generator configuration to XML
+                // Export the generator state to XML
                 generator.ExportToXml(xmlPath);
             }
 
-            Console.WriteLine($"Exported {encodeType.TypeName} configuration to: {xmlPath}");
+            Console.WriteLine($"Exported configuration {i + 1} to: {xmlPath}");
         }
 
         Console.WriteLine("Batch export completed.");

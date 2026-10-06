@@ -1,57 +1,61 @@
 // Title: Generate Barcode Configuration XML for Product SKUs
-// Description: Demonstrates how to create barcode generator settings for a list of product SKUs and export each configuration to an XML file.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to configure barcode parameters (e.g., symbology, dimensions, colors) and serialize those settings to XML using the BarcodeGenerator class. Typical use cases include batch preparation of barcode configurations for inventory systems, printing workflows, or integration with external services that consume barcode definition files. Developers often need to automate such exports to streamline deployment and maintain consistency across multiple products.
+// Description: Demonstrates how to create Code128 barcode generators for a list of product SKUs and export each generator's configuration to an XML file.
+// Category-Description: This example belongs to the Aspose.BarCode configuration management category, showcasing the use of BarcodeGenerator, EncodeTypes, and generator Parameters to produce XML representations of barcode settings. Typical use cases include batch creation of barcode configurations for inventory systems, automated deployment pipelines, and integration with external services that consume barcode definition files. Developers often need to generate, store, and later apply these XML configurations to ensure consistent barcode rendering across applications.
 // Prompt: Automate generation of barcode configuration XML for each product SKU in an inventory system.
-// Tags: barcode symbology, configuration, xml export, code128, aspose.barcode, generation
+// Tags: code128, xml-generation, barcodegenerator, encode-types, parameters, aspose.barcode
 
 using System;
 using System.IO;
 using System.Collections.Generic;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates barcode configuration XML files for a set of product SKUs.
+/// Example program that generates XML configuration files for Code128 barcodes,
+/// one file per product SKU in a sample inventory list.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Creates barcode generators for each SKU,
-    /// configures basic parameters, and exports the settings to individual XML files.
+    /// Entry point of the application. Iterates over a list of SKUs,
+    /// creates a barcode generator for each, configures appearance settings,
+    /// and exports the generator state to an XML file.
     /// </summary>
     static void Main()
     {
-        // Define a sample collection of product SKUs to process.
+        // Sample list of product SKUs to process
         List<string> skus = new List<string>
         {
-            "SKU001",
-            "SKU002",
-            "SKU003",
-            "SKU004",
-            "SKU005"
+            "SKU00123",
+            "SKU00456",
+            "SKU00789",
+            "SKU01012",
+            "SKU01345"
         };
 
-        // Create a unique temporary folder to store the generated XML configuration files.
-        string outputFolder = Path.Combine(Path.GetTempPath(), "BarcodesConfig_" + Guid.NewGuid().ToString("N"));
+        // Create a unique temporary output folder for the generated XML files
+        string outputFolder = Path.Combine(Path.GetTempPath(), "BarcodeConfig_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(outputFolder);
-        Console.WriteLine($"XML configuration files will be saved to: {outputFolder}");
+        Console.WriteLine("Generating barcode XML configurations in: " + outputFolder);
 
-        // Iterate over each SKU, generate a barcode, configure its appearance, and export to XML.
+        // Process each SKU individually
         foreach (string sku in skus)
         {
-            // Use Code128 symbology for the SKU barcode.
+            // Initialize a barcode generator for Code128 using the SKU as the encoded text
             using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, sku))
             {
-                // Set module size (X dimension) and bar color as part of the barcode configuration.
-                generator.Parameters.Barcode.XDimension.Point = 2f;
-                generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
+                // Configure visual appearance of the barcode
+                generator.Parameters.Barcode.XDimension.Pixels = 2f;                     // Set module width
+                generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;   // Set bar color
+                generator.Parameters.BackColor = Aspose.Drawing.Color.White;          // Set background color
 
-                // Build the full path for the XML file named after the current SKU.
-                string xmlPath = Path.Combine(outputFolder, $"{sku}.xml");
+                // Determine the file path for the XML configuration of the current SKU
+                string xmlPath = Path.Combine(outputFolder, sku + ".xml");
 
-                // Export the current generator's settings to the XML file.
+                // Export the generator's configuration to an XML file
                 generator.ExportToXml(xmlPath);
-                Console.WriteLine($"Generated XML for SKU '{sku}' at: {xmlPath}");
+                Console.WriteLine($"Exported XML for SKU '{sku}' to '{xmlPath}'");
             }
         }
 

@@ -1,8 +1,8 @@
-// Title: Load barcode settings from XML and display them
-// Description: Demonstrates exporting barcode generator settings to an XML file, then importing them back and printing the configuration.
-// Category-Description: This example belongs to the Aspose.BarCode configuration management category. It shows how to use BarcodeGenerator, ExportToXml, and ImportFromXml to persist and restore barcode settings. Typical use cases include saving user‑defined barcode options, sharing configurations across applications, and initializing UI property editors with saved values. Developers often need to serialize settings for reuse or to populate UI controls in design‑time or runtime scenarios.
+// Title: Export and Import Barcode Generator Settings via XML
+// Description: Demonstrates creating a barcode generator, exporting its configuration to an XML file, and reloading those settings. Useful for persisting UI‑based barcode options.
+// Category-Description: This example belongs to the Aspose.BarCode generation settings management category. It showcases the BarcodeGenerator class, its Parameters property, and the ExportToXml / ImportFromXml methods. Developers often need to save user‑defined barcode options to XML for later reuse in UI components or configuration files.
 // Prompt: Design a UI component that loads barcode settings from an XML file and populates property editors.
-// Tags: barcode, xml, configuration, export, import, aspose.barcode, settings, ui, property editors
+// Tags: barcode symbology, export, import, xml, settings, generation, aspose.barcode, ui
 
 using System;
 using System.IO;
@@ -11,89 +11,51 @@ using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates exporting barcode settings to XML, importing them back,
-/// and outputting the loaded configuration to the console.
+/// Demonstrates exporting and importing barcode generator settings using XML.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the demo. Creates a temporary environment, saves barcode settings,
-    /// reloads them from XML, and displays the values.
+    /// Entry point. Creates a sample configuration if missing, then loads and displays settings.
     /// </summary>
     static void Main()
     {
-        // Create a temporary folder for the demo files
-        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
+        // Determine path for the XML configuration file in the current directory
+        string xmlPath = Path.Combine(Directory.GetCurrentDirectory(), "generatorSettings.xml");
 
-        // Define paths for the XML settings file and a sample barcode image
-        string xmlPath = Path.Combine(tempFolder, "settings.xml");
-        string imagePath = Path.Combine(tempFolder, "sample.png");
-
-        // ------------------------------------------------------------
-        // Step 1: Configure a BarcodeGenerator and export its settings to XML
-        // ------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "12345"))
-        {
-            // Apply custom visual and layout settings
-            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.DarkBlue;
-            generator.Parameters.Barcode.XDimension.Point = 2f;
-            generator.Parameters.Barcode.Padding.Left.Point = 5f;
-            generator.Parameters.Barcode.Padding.Top.Point = 5f;
-            generator.Parameters.Barcode.Padding.Right.Point = 5f;
-            generator.Parameters.Barcode.Padding.Bottom.Point = 5f;
-            generator.Parameters.Resolution = 150f;
-            generator.Parameters.AutoSizeMode = AutoSizeMode.Nearest;
-            generator.Parameters.ImageWidth.Pixels = 300f;
-            generator.Parameters.ImageHeight.Pixels = 100f;
-
-            // Persist the current configuration to an XML file
-            generator.ExportToXml(xmlPath);
-
-            // Optionally save a sample barcode image for visual verification
-            generator.Save(imagePath, BarCodeImageFormat.Png);
-        }
-
-        // Verify that the XML file was created successfully
+        // If the configuration file does not exist, create a sample generator and export its settings
         if (!File.Exists(xmlPath))
         {
-            Console.WriteLine("Failed to create the XML settings file.");
-            return;
+            // Initialize a QR code generator with sample text
+            using (var gen = new BarcodeGenerator(EncodeTypes.QR, "Sample123"))
+            {
+                // Configure visual appearance and code text parameters
+                gen.Parameters.Barcode.BarColor = Color.Blue;
+                gen.Parameters.Barcode.FilledBars = false;
+                gen.Parameters.Barcode.XDimension.Point = 2f;
+                gen.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.Below;
+                gen.Parameters.Barcode.CodeTextParameters.Font.FamilyName = "Arial";
+                gen.Parameters.Barcode.CodeTextParameters.Font.Size.Point = 12f;
+
+                // Export the configured parameters to an XML file
+                gen.ExportToXml(xmlPath);
+                Console.WriteLine($"Sample XML configuration created at: {xmlPath}");
+            }
         }
 
-        // ------------------------------------------------------------
-        // Step 2: Load the barcode settings from the XML file
-        // ------------------------------------------------------------
-        using (var loadedGenerator = BarcodeGenerator.ImportFromXml(xmlPath))
+        // Load barcode generation settings from the previously created (or existing) XML file
+        using (var generator = BarcodeGenerator.ImportFromXml(xmlPath))
         {
-            // Simulate populating UI property editors by writing values to the console
-            Console.WriteLine("Loaded Barcode Settings:");
-            Console.WriteLine($"  Symbology      : {loadedGenerator.BarcodeType}");
-            Console.WriteLine($"  Code Text      : {loadedGenerator.CodeText}");
-            Console.WriteLine($"  Bar Color      : {loadedGenerator.Parameters.Barcode.BarColor}");
-            Console.WriteLine($"  X Dimension    : {loadedGenerator.Parameters.Barcode.XDimension.Point} pt");
-            Console.WriteLine($"  Padding Left   : {loadedGenerator.Parameters.Barcode.Padding.Left.Point} pt");
-            Console.WriteLine($"  Padding Top    : {loadedGenerator.Parameters.Barcode.Padding.Top.Point} pt");
-            Console.WriteLine($"  Padding Right  : {loadedGenerator.Parameters.Barcode.Padding.Right.Point} pt");
-            Console.WriteLine($"  Padding Bottom : {loadedGenerator.Parameters.Barcode.Padding.Bottom.Point} pt");
-            Console.WriteLine($"  Resolution     : {loadedGenerator.Parameters.Resolution} DPI");
-            Console.WriteLine($"  AutoSizeMode   : {loadedGenerator.Parameters.AutoSizeMode}");
-            Console.WriteLine($"  Image Width    : {loadedGenerator.Parameters.ImageWidth.Pixels} px");
-            Console.WriteLine($"  Image Height   : {loadedGenerator.Parameters.ImageHeight.Pixels} px");
-        }
-
-        // ------------------------------------------------------------
-        // Cleanup: delete temporary files and folder
-        // ------------------------------------------------------------
-        try
-        {
-            if (File.Exists(xmlPath)) File.Delete(xmlPath);
-            if (File.Exists(imagePath)) File.Delete(imagePath);
-            Directory.Delete(tempFolder, true);
-        }
-        catch
-        {
-            // Ignored – cleanup failures are non‑critical for the demo
+            // Output loaded settings to the console for verification
+            Console.WriteLine("Loaded barcode generation settings from XML:");
+            Console.WriteLine($"Encode Type: {generator.BarcodeType}");
+            Console.WriteLine($"Code Text: {generator.CodeText}");
+            Console.WriteLine($"Bar Color: {generator.Parameters.Barcode.BarColor}");
+            Console.WriteLine($"Filled Bars: {generator.Parameters.Barcode.FilledBars}");
+            Console.WriteLine($"X Dimension (points): {generator.Parameters.Barcode.XDimension.Point}");
+            Console.WriteLine($"Code Text Location: {generator.Parameters.Barcode.CodeTextParameters.Location}");
+            Console.WriteLine($"Code Text Font Family: {generator.Parameters.Barcode.CodeTextParameters.Font.FamilyName}");
+            Console.WriteLine($"Code Text Font Size (points): {generator.Parameters.Barcode.CodeTextParameters.Font.Size.Point}");
         }
     }
 }
