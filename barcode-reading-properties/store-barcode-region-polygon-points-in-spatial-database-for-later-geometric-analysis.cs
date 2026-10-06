@@ -1,95 +1,106 @@
 // Title: Store barcode region polygon points for spatial analysis
-// Description: Demonstrates generating a barcode, reading its region polygon points, and persisting them as JSON (simulating a spatial database) for later geometric analysis.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator to create barcodes, BarCodeReader to decode them, and the Region property to obtain polygon points. Developers working with barcode imaging often need to extract geometric data for spatial queries, GIS integration, or custom analytics, making this pattern useful for storing such data in spatial databases.
+// Description: Demonstrates generating a QR barcode, reading its region polygon points, and saving them as JSON to simulate storage in a spatial database.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator, BarCodeReader, and related result classes to extract geometric region data. Developers often need to persist barcode location information for GIS or spatial queries, typically using databases with spatial extensions.
 // Prompt: Store barcode region polygon points in a spatial database for later geometric analysis.
-// Tags: barcode, code128, region, polygon, spatial database, json, aspose.barcode, generation, recognition
+// Tags: qr, barcode generation, barcode recognition, json, spatial database, aspose.barcode, aspose.drawing
 
 using System;
-using System.IO;
 using System.Collections.Generic;
+using System.IO;
 using System.Text.Json;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates barcode generation, region extraction, and storage of polygon points for later spatial analysis.
+/// Demonstrates generating a QR barcode, extracting its region polygon points,
+/// and persisting the data for later geometric analysis.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a barcode, reads its region points, and saves them as JSON.
+    /// Entry point of the example. Generates a barcode, reads its region points,
+    /// and stores the information in a JSON file (simulating a spatial database).
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder to hold generated files.
-        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
+        // --------------------------------------------------------------------
+        // Prepare a temporary working directory for generated files.
+        // --------------------------------------------------------------------
+        string workDir = Path.Combine(Path.GetTempPath(), "BarcodeRegionDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(workDir);
 
-        // Define barcode content and output image path.
-        string barcodeText = "Sample123";
-        string imagePath = Path.Combine(tempFolder, "barcode.png");
-
-        // Generate a Code128 barcode image and save it as PNG.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, barcodeText))
+        // --------------------------------------------------------------------
+        // Generate a sample QR barcode image and save it as PNG.
+        // --------------------------------------------------------------------
+        string barcodeFile = Path.Combine(workDir, "sample_qr.png");
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Hello Aspose"))
         {
-            generator.Save(imagePath, BarCodeImageFormat.Png);
+            generator.Save(barcodeFile, BarCodeImageFormat.Png);
         }
 
-        // Prepare a collection to store region data for each detected barcode.
-        var records = new List<BarcodeRegionRecord>();
-
-        // Read the barcode image and extract polygon points that define the barcode region.
-        using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
+        // --------------------------------------------------------------------
+        // Read the barcode image, collect region polygon points for each result.
+        // --------------------------------------------------------------------
+        var records = new List<BarcodeRecord>();
+        if (File.Exists(barcodeFile))
         {
-            foreach (BarCodeResult result in reader.ReadBarCodes())
+            using (var reader = new BarCodeReader(barcodeFile, DecodeType.QR, DecodeType.Code128))
             {
-                // Convert Aspose.Drawing.Point objects to simple serializable PointData structures.
-                var points = new List<PointData>();
-                foreach (Point pt in result.Region.Points)
+                foreach (BarCodeResult result in reader.ReadBarCodes())
                 {
-                    points.Add(new PointData { X = pt.X, Y = pt.Y });
-                }
+                    var points = new List<PointDto>();
+                    foreach (Point pt in result.Region.Points)
+                    {
+                        points.Add(new PointDto { X = pt.X, Y = pt.Y });
+                    }
 
-                // Build a record containing file path, decoded text, symbology, and polygon points.
-                var record = new BarcodeRegionRecord
-                {
-                    FilePath = imagePath,
-                    CodeText = result.CodeText,
-                    CodeType = result.CodeTypeName,
-                    Points = points
-                };
-                records.Add(record);
+                    records.Add(new BarcodeRecord
+                    {
+                        FileName = barcodeFile,
+                        CodeText = result.CodeText,
+                        CodeType = result.CodeTypeName,
+                        Points = points
+                    });
+                }
             }
         }
+        else
+        {
+            Console.WriteLine($"Barcode image not found: {barcodeFile}");
+        }
 
-        // Serialize the collected records to JSON (acting as a stand‑in for a spatial database).
-        string jsonPath = Path.Combine(tempFolder, "barcode_regions.json");
+        // --------------------------------------------------------------------
+        // Serialize the collected region data to JSON (simulating a spatial DB).
+        // --------------------------------------------------------------------
+        string jsonPath = Path.Combine(workDir, "barcode_regions.json");
         var jsonOptions = new JsonSerializerOptions { WriteIndented = true };
         string json = JsonSerializer.Serialize(records, jsonOptions);
         File.WriteAllText(jsonPath, json);
 
-        Console.WriteLine($"Barcode region data saved to: {jsonPath}");
-        // In a real scenario, replace the JSON file with inserts into a spatial database.
+        Console.WriteLine($"Region data saved to: {jsonPath}");
+        // In a real scenario, replace the JSON storage with a spatial database (e.g., SQLite with spatial extensions).
     }
 }
 
 /// <summary>
-/// Represents a barcode region record suitable for storage in a spatial database.
+/// Represents a barcode record containing file information, decoded text,
+/// symbology type, and the polygon points of its detected region.
 /// </summary>
-public class BarcodeRegionRecord
+class BarcodeRecord
 {
-    public string FilePath { get; set; }
+    public string FileName { get; set; }
     public string CodeText { get; set; }
     public string CodeType { get; set; }
-    public List<PointData> Points { get; set; }
+    public List<PointDto> Points { get; set; }
 }
 
 /// <summary>
-/// Simple data transfer object for a point in 2‑D space.
+/// Simple DTO for a point in the barcode region polygon.
 /// </summary>
-public class PointData
+class PointDto
 {
-    public float X { get; set; }
-    public float Y { get; set; }
+    public int X { get; set; }
+    public int Y { get; set; }
 }

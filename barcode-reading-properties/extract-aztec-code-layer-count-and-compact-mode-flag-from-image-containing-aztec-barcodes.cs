@@ -1,88 +1,73 @@
-// Title: Extract Aztec barcode layer count and compact mode flag
-// Description: Demonstrates how to generate an Aztec barcode, then read it back to obtain the layers count and whether it is in compact mode.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It shows usage of BarcodeGenerator for creating Aztec symbols and BarCodeReader with DecodeType.Aztec for extracting extended Aztec properties such as LayersCount and SymbolMode. Developers working with Aztec symbology often need to verify encoding parameters after scanning, making this pattern useful for validation and debugging scenarios.
+// Title: Extract Aztec Code layer count and compact mode flag
+// Description: Demonstrates how to read an Aztec barcode from an image and retrieve its layer count and compact mode flag using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, illustrating the use of BarCodeReader, DecodeType, and the Extended Aztec properties to obtain detailed symbology information. Typical use cases include analyzing Aztec codes for metadata such as layers and compact mode, which developers often need when processing scanned documents or validating barcode specifications. The snippet serves as a reference for extracting low‑level Aztec parameters in .NET applications.
 // Prompt: Extract Aztec Code layer count and compact mode flag from an image containing Aztec barcodes.
-// Tags: aztec, barcode, generation, recognition, layerscount, compactmode, aspose.barcode
+// Tags: aztec, barcode, recognition, layerscount, iscompact, aspose.barcode, csharp, .net
 
 using System;
 using System.IO;
 using Aspose.BarCode;
-using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Sample program that generates an Aztec barcode, then reads it back to extract
-/// the layers count and compact mode flag using Aspose.BarCode APIs.
+/// Program to read Aztec barcode from an image and display its layer count and compact mode flag.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the sample. Generates a temporary Aztec barcode image,
-    /// reads it, and prints the detected LayersCount and Compact mode status.
+    /// Entry point. Accepts optional image path argument, reads Aztec barcode, and prints details.
     /// </summary>
-    static void Main()
+    /// <param name="args">Command‑line arguments; first argument may be the image file path.</param>
+    static void Main(string[] args)
     {
-        // Create a unique temporary folder to store the barcode image
-        string tempFolder = Path.Combine(Path.GetTempPath(), "AztecSample_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
-        string imagePath = Path.Combine(tempFolder, "aztec.png");
+        // Determine image path: use first argument if provided, otherwise default to "aztec.png"
+        string imagePath = args.Length > 0 ? args[0] : "aztec.png";
 
-        // Generate an Aztec barcode with known settings (compact mode, 3 layers)
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Aztec, "SampleText"))
-        {
-            generator.Parameters.Barcode.XDimension.Pixels = 4f;
-            generator.Parameters.Barcode.Aztec.SymbolMode = AztecSymbolMode.Compact;
-            generator.Parameters.Barcode.Aztec.LayersCount = 3; // Compact mode supports 1-3 layers
-            generator.Save(imagePath, BarCodeImageFormat.Png);
-        }
-
-        // Verify that the image file was created successfully
+        // Verify that the file exists before attempting to read
         if (!File.Exists(imagePath))
         {
-            Console.WriteLine("Failed to create barcode image.");
+            Console.WriteLine($"File not found: {imagePath}");
             return;
         }
 
-        // Read the barcode from the image and extract extended Aztec properties
+        // Initialize BarCodeReader for Aztec symbology
         using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.Aztec))
         {
+            // Iterate through all detected barcodes in the image
             foreach (BarCodeResult result in reader.ReadBarCodes())
             {
-                // Use reflection to safely access extended Aztec properties (may vary by version)
-                object aztecExt = result.Extended?.Aztec;
-                int layersCount = -1;
-                bool isCompact = false;
+                // Output basic barcode information
+                Console.WriteLine($"CodeType: {result.CodeTypeName}");
+                Console.WriteLine($"CodeText: {result.CodeText}");
 
-                if (aztecExt != null)
+                // Access extended Aztec-specific properties via reflection
+                var aztecExt = result.Extended.Aztec;
+
+                var layersProp = aztecExt.GetType().GetProperty("LayersCount");
+                var compactProp = aztecExt.GetType().GetProperty("IsCompact");
+
+                // Retrieve and display LayersCount if available
+                if (layersProp != null && layersProp.PropertyType == typeof(int))
                 {
-                    var layersProp = aztecExt.GetType().GetProperty("LayersCount");
-                    if (layersProp != null && layersProp.PropertyType == typeof(int))
-                    {
-                        layersCount = (int)layersProp.GetValue(aztecExt);
-                    }
-
-                    var modeProp = aztecExt.GetType().GetProperty("SymbolMode");
-                    if (modeProp != null && modeProp.PropertyType == typeof(AztecSymbolMode))
-                    {
-                        AztecSymbolMode mode = (AztecSymbolMode)modeProp.GetValue(aztecExt);
-                        isCompact = mode == AztecSymbolMode.Compact;
-                    }
+                    int layers = (int)layersProp.GetValue(aztecExt);
+                    Console.WriteLine($"LayersCount: {layers}");
+                }
+                else
+                {
+                    Console.WriteLine("LayersCount: not available");
                 }
 
-                Console.WriteLine($"Detected LayersCount: {layersCount}");
-                Console.WriteLine($"Is Compact Mode: {isCompact}");
+                // Retrieve and display IsCompact flag if available
+                if (compactProp != null && compactProp.PropertyType == typeof(bool))
+                {
+                    bool isCompact = (bool)compactProp.GetValue(aztecExt);
+                    Console.WriteLine($"IsCompact: {isCompact}");
+                }
+                else
+                {
+                    Console.WriteLine("IsCompact: not available");
+                }
             }
-        }
-
-        // Clean up temporary files (optional)
-        try
-        {
-            File.Delete(imagePath);
-            Directory.Delete(tempFolder);
-        }
-        catch
-        {
-            // Ignore cleanup errors
         }
     }
 }
