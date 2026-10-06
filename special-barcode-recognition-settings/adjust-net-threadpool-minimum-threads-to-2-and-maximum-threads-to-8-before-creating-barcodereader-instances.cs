@@ -1,58 +1,84 @@
-// Title: Adjust .NET ThreadPool settings for barcode generation and recognition
-// Description: Demonstrates how to set the ThreadPool minimum and maximum threads before creating Aspose.BarCode BarcodeGenerator and BarCodeReader instances.
-// Category-Description: This example belongs to the Aspose.BarCode threading and performance category, illustrating the use of ThreadPool configuration together with barcode generation (BarcodeGenerator) and recognition (BarCodeReader). Developers often need to tune thread pool limits to optimize parallel barcode processing in high‑throughput applications.
+// Title: Adjust .NET ThreadPool Settings and Read a Code128 Barcode with Aspose.BarCode
+// Description: Demonstrates how to configure the .NET ThreadPool minimum and maximum thread counts before generating and reading a Code128 barcode using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator to create a barcode image and BarCodeReader to decode it. Developers working with barcode automation often need to tune ThreadPool settings for optimal performance when processing many images concurrently. The key API classes demonstrated are BarcodeGenerator, BarCodeReader, EncodeTypes, DecodeType, and BarCodeImageFormat.
 // Prompt: Adjust .NET ThreadPool minimum threads to 2 and maximum threads to 8 before creating BarCodeReader instances.
-// Tags: qr, barcode generation, barcode recognition, png, barcodegenerator, barcodereader
+// Tags: code128, barcode generation, barcode recognition, threadpool, aspose.barcode, png
 
 using System;
 using System.IO;
 using System.Threading;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates adjusting .NET ThreadPool settings and using Aspose.BarCode to generate and read a QR code.
+/// Demonstrates adjusting ThreadPool settings and using Aspose.BarCode to generate and read a Code128 barcode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Configures ThreadPool, creates a temporary QR barcode image, reads it, and cleans up.
+    /// Entry point of the example. Configures ThreadPool, creates a temporary barcode image,
+    /// reads the barcode, and cleans up resources.
     /// </summary>
     static void Main()
     {
-        // Adjust ThreadPool settings: set minimum worker threads to 2 and maximum to 8
+        // ------------------------------------------------------------
+        // 1. Configure .NET ThreadPool limits (min 2, max 8 worker threads)
+        // ------------------------------------------------------------
         int workerThreads, completionPortThreads;
-        ThreadPool.GetMinThreads(out workerThreads, out completionPortThreads);
-        ThreadPool.SetMinThreads(2, completionPortThreads);
         ThreadPool.GetMaxThreads(out workerThreads, out completionPortThreads);
         ThreadPool.SetMaxThreads(8, completionPortThreads);
+        ThreadPool.GetMinThreads(out workerThreads, out completionPortThreads);
+        ThreadPool.SetMinThreads(2, completionPortThreads);
 
-        // Prepare a temporary file path for the generated barcode image
-        string tempFile = Path.Combine(Path.GetTempPath(), "barcode_" + Guid.NewGuid().ToString("N") + ".png");
+        // ------------------------------------------------------------
+        // 2. Prepare a temporary folder and file path for the barcode image
+        // ------------------------------------------------------------
+        string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
+        string barcodePath = Path.Combine(tempFolder, "sample.png");
 
-        // Generate a QR barcode and save it as PNG
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "Hello Aspose"))
+        // ------------------------------------------------------------
+        // 3. Generate a Code128 barcode and save it as PNG
+        // ------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
         {
-            generator.Save(tempFile, BarCodeImageFormat.Png);
+            generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        // Read the generated barcode using BarCodeReader
-        BaseDecodeType decodeType = DecodeType.QR;
-        using (BarCodeReader reader = new BarCodeReader(tempFile, decodeType))
+        // ------------------------------------------------------------
+        // 4. Verify that the barcode image was created successfully
+        // ------------------------------------------------------------
+        if (!File.Exists(barcodePath))
         {
-            BarCodeResult[] results = reader.ReadBarCodes();
-            Console.WriteLine($"Barcodes found: {results.Length}");
-            foreach (BarCodeResult result in results)
+            Console.WriteLine("Failed to create barcode image.");
+            return;
+        }
+
+        // ------------------------------------------------------------
+        // 5. Read the barcode using BarCodeReader with the appropriate decode type
+        // ------------------------------------------------------------
+        BaseDecodeType decodeType = DecodeType.Code128;
+        using (var reader = new BarCodeReader(barcodePath, decodeType))
+        {
+            var results = reader.ReadBarCodes();
+            foreach (var result in results)
             {
-                Console.WriteLine($"Type: {result.CodeTypeName}, Text: {result.CodeText}");
+                Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
             }
         }
 
-        // Delete the temporary barcode image file
-        if (File.Exists(tempFile))
+        // ------------------------------------------------------------
+        // 6. Clean up temporary files and directory
+        // ------------------------------------------------------------
+        try
         {
-            File.Delete(tempFile);
+            File.Delete(barcodePath);
+            Directory.Delete(tempFolder);
+        }
+        catch
+        {
+            // Ignored - cleanup failure should not affect program outcome
         }
     }
 }

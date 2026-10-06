@@ -1,8 +1,8 @@
-// Title: Decode Barcodes in a Directory with StripFNC Disabled
-// Description: Generates sample barcodes, saves them to a temporary folder, then decodes each image with StripFNC set to false and prints the results.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It demonstrates how to use the BarcodeGenerator to create barcodes and the BarCodeReader to batch‑process images, configuring BarcodeSettings (e.g., StripFNC) for custom decoding behavior. Typical use cases include automated scanning of image folders, validation of barcode data, and handling of Function Code (FNC) characters in industrial applications.
+// Title: Decode multiple barcodes from generated images with StripFNC disabled
+// Description: Demonstrates generating several Code128 barcodes, saving them to a temporary folder, and decoding each image while keeping Function characters (FNC) intact.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, showcasing the use of BarCodeGenerator for image creation and BarCodeReader for batch decoding. It highlights configuring BarcodeSettings.StripFNC, handling multiple files, and typical cleanup steps—common tasks for developers implementing bulk barcode processing in .NET applications.
 // Prompt: Develop a console application that decodes all barcodes in a directory with StripFNC false and prints results.
-// Tags: barcode, decoding, stripfnc, batch, console, aspose.barcode, generation, recognition
+// Tags: barcode, code128, batch decoding, stripfnc, console, aspose.barcode, generation, recognition
 
 using System;
 using System.IO;
@@ -11,12 +11,12 @@ using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates generating sample barcodes, decoding them with StripFNC disabled, and outputting results.
+/// Demonstrates generating barcode images, decoding them with StripFNC disabled, and outputting results to the console.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates sample barcodes, decodes them with StripFNC false, and prints the decoded information.
+    /// Entry point of the console application. Generates sample barcodes, decodes them, and cleans up temporary files.
     /// </summary>
     static void Main()
     {
@@ -24,56 +24,46 @@ class Program
         string tempFolder = Path.Combine(Path.GetTempPath(), "Batch_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
 
-        // List to hold the full paths of generated barcode files
-        List<string> barcodeFiles = new List<string>();
+        // Define sample texts to encode into barcodes
+        var sampleTexts = new List<string> { "ABC123", "XYZ789", "HelloWorld" };
+        var barcodeFiles = new List<string>();
 
-        // -------------------- Generate sample Code128 barcode --------------------
-        string code128Path = Path.Combine(tempFolder, "code128.png");
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
+        // Generate barcode images and store their file paths
+        for (int i = 0; i < sampleTexts.Count; i++)
         {
-            generator.Save(code128Path, BarCodeImageFormat.Png);
-        }
-        barcodeFiles.Add(code128Path);
+            string text = sampleTexts[i];
+            string filePath = Path.Combine(tempFolder, $"barcode_{i}.png");
 
-        // -------------------- Generate sample QR barcode --------------------
-        string qrPath = Path.Combine(tempFolder, "qr.png");
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
-        {
-            generator.Save(qrPath, BarCodeImageFormat.Png);
-        }
-        barcodeFiles.Add(qrPath);
-
-        // -------------------- Generate sample DataMatrix barcode --------------------
-        string dmPath = Path.Combine(tempFolder, "datamatrix.png");
-        using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, "DM12345"))
-        {
-            generator.Save(dmPath, BarCodeImageFormat.Png);
-        }
-        barcodeFiles.Add(dmPath);
-
-        // -------------------- Decode each barcode with StripFNC set to false --------------------
-        foreach (string filePath in barcodeFiles)
-        {
-            if (!File.Exists(filePath))
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, text))
             {
-                Console.WriteLine($"File not found: {filePath}");
+                // Set X-dimension for better image quality
+                generator.Parameters.Barcode.XDimension.Pixels = 2f;
+                generator.Save(filePath, BarCodeImageFormat.Png);
+            }
+
+            barcodeFiles.Add(filePath);
+        }
+
+        // Decode each generated barcode image with StripFNC set to false
+        foreach (string file in barcodeFiles)
+        {
+            if (!File.Exists(file))
+            {
+                Console.WriteLine($"File not found: {file}");
                 continue;
             }
 
-            Console.WriteLine($"Decoding file: {Path.GetFileName(filePath)}");
             try
             {
-                using (var reader = new BarCodeReader(filePath))
+                using (var reader = new BarCodeReader(file, DecodeType.AllSupportedTypes))
                 {
-                    // Disable stripping of Function Code (FNC) characters during recognition
+                    // Preserve Function characters during decoding
                     reader.BarcodeSettings.StripFNC = false;
-
-                    // Read all barcodes present in the image
                     BarCodeResult[] results = reader.ReadBarCodes();
 
-                    // Output each detected barcode's type and text
-                    foreach (BarCodeResult result in results)
+                    foreach (var result in results)
                     {
+                        Console.WriteLine($"File: {Path.GetFileName(file)}");
                         Console.WriteLine($"CodeType: {result.CodeTypeName}");
                         Console.WriteLine($"CodeText: {result.CodeText}");
                     }
@@ -81,22 +71,19 @@ class Program
             }
             catch (ArgumentException ex)
             {
-                Console.WriteLine($"Failed to load image '{filePath}': {ex.Message}");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error processing '{filePath}': {ex.Message}");
+                // Handle files that cannot be processed by the reader
+                Console.WriteLine($"Skipping file {Path.GetFileName(file)}: {ex.Message}");
             }
         }
 
-        // -------------------- Clean up temporary folder --------------------
+        // Optional cleanup of the temporary folder
         try
         {
             Directory.Delete(tempFolder, true);
         }
         catch
         {
-            // Ignore any errors that occur during cleanup
+            // Suppress any errors during cleanup
         }
     }
 }

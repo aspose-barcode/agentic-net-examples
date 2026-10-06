@@ -1,36 +1,36 @@
-// Title: QR Barcode Generation and Memory‑Aware Decoding with Fallback
-// Description: Generates a QR code image, then decodes it using Aspose.BarCode, switching to single‑thread mode when multithreaded processing exceeds a specified memory limit.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It demonstrates how to use BarcodeGenerator to create a QR barcode, BarCodeReader to decode it, and ProcessorSettings to control threading behavior. Developers often need to balance performance with memory consumption, especially in high‑throughput or resource‑constrained environments; this snippet shows a practical fallback strategy.
+// Title: Fallback barcode decoder with single‑thread fallback
+// Description: Demonstrates generating a QR barcode, attempting multithreaded decoding, and falling back to single‑thread mode when memory limits are hit.
+// Category-Description: This example belongs to the Aspose.BarCode decoding category, showcasing how to configure BarCodeReader processor settings for multithreaded and single‑thread operation. It covers key API classes such as BarcodeGenerator, BarCodeReader, and ProcessorSettings, typical for scenarios where large images or limited memory require adaptive threading strategies. Developers often need to switch threading modes to balance performance and resource usage.
 // Prompt: Implement a fallback decoder that switches to single‑thread mode if multithreaded processing exceeds memory limits.
-// Tags: qr, barcode generation, barcode recognition, memory limit, fallback, multithread, single‑thread, aspose.barcode, c#
+// Tags: qr, barcode, decoding, multithreading, fallback, aspose.barcode, processorsettings
 
 using System;
-using System.Diagnostics;
 using System.IO;
+using System.Diagnostics;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates QR barcode creation and a memory‑aware decoding routine that falls back to single‑thread processing when needed.
+/// Demonstrates barcode generation and a fallback decoding strategy that switches to single‑thread mode when multithreaded processing fails due to memory constraints.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a QR code, attempts multithreaded decoding, and falls back to single‑thread decoding if memory usage exceeds the defined limit.
+    /// Entry point. Generates a QR barcode, tries multithreaded decoding, and falls back to single‑thread decoding if needed.
     /// </summary>
     static void Main()
     {
         // Create a unique temporary folder for the demo files
-        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        string tempFolder = Path.Combine(Path.GetTempPath(), "FallbackDemo_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
 
-        // Define the full path for the generated barcode image
+        // Define the path for the sample barcode image
         string barcodePath = Path.Combine(tempFolder, "sample.png");
 
-        // Generate a QR barcode image and save it as PNG
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Hello World"))
+        // Generate a sample QR barcode and save it as PNG
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Hello Aspose"))
         {
             generator.Parameters.Barcode.XDimension.Pixels = 5;
             generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
@@ -38,89 +38,79 @@ class Program
             generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        // Decode the image with fallback logic (memory limit set to 100 MB)
-        DecodeWithFallback(barcodePath, 100L * 1024 * 1024);
+        Console.WriteLine($"Generated barcode at: {barcodePath}");
 
-        // Clean up temporary files and folder
-        try
+        // First attempt: use multithreaded decoding
+        bool success = TryReadBarcodes(barcodePath, useSingleThread: false);
+
+        if (!success)
         {
-            if (File.Exists(barcodePath))
-                File.Delete(barcodePath);
-            Directory.Delete(tempFolder, true);
-        }
-        catch
-        {
-            // Ignored – cleanup failures should not crash the program
-        }
-    }
+            // Multithreaded read failed (likely due to memory). Switch to single‑thread mode.
+            Console.WriteLine("Multithreaded read failed (likely due to memory). Switching to single‑thread mode.");
 
-    /// <summary>
-    /// Attempts to decode a barcode image using multithreaded processing. If the process memory exceeds <paramref name="memoryLimitBytes"/>,
-    /// the method falls back to single‑thread decoding.
-    /// </summary>
-    /// <param name="imagePath">Path to the barcode image file.</param>
-    /// <param name="memoryLimitBytes">Maximum allowed memory usage in bytes before falling back.</param>
-    static void DecodeWithFallback(string imagePath, long memoryLimitBytes)
-    {
-        if (!File.Exists(imagePath))
-        {
-            Console.WriteLine($"File not found: {imagePath}");
-            return;
-        }
-
-        // Configure processor for multithreaded execution
-        BarCodeReader.ProcessorSettings.UseAllCores = true;
-        BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount = Environment.ProcessorCount;
-        BarCodeReader.ProcessorSettings.MaxAdditionalAllowedThreads = 4;
-
-        Console.WriteLine("Attempting multithreaded decoding...");
-
-        // Perform multithreaded decoding
-        using (var reader = new BarCodeReader(imagePath, DecodeType.QR))
-        {
-            reader.ReadBarCodes();
-            PrintResults(reader);
-        }
-
-        // Check memory consumption after multithreaded read
-        long usedMemory = Process.GetCurrentProcess().PrivateMemorySize64;
-        Console.WriteLine($"Memory after multithreaded read: {usedMemory / (1024 * 1024)} MB");
-
-        if (usedMemory > memoryLimitBytes)
-        {
-            Console.WriteLine("Memory limit exceeded. Falling back to single‑thread decoding.");
-
-            // Reconfigure processor for single‑thread execution
+            // Configure processor settings for single‑thread operation
             BarCodeReader.ProcessorSettings.UseAllCores = false;
             BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount = 1;
             BarCodeReader.ProcessorSettings.MaxAdditionalAllowedThreads = 0;
 
-            // Perform single‑thread decoding
-            using (var reader = new BarCodeReader(imagePath, DecodeType.QR))
-            {
-                reader.ReadBarCodes();
-                PrintResults(reader);
-            }
+            // Retry decoding with single‑thread settings
+            success = TryReadBarcodes(barcodePath, useSingleThread: true);
+        }
 
-            long finalMemory = Process.GetCurrentProcess().PrivateMemorySize64;
-            Console.WriteLine($"Memory after single‑thread read: {finalMemory / (1024 * 1024)} MB");
-        }
-        else
-        {
-            Console.WriteLine("Memory usage within limits; no fallback needed.");
-        }
+        Console.WriteLine(success ? "Barcode read successfully." : "Failed to read barcode.");
     }
 
     /// <summary>
-    /// Prints the decoding results to the console.
+    /// Attempts to read barcodes from the specified image using either multithreaded or single‑thread settings.
     /// </summary>
-    /// <param name="reader">The <see cref="BarCodeReader"/> instance containing the results.</param>
-    static void PrintResults(BarCodeReader reader)
+    /// <param name="imagePath">Path to the barcode image.</param>
+    /// <param name="useSingleThread">If true, forces single‑thread decoding; otherwise uses multithreaded defaults.</param>
+    /// <returns>True if decoding succeeds; otherwise false.</returns>
+    static bool TryReadBarcodes(string imagePath, bool useSingleThread)
     {
-        Console.WriteLine($"Barcodes found: {reader.FoundCount}");
-        foreach (BarCodeResult result in reader.FoundBarCodes)
+        try
         {
-            Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
+            // Adjust processor settings based on the requested threading mode
+            if (!useSingleThread)
+            {
+                // Enable default multithreaded settings (use all cores, allow extra threads)
+                BarCodeReader.ProcessorSettings.UseAllCores = true;
+                BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount = 0;
+                BarCodeReader.ProcessorSettings.MaxAdditionalAllowedThreads = 4;
+            }
+
+            // Create a reader for the QR code type
+            using (var reader = new BarCodeReader(imagePath, DecodeType.QR))
+            {
+                Stopwatch watch = Stopwatch.StartNew();
+
+                // Perform the decoding operation
+                reader.ReadBarCodes();
+
+                watch.Stop();
+
+                Console.WriteLine($"Found {reader.FoundCount} barcode(s) in {watch.ElapsedMilliseconds} ms.");
+
+                // Output each detected barcode's type and text
+                foreach (BarCodeResult result in reader.FoundBarCodes)
+                {
+                    Console.WriteLine($"Type: {result.CodeTypeName}, Text: {result.CodeText}");
+                }
+            }
+
+            return true;
+        }
+        catch (OutOfMemoryException oom)
+        {
+            // Memory limit reached during decoding
+            Console.WriteLine($"OutOfMemoryException: {oom.Message}");
+            return false;
+        }
+        catch (Exception ex)
+        {
+            // Any other decoding error
+            Console.WriteLine($"Exception during barcode read: {ex.Message}");
+            return false;
         }
     }
 }

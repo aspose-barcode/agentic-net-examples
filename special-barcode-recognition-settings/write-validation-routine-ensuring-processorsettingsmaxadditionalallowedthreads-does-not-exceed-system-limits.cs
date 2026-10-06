@@ -1,89 +1,53 @@
-// Title: Validate and Set MaxAdditionalAllowedThreads for Aspose.BarCode Processor
-// Description: Demonstrates how to validate a requested thread count against system limits and apply it to Aspose.BarCode's ProcessorSettings. The example also generates and reads a QR barcode.
-// Category-Description: This example belongs to the Aspose.BarCode processing configuration category, illustrating the use of BarCodeReader.ProcessorSettings to control multithreading. It shows typical usage of environment-derived limits, the BarcodeGenerator for creating barcodes, and BarCodeReader for decoding. Developers often need to tune thread settings for performance and resource management in high‑throughput barcode scanning scenarios.
+// Title: Validate MaxAdditionalAllowedThreads Setting for Aspose.BarCode Processor
+// Description: Demonstrates how to ensure the ProcessorSettings.MaxAdditionalAllowedThreads value does not exceed the system's thread pool limits, preventing runtime errors.
+// Category-Description: This example belongs to the Aspose.BarCode threading and performance configuration category. It shows how to query the .NET ThreadPool, compare against Aspose.BarCode's ProcessorSettings, and safely adjust the MaxAdditionalAllowedThreads property. Developers working with high‑throughput barcode scanning often need to tune thread usage to match hardware capabilities while staying within system constraints.
 // Prompt: Write a validation routine ensuring ProcessorSettings.MaxAdditionalAllowedThreads does not exceed system limits.
-// Tags: barcode, threading, validation, aspose.barcode, qr, generation, recognition
+// Tags: barcode, threading, validation, aspose.barcode, processorsettings, maxadditionalallowedthreads
 
 using System;
-using System.IO;
-using System.Diagnostics;
-using Aspose.BarCode.Generation;
+using System.Threading;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates validation of ProcessorSettings.MaxAdditionalAllowedThreads and basic QR barcode generation and recognition using Aspose.BarCode.
+/// Provides a sample program that validates and sets the maximum additional allowed threads for Aspose.BarCode processing.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the sample application.
+    /// Validates the desired thread count against the system's ThreadPool limits and applies it to BarCodeReader.ProcessorSettings.
     /// </summary>
-    static void Main()
+    /// <param name="desiredValue">The requested number of additional threads.</param>
+    static void ValidateMaxAdditionalAllowedThreads(int desiredValue)
     {
-        // Sample requested value (could be from args or config)
-        int requestedThreads = 100;
-        ValidateAndSetMaxAdditionalAllowedThreads(requestedThreads);
+        // Ensure the requested value is non‑negative.
+        if (desiredValue < 0)
+            throw new ArgumentOutOfRangeException(nameof(desiredValue), "Value cannot be negative.");
 
-        // Create a temporary folder for the sample barcode image
-        string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeSample_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
-        string barcodePath = Path.Combine(tempFolder, "sample.png");
+        // Retrieve the maximum number of worker threads the ThreadPool can support.
+        ThreadPool.GetMaxThreads(out int maxWorkerThreads, out int _);
+        int limit = maxWorkerThreads;
 
-        // Generate a simple QR barcode and save it as PNG
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "SampleText"))
+        // Start with the desired value; adjust if it exceeds the system limit.
+        int finalValue = desiredValue;
+        if (desiredValue > limit)
         {
-            generator.Save(barcodePath, BarCodeImageFormat.Png);
+            Console.WriteLine($"Desired MaxAdditionalAllowedThreads ({desiredValue}) exceeds system max worker threads ({limit}). Adjusting to limit.");
+            finalValue = limit;
         }
 
-        // Read the generated barcode using all supported decode types
-        using (var reader = new BarCodeReader(barcodePath, DecodeType.AllSupportedTypes))
-        {
-            BarCodeResult[] results = reader.ReadBarCodes();
-            Console.WriteLine($"Barcodes found: {results.Length}");
-            foreach (var result in results)
-            {
-                Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
-            }
-        }
-
-        // Clean up temporary files and directory
-        try
-        {
-            if (File.Exists(barcodePath))
-                File.Delete(barcodePath);
-            if (Directory.Exists(tempFolder))
-                Directory.Delete(tempFolder, true);
-        }
-        catch
-        {
-            // Ignored - cleanup failure should not affect program exit
-        }
+        // Apply the validated thread count to the Aspose.BarCode processor settings.
+        BarCodeReader.ProcessorSettings.MaxAdditionalAllowedThreads = finalValue;
+        Console.WriteLine($"ProcessorSettings.MaxAdditionalAllowedThreads set to {BarCodeReader.ProcessorSettings.MaxAdditionalAllowedThreads}.");
     }
 
     /// <summary>
-    /// Validates the requested thread count against a system-derived limit and applies it to BarCodeReader.ProcessorSettings.
+    /// Entry point of the sample. Calculates a sample thread count and invokes the validation routine.
     /// </summary>
-    /// <param name="requested">The desired number of additional allowed threads.</param>
-    static void ValidateAndSetMaxAdditionalAllowedThreads(int requested)
+    static void Main()
     {
-        // Example system-derived limit: twice the number of logical processors
-        int systemLimit = Environment.ProcessorCount * 2;
-        int finalValue = requested;
-
-        if (requested > systemLimit)
-        {
-            Console.WriteLine($"Requested MaxAdditionalAllowedThreads ({requested}) exceeds system limit ({systemLimit}). Capping to limit.");
-            finalValue = systemLimit;
-        }
-        else if (requested < 0)
-        {
-            Console.WriteLine($"Requested MaxAdditionalAllowedThreads ({requested}) is negative. Setting to 0.");
-            finalValue = 0;
-        }
-
-        // Apply the validated value to the Aspose.BarCode processor settings
-        BarCodeReader.ProcessorSettings.MaxAdditionalAllowedThreads = finalValue;
-        Console.WriteLine($"ProcessorSettings.MaxAdditionalAllowedThreads set to {finalValue}.");
+        // Example value that may be higher than the system's allowed worker threads.
+        int sampleValue = Environment.ProcessorCount * 4;
+        Console.WriteLine($"Attempting to set MaxAdditionalAllowedThreads to {sampleValue}.");
+        ValidateMaxAdditionalAllowedThreads(sampleValue);
     }
 }

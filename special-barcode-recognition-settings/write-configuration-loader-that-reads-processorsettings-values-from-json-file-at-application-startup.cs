@@ -1,8 +1,8 @@
-// Title: Load Aspose.BarCode ProcessorSettings from JSON configuration
-// Description: Demonstrates reading a JSON file at startup and applying its values to Aspose.BarCode's ProcessorSettings for optimal threading control.
-// Category-Description: This example belongs to the Aspose.BarCode configuration management category, illustrating how to use System.Text.Json to deserialize settings and assign them to the static BarCodeReader.ProcessorSettings class. Typical use cases include customizing CPU core usage and thread limits for barcode recognition workloads. Developers often need to load such settings from external files to make their applications adaptable to different environments.
+// Title: Load ProcessorSettings from JSON configuration at startup
+// Description: Demonstrates reading processor configuration values from a JSON file and applying them to Aspose.BarCode's BarCodeReader.ProcessorSettings.
+// Category-Description: This example belongs to the Aspose.BarCode configuration management category, showing how to use System.Text.Json to load settings for multi‑core processing. It covers key API classes such as BarCodeReader.ProcessorSettings and typical use cases like customizing thread usage for barcode recognition workloads. Developers often need to adjust these settings to optimize performance on different hardware environments.
 // Prompt: Write a configuration loader that reads ProcessorSettings values from a JSON file at application startup.
-// Tags: processor-settings, configuration, json, aspose.barcode, barcodereader
+// Tags: json, configuration, processor settings, multithreading, aspose.barcode, barcodereader, system.text.json
 
 using System;
 using System.IO;
@@ -10,72 +10,55 @@ using System.Text.Json;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Represents processor configuration options for Aspose.BarCode.
-/// </summary>
-class ProcessorConfig
-{
-    public bool UseAllCores { get; set; }
-    public int UseOnlyThisCoresCount { get; set; }
-    public int MaxAdditionalAllowedThreads { get; set; }
-}
-
-/// <summary>
-/// Entry point of the application that loads processor settings from a JSON file and applies them to Aspose.BarCode.
+/// Program that loads Aspose.BarCode processor settings from a JSON file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Main method that performs the configuration loading and application.
+    /// Application entry point. Creates a default configuration file if missing,
+    /// reads the JSON, and applies the values to BarCodeReader.ProcessorSettings.
     /// </summary>
     static void Main()
     {
-        // Build the full path to the JSON configuration file located in the application base directory.
-        string configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "processorSettings.json");
+        // Path to the JSON configuration file
+        const string configFile = "processorSettings.json";
 
-        // Verify that the configuration file exists before attempting to read it.
-        if (!File.Exists(configPath))
+        // If the config file does not exist, create one with default values
+        if (!File.Exists(configFile))
         {
-            Console.WriteLine($"Configuration file not found: {configPath}");
-            return;
+            var defaultConfig = new
+            {
+                UseAllCores = true,
+                UseOnlyThisCoresCount = Environment.ProcessorCount,
+                MaxAdditionalAllowedThreads = Environment.ProcessorCount * 2
+            };
+            // Serialize the default configuration with indentation for readability
+            string json = JsonSerializer.Serialize(defaultConfig, new JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText(configFile, json);
+            Console.WriteLine($"Created default config file: {configFile}");
         }
 
-        string jsonContent;
-        try
+        // Read the JSON content from the configuration file
+        string fileContent = File.ReadAllText(configFile);
+        using (JsonDocument doc = JsonDocument.Parse(fileContent))
         {
-            // Read the entire JSON file content into a string.
-            jsonContent = File.ReadAllText(configPath);
-        }
-        catch (Exception ex)
-        {
-            // Handle any I/O errors that may occur while reading the file.
-            Console.WriteLine($"Error reading configuration file: {ex.Message}");
-            return;
-        }
+            JsonElement root = doc.RootElement;
 
-        ProcessorConfig config;
-        try
-        {
-            // Deserialize the JSON into a ProcessorConfig instance.
-            config = JsonSerializer.Deserialize<ProcessorConfig>(jsonContent);
-            if (config == null)
-                throw new InvalidOperationException("Deserialized config is null.");
-        }
-        catch (Exception ex)
-        {
-            // Handle JSON parsing errors.
-            Console.WriteLine($"Error parsing configuration JSON: {ex.Message}");
-            return;
-        }
+            // Extract individual settings from the JSON document
+            bool useAllCores = root.GetProperty("UseAllCores").GetBoolean();
+            int useOnlyThisCoresCount = root.GetProperty("UseOnlyThisCoresCount").GetInt32();
+            int maxAdditionalAllowedThreads = root.GetProperty("MaxAdditionalAllowedThreads").GetInt32();
 
-        // Apply the deserialized settings to Aspose.BarCode's static ProcessorSettings.
-        BarCodeReader.ProcessorSettings.UseAllCores = config.UseAllCores;
-        BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount = config.UseOnlyThisCoresCount;
-        BarCodeReader.ProcessorSettings.MaxAdditionalAllowedThreads = config.MaxAdditionalAllowedThreads;
+            // Apply the settings to Aspose.BarCode's processor configuration
+            BarCodeReader.ProcessorSettings.UseAllCores = useAllCores;
+            BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount = useOnlyThisCoresCount;
+            BarCodeReader.ProcessorSettings.MaxAdditionalAllowedThreads = maxAdditionalAllowedThreads;
 
-        // Output the applied settings for verification.
-        Console.WriteLine("ProcessorSettings applied:");
-        Console.WriteLine($"UseAllCores = {BarCodeReader.ProcessorSettings.UseAllCores}");
-        Console.WriteLine($"UseOnlyThisCoresCount = {BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount}");
-        Console.WriteLine($"MaxAdditionalAllowedThreads = {BarCodeReader.ProcessorSettings.MaxAdditionalAllowedThreads}");
+            // Output the loaded settings for verification
+            Console.WriteLine("ProcessorSettings loaded from JSON:");
+            Console.WriteLine($"UseAllCores = {BarCodeReader.ProcessorSettings.UseAllCores}");
+            Console.WriteLine($"UseOnlyThisCoresCount = {BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount}");
+            Console.WriteLine($"MaxAdditionalAllowedThreads = {BarCodeReader.ProcessorSettings.MaxAdditionalAllowedThreads}");
+        }
     }
 }
