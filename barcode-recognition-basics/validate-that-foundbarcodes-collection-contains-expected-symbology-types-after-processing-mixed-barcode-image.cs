@@ -1,154 +1,123 @@
-// Title: Validate Detected Barcode Symbologies in a Mixed Image
-// Description: This example generates multiple barcode types, merges them into a single image, reads the combined image, and checks that each expected symbology is present.
-// Category-Description: Demonstrates Aspose.BarCode generation and recognition APIs. It shows how to create barcodes with BarcodeGenerator, compose them using Aspose.Drawing, and extract information with BarCodeReader. Typical for scenarios where developers need to batch‑process or validate mixed barcode images, such as inventory scanning or document verification.
+// Title: Validate Detected Barcode Symbologies in a Combined Image
+// Description: Generates several different barcode types, merges them into a single image, then reads the image to confirm each expected symbology is detected.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It demonstrates using BarcodeGenerator to create barcodes, combining images with Aspose.Drawing, and employing BarCodeReader with DecodeType.AllSupportedTypes to recognize multiple symbologies. Developers often need to batch‑process mixed barcode images, verify content, or build validation pipelines; this snippet shows the key API classes (BarcodeGenerator, BarCodeReader, DecodeType) and typical workflow for such scenarios.
 // Prompt: Validate that FoundBarCodes collection contains expected symbology types after processing a mixed barcode image.
-// Tags: barcode, symbology, validation, generation, recognition, mixed image, aspose.barcode, csharp
+// Tags: barcode, symbology, validation, generation, recognition, aspose.barcode, csharp
 
 using System;
 using System.IO;
 using System.Collections.Generic;
-using System.Linq;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates creating several barcodes, combining them into one image,
-/// reading the combined image, and verifying that all expected symbologies are detected.
+/// Demonstrates generating multiple barcode types, combining them into one image,
+/// and validating that the recognized symbologies match the expected set.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Executes the generation, composition, recognition,
-    /// and validation steps for a mixed barcode image.
+    /// Entry point that creates barcodes, merges them, reads back the combined image,
+    /// and prints validation results to the console.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder for all intermediate files.
-        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeMix_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
+        // Create a temporary working directory for intermediate files
+        string tempDir = Path.Combine(Path.GetTempPath(), "BarcodeMixed_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
 
-        // Define the barcode types, their data, and output file names.
-        var specs = new List<(BaseEncodeType EncodeType, string CodeText, string FileName)>
+        // Define the barcodes to generate: type, data, and the expected name used for validation
+        var barcodeInfos = new List<(BaseEncodeType Encode, string Text, string ExpectedName)>
         {
-            (EncodeTypes.Code128, "ABC123", "code128.png"),
-            (EncodeTypes.QR, "https://example.com", "qr.png"),
-            (EncodeTypes.DataMatrix, "DM12345", "datamatrix.png"),
-            (EncodeTypes.Aztec, "AZTEC", "aztec.png")
+            (EncodeTypes.Code128, "CODE128TEST", "Code128"),
+            (EncodeTypes.QR, "https://example.com", "QR"),
+            (EncodeTypes.Pdf417, "PDF417DATA", "PDF417")
         };
 
-        // Generate individual barcode images and store their paths.
-        var barcodePaths = new List<string>();
-        foreach (var spec in specs)
-        {
-            string path = Path.Combine(tempFolder, spec.FileName);
-            using (var generator = new BarcodeGenerator(spec.EncodeType, spec.CodeText))
-            {
-                generator.Save(path, BarCodeImageFormat.Png);
-            }
-            barcodePaths.Add(path);
-        }
-
-        // Prepare to combine the generated barcodes into a single horizontal layout.
-        int spacing = 20;                     // Space between barcodes and margins.
-        int totalWidth = spacing;             // Initial left margin.
-        int maxHeight = 0;                    // Track the tallest barcode.
+        // Generate individual barcode images and store them in a list
         var bitmaps = new List<Bitmap>();
-
-        // Load each barcode image, calculate combined dimensions, and collect bitmaps.
-        foreach (string path in barcodePaths)
+        foreach (var info in barcodeInfos)
         {
-            if (!File.Exists(path))
+            using (var generator = new BarcodeGenerator(info.Encode, info.Text))
             {
-                Console.WriteLine($"Missing barcode image: {path}");
-                return;
-            }
+                // Optional visual parameters for better readability
+                generator.Parameters.Barcode.XDimension.Point = 2f;
+                generator.Parameters.Barcode.BarHeight.Point = 30f;
 
-            var bmp = new Bitmap(path);
-            bitmaps.Add(bmp);
-            totalWidth += bmp.Width + spacing;
-            if (bmp.Height > maxHeight) maxHeight = bmp.Height;
+                Bitmap bmp = generator.GenerateBarCodeImage();
+                bitmaps.Add(bmp);
+            }
         }
 
-        totalWidth += spacing; // Right margin.
-        int totalHeight = maxHeight + spacing * 2; // Top and bottom margins.
-
-        // Create the combined bitmap and draw each barcode onto it.
-        string combinedPath = Path.Combine(tempFolder, "combined.png");
-        using (var combinedBitmap = new Bitmap(totalWidth, totalHeight))
+        // Calculate the size of the combined image (max width, total height with spacing)
+        int maxWidth = 0;
+        int totalHeight = 0;
+        int spacing = 10; // pixels between barcodes
+        foreach (var bmp in bitmaps)
         {
-            using (var graphics = Graphics.FromImage(combinedBitmap))
+            if (bmp.Width > maxWidth) maxWidth = bmp.Width;
+            totalHeight += bmp.Height + spacing;
+        }
+        totalHeight -= spacing; // remove extra spacing after the last image
+
+        // Create the combined bitmap and draw each barcode onto it sequentially
+        string combinedPath = Path.Combine(tempDir, "combined.png");
+        using (var combined = new Bitmap(maxWidth, totalHeight, PixelFormat.Format32bppArgb))
+        {
+            using (var graphics = Graphics.FromImage(combined))
             {
                 graphics.Clear(Color.White);
-                int x = spacing;
-                int y = spacing;
+                int yOffset = 0;
                 foreach (var bmp in bitmaps)
                 {
-                    graphics.DrawImage(bmp, x, y, bmp.Width, bmp.Height);
-                    x += bmp.Width + spacing;
+                    graphics.DrawImage(bmp, 0, yOffset, bmp.Width, bmp.Height);
+                    yOffset += bmp.Height + spacing;
+                    bmp.Dispose(); // release individual bitmap resources after drawing
                 }
             }
-            combinedBitmap.Save(combinedPath, ImageFormat.Png);
+            combined.Save(combinedPath, ImageFormat.Png);
         }
 
-        // Release resources held by individual barcode bitmaps.
-        foreach (var bmp in bitmaps) bmp.Dispose();
-
-        // Verify that the combined image was successfully created.
+        // Verify that the combined image file was created successfully
         if (!File.Exists(combinedPath))
         {
             Console.WriteLine("Failed to create combined barcode image.");
             return;
         }
 
-        // Define the set of symbologies we expect to find in the combined image.
-        var expectedSymbologies = new HashSet<string> { "Code128", "QR", "DataMatrix", "Aztec" };
-        var foundSymbologies = new HashSet<string>();
-
-        // Read all barcodes from the combined image.
+        // Read and recognize all barcodes from the combined image
+        var foundTypes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         using (var reader = new BarCodeReader(combinedPath, DecodeType.AllSupportedTypes))
         {
-            var results = reader.ReadBarCodes();
-            foreach (var result in results)
+            reader.ReadBarCodes();
+            foreach (var result in reader.FoundBarCodes)
             {
-                if (!string.IsNullOrEmpty(result.CodeTypeName))
-                {
-                    foundSymbologies.Add(result.CodeTypeName);
-                    Console.WriteLine($"Detected: {result.CodeTypeName} - Text: {result.CodeText}");
-                }
+                foundTypes.Add(result.CodeTypeName);
+                Console.WriteLine($"Detected: {result.CodeTypeName} - {result.CodeText}");
             }
         }
 
-        // Validate that each expected symbology was detected.
-        bool allFound = true;
-        foreach (var expected in expectedSymbologies)
+        // Validate that each expected symbology is present in the recognized set
+        Console.WriteLine("\nValidation Results:");
+        foreach (var info in barcodeInfos)
         {
-            if (!foundSymbologies.Contains(expected))
-            {
-                Console.WriteLine($"Missing expected symbology: {expected}");
-                allFound = false;
-            }
+            bool present = foundTypes.Contains(info.ExpectedName);
+            Console.WriteLine($"{info.ExpectedName}: {(present ? "PASS" : "FAIL")}");
         }
 
-        // Output the overall validation result.
-        if (allFound)
-        {
-            Console.WriteLine("Validation succeeded: all expected symbologies were detected.");
-        }
-        else
-        {
-            Console.WriteLine("Validation failed: some expected symbologies were not detected.");
-        }
-
-        // Clean up temporary files and folders (optional).
+        // Clean up temporary files and directories
         try
         {
-            Directory.Delete(tempFolder, true);
+            if (File.Exists(combinedPath))
+                File.Delete(combinedPath);
+            Directory.Delete(tempDir, true);
         }
         catch
         {
-            // Ignored – cleanup failures should not affect the validation outcome.
+            // Ignored – cleanup failures should not affect program exit
         }
     }
 }

@@ -1,8 +1,8 @@
-// Title: Retrieve QR Code Reading Quality and Log to Diagnostics File
-// Description: Demonstrates generating a QR code, reading it with Aspose.BarCode, extracting the reading quality (used as confidence) and writing the result to a log file.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It shows how to use BarcodeGenerator to create a QR code, BarCodeReader with QualitySettings to decode it, and how to access BarCodeResult properties such as ReadingQuality for confidence assessment. Developers often need to log barcode detection details for diagnostics or auditing, making this pattern useful for batch processing and CI pipelines.
+// Title: Read QR Code and Log Confidence
+// Description: This example generates a QR code image, reads it back using Aspose.BarCode, retrieves the confidence level of the detection, and writes the result to a diagnostics log file.
+// Category-Description: Demonstrates Aspose.BarCode generation and recognition APIs. It uses BarcodeGenerator to create a QR code, BarCodeReader to decode it, and accesses BarCodeResult.Confidence to assess detection reliability. Developers working with barcode scanning, quality assessment, or logging diagnostic information commonly use these classes to validate and monitor barcode processing pipelines.
 // Prompt: Retrieve BarCodeResult.Confidence after reading a QR code and log the enumeration to a diagnostics file.
-// Tags: qr code,reading quality,confidence,diagnostics,logging,barcode generation,barcode recognition,aspose.barcode
+// Tags: qr code, barcode generation, barcode recognition, confidence, diagnostics, logging, aspose.barcode
 
 using System;
 using System.IO;
@@ -11,64 +11,51 @@ using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates generating a QR code, reading it, retrieving the reading quality as confidence,
-/// and logging the information to a diagnostics file.
+/// Demonstrates generating a QR code, reading it, retrieving confidence, and logging diagnostics.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a QR code image, reads it, extracts confidence,
-    /// and writes diagnostic information to a log file.
+    /// Entry point. Generates a QR code, reads it, logs confidence to a file.
     /// </summary>
     static void Main()
     {
-        // Prepare temporary folder and file paths
+        // Create a unique temporary folder for generated files
         string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
-        string barcodePath = Path.Combine(tempFolder, "qr.png");
-        string logPath = Path.Combine(tempFolder, "diagnostics.log");
 
-        // Generate a QR code image
+        // Define paths for the QR code image and the diagnostics log
+        string barcodePath = Path.Combine(tempFolder, "qr.png");
+        string diagnosticsPath = Path.Combine(tempFolder, "diagnostics.log");
+
+        // Generate a QR code image and save it as PNG
         using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "Sample QR Text"))
         {
-            // Save as PNG using the appropriate overload
+            generator.Parameters.Barcode.XDimension.Pixels = 4;
             generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        // Verify that the barcode image was created
+        // Verify that the QR code image was created successfully
         if (!File.Exists(barcodePath))
         {
-            File.AppendAllText(logPath, $"[{DateTime.Now}] Error: Barcode image not found at '{barcodePath}'.{Environment.NewLine}");
+            Console.WriteLine("Failed to generate barcode image.");
             return;
         }
 
-        // Read the QR code and retrieve the confidence (using ReadingQuality as a proxy)
+        // Read the QR code, retrieve confidence, and log the information
         using (BarCodeReader reader = new BarCodeReader(barcodePath, DecodeType.QR))
         {
-            // Optional: set high-performance quality settings
-            reader.QualitySettings = QualitySettings.HighPerformance;
-
             BarCodeResult[] results = reader.ReadBarCodes();
-            if (results == null || results.Length == 0)
+            foreach (BarCodeResult result in results)
             {
-                // No barcode detected; log the situation
-                File.AppendAllText(logPath, $"[{DateTime.Now}] No barcode detected in the image.{Environment.NewLine}");
-            }
-            else
-            {
-                // Iterate through detected barcodes
-                foreach (BarCodeResult result in results)
-                {
-                    // Aspose.BarCode does not expose a 'Confidence' property; use ReadingQuality instead
-                    double confidence = result.ReadingQuality;
-                    string logEntry = $"[{DateTime.Now}] Detected QR Code. CodeText: '{result.CodeText}'. Confidence (ReadingQuality): {confidence:F2}";
-                    File.AppendAllText(logPath, logEntry + Environment.NewLine);
-                }
+                BarCodeConfidence confidence = result.Confidence;
+                string logLine = $"File: {barcodePath}, Confidence: {confidence}";
+                File.AppendAllText(diagnosticsPath, logLine + Environment.NewLine);
+                Console.WriteLine(logLine);
             }
         }
 
-        // Output locations for verification (optional)
-        Console.WriteLine("Barcode image: " + barcodePath);
-        Console.WriteLine("Diagnostics log: " + logPath);
+        // Inform the user where the diagnostics log was written
+        Console.WriteLine($"Diagnostics written to: {diagnosticsPath}");
     }
 }

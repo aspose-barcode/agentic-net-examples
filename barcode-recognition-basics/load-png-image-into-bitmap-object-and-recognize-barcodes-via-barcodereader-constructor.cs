@@ -1,8 +1,8 @@
-// Title: Load PNG into Bitmap and Recognize Barcodes with BarCodeReader
-// Description: Demonstrates loading a PNG image into an Aspose.Drawing.Bitmap and using BarCodeReader to detect all supported barcode types.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases key API classes such as BarcodeGenerator for creating barcodes, BarCodeReader for decoding, and BarCodeResult for accessing decoded data. Typical use cases include scanning barcode images from files or streams, extracting product codes, and integrating barcode processing into .NET applications. Developers often need quick samples that cover image handling, temporary file management, and cleanup.
+// Title: Load PNG into Bitmap and recognize Code128 barcode using BarCodeReader
+// Description: Demonstrates loading a generated PNG barcode image into a Bitmap object and using Aspose.BarCode's BarCodeReader to detect and read a Code128 barcode.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, showcasing how to work with image files, Bitmap objects, and the BarCodeReader API. It illustrates typical use cases such as scanning saved barcode images, extracting encoded data, and handling temporary files. Developers often need to integrate barcode reading into image processing pipelines, and this snippet provides a concise reference.
 // Prompt: Load a PNG image into a Bitmap object and recognize barcodes via BarCodeReader constructor.
-// Tags: barcode, png, bitmap, recognition, generation, aspose.barcode, decode, encode, csharp
+// Tags: code128, barcode recognition, png, bitmap, aspose.barcode, aspose.drawing
 
 using System;
 using System.IO;
@@ -12,78 +12,57 @@ using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Sample program that generates a barcode image, loads it into a Bitmap, and reads barcodes using Aspose.BarCode.
+/// Demonstrates generating a Code128 barcode, saving it as PNG, loading it into a Bitmap,
+/// and recognizing the barcode using Aspose.BarCode's BarCodeReader.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Creates a temporary barcode PNG, loads it as a Bitmap, and extracts barcode information.
+    /// Entry point of the example. Creates a temporary PNG barcode image,
+    /// reads it with BarCodeReader, outputs the result, and cleans up resources.
     /// </summary>
     static void Main()
     {
-        // Create a temporary folder for the sample image
-        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeSample_" + Guid.NewGuid().ToString("N"));
+        // Create a unique temporary folder for the demo files
+        string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
-        string imagePath = Path.Combine(tempFolder, "barcode.png");
 
-        // Generate a sample barcode image if it does not exist
+        // Define the full path for the sample PNG image
+        string imagePath = Path.Combine(tempFolder, "sample.png");
+
+        // Generate a Code128 barcode and save it as a PNG file
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456789"))
+        {
+            generator.Save(imagePath, BarCodeImageFormat.Png);
+        }
+
+        // Verify that the image was created successfully
         if (!File.Exists(imagePath))
         {
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+            Console.WriteLine("Failed to create barcode image.");
+            return;
+        }
+
+        // Load the PNG image into a Bitmap and initialize the BarCodeReader for Code128 decoding
+        using (var bitmap = new Bitmap(imagePath))
+        using (var reader = new BarCodeReader(bitmap, DecodeType.Code128))
+        {
+            // Iterate through all detected barcodes and display their type and text
+            foreach (BarCodeResult result in reader.ReadBarCodes())
             {
-                // Save the generated barcode as a PNG file
-                generator.Save(imagePath, BarCodeImageFormat.Png);
+                Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
             }
         }
 
-        // Load the PNG image into a Bitmap object
-        using (Aspose.Drawing.Bitmap bitmap = new Aspose.Drawing.Bitmap(imagePath))
-        {
-            // The bitmap is now loaded; it can be used for further processing if needed
-        }
-
-        // Recognize barcodes from the image using BarCodeReader
-        if (File.Exists(imagePath))
-        {
-            using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
-            {
-                // Read all detected barcodes
-                BarCodeResult[] results = reader.ReadBarCodes();
-
-                if (results.Length == 0)
-                {
-                    Console.WriteLine("No barcodes detected.");
-                }
-                else
-                {
-                    // Output details for each detected barcode
-                    foreach (BarCodeResult result in results)
-                    {
-                        Console.WriteLine($"Code Text: {result.CodeText}");
-                        Console.WriteLine($"Symbology: {result.CodeTypeName}");
-                        Console.WriteLine($"Reading Quality: {result.ReadingQuality}");
-                        Console.WriteLine($"Region Angle: {result.Region.Angle}");
-                        Console.WriteLine();
-                    }
-                }
-            }
-        }
-        else
-        {
-            Console.WriteLine($"Image file not found: {imagePath}");
-        }
-
-        // Clean up temporary files
+        // Clean up temporary files and folder
         try
         {
-            if (Directory.Exists(tempFolder))
-            {
-                Directory.Delete(tempFolder, true);
-            }
+            File.Delete(imagePath);
+            Directory.Delete(tempFolder, true);
         }
         catch
         {
-            // Ignore cleanup errors
+            // Ignored - cleanup failure should not affect program outcome
         }
     }
 }

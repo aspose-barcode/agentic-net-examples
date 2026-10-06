@@ -1,80 +1,49 @@
-// Title: Barcode detection from image stream in a simulated web API
-// Description: Demonstrates how to detect barcodes in an image stream using Aspose.BarCode, mimicking a web API endpoint that receives uploaded images.
-// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category. It showcases the BarCodeReader class together with System.Drawing.Bitmap to read any supported symbology from an image stream. Typical use cases include server‑side processing of uploaded photos, document scanning pipelines, and real‑time mobile uploads where developers need to extract barcode data quickly.
+// Title: Barcode generation and detection using Aspose.BarCode in a simulated web API
+// Description: This example generates a Code128 barcode, stores it in a memory stream, and then reads the same stream to detect and decode the barcode.
+// Category-Description: Demonstrates Aspose.BarCode generation and recognition APIs, focusing on BarcodeGenerator, BarCodeReader, and related image handling. Typical use cases include processing uploaded images in web APIs to instantly read barcodes. Developers often need to convert streams to images, detect multiple symbologies, and extract encoded data.
 // Prompt: Integrate barcode detection into a web API endpoint that accepts uploaded image streams for instant processing.
-// Tags: barcode detection, image stream, aspnet, aspose.barcode, qr, barcode recognition, web api, c#
+// Tags: barcode, code128, generation, detection, aspnet, aspose.barcode, memorystream, png
 
 using System;
-using System.Collections.Generic;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Provides a simple demonstration of barcode detection from an image stream,
-/// representing a typical web API endpoint implementation.
+/// Demonstrates barcode generation and immediate detection using Aspose.BarCode.
+/// In a real scenario this logic would reside in a web API endpoint that processes
+/// uploaded image streams.
 /// </summary>
 class Program
 {
-    // Simulated web API endpoint: accepts an image stream and returns detected barcodes.
-    static List<(string CodeType, string CodeText)> DetectBarcodes(Stream imageStream)
-    {
-        var results = new List<(string, string)>();
-
-        // Load the image from the stream into a Bitmap.
-        using (var bitmap = new Bitmap(imageStream))
-        {
-            // Use the default constructor that detects all supported barcode types.
-            using (var reader = new BarCodeReader(bitmap))
-            {
-                // Iterate through all detected barcodes.
-                foreach (BarCodeResult result in reader.ReadBarCodes())
-                {
-                    // result.CodeTypeName provides a readable symbology name.
-                    results.Add((result.CodeTypeName, result.CodeText));
-                }
-            }
-        }
-
-        return results;
-    }
-
     /// <summary>
-    /// Generates a sample QR code, feeds it to the detection routine,
-    /// and writes the detection results to the console.
+    /// Entry point that creates a barcode, writes it to a memory stream,
+    /// and reads the stream to detect and decode the barcode.
     /// </summary>
-    static void Main()
+    static void Main(string[] args)
     {
-        // Simulate a client uploading an image by generating a barcode in memory.
-        const string sampleText = "Hello World";
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, sampleText))
+        // Simulate receiving an uploaded image stream in a web API by generating a barcode into a MemoryStream.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
         {
-            // Optional: customize appearance.
-            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
-            generator.Parameters.Barcode.QR.Version = QRVersion.Auto;
-            generator.Parameters.Barcode.BarColor = Color.Black;
-            generator.Parameters.BackColor = Color.White;
-
-            using (var ms = new MemoryStream())
+            // Create a memory stream to hold the generated barcode image.
+            using (var barcodeStream = new MemoryStream())
             {
-                // Save generated barcode as PNG into the memory stream.
-                generator.Save(ms, BarCodeImageFormat.Png);
-                ms.Position = 0; // Reset stream for reading.
+                // Save the barcode as a PNG image into the stream.
+                generator.Save(barcodeStream, BarCodeImageFormat.Png);
 
-                // Call the simulated API method.
-                List<(string CodeType, string CodeText)> detected = DetectBarcodes(ms);
+                // Reset the stream position to the beginning before reading.
+                barcodeStream.Position = 0;
 
-                // Output detection results.
-                if (detected.Count == 0)
+                // Initialize the barcode reader with the image stream.
+                using (var reader = new BarCodeReader(barcodeStream))
                 {
-                    Console.WriteLine("No barcodes detected.");
-                }
-                else
-                {
-                    foreach (var item in detected)
+                    // Iterate through all detected barcodes in the image.
+                    foreach (BarCodeResult result in reader.ReadBarCodes())
                     {
-                        Console.WriteLine($"Detected {item.CodeType}: {item.CodeText}");
+                        Console.WriteLine($"Detected Barcode Type: {result.CodeTypeName}");
+                        Console.WriteLine($"Decoded Text: {result.CodeText}");
                     }
                 }
             }

@@ -1,123 +1,105 @@
-// Title: Abort Barcode Recognition Test
-// Description: Demonstrates how to abort a barcode recognition operation using Aspose.BarCode and verifies it completes within a defined time.
-// Category-Description: This example belongs to the Aspose.BarCode recognition category, showcasing the use of BarCodeReader, its Abort method, and timeout handling. Developers often need to stop long-running barcode scans in responsive applications or unit tests; this snippet illustrates typical patterns for aborting and measuring recognition duration.
+// Title: Abort Barcode Recognition Example
+// Description: Demonstrates how to abort a barcode recognition operation using Aspose.BarCode and verify it stops within a time limit.
+// Category-Description: This example belongs to the Aspose.BarCode recognition category, showcasing the use of BarCodeReader, its Timeout property, and the Abort method. Developers often need to stop long‑running recognition tasks programmatically, especially in UI or service scenarios where responsiveness is critical. The code illustrates typical patterns for threading, exception handling, and performance measurement when working with barcode recognition APIs.
 // Prompt: Create unit tests that verify Abort method successfully stops recognition within a specified time frame.
-// Tags: barcode recognition, abort, timeout, aspose.barcode, code128, unit test, performance
+// Tags: barcode, symbology, abort, recognition, unit-test, aspose.barcode, threading, performance
 
 using System;
 using System.IO;
 using System.Diagnostics;
 using System.Threading;
-using System.Threading.Tasks;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates aborting a barcode recognition operation and validates its timing.
+/// Contains the entry point and demonstration of aborting a barcode recognition operation.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that generates a sample barcode, runs the abort test, and reports the outcome.
+    /// Application entry point. Executes the abort recognition test.
     /// </summary>
     static void Main()
     {
-        // Create a temporary folder for test files
-        string tempFolder = Path.Combine(Path.GetTempPath(), "AbortTest_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
-
-        // Generate a sample barcode image
-        string barcodePath = Path.Combine(tempFolder, "sample.png");
-        GenerateSampleBarcode(barcodePath);
-
-        // Run the abort test
-        bool testResult = RunAbortTest(barcodePath, expectedMaxDurationMs: 1000);
-
-        // Report result
-        if (testResult)
-        {
-            Console.WriteLine("PASSED: Abort stopped recognition within the expected time.");
-        }
-        else
-        {
-            Console.WriteLine("FAILED: Abort did not stop recognition as expected.");
-        }
-
-        // Clean up temporary files
-        try { Directory.Delete(tempFolder, true); } catch { /* ignore cleanup errors */ }
+        TestAbortRecognition();
     }
 
-    // Generates a simple Code128 barcode and saves it to the specified path
-    private static void GenerateSampleBarcode(string path)
+    static void TestAbortRecognition()
     {
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
-        {
-            generator.Save(path, BarCodeImageFormat.Png);
-        }
-    }
+        // Create a unique temporary folder for the test files
+        string tempDir = Path.Combine(Path.GetTempPath(), "AbortTest_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        string barcodePath = Path.Combine(tempDir, "code.png");
 
-    // Starts recognition, aborts it after a short delay, and verifies it stops quickly
-    private static bool RunAbortTest(string imagePath, int expectedMaxDurationMs)
-    {
-        if (!File.Exists(imagePath))
+        // Generate a simple Code128 barcode image and save it to the temporary folder
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "TestAbort"))
         {
-            Console.WriteLine("Test image not found.");
-            return false;
+            generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        bool abortCaught = false;
-        long elapsedMs = 0;
-
-        using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
+        // Initialize the barcode reader with a long timeout to prevent automatic abort
+        using (var reader = new BarCodeReader(barcodePath, DecodeType.Code128))
         {
-            // Set a long timeout so that abort is the only way to stop early
             reader.Timeout = 10000; // 10 seconds
 
-            // Task that performs the reading
-            Task readTask = Task.Run(() =>
+            Exception readException = null;
+            Stopwatch sw = new Stopwatch();
+
+            // Start recognition on a separate thread so we can abort it from the main thread
+            Thread readThread = new Thread(() =>
             {
-                Stopwatch sw = Stopwatch.StartNew();
                 try
                 {
-                    // This call blocks until reading finishes, timeout expires, or abort is invoked
-                    BarCodeResult[] results = reader.ReadBarCodes();
-                    // If we get results before abort, treat as failure for this test
-                    abortCaught = false;
+                    sw.Start();
+                    var results = reader.ReadBarCodes(); // Blocking call
+                    sw.Stop(); // Should not reach here if abort works
                 }
-                catch (RecognitionAbortedException)
+                catch (RecognitionAbortedException ex)
                 {
-                    // Expected when abort is triggered
-                    abortCaught = true;
+                    readException = ex;
+                    sw.Stop();
                 }
                 catch (Exception ex)
                 {
-                    // Any other exception is unexpected
-                    Console.WriteLine($"Unexpected exception: {ex.GetType().Name} - {ex.Message}");
-                    abortCaught = false;
-                }
-                finally
-                {
+                    readException = ex;
                     sw.Stop();
-                    elapsedMs = sw.ElapsedMilliseconds;
                 }
             });
+            readThread.Start();
 
-            // Wait a short period before aborting
-            Thread.Sleep(200); // 200 ms
+            // Give the reader a short moment to begin processing
+            Thread.Sleep(100);
+
+            // Request abort of the ongoing recognition operation
             reader.Abort();
 
-            // Wait for the reading task to complete (with a safety timeout)
-            if (!readTask.Wait(5000))
+            // Wait for the recognition thread to finish
+            readThread.Join();
+
+            // Verify that the abort was raised and completed within a reasonable time (<= 1 second)
+            bool passed = readException is RecognitionAbortedException && sw.ElapsedMilliseconds <= 1000;
+            Console.WriteLine(passed
+                ? "PASS: Abort stopped recognition within time."
+                : "FAIL: Abort did not work as expected.");
+
+            // Output any unexpected exception details
+            if (readException != null && !(readException is RecognitionAbortedException))
             {
-                Console.WriteLine("Read task did not complete in expected time.");
-                return false;
+                Console.WriteLine($"Unexpected exception: {readException.GetType().Name} - {readException.Message}");
             }
+
+            Console.WriteLine($"Elapsed ms: {sw.ElapsedMilliseconds}");
         }
 
-        // Verify that abort was caught and that the operation finished quickly
-        bool durationOk = elapsedMs <= expectedMaxDurationMs;
-        Console.WriteLine($"Abort caught: {abortCaught}, Elapsed ms: {elapsedMs}, Duration OK: {durationOk}");
-        return abortCaught && durationOk;
+        // Clean up temporary files and folder
+        try
+        {
+            Directory.Delete(tempDir, true);
+        }
+        catch
+        {
+            // Ignored – cleanup failure should not affect test outcome
+        }
     }
 }

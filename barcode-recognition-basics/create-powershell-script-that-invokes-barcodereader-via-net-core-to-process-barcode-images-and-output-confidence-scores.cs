@@ -1,81 +1,63 @@
-// Title: Generate and Read Barcode with Confidence Scores using Aspose.BarCode
-// Description: Demonstrates creating a Code128 barcode image, saving it as PNG, then reading it with Aspose.BarCode to output the decoded text, symbology, and reading quality (confidence score).
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator for encoding barcodes and BarCodeReader for decoding them, including quality settings to improve confidence scores. Developers working with barcode automation, inventory systems, or document processing often need to generate barcodes and later verify them programmatically; this snippet provides a concise reference for those common tasks.
+// Title: Generate PowerShell script for Aspose.BarCode barcode reading with confidence scores
+// Description: This example creates a temporary PowerShell script that loads the Aspose.BarCode .NET library, reads a list of barcode images, and outputs each barcode's text, type, confidence score, and reading quality.
+// Category-Description: Demonstrates how to use Aspose.BarCode's BarCodeReader class from a PowerShell script executed via .NET Core. The example shows loading the Aspose.BarCode assembly, initializing BarCodeReader with all supported decode types, iterating over detection results, and retrieving detailed properties such as Confidence and ReadingQuality. Developers working with barcode recognition automation, batch processing, or integration with scripting environments will find this pattern useful for generating reusable scripts that expose rich barcode metadata.
 // Prompt: Create a PowerShell script that invokes BarCodeReader via .NET Core to process barcode images and output confidence scores.
-// Tags: barcode generation, barcode recognition, confidence score, code128, aspose.barcode, .net core
+// Tags: barcode symbology, reading, confidence, powershell, aspose.barcode, .net core
 
 using System;
 using System.IO;
-using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates barcode generation and reading using Aspose.BarCode, outputting confidence scores.
+/// Generates a PowerShell script that utilizes Aspose.BarCode's BarCodeReader to read barcodes
+/// from image files and prints detailed information including confidence scores.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a Code128 barcode, reads it, and prints decoding results with quality scores.
+    /// Entry point of the application. Creates a temporary folder, writes the PowerShell script,
+    /// and informs the user of the script location.
     /// </summary>
-    /// <param name="args">Command‑line arguments (not used).</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Create a temporary folder for sample files
-        string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeSample_" + Guid.NewGuid().ToString("N"));
+        // Create a unique temporary folder for the generated PowerShell script
+        string tempFolder = Path.Combine(Path.GetTempPath(), "PsScript_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
 
-        // Define sample barcode parameters
-        string barcodePath = Path.Combine(tempFolder, "sample.png");
-        string codeText = "1234567890";
-        BaseEncodeType encodeType = EncodeTypes.Code128;
+        // Define the PowerShell script content that loads Aspose.BarCode and reads barcodes
+        string scriptContent = @"
+# PowerShell script to read barcodes and output confidence scores using Aspose.BarCode
+$assemblyPath = ""<Path_To_Aspose.BarCode.dll>""
+Add-Type -Path $assemblyPath
 
-        // Generate a barcode image and save it as PNG
-        using (var generator = new BarcodeGenerator(encodeType, codeText))
-        {
-            generator.Save(barcodePath, BarCodeImageFormat.Png);
-        }
+# List of barcode image files to process
+$images = @(
+    ""sample1.png"",
+    ""sample2.png""
+)
 
-        // Verify the file exists before attempting to read
-        if (!File.Exists(barcodePath))
-        {
-            Console.WriteLine($"Barcode image not found: {barcodePath}");
-            return;
+foreach ($img in $images) {
+    if (Test-Path $img) {
+        $reader = New-Object Aspose.BarCode.BarCodeRecognition.BarCodeReader($img, [Aspose.BarCode.BarCodeRecognition.DecodeType]::AllSupportedTypes)
+        $results = $reader.ReadBarCodes()
+        foreach ($res in $results) {
+            Write-Output ""File: $img""
+            Write-Output ""CodeText: $($res.CodeText)""
+            Write-Output ""CodeType: $($res.CodeTypeName)""
+            Write-Output ""Confidence: $($res.Confidence)""
+            Write-Output ""ReadingQuality: $($res.ReadingQuality)""
         }
+        $reader.Dispose()
+    } else {
+        Write-Output ""File not found: $img""
+    }
+}
+".TrimStart();
 
-        // Read the barcode and output confidence scores
-        using (var reader = new BarCodeReader(barcodePath, DecodeType.AllSupportedTypes))
-        {
-            // Optional: set quality settings for higher accuracy
-            reader.QualitySettings = QualitySettings.HighQuality;
+        // Write the script content to a .ps1 file inside the temporary folder
+        string scriptPath = Path.Combine(tempFolder, "ReadBarcodes.ps1");
+        File.WriteAllText(scriptPath, scriptContent);
 
-            BarCodeResult[] results = reader.ReadBarCodes();
-            if (results.Length == 0)
-            {
-                Console.WriteLine("No barcode detected.");
-            }
-            else
-            {
-                foreach (BarCodeResult result in results)
-                {
-                    Console.WriteLine($"Code Text       : {result.CodeText}");
-                    Console.WriteLine($"Symbology       : {result.CodeTypeName}");
-                    Console.WriteLine($"Reading Quality : {result.ReadingQuality}");
-                    Console.WriteLine(new string('-', 30));
-                }
-            }
-        }
-
-        // Clean up temporary files
-        try
-        {
-            File.Delete(barcodePath);
-            Directory.Delete(tempFolder);
-        }
-        catch
-        {
-            // Ignored - cleanup failure should not affect program exit
-        }
+        // Inform the user where the PowerShell script has been saved
+        Console.WriteLine($"PowerShell script written to: {scriptPath}");
     }
 }

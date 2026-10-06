@@ -1,155 +1,118 @@
-// Title: Combine Multiple Target Regions for Barcode Recognition in a Single Image
-// Description: Demonstrates generating two different barcodes, merging them into one image, defining distinct target regions, and recognizing each barcode separately.
-// Category-Description: This example belongs to the Aspose.BarCode image processing and recognition category. It showcases the use of BarcodeGenerator to create barcodes, Bitmap and Graphics for image composition, and BarCodeReader for decoding. Typical scenarios include scanning composite documents where barcodes appear in known sub‑areas, requiring region‑based processing to improve accuracy and performance. Developers often need to define multiple rectangles, crop, and decode each region using the Aspose.BarCode API.
-/// Prompt: Combine multiple target regions to focus recognition on several distinct areas within a single image file.
-/// Tags: code128, qr, barcode-recognition, region-processing, png, aspose.barcode, aspose.drawing, barcode-generator, barcode-reader
+// Title: Combine Multiple Target Regions for Barcode Recognition
+// Description: Demonstrates generating QR and Code128 barcodes, merging them into one image, and using target regions to limit barcode recognition to each distinct area.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, showcasing how to work with BarcodeGenerator, BarCodeReader, and region-based decoding. Developers often need to process images containing multiple barcodes and isolate each using Rectangle regions to improve accuracy and performance. The snippet illustrates typical use cases such as scanning composite documents or combined label images.
+// Prompt: Combine multiple target regions to focus recognition on several distinct areas within a single image file.
+// Tags: qr, code128, barcode recognition, target region, aspose.barcode, aspose.drawing
 
 using System;
 using System.IO;
-using System.Collections.Generic;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates how to combine multiple target regions within a single image
-/// and perform barcode recognition on each region individually.
+/// Demonstrates combining multiple barcode images into a single canvas and recognizing each barcode
+/// by specifying separate target regions for the Aspose.BarCode reader.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the demo. Generates two barcodes, merges them,
-    /// defines target regions, and reads each barcode from its region.
+    /// Entry point of the example. Generates QR and Code128 barcodes, composes them into one image,
+    /// defines distinct regions for each barcode, and performs region‑limited recognition.
     /// </summary>
     static void Main()
     {
-        // Prepare a temporary working directory
-        string workDir = Path.Combine(Path.GetTempPath(), "BarcodeRegionDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(workDir);
+        // Create a temporary working directory for intermediate files
+        string tempDir = Path.Combine(Path.GetTempPath(), "BarcodeRegionDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
 
-        // Path for the combined image
-        string combinedImagePath = Path.Combine(workDir, "combined.png");
+        // Path for the combined image that will contain both barcodes
+        string combinedImagePath = Path.Combine(tempDir, "combined.png");
 
-        // Generate two separate barcode images (Code128 and QR)
-        byte[] firstBarcode = GenerateBarcodeImage(EncodeTypes.Code128, "First", BarCodeImageFormat.Png);
-        byte[] secondBarcode = GenerateBarcodeImage(EncodeTypes.QR, "Second", BarCodeImageFormat.Png);
-
-        // Create a combined bitmap and draw both barcodes side by side
-        using (var combinedBitmap = new Bitmap(400, 200))
+        // -------------------- Generate QR barcode --------------------
+        MemoryStream qrStream = new MemoryStream();
+        using (BarcodeGenerator qrGenerator = new BarcodeGenerator(EncodeTypes.QR, "QR Sample"))
         {
-            using (var graphics = Graphics.FromImage(combinedBitmap))
+            // Save QR barcode to memory stream in PNG format
+            qrGenerator.Save(qrStream, BarCodeImageFormat.Png);
+        }
+        qrStream.Position = 0; // Reset stream position for reading
+
+        // -------------------- Generate Code128 barcode --------------------
+        MemoryStream code128Stream = new MemoryStream();
+        using (BarcodeGenerator code128Generator = new BarcodeGenerator(EncodeTypes.Code128, "CODE128"))
+        {
+            // Save Code128 barcode to memory stream in PNG format
+            code128Generator.Save(code128Stream, BarCodeImageFormat.Png);
+        }
+        code128Stream.Position = 0; // Reset stream position for reading
+
+        // -------------------- Load generated barcode images --------------------
+        Image qrImage;
+        Image code128Image;
+        using (qrImage = Image.FromStream(qrStream))
+        using (code128Image = Image.FromStream(code128Stream))
+        {
+            // Retrieve dimensions of each barcode image
+            int qrWidth = qrImage.Width;
+            int qrHeight = qrImage.Height;
+            int code128Width = code128Image.Width;
+            int code128Height = code128Image.Height;
+
+            // Create a blank canvas large enough to hold both barcodes side by side with padding
+            int canvasWidth = qrWidth + code128Width + 20; // 20 px total horizontal padding
+            int canvasHeight = Math.Max(qrHeight, code128Height) + 20; // 20 px total vertical padding
+
+            using (Bitmap canvas = new Bitmap(canvasWidth, canvasHeight, PixelFormat.Format32bppArgb))
             {
-                graphics.Clear(Color.White);
-
-                // Draw first barcode on the left half
-                using (var ms = new MemoryStream(firstBarcode))
-                using (var bmp = new Bitmap(ms))
+                using (Graphics g = Graphics.FromImage(canvas))
                 {
-                    graphics.DrawImage(bmp, new Rectangle(0, 0, 200, 200));
+                    // Fill background with white
+                    g.Clear(Color.White);
+
+                    // Draw QR barcode at (10, 10)
+                    g.DrawImage(qrImage, 10, 10, qrWidth, qrHeight);
+
+                    // Draw Code128 barcode to the right of the QR barcode
+                    g.DrawImage(code128Image, qrWidth + 20, 10, code128Width, code128Height);
                 }
 
-                // Draw second barcode on the right half
-                using (var ms = new MemoryStream(secondBarcode))
-                using (var bmp = new Bitmap(ms))
-                {
-                    graphics.DrawImage(bmp, new Rectangle(200, 0, 200, 200));
-                }
+                // Save the combined image to disk
+                canvas.Save(combinedImagePath, ImageFormat.Png);
             }
 
-            // Save the combined image to disk
-            combinedBitmap.Save(combinedImagePath, ImageFormat.Png);
-        }
+            // -------------------- Define target regions for each barcode --------------------
+            Rectangle rectQr = new Rectangle(10, 10, qrWidth, qrHeight);
+            Rectangle rectCode128 = new Rectangle(qrWidth + 20, 10, code128Width, code128Height);
 
-        // Verify that the combined image was created successfully
-        if (!File.Exists(combinedImagePath))
-        {
-            Console.WriteLine("Failed to create the combined image.");
-            return;
-        }
-
-        // Define the target regions (left and right halves of the image)
-        var regions = new List<Rectangle>
-        {
-            new Rectangle(0, 0, 200, 200),   // First barcode region
-            new Rectangle(200, 0, 200, 200) // Second barcode region
-        };
-
-        // Process each region separately by cropping and decoding
-        using (var sourceBitmap = new Bitmap(combinedImagePath))
-        {
-            int regionIndex = 1;
-            foreach (var rect in regions)
+            // -------------------- Perform region‑limited barcode recognition --------------------
+            using (Bitmap combinedBmp = new Bitmap(combinedImagePath))
+            using (BarCodeReader reader = new BarCodeReader())
             {
-                // Crop the region from the source bitmap
-                using (var croppedBitmap = sourceBitmap.Clone(rect, sourceBitmap.PixelFormat))
+                // Set the image and the array of regions to scan
+                reader.SetBarCodeImage(combinedBmp, new Rectangle[] { rectQr, rectCode128 });
+
+                // Restrict decoding to the expected symbologies
+                reader.SetBarCodeReadType(DecodeType.QR, DecodeType.Code128);
+
+                Console.WriteLine("Recognition results within specified regions:");
+                foreach (BarCodeResult result in reader.ReadBarCodes())
                 {
-                    // Convert the cropped bitmap to a byte array
-                    byte[] croppedBytes;
-                    using (var ms = new MemoryStream())
-                    {
-                        croppedBitmap.Save(ms, ImageFormat.Png);
-                        croppedBytes = ms.ToArray();
-                    }
-
-                    // Decode barcodes within the cropped region
-                    using (var reader = new BarCodeReader(new MemoryStream(croppedBytes), DecodeType.AllSupportedTypes))
-                    {
-                        BarCodeResult[] results = reader.ReadBarCodes();
-
-                        Console.WriteLine($"Region {regionIndex}:");
-                        if (results.Length == 0)
-                        {
-                            Console.WriteLine("  No barcode detected.");
-                        }
-                        else
-                        {
-                            foreach (var result in results)
-                            {
-                                Console.WriteLine($"  CodeText: {result.CodeText}");
-                                Console.WriteLine($"  Symbology: {result.CodeTypeName}");
-                                var bounds = result.Region.Rectangle;
-                                Console.WriteLine($"  Region Bounds: X={bounds.X}, Y={bounds.Y}, Width={bounds.Width}, Height={bounds.Height}");
-                                Console.WriteLine($"  Angle: {result.Region.Angle}");
-                            }
-                        }
-                    }
+                    Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
                 }
-
-                regionIndex++;
             }
         }
 
-        // Clean up temporary files (optional)
+        // -------------------- Clean up temporary files --------------------
         try
         {
-            Directory.Delete(workDir, true);
+            File.Delete(combinedImagePath);
+            Directory.Delete(tempDir, true);
         }
         catch
         {
-            // Ignored – cleanup failure should not affect demo execution
-        }
-    }
-
-    /// <summary>
-    /// Generates a barcode image using the specified encode type and returns the image bytes.
-    /// </summary>
-    /// <param name="encodeType">The barcode symbology to generate.</param>
-    /// <param name="codeText">The text to encode in the barcode.</param>
-    /// <param name="format">The image format for the generated barcode.</param>
-    /// <returns>Byte array containing the barcode image.</returns>
-    private static byte[] GenerateBarcodeImage(BaseEncodeType encodeType, string codeText, BarCodeImageFormat format)
-    {
-        using (var generator = new BarcodeGenerator(encodeType, codeText))
-        {
-            // Set X-dimension for better readability
-            generator.Parameters.Barcode.XDimension.Point = 2.5f;
-
-            using (var ms = new MemoryStream())
-            {
-                generator.Save(ms, format);
-                return ms.ToArray();
-            }
+            // Ignored – cleanup failures should not affect program outcome
         }
     }
 }

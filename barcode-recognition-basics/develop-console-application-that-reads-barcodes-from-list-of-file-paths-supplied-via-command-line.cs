@@ -1,111 +1,97 @@
-// Title: Read barcodes from file paths supplied via command line
-// Description: Demonstrates a console application that decodes barcode images whose file paths are provided as command‑line arguments, generating sample barcodes when no arguments are given.
-// Category-Description: This example belongs to the Aspose.BarCode reading and generation category. It showcases the BarCodeReader class for recognizing various symbologies and the BarcodeGenerator class for creating sample images. Typical scenarios include batch processing of scanned documents, automated inventory checks, and validation of generated barcodes. Developers often need to iterate over file collections, handle unsupported formats, and output decoded values.
+// Title: Read Barcodes from Files via Command Line
+// Description: Demonstrates how to read barcodes from image files supplied as command‑line arguments, generating sample images when no arguments are provided.
+// Category-Description: This example belongs to the Aspose.BarCode reading operations collection. It showcases the use of BarCodeReader and BarCodeResult to detect and extract barcode data from image files. Typical scenarios include batch processing of scanned documents, automated inventory checks, and validation of generated barcodes. Developers often need to iterate over multiple files, handle missing or unreadable images, and output results to the console or logs.
 // Prompt: Develop a console application that reads barcodes from a list of file paths supplied via command line.
-// Tags: barcode, symbology, read, console, aspose.barcode, generation, recognition, png, command-line
+// Tags: barcode, read, command-line, aspose.barcode, qr, code128, datamatrix
 
 using System;
 using System.IO;
 using System.Collections.Generic;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Console application that reads barcodes from image files supplied via command line.
-/// Generates sample barcode images when no arguments are provided.
+/// Console application that reads barcodes from image files specified on the command line.
+/// If no arguments are supplied, it generates sample barcode images in a temporary folder
+/// and then reads them back to demonstrate the workflow.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Parses command‑line arguments, optionally creates sample barcodes,
-    /// and uses <see cref="BarCodeReader"/> to decode each image, writing results to the console.
+    /// Entry point of the application.
     /// </summary>
     /// <param name="args">Array of file paths to barcode images.</param>
     static void Main(string[] args)
     {
-        // Determine the list of barcode image files to read.
-        List<string> barcodeFiles = new List<string>();
+        // Collect file paths from command‑line arguments.
+        List<string> files = new List<string>();
 
-        if (args != null && args.Length > 0)
+        if (args.Length > 0)
         {
-            // Use file paths supplied via command line.
+            // Use the supplied arguments as file paths.
             foreach (string arg in args)
             {
-                if (!string.IsNullOrWhiteSpace(arg))
-                {
-                    barcodeFiles.Add(arg);
-                }
+                files.Add(arg);
             }
         }
         else
         {
-            // No arguments supplied – create a temporary folder with sample barcodes.
-            string tempFolder = Path.Combine(Path.GetTempPath(), "Barcodes_" + Guid.NewGuid().ToString("N"));
-            Directory.CreateDirectory(tempFolder);
+            // No arguments supplied – create a temporary directory and generate sample barcodes.
+            string tempDir = Path.Combine(Path.GetTempPath(), "Barcodes_" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tempDir);
 
-            // Sample barcode definitions.
-            var samples = new (BaseEncodeType Encode, string Text, string FileName)[]
+            var samples = new[]
             {
-                (EncodeTypes.Code128, "1234567890", "code128.png"),
-                (EncodeTypes.QR, "Hello Aspose!", "qr.png"),
-                (EncodeTypes.Pdf417, "PDF417 Sample", "pdf417.png")
+                new { Sym = EncodeTypes.QR, Text = "HelloQR", Name = "qr.png" },
+                new { Sym = EncodeTypes.Code128, Text = "1234567890", Name = "code128.png" },
+                new { Sym = EncodeTypes.DataMatrix, Text = "DM123", Name = "datamatrix.png" }
             };
 
-            // Generate each sample barcode and add its file path to the list.
-            foreach (var sample in samples)
+            foreach (var s in samples)
             {
-                string filePath = Path.Combine(tempFolder, sample.FileName);
-                using (var generator = new BarcodeGenerator(sample.Encode, sample.Text))
+                string filePath = Path.Combine(tempDir, s.Name);
+                // Generate and save each sample barcode image.
+                using (BarcodeGenerator generator = new BarcodeGenerator(s.Sym, s.Text))
                 {
-                    // Save as PNG.
                     generator.Save(filePath, BarCodeImageFormat.Png);
                 }
-                barcodeFiles.Add(filePath);
+                files.Add(filePath);
             }
         }
 
-        if (barcodeFiles.Count == 0)
+        // Process each file: verify existence, read barcodes, and output results.
+        foreach (string file in files)
         {
-            Console.WriteLine("No barcode files to process.");
-            return;
-        }
-
-        // Process each file.
-        foreach (string filePath in barcodeFiles)
-        {
-            if (!File.Exists(filePath))
+            if (!File.Exists(file))
             {
-                Console.WriteLine($"File not found: {filePath}");
+                Console.WriteLine($"File not found: {file}");
                 continue;
             }
 
             try
             {
-                using (var reader = new BarCodeReader(filePath))
+                // Initialize the barcode reader for the current file.
+                using (BarCodeReader reader = new BarCodeReader(file))
                 {
-                    bool anyFound = false;
-                    // Read all barcodes in the current image.
-                    foreach (var result in reader.ReadBarCodes())
+                    bool any = false;
+                    // Iterate over all detected barcodes.
+                    foreach (BarCodeResult result in reader.ReadBarCodes())
                     {
-                        anyFound = true;
-                        Console.WriteLine($"File: {filePath}");
-                        Console.WriteLine($"  CodeText : {result.CodeText}");
-                        Console.WriteLine($"  Symbology: {result.CodeTypeName}");
+                        any = true;
+                        Console.WriteLine($"{Path.GetFileName(file)}: {result.CodeTypeName} - {result.CodeText}");
                     }
-
-                    if (!anyFound)
+                    // If no barcodes were found, inform the user.
+                    if (!any)
                     {
-                        Console.WriteLine($"No barcode detected in file: {filePath}");
+                        Console.WriteLine($"{Path.GetFileName(file)}: No barcodes detected.");
                     }
                 }
             }
-            catch (ArgumentException ex) when (ex.Message.Contains("Image loading failed"))
+            catch (ArgumentException ex)
             {
-                Console.WriteLine($"Skipping unsupported or corrupted file: {filePath}");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error processing file '{filePath}': {ex.Message}");
+                // Handle cases where the file cannot be processed as a barcode image.
+                Console.WriteLine($"Failed to read {file}: {ex.Message}");
             }
         }
     }

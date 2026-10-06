@@ -1,92 +1,97 @@
-// Title: Read Mixed Symbology Barcodes with Default Checksum Validation
-// Description: Generates Code128 and Code39 barcode images, saves them as PNG files, and reads them using Aspose.BarCode while enforcing the default checksum handling.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It demonstrates how to use BarcodeGenerator to create barcodes of different symbologies, and BarCodeReader with ChecksumValidation.Default to decode them. Developers commonly need to generate barcodes for labeling and then validate them during scanning, handling checksum rules automatically.
+// Title: Checksum Validation Default for Mixed Symbology Barcodes
+// Description: Demonstrates generating Code11 and Code39 barcodes and reading them with ChecksumValidation.Default to enforce default checksum handling.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, showcasing how to work with mixed‑symbology images. It uses BarcodeGenerator for creating barcodes and BarCodeReader for decoding, focusing on checksum validation via the ChecksumValidation property. Developers often need to ensure correct checksum handling when processing diverse barcode types in a single workflow.
 // Prompt: Apply ChecksumValidation.Default to enforce default checksum handling when reading mixed‑symbology images.
-// Tags: barcode, symbology, generation, recognition, checksumvalidation, mixed-symbology, png, aspose.barcode
+// Tags: barcode symbology, checksum validation, mixed symbology, generation, recognition, aspose.barcode, csharp
 
 using System;
 using System.IO;
-using System.Collections.Generic;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates generating mixed‑symbology barcodes and reading them with default checksum validation.
+/// Demonstrates generating Code11 and Code39 barcodes and reading them with default checksum validation.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates temporary barcode images, reads them, and cleans up.
+    /// Entry point of the example. Generates barcodes, reads them with default checksum handling, and cleans up temporary files.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder for sample barcode images
-        string tempFolder = Path.Combine(Path.GetTempPath(), "MixedSymbology_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
+        // Create a unique temporary directory for the demo files
+        string tempDir = Path.Combine(Path.GetTempPath(), "MixedChecksumDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
 
-        // Define sample barcodes to generate (mixed symbologies)
-        var barcodes = new List<(BaseEncodeType encodeType, string text, string fileName)>
+        // Generate a Code11 barcode (checksum is mandatory for this symbology)
+        string code11Path = Path.Combine(tempDir, "Code11.png");
+        using (BarcodeGenerator gen = new BarcodeGenerator(EncodeTypes.Code11, "123456"))
         {
-            (EncodeTypes.Code128, "1234567890", "code128.png"),
-            (EncodeTypes.Code39, "CODE39*CHECK", "code39.png")
-        };
-
-        var generatedFiles = new List<string>();
-
-        // Generate barcode images
-        foreach (var (encodeType, text, fileName) in barcodes)
-        {
-            string filePath = Path.Combine(tempFolder, fileName);
-            using (var generator = new BarcodeGenerator(encodeType, text))
-            {
-                // Save as PNG
-                generator.Save(filePath, BarCodeImageFormat.Png);
-            }
-            generatedFiles.Add(filePath);
+            gen.Parameters.Barcode.XDimension.Pixels = 2;
+            gen.Save(code11Path, BarCodeImageFormat.Png);
         }
 
-        // Read each barcode image with default checksum validation
-        foreach (string file in generatedFiles)
+        // Generate a Code39 barcode (checksum is optional for this symbology)
+        string code39Path = Path.Combine(tempDir, "Code39.png");
+        using (BarcodeGenerator gen = new BarcodeGenerator(EncodeTypes.Code39, "ABC123"))
         {
-            if (!File.Exists(file))
-            {
-                Console.WriteLine($"File not found: {file}");
-                continue;
-            }
-
-            using (var reader = new BarCodeReader(file, DecodeType.AllSupportedTypes))
-            {
-                // Enforce default checksum handling
-                reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.Default;
-
-                // Perform reading
-                BarCodeResult[] results = reader.ReadBarCodes();
-
-                if (results.Length == 0)
-                {
-                    Console.WriteLine($"No barcode detected in {Path.GetFileName(file)}");
-                }
-                else
-                {
-                    foreach (var result in results)
-                    {
-                        Console.WriteLine($"File: {Path.GetFileName(file)}");
-                        Console.WriteLine($"  Code Text : {result.CodeText}");
-                        Console.WriteLine($"  Symbology : {result.CodeTypeName}");
-                    }
-                }
-            }
+            gen.Parameters.Barcode.XDimension.Pixels = 2;
+            gen.Save(code39Path, BarCodeImageFormat.Png);
         }
 
-        // Cleanup temporary files
+        // Read the generated barcodes using the default checksum validation mode
+        ReadBarcode(code11Path, DecodeType.Code11);
+        ReadBarcode(code39Path, DecodeType.Code39);
+
+        // Attempt to delete the temporary files and directory; ignore any errors
         try
         {
-            Directory.Delete(tempFolder, true);
+            File.Delete(code11Path);
+            File.Delete(code39Path);
+            Directory.Delete(tempDir);
         }
-        catch (Exception ex)
+        catch
         {
-            Console.WriteLine($"Cleanup failed: {ex.Message}");
+            // Cleanup errors are non‑critical for the demo
+        }
+    }
+
+    /// <summary>
+    /// Reads a barcode image using the specified decode type and outputs details to the console.
+    /// </summary>
+    /// <param name="imagePath">Full path to the barcode image file.</param>
+    /// <param name="decodeType">The symbology type to use for decoding.</param>
+    static void ReadBarcode(string imagePath, BaseDecodeType decodeType)
+    {
+        // Verify that the image file exists before attempting to read it
+        if (!File.Exists(imagePath))
+        {
+            Console.WriteLine($"File not found: {imagePath}");
+            return;
+        }
+
+        // Initialize the reader with the image and the expected decode type
+        using (BarCodeReader reader = new BarCodeReader(imagePath, decodeType))
+        {
+            // Enforce default checksum validation behavior
+            reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.Default;
+
+            // Iterate through all detected barcodes in the image
+            foreach (BarCodeResult result in reader.ReadBarCodes())
+            {
+                Console.WriteLine($"File: {Path.GetFileName(imagePath)}");
+                Console.WriteLine($"CodeType: {result.CodeTypeName}");
+                Console.WriteLine($"CodeText: {result.CodeText}");
+
+                // If extended 1D information is available, display its value and checksum
+                if (result.Extended != null && result.Extended.OneD != null)
+                {
+                    Console.WriteLine($"1D Value: {result.Extended.OneD.Value}");
+                    Console.WriteLine($"1D CheckSum: {result.Extended.OneD.CheckSum}");
+                }
+
+                Console.WriteLine();
+            }
         }
     }
 }

@@ -1,91 +1,58 @@
 // Title: Detect 2D Barcodes Using BarCodeReader with Types2D Set
-// Description: This example generates QR and DataMatrix barcodes, saves them to temporary files, and then uses BarCodeReader with the Types2D preset to automatically detect common two‑dimensional barcodes.
-// Category-Description: Demonstrates Aspose.BarCode generation and recognition workflows. It showcases the BarcodeGenerator for creating QR and DataMatrix symbols and the BarCodeReader with DecodeType.AllSupportedTypes (which includes the Types2D preset) for automatic detection of 2D symbologies. Developers working with inventory, ticketing, or mobile scanning often need to generate barcodes and later read them without knowing the exact type in advance; this snippet provides a concise reference for such scenarios.
+// Description: Generates a QR code image and reads it using BarCodeReader with the predefined Types2D decode set to automatically detect common 2‑dimensional barcodes.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It demonstrates how to use the BarcodeGenerator class to create a QR code and the BarCodeReader class with DecodeType.Types2D to recognize a variety of 2D symbologies in a single call. Developers often need quick detection of QR, DataMatrix, PDF417 and other 2D barcodes without specifying each type individually.
 // Prompt: Apply the predefined Types2D set to BarCodeReader to automatically detect common two‑dimensional barcodes.
-// Tags: barcode symbology, detection, 2d, types2d, aspose.barcode, generation, recognition, csharp
+// Tags: barcode, 2d, types2d, generation, reading, aspose.barcode, qrcode, decode
 
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generation of QR and DataMatrix barcodes and automatic detection of them using BarCodeReader.
+/// Demonstrates generating a QR code and reading it with the predefined Types2D decode set.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates sample barcodes, reads them back, and outputs detection details.
+    /// Entry point of the example. Generates a QR code image, reads it using Types2D, and outputs the results.
     /// </summary>
-    static void Main()
+    /// <param name="args">Command‑line arguments (not used).</param>
+    static void Main(string[] args)
     {
-        // Create a unique temporary folder for storing generated barcode images.
-        string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
+        // Create a unique temporary folder to store the generated barcode image.
+        string tempDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        string imagePath = Path.Combine(tempDir, "sample_qr.png");
 
-        // Define sample barcodes to generate: QR and DataMatrix.
-        var samples = new[]
+        // Generate a QR code image with custom X‑dimension.
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Hello Aspose"))
         {
-            new { Type = EncodeTypes.QR, Text = "https://example.com/qr", File = Path.Combine(tempFolder, "qr.png") },
-            new { Type = EncodeTypes.DataMatrix, Text = "DM_SAMPLE_12345", File = Path.Combine(tempFolder, "datamatrix.png") }
-        };
+            generator.Parameters.Barcode.XDimension.Pixels = 4f;
+            generator.Save(imagePath, BarCodeImageFormat.Png);
+        }
 
-        // -----------------------------------------------------------------
-        // Generate barcode images and save them as PNG files.
-        // -----------------------------------------------------------------
-        foreach (var sample in samples)
+        // Verify that the image file was successfully created.
+        if (!File.Exists(imagePath))
         {
-            using (var generator = new BarcodeGenerator(sample.Type, sample.Text))
+            Console.WriteLine("Failed to create barcode image.");
+            return;
+        }
+
+        // Read barcodes from the image using the predefined Types2D set,
+        // which automatically detects common 2D symbologies.
+        using (var reader = new BarCodeReader(imagePath, DecodeType.Types2D))
+        {
+            Console.WriteLine("Read Types2D results:");
+            foreach (var result in reader.ReadBarCodes())
             {
-                generator.Save(sample.File, BarCodeImageFormat.Png);
-                Console.WriteLine($"Generated {sample.Type} barcode at: {sample.File}");
+                Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
             }
         }
 
-        // -----------------------------------------------------------------
-        // Read each generated image and attempt to detect any supported barcode.
-        // -----------------------------------------------------------------
-        foreach (var sample in samples)
-        {
-            if (!File.Exists(sample.File))
-            {
-                Console.WriteLine($"File not found: {sample.File}");
-                continue;
-            }
-
-            // Use BarCodeReader with DecodeType.AllSupportedTypes (includes Types2D preset) to auto‑detect 2D barcodes.
-            using (var reader = new BarCodeReader(sample.File, DecodeType.AllSupportedTypes))
-            {
-                BarCodeResult[] results = reader.ReadBarCodes();
-
-                if (results.Length == 0)
-                {
-                    Console.WriteLine($"No barcode detected in file: {sample.File}");
-                }
-                else
-                {
-                    foreach (var result in results)
-                    {
-                        Console.WriteLine($"File: {sample.File}");
-                        Console.WriteLine($"  Detected Type: {result.CodeTypeName}");
-                        Console.WriteLine($"  Code Text   : {result.CodeText}");
-                        Console.WriteLine($"  Reading Quality: {result.ReadingQuality}");
-                        Console.WriteLine($"  Region Angle: {result.Region.Angle}");
-                    }
-                }
-            }
-        }
-
-        // -----------------------------------------------------------------
-        // Clean up temporary files and folder.
-        // -----------------------------------------------------------------
-        try
-        {
-            Directory.Delete(tempFolder, true);
-        }
-        catch
-        {
-            // Suppress any exceptions during cleanup (e.g., files in use).
-        }
+        // Cleanup temporary files (optional). Uncomment to delete the folder after execution.
+        // Directory.Delete(tempDir, true);
     }
 }

@@ -1,97 +1,119 @@
 // Title: Parallel Barcode Reading Using Multiple CPU Cores
-// Description: Demonstrates how to generate sample barcode images and read them concurrently across all processor cores using Aspose.BarCode.
-// Category-Description: This example belongs to the Aspose.BarCode batch processing collection, showcasing barcode generation (BarcodeGenerator) and recognition (BarCodeReader) with parallel execution. Developers often need to process large sets of images quickly; using ProcessorSettings with Parallel.ForEach enables high‑throughput scanning on multi‑core machines.
+// Description: Demonstrates generating several barcode images and reading them concurrently with Aspose.BarCode, leveraging all processor cores for faster recognition.
+// Category-Description: This example belongs to the Aspose.BarCode batch processing category, showcasing how to combine the BarcodeGenerator and BarCodeReader classes with ProcessorSettings for high‑throughput scenarios. Typical use cases include scanning large image collections, automated inventory checks, and real‑time data capture where developers need to maximize CPU utilization while maintaining thread‑safe barcode recognition.
 // Prompt: Parallelize barcode reading across multiple CPU cores by creating separate BarCodeReader instances for each image.
-// Tags: barcode, parallel, multithreading, code128, generation, recognition, aspose.barcode, png
+// Tags: barcode, generation, recognition, parallel, multithreading, aspose.barcode, csharp
 
 using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Aspose.BarCode;
+using System.Diagnostics;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Sample program that generates a set of Code128 barcode images and reads them in parallel
-/// using separate <see cref="BarCodeReader"/> instances for each file.
+/// Sample program that generates a set of barcode images and reads them in parallel
+/// using all available CPU cores. It demonstrates the use of Aspose.BarCode's
+/// <c>BarcodeGenerator</c>, <c>BarCodeReader</c>, and <c>ProcessorSettings</c> for
+/// high‑performance batch recognition.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
+    /// Entry point of the application. Generates sample barcodes, configures
+    /// multithreaded recognition, processes the images in parallel, and cleans up
+    /// temporary files.
     /// </summary>
     static void Main()
     {
         // --------------------------------------------------------------------
-        // Create a unique temporary folder for sample barcode images
+        // 1. Create a dedicated temporary folder for generated barcode images
         // --------------------------------------------------------------------
-        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeParallel_" + Guid.NewGuid().ToString("N"));
+        string tempFolder = Path.Combine(Path.GetTempPath(), "Barcodes_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
 
-        // --------------------------------------------------------------------
-        // Generate a few sample barcode images (Code128) and collect their paths
-        // --------------------------------------------------------------------
-        List<string> imageFiles = new List<string>();
-        for (int i = 1; i <= 5; i++)
+        // --------------------------------------------------------------
+        // 2. Define a collection of sample barcodes to be generated
+        // --------------------------------------------------------------
+        var samples = new List<(BaseEncodeType encodeType, string text, string fileName)>
         {
-            string filePath = Path.Combine(tempFolder, $"sample_{i}.png");
-            string codeText = $"Sample{i}";
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+            (EncodeTypes.Code128, "ABC123", "code128.png"),
+            (EncodeTypes.QR, "https://example.com", "qr.png"),
+            (EncodeTypes.Pdf417, "PDF417 Sample", "pdf417.png"),
+            (EncodeTypes.DataMatrix, "DM12345", "datamatrix.png"),
+            (EncodeTypes.Interleaved2of5, "1234567890", "itf.png")
+        };
+
+        var generatedFiles = new List<string>();
+
+        // --------------------------------------------------------------
+        // 3. Generate barcode images and store their file paths
+        // --------------------------------------------------------------
+        foreach (var (encodeType, text, fileName) in samples)
+        {
+            string filePath = Path.Combine(tempFolder, fileName);
+            using (var generator = new BarcodeGenerator(encodeType, text))
             {
                 generator.Save(filePath, BarCodeImageFormat.Png);
             }
-            imageFiles.Add(filePath);
+            generatedFiles.Add(filePath);
         }
 
-        // --------------------------------------------------------------------
-        // Enable parallel processing across all CPU cores
-        // --------------------------------------------------------------------
+        // --------------------------------------------------------------
+        // 4. Enable multithreaded recognition using all available cores
+        // --------------------------------------------------------------
         BarCodeReader.ProcessorSettings.UseAllCores = true;
-        // Optionally limit to a specific core count:
-        // BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount = Environment.ProcessorCount;
+        BarCodeReader.ProcessorSettings.MaxAdditionalAllowedThreads = Environment.ProcessorCount * 2;
 
-        // --------------------------------------------------------------------
-        // Read barcodes in parallel; each image gets its own BarCodeReader instance
-        // --------------------------------------------------------------------
-        Parallel.ForEach(imageFiles, file =>
+        var stopwatch = Stopwatch.StartNew();
+
+        // --------------------------------------------------------------
+        // 5. Parallel reading of barcodes – one BarCodeReader per image
+        // --------------------------------------------------------------
+        Parallel.ForEach(generatedFiles, filePath =>
         {
-            if (!File.Exists(file))
+            try
             {
-                Console.WriteLine($"File not found: {file}");
-                return;
-            }
-
-            using (var reader = new BarCodeReader(file, DecodeType.AllSupportedTypes))
-            {
-                // Read all barcodes from the image
-                BarCodeResult[] results = reader.ReadBarCodes();
-
-                // Evaluation version may modify CodeText, so just check for non‑empty result
-                if (results.Length == 0)
+                using (var reader = new BarCodeReader(filePath, DecodeType.AllSupportedTypes))
                 {
-                    Console.WriteLine($"No barcode detected in {Path.GetFileName(file)}");
-                }
-                else
-                {
+                    var results = reader.ReadBarCodes();
                     foreach (var result in results)
                     {
-                        Console.WriteLine($"File: {Path.GetFileName(file)} | Type: {result.CodeTypeName} | Text: {result.CodeText}");
+                        Console.WriteLine($"{Path.GetFileName(filePath)} => {result.CodeTypeName}: {result.CodeText}");
                     }
                 }
             }
+            catch (ArgumentException ex) when (ex.Message.Contains("Image loading failed"))
+            {
+                // Image could not be loaded – skip and continue processing other files
+                Console.WriteLine($"Skipping unreadable file: {filePath}");
+            }
+            catch (Exception ex)
+            {
+                // Log unexpected errors without terminating the parallel loop
+                Console.WriteLine($"Error processing {filePath}: {ex.Message}");
+            }
         });
 
-        // --------------------------------------------------------------------
-        // Cleanup temporary files (optional)
-        // --------------------------------------------------------------------
+        stopwatch.Stop();
+        Console.WriteLine($"Total recognition time: {stopwatch.ElapsedMilliseconds} ms");
+
+        // --------------------------------------------------------------
+        // 6. Cleanup temporary files and folder
+        // --------------------------------------------------------------
         try
         {
-            Directory.Delete(tempFolder, true);
+            foreach (var file in generatedFiles)
+            {
+                File.Delete(file);
+            }
+            Directory.Delete(tempFolder);
         }
         catch
         {
-            // If cleanup fails, ignore – the OS will eventually reclaim the temp folder
+            // Ignored – cleanup failures should not affect program exit
         }
     }
 }

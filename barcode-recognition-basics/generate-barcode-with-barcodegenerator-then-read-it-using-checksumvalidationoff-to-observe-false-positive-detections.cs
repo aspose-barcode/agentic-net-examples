@@ -1,14 +1,14 @@
-// Title: Generate and Read a Code128 Barcode with Checksum Validation Disabled
-// Description: This example creates a Code128 barcode image using Aspose.BarCode's BarcodeGenerator, saves it as PNG, and then reads it back with checksum validation turned off to demonstrate handling of false positive detections.
-// Category-Description: Demonstrates Aspose.BarCode barcode generation and recognition workflow, focusing on checksum validation settings. Shows how to use BarcodeGenerator, BarCodeReader, and BarcodeSettings.ChecksumValidation to control validation behavior during scanning. Useful for developers implementing custom barcode scanning where checksum errors need to be ignored.
+// Title: Generate Code11 barcode and read with checksum validation disabled
+// Description: Demonstrates generating a Code11 barcode using BarcodeGenerator and then reading it with checksum validation turned off to illustrate false‑positive detection.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the core API classes BarcodeGenerator for creating barcodes and BarCodeReader for decoding them. Typical use cases include producing barcode images for inventory, shipping, or labeling and validating them during scanning. Developers often need to control checksum validation to handle legacy or non‑standard barcodes, making this pattern useful for troubleshooting and custom validation scenarios.
 // Prompt: Generate a barcode with BarcodeGenerator, then read it using ChecksumValidation.Off to observe false positive detections.
-// Tags: code128, barcode generation, barcode recognition, checksumvalidation, off, aspnet, aspose.barcode, png, c#
+// Tags: code11, barcode, generation, recognition, checksumvalidation, off, png, aspose.barcode
+
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
 /// Demonstrates barcode generation and reading with checksum validation disabled.
@@ -16,58 +16,49 @@ using Aspose.Drawing;
 class Program
 {
     /// <summary>
-    /// Entry point of the demo. Generates a Code128 barcode, saves it as PNG,
-    /// then reads it back with checksum validation turned off.
+    /// Entry point of the example. Generates a Code11 barcode, reads it with checksum validation turned off,
+    /// and outputs the decoded information to the console.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder for the demo files
-        string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        // Prepare a temporary folder for the barcode image
+        string tempFolder = Path.Combine(Path.GetTempPath(), "ChecksumDemo_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
+        string barcodePath = Path.Combine(tempFolder, "code11.png");
 
-        // Define the full path for the generated barcode image
-        string barcodePath = Path.Combine(tempFolder, "code128.png");
-
-        // Generate a Code128 barcode with the specified text
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456789"))
+        // Generate a Code11 barcode (intentionally using a code that may have an incorrect checksum)
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code11, "123456"))
         {
-            // Save the generated barcode as a PNG image
+            // Set the X-dimension (module width) to 2 pixels for better readability
+            generator.Parameters.Barcode.XDimension.Pixels = 2f;
+            // Save the barcode image as PNG
             generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        // Verify that the barcode image was successfully created
+        // Verify the file was created
         if (!File.Exists(barcodePath))
         {
-            Console.WriteLine("Failed to generate the barcode image.");
+            Console.WriteLine("Failed to generate barcode image.");
             return;
         }
 
-        // Set up the reader to decode Code128 barcodes from the saved image
-        BaseDecodeType decodeType = DecodeType.Code128;
-        using (var reader = new BarCodeReader(barcodePath, decodeType))
+        // Read the barcode with checksum validation turned OFF (allows false positives)
+        using (BarCodeReader reader = new BarCodeReader(barcodePath, DecodeType.Code11))
         {
-            // Disable checksum validation to allow false positive detections
+            // Disable checksum validation
             reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.Off;
 
-            // Perform the barcode reading operation
-            BarCodeResult[] results = reader.ReadBarCodes();
-
-            // Output the decoding results
-            if (results.Length == 0)
+            Console.WriteLine("Reading barcode with ChecksumValidation.Off:");
+            foreach (BarCodeResult result in reader.ReadBarCodes())
             {
-                Console.WriteLine("No barcode detected.");
-            }
-            else
-            {
-                foreach (var result in results)
-                {
-                    Console.WriteLine($"Detected CodeText: {result.CodeText}");
-                    Console.WriteLine($"Detected CodeType: {result.CodeTypeName}");
-                }
+                Console.WriteLine($"CodeType: {result.CodeTypeName}");
+                Console.WriteLine($"CodeText: {result.CodeText}");
+                Console.WriteLine($"1D Value: {result.Extended.OneD.Value}");
+                Console.WriteLine($"1D CheckSum: {result.Extended.OneD.CheckSum}");
             }
         }
 
-        // Clean up temporary files (optional)
+        // Clean up temporary files
         try
         {
             File.Delete(barcodePath);
@@ -75,7 +66,7 @@ class Program
         }
         catch
         {
-            // Ignored – cleanup failure should not affect demo execution
+            // Ignored - cleanup failure should not affect program outcome
         }
     }
 }

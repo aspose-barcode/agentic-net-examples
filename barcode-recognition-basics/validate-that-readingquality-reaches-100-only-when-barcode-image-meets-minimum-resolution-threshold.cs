@@ -1,101 +1,99 @@
 // Title: Validate ReadingQuality based on barcode image resolution
-// Description: Demonstrates how the ReadingQuality property of a detected QR code reaches 100 only when the image resolution meets a defined DPI threshold.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator to create barcodes and BarCodeReader to decode them, focusing on image quality assessment. Developers often need to verify that barcode images meet minimum resolution requirements for reliable scanning; this snippet illustrates how to programmatically evaluate that using the ReadingQuality metric.
+// Description: Demonstrates how the ReadingQuality property reaches 100 only when the barcode image meets a minimum resolution of 300 DPI.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It shows how to use BarcodeGenerator to create barcodes at specific resolutions and BarCodeReader to decode them, focusing on the ReadingQuality metric. Developers often need to ensure barcode readability under varying image qualities, making resolution a key factor in quality assessment.
 // Prompt: Validate that ReadingQuality reaches 100 only when the barcode image meets a minimum resolution threshold.
-// Tags: qr code, readingquality, resolution, barcode generation, barcode recognition, aspose.barcode, c#
+// Tags: qr, readingquality, resolution, barcode, generation, recognition, aspose.barcode
 
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that validates the ReadingQuality of a QR code based on image resolution.
+/// Demonstrates validation that ReadingQuality reaches 100 only when the barcode image meets a minimum resolution threshold.
 /// </summary>
 class Program
 {
-    // Minimum DPI required for a perfect reading quality (100)
-    const float MinimumResolutionDpi = 200f;
-
     /// <summary>
-    /// Entry point. Generates QR codes at two different DPI values and checks ReadingQuality.
+    /// Generates QR barcodes at various resolutions, reads them, and validates the ReadingQuality metric.
     /// </summary>
     static void Main()
     {
-        // Sample QR code text
-        string codeText = "https://example.com";
+        // Minimum resolution required for ReadingQuality 100
+        const float minResolution = 300f;
 
-        // Test with low resolution (e.g., 100 DPI)
-        TestResolution(codeText, 100f);
+        // Create a temporary folder for generated images
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeQualityDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
 
-        // Test with high resolution (e.g., 300 DPI)
-        TestResolution(codeText, 300f);
-    }
+        // Resolutions to test
+        float[] resolutions = new float[] { 96f, 150f, 300f };
 
-    /// <summary>
-    /// Generates a QR code at the specified DPI, reads it back, and evaluates the ReadingQuality.
-    /// </summary>
-    /// <param name="codeText">The text to encode in the QR code.</param>
-    /// <param name="resolutionDpi">The DPI resolution to apply when generating the image.</param>
-    static void TestResolution(string codeText, float resolutionDpi)
-    {
-        // Create a barcode generator for QR code with the provided text
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, codeText))
+        // Iterate over each resolution, generate barcode, read it, and validate quality
+        foreach (float res in resolutions)
         {
-            // Set the image resolution (DPI) for the generated barcode
-            generator.Parameters.Resolution = resolutionDpi;
+            // Build file path for the current resolution image
+            string filePath = Path.Combine(tempFolder, $"qr_{res}dpi.png");
 
-            using (var ms = new MemoryStream())
+            // Generate barcode image at the specified resolution
+            using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Aspose"))
             {
-                // Save the generated barcode to a memory stream in PNG format
-                generator.Save(ms, BarCodeImageFormat.Png);
-                ms.Position = 0; // Reset stream position for reading
+                generator.Parameters.Resolution = res;
+                generator.Save(filePath, BarCodeImageFormat.Png);
+            }
 
-                // Initialize a barcode reader to decode the QR code from the stream
-                using (var reader = new BarCodeReader(ms, DecodeType.QR))
+            // Verify that the image file was created successfully
+            if (!File.Exists(filePath))
+            {
+                Console.WriteLine($"Failed to create image at {res} DPI.");
+                continue;
+            }
+
+            // Read the barcode and obtain the ReadingQuality value
+            double readingQuality = -1;
+            using (var reader = new BarCodeReader(filePath, DecodeType.QR))
+            {
+                foreach (BarCodeResult result in reader.ReadBarCodes())
                 {
-                    BarCodeResult[] results = reader.ReadBarCodes();
-
-                    if (results.Length == 0)
-                    {
-                        Console.WriteLine($"[Resolution {resolutionDpi} DPI] No barcode detected.");
-                        return;
-                    }
-
-                    // Iterate through all detected barcodes (should be one in this case)
-                    foreach (BarCodeResult result in results)
-                    {
-                        double quality = result.ReadingQuality; // Value ranges from 0 to 100
-                        Console.WriteLine($"[Resolution {resolutionDpi} DPI] Detected: {result.CodeText}");
-                        Console.WriteLine($"ReadingQuality: {quality}");
-
-                        // Verify expected quality based on the DPI threshold
-                        if (resolutionDpi >= MinimumResolutionDpi)
-                        {
-                            if (quality == 100.0)
-                            {
-                                Console.WriteLine("✅ Quality is 100 as expected for sufficient resolution.");
-                            }
-                            else
-                            {
-                                Console.WriteLine("⚠️ Expected quality 100 for sufficient resolution, but got lower.");
-                            }
-                        }
-                        else
-                        {
-                            if (quality < 100.0)
-                            {
-                                Console.WriteLine("✅ Quality is below 100 as expected for insufficient resolution.");
-                            }
-                            else
-                            {
-                                Console.WriteLine("⚠️ Unexpected quality 100 for insufficient resolution.");
-                            }
-                        }
-                    }
+                    readingQuality = result.ReadingQuality;
+                    Console.WriteLine($"Resolution: {res} DPI, CodeText: {result.CodeText}, ReadingQuality: {readingQuality}");
+                    break; // Only need the first result
                 }
             }
+
+            // Perform validation based on resolution and ReadingQuality
+            bool qualityIsFull = Math.Abs(readingQuality - 100.0) < 0.0001;
+            bool meetsThreshold = res >= minResolution;
+
+            if (qualityIsFull && meetsThreshold)
+            {
+                Console.WriteLine("Validation passed: Quality 100 achieved at sufficient resolution.");
+            }
+            else if (qualityIsFull && !meetsThreshold)
+            {
+                Console.WriteLine("Validation failed: Quality 100 reached below minimum resolution.");
+            }
+            else if (!qualityIsFull && meetsThreshold)
+            {
+                Console.WriteLine("Validation warning: Expected Quality 100 at or above minimum resolution, but got lower.");
+            }
+            else
+            {
+                Console.WriteLine("Validation OK: Quality below 100 as expected for lower resolution.");
+            }
+
+            Console.WriteLine();
+        }
+
+        // Cleanup temporary files and folder
+        try
+        {
+            Directory.Delete(tempFolder, true);
+        }
+        catch
+        {
+            // Ignore cleanup errors
         }
     }
 }

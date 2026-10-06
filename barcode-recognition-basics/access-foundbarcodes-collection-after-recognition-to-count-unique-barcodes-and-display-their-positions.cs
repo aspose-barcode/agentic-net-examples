@@ -1,120 +1,112 @@
-// Title: Count Unique Barcodes and Display Their Positions
-// Description: Demonstrates generating barcode images, recognizing them, accessing the FoundBarCodes collection, counting unique barcodes, and printing each barcode's location.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator to create barcodes, BarCodeReader to detect them, and BarCodeResult to retrieve details such as code text and region. Typical scenarios include batch processing of scanned documents, inventory tracking, and quality‑control checks where developers need to aggregate distinct barcodes and know where they appear in images. The code illustrates common patterns for temporary file handling, dictionary aggregation, and cleanup.
+// Title: Combine Multiple Barcodes into One Image and Recognize Unique Barcodes
+// Description: Generates several barcodes, merges them onto a single canvas, then reads the combined image to count unique barcodes and display their positions.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It demonstrates how to use BarcodeGenerator to create barcodes, combine them with Aspose.Drawing, and employ BarCodeReader to detect and enumerate found barcodes via the FoundBarCodes collection. Typical use cases include batch processing of barcode images, creating composite scans for inventory, and extracting barcode metadata such as location and type. Developers often need to count distinct codes and retrieve their geometric regions for downstream processing.
 // Prompt: Access FoundBarCodes collection after recognition to count unique barcodes and display their positions.
-// Tags: barcode, symbology, generation, recognition, count, positions, aspose.barcode
+// Tags: barcode generation, barcode recognition, combined image, unique barcodes, positions, aspose.barcode
 
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Generates sample barcodes, reads them back, aggregates unique codes, and prints their positions.
+/// Demonstrates how to generate multiple barcodes, combine them into a single image,
+/// and then recognize the barcodes to count unique entries and output their positions.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Executes barcode generation, recognition, aggregation, and cleanup.
+    /// Entry point of the example. Generates barcodes, creates a composite image,
+    /// reads the barcodes back, and prints detection details to the console.
     /// </summary>
     static void Main()
     {
-        // Create a temporary folder for sample barcode images
-        string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodes_" + Guid.NewGuid().ToString("N"));
+        // Create a temporary folder for generated images
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
 
-        // Sample data: code text and the symbology to use
-        var samples = new List<(string CodeText, BaseEncodeType EncodeType)>
+        // Prepare barcode data (type and text)
+        var barcodeInfos = new List<(BaseEncodeType type, string text)>
         {
-            ("ABC123", EncodeTypes.Code128),
-            ("ABC123", EncodeTypes.Code128),
-            ("XYZ789", EncodeTypes.QR)
+            (EncodeTypes.Code128, "ABC123"),
+            (EncodeTypes.QR, "https://example.com"),
+            (EncodeTypes.DataMatrix, "DM12345")
         };
 
-        // Generate barcode images and collect their file paths
-        var imagePaths = new List<string>();
-        foreach (var (codeText, encodeType) in samples)
+        // Generate individual barcode bitmaps and store them in a list
+        var bitmaps = new List<Bitmap>();
+        foreach (var info in barcodeInfos)
         {
-            string filePath = Path.Combine(tempFolder, $"{codeText}_{Guid.NewGuid().ToString("N")}.png");
-            using (var generator = new BarcodeGenerator(encodeType, codeText))
+            using (var generator = new BarcodeGenerator(info.type, info.text))
             {
-                // Save directly to PNG file
-                generator.Save(filePath, BarCodeImageFormat.Png);
+                Bitmap bmp = generator.GenerateBarCodeImage();
+                bitmaps.Add(bmp);
             }
-            imagePaths.Add(filePath);
         }
 
-        // Dictionary to hold unique code texts and their positions (case‑insensitive)
-        var barcodePositions = new Dictionary<string, List<RectangleF>>(StringComparer.OrdinalIgnoreCase);
-
-        // Read each generated image and collect recognition results
-        foreach (string imagePath in imagePaths)
+        // Calculate canvas size based on individual barcode dimensions and spacing
+        int spacing = 20;
+        int totalWidth = spacing;
+        int maxHeight = 0;
+        foreach (var bmp in bitmaps)
         {
-            if (!File.Exists(imagePath))
+            totalWidth += bmp.Width + spacing;
+            if (bmp.Height > maxHeight) maxHeight = bmp.Height;
+        }
+        totalWidth += spacing;
+        maxHeight += spacing * 2;
+
+        // Create a blank canvas and draw each barcode bitmap onto it
+        using (Bitmap canvas = new Bitmap(totalWidth, maxHeight, PixelFormat.Format32bppArgb))
+        {
+            using (Graphics g = Graphics.FromImage(canvas))
             {
-                Console.WriteLine($"File not found: {imagePath}");
-                continue;
+                g.Clear(Color.White);
+                int xOffset = spacing;
+                foreach (var bmp in bitmaps)
+                {
+                    g.DrawImage(bmp, xOffset, spacing, bmp.Width, bmp.Height);
+                    xOffset += bmp.Width + spacing;
+                }
             }
 
-            using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
+            // Save the combined image to the temporary folder
+            string combinedPath = Path.Combine(tempFolder, "combined.png");
+            canvas.Save(combinedPath, ImageFormat.Png);
+
+            // Initialize a reader that supports all barcode types
+            BaseDecodeType decodeAll = DecodeType.AllSupportedTypes;
+            using (BarCodeReader reader = new BarCodeReader(combinedPath, decodeAll))
             {
-                // Perform recognition
+                // Perform recognition on the combined image
                 reader.ReadBarCodes();
+                Console.WriteLine($"Total barcodes detected: {reader.FoundCount}");
 
-                // Access the FoundBarCodes collection after recognition
-                BarCodeResult[] found = reader.FoundBarCodes;
-                if (found == null || found.Length == 0)
+                // Use a HashSet to track unique barcode texts
+                var uniqueTexts = new HashSet<string>();
+                foreach (BarCodeResult result in reader.FoundBarCodes)
                 {
-                    Console.WriteLine($"No barcodes detected in {Path.GetFileName(imagePath)}");
-                    continue;
+                    uniqueTexts.Add(result.CodeText);
+                    var rect = result.Region.Rectangle;
+                    Console.WriteLine($"Type: {result.CodeTypeName}, Text: {result.CodeText}");
+                    Console.WriteLine($"  Position - X:{rect.X}, Y:{rect.Y}, Width:{rect.Width}, Height:{rect.Height}");
                 }
 
-                // Aggregate each detected barcode's text and region
-                foreach (BarCodeResult result in found)
-                {
-                    string code = result.CodeText ?? string.Empty;
-                    RectangleF rect = result.Region.Rectangle; // Position of the barcode
-
-                    if (!barcodePositions.ContainsKey(code))
-                    {
-                        barcodePositions[code] = new List<RectangleF>();
-                    }
-                    barcodePositions[code].Add(rect);
-                }
+                // Output the count of distinct barcode texts
+                Console.WriteLine($"Unique barcode count: {uniqueTexts.Count}");
             }
-        }
 
-        // Output the count of unique barcodes and their positions
-        Console.WriteLine($"Unique barcodes detected: {barcodePositions.Count}");
-        foreach (var kvp in barcodePositions)
-        {
-            Console.WriteLine($"CodeText: {kvp.Key}");
-            int index = 1;
-            foreach (RectangleF pos in kvp.Value)
+            // Dispose of generated bitmap resources
+            foreach (var bmp in bitmaps)
             {
-                Console.WriteLine($"  Position {index}: X={pos.X}, Y={pos.Y}, Width={pos.Width}, Height={pos.Height}");
-                index++;
+                bmp.Dispose();
             }
         }
 
-        // Cleanup temporary files and folder
-        try
-        {
-            foreach (string file in imagePaths)
-            {
-                if (File.Exists(file))
-                    File.Delete(file);
-            }
-            if (Directory.Exists(tempFolder))
-                Directory.Delete(tempFolder, true);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Cleanup error: {ex.Message}");
-        }
+        // Optionally delete temporary folder (commented out to keep files for inspection)
+        // Directory.Delete(tempFolder, true);
     }
 }

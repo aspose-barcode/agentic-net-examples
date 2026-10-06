@@ -1,8 +1,8 @@
-// Title: Read Barcode from Remote Image Using Memory Stream
-// Description: Demonstrates downloading a barcode image from a URL into a memory stream and recognizing it with Aspose.BarCode without saving the file locally.
-// Category-Description: This example belongs to the Aspose.BarCode reading category, showcasing how to use BarCodeReader and its SetBarCodeImage method. It illustrates typical scenarios where developers need to process barcode images received over a network (e.g., from web services or APIs) without persisting them to disk. Key classes include BarCodeReader, BarCodeResult, and MemoryStream, which together enable efficient, in‑memory barcode detection.
+// Title: Read Barcodes from a Remote Image via Network Stream
+// Description: Demonstrates how to download a barcode image from a URL and decode it directly from a network stream without saving the file locally.
+// Category-Description: This example belongs to the Aspose.BarCode reading category, showcasing the BarCodeReader class with multiple DecodeType options. It illustrates typical scenarios where developers need to process barcode images received over HTTP, such as scanning documents in web services or mobile apps, without persisting the image to disk. The code highlights how to combine HttpClient, streams, and Aspose.BarCode to achieve fast, memory‑efficient barcode recognition.
 // Prompt: Provide a network stream to SetBarCodeImage for reading barcodes from remote image data without saving locally.
-// Tags: barcode recognition, memory stream, network stream, aspose.barcode, setbarcodeimage, remote image, qr code
+// Tags: barcode, reading, network, stream, aspose.barcode, barcodereader, decode, pdf417, datamatrix, qr, code128
 
 using System;
 using System.IO;
@@ -11,73 +11,57 @@ using Aspose.BarCode;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Example program that downloads a barcode image from a remote URL,
-/// loads it into a memory stream, and reads the barcode using Aspose.BarCode.
+/// Example program that reads barcodes from an image retrieved over HTTP using a network stream.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
+    /// Entry point. Downloads an image from the specified URL (or a default one) and decodes supported barcode types directly from the response stream.
     /// </summary>
-    static void Main()
+    /// <param name="args">Optional command‑line argument containing the image URL.</param>
+    static void Main(string[] args)
     {
-        // URL of the sample image that contains a QR code.
-        const string imageUrl = "https://raw.githubusercontent.com/aspose-barcode/Aspose.BarCode-for-.NET/master/Examples/Resources/qr.png";
+        // Determine the image URL: use the first argument if provided, otherwise fall back to a sample URL.
+        string imageUrl = args.Length > 0 ? args[0] : "https://example.com/barcode.png";
 
-        // Variable to hold the downloaded image data.
-        MemoryStream barcodeStream = null;
-
-        // Download the image using HttpClient and store it in a memory stream.
-        using (var httpClient = new HttpClient())
+        // Create an HttpClient instance for sending the request.
+        using (HttpClient httpClient = new HttpClient())
         {
             try
             {
-                using (var response = httpClient.GetAsync(imageUrl).Result)
+                // Synchronously send a GET request to the image URL.
+                using (HttpResponseMessage response = httpClient.GetAsync(imageUrl).Result)
                 {
-                    if (!response.IsSuccessStatusCode)
-                    {
-                        Console.WriteLine($"Failed to download image. Status code: {response.StatusCode}");
-                        return;
-                    }
+                    // Throw if the HTTP status is not successful.
+                    response.EnsureSuccessStatusCode();
 
-                    using (var responseStream = response.Content.ReadAsStreamAsync().Result)
+                    // Obtain the response content as a stream without writing to disk.
+                    using (Stream stream = response.Content.ReadAsStreamAsync().Result)
                     {
-                        barcodeStream = new MemoryStream();
-                        responseStream.CopyTo(barcodeStream);
-                        barcodeStream.Position = 0; // Reset stream position for reading.
+                        // Initialize BarCodeReader with the stream and the desired barcode symbologies.
+                        using (BarCodeReader reader = new BarCodeReader(
+                            stream,
+                            DecodeType.Pdf417,
+                            DecodeType.DataMatrix,
+                            DecodeType.QR,
+                            DecodeType.Code128))
+                        {
+                            Console.WriteLine("Reading barcodes from network stream:");
+
+                            // Iterate through all detected barcodes and output their type and value.
+                            foreach (BarCodeResult result in reader.ReadBarCodes())
+                            {
+                                Console.WriteLine($"{result.CodeTypeName}:{result.CodeText}");
+                            }
+                        }
                     }
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Exception while downloading image: {ex.Message}");
-                return;
+                // Output any errors that occur during download or decoding.
+                Console.WriteLine($"Error: {ex.Message}");
             }
         }
-
-        // Initialize BarCodeReader and provide the memory stream as input.
-        using (var reader = new BarCodeReader())
-        {
-            try
-            {
-                // Set the image source for the reader.
-                reader.SetBarCodeImage(barcodeStream);
-
-                // Iterate through all detected barcodes and output their details.
-                foreach (BarCodeResult result in reader.ReadBarCodes())
-                {
-                    Console.WriteLine($"CodeText: {result.CodeText}");
-                    Console.WriteLine($"Symbology: {result.CodeTypeName}");
-                    Console.WriteLine();
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error during barcode recognition: {ex.Message}");
-            }
-        }
-
-        // Release the memory stream resources.
-        barcodeStream?.Dispose();
     }
 }

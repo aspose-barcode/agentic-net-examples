@@ -1,66 +1,53 @@
-// Title: Replace barcode image source with SetBarCodeImage to read a different in‑memory barcode
-// Description: Demonstrates generating two barcodes in memory, reading the first, then swapping the image source using SetBarCodeImage to read the second barcode without creating a new reader.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the BarcodeGenerator, BarCodeReader, and SetBarCodeImage API classes, which are commonly used to create barcodes, decode them, and efficiently switch image sources when processing multiple in‑memory images. Developers often need this pattern when handling streams of barcode images without repeatedly instantiating readers.
+// Title: Replace barcode image source using SetBarCodeImage
+// Description: Demonstrates how to switch the in‑memory bitmap source of a BarCodeReader to read different barcodes without recreating the reader.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator to create barcode images, BarCodeReader to decode them, and the SetBarCodeImage method to replace the image source dynamically. Developers working with multiple in‑memory images or streams often need to reuse a single reader instance for efficiency.
 // Prompt: Replace the current bitmap source using SetBarCodeImage to process a different in‑memory image.
-// Tags: barcode generation, barcode recognition, setbarcodeimage, in-memory, code128, qr, aspose.barcode
+// Tags: barcode symbology, image source replacement, in-memory bitmap, setbarcodeimage, generation, recognition, csharp
 
 using System;
-using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates replacing the barcode image source of a <see cref="BarCodeReader"/> using <c>SetBarCodeImage</c>.
+/// Example program that shows how to replace the barcode image source of a BarCodeReader using SetBarCodeImage.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates two barcodes in memory, reads the first, then swaps the image source to read the second.
+    /// Generates two barcode images in memory and reads them sequentially with a single BarCodeReader instance,
+    /// demonstrating the SetBarCodeImage method to change the source image.
     /// </summary>
     static void Main()
     {
-        // Generate the first barcode (Code128) and keep it in memory
-        using (var generator1 = new BarcodeGenerator(EncodeTypes.Code128, "First"))
+        // Generate the first barcode bitmap (Code128, value "12345")
+        using (var generator1 = new BarcodeGenerator(EncodeTypes.Code128, "12345"))
         {
-            using (var ms1 = new MemoryStream())
+            using (Bitmap bitmap1 = generator1.GenerateBarCodeImage())
             {
-                // Save the first barcode as PNG into the memory stream
-                generator1.Save(ms1, BarCodeImageFormat.Png);
-                ms1.Position = 0; // Reset stream position for reading
-
-                using (var bitmap1 = new Bitmap(ms1))
+                // Generate the second barcode bitmap (Code128, value "ABCDEF")
+                using (var generator2 = new BarcodeGenerator(EncodeTypes.Code128, "ABCDEF"))
                 {
-                    // Create a reader for the first image (Code128)
-                    using (var reader = new BarCodeReader(bitmap1, DecodeType.Code128))
+                    using (Bitmap bitmap2 = generator2.GenerateBarCodeImage())
                     {
-                        Console.WriteLine("Reading first barcode:");
-                        foreach (var result in reader.ReadBarCodes())
+                        // Create a BarCodeReader without an initial image source
+                        using (var reader = new BarCodeReader())
                         {
-                            Console.WriteLine($"CodeText: {result.CodeText}");
-                        }
-
-                        // Generate a second barcode (QR) in memory
-                        using (var generator2 = new BarcodeGenerator(EncodeTypes.QR, "Second"))
-                        {
-                            using (var ms2 = new MemoryStream())
+                            // Set the first bitmap as the source and read its barcode(s)
+                            reader.SetBarCodeImage(bitmap1);
+                            Console.WriteLine("Reading from first bitmap:");
+                            foreach (var result in reader.ReadBarCodes())
                             {
-                                // Save the second barcode as PNG into a new memory stream
-                                generator2.Save(ms2, BarCodeImageFormat.Png);
-                                ms2.Position = 0; // Reset stream position for reading
+                                Console.WriteLine($"{result.CodeTypeName}:{result.CodeText}");
+                            }
 
-                                using (var bitmap2 = new Bitmap(ms2))
-                                {
-                                    // Replace the current image source with the new bitmap
-                                    reader.SetBarCodeImage(bitmap2);
-
-                                    Console.WriteLine("Reading second barcode after SetBarCodeImage:");
-                                    foreach (var result in reader.ReadBarCodes())
-                                    {
-                                        Console.WriteLine($"CodeText: {result.CodeText}");
-                                    }
-                                }
+                            // Replace the source with the second bitmap and read its barcode(s)
+                            reader.SetBarCodeImage(bitmap2);
+                            Console.WriteLine("Reading from second bitmap:");
+                            foreach (var result in reader.ReadBarCodes())
+                            {
+                                Console.WriteLine($"{result.CodeTypeName}:{result.CodeText}");
                             }
                         }
                     }

@@ -1,8 +1,8 @@
-// Title: Process Code 39 images with checksum validation using BarCodeReader
-// Description: Demonstrates generating Code 39 barcodes (with and without optional checksum), saving them as PNG, and reading them back with BarCodeReader while enabling checksum validation.
-// Category-Description: This example belongs to the Aspose.BarCode barcode reading and generation category. It showcases the use of BarcodeGenerator for creating Code 39 symbols and BarCodeReader with ChecksumValidation.On to verify optional checksums. Developers often need to batch‑process images, validate checksums, and handle decoding results, making this pattern common in inventory and logistics applications.
+// Title: Process Code 39 Images with Checksum Validation Using BarCodeReader
+// Description: Demonstrates how to generate Code 39 barcode images with optional checksum enabled, then read them from a folder using BarCodeReader with ChecksumValidation.On to verify the checksums.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes and BarCodeReader for decoding them, highlighting checksum validation—a common requirement when working with Code 39 symbology in inventory, shipping, and tracking systems. Developers often need to batch‑process images, validate optional checksums, and extract barcode data efficiently.
 // Prompt: Process a folder of Code 39 images using BarCodeReader with ChecksumValidation.On to validate optional checksums.
-// Tags: code39, checksum, barcode, generation, reading, aspose.barcode
+// Tags: code39, checksum, barcode, generation, recognition, aspose.barcode
 
 using System;
 using System.IO;
@@ -11,52 +11,48 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating Code 39 barcodes (with optional checksum) and reading them back with checksum validation.
+/// Example program that creates temporary Code 39 barcode images with checksum enabled,
+/// then reads each image using BarCodeReader with checksum validation turned on.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates sample barcode images, reads them with checksum validation, and outputs results.
+    /// Entry point. Generates sample barcodes, validates them, and cleans up temporary files.
     /// </summary>
     static void Main()
     {
-        // Create a dedicated temporary folder for the sample images
-        string tempFolder = Path.Combine(Path.GetTempPath(), "Code39Batch_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
+        // --------------------------------------------------------------------
+        // 1. Create a dedicated temporary folder for the sample barcode images.
+        // --------------------------------------------------------------------
+        string folderPath = Path.Combine(Path.GetTempPath(), "Code39Batch_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(folderPath);
 
-        // Prepare sample Code39 texts (one with checksum enabled, one without)
-        var samples = new List<(string Text, bool EnableChecksum)>
+        // ---------------------------------------------------------------
+        // 2. Generate sample Code 39 barcode images with checksum enabled.
+        // ---------------------------------------------------------------
+        List<string> barcodeFiles = new List<string>();
+        for (int i = 1; i <= 3; i++)
         {
-            ("CODE39", false),
-            ("CHECKSUM", true)
-        };
+            string codeText = $"CODE{i}";
+            string filePath = Path.Combine(folderPath, $"Code39_{i}.png");
 
-        // List to hold the generated file paths
-        var imageFiles = new List<string>();
-
-        // Generate barcode images
-        foreach (var (text, enableChecksum) in samples)
-        {
-            string filePath = Path.Combine(tempFolder, $"{text}.png");
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code39, text))
+            // Use BarcodeGenerator to create a PNG image for each code.
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code39, codeText))
             {
-                // Enable optional checksum for the second sample
-                if (enableChecksum)
-                {
-                    generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
-                }
-
-                // Save as PNG
+                generator.Parameters.Barcode.XDimension.Pixels = 2f;
+                generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
                 generator.Save(filePath, BarCodeImageFormat.Png);
             }
-            imageFiles.Add(filePath);
+
+            barcodeFiles.Add(filePath);
         }
 
-        // Process each image with BarCodeReader
-        foreach (string file in imageFiles)
+        // ---------------------------------------------------------------
+        // 3. Process each barcode image with checksum validation turned on.
+        // ---------------------------------------------------------------
+        foreach (string file in barcodeFiles)
         {
             if (!File.Exists(file))
             {
@@ -66,44 +62,47 @@ class Program
 
             try
             {
+                // Initialize BarCodeReader for Code 39 decoding.
                 using (var reader = new BarCodeReader(file, DecodeType.Code39))
                 {
-                    // Validate optional checksums
+                    // Enable checksum validation for the reader.
                     reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
 
+                    // Read all barcodes found in the image.
                     BarCodeResult[] results = reader.ReadBarCodes();
 
                     if (results.Length == 0)
                     {
-                        Console.WriteLine($"No valid Code39 barcode detected in file: {Path.GetFileName(file)}");
+                        Console.WriteLine($"No barcode detected in {Path.GetFileName(file)}");
+                        continue;
                     }
-                    else
+
+                    // Output details for each detected barcode.
+                    foreach (var result in results)
                     {
-                        foreach (var result in results)
-                        {
-                            Console.WriteLine($"File: {Path.GetFileName(file)} | CodeText: {result.CodeText} | Symbology: {result.CodeTypeName}");
-                        }
+                        Console.WriteLine($"File: {Path.GetFileName(file)}");
+                        Console.WriteLine($"  CodeType: {result.CodeTypeName}");
+                        Console.WriteLine($"  CodeText: {result.CodeText}");
+                        Console.WriteLine($"  CheckSum: {result.Extended.OneD.CheckSum}");
                     }
                 }
             }
-            catch (ArgumentException ex) when (ex.Message.Contains("Image loading failed"))
+            catch (ArgumentException ex)
             {
-                Console.WriteLine($"Skipping unsupported or corrupted file: {Path.GetFileName(file)}");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error processing file {Path.GetFileName(file)}: {ex.Message}");
+                Console.WriteLine($"Error loading image '{Path.GetFileName(file)}': {ex.Message}");
             }
         }
 
-        // Cleanup: delete temporary folder and its contents
+        // ---------------------------------------------------------------
+        // 4. Cleanup: delete the temporary folder and its contents.
+        // ---------------------------------------------------------------
         try
         {
-            Directory.Delete(tempFolder, true);
+            Directory.Delete(folderPath, true);
         }
         catch
         {
-            // Ignore cleanup errors
+            // Ignore cleanup errors (e.g., files in use).
         }
     }
 }

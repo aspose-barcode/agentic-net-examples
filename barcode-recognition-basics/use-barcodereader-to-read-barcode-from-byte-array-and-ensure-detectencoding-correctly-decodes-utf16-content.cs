@@ -1,8 +1,8 @@
-// Title: Read QR Code from byte array with UTF-16 detection using BarCodeReader
-// Description: Demonstrates reading a QR code stored in a byte array and using DetectEncoding to correctly decode UTF‑16 text.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, showcasing how to generate a barcode in memory, serialize it to a byte array, and then read it back using BarCodeReader. It highlights key API classes such as BarcodeGenerator, BarCodeReader, and BarCodeResult, which developers commonly use for in‑memory barcode processing, Unicode support, and automated scanning scenarios. Ideal for applications that need to handle barcodes without persisting image files.
+// Title: Read QR Code from Byte Array with UTF-16 Detection
+// Description: Demonstrates using BarCodeReader to decode a QR code stored in a byte array, ensuring DetectEncoding correctly interprets UTF-16 encoded text.
+// Category-Description: This example belongs to the Aspose.BarCode barcode reading category, showcasing how to generate a QR code, load it as a byte array, and read it with BarCodeReader. It highlights key API classes such as BarcodeGenerator, BarCodeReader, and BarcodeSettings, which developers use for scanning barcodes from streams, files, or memory buffers, especially when handling different text encodings.
 // Prompt: Use BarCodeReader to read a barcode from a byte array and ensure DetectEncoding correctly decodes UTF16 content.
-// Tags: qr, barcode, read, byte-array, utf16, detectencoding, aspose.barcode, generation, recognition
+// Tags: qr, utf-16, barcodereading, bytearray, aspose.barcode, encoding
 
 using System;
 using System.IO;
@@ -10,64 +10,63 @@ using System.Text;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates a QR code containing UTF‑16 text,
-/// stores it in a byte array, and reads it back using BarCodeReader
-/// with DetectEncoding enabled to verify correct decoding.
+/// Demonstrates reading a QR code from a byte array with UTF-16 detection using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a QR code, reads it from memory,
-    /// and prints the decoded text along with a verification of the original content.
+    /// Entry point of the example. Generates a QR code with UTF-16 text, reads it from a byte array, and outputs the decoded result.
     /// </summary>
     static void Main()
     {
-        // Original text includes Unicode characters (emoji and Chinese) to test UTF‑16 handling.
-        string originalText = "Hello 🌍 你好";
+        // Create a temporary folder for the barcode image
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
+        string imagePath = Path.Combine(tempFolder, "qr_utf16.png");
 
-        // Create a QR code generator with empty initial text; we'll set the text with Unicode encoding.
+        // Generate a QR code with UTF-16 encoded text
         using (var generator = new BarcodeGenerator(EncodeTypes.QR, string.Empty))
         {
-            // Assign the Unicode text to the barcode, specifying UTF‑16 (Encoding.Unicode).
-            generator.SetCodeText(originalText, Encoding.Unicode);
+            // Set the code text using Unicode (UTF-16) encoding
+            generator.SetCodeText("Привет UTF16", Encoding.Unicode);
+            // Adjust the module size for better readability
+            generator.Parameters.Barcode.XDimension.Pixels = 4f;
+            // Save the generated QR code as a PNG file
+            generator.Save(imagePath, BarCodeImageFormat.Png);
+        }
 
-            // Save the generated barcode image to a memory stream in PNG format.
-            using (var ms = new MemoryStream())
+        // Load the generated image into a byte array
+        byte[] imageBytes = File.ReadAllBytes(imagePath);
+
+        // Read the barcode from the byte array with DetectEncoding enabled
+        using (var memoryStream = new MemoryStream(imageBytes))
+        {
+            BaseDecodeType decodeType = DecodeType.QR;
+            using (var reader = new BarCodeReader(memoryStream, decodeType))
             {
-                generator.Save(ms, BarCodeImageFormat.Png);
-                // Convert the memory stream to a byte array for later reading.
-                byte[] barcodeBytes = ms.ToArray();
+                // Enable automatic detection of the text encoding (UTF-16 in this case)
+                reader.BarcodeSettings.DetectEncoding = true;
 
-                // Initialize a BarCodeReader with the byte array wrapped in a MemoryStream.
-                using (var reader = new BarCodeReader(new MemoryStream(barcodeBytes), DecodeType.QR))
+                // Iterate through all detected barcodes (only one expected)
+                foreach (BarCodeResult result in reader.ReadBarCodes())
                 {
-                    // Enable automatic detection of the text encoding used in the barcode.
-                    reader.BarcodeSettings.DetectEncoding = true;
-
-                    // Read all barcodes found in the image (should be one QR code).
-                    BarCodeResult[] results = reader.ReadBarCodes();
-
-                    // Verify that a result was obtained and that the decoded text is not empty.
-                    if (results.Length > 0 && !string.IsNullOrEmpty(results[0].CodeText))
-                    {
-                        string decodedText = results[0].CodeText;
-                        bool match = decodedText == originalText;
-
-                        // Output the decoded text and whether it matches the original.
-                        Console.WriteLine($"Decoded Text: {decodedText}");
-                        Console.WriteLine($"Match Original: {match}");
-                    }
-                    else
-                    {
-                        // Inform the user if no barcode was detected or the result is empty.
-                        Console.WriteLine("No barcode detected or empty result.");
-                    }
+                    Console.WriteLine($"CodeType: {result.CodeTypeName}");
+                    Console.WriteLine($"CodeText: {result.CodeText}");
                 }
             }
+        }
+
+        // Clean up temporary files and folder
+        try
+        {
+            Directory.Delete(tempFolder, true);
+        }
+        catch
+        {
+            // Ignore any cleanup errors
         }
     }
 }

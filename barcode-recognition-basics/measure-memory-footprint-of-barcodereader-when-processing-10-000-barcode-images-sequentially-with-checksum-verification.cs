@@ -1,114 +1,106 @@
 // Title: Measure memory usage of BarCodeReader processing multiple images with checksum validation
-// Description: Demonstrates generating sample barcode images, reading them sequentially with checksum verification enabled, and measuring the memory footprint of the BarCodeReader.
-// Category-Description: This example belongs to the Aspose.BarCode reading and performance measurement category. It showcases the BarCodeReader class, checksum validation via BarcodeSettings, and memory profiling using GC.GetTotalMemory. Developers often need to assess resource consumption when processing large batches of barcodes, especially in high‑throughput or memory‑constrained environments.
+// Description: Demonstrates how to generate Code128 barcode images, read them sequentially with checksum verification enabled, and measure the memory footprint of the BarCodeReader.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, showcasing typical use cases such as creating barcode images, configuring reader settings (e.g., checksum validation), and profiling memory consumption. Developers working with bulk barcode processing, performance tuning, or resource‑constrained environments often need to understand the memory impact of the BarCodeReader API.
 // Prompt: Measure memory footprint of BarCodeReader when processing 10,000 barcode images sequentially with checksum verification enabled.
-// Tags: barcode, symbology, reading, checksum, memory, performance, aspose.barcode, csharp
+// Tags: barcode, code128, memory, checksum, generation, recognition, aspose.barcode
 
 using System;
 using System.IO;
 using System.Collections.Generic;
-using System.Diagnostics;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
+using Aspose.BarCode;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Provides a sample that generates barcode images, reads them with checksum validation,
-/// and measures the memory consumption of the BarCodeReader.
+/// Example program that generates barcode images, reads them with checksum validation,
+/// and measures the memory used by the BarCodeReader during processing.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the sample. Generates sample barcodes, processes them while measuring memory usage,
-    /// and outputs the results to the console.
+    /// Entry point of the application.
     /// </summary>
-    /// <param name="args">Command‑line arguments (not used).</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Create a unique temporary folder for the sample barcodes
-        string tempFolder = Path.Combine(Path.GetTempPath(), "Barcodes_" + Guid.NewGuid().ToString("N"));
+        // Create a temporary folder to store generated barcode images
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarCodeReaderMemoryTest_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
 
-        // Number of sample images to generate (use a small safe number for demo)
-        // In a real benchmark replace with 10000
+        // Number of sample images to generate (adjustable for real‑world testing)
         int sampleCount = 10;
 
-        // Generate sample barcode images and collect their file paths
-        List<string> barcodeFiles = GenerateSampleBarcodes(sampleCount, tempFolder);
+        // Generate sample barcode images (Code128) and collect their file paths
+        List<string> imageFiles = new List<string>();
+        for (int i = 0; i < sampleCount; i++)
+        {
+            string filePath = Path.Combine(tempFolder, $"barcode_{i}.png");
+            string codeText = $"CODE{i:D4}";
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+            {
+                // Configure barcode appearance
+                generator.Parameters.Barcode.XDimension.Pixels = 2f;
+                // Save the barcode image as PNG
+                generator.Save(filePath, BarCodeImageFormat.Png);
+            }
+            imageFiles.Add(filePath);
+        }
 
-        // Record memory usage before processing the images
+        // Force garbage collection before measuring memory usage
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
+
+        // Record memory usage prior to processing
         long memoryBefore = GC.GetTotalMemory(true);
 
-        // Process each barcode image sequentially with checksum validation enabled
-        foreach (string filePath in barcodeFiles)
+        // Process each barcode image sequentially with checksum verification enabled
+        foreach (string file in imageFiles)
         {
-            if (!File.Exists(filePath))
+            if (!File.Exists(file))
             {
-                Console.WriteLine($"File not found: {filePath}");
+                Console.WriteLine($"File not found: {file}");
                 continue;
             }
 
-            // Initialize the reader for all supported decode types
-            using (BarCodeReader reader = new BarCodeReader(filePath, DecodeType.AllSupportedTypes))
+            using (BarCodeReader reader = new BarCodeReader(file, DecodeType.Code128))
             {
-                // Enable checksum validation for the current read operation
+                // Enable checksum validation for the reader
                 reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
 
-                // Read all barcodes present in the image
+                // Read barcodes; results may be empty if checksum validation fails
                 BarCodeResult[] results = reader.ReadBarCodes();
-
-                // Output result information (optional, useful for verification)
                 foreach (BarCodeResult result in results)
                 {
-                    Console.WriteLine($"File: {Path.GetFileName(filePath)} | CodeText: {result.CodeText} | Type: {result.CodeTypeName}");
+                    // Output minimal information to ensure the read operation occurs
+                    Console.WriteLine($"Read: {result.CodeTypeName} - {result.CodeText}");
                 }
             }
         }
 
-        // Record memory usage after processing the images
+        // Force garbage collection after processing to obtain a clean memory measurement
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
+
+        // Record memory usage after processing and calculate the difference
         long memoryAfter = GC.GetTotalMemory(true);
         long memoryUsed = memoryAfter - memoryBefore;
 
-        Console.WriteLine();
-        Console.WriteLine($"Memory used for processing {sampleCount} images: {memoryUsed} bytes");
+        Console.WriteLine($"Memory used for processing {sampleCount} barcodes: {memoryUsed} bytes");
 
-        // Clean up temporary files and folder
+        // Clean up temporary files and directory
         try
         {
-            Directory.Delete(tempFolder, true);
+            foreach (string file in imageFiles)
+            {
+                File.Delete(file);
+            }
+            Directory.Delete(tempFolder);
         }
         catch
         {
-            // Ignore cleanup errors in demo scenarios
+            // Ignore any cleanup errors
         }
-    }
-
-    /// <summary>
-    /// Generates a specified number of barcode PNG files in the given folder.
-    /// </summary>
-    /// <param name="count">Number of barcode images to create.</param>
-    /// <param name="folder">Destination folder for the generated images.</param>
-    /// <returns>List of file paths for the created barcode images.</returns>
-    private static List<string> GenerateSampleBarcodes(int count, string folder)
-    {
-        List<string> files = new List<string>();
-
-        for (int i = 0; i < count; i++)
-        {
-            string codeText = $"CODE{i:D5}";
-            string filePath = Path.Combine(folder, $"barcode_{i}.png");
-
-            // Create a barcode generator for Code128 symbology
-            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
-            {
-                // Save the barcode image as PNG; default size adapts to the CodeText length
-                generator.Save(filePath, BarCodeImageFormat.Png);
-            }
-
-            files.Add(filePath);
-        }
-
-        return files;
     }
 }

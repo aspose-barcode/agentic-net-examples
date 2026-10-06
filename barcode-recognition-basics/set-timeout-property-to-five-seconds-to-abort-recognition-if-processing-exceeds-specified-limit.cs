@@ -1,8 +1,8 @@
-// Title: Barcode recognition with timeout handling
-// Description: Demonstrates generating a QR code, reading it using Aspose.BarCode, and aborting the recognition if it exceeds a five‑second limit.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the BarcodeGenerator for creating barcodes and the BarCodeReader for decoding them, highlighting how to configure the Timeout property to prevent long‑running recognition tasks. Developers working with barcode scanning, image processing, or real‑time applications often need to limit processing time to maintain responsiveness.
+// Title: Barcode recognition with timeout abort after five seconds
+// Description: Demonstrates generating a QR barcode image and reading it using Aspose.BarCode with a 5‑second timeout to abort recognition if processing exceeds the limit.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes and BarCodeReader for decoding them. Typical scenarios include scanning images in applications where long‑running recognition must be bounded, and developers often need to configure the Timeout property to prevent hangs.
 // Prompt: Set TimeOut property to five seconds to abort recognition if processing exceeds the specified limit.
-// Tags: barcode, qr, generation, recognition, timeout, aspose.barcode, csharp
+// Tags: barcode, qr, timeout, recognition, generation, aspose.barcode, csharp
 
 using System;
 using System.IO;
@@ -11,66 +11,61 @@ using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates barcode generation and recognition with a timeout to abort long‑running scans.
+/// Example program that creates a QR barcode, reads it with a timeout, and cleans up temporary files.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the sample. Generates a QR code, reads it with a 5‑second timeout, and cleans up temporary files.
+    /// Entry point of the application.
+    /// Generates a QR code, attempts to read it with a 5‑second timeout, and outputs the results.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder for the sample barcode image
-        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeTimeoutSample_" + Guid.NewGuid().ToString("N"));
+        // Create a unique temporary folder for the demo files
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
+
+        // Define the full path for the generated barcode image
         string barcodePath = Path.Combine(tempFolder, "sample.png");
 
-        // Generate a simple QR code and save it to the temporary file
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Hello World"))
+        // Generate a QR barcode containing the text "Hello Aspose" and save it as PNG
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "Hello Aspose"))
         {
             generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        // Verify that the image file was created before attempting to read it
+        // Verify that the barcode image was created before attempting recognition
         if (!File.Exists(barcodePath))
         {
             Console.WriteLine("Failed to create barcode image.");
             return;
         }
 
-        // Initialize a BarCodeReader with a timeout of 5 seconds (5000 ms)
-        using (var reader = new BarCodeReader(barcodePath, DecodeType.AllSupportedTypes))
+        // Initialize the barcode reader for QR codes and set a 5‑second timeout (5000 ms)
+        using (BarCodeReader reader = new BarCodeReader(barcodePath, DecodeType.QR))
         {
-            reader.Timeout = 5000; // Timeout in milliseconds
+            reader.Timeout = 5000; // milliseconds
 
             try
             {
-                // Attempt to read all barcodes from the image
+                // Attempt to read barcodes from the image
                 BarCodeResult[] results = reader.ReadBarCodes();
+                Console.WriteLine($"Barcodes found: {results.Length}");
 
-                if (results.Length == 0)
+                // Output each detected barcode's type and text
+                foreach (BarCodeResult result in results)
                 {
-                    Console.WriteLine("No barcode detected.");
-                }
-                else
-                {
-                    // Output details for each detected barcode
-                    foreach (var result in results)
-                    {
-                        Console.WriteLine($"Code Text: {result.CodeText}");
-                        Console.WriteLine($"Symbology: {result.CodeTypeName}");
-                        Console.WriteLine($"Reading Quality: {result.ReadingQuality}");
-                    }
+                    Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
                 }
             }
             catch (RecognitionAbortedException ex)
             {
                 // Handle the case where recognition was aborted due to timeout
-                Console.WriteLine($"Recognition aborted after timeout: {ex.ExecutionTime} ms");
+                Console.WriteLine($"Recognition aborted after {ex.ExecutionTime} ms");
             }
         }
 
-        // Clean up temporary files and folder
+        // Clean up temporary files and folder; ignore any errors during cleanup
         try
         {
             File.Delete(barcodePath);
@@ -78,7 +73,7 @@ class Program
         }
         catch
         {
-            // Ignored – cleanup failures should not affect program flow
+            // Ignored - cleanup failure should not affect program outcome
         }
     }
 }

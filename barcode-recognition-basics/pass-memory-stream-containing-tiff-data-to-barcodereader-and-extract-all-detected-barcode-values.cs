@@ -1,8 +1,8 @@
-// Title: Read barcodes from a TIFF memory stream using Aspose.BarCode
-// Description: Demonstrates how to generate a barcode, store it as TIFF in a memory stream, and then read all detected barcodes from that stream.
-// Category-Description: This example belongs to the Aspose.BarCode image processing and barcode recognition category. It showcases the use of BarcodeGenerator to create barcodes, MemoryStream for in‑memory image handling, and BarCodeReader with DecodeType.AllSupportedTypes to detect any barcode present. Developers often need to process scanned documents or image buffers without writing to disk, and this pattern provides a quick way to extract barcode values directly from memory.
+// Title: Read barcodes from a TIFF MemoryStream using Aspose.BarCode
+// Description: Demonstrates how to generate a Code128 barcode, store it in a TIFF image within a MemoryStream, and then read all detected barcodes from that stream.
+// Category-Description: This example belongs to the Aspose.BarCode image generation and recognition category. It showcases the use of BarcodeGenerator to create barcodes, saving them in TIFF format, and BarCodeReader with DecodeType.AllSupportedTypes to detect multiple symbologies from an in‑memory image. Developers often need to process barcodes without writing temporary files, such as in web services or CI pipelines, and this pattern provides a fast, file‑less workflow.
 // Prompt: Pass a memory stream containing TIFF data to BarCodeReader and extract all detected barcode values.
-// Tags: barcode, tiff, memorystream, barcodereader, decodeall, aspnet, csharp
+// Tags: barcode, tiff, memorystream, generation, recognition, alltypes, aspose.barcode, csharp
 
 using System;
 using System.IO;
@@ -11,51 +11,36 @@ using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates generating a Code128 barcode, storing it as TIFF in a memory stream,
+/// Demonstrates generating a Code128 barcode, storing it as a TIFF image in a memory stream,
 /// and reading all detected barcodes from that stream using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a sample barcode, reads it from a memory stream,
-    /// and prints detected barcode values to the console.
+    /// Entry point of the example. Executes the generation and recognition workflow.
     /// </summary>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Generate a sample Code128 barcode and save it as TIFF into a memory buffer
-        byte[] tiffData;
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456789"))
+        // Create a memory stream to hold the TIFF image data
+        using (MemoryStream tiffStream = new MemoryStream())
         {
-            using (var ms = new MemoryStream())
+            // Generate a Code128 barcode with the text "123456789"
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "123456789"))
             {
-                generator.Save(ms, BarCodeImageFormat.Tiff);
-                tiffData = ms.ToArray(); // Capture the TIFF bytes
+                // Save the generated barcode directly into the memory stream in TIFF format
+                generator.Save(tiffStream, BarCodeImageFormat.Tiff);
             }
-        }
 
-        // Create a new memory stream from the TIFF byte array for reading
-        using (var tiffStream = new MemoryStream(tiffData))
-        {
-            // Initialize the reader to detect any supported barcode type
-            using (var reader = new BarCodeReader(tiffStream, DecodeType.AllSupportedTypes))
+            // Reset the stream position to the beginning before reading
+            tiffStream.Position = 0;
+
+            // Initialize the barcode reader to scan the TIFF stream for all supported types
+            using (BarCodeReader reader = new BarCodeReader(tiffStream, DecodeType.AllSupportedTypes))
             {
-                // Ensure the stream position is at the beginning before reading
-                tiffStream.Position = 0;
-                reader.SetBarCodeImage(tiffStream); // Explicitly set the image source
-
-                // Perform barcode detection
-                BarCodeResult[] results = reader.ReadBarCodes();
-
-                // Output each detected barcode value
-                foreach (BarCodeResult result in results)
+                // Iterate through all detected barcodes and output their type and text
+                foreach (BarCodeResult result in reader.ReadBarCodes())
                 {
-                    Console.WriteLine($"Detected barcode: {result.CodeText}");
-                }
-
-                // Inform the user if no barcodes were found
-                if (results.Length == 0)
-                {
-                    Console.WriteLine("No barcodes were detected in the provided TIFF data.");
+                    Console.WriteLine($"Detected barcode: Type={result.CodeTypeName}, Text={result.CodeText}");
                 }
             }
         }
