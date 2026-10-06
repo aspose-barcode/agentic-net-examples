@@ -1,112 +1,117 @@
-// Title: Unit Test for Encoding Primary Fields into a Code 128 HIBC LIC Barcode
-// Description: Demonstrates generating a HIBC Code 128 LIC barcode with primary data fields, then decoding it to verify the fields are correctly encoded.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation and recognition category. It shows how to use ComplexBarcodeGenerator with HIBCLICPrimaryDataCodetext, configure barcode parameters, save the image, and then read it back using BarCodeReader and ComplexCodetextReader. Developers working with healthcare barcodes, especially HIBC LIC, can use this pattern to validate encoding and decoding of primary data fields.
+// Title: Unit Test for Encoding Primary Fields in a Code 128 HIBC LIC Barcode
+// Description: Demonstrates generating a HIBC Code 128 LIC barcode with primary data fields, saving it, and verifying the encoded fields by decoding the image.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation and recognition category. It shows how to use ComplexBarcodeGenerator with HIBCLICPrimaryDataCodetext, configure barcode parameters, and read back the barcode using BarCodeReader. Developers working with healthcare industry barcodes (HIBC) often need to encode product, labeler, and unit‑of‑measure information and validate it programmatically.
 // Prompt: Create a unit test verifying correct encoding of primary fields into a Code 128 HIBC LIC barcode.
-// Tags: barcode symbology, encoding, decoding, hibc, code128, lic, complexbarcode, unit-test, csharp, aspose.barcode
+// Tags: barcode, hibc, code128, lic, complexbarcode, generation, recognition, unit-test, aspnet, csharp
 
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.BarCode.ComplexBarcode;
-using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates a HIBC Code 128 LIC barcode with primary data,
-/// decodes it, and validates that the encoded fields match the original values.
+/// Demonstrates a simple unit‑test‑style verification of primary field encoding for a HIBC Code 128 LIC barcode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that performs barcode generation, decoding, validation, and cleanup.
+    /// Entry point that generates the barcode, decodes it, and validates the primary data fields.
     /// </summary>
     static void Main()
     {
-        // Prepare a temporary file path for the generated barcode image.
-        string tempPath = Path.Combine(Path.GetTempPath(), "HIBCLICPrimary.png");
+        // Prepare a unique temporary folder for the test artifacts
+        string tempFolder = Path.Combine(Path.GetTempPath(), "HIBCTest_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
+        string barcodePath = Path.Combine(tempFolder, "HIBCPrimary.png");
 
-        // Create primary data codetext and configure its properties.
+        // Define primary data values to be encoded
+        string productNumber = "12345";
+        string labelerCode = "A999";
+        int unitOfMeasureId = 1;
+
+        // Build the primary data codetext object
         HIBCLICPrimaryDataCodetext primaryCodetext = new HIBCLICPrimaryDataCodetext
         {
             BarcodeType = EncodeTypes.HIBCCode128LIC,
             Data = new PrimaryData
             {
-                ProductOrCatalogNumber = "12345",
-                LabelerIdentificationCode = "A999",
-                UnitOfMeasureID = 1
+                ProductOrCatalogNumber = productNumber,
+                LabelerIdentificationCode = labelerCode,
+                UnitOfMeasureID = unitOfMeasureId
             }
         };
 
-        // Generate the barcode image using ComplexBarcodeGenerator.
+        // Generate the barcode image using ComplexBarcodeGenerator
         using (ComplexBarcodeGenerator generator = new ComplexBarcodeGenerator(primaryCodetext))
         {
-            // Set the X-dimension (module width) to 10 pixels for better readability.
-            generator.Parameters.Barcode.XDimension.Pixels = 10;
-            generator.Save(tempPath, BarCodeImageFormat.Png);
+            generator.Parameters.Barcode.XDimension.Pixels = 10f; // Set module size
+            generator.Save(barcodePath); // Save as PNG
         }
 
-        // Resolve the appropriate decode type via reflection (handles possible member name changes).
-        BaseDecodeType decodeType;
-        var decodeField = typeof(DecodeType).GetField("HIBCCode128LIC");
-        if (decodeField == null)
+        // Verify that the barcode image file was created
+        if (!File.Exists(barcodePath))
         {
-            Console.WriteLine("FAILED: DecodeType HIBCCode128LIC not found.");
+            Console.WriteLine("FAILED: Barcode image was not created.");
             return;
         }
-        decodeType = (BaseDecodeType)decodeField.GetValue(null);
 
-        // Read and decode the barcode from the saved image.
-        using (BarCodeReader reader = new BarCodeReader(tempPath, decodeType))
+        // Decode the barcode using the appropriate decode type
+        BaseDecodeType decodeType = DecodeType.HIBCCode128LIC;
+        bool testPassed = false;
+
+        using (BarCodeReader reader = new BarCodeReader(barcodePath, decodeType))
         {
-            BarCodeResult[] results = reader.ReadBarCodes();
-            if (results.Length == 0)
+            foreach (BarCodeResult result in reader.ReadBarCodes())
             {
-                Console.WriteLine("FAILED: No barcode detected.");
-                return;
-            }
-
-            bool allPassed = true;
-            foreach (BarCodeResult result in results)
-            {
-                // Attempt to decode the complex codetext and cast to primary data type.
+                // Attempt to parse the complex HIBC LIC codetext
                 HIBCLICComplexCodetext complex = ComplexCodetextReader.TryDecodeHIBCLIC(result.CodeText);
-                HIBCLICPrimaryDataCodetext decoded = complex as HIBCLICPrimaryDataCodetext;
-                if (decoded == null)
+                HIBCLICPrimaryDataCodetext decodedPrimary = complex as HIBCLICPrimaryDataCodetext;
+
+                if (decodedPrimary == null)
                 {
-                    Console.WriteLine("FAILED: Decoded codetext is not primary data.");
-                    allPassed = false;
-                    continue;
+                    continue; // Not a primary data barcode; skip
                 }
 
-                // Compare each field with the original values.
-                bool productMatch = decoded.Data.ProductOrCatalogNumber == primaryCodetext.Data.ProductOrCatalogNumber;
-                bool labelerMatch = decoded.Data.LabelerIdentificationCode == primaryCodetext.Data.LabelerIdentificationCode;
-                bool uomMatch = decoded.Data.UnitOfMeasureID == primaryCodetext.Data.UnitOfMeasureID;
+                // Compare each decoded field with the original values
+                bool productMatch = decodedPrimary.Data.ProductOrCatalogNumber == productNumber;
+                bool labelerMatch = decodedPrimary.Data.LabelerIdentificationCode == labelerCode;
+                bool unitMatch = decodedPrimary.Data.UnitOfMeasureID == unitOfMeasureId;
 
-                if (!productMatch || !labelerMatch || !uomMatch)
+                if (productMatch && labelerMatch && unitMatch)
                 {
-                    Console.WriteLine("FAILED: Mismatch in decoded fields.");
-                    Console.WriteLine($"Expected Product: {primaryCodetext.Data.ProductOrCatalogNumber}, Got: {decoded.Data.ProductOrCatalogNumber}");
-                    Console.WriteLine($"Expected Labeler: {primaryCodetext.Data.LabelerIdentificationCode}, Got: {decoded.Data.LabelerIdentificationCode}");
-                    Console.WriteLine($"Expected UOM: {primaryCodetext.Data.UnitOfMeasureID}, Got: {decoded.Data.UnitOfMeasureID}");
-                    allPassed = false;
+                    testPassed = true; // All fields match
+                }
+                else
+                {
+                    Console.WriteLine("FAILED: Decoded fields do not match expected values.");
+                    Console.WriteLine($"Expected ProductOrCatalogNumber: {productNumber}, Got: {decodedPrimary.Data.ProductOrCatalogNumber}");
+                    Console.WriteLine($"Expected LabelerIdentificationCode: {labelerCode}, Got: {decodedPrimary.Data.LabelerIdentificationCode}");
+                    Console.WriteLine($"Expected UnitOfMeasureID: {unitOfMeasureId}, Got: {decodedPrimary.Data.UnitOfMeasureID}");
                 }
             }
-
-            Console.WriteLine(allPassed ? "PASS: Primary fields encoded and decoded correctly." : "FAILED: One or more checks failed.");
         }
 
-        // Clean up the temporary barcode image file.
+        // Output final test result
+        if (testPassed)
+        {
+            Console.WriteLine("PASSED: Primary fields encoded and decoded correctly.");
+        }
+        else
+        {
+            Console.WriteLine("FAILED: No valid HIBC LIC primary barcode was decoded.");
+        }
+
+        // Cleanup temporary files and folder
         try
         {
-            if (File.Exists(tempPath))
-            {
-                File.Delete(tempPath);
-            }
+            File.Delete(barcodePath);
+            Directory.Delete(tempFolder);
         }
         catch
         {
-            // Ignore any errors during cleanup.
+            // Suppress any cleanup exceptions
         }
     }
 }

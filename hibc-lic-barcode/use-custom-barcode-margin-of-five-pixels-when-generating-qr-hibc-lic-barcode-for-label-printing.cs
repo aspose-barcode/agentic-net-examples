@@ -1,8 +1,8 @@
 // Title: Generate QR HIBC LIC Barcode with Custom Margin
-// Description: Demonstrates how to generate a QR HIBC LIC barcode with a five‑pixel margin on each side, suitable for label printing.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It showcases the use of ComplexBarcodeGenerator, HIBCLICPrimaryDataCodetext, and related parameter classes to create healthcare‑industry HIBC QR LIC barcodes. Developers often need to customize layout details such as margins for label printers, and this snippet provides a clear pattern for doing so.
-/// Prompt: Use a custom barcode margin of five pixels when generating a QR HIBC LIC barcode for label printing.
-/// Tags: barcode, hibc, qr, margin, png, aspose.barcode, label-printing, complexbarcode
+// Description: Demonstrates how to generate a QR HIBC LIC barcode with a five‑pixel margin, suitable for label printing.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It showcases the use of ComplexBarcodeGenerator and HIBCLICPrimaryDataCodetext to create healthcare‑industry HIBC LIC QR codes. Developers often need to customize barcode appearance, such as margins and module size, for printing on labels and packaging.
+// Prompt: Use a custom barcode margin of five pixels when generating a QR HIBC LIC barcode for label printing.
+// Tags: barcode, hibc, qr, margin, label, aspose.barcode, complexbarcodegenerator
 
 using System;
 using System.IO;
@@ -11,22 +11,22 @@ using Aspose.BarCode.Generation;
 using Aspose.BarCode.ComplexBarcode;
 
 /// <summary>
-/// Example program that creates a QR HIBC LIC barcode with a custom five‑pixel margin on all sides.
+/// Entry point for the QR HIBC LIC barcode generation example.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that builds the barcode, applies margin settings, and saves the image to a temporary folder.
+    /// Generates a QR HIBC LIC barcode with a five‑pixel margin and saves it as a PNG file.
     /// </summary>
     static void Main()
     {
-        // Prepare the output directory in the system temporary folder.
-        string outputDir = Path.Combine(Path.GetTempPath(), "HIBC_QR_Output");
+        // Create a temporary output folder to store the generated barcode image
+        string outputDir = Path.Combine(Path.GetTempPath(), "HIBCLIC_QR_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(outputDir);
-        string outputPath = Path.Combine(outputDir, "HIBCLICPrimary.png");
+        string outputPath = Path.Combine(outputDir, "HIBCLIC_QR.png");
 
-        // Create primary data codetext for the HIBC QR LIC barcode.
-        HIBCLICPrimaryDataCodetext complexCodetext = new HIBCLICPrimaryDataCodetext
+        // Build the primary data required for a HIBC LIC QR barcode
+        HIBCLICPrimaryDataCodetext codetext = new HIBCLICPrimaryDataCodetext
         {
             BarcodeType = EncodeTypes.HIBCQRLIC,
             Data = new PrimaryData
@@ -37,19 +37,23 @@ class Program
             }
         };
 
-        // Generate the barcode and set a custom margin of 5 pixels on each side.
-        using (ComplexBarcodeGenerator gen = new ComplexBarcodeGenerator(complexCodetext))
+        // Initialize the complex barcode generator with the prepared data
+        using (ComplexBarcodeGenerator generator = new ComplexBarcodeGenerator(codetext))
         {
-            gen.Parameters.Barcode.Padding.Left.Pixels = 5f;
-            gen.Parameters.Barcode.Padding.Top.Pixels = 5f;
-            gen.Parameters.Barcode.Padding.Right.Pixels = 5f;
-            gen.Parameters.Barcode.Padding.Bottom.Pixels = 5f;
+            // Apply a uniform margin of five pixels on all sides
+            generator.Parameters.Barcode.Padding.Left.Pixels = 5f;
+            generator.Parameters.Barcode.Padding.Top.Pixels = 5f;
+            generator.Parameters.Barcode.Padding.Right.Pixels = 5f;
+            generator.Parameters.Barcode.Padding.Bottom.Pixels = 5f;
 
-            // Save the barcode image as PNG.
-            gen.Save(outputPath, BarCodeImageFormat.Png);
+            // Optional: define the size of a single QR module (pixel dimension)
+            generator.Parameters.Barcode.XDimension.Pixels = 4f;
+
+            // Save the generated barcode image to the specified path
+            generator.Save(outputPath);
         }
 
-        // Inform the user where the barcode image was saved.
-        Console.WriteLine($"Barcode saved to: {outputPath}");
+        // Inform the user where the barcode image has been saved
+        Console.WriteLine("Barcode saved to: " + outputPath);
     }
 }

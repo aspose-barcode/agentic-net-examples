@@ -1,88 +1,107 @@
-// Title: Demonstrate HIBCLIC barcode generation and validation using Aspose.BarCode
-// Description: This example creates a HIBCLIC barcode image, decodes it with the HIBC QRLIC decode type, and checks if the decoded text is non‑empty as a simple validity test.
-// Category-Description: Shows how to work with Aspose.BarCode's ComplexBarcodeGenerator and BarCodeReader for HIBCLIC symbology. The example covers creating primary and secondary data, saving the barcode as PNG, reading it back with a specific DecodeType, and performing a basic validation of the decoded text. Developers dealing with healthcare barcodes often need to generate and verify HIBCLIC codes using these core API classes.
+// Title: Decode HIBCLIC barcode and verify code text validity
+// Description: This example generates a HIBCLIC barcode, reads it using BarCodeReader with DecodeType set to HIBCLIC, and checks whether the decoded text is present (simulating IsCodeTextValid). It shows how to work with complex HIBCLIC barcodes in Aspose.BarCode.
+// Category-Description: Aspose.BarCode barcode recognition examples focusing on complex barcode types such as HIBCLIC. The sample uses ComplexBarcodeGenerator, BarCodeReader, DecodeType, and checksum validation to illustrate typical workflows for generating, scanning, and validating HIBCLIC barcodes, which are commonly used in healthcare labeling. Developers can use this pattern to integrate HIBCLIC support into .NET applications.
 // Prompt: Set BarCodeReader.DecodeType to HIBCLIC and verify IsCodeTextValid after decoding a scanned image.
-// Tags: hibc, decode, validation, png, complexbarcode, barcodereader
+// Tags: hibclic, barcode, decode, validation, aspose.barcode, complexbarcode, csharp
 
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.BarCode.ComplexBarcode;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates a HIBCLIC barcode, reads it back, and validates the decoded text.
+/// Demonstrates generating a HIBCLIC barcode, decoding it with the appropriate DecodeType,
+/// and performing a simple validation of the decoded text.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a barcode, decodes it, and outputs validation results.
+    /// Entry point of the example. Generates a barcode image, reads it, and outputs validation results.
     /// </summary>
     static void Main()
     {
-        // Create a temporary directory to store the generated barcode image
-        string tempDir = Path.Combine(Path.GetTempPath(), "HIBCLICDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempDir);
-        string imagePath = Path.Combine(tempDir, "hibclic.png");
+        // --------------------------------------------------------------------
+        // Prepare a temporary folder and file path for the barcode image.
+        // --------------------------------------------------------------------
+        string tempFolder = Path.Combine(Path.GetTempPath(), "HIBCLICDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
+        string imagePath = Path.Combine(tempFolder, "hibclic.png");
 
-        // Prepare primary data required for HIBCLIC
-        var primaryData = new PrimaryData
+        // --------------------------------------------------------------------
+        // Create HIBCLIC primary data codetext with required fields.
+        // --------------------------------------------------------------------
+        var primaryCodetext = new HIBCLICPrimaryDataCodetext
         {
-            ProductOrCatalogNumber = "12345",
-            LabelerIdentificationCode = "A999",
-            UnitOfMeasureID = 1
+            BarcodeType = EncodeTypes.HIBCCode128LIC,
+            Data = new PrimaryData
+            {
+                ProductOrCatalogNumber = "12345",
+                LabelerIdentificationCode = "A999",
+                UnitOfMeasureID = 1
+            }
         };
 
-        // Prepare secondary data with the required link character
-        var secondaryCodetext = new HIBCLICSecondaryAndAdditionalDataCodetext
-        {
-            Data = new SecondaryAndAdditionalData { LotNumber = "LOT123" },
-            LinkCharacter = '+'
-        };
-
-        // Combine primary and secondary data into a single codetext object
-        var combinedCodetext = new HIBCLICCombinedCodetext
-        {
-            PrimaryData = primaryData,
-            SecondaryAndAdditionalData = secondaryCodetext.Data
-        };
-
-        // Generate the barcode image and save it as PNG
-        using (var generator = new ComplexBarcodeGenerator(combinedCodetext))
+        // --------------------------------------------------------------------
+        // Generate the barcode image and save it as PNG.
+        // --------------------------------------------------------------------
+        using (var generator = new ComplexBarcodeGenerator(primaryCodetext))
         {
             generator.Save(imagePath, BarCodeImageFormat.Png);
         }
 
-        // Verify that the image file was created successfully
-        if (!File.Exists(imagePath))
+        // --------------------------------------------------------------------
+        // Resolve DecodeType.HIBCLIC via reflection (required for older SDK versions).
+        // --------------------------------------------------------------------
+        var field = typeof(DecodeType).GetField("HIBCLIC");
+        if (field == null)
         {
-            Console.WriteLine("Failed to create barcode image.");
+            Console.WriteLine("DecodeType HIBCLIC is not supported by the current Aspose.BarCode version.");
             return;
         }
+        BaseDecodeType decodeType = (BaseDecodeType)field.GetValue(null);
 
-        // Read the barcode using the HIBC QRLIC decode type
-        using (var reader = new BarCodeReader(imagePath, DecodeType.HIBCQRLIC))
+        // --------------------------------------------------------------------
+        // Read the barcode using the resolved DecodeType.
+        // --------------------------------------------------------------------
+        using (var reader = new BarCodeReader(imagePath, decodeType))
         {
-            foreach (BarCodeResult result in reader.ReadBarCodes())
+            // Enable default checksum validation (optional but typical).
+            reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.Default;
+
+            BarCodeResult[] results = reader.ReadBarCodes();
+
+            if (results.Length == 0)
             {
-                // Simple validation: consider the code text valid if it is not null or empty
-                bool isValid = !string.IsNullOrEmpty(result.CodeText);
-                Console.WriteLine($"Decoded CodeText: {result.CodeText}");
-                Console.WriteLine($"IsCodeTextValid (simulated): {isValid}");
+                Console.WriteLine("No barcode detected.");
+            }
+            else
+            {
+                foreach (var result in results)
+                {
+                    // Simulate IsCodeTextValid by checking for a non‑empty CodeText.
+                    bool isValid = !string.IsNullOrEmpty(result.CodeText);
+                    Console.WriteLine($"CodeType: {result.CodeTypeName}");
+                    Console.WriteLine($"CodeText: {result.CodeText}");
+                    Console.WriteLine($"IsCodeTextValid (simulated): {isValid}");
+                }
             }
         }
 
-        // Clean up temporary files and directory
+        // --------------------------------------------------------------------
+        // Cleanup temporary files and directories.
+        // --------------------------------------------------------------------
         try
         {
-            File.Delete(imagePath);
-            Directory.Delete(tempDir);
+            if (File.Exists(imagePath))
+                File.Delete(imagePath);
+            if (Directory.Exists(tempFolder))
+                Directory.Delete(tempFolder, true);
         }
         catch
         {
-            // Ignore any errors during cleanup
+            // Ignore any cleanup errors.
         }
     }
 }
