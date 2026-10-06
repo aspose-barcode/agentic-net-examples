@@ -1,113 +1,74 @@
-// Title: Determine barcode orientation angle in a BMP image
-// Description: Loads a BMP image, detects all barcodes, and prints each barcode's orientation angle in degrees.
-// Category-Description: This example demonstrates Aspose.BarCode barcode recognition capabilities, focusing on extracting orientation information from detected barcodes. It uses the BarCodeReader, BarCodeResult, and QualitySettings classes to read barcodes from an image, a common requirement for image preprocessing, automated sorting, and quality inspection scenarios. Developers working with barcode detection and analysis often need to know the rotation angle to correctly align or further process the scanned data.
+// Title: Determine Barcode Orientation Angle in a BMP Image
+// Description: This example generates a rotated Code128 barcode, saves it as a BMP file, and then detects the barcode to retrieve its orientation angle.
+// Category-Description: Demonstrates Aspose.BarCode generation and recognition workflow focusing on barcode orientation detection. It uses BarcodeGenerator for creating barcodes, BarCodeReader for scanning, and accesses the Region.Angle property to obtain rotation. Useful for developers needing to verify barcode placement, correct rotation, or process images with rotated barcodes.
 // Prompt: Determine barcode orientation angle for each detected barcode in a BMP image.
-// Tags: barcode orientation, detection, bmp, aspose.barcode, csharp, barcoderecognition
+// Tags: code128, barcode orientation, bmp, generation, recognition, aspose.barcode, rotationangle, detection
 
 using System;
 using System.IO;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.BarCode;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
-/// <summary>
-/// Sample program that detects barcodes in a BMP image and reports their orientation angles.
-/// </summary>
-class Program
+namespace BarcodeOrientationDemo
 {
     /// <summary>
-    /// Entry point. Accepts an optional BMP file path; otherwise generates a rotated barcode sample,
-    /// reads all barcodes, and outputs each barcode's text, symbology, and orientation angle.
+    /// Demonstrates how to generate a rotated barcode, save it as a BMP image,
+    /// and then read the image to obtain the orientation angle of each detected barcode.
     /// </summary>
-    /// <param name="args">Command‑line arguments. First argument may be a path to a BMP image.</param>
-    static void Main(string[] args)
+    class Program
     {
-        // Determine input BMP path: use argument if provided, otherwise generate a sample rotated barcode.
-        string bmpPath;
-        if (args.Length > 0 && File.Exists(args[0]))
+        /// <summary>
+        /// Entry point of the demo. Generates a barcode, reads it back, and prints orientation information.
+        /// </summary>
+        static void Main()
         {
-            bmpPath = args[0];
-        }
-        else
-        {
-            // Create a temporary folder for the sample image.
-            string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeOrientationSample_" + Guid.NewGuid().ToString("N"));
-            Directory.CreateDirectory(tempFolder);
-            bmpPath = Path.Combine(tempFolder, "rotated_barcode.bmp");
+            // Create a unique temporary directory to store the sample image
+            string tempDir = Path.Combine(Path.GetTempPath(), "BarcodeOrientationDemo_" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tempDir);
+            string imagePath = Path.Combine(tempDir, "sample.bmp");
 
-            // Generate a simple Code128 barcode.
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
+            // Generate a rotated Code128 barcode and save it as a BMP file
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
             {
-                // Save barcode to a memory stream as PNG.
-                using (var pngStream = new MemoryStream())
+                generator.Parameters.RotationAngle = 45; // Rotate the barcode by 45 degrees
+                generator.Save(imagePath, BarCodeImageFormat.Bmp);
+            }
+
+            // Verify that the image was created successfully
+            if (!File.Exists(imagePath))
+            {
+                Console.WriteLine("Failed to create barcode image.");
+                return;
+            }
+
+            // Read the barcode from the BMP image and output its orientation angle
+            using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
+            {
+                BarCodeResult[] results = reader.ReadBarCodes();
+                if (results.Length == 0)
                 {
-                    generator.Save(pngStream, BarCodeImageFormat.Png);
-                    pngStream.Position = 0;
-
-                    // Load PNG into Aspose.Drawing.Bitmap.
-                    using (var bitmap = new Bitmap(pngStream))
+                    Console.WriteLine("No barcodes detected.");
+                }
+                else
+                {
+                    foreach (BarCodeResult result in results)
                     {
-                        // Rotate the bitmap by 90 degrees.
-                        bitmap.RotateFlip(RotateFlipType.Rotate90FlipNone);
-
-                        // Save the rotated image as BMP.
-                        bitmap.Save(bmpPath, ImageFormat.Bmp);
+                        Console.WriteLine($"CodeType: {result.CodeTypeName}");
+                        Console.WriteLine($"CodeText: {result.CodeText}");
+                        Console.WriteLine($"Orientation Angle: {result.Region.Angle} degrees");
                     }
                 }
             }
 
-            Console.WriteLine($"Generated rotated barcode image at: {bmpPath}");
-        }
-
-        // Verify the BMP file exists before attempting to read.
-        if (!File.Exists(bmpPath))
-        {
-            Console.WriteLine($"Error: File not found - {bmpPath}");
-            return;
-        }
-
-        // Read barcodes from the BMP image.
-        using (var reader = new BarCodeReader(bmpPath, DecodeType.AllSupportedTypes))
-        {
-            // Optional: set high performance quality settings.
-            reader.QualitySettings = QualitySettings.HighPerformance;
-
-            // Perform barcode detection.
-            BarCodeResult[] results = reader.ReadBarCodes();
-
-            if (results.Length == 0)
-            {
-                Console.WriteLine("No barcodes detected.");
-            }
-            else
-            {
-                // Iterate through each detected barcode and display its details.
-                for (int i = 0; i < results.Length; i++)
-                {
-                    BarCodeResult result = results[i];
-                    double angle = result.Region.Angle; // Orientation angle in degrees.
-
-                    Console.WriteLine($"Barcode {i + 1}:");
-                    Console.WriteLine($"  Code Text : {result.CodeText}");
-                    Console.WriteLine($"  Symbology : {result.CodeTypeName}");
-                    Console.WriteLine($"  Angle     : {angle} degrees");
-                }
-            }
-        }
-
-        // Cleanup generated temporary files if we created them.
-        if (args.Length == 0 && Directory.Exists(Path.GetDirectoryName(bmpPath)))
-        {
+            // Cleanup temporary files and directory
             try
             {
-                File.Delete(bmpPath);
-                Directory.Delete(Path.GetDirectoryName(bmpPath));
+                File.Delete(imagePath);
+                Directory.Delete(tempDir);
             }
             catch
             {
-                // Ignore cleanup errors.
+                // Ignore cleanup errors
             }
         }
     }

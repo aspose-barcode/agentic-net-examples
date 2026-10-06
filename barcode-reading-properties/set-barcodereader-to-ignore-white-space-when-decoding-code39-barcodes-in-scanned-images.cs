@@ -1,8 +1,8 @@
-// Title: Ignore whitespace when decoding Code39 barcodes with BarCodeReader
-// Description: Demonstrates how to configure BarCodeReader to strip whitespace (FNC characters) while decoding a Code39 barcode generated with spaces.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator to create a Code39 barcode and BarCodeReader with BarcodeSettings to modify decoding behavior. Developers often need to read barcodes from scanned images where whitespace or FNC characters should be ignored, making StripFNC a common setting for clean data extraction.
+// Title: Decode Code39 barcode while ignoring whitespace
+// Description: Demonstrates how to generate a Code39 barcode containing spaces and configure BarCodeReader to strip whitespace (FNC) during decoding.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, illustrating the use of BarCodeReader and BarcodeGenerator classes to handle Code39 symbology. Developers often need to read barcodes from scanned images where extra whitespace or FNC characters may be present; setting StripFNC to true enables reliable decoding in such scenarios.
 // Prompt: Set BarCodeReader to ignore white space when decoding Code39 barcodes in scanned images.
-// Tags: code39, whitespace, stripfnc, barcode, generation, recognition, aspose.barcode
+// Tags: code39, whitespace, stripfnc, barcode recognition, aspose.barcode, csharp
 
 using System;
 using System.IO;
@@ -11,64 +11,61 @@ using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Example program that generates a Code39 barcode containing spaces and
-/// decodes it while ignoring whitespace using Aspose.BarCode.
+/// Demonstrates generating a Code39 barcode with whitespace and reading it while ignoring whitespace using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a barcode, decodes it with whitespace
-    /// stripping enabled, and outputs the result to the console.
+    /// Entry point. Generates a barcode, reads it with StripFNC enabled, and outputs the result.
     /// </summary>
     static void Main()
     {
-        // Prepare a temporary folder for the sample files
-        string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeSample_" + Guid.NewGuid().ToString("N"));
+        // Prepare a unique temporary folder for the demo files
+        string tempFolder = Path.Combine(Path.GetTempPath(), "Code39Demo_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
-
-        // Define the path for the generated barcode image
         string barcodePath = Path.Combine(tempFolder, "code39.png");
 
-        // Create a Code39 barcode that contains whitespace characters
-        string codeTextWithSpaces = "A B C";
-
-        // Generate the barcode image and save it as PNG
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code39, codeTextWithSpaces))
+        // Generate a Code39 barcode that includes a space character
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code39, "ABC 123"))
         {
+            // Set the X-dimension (module width) to improve image clarity
+            generator.Parameters.Barcode.XDimension.Pixels = 2f;
+            // Save the generated barcode as a PNG image
             generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        // Verify that the image was created successfully
+        // Verify that the barcode image was successfully created
         if (!File.Exists(barcodePath))
         {
-            Console.WriteLine("Failed to create the barcode image.");
+            Console.WriteLine("Failed to create barcode image.");
             return;
         }
 
-        // Read the barcode while ignoring whitespace (strip FNC characters)
+        // Read the barcode while ignoring whitespace (StripFNC)
         using (var reader = new BarCodeReader(barcodePath, DecodeType.Code39))
         {
-            // Instruct the reader to strip FNC/whitespace characters during decoding
+            // Enable stripping of FNC characters, which removes whitespace for Code39
             reader.BarcodeSettings.StripFNC = true;
 
-            // Perform the decoding
+            // Perform the decoding operation
             BarCodeResult[] results = reader.ReadBarCodes();
 
+            // Output the decoding results
             if (results.Length == 0)
             {
                 Console.WriteLine("No barcode detected.");
             }
             else
             {
-                foreach (BarCodeResult result in results)
+                foreach (var result in results)
                 {
-                    Console.WriteLine($"Decoded Text: {result.CodeText}");
-                    Console.WriteLine($"Symbology: {result.CodeTypeName}");
+                    Console.WriteLine($"CodeType: {result.CodeTypeName}");
+                    Console.WriteLine($"CodeText: {result.CodeText}");
                 }
             }
         }
 
-        // Clean up temporary files (optional)
+        // Clean up temporary files and folder
         try
         {
             File.Delete(barcodePath);
@@ -76,7 +73,7 @@ class Program
         }
         catch
         {
-            // Ignored – cleanup failure should not affect program outcome
+            // Ignored - cleanup failure should not affect program outcome
         }
     }
 }

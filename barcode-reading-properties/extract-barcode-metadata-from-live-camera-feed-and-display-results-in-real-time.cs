@@ -1,124 +1,84 @@
-// Title: Real-time barcode metadata extraction from simulated camera feed
-// Description: Demonstrates generating barcode images, treating them as camera frames, and extracting metadata such as symbology, QR version, and DataMatrix info in real time.
-// Category-Description: This example belongs to the Aspose.BarCode barcode recognition and generation category. It shows how to use BarcodeGenerator to create barcodes, BarCodeReader to recognize them, and how to access extended metadata like QR version and error level. Typical use cases include scanning live video streams, processing captured images, and retrieving detailed barcode information for inventory or tracking systems. Developers often need to generate test images, read multiple symbologies, and handle extended properties.
+// Title: Real-time Barcode Metadata Extraction from Simulated Camera Feed
+// Description: Demonstrates generating a QR code image, reading it with Aspose.BarCode, and displaying barcode metadata such as text, symbology, quality, and orientation.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes and BarCodeReader for decoding them, covering typical scenarios like live‑camera scanning, metadata retrieval, and quality assessment. Developers working with barcode imaging often need to generate test images, extract detailed decoding information, and handle various symbologies in real‑time applications.
 // Prompt: Extract barcode metadata from live camera feed and display results in real time.
-// Tags: barcode, metadata, realtime, camera, qrcode, datamatrix, code128, aspose.barcode, generation, recognition, extendedinfo
+// Tags: barcode, symbology, metadata extraction, real-time, aspose.barcode, generation, recognition, qr, console
 
 using System;
 using System.IO;
-using System.Collections.Generic;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Example program that simulates a live camera feed by generating barcode images,
-/// then reads each image to extract barcode metadata and displays the results in real time.
+/// Sample console application that simulates a live camera feed by generating a QR code,
+/// then reads the barcode and prints its metadata to the console.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates sample barcode frames, reads them,
-    /// outputs detection details, and cleans up temporary resources.
+    /// Entry point of the application.
     /// </summary>
     static void Main()
     {
-        // Create a temporary folder to simulate frames captured from a live camera.
-        string tempFolder = Path.Combine(Path.GetTempPath(), "CameraSim_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
+        // NOTE: Live camera feed is not available in this console environment.
+        // The example simulates a camera capture by generating a barcode image locally.
 
-        // List to hold generated image file paths (simulated frames).
-        List<string> frameFiles = new List<string>();
+        // Create a unique temporary directory to store the generated image.
+        string tempDir = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
 
-        // Define sample barcodes to generate (each will act as a camera frame).
-        var samples = new (BaseEncodeType encodeType, string codeText)[]
+        // Define the full path for the sample image and the text to encode.
+        string imagePath = Path.Combine(tempDir, "sample.png");
+        string codeText = "HelloWorld";
+
+        // ------------------------------------------------------------
+        // Generate a QR code image and save it as PNG.
+        // ------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, codeText))
         {
-            (EncodeTypes.QR, "(01)12345678901234(21)ABC123"),
-            (EncodeTypes.Code128, "Sample12345"),
-            (EncodeTypes.DataMatrix, "DM123456")
-        };
-
-        // Generate barcode images and store their file paths.
-        foreach (var (encodeType, codeText) in samples)
-        {
-            string filePath = Path.Combine(tempFolder, $"{encodeType}_{Guid.NewGuid().ToString("N")}.png");
-            using (var generator = new BarcodeGenerator(encodeType, codeText))
-            {
-                // Set common visual parameters.
-                generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.Below;
-                generator.Parameters.Barcode.CodeTextParameters.Font.Size.Point = 12f;
-                generator.Parameters.Barcode.XDimension.Point = 2f;
-                generator.Parameters.BackColor = Aspose.Drawing.Color.White;
-                generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-
-                // Save the generated barcode image to the temporary folder.
-                generator.Save(filePath, BarCodeImageFormat.Png);
-            }
-            frameFiles.Add(filePath);
+            generator.Save(imagePath, BarCodeImageFormat.Png);
         }
 
-        // Process each simulated "frame" and extract barcode metadata.
-        foreach (string framePath in frameFiles)
+        // ------------------------------------------------------------
+        // Read the barcode from the generated image and output metadata.
+        // ------------------------------------------------------------
+        using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
         {
-            if (!File.Exists(framePath))
+            // Example quality setting (optional) – high performance mode.
+            reader.QualitySettings = QualitySettings.HighPerformance;
+
+            // Perform the decoding operation.
+            BarCodeResult[] results = reader.ReadBarCodes();
+
+            if (results.Length == 0)
             {
-                Console.WriteLine($"File not found: {framePath}");
-                continue;
+                Console.WriteLine("No barcode detected.");
             }
-
-            try
+            else
             {
-                using (var reader = new BarCodeReader(framePath))
+                foreach (var result in results)
                 {
-                    foreach (var result in reader.ReadBarCodes())
-                    {
-                        Console.WriteLine("=== Detected Barcode ===");
-                        Console.WriteLine($"File: {Path.GetFileName(framePath)}");
-                        Console.WriteLine($"Code Text: {result.CodeText}");
-                        Console.WriteLine($"Symbology: {result.CodeTypeName}");
-
-                        // Show extended information for QR codes if available.
-                        if (result.Extended.QR != null)
-                        {
-                            Console.WriteLine($"QR Version: {result.Extended.QR.Version}");
-                            Console.WriteLine($"QR Error Level: {result.Extended.QR.ErrorLevel}");
-                        }
-
-                        // Show extended information for DataMatrix if available.
-                        if (result.Extended.DataMatrix != null)
-                        {
-                            Console.WriteLine("DataMatrix barcode detected.");
-                        }
-
-                        Console.WriteLine();
-                    }
+                    Console.WriteLine($"Code Text: {result.CodeText}");
+                    Console.WriteLine($"Symbology: {result.CodeTypeName}");
+                    Console.WriteLine($"Reading Quality: {result.ReadingQuality}");
+                    Console.WriteLine($"Orientation Angle: {result.Region.Angle}");
+                    // Additional metadata can be accessed via result.Extended if needed.
                 }
             }
-            catch (ArgumentException ex) when (ex.Message.Contains("Image loading failed"))
-            {
-                Console.WriteLine($"Skipping unsupported file: {framePath}");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error processing {framePath}: {ex.Message}");
-            }
         }
 
-        // Clean up temporary files and folder.
+        // ------------------------------------------------------------
+        // Clean up temporary files and directory.
+        // ------------------------------------------------------------
         try
         {
-            foreach (string file in frameFiles)
-            {
-                if (File.Exists(file))
-                {
-                    File.Delete(file);
-                }
-            }
-            Directory.Delete(tempFolder, true);
+            File.Delete(imagePath);
+            Directory.Delete(tempDir, true);
         }
-        catch (Exception cleanupEx)
+        catch
         {
-            Console.WriteLine($"Cleanup warning: {cleanupEx.Message}");
+            // Ignored – cleanup failure should not affect program exit.
         }
     }
 }

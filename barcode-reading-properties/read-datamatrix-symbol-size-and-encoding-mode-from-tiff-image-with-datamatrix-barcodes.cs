@@ -1,69 +1,57 @@
 // Title: Read DataMatrix Symbol Size and Encoding Mode from a TIFF Image
-// Description: Demonstrates loading a TIFF image containing DataMatrix barcodes, detecting them, and retrieving the barcode region (size). It also shows the current limitation regarding encoding mode retrieval via the Aspose.BarCode API.
-// Category-Description: This example belongs to the barcode recognition category of Aspose.BarCode, illustrating how to use BarCodeReader to decode DataMatrix symbols from raster images. It covers image loading, specifying symbology, iterating over detection results, and extracting geometric information such as region bounds. Developers commonly use these techniques for locating barcodes in documents, analyzing symbol dimensions, or extracting additional metadata when available.
+// Description: Demonstrates how to load a TIFF file containing DataMatrix barcodes and attempt to retrieve barcode details using Aspose.BarCode's recognition API.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, illustrating the use of BarCodeReader with DecodeType.DataMatrix to extract information from images. Developers often need to read barcode data from scanned documents or multi-page TIFFs, and typical use cases involve retrieving the encoded text and barcode type. While the API provides basic recognition results, advanced properties such as symbol size (version) and encoding mode are only available during generation.
 // Prompt: Read DataMatrix symbol size and encoding mode from a TIFF image with DataMatrix barcodes.
-// Tags: datamatrix, barcode recognition, tiff, symbol size, encoding mode, aspose.barcode, c#
+// Tags: datamatrix, barcode, recognition, tiff, aspnet, aspnetcore, aspose.barcode, symbolsize, encodingmode
 
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Provides an example that reads DataMatrix barcodes from a TIFF image,
-/// outputs their text, symbology, region size, and notes the unavailability of encoding mode information.
+/// Example program that reads DataMatrix barcodes from a TIFF file and displays basic recognition results.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Loads the image, detects DataMatrix barcodes,
-    /// and prints details about each detected symbol.
+    /// Entry point. Loads the TIFF, checks existence, reads DataMatrix barcodes, and prints code text and type.
     /// </summary>
     static void Main()
     {
-        // Path to the TIFF image containing DataMatrix barcodes
-        string imagePath = Path.Combine(Directory.GetCurrentDirectory(), "datamatrix.tif");
+        // Build the full path to the sample TIFF file located in the current directory
+        string tiffPath = Path.Combine(Directory.GetCurrentDirectory(), "sample.tif");
 
-        // Verify that the file exists
-        if (!File.Exists(imagePath))
+        // Verify that the file exists before attempting to read it
+        if (!File.Exists(tiffPath))
         {
-            Console.WriteLine($"File not found: {imagePath}");
+            Console.WriteLine($"File not found: {tiffPath}");
             return;
         }
 
-        // Create a BarCodeReader for DataMatrix symbology
-        using (var reader = new BarCodeReader(imagePath, DecodeType.DataMatrix))
+        // Initialize a BarCodeReader configured to detect only DataMatrix barcodes
+        using (BarCodeReader reader = new BarCodeReader(tiffPath, DecodeType.DataMatrix))
         {
-            // Read all barcodes from the image
+            // Perform the recognition and retrieve all detected barcodes
             BarCodeResult[] results = reader.ReadBarCodes();
 
+            // If no barcodes were found, inform the user and exit
             if (results.Length == 0)
             {
-                Console.WriteLine("No DataMatrix barcode detected in the image.");
+                Console.WriteLine("No DataMatrix barcode detected.");
                 return;
             }
 
-            foreach (var result in results)
+            // Iterate through each recognized barcode and display its details
+            foreach (BarCodeResult result in results)
             {
-                // Ensure the detected barcode is a DataMatrix
-                if (!string.Equals(result.CodeTypeName, "DataMatrix", StringComparison.OrdinalIgnoreCase))
-                {
-                    continue;
-                }
+                Console.WriteLine($"CodeText: {result.CodeText}");
+                Console.WriteLine($"CodeType: {result.CodeTypeName}");
 
-                Console.WriteLine("=== DataMatrix Barcode Detected ===");
-                Console.WriteLine($"Code Text : {result.CodeText}");
-                Console.WriteLine($"Symbology : {result.CodeTypeName}");
-
-                // Region (size) of the detected barcode in the image
-                var bounds = result.Region.Rectangle;
-                Console.WriteLine($"Region X      : {bounds.X}");
-                Console.WriteLine($"Region Y      : {bounds.Y}");
-                Console.WriteLine($"Region Width  : {bounds.Width}");
-                Console.WriteLine($"Region Height : {bounds.Height}");
-
-                // Encoding mode is not exposed via the Aspose.BarCode recognition API
-                Console.WriteLine("Encoding Mode : Not available via API");
+                // Note: The Aspose.BarCode API does not expose DataMatrix symbol size (version) or
+                // encoding mode in the recognition results. These details are only available
+                // during generation via generator.Parameters.Barcode.DataMatrix.Version and
+                // generator.Parameters.Barcode.DataMatrix.EncodeMode.
+                Console.WriteLine("Symbol size and encoding mode are not available via the reader API.");
                 Console.WriteLine();
             }
         }

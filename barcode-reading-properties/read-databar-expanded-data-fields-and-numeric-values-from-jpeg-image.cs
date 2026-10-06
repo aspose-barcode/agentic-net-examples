@@ -1,8 +1,8 @@
-// Title: Read DataBar Expanded barcode data and numeric values from a JPEG image
-// Description: Demonstrates how to load a JPEG file, detect a DataBar Expanded barcode, and extract its code text along with any extended numeric fields.
-// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, showcasing the use of BarCodeReader with a specific BaseDecodeType (DatabarExpanded). It illustrates typical scenarios such as scanning product images, extracting GS1 DataBar Expanded information, and handling extended properties via reflection. Developers working with barcode scanning, inventory systems, or retail applications often need to read and process these symbologies using the Aspose.BarCode API.
-/// Prompt: Read DataBar expanded data fields and numeric values from a JPEG image.
-// Tags: databar expanded, barcode recognition, jpeg, aspose.barcode, c#, reading extended data
+// Title: Read DataBar Expanded barcode fields from a JPEG image
+// Description: Demonstrates how to load a JPEG file and extract DataBar Expanded barcode text and extended fields using Aspose.BarCode.
+// Category-Description: This example belongs to the barcode recognition category of Aspose.BarCode. It shows how to use BarCodeReader with DecodeType.DatabarExpanded to detect DataBar Expanded symbology, retrieve the decoded text, and access any extended data fields. Developers working with retail or logistics scanning often need to read DataBar Expanded barcodes from images for product identification and pricing.
+// Prompt: Read DataBar expanded data fields and numeric values from a JPEG image.
+// Tags: databar, expanded, barcode, recognition, jpeg, aspose.barcode, csharp
 
 using System;
 using System.IO;
@@ -10,90 +10,57 @@ using Aspose.BarCode;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Example program that reads DataBar Expanded barcode data from a JPEG image using Aspose.BarCode.
+/// Demonstrates reading DataBar Expanded barcode data from a JPEG image using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Loads the image, decodes DataBar Expanded barcodes, and prints code text and extended fields.
+    /// Entry point. Accepts an optional image path argument, reads DataBar Expanded barcodes, and prints their type, text, and any extended fields.
     /// </summary>
-    static void Main()
+    static void Main(string[] args)
     {
-        // Path to the JPEG image containing a DataBar Expanded barcode
-        string imagePath = Path.Combine(Directory.GetCurrentDirectory(), "databar_expanded.jpg");
+        // Determine the image file path: use first argument if provided, otherwise default to "databar.jpg".
+        string imagePath = args.Length > 0 ? args[0] : "databar.jpg";
 
-        // Verify that the file exists before attempting to read it
+        // Verify that the specified file exists before attempting to read it.
         if (!File.Exists(imagePath))
         {
-            Console.WriteLine($"Image file not found: {imagePath}");
+            Console.WriteLine($"File not found: {imagePath}");
             return;
         }
 
-        // Decode only DataBar Expanded symbology to improve performance
-        BaseDecodeType decodeType = DecodeType.DatabarExpanded;
-
-        // Initialize the barcode reader with the image path and the specific decode type
-        using (var reader = new BarCodeReader(imagePath, decodeType))
+        try
         {
-            // Read all barcodes that match the specified symbology
-            BarCodeResult[] results = reader.ReadBarCodes();
-
-            // Handle case where no matching barcode is found
-            if (results == null || results.Length == 0)
+            // Initialize the barcode reader for DataBar Expanded symbology.
+            using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.DatabarExpanded))
             {
-                Console.WriteLine("No DataBar Expanded barcode detected.");
-                return;
-            }
+                bool anyFound = false;
 
-            // Iterate through each detected barcode result
-            foreach (var result in results)
-            {
-                // Output the primary decoded text
-                Console.WriteLine($"Code Text: {result.CodeText}");
-
-                // Access extended data via reflection (covers any available extended properties)
-                var extended = result.Extended;
-                if (extended != null)
+                // Iterate through all detected barcodes in the image.
+                foreach (BarCodeResult result in reader.ReadBarCodes())
                 {
-                    var extProps = extended.GetType().GetProperties();
-                    bool anyExtended = false;
+                    anyFound = true;
 
-                    foreach (var prop in extProps)
-                    {
-                        var extValue = prop.GetValue(extended);
-                        if (extValue == null) continue;
+                    // Output basic barcode information.
+                    Console.WriteLine($"CodeTypeName: {result.CodeTypeName}");
+                    Console.WriteLine($"CodeText: {result.CodeText}");
 
-                        anyExtended = true;
-                        Console.WriteLine($"Extended {prop.Name}:");
-
-                        var subProps = extValue.GetType().GetProperties();
-                        foreach (var subProp in subProps)
-                        {
-                            try
-                            {
-                                var subVal = subProp.GetValue(extValue);
-                                Console.WriteLine($"  {subProp.Name}: {subVal}");
-                            }
-                            catch
-                            {
-                                // Ignore unreadable properties
-                            }
-                        }
-                    }
-
-                    if (!anyExtended)
-                    {
-                        Console.WriteLine("No extended DataBar Expanded information available.");
-                    }
-                }
-                else
-                {
-                    Console.WriteLine("No extended DataBar Expanded information available.");
+                    // If the API provides extended DataBar fields, they can be accessed here.
+                    // Example (uncomment and adjust when available):
+                    // Console.WriteLine($"DataBar Expanded Field: {result.Extended.DataBar?.SomeField}");
                 }
 
-                // Separator for readability between multiple results
-                Console.WriteLine(new string('-', 40));
+                // Inform the user if no DataBar Expanded barcodes were found.
+                if (!anyFound)
+                {
+                    Console.WriteLine("No DataBar Expanded barcode detected in the image.");
+                }
             }
+        }
+        catch (Exception ex)
+        {
+            // Report any errors that occur during barcode reading.
+            Console.WriteLine($"Error during barcode reading: {ex.Message}");
         }
     }
 }

@@ -1,12 +1,12 @@
-// Title: Store barcode region polygon points in a spatial database (JSON example)
-// Description: Generates a QR barcode, reads its region polygon points, and saves them to a JSON file representing a spatial database for later geometric analysis.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It demonstrates how to use BarcodeGenerator to create a barcode, BarCodeReader to extract the barcode region polygon, and standard .NET serialization to store geometric data. Developers working with spatial databases, GIS, or geometric analysis often need to capture precise barcode locations for mapping, collision detection, or area calculations.
+// Title: Store barcode region polygon points for spatial analysis
+// Description: Demonstrates generating a QR barcode, reading its region polygon points, and saving them as JSON to simulate storage in a spatial database.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator, BarCodeReader, and related result classes to extract geometric region data. Developers often need to persist barcode location information for GIS or spatial queries, typically using databases with spatial extensions.
 // Prompt: Store barcode region polygon points in a spatial database for later geometric analysis.
-// Tags: qr, barcode, region, polygon, spatial, json, aspose.barcode, generation, recognition, geometry
+// Tags: qr, barcode generation, barcode recognition, json, spatial database, aspose.barcode, aspose.drawing
 
 using System;
-using System.IO;
 using System.Collections.Generic;
+using System.IO;
 using System.Text.Json;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
@@ -15,88 +15,92 @@ using Aspose.Drawing;
 
 /// <summary>
 /// Demonstrates generating a QR barcode, extracting its region polygon points,
-/// and persisting them for spatial analysis.
+/// and persisting the data for later geometric analysis.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a barcode, reads region points,
-    /// and writes them to a JSON file.
+    /// Entry point of the example. Generates a barcode, reads its region points,
+    /// and stores the information in a JSON file (simulating a spatial database).
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder for this demo
-        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
+        // --------------------------------------------------------------------
+        // Prepare a temporary working directory for generated files.
+        // --------------------------------------------------------------------
+        string workDir = Path.Combine(Path.GetTempPath(), "BarcodeRegionDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(workDir);
 
-        // Path for the generated barcode image
-        string barcodePath = Path.Combine(tempFolder, "sample.png");
-
-        // Generate a sample QR barcode and save it as PNG
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
+        // --------------------------------------------------------------------
+        // Generate a sample QR barcode image and save it as PNG.
+        // --------------------------------------------------------------------
+        string barcodeFile = Path.Combine(workDir, "sample_qr.png");
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Hello Aspose"))
         {
-            // Optional: set module size (X dimension) for better readability
-            generator.Parameters.Barcode.XDimension.Point = 2f;
-            generator.Save(barcodePath, BarCodeImageFormat.Png);
+            generator.Save(barcodeFile, BarCodeImageFormat.Png);
         }
 
-        // List to hold region records extracted from the barcode image
-        var records = new List<BarcodeRegionRecord>();
-
-        // Read the barcode image and extract region polygon points
-        using (var reader = new BarCodeReader(barcodePath, DecodeType.AllSupportedTypes))
+        // --------------------------------------------------------------------
+        // Read the barcode image, collect region polygon points for each result.
+        // --------------------------------------------------------------------
+        var records = new List<BarcodeRecord>();
+        if (File.Exists(barcodeFile))
         {
-            // According to the API rules, call SetBarCodeImage after construction
-            reader.SetBarCodeImage(barcodePath);
-
-            // Iterate through all detected barcodes (only one in this demo)
-            foreach (var result in reader.ReadBarCodes())
+            using (var reader = new BarCodeReader(barcodeFile, DecodeType.QR, DecodeType.Code128))
             {
-                // Collect points of the barcode region polygon
-                var points = new List<PointDto>();
-                foreach (var pt in result.Region.Points)
+                foreach (BarCodeResult result in reader.ReadBarCodes())
                 {
-                    points.Add(new PointDto { X = pt.X, Y = pt.Y });
-                }
+                    var points = new List<PointDto>();
+                    foreach (Point pt in result.Region.Points)
+                    {
+                        points.Add(new PointDto { X = pt.X, Y = pt.Y });
+                    }
 
-                // Create a record that captures the barcode text, symbology, and geometry
-                var record = new BarcodeRegionRecord
-                {
-                    CodeText = result.CodeText,
-                    Symbology = result.CodeTypeName,
-                    Points = points
-                };
-                records.Add(record);
+                    records.Add(new BarcodeRecord
+                    {
+                        FileName = barcodeFile,
+                        CodeText = result.CodeText,
+                        CodeType = result.CodeTypeName,
+                        Points = points
+                    });
+                }
             }
         }
+        else
+        {
+            Console.WriteLine($"Barcode image not found: {barcodeFile}");
+        }
 
-        // Serialize records to a JSON file (acts as a stand‑in for a spatial DB)
-        string jsonPath = Path.Combine(tempFolder, "barcode_regions.json");
+        // --------------------------------------------------------------------
+        // Serialize the collected region data to JSON (simulating a spatial DB).
+        // --------------------------------------------------------------------
+        string jsonPath = Path.Combine(workDir, "barcode_regions.json");
         var jsonOptions = new JsonSerializerOptions { WriteIndented = true };
         string json = JsonSerializer.Serialize(records, jsonOptions);
         File.WriteAllText(jsonPath, json);
 
-        // Output paths for verification
-        Console.WriteLine($"Barcode image saved to: {barcodePath}");
         Console.WriteLine($"Region data saved to: {jsonPath}");
+        // In a real scenario, replace the JSON storage with a spatial database (e.g., SQLite with spatial extensions).
     }
 }
 
 /// <summary>
-/// Simple DTO representing a point (X, Y) in the barcode region polygon.
+/// Represents a barcode record containing file information, decoded text,
+/// symbology type, and the polygon points of its detected region.
 /// </summary>
-public class PointDto
+class BarcodeRecord
 {
-    public float X { get; set; }
-    public float Y { get; set; }
+    public string FileName { get; set; }
+    public string CodeText { get; set; }
+    public string CodeType { get; set; }
+    public List<PointDto> Points { get; set; }
 }
 
 /// <summary>
-/// Record representing a barcode region polygon, including its text, symbology, and vertex points.
+/// Simple DTO for a point in the barcode region polygon.
 /// </summary>
-public class BarcodeRegionRecord
+class PointDto
 {
-    public string CodeText { get; set; }
-    public string Symbology { get; set; }
-    public List<PointDto> Points { get; set; }
+    public int X { get; set; }
+    public int Y { get; set; }
 }

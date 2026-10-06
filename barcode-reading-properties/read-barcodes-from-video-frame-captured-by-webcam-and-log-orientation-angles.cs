@@ -1,64 +1,74 @@
-// Title: Read barcodes from a webcam frame and log orientation angles
-// Description: Demonstrates how to use Aspose.BarCode to detect any supported barcode type in an image captured from a webcam and output each barcode's decoded text, type, and orientation angle.
-// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category. It showcases the BarCodeReader class with DecodeType.AllSupportedTypes to automatically recognize multiple symbologies in a single image. Typical use cases include processing video frames from cameras, scanning documents, or analyzing images where barcode orientation varies. Developers often need to retrieve orientation data to correct image alignment or to support downstream processing pipelines.
+// Title: Read barcode from a generated image and log its orientation angle
+// Description: Generates a QR code image, reads it back using Aspose.BarCode, and logs the barcode type, text, and detected angle, simulating a video frame capture.
+// Category-Description: This example demonstrates the core Aspose.BarCode workflow of barcode generation and recognition. It uses BarcodeGenerator to create a barcode image and BarCodeReader to decode it, exposing properties such as CodeTypeName, CodeText, and Region.Angle. Developers working with image or video streams often need to generate test barcodes and extract orientation information for alignment or quality‑control purposes. The snippet showcases typical API classes (BarcodeGenerator, BarCodeReader, BarCodeResult) and common use cases like QR code handling and angle detection, making it a useful reference for quick prototyping or CI‑based validation of barcode processing pipelines.
 // Prompt: Read barcodes from a video frame captured by a webcam and log orientation angles.
-// Tags: barcode, reading, orientation, webcam, aspose.barcode, decode, image, csharp
+// Tags: barcode, qr, generation, recognition, orientation, angle, aspose.barcode, c#, console
 
 using System;
 using System.IO;
 using Aspose.BarCode;
+using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Sample program that reads barcodes from an image (simulating a webcam frame) and prints
-/// each barcode's text, type, and orientation angle.
+/// Demonstrates barcode generation, recognition, and angle extraction using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
+    /// Entry point of the example. Generates a QR code, reads it, and prints detection details.
     /// </summary>
     static void Main()
     {
-        // NOTE: Direct webcam capture requires additional libraries not available in this runner.
-        // For demonstration, we use a sample image file that represents a captured video frame.
-        // Replace "frame.jpg" with the path to an actual webcam snapshot when running in a real environment.
-        string imagePath = "frame.jpg";
+        // Create a temporary folder for the demo files
+        string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
+        string barcodeFile = Path.Combine(tempFolder, "sample.png");
 
-        // Verify that the image file exists before attempting to read it.
-        if (!File.Exists(imagePath))
+        // Generate a sample QR barcode image
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Hello Aspose"))
         {
-            Console.WriteLine($"Image file not found: {imagePath}");
+            generator.Save(barcodeFile, BarCodeImageFormat.Png);
+        }
+
+        // Verify the generated file exists
+        if (!File.Exists(barcodeFile))
+        {
+            Console.WriteLine("Failed to create barcode image.");
             return;
         }
 
-        // Create a barcode reader that attempts to detect any supported barcode type.
-        using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
+        // Read barcodes from the generated image (simulating a captured video frame)
+        using (var reader = new BarCodeReader(barcodeFile, DecodeType.AllSupportedTypes))
         {
-            // Read all barcodes found in the image.
             BarCodeResult[] results = reader.ReadBarCodes();
-
-            // If no barcodes were detected, inform the user.
             if (results.Length == 0)
             {
-                Console.WriteLine("No barcodes detected in the image.");
+                Console.WriteLine("No barcodes detected.");
             }
             else
             {
-                // Iterate through each detected barcode and log its details.
                 foreach (BarCodeResult result in results)
                 {
-                    // Retrieve the orientation angle of the barcode region.
-                    double angle = result.Region.Angle;
-
-                    // Output decoded text, barcode type, and orientation angle.
-                    Console.WriteLine($"CodeText: {result.CodeText}");
+                    // Output barcode type, decoded text, and detected orientation angle
                     Console.WriteLine($"CodeType: {result.CodeTypeName}");
-                    Console.WriteLine($"Orientation Angle: {angle} degrees");
-                    Console.WriteLine(new string('-', 40));
+                    Console.WriteLine($"CodeText: {result.CodeText}");
+                    Console.WriteLine($"Angle: {result.Region.Angle}");
                 }
             }
+        }
+
+        // Clean up temporary files
+        try
+        {
+            File.Delete(barcodeFile);
+            Directory.Delete(tempFolder);
+        }
+        catch
+        {
+            // Ignored - cleanup failure should not affect program outcome
         }
     }
 }

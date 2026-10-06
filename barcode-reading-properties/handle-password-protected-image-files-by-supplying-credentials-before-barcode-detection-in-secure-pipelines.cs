@@ -1,8 +1,8 @@
-// Title: Detect Barcodes in Password‑Protected PDF Files
-// Description: Demonstrates opening a password‑protected PDF, rendering each page to an image, and scanning for barcodes using Aspose.BarCode.
-// Category-Description: Shows how to work with secured PDF documents in the Aspose.BarCode suite. The example uses Aspose.Pdf Document and PdfConverter to render pages, then Aspose.BarCode.BarCodeRecognition.BarCodeReader to detect all supported barcode symbologies. Typical scenarios include automated processing pipelines where PDFs are encrypted and need barcode extraction without manual intervention.
+// Title: Detect barcodes in password‑protected PDF files
+// Description: Demonstrates opening a secured PDF with a password, converting each page to an image, and reading any barcodes present.
+// Category-Description: This example belongs to the Aspose.BarCode for .NET barcode recognition category, illustrating how to work with protected documents using Aspose.Pdf and Aspose.BarCode. It shows the use of Document, PdfConverter, and BarCodeReader classes to extract barcodes from PDFs in secure processing pipelines, a common requirement for automated invoice or ticket processing systems.
 // Prompt: Handle password‑protected image files by supplying credentials before barcode detection in secure pipelines.
-// Tags: pdf, password, barcode detection, aspose.barcode, aspose.pdf, image rendering, decodeall
+// Tags: pdf, password, barcode detection, aspnet, aspose.barcode, aspose.pdf, decode, image conversion
 
 using System;
 using System.IO;
@@ -12,101 +12,72 @@ using Aspose.Pdf.Facades;
 
 /// <summary>
 /// Example program that opens a password‑protected PDF, converts each page to an image,
-/// and reads any barcodes present using Aspose.BarCode.
+/// and reads any barcodes found on those pages using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Specifies the PDF path and password, then starts processing.
+    /// Entry point of the application.
     /// </summary>
     static void Main()
     {
-        // Sample PDF path and password. Adjust as needed.
-        string pdfPath = "protected_sample.pdf";
+        // Path to the password‑protected PDF file
+        string pdfPath = "protected.pdf";
+
+        // Password required to open the PDF
         string password = "secret";
 
-        ProcessPasswordProtectedPdf(pdfPath, password);
-    }
-
-    /// <summary>
-    /// Opens the PDF with the supplied password, renders each page to an image,
-    /// and scans the image for barcodes of any supported type.
-    /// </summary>
-    /// <param name="pdfPath">Full path to the PDF file.</param>
-    /// <param name="password">Password required to open the PDF.</param>
-    static void ProcessPasswordProtectedPdf(string pdfPath, string password)
-    {
-        // Verify the file exists before attempting to open it.
+        // Verify that the PDF file exists before proceeding
         if (!File.Exists(pdfPath))
         {
             Console.WriteLine($"File not found: {pdfPath}");
             return;
         }
 
-        // Attempt to open the PDF using the provided password.
-        try
+        // Open the PDF document using the supplied password
+        using (var pdfDocument = new Document(pdfPath, password))
         {
-            using (var pdfDocument = new Document(pdfPath, password))
+            // Initialize a PDF‑to‑image converter with barcode‑optimization enabled
+            using (var pdfConverter = new PdfConverter(pdfDocument))
             {
-                // Initialize a converter to render PDF pages as images.
-                using (var pdfConverter = new PdfConverter(pdfDocument))
+                pdfConverter.RenderingOptions.BarcodeOptimization = true;
+
+                // Iterate through each page of the PDF
+                int pageCount = pdfDocument.Pages.Count;
+                for (int pageNumber = 1; pageNumber <= pageCount; pageNumber++)
                 {
-                    // Enable barcode optimization to improve detection speed/accuracy.
-                    pdfConverter.RenderingOptions.BarcodeOptimization = true;
+                    // Configure the converter to process a single page
+                    pdfConverter.StartPage = pageNumber;
+                    pdfConverter.EndPage = pageNumber;
+                    pdfConverter.DoConvert();
 
-                    int pageCount = pdfDocument.Pages.Count;
-                    for (int pageNumber = 1; pageNumber <= pageCount; pageNumber++)
+                    // Capture the rendered page as an image stream
+                    using (var imageStream = new MemoryStream())
                     {
-                        // Set the converter to process only the current page.
-                        pdfConverter.StartPage = pageNumber;
-                        pdfConverter.EndPage = pageNumber;
+                        pdfConverter.GetNextImage(imageStream);
+                        imageStream.Position = 0; // Reset stream position for reading
 
-                        // Perform the conversion for the selected page.
-                        pdfConverter.DoConvert();
-
-                        // Retrieve the rendered image into a memory stream.
-                        using (var imageStream = new MemoryStream())
+                        // Create a barcode reader for the image stream, supporting all barcode types
+                        using (var reader = new BarCodeReader(imageStream, DecodeType.AllSupportedTypes))
                         {
-                            pdfConverter.GetNextImage(imageStream);
-                            imageStream.Position = 0; // Reset stream position for reading.
+                            bool anyFound = false;
 
-                            // Attempt to read barcodes from the rendered image.
-                            try
+                            // Enumerate all detected barcodes on the current page
+                            foreach (var result in reader.ReadBarCodes())
                             {
-                                using (var reader = new BarCodeReader(imageStream, DecodeType.AllSupportedTypes))
-                                {
-                                    bool anyFound = false;
-                                    foreach (var result in reader.ReadBarCodes())
-                                    {
-                                        anyFound = true;
-                                        Console.WriteLine($"Page {pageNumber}: Type = {result.CodeTypeName}, Text = {result.CodeText}");
-                                    }
+                                anyFound = true;
+                                Console.WriteLine($"Page {pageNumber}: Type = {result.CodeTypeName}, Text = {result.CodeText}");
+                            }
 
-                                    if (!anyFound)
-                                    {
-                                        Console.WriteLine($"Page {pageNumber}: No barcodes detected.");
-                                    }
-                                }
-                            }
-                            // Specific handling for image loading failures.
-                            catch (ArgumentException ex) when (ex.Message.Contains("Image loading failed"))
+                            // Inform the user if no barcodes were detected on this page
+                            if (!anyFound)
                             {
-                                Console.WriteLine($"Page {pageNumber}: Unable to load rendered image. {ex.Message}");
-                            }
-                            // General exception handling for barcode reading errors.
-                            catch (Exception ex)
-                            {
-                                Console.WriteLine($"Page {pageNumber}: Barcode reading error. {ex.Message}");
+                                Console.WriteLine($"Page {pageNumber}: No barcodes detected.");
                             }
                         }
                     }
                 }
             }
-        }
-        // Handle errors opening the PDF (e.g., incorrect password).
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Failed to open PDF. Ensure the password is correct. Error: {ex.Message}");
         }
     }
 }

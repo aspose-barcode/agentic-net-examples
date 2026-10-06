@@ -1,8 +1,8 @@
 // Title: Read barcode text and symbology from a JPEG image using BarCodeReader
-// Description: Demonstrates generating a QR barcode, saving it as a JPEG, and then extracting the barcode text and symbology type from the image with Aspose.BarCode's BarCodeReader.
-// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category. It showcases the use of core API classes such as BarcodeGenerator for barcode creation, BarCodeReader for decoding, and QualitySettings for performance tuning. Typical scenarios include reading barcodes from scanned documents, images, or camera captures, where developers need to quickly obtain the encoded data and its symbology.
+// Description: Demonstrates how to generate a QR code image, save it as JPEG, and then read the barcode text and symbology type from that image using Aspose.BarCode's BarCodeReader.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, showcasing the use of BarCodeReader, BarCodeResult, and DecodeType to extract information from images. Typical use cases include scanning product labels, documents, or any image containing barcodes to retrieve encoded data. Developers often need to generate test images, read multiple barcode types, and handle temporary files, which this snippet illustrates.
 // Prompt: Read barcode code text and symbology type from a JPEG image using BarCodeReader.
-// Tags: barcode, symbology, read, jpeg, aspose.barcode, barcodereader, generation, qr, csharp
+// Tags: barcode, symbology, read, jpeg, aspose.barcode, barcodereader, decode, qr, generation
 
 using System;
 using System.IO;
@@ -11,71 +11,63 @@ using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Sample program that creates a QR barcode image and reads its content using Aspose.BarCode.
+/// Example program that creates a QR code image, saves it as JPEG, and reads the barcode data from the image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a QR code, saves it as JPEG, then reads and displays the barcode text and type.
+    /// Entry point of the application. Generates a sample QR code, reads it back, and outputs the decoded information.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder for the demo
-        string tempFolder = Path.Combine(Path.GetTempPath(), "ReadBarcodeDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
+        // Create a unique temporary directory to store the sample image
+        string tempDir = Path.Combine(Path.GetTempPath(), "BarcodeReadDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        string imagePath = Path.Combine(tempDir, "sample.jpg");
 
-        // Path to the sample JPEG image
-        string imagePath = Path.Combine(tempFolder, "sample.jpg");
-
-        // Generate a sample QR barcode and save it as JPEG
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "HelloWorld"))
+        // Generate a sample QR code image and save it as JPEG
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "SampleText"))
         {
+            generator.Parameters.Barcode.XDimension.Pixels = 4f;
             generator.Save(imagePath, BarCodeImageFormat.Jpeg);
         }
 
-        // Verify that the image file exists before attempting to read
+        // Verify that the image was created successfully
         if (!File.Exists(imagePath))
         {
-            Console.WriteLine($"Image file not found: {imagePath}");
+            Console.WriteLine("Failed to create barcode image.");
             return;
         }
 
-        // Read barcodes from the JPEG image (all supported symbologies)
-        BaseDecodeType decodeType = DecodeType.AllSupportedTypes;
-        using (var reader = new BarCodeReader(imagePath, decodeType))
+        // Read all supported barcodes from the JPEG image
+        using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
         {
-            // Set high‑performance quality settings (optional)
-            reader.QualitySettings = QualitySettings.HighPerformance;
-
-            // Perform the decoding operation
             BarCodeResult[] results = reader.ReadBarCodes();
-
             if (results.Length == 0)
             {
-                Console.WriteLine("No barcodes detected.");
+                Console.WriteLine("No barcode detected.");
             }
             else
             {
-                // Output each detected barcode's details
+                // Output each detected barcode's text and type information
                 foreach (BarCodeResult result in results)
                 {
-                    Console.WriteLine($"Code Text   : {result.CodeText}");
-                    Console.WriteLine($"Symbology   : {result.CodeTypeName}");
-                    Console.WriteLine($"Quality (%) : {result.ReadingQuality}");
-                    Console.WriteLine(new string('-', 30));
+                    Console.WriteLine($"CodeText: {result.CodeText}");
+                    Console.WriteLine($"CodeType: {result.CodeType}");
+                    Console.WriteLine($"CodeTypeName: {result.CodeTypeName}");
                 }
             }
         }
 
-        // Clean up temporary files (optional)
+        // Clean up temporary files and directory
         try
         {
             File.Delete(imagePath);
-            Directory.Delete(tempFolder);
+            Directory.Delete(tempDir, true);
         }
         catch
         {
-            // Ignored - cleanup failure should not affect demo execution
+            // Ignored – cleanup failures are non‑critical for this demo
         }
     }
 }

@@ -1,112 +1,110 @@
-// Title: Limit Barcode Detection to Three per Image
-// Description: Demonstrates generating multiple Code128 barcodes, combining them into a single image, and reading up to three barcodes from that image to reduce processing overhead.
-// Category-Description: This example belongs to the Aspose.BarCode image processing and recognition category. It shows how to use BarcodeGenerator to create barcodes, Aspose.Drawing to compose images, and BarCodeReader to detect barcodes. Developers often need to batch‑process barcodes while limiting the number of detections per image for performance reasons.
+// Title: Limit Barcode Decoding to Three per Image
+// Description: Demonstrates generating multiple Code128 barcodes, combining them into a single image, and decoding up to three barcodes from that image to reduce processing overhead.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It shows how to use BarcodeGenerator to create barcodes, Aspose.Drawing to compose a combined image, and BarCodeReader to extract barcode data. Typical use cases include batch barcode creation, image composition, and performance‑optimized scanning where only a subset of barcodes needs to be processed. Developers often need to limit the number of decoded symbols to avoid unnecessary computation, especially in high‑throughput scenarios.
 // Prompt: Set maximum number of barcodes per image to three to limit processing overhead.
-// Tags: barcode generation, barcode recognition, code128, limit detection, composite image, aspose.barcode, aspose.drawing
+// Tags: barcode, code128, generation, recognition, limit, aspose.barcode, image processing, c#
 
 using System;
 using System.IO;
 using System.Collections.Generic;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Sample program that creates several Code128 barcodes, merges them into one image,
-/// and reads a maximum of three barcodes from the combined image.
+/// Generates several Code128 barcodes, merges them into one image, and reads a maximum of three barcodes from the combined image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
+    /// Entry point of the example. Creates temporary files, builds a combined barcode image, reads up to three barcodes, and cleans up resources.
     /// </summary>
     static void Main()
     {
-        // Create a temporary folder for sample files
-        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeSample_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
+        // Create a temporary folder for generated images
+        string tempDir = Path.Combine(Path.GetTempPath(), "BarCodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        string combinedPath = Path.Combine(tempDir, "combined.png");
 
-        // Prepare sample barcode texts
+        // Sample texts for multiple barcodes
         List<string> texts = new List<string> { "ABC123", "DEF456", "GHI789", "JKL012", "MNO345" };
         List<Bitmap> barcodeBitmaps = new List<Bitmap>();
 
-        // Generate individual barcode images and keep them in memory
+        // Generate individual barcode images
         foreach (string txt in texts)
         {
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, txt))
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, txt))
             {
-                using (Bitmap bmp = generator.GenerateBarCodeImage())
-                {
-                    // Clone to keep after disposing generator
-                    barcodeBitmaps.Add((Bitmap)bmp.Clone());
-                }
+                // Set X-dimension to control barcode width
+                generator.Parameters.Barcode.XDimension.Point = 2f;
+                Bitmap bmp = generator.GenerateBarCodeImage();
+                barcodeBitmaps.Add(bmp);
             }
         }
 
-        // Determine combined image size (place barcodes side by side)
-        int totalWidth = 0;
-        int maxHeight = 0;
-        foreach (var bmp in barcodeBitmaps)
+        // Determine combined image size (max width, total height with spacing)
+        int maxWidth = 0;
+        int totalHeight = 0;
+        int spacing = 10;
+        foreach (Bitmap bmp in barcodeBitmaps)
         {
-            totalWidth += bmp.Width;
-            if (bmp.Height > maxHeight) maxHeight = bmp.Height;
+            if (bmp.Width > maxWidth) maxWidth = bmp.Width;
+            totalHeight += bmp.Height + spacing;
         }
+        totalHeight -= spacing; // remove extra spacing after last barcode
 
-        // Create a composite image containing all barcodes
-        string compositePath = Path.Combine(tempFolder, "Composite.png");
-        using (var finalBitmap = new Bitmap(totalWidth, maxHeight))
+        // Create combined bitmap and draw individual barcodes onto it
+        using (Bitmap combined = new Bitmap(maxWidth, totalHeight, PixelFormat.Format32bppArgb))
         {
-            using (var graphics = Graphics.FromImage(finalBitmap))
+            using (Graphics g = Graphics.FromImage(combined))
             {
-                graphics.Clear(Aspose.Drawing.Color.White);
-                int offsetX = 0;
-                foreach (var bmp in barcodeBitmaps)
+                g.Clear(Aspose.Drawing.Color.White);
+                int y = 0;
+                foreach (Bitmap bmp in barcodeBitmaps)
                 {
-                    graphics.DrawImage(bmp, offsetX, 0, bmp.Width, bmp.Height);
-                    offsetX += bmp.Width;
+                    g.DrawImage(bmp, 0, y);
+                    y += bmp.Height + spacing;
                 }
             }
-            finalBitmap.Save(compositePath, Aspose.Drawing.Imaging.ImageFormat.Png);
+
+            // Save combined image to temporary file
+            combined.Save(combinedPath, ImageFormat.Png);
         }
 
-        // Clean up individual barcode bitmaps
-        foreach (var bmp in barcodeBitmaps)
+        // Dispose individual barcode bitmaps now that they are no longer needed
+        foreach (Bitmap bmp in barcodeBitmaps)
         {
             bmp.Dispose();
         }
 
-        // Verify that the composite image was created
-        if (!File.Exists(compositePath))
-        {
-            Console.WriteLine("Composite image not found.");
-            return;
-        }
-
-        // Read barcodes from the composite image, processing at most three
-        BaseDecodeType decodeType = DecodeType.Code128;
-        using (var reader = new BarCodeReader(compositePath, decodeType))
+        // Read barcodes from the combined image, limiting to a maximum of three
+        BaseDecodeType decode = DecodeType.Code128;
+        using (BarCodeReader reader = new BarCodeReader(combinedPath, decode))
         {
             int processed = 0;
-            foreach (var result in reader.ReadBarCodes())
+            foreach (BarCodeResult result in reader.ReadBarCodes())
             {
-                Console.WriteLine($"Detected Barcode: Text = {result.CodeText}, Type = {result.CodeTypeName}");
+                Console.WriteLine($"{result.CodeTypeName}:{result.CodeText}");
                 processed++;
                 if (processed >= 3)
                 {
-                    // Stop after processing three barcodes to limit overhead
+                    // Stop after processing three barcodes to meet the limit
                     break;
                 }
             }
-
-            if (processed == 0)
-            {
-                Console.WriteLine("No barcodes were detected.");
-            }
+            Console.WriteLine($"Processed {processed} barcode(s) (maximum 3).");
         }
 
-        // Optionally clean up the temporary folder (commented out to allow inspection)
-        // Directory.Delete(tempFolder, true);
+        // Clean up temporary files and directory
+        try
+        {
+            File.Delete(combinedPath);
+            Directory.Delete(tempDir, true);
+        }
+        catch
+        {
+            // Ignored - cleanup failure should not affect program outcome
+        }
     }
 }
