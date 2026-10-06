@@ -1,103 +1,87 @@
-// Title: Generate and Decode a Code128 Barcode with Detailed Logging
-// Description: This example creates a Code128 barcode image, saves it to a temporary folder, then reads and logs comprehensive decoding information for troubleshooting.
-// Category-Description: Demonstrates Aspose.BarCode generation and recognition workflows, covering BarcodeGenerator, BarCodeReader, and detailed result inspection via reflection. Useful for developers needing to create barcodes, decode them, and extract extended metadata for debugging or analytics. Typical use cases include inventory systems, shipping labels, and quality assurance of barcode scans.
+// Title: Log detailed decoding information from a barcode image
+// Description: Demonstrates generating a Code128 barcode, saving it as PNG, then reading it back and logging comprehensive decoding details for troubleshooting.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator to create barcodes and BarCodeReader to decode them. Developers commonly use these APIs to embed barcodes in documents, validate scanned data, or troubleshoot decoding issues by inspecting detailed result fields such as region, angle, and extended information.
 // Prompt: Log detailed decoding information, including field names and values, to assist troubleshooting.
-// Tags: code128, barcode generation, barcode decoding, detailed logging, aspose.barcode, reflection, c#
+// Tags: barcode, code128, decoding, logging, aspose.barcode, generation, recognition, png, console
 
 using System;
 using System.IO;
-using System.Reflection;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates barcode generation, decoding, and detailed logging using Aspose.BarCode.
+/// Sample program that generates a barcode, reads it back, and logs detailed decoding information.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a Code128 barcode, decodes it, and logs all available information.
+    /// Entry point of the application. Generates a barcode image, decodes it, and writes detailed information to the console.
     /// </summary>
-    static void Main()
+    /// <param name="args">Command‑line arguments (not used).</param>
+    static void Main(string[] args)
     {
-        // Create a unique temporary folder for the barcode image
-        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
+        // --------------------------------------------------------------------
+        // Create a unique temporary folder to store the generated barcode image.
+        // --------------------------------------------------------------------
+        string tempDir = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        string imagePath = Path.Combine(tempDir, "sample.png");
 
-        // Define the full path for the generated barcode image
-        string imagePath = Path.Combine(tempFolder, "sample.png");
-
-        // Generate a Code128 barcode image and save it as PNG
+        // --------------------------------------------------------------
+        // Generate a Code128 barcode with custom dimensions and save it.
+        // --------------------------------------------------------------
         using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
         {
-            generator.Parameters.Barcode.XDimension.Pixels = 4f;   // Set module width
-            generator.Parameters.Barcode.BarHeight.Pixels = 50f; // Set bar height
-            generator.Save(imagePath, BarCodeImageFormat.Png);
+            generator.Parameters.Barcode.XDimension.Pixels = 4;      // Width of a single barcode module.
+            generator.Parameters.Barcode.BarHeight.Pixels = 50;    // Height of the barcode bars.
+            generator.Save(imagePath, BarCodeImageFormat.Png);     // Save as PNG file.
         }
 
-        // Verify that the image file was created successfully
+        // --------------------------------------------------------------
+        // Verify that the image file was created successfully.
+        // --------------------------------------------------------------
         if (!File.Exists(imagePath))
         {
-            Console.WriteLine($"Failed to create barcode image at {imagePath}");
+            Console.WriteLine("Failed to create barcode image.");
             return;
         }
 
-        // Initialize a reader to decode all supported barcode types from the image
+        // --------------------------------------------------------------
+        // Read the barcode from the image and log detailed decoding data.
+        // --------------------------------------------------------------
         using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
         {
-            // Optional: configure high‑performance quality settings
-            reader.QualitySettings = QualitySettings.HighPerformance;
+            BarCodeResult[] results = reader.ReadBarCodes();
+            Console.WriteLine($"Barcodes detected: {results.Length}");
 
-            // Iterate through all detected barcode results
-            foreach (BarCodeResult result in reader.ReadBarCodes())
+            int count = 1;
+            foreach (BarCodeResult result in results)
             {
-                Console.WriteLine("=== Barcode Result ===");
+                Console.WriteLine($"--- Barcode {count} ---");
                 Console.WriteLine($"CodeTypeName: {result.CodeTypeName}");
                 Console.WriteLine($"CodeText: {result.CodeText}");
                 Console.WriteLine($"ReadingQuality: {result.ReadingQuality}");
 
-                // Log the region (position and size) of the detected barcode
+                // Region information provides the location and size of the detected barcode.
                 var rect = result.Region.Rectangle;
                 Console.WriteLine($"Region: X={rect.X}, Y={rect.Y}, Width={rect.Width}, Height={rect.Height}");
                 Console.WriteLine($"Angle: {result.Region.Angle}");
 
-                // Use reflection to log any extended properties provided by the result
-                var ext = result.Extended;
-                if (ext != null)
+                // Extended information may contain additional data specific to certain symbologies.
+                if (result.Extended != null)
                 {
-                    PropertyInfo[] extProps = ext.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance);
-                    foreach (PropertyInfo prop in extProps)
-                    {
-                        try
-                        {
-                            object value = prop.GetValue(ext);
-                            if (value != null)
-                            {
-                                Console.WriteLine($"Extended.{prop.Name}: {value}");
-                            }
-                        }
-                        catch
-                        {
-                            // Silently ignore properties that cannot be read
-                        }
-                    }
+                    Console.WriteLine($"ExtendedInfoType: {result.Extended.GetType().Name}");
                 }
+
+                count++;
             }
         }
 
-        // Attempt to clean up the temporary folder and its contents
-        try
-        {
-            if (Directory.Exists(tempFolder))
-            {
-                Directory.Delete(tempFolder, true);
-            }
-        }
-        catch
-        {
-            // Suppress any errors during cleanup to avoid breaking the example flow
-        }
+        // --------------------------------------------------------------
+        // Optional cleanup: delete the temporary folder and its contents.
+        // Uncomment the line below to enable automatic cleanup.
+        // --------------------------------------------------------------
+        // Directory.Delete(tempDir, true);
     }
 }

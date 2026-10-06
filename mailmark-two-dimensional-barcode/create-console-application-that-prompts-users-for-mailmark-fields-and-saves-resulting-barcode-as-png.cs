@@ -1,69 +1,113 @@
-// Title: Generate Mailmark 4-State Barcode and Save as PNG
-// Description: Demonstrates creating a Mailmark barcode with default or command-line values and saving it as a PNG image file.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It shows how to use the MailmarkCodetext class together with ComplexBarcodeGenerator to produce Mailmark 4-state barcodes, a common requirement for postal automation. Developers typically need to set fields such as format, version ID, class, supply-chain ID, item ID, and destination postcode before rendering the barcode to an image format like PNG.
+// Title: Generate Mailmark 2D Barcode and Save as PNG
+// Description: Demonstrates how to create a Mailmark 2D barcode using Aspose.BarCode, populate its fields from command‑line arguments, and save the image as a PNG file.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on complex barcode types such as Mailmark 2D. It showcases the use of Mailmark2DCodetext, ComplexBarcodeGenerator, and related parameter settings. Developers working with postal services, logistics, or any scenario requiring Mailmark symbology can reference this pattern for creating and exporting barcodes in common image formats.
 // Prompt: Create a console application that prompts users for Mailmark fields and saves the resulting barcode as PNG.
 // Tags: mailmark, barcode, generation, png, console, aspose.barcode, complexbarcode
 
 using System;
+using System.IO;
 using Aspose.BarCode;
-using Aspose.BarCode.ComplexBarcode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
+using Aspose.BarCode.ComplexBarcode;
 
 /// <summary>
-/// Console application that generates a Mailmark 4‑state barcode and saves it as a PNG file.
+/// Console application that builds a Mailmark 2D barcode from supplied values
+/// and writes the resulting image to a temporary PNG file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Accepts optional command‑line arguments to override default Mailmark fields,
-    /// creates the barcode, and writes the image to disk.
+    /// Entry point. Parses optional command‑line arguments, constructs the
+    /// Mailmark2DCodetext object, generates the barcode, and saves it as PNG.
     /// </summary>
-    /// <param name="args">Command‑line arguments: format, versionID, class, supplychainID, itemID, destination.</param>
+    /// <param name="args">
+    /// Optional parameters in the following order:
+    /// 0: UPUCountryID, 1: InformationTypeID, 2: VersionID, 3: Class,
+    /// 4: SupplyChainID, 5: ItemID, 6: DestinationPostCodeAndDPS,
+    /// 7: RTSFlag, 8: ReturnToSenderPostCode, 9: CustomerContent,
+    /// 10: DataMatrixType (7, 9, or 29).
+    /// </param>
     static void Main(string[] args)
     {
-        // Default values for Mailmark 4‑state fields
-        int format = 4;
-        int versionID = 1;
-        string classValue = "0";
-        int supplychainID = 384224;
-        int itemID = 16563762;
-        string destination = "EF61AH8T ";
+        // Default values for Mailmark 2D fields
+        string upuCountryID = "JGB ";
+        string informationTypeID = "0";
+        string versionID = "1";
+        string classValue = "1";
+        int supplyChainID = 123;
+        int itemID = 1234;
+        string destinationPostCodeAndDPS = "EF61AH8T ";
+        string rtsFlag = "0";
+        string returnToSenderPostCode = " QWE2 ";
+        string customerContent = "CUSTOM";
+        Mailmark2DType dataMatrixType = Mailmark2DType.Type_7;
 
-        // Override defaults with command‑line arguments if provided
-        if (args.Length >= 6)
+        // Assign from command‑line arguments if supplied
+        // Expected order:
+        // 0: UPUCountryID
+        // 1: InformationTypeID
+        // 2: VersionID
+        // 3: Class
+        // 4: SupplyChainID
+        // 5: ItemID
+        // 6: DestinationPostCodeAndDPS
+        // 7: RTSFlag
+        // 8: ReturnToSenderPostCode
+        // 9: CustomerContent
+        // 10: DataMatrixType (7,9,29)
+        if (args.Length > 0) upuCountryID = args[0];
+        if (args.Length > 1) informationTypeID = args[1];
+        if (args.Length > 2) versionID = args[2];
+        if (args.Length > 3) classValue = args[3];
+        if (args.Length > 4 && int.TryParse(args[4], out int sc)) supplyChainID = sc;
+        if (args.Length > 5 && int.TryParse(args[5], out int it)) itemID = it;
+        if (args.Length > 6) destinationPostCodeAndDPS = args[6];
+        if (args.Length > 7) rtsFlag = args[7];
+        if (args.Length > 8) returnToSenderPostCode = args[8];
+        if (args.Length > 9) customerContent = args[9];
+        if (args.Length > 10)
         {
-            int.TryParse(args[0], out format);
-            int.TryParse(args[1], out versionID);
-            classValue = args[2];
-            int.TryParse(args[3], out supplychainID);
-            int.TryParse(args[4], out itemID);
-            destination = args[5];
+            switch (args[10])
+            {
+                case "7":
+                    dataMatrixType = Mailmark2DType.Type_7;
+                    break;
+                case "9":
+                    dataMatrixType = Mailmark2DType.Type_9;
+                    break;
+                case "29":
+                    dataMatrixType = Mailmark2DType.Type_29;
+                    break;
+            }
         }
 
-        // Create Mailmark codetext object with the specified field values
-        var mailmark = new MailmarkCodetext
+        // Create Mailmark2D codetext object with populated fields
+        Mailmark2DCodetext mailmark2D = new Mailmark2DCodetext
         {
-            Format = format,
+            UPUCountryID = upuCountryID,
+            InformationTypeID = informationTypeID,
             VersionID = versionID,
             Class = classValue,
-            SupplychainID = supplychainID,
+            SupplyChainID = supplyChainID,
             ItemID = itemID,
-            DestinationPostCodePlusDPS = destination
+            DestinationPostCodeAndDPS = destinationPostCodeAndDPS,
+            RTSFlag = rtsFlag,
+            ReturnToSenderPostCode = returnToSenderPostCode,
+            CustomerContent = customerContent,
+            DataMatrixType = dataMatrixType
         };
 
-        // Output file name for the generated PNG image
-        string outputPath = "Mailmark4State.png";
+        // Determine output file path in the system temporary folder
+        string outputPath = Path.Combine(Path.GetTempPath(), "Mailmark2D.png");
 
-        // Generate the barcode using ComplexBarcodeGenerator and save it as PNG
-        using (var generator = new ComplexBarcodeGenerator(mailmark))
+        // Generate the barcode and save it as PNG
+        using (ComplexBarcodeGenerator generator = new ComplexBarcodeGenerator(mailmark2D))
         {
-            // Set the X‑dimension (module width) in pixels for better readability
-            generator.Parameters.Barcode.XDimension.Pixels = 4f;
+            // Set module size (X‑dimension) to 4 pixels for better readability
+            generator.Parameters.Barcode.XDimension.Pixels = 4;
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user where the barcode image was saved
-        Console.WriteLine($"Mailmark barcode saved to {outputPath}");
+        Console.WriteLine($"Mailmark 2D barcode saved to: {outputPath}");
     }
 }

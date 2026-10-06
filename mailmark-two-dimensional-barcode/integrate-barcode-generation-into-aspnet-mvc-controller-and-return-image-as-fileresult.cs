@@ -1,48 +1,53 @@
-// Title: Generate Code128 barcode and output Base64 PNG
-// Description: Demonstrates creating a Code128 barcode using Aspose.BarCode, converting it to a PNG image, and displaying its Base64 string. This pattern mirrors returning the image from an ASP.NET MVC controller.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to use BarcodeGenerator with EncodeTypes and BarCodeImageFormat to produce barcode images. Developers often need to generate barcodes on the fly for web applications, reports, or inventory systems, and then return them as file responses such as FileResult in ASP.NET MVC.
+// Title: Generate Code128 Barcode and Return as FileResult in ASP.NET MVC
+// Description: This example creates a Code128 barcode image with Aspose.BarCode, writes it to a MemoryStream, and demonstrates how the stream could be returned from an MVC controller as a FileResult.
+// Category-Description: Aspose.BarCode generation examples illustrate how to produce various barcode symbologies using the BarcodeGenerator class. Typical scenarios include creating printable labels, receipts, or embedding barcodes in web applications. Developers often need to customize colors, image formats, and return the generated image directly from ASP.NET MVC actions using FileResult.
 // Prompt: Integrate barcode generation into an ASP.NET MVC controller and return the image as a FileResult.
-// Tags: code128, barcode generation, png, base64, aspnet mvc, fileresult, aspose.barcode
+// Tags: code128, barcode generation, aspnet mvc, filereturn, png, aspose.barcode, image output
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates barcode generation using Aspose.BarCode.
+/// Demonstrates barcode generation using Aspose.BarCode suitable for returning from an ASP.NET MVC controller.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point for the console demonstration. Generates a Code128 barcode,
-    /// saves it to a memory stream as PNG, converts to Base64, and writes to console.
-    /// In an MVC controller the same image bytes would be returned as a FileResult.
+    /// Entry point that generates a Code128 barcode, writes it to a memory stream, and outputs image size and Base64 representation (simulating MVC FileResult).
     /// </summary>
     static void Main()
     {
-        // Define the barcode text and symbology.
-        string codeText = "12345678";
-        BaseEncodeType encodeType = EncodeTypes.Code128;
+        // The text to encode in the barcode.
+        const string codeText = "12345678";
 
-        // Initialize the barcode generator with the specified type and text.
-        using (var generator = new BarcodeGenerator(encodeType, codeText))
+        // Initialize the barcode generator with Code128 symbology.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
         {
+            // Customize barcode appearance.
+            generator.Parameters.Barcode.BarColor = Color.Black;   // Set barcode bars to black.
+            generator.Parameters.BackColor = Color.White;          // Set background to white.
+
             // Create a memory stream to hold the generated image.
             using (var ms = new MemoryStream())
             {
-                // Save the barcode as PNG into the memory stream.
+                // Save the barcode image to the stream in PNG format.
                 generator.Save(ms, BarCodeImageFormat.Png);
+                ms.Position = 0; // Reset stream position for reading.
 
-                // Retrieve the image bytes from the stream.
-                byte[] imageBytes = ms.ToArray();
+                // Output image size for diagnostic purposes.
+                Console.WriteLine($"Generated barcode image size: {ms.Length} bytes");
 
-                // Convert the image bytes to a Base64 string for display or transport.
-                string base64 = Convert.ToBase64String(imageBytes);
-
-                // Output the Base64 string to the console (for demo purposes).
-                Console.WriteLine("Barcode Base64 PNG:");
+                // Convert the image to Base64 (useful for embedding in HTML or JSON).
+                string base64 = Convert.ToBase64String(ms.ToArray());
+                Console.WriteLine("Base64 PNG:");
                 Console.WriteLine(base64);
+
+                // In an ASP.NET MVC action you would return:
+                // return File(ms, "image/png", "barcode.png");
             }
         }
     }
