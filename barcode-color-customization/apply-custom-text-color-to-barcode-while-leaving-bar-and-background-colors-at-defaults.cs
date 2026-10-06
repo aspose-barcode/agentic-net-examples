@@ -1,43 +1,38 @@
-// Title: Apply custom text color to a barcode using Aspose.BarCode
+// Title: Apply custom text color to a Code128 barcode
 // Description: Demonstrates how to set a custom color for the barcode's human‑readable text while keeping the bar and background colors at their default values.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to customize visual aspects of generated barcodes. It highlights the use of BarcodeGenerator, EncodeTypes, and Color settings to meet common requirements such as branding or visual emphasis. Developers often need to adjust text, bar, or background colors for integration into UI designs or printed materials.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and CodeTextParameters to customize barcode appearance. Developers often need to adjust text styling (color, font) without affecting the barcode itself, especially for branding or visual integration in reports and UI.
 // Prompt: Apply a custom text color to a barcode while leaving bar and background colors at defaults.
-// Tags: barcode symbology, color customization, code128, png, aspose.barcode, generation
+// Tags: code128, custom text color, png, barcodegenerator, codetextparameters, aspose.barcode
 
 using System;
-using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates applying a custom text color to a barcode while leaving bar and background colors at defaults.
+/// Generates a Code128 barcode with a custom text color and saves it as a PNG image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Generates a Code128 barcode with green text and saves it as a PNG file.
+    /// Entry point of the example. Creates the barcode, applies a green text color, and writes the image to disk.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary directory for the output image.
-        string tempDir = Path.Combine(Path.GetTempPath(), "BarcodeColorDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempDir);
-
-        // Define the full path for the generated PNG file.
-        string outputPath = Path.Combine(tempDir, "customTextColor.png");
+        // Define the output file name.
+        string outputPath = "customTextColorBarcode.png";
 
         // Initialize the barcode generator with Code128 symbology and sample data.
         using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
         {
-            // Set a custom color (green) for the human‑readable text; bar and background colors stay default.
+            // Apply a custom text color (green). Bar and background colors remain at their defaults.
             generator.Parameters.Barcode.CodeTextParameters.Color = Color.Green;
 
-            // Save the barcode image to the specified path in PNG format.
+            // Save the generated barcode as a PNG file.
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user where the barcode image was saved.
-        Console.WriteLine("Barcode image saved to: " + outputPath);
+        // Inform the user where the image was saved.
+        Console.WriteLine($"Barcode image saved to: {outputPath}");
     }
 }

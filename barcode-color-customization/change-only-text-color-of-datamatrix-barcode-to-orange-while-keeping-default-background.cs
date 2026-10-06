@@ -1,8 +1,8 @@
 // Title: Change DataMatrix barcode text color to orange
 // Description: Demonstrates how to set the code text color of a DataMatrix barcode to orange while preserving the default background.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to customize visual aspects of barcodes such as text color. It uses the BarcodeGenerator class with EncodeTypes.DataMatrix and modifies the CodeTextParameters.Color property. Developers often need to match branding colors or improve readability, and this pattern shows the typical steps for color customization before saving the image.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating customization of barcode appearance using the BarcodeGenerator class. It shows how to modify visual properties such as code text color for DataMatrix symbology, a common requirement when integrating barcodes into branded materials or UI designs. Developers often need to adjust colors without affecting other barcode elements, and this snippet provides a concise reference.
 // Prompt: Change only the text color of a DataMatrix barcode to orange while keeping default background.
-// Tags: datamatrix, barcode, color, textcolor, png, aspose.barcode, generation
+// Tags: datamatrix, barcode, colortext, orange, aspnet, aspnetcore, aspose.barcode, generation, png
 
 using System;
 using System.IO;
@@ -11,33 +11,29 @@ using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates a DataMatrix barcode with orange text color.
+/// Generates a DataMatrix barcode with the code text colored orange and saves it as a PNG file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates the barcode and saves it as a PNG file.
+    /// Entry point of the example. Creates the barcode, applies the orange text color, and writes the image to disk.
     /// </summary>
     static void Main()
     {
-        // Define output directory in the temporary folder and ensure it exists
-        string outputDir = Path.Combine(Path.GetTempPath(), "DataMatrixColorDemo");
-        Directory.CreateDirectory(outputDir);
+        // Define the output file path in the current working directory.
+        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "datamatrix.png");
 
-        // Full path for the resulting PNG image
-        string outputPath = Path.Combine(outputDir, "DataMatrix_OrangeText.png");
-
-        // Create a BarcodeGenerator for DataMatrix with the desired data
-        using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, "123456"))
+        // Initialize the barcode generator for DataMatrix symbology with sample text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, "SampleText"))
         {
-            // Set only the code text (human‑readable) color to orange; background remains default
+            // Set only the barcode code text (the human‑readable part) color to orange.
             generator.Parameters.Barcode.CodeTextParameters.Color = Color.Orange;
 
-            // Save the generated barcode image as PNG to the specified path
+            // Save the generated barcode image as a PNG file.
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user where the barcode image was saved
-        Console.WriteLine($"Barcode saved to: {outputPath}");
+        // Inform the user where the barcode image has been saved.
+        Console.WriteLine($"DataMatrix barcode saved to: {outputPath}");
     }
 }

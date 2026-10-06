@@ -1,73 +1,82 @@
-// Title: Generate a barcode with custom colors and verify color values
-// Description: Demonstrates creating a Code128 barcode with a custom background and bar color, saving it as a PNG, and then reading the image to confirm the colors match the specified ARGB values.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, showcasing how to customize barcode appearance using the BarcodeGenerator class and how to validate the output with Aspose.Drawing. Typical use cases include branding, UI integration, and quality assurance where specific colors are required. Developers often need to set BackColor and BarColor, save to common image formats, and programmatically verify visual properties.
+// Title: Generate Barcode with Custom Colors and Verify Colors
+// Description: This example creates a Code128 barcode image with a green background and red bars, saves it as PNG, then reads the image to confirm the colors match the expected values.
+// Category-Description: Demonstrates Aspose.BarCode generation and image verification using Aspose.Drawing. It showcases the BarcodeGenerator class for creating barcodes with custom visual properties and how to load the resulting image to inspect pixel colors. Typical use cases include branding barcodes with corporate colors and validating output in automated tests. Developers working with barcode creation and image processing often need to customize appearance and programmatically verify results.
 // Prompt: Generate a barcode with custom colors and then read back the image to confirm color values.
-// Tags: barcode, code128, generation, custom colors, png, aspose.barcode, aspose.drawing, verification
+// Tags: barcode symbology, generation, custom colors, png, aspose.barcode, aspose.drawing
 
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates barcode generation with custom colors and verification of the saved image.
+/// Demonstrates generating a barcode with custom colors and verifying the colors by reading the saved image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a barcode, saves it, and checks the background and bar colors.
+    /// Entry point of the example.
     /// </summary>
     static void Main()
     {
-        // Define the output file path in the temporary folder.
+        // Define the output file path in the temporary directory.
         string outputPath = Path.Combine(Path.GetTempPath(), "custom_color_barcode.png");
 
-        // Define custom colors: a light green background and a blue bar.
-        Color backgroundColor = Color.FromArgb(255, 200, 255, 200);
-        Color barColor = Color.Blue;
+        // Define custom colors: green background and red bars.
+        Color backgroundColor = Color.FromArgb(255, 0, 255, 0); // Green
+        Color barColor = Color.FromArgb(255, 255, 0, 0);       // Red
 
         // Generate the barcode with the specified colors.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "12345"))
         {
-            // Apply the custom background and bar colors.
-            generator.Parameters.BackColor = backgroundColor;
-            generator.Parameters.Barcode.BarColor = barColor;
-
-            // Save the barcode image as PNG.
-            generator.Save(outputPath, BarCodeImageFormat.Png);
+            generator.Parameters.BackColor = backgroundColor;      // Set background color.
+            generator.Parameters.Barcode.BarColor = barColor;      // Set bar (foreground) color.
+            generator.Save(outputPath, BarCodeImageFormat.Png);    // Save as PNG.
         }
 
-        // Verify that the image file was created successfully.
+        // Verify that the image file was created.
         if (!File.Exists(outputPath))
         {
             Console.WriteLine("Failed to create barcode image.");
             return;
         }
 
-        // Load the saved image for color verification.
-        using (Image img = Image.FromFile(outputPath))
+        // Load the saved image to verify the colors.
+        using (var bitmap = new Bitmap(outputPath))
         {
-            using (Bitmap bitmap = new Bitmap(img))
+            // Sample the background pixel (top-left corner).
+            Color sampledBackground = bitmap.GetPixel(0, 0);
+
+            // Find a pixel that differs from the background (assumed to be a barcode bar).
+            Color sampledBar = Color.Empty;
+            bool barFound = false;
+            for (int y = 0; y < bitmap.Height && !barFound; y++)
             {
-                // Sample a background pixel (top-left corner).
-                Color sampledBackground = bitmap.GetPixel(0, 0);
+                for (int x = 0; x < bitmap.Width && !barFound; x++)
+                {
+                    Color pixel = bitmap.GetPixel(x, y);
+                    if (!pixel.Equals(sampledBackground))
+                    {
+                        sampledBar = pixel;
+                        barFound = true;
+                    }
+                }
+            }
 
-                // Sample a pixel near the center, which is likely part of a barcode bar.
-                int centerX = bitmap.Width / 2;
-                int centerY = bitmap.Height / 2;
-                Color sampledBar = bitmap.GetPixel(centerX, centerY);
+            // Output verification results for background color.
+            Console.WriteLine($"Expected Background: {backgroundColor.ToArgb()}, Sampled: {sampledBackground.ToArgb()}, Match: {sampledBackground.Equals(backgroundColor)}");
 
-                // Compare the sampled colors with the expected ARGB values.
-                bool backgroundMatches = sampledBackground.ToArgb() == backgroundColor.ToArgb();
-                bool barMatches = sampledBar.ToArgb() == barColor.ToArgb();
-
-                // Output verification results.
-                Console.WriteLine($"Background color match: {backgroundMatches}");
-                Console.WriteLine($"Bar color match: {barMatches}");
-                Console.WriteLine($"Sampled background ARGB: {sampledBackground.ToArgb():X8}");
-                Console.WriteLine($"Sampled bar ARGB: {sampledBar.ToArgb():X8}");
+            // Output verification results for bar color, if a bar pixel was found.
+            if (barFound)
+            {
+                Console.WriteLine($"Expected Bar Color: {barColor.ToArgb()}, Sampled: {sampledBar.ToArgb()}, Match: {sampledBar.Equals(barColor)}");
+            }
+            else
+            {
+                Console.WriteLine("No bar pixel detected for verification.");
             }
         }
     }
