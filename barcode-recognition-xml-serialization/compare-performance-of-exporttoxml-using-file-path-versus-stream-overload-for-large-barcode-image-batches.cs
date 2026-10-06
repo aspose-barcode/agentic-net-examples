@@ -1,8 +1,8 @@
-// Title: Performance Comparison of ExportToXml: File Path vs Stream Overloads
-// Description: Demonstrates measuring the execution time of Aspose.BarCode's ExportToXml method when saving barcode data to a file versus writing to a memory stream for a batch of large barcode images.
-// Category-Description: This example belongs to the Aspose.BarCode export operations category, illustrating how to use the BarcodeGenerator class to generate barcodes and export their metadata to XML. It showcases typical use cases such as bulk processing, performance benchmarking, and choosing between file‑based and stream‑based APIs. Developers working with barcode generation and serialization often need to evaluate these overloads to optimize I/O performance.
+// Title: ExportToXml Performance: File Path vs Stream Overload
+// Description: Demonstrates measuring the execution time of Aspose.BarCode's ExportToXml method when saving to a file path versus a memory stream for a batch of barcode generators.
+// Category-Description: This example belongs to the barcode generation and export performance category of Aspose.BarCode. It showcases the use of BarcodeGenerator and its ExportToXml overloads to serialize barcode settings to XML, a common requirement when persisting configurations for later reuse or integration. Developers often need to compare file‑based and stream‑based approaches to choose the most efficient method for large‑scale batch processing.
 // Prompt: Compare performance of ExportToXml using file path versus stream overload for large barcode image batches.
-// Tags: barcode, export, xml, performance, file, stream, aspose.barcode, code128, batch processing
+// Tags: barcode generation, export, xml, performance, file path, stream, aspose.barcode, code128
 
 using System;
 using System.IO;
@@ -12,71 +12,75 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates performance measurement of ExportToXml using file path and stream overloads for a batch of barcodes.
+/// Provides a performance comparison between the file‑path and stream overloads of <c>BarcodeGenerator.ExportToXml</c>.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates sample barcodes, exports them to XML via file and stream, and reports timing.
+    /// Entry point of the example. Generates a set of barcode generators, exports each to XML using both
+    /// a file path and a memory stream, and reports the elapsed time for each approach.
     /// </summary>
     static void Main()
     {
-        const int sampleCount = 5;
+        const int sampleCount = 5; // Number of barcode generators to create for the test batch
 
-        // Create a temporary folder for XML files
+        // Create a unique temporary folder for file‑based XML exports
         string tempFolder = Path.Combine(Path.GetTempPath(), "ExportXmlBatch_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
 
-        // Prepare a list of barcode generators with sample data
+        // Prepare a list of barcode generators with distinct Code128 values
         List<BarcodeGenerator> generators = new List<BarcodeGenerator>();
-        for (int i = 1; i <= sampleCount; i++)
+        for (int i = 0; i < sampleCount; i++)
         {
-            var gen = new BarcodeGenerator(EncodeTypes.Code128, $"Sample{i}");
-            gen.Parameters.Barcode.XDimension.Pixels = 2f;
+            string codeText = $"CODE{i:D4}";
+            var gen = new BarcodeGenerator(EncodeTypes.Code128, codeText);
+            // Optional: set X‑dimension to control barcode module size
+            gen.Parameters.Barcode.XDimension.Point = 2f;
             generators.Add(gen);
         }
 
-        // Export each barcode to an XML file and measure the elapsed time
-        Stopwatch swFile = Stopwatch.StartNew();
+        // Measure ExportToXml using the file‑path overload
+        Stopwatch swFile = new Stopwatch();
+        swFile.Start();
         for (int i = 0; i < generators.Count; i++)
         {
-            string filePath = Path.Combine(tempFolder, $"gen{i}.xml");
-            generators[i].ExportToXml(filePath);
+            string xmlPath = Path.Combine(tempFolder, $"gen{i}.xml");
+            generators[i].ExportToXml(xmlPath);
         }
         swFile.Stop();
 
-        // Export each barcode to a memory stream and measure the elapsed time
-        Stopwatch swStream = Stopwatch.StartNew();
-        foreach (var gen in generators)
+        // Measure ExportToXml using the stream overload (MemoryStream)
+        Stopwatch swStream = new Stopwatch();
+        swStream.Start();
+        for (int i = 0; i < generators.Count; i++)
         {
-            using (var ms = new MemoryStream())
+            using (MemoryStream ms = new MemoryStream())
             {
-                gen.ExportToXml(ms);
-                ms.Position = 0; // Reset position to read from the beginning
-                using (var sr = new StreamReader(ms, leaveOpen: true))
-                {
-                    string _ = sr.ReadToEnd(); // Ensure the stream is fully processed
-                }
+                generators[i].ExportToXml(ms);
+                // Reset position if further processing of the stream is required
+                ms.Position = 0;
             }
         }
         swStream.Stop();
 
-        // Output the timing results
-        Console.WriteLine($"Export to XML files time: {swFile.ElapsedMilliseconds} ms");
-        Console.WriteLine($"Export to XML streams time: {swStream.ElapsedMilliseconds} ms");
+        // Output the timing results to the console
+        Console.WriteLine($"ExportToXml (file path) elapsed: {swFile.ElapsedMilliseconds} ms");
+        Console.WriteLine($"ExportToXml (stream) elapsed: {swStream.ElapsedMilliseconds} ms");
 
-        // Cleanup temporary files and directory
+        // Clean up: dispose all barcode generators
+        foreach (var gen in generators)
+        {
+            gen.Dispose();
+        }
+
+        // Delete temporary files and folder; ignore any errors during cleanup
         try
         {
-            foreach (var file in Directory.GetFiles(tempFolder))
-            {
-                File.Delete(file);
-            }
-            Directory.Delete(tempFolder);
+            Directory.Delete(tempFolder, true);
         }
         catch
         {
-            // Ignore cleanup errors
+            // Suppress cleanup exceptions
         }
     }
 }

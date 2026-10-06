@@ -1,81 +1,57 @@
-// Title: Barcode Generation, Recognition, and Logging Example
-// Description: Demonstrates generating a Code128 barcode image, reading it with BarCodeReader, exporting the reader state to XML, and logging the file paths used.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, showcasing the use of BarcodeGenerator for creating barcodes, BarCodeReader for image recognition, and ExportToXml for persisting recognition state. Developers often need to generate barcodes, validate them programmatically, and keep audit logs of file operations; this snippet illustrates typical API classes and workflow for such tasks.
+// Title: Generate QR barcode, export reader state to XML, and log file paths
+// Description: This example creates a QR code image, reads it using Aspose.BarCode, exports the reader's state to XML, and logs the used file paths.
+// Category-Description: Demonstrates core Aspose.BarCode operations such as barcode generation, image loading, state export, and custom logging. It showcases the BarcodeGenerator, BarCodeReader, and related classes, useful for developers needing to persist barcode processing details or audit file usage. Ideal for tutorials on QR code handling, XML state management, and simple logging in .NET applications.
 // Prompt: Design a logging mechanism that records the file path used in SetBarCodeImage alongside the exported XML state.
-// Tags: barcode, generation, recognition, logging, xml, code128, aspose.barcode
+// Tags: qr, barcode generation, barcode reading, xml export, logging, aspose.barcode, csharp, .net
 
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates barcode creation, recognition, XML export, and logging of file paths.
+/// Demonstrates barcode generation, reading, XML export, and logging of file paths using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a barcode, reads it, exports state to XML, and logs file locations.
+    /// Entry point of the example. Generates a QR code, reads it, exports the reader state, and logs the file locations.
     /// </summary>
     static void Main()
     {
-        // -----------------------------------------------------------------
-        // Prepare a unique temporary working directory for all generated files.
-        // -----------------------------------------------------------------
-        string workDir = Path.Combine(Path.GetTempPath(), "BarcodeLogDemo_" + Guid.NewGuid().ToString("N"));
+        // Create a unique temporary working directory for all generated files
+        string workDir = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(workDir);
 
-        // Define file paths for the barcode image, XML export, and log file.
-        string imagePath = Path.Combine(workDir, "sample_barcode.png");
-        string readerXmlPath = Path.Combine(workDir, "reader_state.xml");
+        // Define paths for the barcode image, exported XML, and log file
+        string imagePath = Path.Combine(workDir, "barcode.png");
+        string xmlPath = Path.Combine(workDir, "readerState.xml");
         string logPath = Path.Combine(workDir, "log.txt");
 
-        // -----------------------------------------------------------------
-        // Generate a Code128 barcode image and save it as PNG.
-        // -----------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456789"))
+        // Generate a QR code image and save it as PNG
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "Sample123"))
         {
-            // Set barcode module size (X-dimension) to 2 points.
-            generator.Parameters.Barcode.XDimension.Point = 2f;
             generator.Save(imagePath, BarCodeImageFormat.Png);
         }
 
-        // Verify that the barcode image was successfully created.
-        if (!File.Exists(imagePath))
+        // Initialize a barcode reader, load the generated image, and export its internal state to XML
+        using (BarCodeReader reader = new BarCodeReader())
         {
-            Console.WriteLine("Failed to create barcode image.");
-            return;
-        }
-
-        // -----------------------------------------------------------------
-        // Initialize BarCodeReader, load the generated image, and export its state.
-        // -----------------------------------------------------------------
-        using (var reader = new BarCodeReader())
-        {
-            // Record the image path used in SetBarCodeImage for later logging.
             reader.SetBarCodeImage(imagePath);
-            // Export the recognition state to an XML file.
-            reader.ExportToXml(readerXmlPath);
+            reader.ExportToXml(xmlPath);
         }
 
-        // Verify that the XML export succeeded.
-        if (!File.Exists(readerXmlPath))
-        {
-            Console.WriteLine("Failed to export reader state to XML.");
-            return;
-        }
+        // Build a log entry containing the image path used in SetBarCodeImage and the XML export location
+        string logEntry = $"SetBarCodeImage Path: {imagePath}{Environment.NewLine}" +
+                          $"Exported XML Path: {xmlPath}{Environment.NewLine}";
 
-        // -----------------------------------------------------------------
-        // Log the file paths used during SetBarCodeImage and ExportToXml.
-        // -----------------------------------------------------------------
-        string logContent = $"SetBarCodeImage path: {imagePath}{Environment.NewLine}" +
-                            $"Exported XML path: {readerXmlPath}{Environment.NewLine}";
-        File.AppendAllText(logPath, logContent);
+        // Append the log entry to the log file
+        File.AppendAllText(logPath, logEntry);
 
-        // Output the locations of the generated files for verification.
-        Console.WriteLine("Barcode image saved to: " + imagePath);
-        Console.WriteLine("Reader state XML saved to: " + readerXmlPath);
-        Console.WriteLine("Log written to: " + logPath);
+        // Write log details to the console for immediate feedback
+        Console.WriteLine("Logging completed. Details:");
+        Console.WriteLine(logEntry);
+        Console.WriteLine($"All files are located in: {workDir}");
     }
 }

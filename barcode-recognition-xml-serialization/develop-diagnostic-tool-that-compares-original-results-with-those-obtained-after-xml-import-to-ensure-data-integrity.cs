@@ -1,8 +1,8 @@
-// Title: Barcode generation, XML export/import, and validation
-// Description: Demonstrates generating a Code128 barcode, exporting its configuration to XML, re-importing it, and verifying that the regenerated barcode matches the original.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, showcasing how to use BarcodeGenerator, its ExportToXml/ImportFromXml methods, and BarCodeReader to create, persist, and validate barcodes. Typical use cases include diagnostic tools, migration of barcode settings, and automated integrity checks where developers need to ensure that exported configurations produce identical barcodes when re-imported.
+// Title: Barcode XML Export/Import Integrity Check
+// Description: Generates a QR barcode, exports its configuration to XML, re-imports the XML to recreate the barcode, and compares the decoded results to verify data integrity.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It demonstrates how to use BarcodeGenerator to create barcodes, export settings to XML, import them back, and employ BarCodeReader for decoding. Typical use cases include persisting barcode configurations, migrating settings between systems, and ensuring that exported/imported data yields identical scan results. Developers often need to validate that XML serialization preserves all essential barcode parameters.
 // Prompt: Develop a diagnostic tool that compares original results with those obtained after XML import to ensure data integrity.
-// Tags: barcode symbology, generation, import, export, xml, validation, codetype, codetext, aspose.barcode, code128, png
+// Tags: barcode, qr, generation, export, import, xml, recognition, integrity, aspose.barcode, diagnostics
 
 using System;
 using System.IO;
@@ -11,78 +11,112 @@ using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates a diagnostic workflow that generates a barcode, exports its settings to XML,
-/// re‑imports the configuration, regenerates the barcode, and compares the read results
-/// to ensure data integrity.
+/// Demonstrates generating a QR barcode, exporting its settings to XML, importing the XML,
+/// regenerating the barcode, and comparing decoded results to ensure data integrity.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Executes the barcode generation, XML export/import, and result comparison steps.
+    /// Entry point of the example. Executes the barcode generation, XML export/import,
+    /// decoding, and comparison workflow.
     /// </summary>
-    static void Main()
+    /// <param name="args">Command‑line arguments (not used).</param>
+    static void Main(string[] args)
     {
-        // Prepare a temporary working folder for all generated files
-        string workFolder = Path.Combine(Path.GetTempPath(), "BarcodeDiag_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(workFolder);
+        // Create a unique temporary folder for all intermediate files.
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeDiag_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
 
-        // Define file paths for the original image, XML configuration, and the imported image
-        string originalImagePath = Path.Combine(workFolder, "original.png");
-        string xmlPath = Path.Combine(workFolder, "generator.xml");
-        string importedImagePath = Path.Combine(workFolder, "imported.png");
+        // Define file paths for the original image, XML configuration, and the imported image.
+        string originalImagePath = Path.Combine(tempFolder, "original.png");
+        string xmlPath = Path.Combine(tempFolder, "generator.xml");
+        string importedImagePath = Path.Combine(tempFolder, "imported.png");
 
-        const string codeText = "ABC123XYZ";
-
-        // Step 1: Generate the original barcode and export its generation state to XML
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+        // ------------------------------------------------------------
+        // Generate the original QR barcode and export its settings to XML.
+        // ------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Test123"))
         {
-            generator.Parameters.Barcode.XDimension.Pixels = 2f;
+            // Set a specific X‑dimension for better readability.
+            generator.Parameters.Barcode.XDimension.Pixels = 4f;
+
+            // Save the barcode image as PNG.
             generator.Save(originalImagePath, BarCodeImageFormat.Png);
-            generator.ExportToXml(xmlPath); // Persist generator settings
+
+            // Export the generator configuration to an XML file.
+            generator.ExportToXml(xmlPath);
         }
 
-        // Step 2: Import the generator from the saved XML and generate a second barcode
-        using (var importedGenerator = BarcodeGenerator.ImportFromXml(xmlPath))
+        // ------------------------------------------------------------
+        // Import the generator configuration from XML and generate a new barcode.
+        // ------------------------------------------------------------
+        BarcodeGenerator importedGenerator = BarcodeGenerator.ImportFromXml(xmlPath);
+        using (importedGenerator)
         {
+            // Save the regenerated barcode image.
             importedGenerator.Save(importedImagePath, BarCodeImageFormat.Png);
         }
 
-        // Step 3: Read both barcode images using BarCodeReader
-        BarCodeResult originalResult = null;
-        BarCodeResult importedResult = null;
-
-        if (File.Exists(originalImagePath))
+        // ------------------------------------------------------------
+        // Local function: reads barcode results from a given image file.
+        // ------------------------------------------------------------
+        BarCodeResult[] ReadBarcode(string imagePath)
         {
-            using (var reader = new BarCodeReader(originalImagePath, DecodeType.Code128))
+            if (!File.Exists(imagePath))
             {
-                var results = reader.ReadBarCodes();
-                if (results.Length > 0)
-                    originalResult = results[0];
+                Console.WriteLine($"File not found: {imagePath}");
+                return Array.Empty<BarCodeResult>();
+            }
+
+            // Use all supported decode types for maximum compatibility.
+            BaseDecodeType decodeType = DecodeType.AllSupportedTypes;
+            using (var reader = new BarCodeReader(imagePath, decodeType))
+            {
+                return reader.ReadBarCodes();
             }
         }
 
-        if (File.Exists(importedImagePath))
+        // Decode barcodes from both the original and imported images.
+        BarCodeResult[] originalResults = ReadBarcode(originalImagePath);
+        BarCodeResult[] importedResults = ReadBarcode(importedImagePath);
+
+        // ------------------------------------------------------------
+        // Compare the decoded results to verify that the XML import preserved data.
+        // ------------------------------------------------------------
+        bool success = false;
+        if (originalResults.Length > 0 && importedResults.Length > 0)
         {
-            using (var reader = new BarCodeReader(importedImagePath, DecodeType.Code128))
-            {
-                var results = reader.ReadBarCodes();
-                if (results.Length > 0)
-                    importedResult = results[0];
-            }
+            var orig = originalResults[0];
+            var imp = importedResults[0];
+
+            // Compare barcode type names (case‑insensitive) and text lengths.
+            bool typeMatch = string.Equals(orig.CodeTypeName, imp.CodeTypeName, StringComparison.OrdinalIgnoreCase);
+            bool textLengthMatch = orig.CodeText?.Length == imp.CodeText?.Length;
+
+            success = typeMatch && textLengthMatch;
+
+            Console.WriteLine($"Original CodeType: {orig.CodeTypeName}, CodeText Length: {orig.CodeText?.Length}");
+            Console.WriteLine($"Imported CodeType: {imp.CodeTypeName}, CodeText Length: {imp.CodeText?.Length}");
+            Console.WriteLine($"Type match: {typeMatch}");
+            Console.WriteLine($"Text length match: {textLengthMatch}");
+        }
+        else
+        {
+            Console.WriteLine("One or both images did not yield any barcode results.");
         }
 
-        // Step 4: Compare the read results for type and text consistency
-        bool typeMatch = originalResult?.CodeTypeName == importedResult?.CodeTypeName;
-        bool textPresent = !string.IsNullOrEmpty(originalResult?.CodeText) && !string.IsNullOrEmpty(importedResult?.CodeText);
+        Console.WriteLine($"Data integrity check: {(success ? "PASS" : "FAIL")}");
 
-        // Output a summary of the comparison
-        Console.WriteLine("Original barcode image: " + (File.Exists(originalImagePath) ? "found" : "missing"));
-        Console.WriteLine("Imported barcode image: " + (File.Exists(importedImagePath) ? "found" : "missing"));
-        Console.WriteLine("Original read result: " + (originalResult != null ? "available" : "none"));
-        Console.WriteLine("Imported read result: " + (importedResult != null ? "available" : "none"));
-        Console.WriteLine("Code type match: " + (typeMatch ? "YES" : "NO"));
-        Console.WriteLine("Both have readable text: " + (textPresent ? "YES" : "NO"));
-        Console.WriteLine("Original CodeText: " + (originalResult?.CodeText ?? "N/A"));
-        Console.WriteLine("Imported CodeText: " + (importedResult?.CodeText ?? "N/A"));
+        // ------------------------------------------------------------
+        // Cleanup temporary files and folder (optional).
+        // ------------------------------------------------------------
+        try
+        {
+            Directory.Delete(tempFolder, true);
+        }
+        catch
+        {
+            // Suppress any cleanup errors to avoid interrupting the flow.
+        }
     }
 }

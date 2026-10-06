@@ -1,86 +1,88 @@
-// Title: Export Barcode Generator State to XML Using Configured Directory
-// Description: Demonstrates reading a default export directory from a configuration file, generating a QR barcode, exporting its state to XML, and recreating the barcode image from the XML.
-// Category-Description: This example belongs to the Aspose.BarCode generation and persistence category. It showcases key API classes such as BarcodeGenerator, EncodeTypes, and BarCodeImageFormat for creating barcodes, as well as ExportToXml and ImportFromXml for persisting and restoring generator state. Typical use cases include saving barcode configurations for later reuse, batch processing, and integrating barcode generation into automated workflows. Developers often need to manage export locations via configuration files to keep environments flexible and maintainable.
-/// Prompt: Design a configuration file that specifies the default XML export directory and integrates it with ExportToXml calls.
-/// Tags: barcode symbology, generation, export, xml, configuration, aspose.barcode, qr
+// Title: Export barcode generation state to XML using a configurable directory
+// Description: Demonstrates reading a simple configuration file to determine the output folder and exporting the Aspose.BarCode generation state and image to XML and PNG formats.
+// Category-Description: This example belongs to the Aspose.BarCode generation and export category. It showcases how to use the BarcodeGenerator class, configure barcode parameters, and persist the generation state with ExportToXml. Typical use cases include archiving barcode settings, debugging, or integrating with downstream systems that consume XML representations of barcode configurations. Developers often need to manage output locations via configuration files and save both the barcode image and its metadata.
+// Prompt: Design a configuration file that specifies the default XML export directory and integrates it with ExportToXml calls.
+// Tags: barcode symbology, export, xml, configuration, aspose.barcode, generation
 
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Provides a simple demonstration of configuring an export directory,
-/// generating a QR barcode, exporting its state to XML, and recreating the barcode image from the XML.
+/// Sample program that reads a configuration file to determine the export directory,
+/// generates a QR barcode, and exports its generation state to XML along with the image file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Executes the configuration handling,
-    /// barcode generation, XML export/import, and image saving steps.
+    /// Entry point of the application.
     /// </summary>
     static void Main()
     {
-        // --------------------------------------------------------------------
-        // Define base paths and configuration file location
-        // --------------------------------------------------------------------
-        string basePath = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
-        string configPath = Path.Combine(basePath, "config.txt");
-        string defaultExportDir = Path.Combine(basePath, "ExportedXml");
+        // ------------------------------------------------------------
+        // Load or create a simple configuration file containing the export directory
+        // ------------------------------------------------------------
+        string configFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "config.txt");
 
-        // --------------------------------------------------------------------
-        // Ensure the base directory exists
-        // --------------------------------------------------------------------
-        if (!Directory.Exists(basePath))
-            Directory.CreateDirectory(basePath);
-
-        // --------------------------------------------------------------------
-        // Create a simple config file with the default export directory if it does not exist
-        // --------------------------------------------------------------------
-        if (!File.Exists(configPath))
+        // If the config file does not exist, create it with a default export directory
+        if (!File.Exists(configFile))
         {
-            Directory.CreateDirectory(defaultExportDir);
-            File.WriteAllText(configPath, defaultExportDir);
+            string defaultDir = "ExportXml";
+            File.WriteAllText(configFile, $"ExportDir={defaultDir}");
+            Console.WriteLine($"Created default config file at '{configFile}'.");
         }
 
-        // --------------------------------------------------------------------
-        // Read the export directory from the config file
-        // --------------------------------------------------------------------
-        string exportDir = File.ReadAllText(configPath).Trim();
+        // ------------------------------------------------------------
+        // Parse the configuration file to obtain the ExportDir value
+        // ------------------------------------------------------------
+        string exportDir = null;
+        foreach (string line in File.ReadAllLines(configFile))
+        {
+            if (line.StartsWith("ExportDir=", StringComparison.OrdinalIgnoreCase))
+            {
+                exportDir = line.Substring("ExportDir=".Length).Trim();
+                break;
+            }
+        }
+
+        // Validate that the export directory was found in the configuration
         if (string.IsNullOrEmpty(exportDir))
         {
-            Console.WriteLine("Export directory not specified in config. Using default.");
-            exportDir = defaultExportDir;
+            Console.WriteLine("ExportDir not found in configuration. Exiting.");
+            return;
         }
 
-        // --------------------------------------------------------------------
-        // Ensure the export directory exists
-        // --------------------------------------------------------------------
-        if (!Directory.Exists(exportDir))
-            Directory.CreateDirectory(exportDir);
-
-        // --------------------------------------------------------------------
-        // Generate a QR barcode and export its generator state to an XML file
-        // --------------------------------------------------------------------
-        string xmlFilePath = Path.Combine(exportDir, "barcode_state.xml");
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Aspose.BarCode"))
+        // ------------------------------------------------------------
+        // Resolve the export directory to an absolute path and ensure it exists
+        // ------------------------------------------------------------
+        if (!Path.IsPathRooted(exportDir))
         {
-            // Set a specific X-dimension for better visual quality
-            generator.Parameters.Barcode.XDimension.Pixels = 4f;
-            generator.ExportToXml(xmlFilePath);
+            exportDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, exportDir);
         }
+        Directory.CreateDirectory(exportDir);
+        Console.WriteLine($"Using XML export directory: {exportDir}");
 
-        Console.WriteLine($"Barcode generation state exported to: {xmlFilePath}");
-
-        // --------------------------------------------------------------------
-        // Import the barcode generator state from the XML and save the barcode image
-        // --------------------------------------------------------------------
-        string imagePath = Path.Combine(exportDir, "barcode_image.png");
-        using (var importedGenerator = BarcodeGenerator.ImportFromXml(xmlFilePath))
+        // ------------------------------------------------------------
+        // Generate a sample QR barcode and export its state to XML
+        // ------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "SampleCodeText"))
         {
-            importedGenerator.Save(imagePath, BarCodeImageFormat.Png);
+            // Set a simple barcode parameter (X dimension in points)
+            generator.Parameters.Barcode.XDimension.Point = 2f;
+
+            // Build the full path for the XML export file
+            string xmlPath = Path.Combine(exportDir, "barcodeState.xml");
+
+            // Export the generation state to XML
+            generator.ExportToXml(xmlPath);
+            Console.WriteLine($"Barcode generation state exported to: {xmlPath}");
+
+            // Also save the barcode image for reference
+            string imagePath = Path.Combine(exportDir, "barcodeImage.png");
+            generator.Save(imagePath, BarCodeImageFormat.Png);
+            Console.WriteLine($"Barcode image saved to: {imagePath}");
         }
 
-        Console.WriteLine($"Barcode image generated from imported state: {imagePath}");
+        Console.WriteLine("Operation completed successfully.");
     }
 }

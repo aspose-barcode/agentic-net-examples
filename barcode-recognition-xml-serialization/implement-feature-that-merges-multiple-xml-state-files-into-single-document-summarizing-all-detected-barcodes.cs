@@ -1,106 +1,130 @@
-// Title: Merge Multiple Barcode Recognition XML States into a Summary Document
-// Description: Demonstrates generating barcodes, recognizing them, exporting each recognition state to XML, and merging those XML files into a single summary that lists all detected barcodes.
-// Category-Description: This example belongs to the Aspose.BarCode operations category covering barcode generation, recognition, and state management. It showcases the use of BarcodeGenerator, BarCodeReader, ExportToXml, and ImportFromXml APIs to create images, read them, persist recognition state, and later re‑import that state for further processing. Developers often need to batch‑process many barcodes, keep a record of detection results, and produce consolidated reports—this snippet provides a clear pattern for those scenarios.
+// Title: Merge Barcode Reader XML States and Summarize Detected Barcodes
+// Description: Demonstrates how to generate sample barcodes, export each reader's state to XML, import those states, and produce a consolidated text summary of all detected barcodes.
+// Category-Description: This example belongs to the Aspose.BarCode processing suite, illustrating state export/import, barcode generation, and recognition workflows. It showcases key API classes such as BarcodeGenerator, BarCodeReader, and methods like ExportToXml and ImportFromXml. Developers often need to persist reader configurations, merge results from multiple scans, or create audit reports, making this pattern useful for batch processing and reporting scenarios.
 // Prompt: Implement a feature that merges multiple XML state files into a single document summarizing all detected barcodes.
-// Tags: barcode symbology, generation, recognition, xml, merge, summary, aspose.barcode
+// Tags: barcode, merge, xml, state, summary, generation, recognition, aspose.barcode, png, txt
 
 using System;
 using System.IO;
 using System.Collections.Generic;
-using System.Xml.Linq;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates merging multiple barcode recognition XML state files into a single summary document.
+/// Demonstrates merging multiple barcode reader XML state files into a single summary document.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that generates sample barcodes, reads them, exports recognition state to XML,
-    /// imports the states, and creates a combined summary XML file.
+    /// Entry point that generates sample barcodes, creates XML state files, imports them, and writes a summary of detected barcodes.
     /// </summary>
-    /// <param name="args">Command‑line arguments (not used).</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Create a unique temporary folder for all generated files
-        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeMergeDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
+        // Create a temporary working directory for generated images and state files
+        string workDir = Path.Combine(Path.GetTempPath(), "BarcodeMergeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(workDir);
 
-        // Define sample barcodes to generate (type and text)
-        var samples = new List<(BaseEncodeType encode, string text)>
+        // Step 1: Generate sample barcode images and collect their file paths
+        List<string> imageFiles = new List<string>();
+        GenerateSampleBarcodes(workDir, imageFiles);
+
+        // Step 2: For each image, read barcodes and export the reader state to an XML file
+        List<string> stateFiles = new List<string>();
+        CreateReaderStateFiles(workDir, imageFiles, stateFiles);
+
+        // Step 3: Import each XML state, reassign the original image, read barcodes again, and collect summary lines
+        List<string> summaryLines = new List<string>();
+        for (int i = 0; i < stateFiles.Count; i++)
         {
-            (EncodeTypes.Code128, "ABC123"),
-            (EncodeTypes.QR, "https://example.com"),
-            (EncodeTypes.Pdf417, "Sample PDF417 text")
-        };
-
-        var xmlFiles = new List<string>();   // Holds paths to exported XML state files
-        var imageFiles = new List<string>(); // Holds paths to generated barcode images
-
-        // Generate each barcode, recognize it, and export the recognition state to XML
-        foreach (var (encode, text) in samples)
-        {
-            // Build unique file names for the image and its corresponding XML state
-            string imagePath = Path.Combine(tempFolder, $"{encode}_{Guid.NewGuid().ToString("N")}.png");
-            string xmlPath = Path.Combine(tempFolder, $"{encode}_{Guid.NewGuid().ToString("N")}.xml");
-
-            // ---- Barcode generation ----
-            using (var generator = new BarcodeGenerator(encode, text))
-            {
-                generator.Save(imagePath, BarCodeImageFormat.Png);
-            }
-
-            // ---- Barcode recognition and state export ----
-            using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
-            {
-                // Force a read to ensure detection before exporting state
-                var _ = reader.ReadBarCodes();
-
-                // Export the internal recognition state to an XML file
-                reader.ExportToXml(xmlPath);
-            }
-
-            // Store file paths for later merging
-            xmlFiles.Add(xmlPath);
-            imageFiles.Add(imagePath);
-        }
-
-        // ---- Merge all XML states into a single summary document ----
-        var summaryDoc = new XDocument(new XElement("BarcodesSummary"));
-
-        for (int i = 0; i < xmlFiles.Count; i++)
-        {
-            string xmlPath = xmlFiles[i];
+            string statePath = stateFiles[i];
             string imagePath = imageFiles[i];
 
-            // Import the previously saved recognition state
-            using (var reader = BarCodeReader.ImportFromXml(xmlPath))
+            using (BarCodeReader reader = BarCodeReader.ImportFromXml(statePath))
             {
-                // Associate the original image with the imported state
+                // The image source is not stored in the XML; set it explicitly before reading
                 reader.SetBarCodeImage(imagePath);
 
                 // Read barcodes using the imported state
-                var results = reader.ReadBarCodes();
+                BarCodeResult[] results = reader.ReadBarCodes();
 
-                foreach (var result in results)
+                // Build a human‑readable line for each detected barcode
+                foreach (BarCodeResult result in results)
                 {
-                    // Add a new entry to the summary XML for each detected barcode
-                    summaryDoc.Root.Add(new XElement("Barcode",
-                        new XAttribute("SourceFile", Path.GetFileName(imagePath)),
-                        new XElement("CodeType", result.CodeTypeName),
-                        new XElement("CodeText", result.CodeText)));
-
-                    // Write a brief line to the console for immediate feedback
-                    Console.WriteLine($"File: {Path.GetFileName(imagePath)} - {result.CodeTypeName}: {result.CodeText}");
+                    string line = $"File: {Path.GetFileName(imagePath)} | Type: {result.CodeTypeName} | Text: {result.CodeText}";
+                    summaryLines.Add(line);
                 }
             }
         }
 
-        // Save the combined summary XML to the temporary folder
-        string summaryPath = Path.Combine(tempFolder, "CombinedSummary.xml");
-        summaryDoc.Save(summaryPath);
-        Console.WriteLine($"Combined summary saved to: {summaryPath}");
+        // Step 4: Write the summary lines to the console and to a text file in the working directory
+        string summaryPath = Path.Combine(workDir, "BarcodeSummary.txt");
+        using (StreamWriter writer = new StreamWriter(summaryPath, false))
+        {
+            foreach (string line in summaryLines)
+            {
+                Console.WriteLine(line);
+                writer.WriteLine(line);
+            }
+        }
+
+        // Optional cleanup: keep the work directory for inspection or delete it
+        // Directory.Delete(workDir, true);
+    }
+
+    /// <summary>
+    /// Generates sample barcode images (Code128, QR, PDF417) and stores their file paths.
+    /// </summary>
+    /// <param name="folder">The folder where images will be saved.</param>
+    /// <param name="imagePaths">A list to receive the generated image file paths.</param>
+    private static void GenerateSampleBarcodes(string folder, List<string> imagePaths)
+    {
+        // Code128 barcode
+        using (BarcodeGenerator gen = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
+        {
+            string path = Path.Combine(folder, "code128.png");
+            gen.Save(path, BarCodeImageFormat.Png);
+            imagePaths.Add(path);
+        }
+
+        // QR Code barcode
+        using (BarcodeGenerator gen = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
+        {
+            string path = Path.Combine(folder, "qr.png");
+            gen.Save(path, BarCodeImageFormat.Png);
+            imagePaths.Add(path);
+        }
+
+        // PDF417 barcode
+        using (BarcodeGenerator gen = new BarcodeGenerator(EncodeTypes.Pdf417, "PDF417 Sample Text"))
+        {
+            string path = Path.Combine(folder, "pdf417.png");
+            gen.Save(path, BarCodeImageFormat.Png);
+            imagePaths.Add(path);
+        }
+    }
+
+    /// <summary>
+    /// Reads each barcode image, exports the reader's internal state to an XML file, and records the state file paths.
+    /// </summary>
+    /// <param name="folder">The folder where state files will be saved.</param>
+    /// <param name="imagePaths">List of barcode image file paths.</param>
+    /// <param name="statePaths">A list to receive the generated XML state file paths.</param>
+    private static void CreateReaderStateFiles(string folder, List<string> imagePaths, List<string> statePaths)
+    {
+        for (int i = 0; i < imagePaths.Count; i++)
+        {
+            string imagePath = imagePaths[i];
+            using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
+            {
+                // Perform an initial read to populate the reader's internal state
+                reader.ReadBarCodes();
+
+                // Export the populated state to an XML file
+                string statePath = Path.Combine(folder, $"state_{i}.xml");
+                reader.ExportToXml(statePath);
+                statePaths.Add(statePath);
+            }
+        }
     }
 }

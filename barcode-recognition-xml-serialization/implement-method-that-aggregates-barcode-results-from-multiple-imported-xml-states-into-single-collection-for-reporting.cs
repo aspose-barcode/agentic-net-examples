@@ -1,110 +1,105 @@
-// Title: Aggregate Barcode Results from Multiple XML States
-// Description: Demonstrates generating barcodes, exporting their reader state to XML, and then aggregating results from those XML files into a single collection for reporting.
-// Category-Description: This example belongs to the Aspose.BarCode processing category, showcasing how to use BarcodeGenerator, BarCodeReader, and XML import/export APIs. Typical use cases include batch barcode processing, state persistence, and consolidated reporting across multiple scans. Developers often need to generate barcodes, read them, store reader states, and later re-import for analysis or reporting.
+// Title: Barcode XML aggregation example
+// Description: Demonstrates generating barcodes, exporting their recognition state to XML, and aggregating results from multiple XML files into a single collection for reporting.
+// Category-Description: This example belongs to the Aspose.BarCode operations category covering barcode generation, recognition, and state persistence. It showcases key API classes such as BarcodeGenerator, BarCodeReader, and methods like ExportToXml and ImportFromXml, which developers use to serialize and later reprocess barcode recognition data across sessions or systems.
 // Prompt: Implement a method that aggregates barcode results from multiple imported XML states into a single collection for reporting.
-// Tags: barcode,qr,code128,aggregation,xml,barcode-generation,barcode-recognition
+// Tags: barcode, xml, aggregation, generation, recognition, aspose.barcode, exporttoxml, importfromxml
 
 using System;
 using System.IO;
 using System.Collections.Generic;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates aggregation of barcode results from multiple imported XML states.
+/// Demonstrates barcode generation, XML state export, import, and aggregation of results.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates sample barcodes, exports reader states to XML, re-imports them, and aggregates results.
+    /// Entry point. Generates sample barcodes, exports reader state to XML, imports the states, aggregates results, and displays them.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder for generated files
-        string tempFolder = Path.Combine(Path.GetTempPath(), "Agg_" + Guid.NewGuid().ToString("N"));
+        // Create a unique temporary folder for generated images and XML files
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeXmlAgg_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
 
-        // Define sample data for barcode generation (type and text)
-        var samples = new List<(BaseEncodeType encode, string text)>
+        // Define sample barcodes to generate (text and symbology)
+        var samples = new (string CodeText, BaseEncodeType Encode)[]
         {
-            (EncodeTypes.QR, "SampleQR1"),
-            (EncodeTypes.Code128, "Sample128")
+            ("HelloWorld", EncodeTypes.QR),
+            ("123456789012", EncodeTypes.Code128),
+            ("ABCD1234", EncodeTypes.DataMatrix)
         };
 
-        var imagePaths = new List<string>();
-        var xmlPaths = new List<string>();
-
-        // Generate barcodes, read them, and export each reader's state to XML
-        for (int i = 0; i < samples.Count; i++)
+        // Generate barcode images, read them, and export the reader state to XML files
+        for (int i = 0; i < samples.Length; i++)
         {
-            string imagePath = Path.Combine(tempFolder, $"barcode{i}.png");
-            string xmlPath = Path.Combine(tempFolder, $"reader{i}.xml");
+            string imagePath = Path.Combine(tempFolder, $"barcode_{i}.png");
+            string xmlPath = Path.Combine(tempFolder, $"reader_{i}.xml");
 
-            // Generate barcode image and save as PNG
-            using (var generator = new BarcodeGenerator(samples[i].encode, samples[i].text))
+            // Generate barcode image using the specified symbology and text
+            using (var generator = new BarcodeGenerator(samples[i].Encode, samples[i].CodeText))
             {
                 generator.Save(imagePath, BarCodeImageFormat.Png);
             }
 
-            // Choose appropriate decode type based on the generated symbology
-            BaseDecodeType decodeType = samples[i].encode == EncodeTypes.QR ? DecodeType.QR :
-                                        samples[i].encode == EncodeTypes.Code128 ? DecodeType.Code128 :
-                                        DecodeType.AllSupportedTypes;
-
-            // Read the barcode and export the reader's internal state to XML
-            using (var reader = new BarCodeReader(imagePath, decodeType))
+            // Read the generated barcode and export its recognition state to XML
+            using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
             {
-                reader.ReadBarCodes(); // Perform initial read to populate results
+                // Perform reading (results may be used later)
+                reader.ReadBarCodes();
+
+                // Export the recognition state to an XML file
                 reader.ExportToXml(xmlPath);
             }
-
-            imagePaths.Add(imagePath);
-            xmlPaths.Add(xmlPath);
         }
 
-        // Aggregate results from the imported XML states
-        var aggregatedResults = new List<BarCodeResult>();
+        // Aggregate results from the imported XML states into a single collection
+        List<BarCodeResult> aggregatedResults = new List<BarCodeResult>();
 
-        for (int i = 0; i < xmlPaths.Count; i++)
+        for (int i = 0; i < samples.Length; i++)
         {
-            string xmlPath = xmlPaths[i];
-            string imagePath = imagePaths[i];
+            string xmlPath = Path.Combine(tempFolder, $"reader_{i}.xml");
+            string imagePath = Path.Combine(tempFolder, $"barcode_{i}.png");
 
-            // Import reader state from XML and associate the original image
+            // Ensure both the XML and image files exist before attempting import
+            if (!File.Exists(xmlPath) || !File.Exists(imagePath))
+                continue; // Skip missing files gracefully
+
+            // Import the previously exported reader state from XML
             using (var importedReader = BarCodeReader.ImportFromXml(xmlPath))
             {
+                // Associate the original image with the imported reader instance
                 importedReader.SetBarCodeImage(imagePath);
+
+                // Read barcodes using the imported state
                 BarCodeResult[] results = importedReader.ReadBarCodes();
 
-                // Add any found results to the aggregated collection
-                if (results != null)
+                // Add each result to the aggregated collection
+                foreach (var result in results)
                 {
-                    aggregatedResults.AddRange(results);
+                    aggregatedResults.Add(result);
                 }
             }
         }
 
-        // Output aggregated barcode results
+        // Report the aggregated barcode results to the console
         Console.WriteLine("Aggregated Barcode Results:");
         foreach (var result in aggregatedResults)
         {
             Console.WriteLine($"Type: {result.CodeTypeName}, Text: {result.CodeText}");
         }
 
-        // Cleanup temporary files (optional)
+        // Clean up the temporary folder (optional). Errors are ignored to avoid breaking the flow.
         try
         {
-            foreach (var file in Directory.GetFiles(tempFolder))
-            {
-                File.Delete(file);
-            }
-            Directory.Delete(tempFolder);
+            Directory.Delete(tempFolder, true);
         }
         catch
         {
-            // Ignored - cleanup failures should not affect program outcome
+            // Ignore any cleanup errors
         }
     }
 }
