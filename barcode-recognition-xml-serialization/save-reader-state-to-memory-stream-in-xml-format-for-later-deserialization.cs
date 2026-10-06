@@ -1,72 +1,89 @@
-// Title: Save BarCodeReader state to XML in a memory stream
-// Description: Demonstrates generating a Code128 barcode, exporting the BarCodeReader configuration to an XML memory stream, and later importing it to perform barcode recognition.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases key API classes such as BarcodeGenerator, BarCodeReader, and their ExportToXml/ImportFromXml methods. Typical use cases include persisting reader settings for later reuse, configuring checksum validation, and processing barcodes in memory without intermediate files. Developers often need to serialize reader state to XML for configuration management or distributed processing scenarios.
+// Title: Save BarCodeReader state to XML in memory stream
+// Description: Demonstrates how to export a BarCodeReader's configuration to an XML memory stream and later import it to read a barcode image.
+// Category-Description: This example belongs to the Aspose.BarCode reading and configuration category. It shows how to use BarCodeReader, BarcodeSettings, QualitySettings, and the ExportToXml/ImportFromXml methods to persist reader state. Typical use cases include saving reader configurations for later reuse, sharing settings across services, or caching. Developers often need to serialize reader settings to XML or JSON for deployment or testing scenarios.
 // Prompt: Save the reader state to a memory stream in XML format for later deserialization.
-// Tags: barcode, code128, generation, recognition, xml, memorystream, export, import, aspose.barcode
+// Tags: barcode, reader, xml, serialization, deserialization, memorystream, aspose.barcode, qrcode, generation, recognition
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates a barcode, exports the reader state to XML,
-/// and imports it back for barcode recognition.
+/// Example program that generates a QR code, serializes a BarCodeReader's state to XML,
+/// deserializes it, and reads the barcode from the generated image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that runs the barcode generation, state export/import, and decoding.
+    /// Entry point of the example. Executes the barcode generation, state export/import,
+    /// and cleanup logic.
     /// </summary>
     static void Main()
     {
-        // Generate a simple Code128 barcode and keep it in a memory stream.
-        using (var barcodeStream = new MemoryStream())
+        // --------------------------------------------------------------------
+        // Create a temporary folder for demo files
+        // --------------------------------------------------------------------
+        string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
+        string imagePath = Path.Combine(tempFolder, "sample.png");
+
+        // --------------------------------------------------------------------
+        // Generate a simple QR barcode and save it to a PNG file
+        // --------------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "SampleText"))
         {
-            // Create a barcode generator for Code128 with the specified text.
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456789"))
+            generator.Save(imagePath, BarCodeImageFormat.Png);
+        }
+
+        // --------------------------------------------------------------------
+        // Export the BarCodeReader configuration to an XML memory stream
+        // --------------------------------------------------------------------
+        using (var ms = new MemoryStream())
+        {
+            // Create a BarCodeReader, configure its settings, and export to XML
+            using (var reader = new BarCodeReader())
             {
-                // Save the barcode image as PNG into the memory stream.
-                generator.Save(barcodeStream, BarCodeImageFormat.Png);
+                reader.SetBarCodeReadType(DecodeType.QR);
+                reader.BarcodeSettings.StripFNC = true;
+                reader.QualitySettings.XDimension = XDimensionMode.Small;
+                reader.ExportToXml(ms);
             }
 
-            // Reset stream position before reading the image.
-            barcodeStream.Position = 0;
+            // Reset the stream position so it can be read from the beginning
+            ms.Position = 0;
 
-            // Create a BarCodeReader for the generated image.
-            using (var reader = new BarCodeReader(barcodeStream, DecodeType.Code128))
+            // ----------------------------------------------------------------
+            // Import the reader state from the XML stream and perform barcode reading
+            // ----------------------------------------------------------------
+            using (var importedReader = BarCodeReader.ImportFromXml(ms))
             {
-                // Enable checksum validation as an example setting.
-                reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
+                importedReader.SetBarCodeImage(imagePath);
+                importedReader.SetBarCodeReadType(DecodeType.QR);
+                var results = importedReader.ReadBarCodes();
 
-                // Export the reader's configuration (state) to XML in a memory stream.
-                using (var xmlStream = new MemoryStream())
+                Console.WriteLine($"Barcodes read: {results.Length}");
+                foreach (var result in results)
                 {
-                    reader.ExportToXml(xmlStream);
-
-                    // Reset XML stream position for reading.
-                    xmlStream.Position = 0;
-
-                    // Import a new BarCodeReader from the exported XML.
-                    using (var importedReader = BarCodeReader.ImportFromXml(xmlStream))
-                    {
-                        // The image source is not stored in the XML, so set it again.
-                        barcodeStream.Position = 0;
-                        importedReader.SetBarCodeImage(barcodeStream);
-
-                        // Perform barcode recognition using the imported reader.
-                        var results = importedReader.ReadBarCodes();
-                        foreach (var result in results)
-                        {
-                            Console.WriteLine($"Decoded Text: {result.CodeText}");
-                            Console.WriteLine($"Symbology   : {result.CodeTypeName}");
-                        }
-                    }
+                    Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
                 }
             }
+        }
+
+        // --------------------------------------------------------------------
+        // Clean up temporary files and directories
+        // --------------------------------------------------------------------
+        try
+        {
+            if (File.Exists(imagePath))
+                File.Delete(imagePath);
+            if (Directory.Exists(tempFolder))
+                Directory.Delete(tempFolder, true);
+        }
+        catch
+        {
+            // Ignored - cleanup failure should not affect program exit
         }
     }
 }

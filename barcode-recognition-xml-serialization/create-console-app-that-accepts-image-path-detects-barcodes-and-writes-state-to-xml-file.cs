@@ -1,83 +1,71 @@
-// Title: Detect Barcodes in an Image and Export Results to XML
-// Description: Demonstrates how to read an image file, detect all barcodes using Aspose.BarCode, and save the detection results to an XML document.
-// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, showcasing the BarCodeReader class for scanning images, extracting CodeText and Symbology, and persisting results in a structured XML format. Typical use cases include batch processing of scanned documents, inventory verification, and automated data extraction where developers need to programmatically capture barcode information and store it for downstream processing.
+// Title: Detect barcodes in an image and export recognition state to XML
+// Description: Loads an image, detects any barcodes using Aspose.BarCode, and writes the reader's internal state to an XML file.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category. It demonstrates how to use the BarCodeReader class to scan an image for supported symbologies, retrieve decoded values, and export the full recognition state via ExportToXml. Typical scenarios include batch processing of scanned documents, automated inventory checks, and integration with downstream systems that consume XML reports of barcode data.
 // Prompt: Create a console app that accepts an image path, detects barcodes, and writes state to an XML file.
-// Tags: barcode detection, xml output, console application, aspose.barcode, barcodereader, barcode recognition
+// Tags: barcode detection, barcode recognition, xml output, aspose.barcode, console app
 
 using System;
 using System.IO;
-using System.Xml.Linq;
-using Aspose.BarCode;
+using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Console application that detects barcodes in an image file and writes the results to an XML document.
+/// Demonstrates barcode detection from an image file and exports the recognition state to an XML document.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Main entry point. Parses command‑line arguments, validates the input image, and initiates barcode detection.
+    /// Entry point of the console application.
+    /// Accepts an optional image path argument, generates a sample barcode if the file is missing,
+    /// reads barcodes from the image, and writes the reader state to an XML file.
     /// </summary>
-    /// <param name="args">Optional arguments: [0] = image path, [1] = XML output path.</param>
+    /// <param name="args">Command‑line arguments; the first argument may contain the image file path.</param>
     static void Main(string[] args)
     {
-        // Default temporary file locations used when no arguments are supplied.
-        string sampleImagePath = Path.Combine(Path.GetTempPath(), "sample.png");
-        string sampleXmlPath = Path.Combine(Path.GetTempPath(), "detected_barcodes.xml");
+        // Determine the image path: use the first argument if supplied, otherwise fall back to a default name.
+        string imagePath = args.Length > 0 ? args[0] : "sample_barcode.png";
 
-        // Use provided arguments if present; otherwise fall back to defaults.
-        string imagePath = args.Length > 0 ? args[0] : sampleImagePath;
-        string xmlOutputPath = args.Length > 1 ? args[1] : sampleXmlPath;
-
-        // Verify that the image file exists before attempting detection.
+        // If the specified image does not exist, create a temporary sample barcode image.
         if (!File.Exists(imagePath))
         {
-            Console.WriteLine($"Image file not found: {imagePath}");
-            return;
-        }
+            // Build a temporary file path for the sample barcode.
+            string samplePath = Path.Combine(Path.GetTempPath(), "sample_barcode.png");
 
-        try
-        {
-            // Perform barcode detection and write the results to the specified XML file.
-            DetectBarcodesAndWriteXml(imagePath, xmlOutputPath);
-            Console.WriteLine($"Barcode detection completed. Results saved to: {xmlOutputPath}");
-        }
-        catch (Exception ex)
-        {
-            // Report any unexpected errors to the console.
-            Console.WriteLine($"An error occurred: {ex.Message}");
-        }
-    }
-
-    /// <summary>
-    /// Detects all barcodes in the given image and creates an XML file containing each barcode's text and symbology.
-    /// </summary>
-    /// <param name="imagePath">Path to the image file to be scanned.</param>
-    /// <param name="xmlOutputPath">Path where the resulting XML document will be saved.</param>
-    private static void DetectBarcodesAndWriteXml(string imagePath, string xmlOutputPath)
-    {
-        // Initialize the barcode reader for the specified image.
-        using (var reader = new BarCodeReader(imagePath))
-        {
-            // Root XML element that will contain individual barcode entries.
-            var barcodesElement = new XElement("Barcodes");
-
-            // Iterate through all detected barcodes.
-            foreach (BarCodeResult result in reader.ReadBarCodes())
+            // Generate a Code128 barcode with sample data and save it as PNG.
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
             {
-                // Create an XML element for each barcode with attributes for code text and symbology.
-                var barcodeElement = new XElement("Barcode",
-                    new XAttribute("CodeText", result.CodeText ?? string.Empty),
-                    new XAttribute("Symbology", result.CodeTypeName ?? string.Empty));
-
-                // Add the barcode element to the root container.
-                barcodesElement.Add(barcodeElement);
+                generator.Save(samplePath, BarCodeImageFormat.Png);
             }
 
-            // Build the final XML document with a declaration and the root element.
-            var document = new XDocument(new XDeclaration("1.0", "utf-8", "yes"), barcodesElement);
-            // Save the XML document to the specified path.
-            document.Save(xmlOutputPath);
+            // Update the imagePath to point to the newly created sample.
+            imagePath = samplePath;
+            Console.WriteLine($"Sample barcode generated at: {imagePath}");
+        }
+
+        // Initialize the barcode reader for the image and perform recognition.
+        using (BarCodeReader reader = new BarCodeReader(imagePath))
+        {
+            // Read all barcodes found in the image.
+            BarCodeResult[] results = reader.ReadBarCodes();
+
+            // Output the number of barcodes detected.
+            Console.WriteLine($"Barcodes found: {results.Length}");
+
+            // Iterate through each result and display its type and decoded text.
+            foreach (BarCodeResult result in results)
+            {
+                Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
+            }
+
+            // Determine the output XML file path in the same directory as the image.
+            string xmlPath = Path.Combine(
+                Path.GetDirectoryName(imagePath) ?? Directory.GetCurrentDirectory(),
+                "readerState.xml");
+
+            // Export the full recognition state (including metadata) to the XML file.
+            reader.ExportToXml(xmlPath);
+            Console.WriteLine($"Recognition state exported to: {xmlPath}");
         }
     }
 }

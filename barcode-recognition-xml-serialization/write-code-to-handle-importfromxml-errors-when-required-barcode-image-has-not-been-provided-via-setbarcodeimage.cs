@@ -1,107 +1,89 @@
 // Title: Demonstrate handling ImportFromXml errors when barcode image is missing
-// Description: Shows how ImportFromXml throws an exception if SetBarCodeImage is not called, and how to correctly provide the image.
-// Category-Description: This example belongs to the Aspose.BarCode XML configuration category, illustrating the use of BarcodeGenerator, BarCodeReader, and related classes to export settings to XML and import them for recognition. Developers often need to persist barcode generation settings, reuse them, and handle missing image scenarios gracefully. The snippet serves as a searchable reference for error handling with ImportFromXml.
-// Prompt: Write code to handle ImportFromXml errors when the required barcode image has not been provided via SetBarCodeImage.
-// Tags: code128, importfromxml, png, barcodegenerator, barcodereader, barcoderecognitionexception
+// Description: Shows how ImportFromXml throws an exception if SetBarCodeImage is not called, and how to recover by providing the required image.
+// Category-Description: This example belongs to the Aspose.BarCode reading and state management category. It demonstrates exporting a BarCodeReader state to XML, importing it back, and handling the common scenario where the barcode image is not included in the exported state. Key API classes include BarcodeGenerator, BarCodeReader, and methods ExportToXml, ImportFromXml, and SetBarCodeImage. Developers often need to persist reader settings, transfer them between processes, or debug recognition pipelines, and must manage missing image errors gracefully.
+/// Prompt: Write code to handle ImportFromXml errors when the required barcode image has not been provided via SetBarCodeImage.
+/// Tags: barcode symbology, import, export, xml, error handling, aspose.barcode, pdf417, reader, generator
 
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a barcode, exporting its configuration to XML,
-/// importing the configuration for recognition, and handling the error that occurs
-/// when the barcode image is not supplied before reading.
+/// Example program that demonstrates error handling when importing a BarCodeReader state from XML
+/// without first providing the barcode image, then correcting the issue by setting the image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the demo. Executes the generation, export, import, and
-    /// error‑handling workflow.
+    /// Entry point of the example. Generates a barcode, exports reader state to XML,
+    /// attempts to read without an image (expected failure), then sets the image and reads successfully.
     /// </summary>
     static void Main()
     {
-        // --------------------------------------------------------------------
-        // 1. Create a unique temporary folder for all demo files.
-        // --------------------------------------------------------------------
-        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        // Create a unique temporary folder for all demo files
+        string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
 
-        // Paths for the generated barcode image and the exported XML configuration.
+        // Define paths for the generated barcode image and the exported XML state
         string barcodePath = Path.Combine(tempFolder, "sample.png");
-        string xmlPath = Path.Combine(tempFolder, "config.xml");
+        string xmlPath = Path.Combine(tempFolder, "readerState.xml");
 
-        // --------------------------------------------------------------------
-        // 2. Generate a simple Code128 barcode and save it as PNG.
-        // --------------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456789"))
+        // Generate a sample PDF417 barcode and save it as PNG
+        using (var generator = new BarcodeGenerator(EncodeTypes.Pdf417, "Sample123"))
         {
             generator.Save(barcodePath, BarCodeImageFormat.Png);
-            // Export the generator settings to an XML file for later import.
-            generator.ExportToXml(xmlPath);
         }
 
-        // --------------------------------------------------------------------
-        // 3. Attempt to import the reader from XML without providing the image.
-        //    This should raise a BarCodeRecognitionException.
-        // --------------------------------------------------------------------
-        Console.WriteLine("=== Attempt without SetBarCodeImage ===");
-        try
+        // Create a BarCodeReader for the generated image and export its state to XML (image not included)
+        using (var reader = new BarCodeReader(barcodePath))
         {
-            using (var reader = BarCodeReader.ImportFromXml(xmlPath))
+            // Optional: modify a reader setting to illustrate state persistence
+            reader.BarcodeSettings.StripFNC = true;
+
+            // Export the current recognition state (without embedding the image) to an XML file
+            reader.ExportToXml(xmlPath);
+        }
+
+        // Import the reader state from XML without providing the barcode image
+        using (var importedReader = BarCodeReader.ImportFromXml(xmlPath))
+        {
+            Console.WriteLine("Attempting to read without setting barcode image...");
+
+            try
             {
-                // Intentionally omit SetBarCodeImage to provoke an error.
-                BarCodeResult[] results = reader.ReadBarCodes();
-                Console.WriteLine($"Unexpectedly read {results.Length} barcode(s).");
+                // This call is expected to fail because the image has not been set
+                var results = importedReader.ReadBarCodes();
+                Console.WriteLine("Unexpected success: read {0} barcodes.", results.Length);
             }
-        }
-        catch (BarCodeRecognitionException ex)
-        {
-            // Expected exception when no image is set.
-            Console.WriteLine($"Caught expected BarCodeRecognitionException: {ex.Message}");
-        }
-        catch (Exception ex)
-        {
-            // Any other unexpected exception.
-            Console.WriteLine($"Caught unexpected exception: {ex.GetType().Name} - {ex.Message}");
-        }
-
-        // --------------------------------------------------------------------
-        // 4. Correct usage: import from XML, set the barcode image, then read.
-        // --------------------------------------------------------------------
-        Console.WriteLine("\n=== Correct usage with SetBarCodeImage ===");
-        try
-        {
-            using (var reader = BarCodeReader.ImportFromXml(xmlPath))
+            catch (Exception ex)
             {
-                // Provide the image source required for recognition.
-                reader.SetBarCodeImage(barcodePath);
+                // Expected error handling for missing image
+                Console.WriteLine("Expected error: " + ex.Message);
+            }
 
-                BarCodeResult[] results = reader.ReadBarCodes();
-                if (results.Length == 0)
+            // Provide the required barcode image to the imported reader
+            importedReader.SetBarCodeImage(barcodePath);
+
+            Console.WriteLine("Reading after setting barcode image...");
+
+            try
+            {
+                // Now the read operation should succeed
+                var results = importedReader.ReadBarCodes();
+                foreach (var result in results)
                 {
-                    Console.WriteLine("No barcodes detected.");
-                }
-                else
-                {
-                    foreach (var result in results)
-                    {
-                        Console.WriteLine($"Detected barcode: CodeText = {result.CodeText}, Symbology = {result.CodeTypeName}");
-                    }
+                    Console.WriteLine($"Found barcode: Type={result.CodeTypeName}, Text={result.CodeText}");
                 }
             }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error during correct read: {ex.GetType().Name} - {ex.Message}");
+            catch (Exception ex)
+            {
+                // Handle any unexpected errors after setting the image
+                Console.WriteLine("Error after setting image: " + ex.Message);
+            }
         }
 
-        // --------------------------------------------------------------------
-        // 5. Cleanup temporary files and folder.
-        // --------------------------------------------------------------------
+        // Clean up temporary files and directory
         try
         {
             if (File.Exists(barcodePath)) File.Delete(barcodePath);
@@ -110,7 +92,7 @@ class Program
         }
         catch
         {
-            // Ignored – cleanup failures are non‑critical for the demo.
+            // Ignored - cleanup failures should not affect program outcome
         }
     }
 }

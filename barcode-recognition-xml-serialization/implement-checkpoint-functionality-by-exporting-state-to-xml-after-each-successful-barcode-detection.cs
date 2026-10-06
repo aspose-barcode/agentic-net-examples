@@ -1,86 +1,108 @@
-// Title: Barcode detection with checkpoint export to XML
-// Description: Demonstrates generating a Code128 barcode, reading it, and exporting a checkpoint XML after each successful detection.
-// Category-Description: This example belongs to the Aspose.BarCode barcode recognition and generation category. It shows how to use BarcodeGenerator to create barcodes, BarCodeReader to detect them, and the ExportToXml method to save the reader’s state after each detection. Developers working with barcode scanning workflows often need to persist intermediate results for debugging, auditing, or resuming processing, making checkpoint functionality essential.
+// Title: Barcode Detection with XML Checkpoint Export
+// Description: Demonstrates generating barcodes, detecting them, and exporting the reader state to XML after each successful detection.
+// Category-Description: Shows Aspose.BarCode generation and recognition workflow, covering BarcodeGenerator, BarCodeReader, and ExportToXml for checkpointing. Useful for developers implementing step‑by‑step processing, error recovery, or audit trails in barcode scanning applications.
 // Prompt: Implement checkpoint functionality by exporting the state to XML after each successful barcode detection.
-// Tags: barcode, code128, checkpoint, xml, export, generation, recognition, aspose.barcode
+// Tags: barcode generation, barcode recognition, checkpoint, xml export, code128, qr, datamatrix, aspose.barcode
 
 using System;
 using System.IO;
-using Aspose.BarCode;
+using System.Collections.Generic;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates a barcode, reads it, and creates XML checkpoints after each detection.
+/// Example program that creates sample barcodes, reads them, and exports detection checkpoints to XML.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
+    /// Entry point. Generates barcodes, reads each image, prints detection results, and saves a checkpoint XML file.
     /// </summary>
-    /// <param name="args">Command‑line arguments (not used).</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Create a temporary working directory to hold generated files
-        string workDir = Path.Combine(Path.GetTempPath(), "BarcodeCheckpoint_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(workDir);
+        // Create a unique temporary folder for sample barcodes and checkpoints
+        string tempFolder = Path.Combine(Path.GetTempPath(), "Checkpoint_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
 
-        // Define paths for the barcode image and the folder that will store checkpoint XML files
-        string barcodePath = Path.Combine(workDir, "sample.png");
-        string checkpointDir = Path.Combine(workDir, "Checkpoints");
-        Directory.CreateDirectory(checkpointDir);
+        // Generate sample barcode images and collect their file paths
+        var barcodeFiles = new List<string>();
+        GenerateBarcode(EncodeTypes.Code128, "CODE128-12345", Path.Combine(tempFolder, "code128.png"));
+        barcodeFiles.Add(Path.Combine(tempFolder, "code128.png"));
+        GenerateBarcode(EncodeTypes.QR, "https://example.com", Path.Combine(tempFolder, "qr.png"));
+        barcodeFiles.Add(Path.Combine(tempFolder, "qr.png"));
+        GenerateBarcode(EncodeTypes.DataMatrix, "DM-98765", Path.Combine(tempFolder, "datamatrix.png"));
+        barcodeFiles.Add(Path.Combine(tempFolder, "datamatrix.png"));
 
-        // Generate a simple Code128 barcode and save it as a PNG image
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "ABC123456"))
+        // Process each barcode image and export a checkpoint after successful detection
+        int index = 0;
+        foreach (string filePath in barcodeFiles)
         {
-            // Optional: set foreground (barcode) and background colors
-            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-            generator.Parameters.BackColor = Aspose.Drawing.Color.White;
-
-            // Persist the barcode image to disk
-            generator.Save(barcodePath, BarCodeImageFormat.Png);
-        }
-
-        // Verify that the barcode image was created before attempting to read it
-        if (!File.Exists(barcodePath))
-        {
-            Console.WriteLine("Failed to create barcode image.");
-            return;
-        }
-
-        // Initialize a reader for the generated image, configured to decode Code128 symbology
-        using (var reader = new BarCodeReader(barcodePath, DecodeType.Code128))
-        {
-            int detectionIndex = 0;
-
-            // Iterate over all detected barcodes in the image
-            foreach (BarCodeResult result in reader.ReadBarCodes())
+            // Verify that the image file exists before attempting to read it
+            if (!File.Exists(filePath))
             {
-                detectionIndex++;
+                Console.WriteLine($"File not found: {filePath}");
+                continue;
+            }
 
-                // Output detection details to the console
-                Console.WriteLine($"Detection {detectionIndex}:");
-                Console.WriteLine($"  Code Text : {result.CodeText}");
-                Console.WriteLine($"  Symbology : {result.CodeTypeName}");
-
-                // Build the checkpoint file path for the current detection
-                string checkpointPath = Path.Combine(checkpointDir, $"checkpoint_{detectionIndex}.xml");
-
-                // Export the reader's current state (settings and last result) to an XML file
-                try
+            try
+            {
+                // Initialize the barcode reader for the current image
+                using (BarCodeReader reader = new BarCodeReader(filePath))
                 {
-                    reader.ExportToXml(checkpointPath);
-                    Console.WriteLine($"  Checkpoint saved to: {checkpointPath}");
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"  Failed to export checkpoint: {ex.Message}");
+                    // Attempt to read all barcodes present in the image
+                    BarCodeResult[] results = reader.ReadBarCodes();
+
+                    // If any barcodes were detected, output details and export a checkpoint
+                    if (results != null && results.Length > 0)
+                    {
+                        Console.WriteLine($"Detected {results.Length} barcode(s) in {Path.GetFileName(filePath)}:");
+                        foreach (BarCodeResult result in results)
+                        {
+                            Console.WriteLine($"  Type: {result.CodeTypeName}, Text: {result.CodeText}");
+                        }
+
+                        // Export the reader's internal state to an XML file for later recovery or auditing
+                        string checkpointPath = Path.Combine(tempFolder, $"checkpoint_{index}.xml");
+                        reader.ExportToXml(checkpointPath);
+                        Console.WriteLine($"Checkpoint exported to: {checkpointPath}");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"No barcodes detected in {Path.GetFileName(filePath)}.");
+                    }
                 }
             }
+            catch (ArgumentException ex)
+            {
+                // Handle cases where the image cannot be processed (e.g., unsupported format)
+                Console.WriteLine($"Failed to read image '{filePath}': {ex.Message}");
+            }
+
+            index++;
         }
 
-        // Optional cleanup: delete the temporary working directory and its contents
-        // Directory.Delete(workDir, true);
+        // Cleanup temporary folder (optional)
+        // Directory.Delete(tempFolder, true);
+    }
+
+    /// <summary>
+    /// Generates a barcode image using the specified encoding type and text, then saves it to the given path.
+    /// </summary>
+    /// <param name="encodeType">The barcode symbology to use.</param>
+    /// <param name="codeText">The data to encode in the barcode.</param>
+    /// <param name="outputPath">File system path where the PNG image will be saved.</param>
+    static void GenerateBarcode(BaseEncodeType encodeType, string codeText, string outputPath)
+    {
+        // Create a barcode generator with the desired type and content
+        using (BarcodeGenerator generator = new BarcodeGenerator(encodeType, codeText))
+        {
+            // Optional: adjust visual appearance (e.g., module size)
+            generator.Parameters.Barcode.XDimension.Point = 0.8f;
+
+            // Save the generated barcode as a PNG image
+            generator.Save(outputPath, BarCodeImageFormat.Png);
+            Console.WriteLine($"Generated barcode: {outputPath}");
+        }
     }
 }

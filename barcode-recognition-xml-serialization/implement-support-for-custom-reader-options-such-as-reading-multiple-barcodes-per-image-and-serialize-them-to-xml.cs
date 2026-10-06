@@ -1,74 +1,106 @@
-// Title: Demonstrate barcode generation, custom reader options, and XML serialization of settings
-// Description: This example generates a QR code, reads it using custom reader options, exports the reader configuration to XML, and reimports it to read the barcode again.
-// Category-Description: Shows how to use Aspose.BarCode for both generation and recognition. Key API classes include BarcodeGenerator for creating barcodes, BarCodeReader for detecting multiple barcodes per image, and methods for exporting/importing reader settings to XML. Typical use cases cover custom detection settings, batch processing, and persisting configuration for reuse across applications.
+// Title: Demonstrate custom BarCodeReader options and XML serialization with Aspose.BarCode
+// Description: This example generates sample Code128 barcodes, configures a BarCodeReader with custom settings, reads multiple barcodes from an image, and serializes the reader configuration to XML.
+// Category-Description: Shows how to work with Aspose.BarCode generation and recognition APIs, focusing on customizing BarCodeReader settings (e.g., StripFNC, XDimension, AllowIncorrectBarcodes) and persisting them via ExportToXml/ImportFromXml. Typical use cases include batch barcode scanning, fine‑tuning recognition quality, and reusing reader configurations across sessions. Developers often need to adjust quality settings and serialize them for repeatable processing pipelines.
 // Prompt: Implement support for custom reader options, such as reading multiple barcodes per image, and serialize them to XML.
-// Tags: barcode generation, barcode reading, custom reader options, xml serialization, qrcode, aspose.barcode, c#
+// Tags: barcode generation, barcode recognition, custom reader options, xml serialization, aspose.barcode, csharp
 
 using System;
 using System.IO;
+using System.Collections.Generic;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Provides a demo that generates a QR barcode, reads it with custom options,
-/// and demonstrates exporting and importing reader settings via XML.
+/// Entry point for the barcode generation and recognition demo.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the demo application.
+    /// Generates sample barcodes, reads them with custom options, and demonstrates XML export/import of reader settings.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder for the demo files.
-        string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        // Create a temporary folder for sample barcode images
+        string tempFolder = Path.Combine(Path.GetTempPath(), "Barcodes_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
 
-        // Define the full path for the generated barcode image.
-        string barcodePath = Path.Combine(tempFolder, "sample.png");
-
-        // Generate a simple QR barcode with the text "Hello World" and save it as a PNG file.
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Hello World"))
+        // Generate sample barcode images and store their file paths
+        List<string> barcodeFiles = new List<string>();
+        for (int i = 0; i < 3; i++)
         {
-            generator.Save(barcodePath, BarCodeImageFormat.Png);
+            string codeText = $"CODE{i}";
+            string filePath = Path.Combine(tempFolder, $"barcode_{i}.png");
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+            {
+                generator.Save(filePath, BarCodeImageFormat.Png);
+            }
+            barcodeFiles.Add(filePath);
         }
 
-        // Initialize a reader that can detect all supported barcode types in the image.
-        using (var reader = new BarCodeReader(barcodePath, DecodeType.AllSupportedTypes))
+        // Use the first generated image for demonstration
+        string sampleImage = barcodeFiles[0];
+        if (!File.Exists(sampleImage))
         {
-            // Set a custom reader option: enable checksum validation.
-            reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
+            Console.WriteLine("Sample image not found.");
+            return;
+        }
 
-            Console.WriteLine("Reading barcodes with original reader:");
-            // Iterate through all detected barcodes and output their details.
-            foreach (var result in reader.ReadBarCodes())
+        // Create a BarCodeReader with custom options to read all supported types
+        BaseDecodeType decodeAll = DecodeType.AllSupportedTypes;
+        using (var reader = new BarCodeReader(sampleImage, decodeAll))
+        {
+            // Apply custom reader settings
+            reader.BarcodeSettings.StripFNC = true;                     // Remove FNC characters from the result
+            reader.QualitySettings.XDimension = XDimensionMode.Small; // Use a smaller X-dimension for higher density
+            reader.QualitySettings.AllowIncorrectBarcodes = true;     // Permit reading of slightly malformed barcodes
+
+            // Read all barcodes present in the image (multiple per image are supported)
+            BarCodeResult[] results = reader.ReadBarCodes();
+            Console.WriteLine($"Initial read - barcodes found: {results.Length}");
+            foreach (var result in results)
             {
-                Console.WriteLine($"CodeText: {result.CodeText}, Type: {result.CodeTypeName}");
+                Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
             }
 
-            // Export the current reader settings to an XML file for later reuse.
-            string xmlPath = Path.Combine(tempFolder, "readerSettings.xml");
+            // Serialize the current reader configuration to an XML file
+            string xmlPath = Path.Combine(tempFolder, "readerState.xml");
             reader.ExportToXml(xmlPath);
-            Console.WriteLine($"Reader settings exported to XML at: {xmlPath}");
+            Console.WriteLine($"Reader state exported to: {xmlPath}");
+        }
 
-            // Import the previously saved settings into a new reader instance.
-            using (var importedReader = BarCodeReader.ImportFromXml(xmlPath))
+        // Import the previously saved reader configuration from XML and read again
+        string importedXml = Path.Combine(tempFolder, "readerState.xml");
+        if (File.Exists(importedXml))
+        {
+            using (var importedReader = BarCodeReader.ImportFromXml(importedXml))
             {
-                // After importing, associate the image source with the new reader.
-                importedReader.SetBarCodeImage(barcodePath);
+                // Associate the image with the imported reader (image data is not stored in XML)
+                importedReader.SetBarCodeImage(sampleImage);
 
-                Console.WriteLine("Reading barcodes with imported settings:");
-                // Read barcodes again using the imported configuration.
-                foreach (var result in importedReader.ReadBarCodes())
+                // Perform barcode reading using the imported settings
+                BarCodeResult[] importedResults = importedReader.ReadBarCodes();
+                Console.WriteLine($"After import - barcodes found: {importedResults.Length}");
+                foreach (var result in importedResults)
                 {
-                    Console.WriteLine($"CodeText: {result.CodeText}, Type: {result.CodeTypeName}");
+                    Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
                 }
             }
         }
 
-        // Optional cleanup: delete the temporary folder and its contents.
-        // Uncomment the line below to remove generated files after execution.
-        // Directory.Delete(tempFolder, true);
+        // Cleanup temporary files and folder (optional)
+        try
+        {
+            foreach (var file in barcodeFiles)
+            {
+                if (File.Exists(file)) File.Delete(file);
+            }
+            if (File.Exists(importedXml)) File.Delete(importedXml);
+            if (Directory.Exists(tempFolder)) Directory.Delete(tempFolder, true);
+        }
+        catch
+        {
+            // Ignore any errors that occur during cleanup
+        }
     }
 }

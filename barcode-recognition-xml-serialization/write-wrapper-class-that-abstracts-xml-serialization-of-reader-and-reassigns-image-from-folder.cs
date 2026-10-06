@@ -1,157 +1,101 @@
-// Title: BarCodeReader XML Serialization Wrapper Demo
-// Description: Demonstrates how to export and import Aspose.BarCode reader settings to XML and reassign a barcode image from a different folder.
-// Category-Description: This example belongs to the Aspose.BarCode .NET library collection that shows configuration persistence and image handling. It uses BarCodeReader, BarcodeGenerator, and related classes to illustrate exporting reader settings via ExportToXml, importing them with ImportFromXml, and reassigning images with SetBarCodeImage. Developers often need to store reader configurations, move images across directories, and reuse settings without recreating them.
-// Prompt: Write a wrapper class that abstracts XML serialization of the reader and reassigns the image from a folder.
-// Tags: barcode, xml-serialization, reader, aspose.barcode, code128, png, wrapper, import-export
+// Title: XML Serialization Wrapper for Aspose.BarCode Reader
+// Description: Demonstrates exporting a BarCodeReader's state to XML and importing it later, reassigning the barcode image from a folder.
+// Category-Description: This example belongs to the Aspose.BarCode serialization and image handling category. It showcases the use of BarCodeGenerator, BarCodeReader, and XML state persistence (ExportToXml, ImportFromXml). Typical scenarios include saving reader configuration for later reuse, batch processing, or decoupling barcode generation from recognition. Developers often need to serialize reader settings, store them, and later reload them with a different image source.
+/// Prompt: Write a wrapper class that abstracts XML serialization of the reader and reassigns the image from a folder.
+/// Tags: barcode, serialization, xml, reader, generation, aspose.barcode, csharp
 
 using System;
 using System.IO;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
-namespace BarcodeXmlWrapperDemo
+namespace AsposeBarCodeDemo
 {
     /// <summary>
-    /// Wrapper that abstracts XML serialization of <see cref="BarCodeReader"/> settings
-    /// and allows reassigning the barcode image after deserialization.
+    /// Provides methods to export and import the state of a <see cref="BarCodeReader"/> using XML serialization.
     /// </summary>
-    public class BarCodeReaderWrapper : IDisposable
+    public class BarCodeReaderXmlWrapper
     {
         /// <summary>
-        /// Gets the underlying <see cref="BarCodeReader"/> instance.
+        /// Exports the current state of the specified <see cref="BarCodeReader"/> to an XML file.
         /// </summary>
-        public BarCodeReader Reader { get; private set; }
-
-        /// <summary>
-        /// Initializes a new wrapper for the specified image file.
-        /// </summary>
-        /// <param name="imagePath">Full path to the barcode image.</param>
-        public BarCodeReaderWrapper(string imagePath)
+        /// <param name="reader">The barcode reader whose state will be saved.</param>
+        /// <param name="xmlPath">The file path where the XML representation will be written.</param>
+        public void ExportReaderState(BarCodeReader reader, string xmlPath)
         {
-            // Validate the image path before creating the reader.
-            if (string.IsNullOrWhiteSpace(imagePath) || !File.Exists(imagePath))
-                throw new ArgumentException("Image file does not exist.", nameof(imagePath));
-
-            Reader = new BarCodeReader(imagePath);
-        }
-
-        // Private constructor used internally when importing settings from XML.
-        private BarCodeReaderWrapper(BarCodeReader reader)
-        {
-            Reader = reader ?? throw new ArgumentNullException(nameof(reader));
+            // Serialize the reader's configuration and internal state to the given XML file.
+            reader.ExportToXml(xmlPath);
         }
 
         /// <summary>
-        /// Exports the current reader configuration to an XML file.
+        /// Imports a <see cref="BarCodeReader"/> state from an XML file and assigns a new barcode image.
         /// </summary>
-        /// <param name="xmlPath">Destination path for the XML file.</param>
-        public void ExportSettings(string xmlPath)
+        /// <param name="xmlPath">The path to the XML file containing the saved reader state.</param>
+        /// <param name="imagePath">The file path of the barcode image to associate with the imported reader.</param>
+        /// <returns>A <see cref="BarCodeReader"/> instance initialized with the imported state and image.</returns>
+        public BarCodeReader ImportReaderState(string xmlPath, string imagePath)
         {
-            if (string.IsNullOrWhiteSpace(xmlPath))
-                throw new ArgumentException("Invalid XML path.", nameof(xmlPath));
-
-            // Ensure the target directory exists.
-            string dir = Path.GetDirectoryName(xmlPath);
-            if (!Directory.Exists(dir))
-                Directory.CreateDirectory(dir);
-
-            Reader.ExportToXml(xmlPath);
-        }
-
-        /// <summary>
-        /// Imports reader settings from an XML file and assigns a new image to process.
-        /// </summary>
-        /// <param name="xmlPath">Path to the XML settings file.</param>
-        /// <param name="imagePath">Path to the barcode image to be assigned.</param>
-        /// <returns>A new <see cref="BarCodeReaderWrapper"/> instance with imported settings.</returns>
-        public static BarCodeReaderWrapper ImportSettings(string xmlPath, string imagePath)
-        {
-            if (!File.Exists(xmlPath))
-                throw new FileNotFoundException("XML settings file not found.", xmlPath);
-            if (!File.Exists(imagePath))
-                throw new FileNotFoundException("Image file not found.", imagePath);
-
-            // Import only the reader configuration; the image is not restored.
-            BarCodeReader importedReader = BarCodeReader.ImportFromXml(xmlPath);
-            // Assign the new image to the imported reader.
-            importedReader.SetBarCodeImage(imagePath);
-            return new BarCodeReaderWrapper(importedReader);
-        }
-
-        /// <summary>
-        /// Reads all barcodes from the assigned image and writes the results to the console.
-        /// </summary>
-        public void ReadAndPrint()
-        {
-            foreach (BarCodeResult result in Reader.ReadBarCodes())
-            {
-                Console.WriteLine($"Symbology: {result.CodeTypeName}, CodeText: {result.CodeText}");
-            }
-        }
-
-        /// <summary>
-        /// Releases all resources used by the underlying <see cref="BarCodeReader"/>.
-        /// </summary>
-        public void Dispose()
-        {
-            Reader?.Dispose();
+            // Recreate the reader from the previously saved XML state.
+            BarCodeReader reader = BarCodeReader.ImportFromXml(xmlPath);
+            // Assign the barcode image that the reader should process.
+            reader.SetBarCodeImage(imagePath);
+            return reader;
         }
     }
 
     class Program
     {
         /// <summary>
-        /// Entry point of the demo. Generates a barcode, exports reader settings,
-        /// moves the image, imports settings, and reads the barcode from the new location.
+        /// Entry point demonstrating barcode generation, state export, import, and reading using the wrapper.
         /// </summary>
         static void Main()
         {
-            // Create a unique temporary working folder.
-            string workFolder = Path.Combine(Path.GetTempPath(), "BarcodeXmlDemo_" + Guid.NewGuid().ToString("N"));
-            Directory.CreateDirectory(workFolder);
+            // Create a unique temporary folder to store generated files.
+            string tempFolder = Path.Combine(Path.GetTempPath(), "BarCodeDemo_" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tempFolder);
 
-            // Define paths for the original image, moved image, and XML settings.
-            string originalImagePath = Path.Combine(workFolder, "barcode.png");
-            string movedFolder = Path.Combine(workFolder, "Moved");
-            Directory.CreateDirectory(movedFolder);
-            string movedImagePath = Path.Combine(movedFolder, "barcode.png");
-            string xmlSettingsPath = Path.Combine(workFolder, "readerSettings.xml");
+            // Define file paths for the barcode image and the XML state file.
+            string barcodePath = Path.Combine(tempFolder, "sample.png");
+            string xmlPath = Path.Combine(tempFolder, "readerState.xml");
 
-            // Generate a sample Code128 barcode image.
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
+            // Generate a simple Code128 barcode and save it as a PNG image.
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
             {
-                // Default auto-sizing is sufficient for this example.
-                generator.Save(originalImagePath, BarCodeImageFormat.Png);
+                generator.Save(barcodePath, BarCodeImageFormat.Png);
             }
 
-            // Wrap the reader around the generated image and export its settings to XML.
-            using (var wrapper = new BarCodeReaderWrapper(originalImagePath))
+            // Initialize a reader for the generated image and export its state to XML.
+            using (BarCodeReader reader = new BarCodeReader(barcodePath))
             {
-                wrapper.ExportSettings(xmlSettingsPath);
-                Console.WriteLine("Exported reader settings to XML.");
+                BarCodeReaderXmlWrapper wrapper = new BarCodeReaderXmlWrapper();
+                wrapper.ExportReaderState(reader, xmlPath);
+                Console.WriteLine($"Reader state exported to: {xmlPath}");
             }
 
-            // Simulate moving the image to another folder.
-            File.Copy(originalImagePath, movedImagePath, overwrite: true);
-            Console.WriteLine($"Image moved to: {movedImagePath}");
-
-            // Import the previously saved settings and assign the moved image.
-            using (var importedWrapper = BarCodeReaderWrapper.ImportSettings(xmlSettingsPath, movedImagePath))
+            // Import the reader state from XML and reassign the same image.
+            BarCodeReaderXmlWrapper importWrapper = new BarCodeReaderXmlWrapper();
+            using (BarCodeReader importedReader = importWrapper.ImportReaderState(xmlPath, barcodePath))
             {
-                Console.WriteLine("Imported settings and assigned new image. Detected barcodes:");
-                importedWrapper.ReadAndPrint();
+                // Read barcodes from the reassigned image.
+                BarCodeResult[] results = importedReader.ReadBarCodes();
+                Console.WriteLine($"Barcodes read after import: {results.Length}");
+                foreach (BarCodeResult result in results)
+                {
+                    Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
+                }
             }
 
-            // Optional cleanup of the temporary working folder.
+            // Clean up temporary files and folder (optional).
             try
             {
-                Directory.Delete(workFolder, recursive: true);
+                File.Delete(barcodePath);
+                File.Delete(xmlPath);
+                Directory.Delete(tempFolder);
             }
             catch
             {
-                // Ignore any cleanup errors.
+                // Suppress any exceptions during cleanup to avoid breaking the demo flow.
             }
         }
     }
