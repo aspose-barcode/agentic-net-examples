@@ -1,8 +1,8 @@
-// Title: Save barcode to MemoryStream and get Base64 string
-// Description: Demonstrates generating a Code128 barcode, saving it directly into a MemoryStream, and converting the image data to a Base64-encoded string for easy transport or embedding.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to use the BarcodeGenerator class with EncodeTypes to create barcodes, save them in various image formats via BarCodeImageFormat, and handle the output in memory. Developers often need to embed barcode images in HTML, JSON, or other text-based payloads, so converting the image stream to Base64 is a common requirement. The snippet shows the typical workflow for in‑memory barcode creation without writing to disk.
+// Title: Generate Code128 barcode and output as Base64 string
+// Description: Demonstrates creating a Code128 barcode, saving it to a MemoryStream, and converting the image data to a Base64-encoded string for easy transport or embedding.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to use BarcodeGenerator with EncodeTypes and BarCodeImageFormat to produce barcode images in memory. Typical use cases include embedding barcodes in web pages, JSON payloads, or email bodies without writing files to disk. Developers often need to convert the image stream to Base64 for HTML img src or API responses.
 // Prompt: Save a barcode directly to a MemoryStream and convert the stream to a Base64 string.
-// Tags: code128, barcode generation, memorystream, base64, aspnet, aspose.barcode, image format
+// Tags: code128, barcode generation, memorystream, base64, aspose.barcode, image output
 
 using System;
 using System.IO;
@@ -10,33 +10,35 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generating a Code128 barcode, saving it to a memory stream,
-/// and converting the image to a Base64 string.
+/// Demonstrates barcode generation and conversion to Base64 string.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates the barcode and outputs its Base64 representation.
+    /// Entry point. Generates a Code128 barcode, writes it to a memory stream, and prints the Base64 representation.
     /// </summary>
     static void Main()
     {
-        // The text to encode in the barcode.
+        // Text to encode in the barcode
         string codeText = "12345678";
 
-        // Create a memory stream to hold the generated barcode image.
+        // Create a memory stream to hold the barcode image
         using (MemoryStream ms = new MemoryStream())
         {
-            // Initialize the barcode generator with Code128 symbology and the desired text.
+            // Initialize the barcode generator with Code128 symbology
             using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
             {
-                // Save the barcode image directly into the memory stream in PNG format.
+                // Save the generated barcode as a PNG image into the memory stream
                 generator.Save(ms, BarCodeImageFormat.Png);
             }
 
-            // Convert the image bytes from the memory stream to a Base64 string.
+            // Reset the stream position to the beginning before reading
+            ms.Position = 0;
+
+            // Convert the image bytes in the stream to a Base64 string
             string base64 = Convert.ToBase64String(ms.ToArray());
 
-            // Output the Base64 string to the console.
+            // Output the Base64 string to the console
             Console.WriteLine(base64);
         }
     }

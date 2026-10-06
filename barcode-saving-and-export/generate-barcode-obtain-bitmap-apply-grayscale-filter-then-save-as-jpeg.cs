@@ -1,8 +1,8 @@
-// Title: Generate Code128 Barcode, Convert to Grayscale Bitmap, and Save as JPEG
+// Title: Generate Code128 barcode and save as grayscale JPEG
 // Description: This example creates a Code128 barcode, converts the generated image to a grayscale bitmap, and saves it as a JPEG file.
-// Category-Description: Demonstrates Aspose.BarCode barcode generation combined with Aspose.Drawing image processing. Shows how to use BarcodeGenerator, Bitmap, pixel manipulation, and ImageFormat to produce a grayscale barcode image, a common requirement for printing or embedding barcodes in documents where color is not desired.
+// Category-Description: Demonstrates Aspose.BarCode barcode generation combined with Aspose.Drawing image processing. It shows how to use BarcodeGenerator, Bitmap, Graphics, and ColorMatrix to transform barcode images, a common task for developers needing custom visual effects before persisting barcodes in formats like JPEG.
 // Prompt: Generate a barcode, obtain a Bitmap, apply a grayscale filter, then save as JPEG.
-// Tags: code128, barcode, grayscale, jpeg, aspose.barcode, aspose.drawing, generation, image-processing
+// Tags: code128, barcode, grayscale, jpeg, aspose.barcode, aspose.drawing, image-processing
 
 using System;
 using System.IO;
@@ -12,45 +12,68 @@ using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Provides an entry point that generates a barcode, applies a grayscale filter, and saves the result as a JPEG file.
+/// Demonstrates generating a Code128 barcode, converting it to grayscale, and saving as JPEG.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Executes the barcode generation, grayscale conversion, and file saving process.
+    /// Entry point. Generates the barcode, applies grayscale filter, and writes the result to a file.
     /// </summary>
     static void Main()
     {
-        // Define the full path for the output JPEG file.
+        // Define the output file path for the grayscale JPEG image.
         string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "barcode_grayscale.jpg");
 
         // Initialize the barcode generator with Code128 symbology and the desired text.
         using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "12345678"))
         {
-            // Generate the barcode image as a Bitmap.
-            using (Bitmap bitmap = generator.GenerateBarCodeImage())
+            // Generate the barcode as a bitmap image.
+            using (Bitmap original = generator.GenerateBarCodeImage())
             {
-                // Apply a grayscale filter by processing each pixel.
-                for (int y = 0; y < bitmap.Height; y++)
-                {
-                    for (int x = 0; x < bitmap.Width; x++)
-                    {
-                        Color original = bitmap.GetPixel(x, y);
-                        int gray = (int)(original.R * 0.3 + original.G * 0.59 + original.B * 0.11);
-                        Color grayColor = Color.FromArgb(original.A, gray, gray, gray);
-                        bitmap.SetPixel(x, y, grayColor);
-                    }
-                }
+                int width = original.Width;
+                int height = original.Height;
 
-                // Save the processed bitmap as a JPEG file.
-                using (FileStream fs = new FileStream(outputPath, FileMode.Create, FileAccess.Write))
+                // Create a new bitmap that will hold the grayscale version.
+                using (Bitmap grayBitmap = new Bitmap(width, height))
                 {
-                    bitmap.Save(fs, ImageFormat.Jpeg);
+                    // Obtain a graphics object to draw onto the grayscale bitmap.
+                    using (Graphics graphics = Graphics.FromImage(grayBitmap))
+                    {
+                        // Define a color matrix that converts colors to grayscale.
+                        float[][] matrixElements = new float[][]
+                        {
+                            new float[] {0.3f, 0.3f, 0.3f, 0f, 0f},
+                            new float[] {0.59f, 0.59f, 0.59f, 0f, 0f},
+                            new float[] {0.11f, 0.11f, 0.11f, 0f, 0f},
+                            new float[] {0f, 0f, 0f, 1f, 0f},
+                            new float[] {0f, 0f, 0f, 0f, 1f}
+                        };
+                        ColorMatrix colorMatrix = new ColorMatrix(matrixElements);
+                        ImageAttributes imgAttr = new ImageAttributes();
+                        imgAttr.SetColorMatrix(colorMatrix);
+
+                        // Draw the original barcode onto the grayscale bitmap using the color matrix.
+                        graphics.DrawImage(
+                            original,
+                            new Rectangle(0, 0, width, height),
+                            0,
+                            0,
+                            width,
+                            height,
+                            GraphicsUnit.Pixel,
+                            imgAttr);
+                    }
+
+                    // Save the grayscale bitmap to a JPEG file.
+                    using (FileStream fs = new FileStream(outputPath, FileMode.Create, FileAccess.Write))
+                    {
+                        grayBitmap.Save(fs, ImageFormat.Jpeg);
+                    }
                 }
             }
         }
 
-        // Inform the user where the grayscale barcode image was saved.
+        // Inform the user where the file was saved.
         Console.WriteLine($"Grayscale barcode saved to: {outputPath}");
     }
 }
