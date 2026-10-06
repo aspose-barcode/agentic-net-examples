@@ -1,69 +1,65 @@
-// Title: Generate QR Code and embed in responsive HTML page
-// Description: Demonstrates creating a QR Code barcode image using Aspose.BarCode and embedding it into an HTML file that scales responsively.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, showcasing how to use the BarcodeGenerator class with QR symbology, configure parameters like XDimension and error correction level, and save the barcode as an image. Typical use cases include generating QR codes for URLs, product information, or authentication, and integrating them into web pages with responsive design. Developers often need to generate barcode images programmatically and embed them in HTML for cross‑platform display.
+// Title: Generate QR Code and embed in responsive HTML
+// Description: Demonstrates creating a QR Code barcode with Aspose.BarCode, converting it to a Base64 PNG, and embedding it in an HTML page that scales responsively.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on QR Code creation and image export. It showcases the BarcodeGenerator class, EncodeTypes enumeration, and BarCodeImageFormat for rendering barcodes as images, then using standard .NET APIs to embed the image in HTML. Developers often need to generate QR codes for web pages, emails, or mobile apps and require responsive display without separate image files.
 // Prompt: Generate QR Code barcode and embed it into an HTML page with responsive scaling.
-// Tags: qr code, barcode generation, html embedding, responsive design, aspose.barcode, encode types, png output
+// Tags: qr code, barcode generation, html embedding, responsive, aspose.barcode, png, base64
 
 using System;
 using System.IO;
+using System.Text;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a QR Code barcode image and embedding it into a responsive HTML page.
+/// Example program that generates a QR Code barcode, encodes it as a Base64 PNG,
+/// and writes an HTML file that displays the QR Code with responsive scaling.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates QR code, saves image, creates HTML, and writes output paths.
+    /// Entry point of the application.
     /// </summary>
     static void Main()
     {
-        // Define output directory and ensure it exists
-        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "output");
+        // Prepare a unique temporary output directory
+        string outputDir = Path.Combine(Path.GetTempPath(), "QrHtmlDemo_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(outputDir);
 
-        // Paths for the QR image and the HTML file
-        string qrImagePath = Path.Combine(outputDir, "qr.png");
-        string htmlPath = Path.Combine(outputDir, "qr.html");
-        string codeText = "https://example.com";
+        // Text to encode in the QR Code
+        string qrText = "https://example.com";
 
-        // Generate QR Code barcode with specific parameters
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, codeText))
+        // Create a QR Code generator with the desired content
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, qrText))
         {
-            // Set module size (XDimension) in pixels
+            // Optional: configure module size and high error correction level
             generator.Parameters.Barcode.XDimension.Pixels = 4f;
-            // Use high error correction level
             generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
-            // Save the barcode as a PNG image
-            generator.Save(qrImagePath, BarCodeImageFormat.Png);
+
+            // Render the QR Code into a memory stream as PNG
+            using (var ms = new MemoryStream())
+            {
+                generator.Save(ms, BarCodeImageFormat.Png);
+                ms.Position = 0; // Reset stream position for reading
+
+                // Convert the PNG bytes to a Base64 string for embedding
+                string base64 = Convert.ToBase64String(ms.ToArray());
+
+                // Build an HTML page that displays the QR Code image responsively
+                string html = $"<html><head><meta charset=\"UTF-8\"><title>QR Code</title></head>" +
+                              $"<body style=\"margin:0;display:flex;justify-content:center;align-items:center;height:100vh;\">" +
+                              $"<img src=\"data:image/png;base64,{base64}\" style=\"max-width:100%;height:auto;\" alt=\"QR Code\"/>" +
+                              $"</body></html>";
+
+                // Write the HTML file to the output directory
+                string htmlPath = Path.Combine(outputDir, "qr.html");
+                File.WriteAllText(htmlPath, html, Encoding.UTF8);
+
+                // Inform the user where the HTML file was saved
+                Console.WriteLine("QR code image and HTML page generated:");
+                Console.WriteLine("Image (in memory, not saved as separate file).");
+                Console.WriteLine($"HTML file: {htmlPath}");
+            }
         }
-
-        // Build HTML content that references the generated QR image and scales responsively
-        string htmlContent = $@"<!DOCTYPE html>
-<html>
-<head>
-<meta charset=""UTF-8"">
-<title>QR Code</title>
-<style>
-    .qr-img {{
-        max-width: 100%;
-        height: auto;
-        display: block;
-        margin: 0 auto;
-    }}
-</style>
-</head>
-<body>
-<img src=""{Path.GetFileName(qrImagePath)}"" class=""qr-img"" alt=""QR Code""/>
-</body>
-</html>";
-
-        // Write the HTML file to disk
-        File.WriteAllText(htmlPath, htmlContent);
-
-        // Output the locations of the generated files
-        Console.WriteLine($"Generated QR code image at: {qrImagePath}");
-        Console.WriteLine($"Generated HTML page at: {htmlPath}");
     }
 }

@@ -1,47 +1,51 @@
 // Title: Generate QR Code with Extended Encoding and Save as BMP
-// Description: Demonstrates how to create a QR Code using the Extended encoding mode, combining plain text and ECI segments, and save the result as a BMP image.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on QR Code creation with advanced encoding options. It showcases the use of QrExtCodetextBuilder to build multi‑segment code text, the EncodeTypes.QR symbology, and the QREncodeMode.Extended setting. Developers often need to generate QR Codes that mix different character sets or data types, and this snippet illustrates the typical workflow for such scenarios.
+// Description: Demonstrates how to create a QR Code using Aspose.BarCode with extended encoding mode that combines multiple data segments, then saves the image as a BMP file.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on QR Code creation with advanced encoding options. It showcases the use of BarcodeGenerator, QrExtCodetextBuilder, and related QR parameters such as EncodeMode and ErrorLevel. Developers often need to combine different data types in a single QR symbol and export it to various image formats for integration into applications.
 // Prompt: Generate a QR Code barcode with Extended encoding mode combining multiple data segments and save as BMP.
-// Tags: qr code, extended encoding, barcode generation, bmp output, aspose.barcode, qrextcodetextbuilder
+// Tags: qr code, extended encoding, bmp, generation, aspose.barcode
 
 using System;
-using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a QR Code with Extended encoding mode and saving it as a BMP file.
+/// Example program that creates a QR Code with extended encoding mode,
+/// combines several data segments, and saves the result as a BMP image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Builds a multi‑segment QR Code text, configures the generator,
-    /// and writes the image to disk.
+    /// Entry point of the application.
     /// </summary>
     static void Main()
     {
-        // Determine output file path in the current directory
-        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "qr_extended.bmp");
+        // Define the output file path for the generated BMP image.
+        string outputPath = "qr_extended.bmp";
 
-        // Build extended QR Code text with plain and ECI (UTF‑8) segments
+        // Build the extended QR code text by adding multiple data segments.
         QrExtCodetextBuilder builder = new QrExtCodetextBuilder();
-        builder.AddPlainCodetext("Hello");
-        builder.AddECICodetext(ECIEncodings.UTF8, "World");
-        builder.AddPlainCodetext("2026");
-        string extendedText = builder.ToString();
+        builder.AddPlainCodetext("Hello");                                 // Plain text segment
+        builder.AddECICodetext(ECIEncodings.UTF8, "World");                // UTF-8 encoded segment
+        builder.AddPlainCodetext("12345");                                 // Another plain text segment
 
-        // Create a QR Code generator with the extended text
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, extendedText))
+        // Initialize the QR Code generator with the QR symbology.
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR))
         {
-            // Set the QR Code to use Extended encoding mode
+            // Enable extended encoding mode to allow mixed data segments.
             generator.Parameters.Barcode.QR.EncodeMode = QREncodeMode.Extended;
 
-            // Save the generated QR Code as a BMP image
+            // Assign the combined extended codetext to the generator.
+            generator.CodeText = builder.GetExtendedCodetext();
+
+            // Optionally set the error correction level (Level M provides a good balance).
+            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
+
+            // Save the generated QR Code as a BMP image to the specified path.
             generator.Save(outputPath, BarCodeImageFormat.Bmp);
         }
 
-        // Inform the user where the file was saved
+        // Inform the user where the QR Code image has been saved.
         Console.WriteLine($"QR Code saved to: {outputPath}");
     }
 }

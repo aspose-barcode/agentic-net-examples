@@ -1,65 +1,62 @@
-// Title: Generate GS1 Composite barcode and return Base64 PNG
-// Description: Demonstrates creating a GS1 Composite barcode from a combined linear and 2D code text string and encoding the resulting PNG image as a Base64 string.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, focusing on GS1 Composite symbology. It uses BarcodeGenerator with EncodeTypes.GS1CompositeBar, configures linear and 2D component types, and shows how to customize component settings such as PDF417 columns. Developers building barcode services or APIs often need to generate composite barcodes and deliver them in web‑friendly formats like Base64 strings.
+// Title: Generate GS1 Composite Barcode and Return as Base64 String
+// Description: Demonstrates creating a GS1 Composite barcode from combined linear and 2‑D components and encoding the PNG image to a Base64 string for API responses.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use BarcodeGenerator with EncodeTypes.GS1CompositeBar, configure linear and 2‑D component types, and produce image output. Typical use cases include web services that need to return barcode images as Base64 strings for client‑side rendering. Developers often work with EncodeTypes, GS1CompositeBar parameters, and image format classes to meet these requirements.
 // Prompt: Expose an API endpoint that receives combined CodeText and returns a GS1 Composite barcode as base64 string.
-// Tags: gs1 composite, barcode generation, base64, png, aspose.barcode, encode types, api endpoint
+// Tags: gs1 composite, barcode generation, png, base64, aspose.barcode
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Provides a console example that generates a GS1 Composite barcode and outputs it as a Base64‑encoded PNG string.
+/// Example program that generates a GS1 Composite barcode and outputs it as a Base64‑encoded PNG string.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Builds sample combined code text, generates the barcode, and writes the Base64 string to the console.
+    /// Entry point that builds the combined CodeText, creates the barcode, and writes the Base64 string to the console.
     /// </summary>
     static void Main()
     {
-        // Sample combined CodeText: linear part | 2D part
-        string linearPart = "(01)12345678901231";
-        string twoDPart = "(01)00123456789012";
-        string combinedCodeText = $"{linearPart}|{twoDPart}";
+        // In a real web service this method would accept a combined CodeText via HTTP.
+        // Here we demonstrate the core logic in a console app and output the Base64 string.
 
-        // Generate the barcode image and obtain its Base64 representation
-        string base64Image = GenerateGs1CompositeBase64(combinedCodeText);
-        Console.WriteLine("Base64 PNG of GS1 Composite barcode:");
-        Console.WriteLine(base64Image);
-    }
+        // Linear component (GS1-128) containing a GTIN‑14.
+        string linearComponent = "(01)01234567890128";
 
-    /// <summary>
-    /// Generates a GS1 Composite barcode from the provided combined code text and returns the PNG image as a Base64 string.
-    /// </summary>
-    /// <param name="combinedCodeText">The combined linear and 2D component data, separated by a pipe character.</param>
-    /// <returns>Base64‑encoded PNG image of the generated barcode.</returns>
-    static string GenerateGs1CompositeBase64(string combinedCodeText)
-    {
-        // Initialize the generator with GS1 Composite symbology and the combined code text
+        // 2‑D component (PDF417) containing a lot number.
+        string twoDComponent = "(21)A12345678";
+
+        // Combine the two components using the '|' separator required by GS1 Composite.
+        string combinedCodeText = $"{linearComponent}|{twoDComponent}";
+
+        // Initialize the barcode generator for GS1 Composite symbology with the combined text.
         using (var generator = new BarcodeGenerator(EncodeTypes.GS1CompositeBar, combinedCodeText))
         {
-            // Configure the linear component to use GS1‑Code128 encoding
+            // Set the linear (1‑D) component type to GS1‑Code128.
             generator.Parameters.Barcode.GS1CompositeBar.LinearComponentType = EncodeTypes.GS1Code128;
 
-            // Configure the 2D component to use CC‑C (Composite Component) type
+            // Set the 2‑D component type; CC_C uses a full PDF417 barcode.
             generator.Parameters.Barcode.GS1CompositeBar.TwoDComponentType = TwoDComponentType.CC_C;
 
-            // Allow non‑GS1 data in the 2D component (optional, set to false to enforce GS1 only)
-            generator.Parameters.Barcode.GS1CompositeBar.AllowOnlyGS1Encoding = false;
-
-            // Example: set PDF417 column count for the CC‑C component
+            // Example PDF417 column setting for the 2‑D component (adjust for desired size).
             generator.Parameters.Barcode.Pdf417.Columns = 30;
 
-            // Render the barcode to a memory stream in PNG format
+            // Allow non‑GS1 data in the 2‑D component (useful for custom application identifiers).
+            generator.Parameters.Barcode.GS1CompositeBar.AllowOnlyGS1Encoding = false;
+
+            // Render the barcode to a memory stream in PNG format.
             using (var ms = new MemoryStream())
             {
                 generator.Save(ms, BarCodeImageFormat.Png);
-                // Convert the image bytes to a Base64 string
-                return Convert.ToBase64String(ms.ToArray());
+
+                // Convert the PNG bytes to a Base64 string for easy transport over HTTP.
+                string base64 = Convert.ToBase64String(ms.ToArray());
+
+                // Output the Base64 string (in a real API this would be the response body).
+                Console.WriteLine(base64);
             }
         }
     }

@@ -1,8 +1,8 @@
 // Title: Generate QR Code with Transparent Background
 // Description: Creates a QR Code barcode, sets a transparent background, and saves it as a PNG for overlay on images.
-// Category-Description: This example demonstrates Aspose.BarCode's barcode generation capabilities, focusing on QR Code creation with a transparent background. It uses BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes to produce a PNG image suitable for compositing over other graphics. Developers often need such images for UI overlays, marketing materials, or embedding barcodes in photos where the background must remain visible.
+// Category-Description: This example demonstrates Aspose.BarCode barcode generation with visual customization. It uses BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes to produce a QR Code with transparent background, a common requirement when overlaying barcodes on photos or UI elements. Developers working with barcode rendering, image compositing, or custom branding will find this pattern useful.
 // Prompt: Generate QR Code barcode and add a transparent background for overlay on images.
-// Tags: qr code, barcode generation, transparent background, png, aspose.barcode, aspose.drawing
+// Tags: qr code, barcode generation, transparent background, png, aspose.barcode, image overlay
 
 using System;
 using System.IO;
@@ -12,43 +12,43 @@ using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates how to generate a QR Code barcode with a transparent background
-/// and save it as a PNG image suitable for overlaying on other images.
+/// Demonstrates generating a QR Code barcode with a transparent background using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates the QR Code, applies transparency,
-    /// and writes the resulting image to the Output folder.
+    /// Entry point that creates the QR Code and saves it as a PNG file.
     /// </summary>
     static void Main()
     {
-        // Determine the output directory relative to the current working folder
-        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Output");
-
-        // Ensure the output directory exists
+        // Prepare an output directory in the system's temporary folder
+        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
         if (!Directory.Exists(outputDir))
         {
             Directory.CreateDirectory(outputDir);
         }
 
-        // Full path for the generated PNG file
+        // Define the data to encode and the full path for the resulting image
+        string codeText = "https://example.com";
         string outputPath = Path.Combine(outputDir, "QrTransparent.png");
 
-        // Initialize the barcode generator for a QR Code with the desired data
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
+        // Generate the QR Code with a transparent background
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, codeText))
         {
-            // Set the background color to transparent so the image can be overlaid
-            generator.Parameters.BackColor = Color.Transparent;
+            // Optional: adjust the size of each QR module (pixel size)
+            generator.Parameters.Barcode.XDimension.Pixels = 4f;
 
-            // Optionally set the QR Code modules (bars) to black (default value)
+            // Set the color of the QR modules (foreground)
             generator.Parameters.Barcode.BarColor = Color.Black;
 
-            // Save the barcode as a PNG, which supports alpha transparency
+            // Set the background color to transparent
+            generator.Parameters.BackColor = Color.Transparent;
+
+            // Save the barcode as a PNG, which supports transparency
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
         // Inform the user where the file was saved
-        Console.WriteLine($"QR Code with transparent background saved to: {outputPath}");
+        Console.WriteLine($"QR Code saved to: {outputPath}");
     }
 }

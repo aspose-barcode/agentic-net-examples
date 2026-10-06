@@ -1,79 +1,74 @@
-// Title: Embed generated barcode into email body using MIME multipart
-// Description: Demonstrates creating a Code128 barcode image, converting it to Base64, and constructing a MIME multipart/related message with the barcode embedded for email.
-// Category-Description: This example belongs to the Aspose.BarCode generation and integration category, showing how to generate barcode images (using BarcodeGenerator) and embed them in email content via MIME multipart messages. Developers often need to include barcodes in automated emails, reports, or notifications, and this snippet illustrates the typical workflow of image generation, Base64 encoding, and MIME assembly using standard .NET classes.
+// Title: Embed a generated barcode image into an email body using MIME multipart
+// Description: Demonstrates creating a Code128 barcode, converting it to PNG, and embedding it as an inline image in an HTML email via a linked resource.
+// Category-Description: This example belongs to the Aspose.BarCode generation and email integration category. It shows how to use BarcodeGenerator (Aspose.BarCode.Generation) to produce barcode images and how to incorporate them into System.Net.Mail messages using AlternateView and LinkedResource. Developers often need to send barcodes in transactional emails, reports, or notifications, and this pattern illustrates the typical workflow for embedding images in MIME multipart messages.
 // Prompt: Provide example showing how to embed generated barcode into an email body using MIME multipart.
-// Tags: code128, barcode generation, png, mime multipart, email embedding, aspose.barcode, aspose.drawing
+// Tags: barcode, code128, embed, email, mime, multipart, html, linkedresource, aspose.barcode, generation, png
 
 using System;
 using System.IO;
-using System.Text;
+using System.Net.Mail;
+using System.Net.Mime;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates embedding a generated barcode image into an email body using MIME multipart/related format.
+/// Demonstrates embedding a generated barcode image into an email body using MIME multipart.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a Code128 barcode, encodes it as Base64, and builds a MIME message with the image embedded.
+    /// Entry point of the example. Generates a Code128 barcode, embeds it in an HTML email, and prepares the message.
     /// </summary>
     static void Main()
     {
-        // ------------------------------------------------------------
-        // Generate barcode image and obtain its Base64 representation
-        // ------------------------------------------------------------
-        string codeText = "12345678";
-        string base64Image;
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
-        {
-            using (var ms = new MemoryStream())
-            {
-                // Save barcode as PNG into memory stream
-                generator.Save(ms, BarCodeImageFormat.Png);
-                byte[] imageBytes = ms.ToArray();
+        // Text to encode in the barcode.
+        string codeText = "1234567890";
 
-                // Convert PNG bytes to Base64 string for MIME embedding
-                base64Image = Convert.ToBase64String(imageBytes);
+        // Initialize the barcode generator with Code128 symbology.
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+        {
+            // Set image resolution for better quality.
+            generator.Parameters.Resolution = 300;
+
+            // Stream to hold the generated PNG image.
+            using (MemoryStream barcodeStream = new MemoryStream())
+            {
+                // Save the barcode image to the memory stream.
+                generator.Save(barcodeStream, BarCodeImageFormat.Png);
+                // Reset stream position to the beginning for reading.
+                barcodeStream.Position = 0;
+
+                // Create the email message.
+                using (MailMessage message = new MailMessage())
+                {
+                    message.From = new MailAddress("sender@example.com");
+                    message.To.Add("recipient@example.com");
+                    message.Subject = "Barcode Embedded Email";
+
+                    // HTML body referencing the embedded image via Content-ID.
+                    string htmlBody = @"<html><body><p>Here is your barcode:</p><img src=""cid:barcodeImage"" alt=""Barcode""/></body></html>";
+
+                    // Create an alternate view for HTML content.
+                    using (AlternateView htmlView = AlternateView.CreateAlternateViewFromString(htmlBody, null, MediaTypeNames.Text.Html))
+                    {
+                        // Create a linked resource for the barcode image.
+                        LinkedResource barcodeResource = new LinkedResource(barcodeStream, MediaTypeNames.Image.Png)
+                        {
+                            ContentId = "barcodeImage",
+                            TransferEncoding = TransferEncoding.Base64
+                        };
+
+                        // Attach the image resource to the HTML view.
+                        htmlView.LinkedResources.Add(barcodeResource);
+
+                        // Add the HTML view to the email message.
+                        message.AlternateViews.Add(htmlView);
+
+                        // Indicate that the email is ready (sending is out of scope for this example).
+                        Console.WriteLine("Email message prepared with embedded barcode.");
+                    }
+                }
             }
         }
-
-        // ------------------------------------------------------------
-        // Build MIME multipart/related email with embedded barcode image
-        // ------------------------------------------------------------
-        string boundary = "----=_Part_" + Guid.NewGuid().ToString("N");
-        var sb = new StringBuilder();
-
-        // Email headers
-        sb.AppendLine("From: sender@example.com");
-        sb.AppendLine("To: recipient@example.com");
-        sb.AppendLine("Subject: Barcode Email");
-        sb.AppendLine("MIME-Version: 1.0");
-        sb.AppendLine($"Content-Type: multipart/related; boundary=\"{boundary}\"");
-        sb.AppendLine();
-
-        // HTML part referencing the embedded image via Content-ID
-        sb.AppendLine($"--{boundary}");
-        sb.AppendLine("Content-Type: text/html; charset=\"utf-8\"");
-        sb.AppendLine("Content-Transfer-Encoding: 7bit");
-        sb.AppendLine();
-        sb.AppendLine("<html><body><p>Here is the barcode:</p>");
-        sb.AppendLine("<img src=\"cid:barcodeImage\" alt=\"Barcode\"/>");
-        sb.AppendLine("</body></html>");
-        sb.AppendLine();
-
-        // Image part containing the Base64-encoded PNG
-        sb.AppendLine($"--{boundary}");
-        sb.AppendLine("Content-Type: image/png");
-        sb.AppendLine("Content-Transfer-Encoding: base64");
-        sb.AppendLine("Content-ID: <barcodeImage>");
-        sb.AppendLine();
-        sb.AppendLine(base64Image);
-        sb.AppendLine($"--{boundary}--");
-
-        // Output the complete MIME message to console
-        Console.WriteLine(sb.ToString());
     }
 }

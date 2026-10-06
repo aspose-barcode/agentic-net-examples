@@ -1,8 +1,8 @@
 // Title: Generate QR Code with Version 40 and Save as PNG
-// Description: This example creates a QR Code barcode using Aspose.BarCode, sets the QR version to 40 (maximum data capacity), and saves the image as a PNG file.
-// Category-Description: Demonstrates barcode generation with Aspose.BarCode focusing on QR Code creation. It showcases the use of BarcodeGenerator, EncodeTypes, QRVersion, and BarCodeImageFormat to produce high‑capacity QR codes, a common requirement for marketing, product tracking, and data‑rich applications. Developers looking for QR Code generation patterns can reference this example as part of a collection of barcode generation tutorials.
+// Description: This example creates a QR Code barcode using Aspose.BarCode, sets the QR version to 40, and saves the image as a PNG file.
+// Category-Description: Demonstrates QR Code generation using Aspose.BarCode's BarcodeGenerator. Shows how to configure QR version, adjust module size, and export to PNG. Useful for developers needing high-capacity QR codes in .NET applications, covering key classes like BarcodeGenerator, EncodeTypes, QRVersion, and BarCodeImageFormat.
 // Prompt: Generate a QR Code barcode with version forty specified and save as PNG.
-// Tags: qr code, barcode generation, png, aspose.barcode, qrcode version, image output
+// Tags: qr code, barcode generation, png output, aspose.barcode, qrversion, encode types
 
 using System;
 using System.IO;
@@ -15,24 +15,27 @@ using Aspose.BarCode.Generation;
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
+    /// Entry point of the application. Creates the QR Code and writes the output path to the console.
     /// </summary>
     static void Main()
     {
-        // Build the full path for the output PNG file in the current directory.
+        // Define the full path for the output PNG file in the current working directory.
         string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "QRCodeVersion40.png");
 
-        // Create a BarcodeGenerator for QR Code with the desired text.
-        using (BarcodeGenerator gen = new BarcodeGenerator(EncodeTypes.QR, "Sample QR Code"))
+        // Initialize the barcode generator for QR Code symbology with the desired text.
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "Aspose"))
         {
-            // Set the QR Code version to 40 (maximum size and data capacity).
-            gen.Parameters.Barcode.QR.Version = QRVersion.Version40;
+            // Set the size of a single QR module (pixel dimension) to 4.
+            generator.Parameters.Barcode.XDimension.Pixels = 4f;
 
-            // Save the generated QR Code image as a PNG file.
-            gen.Save(outputPath, BarCodeImageFormat.Png);
+            // Specify the QR Code version to 40 (maximum data capacity).
+            generator.Parameters.Barcode.QR.Version = QRVersion.Version40;
+
+            // Save the generated QR Code as a PNG image to the specified path.
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Output the location of the saved QR Code image.
+        // Inform the user where the QR Code image has been saved.
         Console.WriteLine($"QR Code saved to: {outputPath}");
     }
 }

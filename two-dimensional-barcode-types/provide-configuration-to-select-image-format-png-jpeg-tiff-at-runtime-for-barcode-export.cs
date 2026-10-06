@@ -1,63 +1,72 @@
-// Title: Runtime Selection of Barcode Image Format
-// Description: Demonstrates how to choose PNG, JPEG, or TIFF output format for a generated barcode based on a command‑line argument.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes. It shows typical use cases such as dynamic image format selection for barcode export, a common requirement when integrating barcode generation into automated workflows or user‑driven applications. Developers often need to configure output formats at runtime to meet downstream processing or storage constraints.
+// Title: Runtime selection of barcode image format (PNG, JPEG, TIFF)
+// Description: Demonstrates how to choose the output image format for a generated barcode based on a command‑line argument.
+// Category-Description: Shows a basic Aspose.BarCode generation scenario where the BarCodeImageFormat enum and BarcodeGenerator.Save method are used. This example belongs to the "Barcode generation and export" category, illustrating typical use cases such as exporting barcodes to different image types (PNG, JPEG, TIFF) for web or print workflows. Developers often need to dynamically select formats, manage output directories, and handle unsupported inputs.
 // Prompt: Provide configuration to select image format (PNG, JPEG, TIFF) at runtime for barcode export.
-// Tags: barcode symbology, generation, image format, runtime configuration, aspose.barcode, png, jpeg, tiff
+// Tags: barcode symbology, generation, image format, png, jpeg, tiff, aspose.barcode, runtime configuration
 
 using System;
 using System.IO;
-using Aspose.BarCode.Generation;
 using Aspose.BarCode;
+using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Generates a Code128 barcode and saves it in a format selected at runtime (PNG, JPEG, or TIFF).
+/// Example program that generates a Code128 barcode and saves it in a format
+/// (PNG, JPEG, or TIFF) selected at runtime via a command‑line argument.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Parses an optional command‑line argument to determine the image format,
-    /// creates the output directory, generates the barcode, and saves it using the chosen format.
+    /// Entry point. Parses the desired image format, prepares the output folder,
+    /// generates the barcode, and saves it using the selected format.
     /// </summary>
-    /// <param name="args">Optional first argument specifying the desired image format (png, jpeg, or tiff).</param>
+    /// <param name="args">Optional first argument specifying the image format (PNG, JPEG, or TIFF).</param>
     static void Main(string[] args)
     {
-        // Determine desired image format from command‑line argument or default to PNG
-        string formatArg = args.Length > 0 ? args[0] : "png";
+        // Determine the requested image format from the first command‑line argument; default to PNG.
+        string formatInput = args.Length > 0 ? args[0].Trim().ToUpperInvariant() : "PNG";
+
         BarCodeImageFormat imageFormat;
         string extension;
 
-        // Map the textual format to Aspose.BarCode's enum and file extension
-        switch (formatArg.Trim().ToLowerInvariant())
+        // Map the textual format to the corresponding BarCodeImageFormat enum value and file extension.
+        switch (formatInput)
         {
-            case "jpeg":
-            case "jpg":
-                imageFormat = BarCodeImageFormat.Jpeg;
-                extension = "jpg";
-                break;
-            case "tiff":
-            case "tif":
-                imageFormat = BarCodeImageFormat.Tiff;
-                extension = "tiff";
-                break;
-            case "png":
-            default:
+            case "PNG":
                 imageFormat = BarCodeImageFormat.Png;
-                extension = "png";
+                extension = ".png";
+                break;
+            case "JPEG":
+            case "JPG":
+                imageFormat = BarCodeImageFormat.Jpeg;
+                extension = ".jpg";
+                break;
+            case "TIFF":
+                imageFormat = BarCodeImageFormat.Tiff;
+                extension = ".tiff";
+                break;
+            default:
+                Console.WriteLine($"Unsupported format '{formatInput}'. Defaulting to PNG.");
+                imageFormat = BarCodeImageFormat.Png;
+                extension = ".png";
                 break;
         }
 
-        // Prepare output directory in the system temporary folder
-        string outputDir = Path.Combine(Path.GetTempPath(), "BarcodeExportDemo");
-        Directory.CreateDirectory(outputDir);
-        string outputPath = Path.Combine(outputDir, $"barcode.{extension}");
-
-        // Generate a simple Code128 barcode and save it in the selected format
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "12345678"))
+        // Ensure the output directory exists.
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
+        if (!Directory.Exists(outputDir))
         {
-            generator.Save(outputPath, imageFormat);
+            Directory.CreateDirectory(outputDir);
         }
 
-        // Inform the user where the barcode image was saved
-        Console.WriteLine($"Barcode saved to: {outputPath}");
+        // Build the full file path for the barcode image.
+        string filePath = Path.Combine(outputDir, $"barcode{extension}");
+
+        // Create a barcode generator for Code128 with sample data.
+        BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "12345678");
+
+        // Save the generated barcode using the selected image format.
+        generator.Save(filePath, imageFormat);
+
+        Console.WriteLine($"Barcode saved to {filePath} with format {imageFormat}.");
     }
 }

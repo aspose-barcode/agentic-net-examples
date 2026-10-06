@@ -1,8 +1,8 @@
 // Title: Han Xin Barcode Generation with Quiet Zone Validation
-// Description: Demonstrates how to generate a Han Xin barcode, apply a minimum quiet zone, and verify the padding meets scanner reliability requirements.
-// Category-Description: Shows Aspose.BarCode barcode generation and validation techniques, focusing on setting XDimension, padding, and image output. Useful for developers needing to ensure quiet zone compliance for 2D symbologies like Han Xin, QR, and DataMatrix. Key API classes include BarcodeGenerator, EncodeTypes, BarCodeImageFormat, and Aspose.Drawing.Image. This example belongs to a collection of barcode creation and quality‑check samples that help developers produce scanner‑ready barcodes.
+// Description: Demonstrates generating a Han Xin barcode, setting a quiet zone, and verifying that the quiet zone meets scanner requirements.
+// Category-Description: Shows how to use Aspose.BarCode to create and read Han Xin barcodes, configure XDimension and padding, and validate quiet zone dimensions. This example belongs to the barcode generation and recognition category, illustrating typical use cases such as setting module size, quiet zone, and confirming readability with BarCodeReader. Developers working with 2D barcodes often need to ensure compliance with scanner specifications.
 // Prompt: Validate that generated Han Xin barcode meets required quiet zone dimensions for scanner reliability.
-// Tags: hanxin, quietzone, barcode, generation, validation, png, aspose.barcode, aspose.drawing
+// Tags: hanxin,barcode,generation,quietzone,validation,recognition,aspose.barcode
 
 using System;
 using System.IO;
@@ -13,65 +13,84 @@ using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that creates a Han Xin barcode, enforces a minimum quiet zone,
-/// validates the padding, and saves the result as a PNG image.
+/// Example program that creates a Han Xin barcode, applies a quiet zone, and validates the quiet zone size.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates the barcode, checks quiet‑zone settings,
-    /// and outputs image dimensions.
+    /// Entry point. Generates a barcode, saves it, reads it back, and checks quiet‑zone compliance.
     /// </summary>
     static void Main()
     {
-        // --------------------------------------------------------------------
-        // Prepare a unique temporary folder for the generated image.
-        // --------------------------------------------------------------------
-        string outputFolder = Path.Combine(Path.GetTempPath(), "HanXinQuietZoneDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(outputFolder);
-        string imagePath = Path.Combine(outputFolder, "hanxin.png");
+        // ------------------------------------------------------------
+        // Prepare temporary folder and file paths
+        // ------------------------------------------------------------
+        string tempFolder = Path.Combine(Path.GetTempPath(), "HanXinQuietZone_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
+        string barcodePath = Path.Combine(tempFolder, "hanxin.png");
 
-        // --------------------------------------------------------------------
-        // Create a Han Xin barcode generator with the desired data string.
-        // --------------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.HanXin, "123456"))
+        // ------------------------------------------------------------
+        // Define barcode parameters
+        // ------------------------------------------------------------
+        const string codeText = "1234567890";
+        const float xDimPoints = 2f;        // Module size (X‑dimension) in points
+        const float paddingPoints = 10f;    // Desired quiet zone per side in points
+
+        // ------------------------------------------------------------
+        // Generate Han Xin barcode with explicit padding (quiet zone)
+        // ------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.HanXin, codeText))
         {
-            // Set the module (X) dimension – the size of a single barcode element.
-            generator.Parameters.Barcode.XDimension.Pixels = 2f;
+            generator.Parameters.Barcode.XDimension.Point = xDimPoints;
+            generator.Parameters.Barcode.Padding.Left.Point = paddingPoints;
+            generator.Parameters.Barcode.Padding.Right.Point = paddingPoints;
+            generator.Parameters.Barcode.Padding.Top.Point = paddingPoints;
+            generator.Parameters.Barcode.Padding.Bottom.Point = paddingPoints;
 
-            // Define the minimum quiet zone as twice the X dimension.
-            float minQuietZone = generator.Parameters.Barcode.XDimension.Pixels * 2f;
-
-            // Apply the calculated quiet zone to all four sides of the barcode.
-            generator.Parameters.Barcode.Padding.Left.Pixels   = minQuietZone;
-            generator.Parameters.Barcode.Padding.Right.Pixels  = minQuietZone;
-            generator.Parameters.Barcode.Padding.Top.Pixels    = minQuietZone;
-            generator.Parameters.Barcode.Padding.Bottom.Pixels = minQuietZone;
-
-            // Save the generated barcode image to the temporary folder.
-            generator.Save(imagePath, BarCodeImageFormat.Png);
-
-            // ----------------------------------------------------------------
-            // Validate that each padding side meets or exceeds the minimum.
-            // ----------------------------------------------------------------
-            bool paddingValid =
-                generator.Parameters.Barcode.Padding.Left.Pixels   >= minQuietZone &&
-                generator.Parameters.Barcode.Padding.Right.Pixels  >= minQuietZone &&
-                generator.Parameters.Barcode.Padding.Top.Pixels    >= minQuietZone &&
-                generator.Parameters.Barcode.Padding.Bottom.Pixels >= minQuietZone;
-
-            Console.WriteLine($"Quiet zone validation: {(paddingValid ? "PASS" : "FAIL")}");
+            generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        // --------------------------------------------------------------------
-        // Load the saved PNG image to report its pixel dimensions.
-        // --------------------------------------------------------------------
-        using (Image img = Image.FromFile(imagePath))
+        // ------------------------------------------------------------
+        // Verify the barcode can be read (implies quiet zone sufficient for scanner)
+        // ------------------------------------------------------------
+        BaseDecodeType decodeType = DecodeType.HanXin;
+        bool readSuccess = false;
+        using (var reader = new BarCodeReader(barcodePath, decodeType))
         {
-            Console.WriteLine($"Generated image size: {img.Width}x{img.Height} pixels");
+            var results = reader.ReadBarCodes();
+            readSuccess = results != null && results.Length > 0;
         }
 
-        // Cleanup: optionally delete the temporary folder (commented out to allow inspection).
-        // Directory.Delete(outputFolder, true);
+        // ------------------------------------------------------------
+        // Validate quiet zone dimensions against typical requirement
+        // ------------------------------------------------------------
+        // Typical requirement: quiet zone >= 10 * XDimension
+        float requiredQuietZone = 10f * xDimPoints;
+        bool quietZoneValid = paddingPoints >= requiredQuietZone;
+
+        // ------------------------------------------------------------
+        // Output results
+        // ------------------------------------------------------------
+        Console.WriteLine($"Barcode image saved to: {barcodePath}");
+        Console.WriteLine($"Read success: {readSuccess}");
+        Console.WriteLine($"XDimension (points): {xDimPoints}");
+        Console.WriteLine($"Padding set (points): {paddingPoints}");
+        Console.WriteLine($"Required quiet zone (points): {requiredQuietZone}");
+        Console.WriteLine($"Quiet zone validation: {(quietZoneValid ? "PASS" : "FAIL")}");
+
+        // ------------------------------------------------------------
+        // Clean up temporary files (optional)
+        // ------------------------------------------------------------
+        try
+        {
+            if (File.Exists(barcodePath))
+                File.Delete(barcodePath);
+            if (Directory.Exists(tempFolder))
+                Directory.Delete(tempFolder, true);
+        }
+        catch
+        {
+            // Ignored - cleanup failure should not affect validation result
+        }
     }
 }

@@ -1,8 +1,8 @@
-// Title: Batch generation of DataMatrix barcodes from a JSON array
-// Description: Demonstrates reading a JSON array of strings, generating a DataMatrix barcode for each entry using Aspose.BarCode, and saving the images to a temporary folder.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use BarcodeGenerator with EncodeTypes.DataMatrix. Typical use cases include bulk barcode creation from data sources such as JSON, CSV, or databases. Developers often need to automate barcode production for inventory, shipping, or tracking systems.
+// Title: Batch generation of DataMatrix barcodes from JSON input
+// Description: Demonstrates reading a JSON array of strings and creating DataMatrix barcodes for each entry, saving them as PNG files in a designated folder.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use the BarcodeGenerator class with EncodeTypes.DataMatrix. It illustrates typical batch processing scenarios where multiple barcodes are produced from external data sources such as JSON files. Developers often need to automate barcode creation for inventory, shipping, or tracking systems, and this snippet provides a concise pattern for reading input, configuring barcode parameters, and exporting images.
 // Prompt: Create a batch routine that reads a JSON array and produces DataMatrix barcodes saved to a specified folder.
-// Tags: datamatrix, barcode, generation, json, batch, aspose.barcode
+// Tags: datamatrix, barcode, batch, json, generation, png, aspose.barcode, csharp
 
 using System;
 using System.IO;
@@ -10,76 +10,89 @@ using System.Collections.Generic;
 using System.Text.Json;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates batch creation of DataMatrix barcodes from a JSON array and saving them to a folder.
+/// Provides a console application that reads a JSON array of strings and generates
+/// DataMatrix barcodes for each entry, saving the images to a specified output folder.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Parses JSON, creates output directory, generates barcodes, and writes PNG files.
+    /// Entry point of the application. Handles argument parsing, input preparation,
+    /// barcode generation, and result reporting.
     /// </summary>
-    static void Main()
+    /// <param name="args">
+    /// Optional command‑line arguments:
+    /// args[0] – path to the input JSON file (default: ./input.json);
+    /// args[1] – path to the output folder (default: temporary folder).
+    /// </param>
+    static void Main(string[] args)
     {
-        // Sample JSON array of strings to encode
-        string json = "[\"ABC\",\"123\",\"Hello World\"]";
+        // Determine input JSON path and output folder (use defaults if not provided)
+        string jsonPath = args.Length > 0 ? args[0] : Path.Combine(Directory.GetCurrentDirectory(), "input.json");
+        string outputFolder = args.Length > 1 ? args[1] : Path.Combine(Path.GetTempPath(), "DataMatrixBatch_" + Guid.NewGuid().ToString("N"));
 
-        // Deserialize JSON into a list of strings
-        List<string> items;
-        try
-        {
-            items = JsonSerializer.Deserialize<List<string>>(json);
-            if (items == null)
-            {
-                Console.WriteLine("JSON deserialization returned null.");
-                return;
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Failed to parse JSON: {ex.Message}");
-            return;
-        }
-
-        // Create a unique temporary output folder for the generated barcodes
-        string outputFolder = Path.Combine(Path.GetTempPath(), "DataMatrixBatch_" + Guid.NewGuid().ToString("N"));
-        try
+        // Ensure the output directory exists
+        if (!Directory.Exists(outputFolder))
         {
             Directory.CreateDirectory(outputFolder);
         }
+
+        // If the JSON file is missing, create a sample file with example data
+        if (!File.Exists(jsonPath))
+        {
+            var sampleData = new List<string> { "Sample1", "HelloWorld", "1234567890", "Aspose.BarCode", "DataMatrix" };
+            string sampleJson = JsonSerializer.Serialize(sampleData, new JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText(jsonPath, sampleJson);
+            Console.WriteLine($"Sample JSON created at: {jsonPath}");
+        }
+
+        // Read the JSON content and deserialize it into a list of strings
+        List<string> codeTexts;
+        try
+        {
+            string jsonContent = File.ReadAllText(jsonPath);
+            codeTexts = JsonSerializer.Deserialize<List<string>>(jsonContent);
+            if (codeTexts == null)
+                throw new ArgumentException("JSON does not contain a valid array of strings.");
+        }
         catch (Exception ex)
         {
-            Console.WriteLine($"Failed to create output folder: {ex.Message}");
+            Console.WriteLine($"Failed to read or parse JSON file: {ex.Message}");
             return;
         }
 
-        Console.WriteLine($"Saving barcodes to: {outputFolder}");
-
-        // Iterate over each item and generate a DataMatrix barcode
-        for (int i = 0; i < items.Count; i++)
+        // Limit the batch size to a safe maximum (e.g., 10 items) to avoid excessive processing
+        int maxItems = Math.Min(codeTexts.Count, 10);
+        for (int i = 0; i < maxItems; i++)
         {
-            string text = items[i] ?? string.Empty;
-            string filePath = Path.Combine(outputFolder, $"barcode_{i + 1}.png");
+            // Retrieve the text for the current barcode; use empty string if null
+            string text = codeTexts[i] ?? string.Empty;
+            string fileName = $"barcode_{i + 1}.png";
+            string outputPath = Path.Combine(outputFolder, fileName);
 
-            // Initialize the barcode generator with DataMatrix symbology and the current text
-            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.DataMatrix, text))
+            try
             {
-                // Optional: adjust module size for better readability
-                generator.Parameters.Barcode.XDimension.Pixels = 4f;
+                // Create a BarcodeGenerator for DataMatrix with the specified text
+                using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.DataMatrix, text))
+                {
+                    // Optional: adjust the module (pixel) size for better readability
+                    generator.Parameters.Barcode.XDimension.Pixels = 4f;
 
-                try
-                {
                     // Save the generated barcode as a PNG image
-                    generator.Save(filePath, BarCodeImageFormat.Png);
-                    Console.WriteLine($"Saved: {filePath}");
+                    generator.Save(outputPath, BarCodeImageFormat.Png);
                 }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Failed to generate barcode for \"{text}\": {ex.Message}");
-                }
+
+                Console.WriteLine($"Generated barcode {i + 1}: {outputPath}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error generating barcode for item {i + 1}: {ex.Message}");
             }
         }
 
-        Console.WriteLine("Batch processing completed.");
+        Console.WriteLine($"Batch processing completed. Barcodes saved to: {outputFolder}");
     }
 }

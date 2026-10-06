@@ -1,8 +1,8 @@
-// Title: Verify barcode image respects configured maximum dimensions
-// Description: Demonstrates generating a Code128 barcode with specified maximum width and height, then checks that the resulting image does not exceed those limits.
-// Category-Description: This example belongs to the Aspose.BarCode image generation category, illustrating how to configure image size constraints using BarcodeGenerator, AutoSizeMode, and image parameters. Developers often need to ensure generated barcodes fit within layout specifications for reports, labels, or UI components. The snippet shows retrieving actual dimensions and validating against configured limits, a common task when integrating barcode generation into automated tests.
-// Prompt: Create a test ensuring barcode image size respects maximum dimensions set in configuration.
-// Tags: barcode, code128, image size, max dimensions, autosizemode, generation, testing, aspose.barcode
+// Title: Barcode Image Size Validation with Maximum Dimensions
+// Description: Demonstrates generating a barcode image while enforcing maximum width and height constraints, then verifies that the output respects those limits.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to configure image size parameters (ImageWidth, ImageHeight, AutoSizeMode) and resolution when creating barcodes. Typical use cases include automated testing of barcode rendering, ensuring compliance with layout specifications, and preparing images for print or display. Developers often need to validate that generated barcodes fit within predefined dimensions using classes like BarcodeGenerator and Bitmap.
+/// Prompt: Create a test ensuring barcode image size respects maximum dimensions set in configuration.
+/// Tags: barcode, code128, image-size, validation, aspose.barcode, generation, png, autosizemode
 
 using System;
 using System.IO;
@@ -12,54 +12,76 @@ using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a barcode and verifying its image dimensions against configured maximum limits.
+/// Generates a barcode image with size constraints, verifies the dimensions, and cleans up temporary files.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a Code128 barcode, enforces maximum width/height, validates size, and saves the image.
+    /// Entry point of the example. Generates a barcode, checks its size against configured maximums, and reports the result.
     /// </summary>
     static void Main()
     {
-        // Define maximum allowed dimensions for the barcode image.
-        const int maxWidth = 300;
-        const int maxHeight = 200;
+        // Configuration: maximum allowed dimensions in pixels
+        const float maxWidthPixels = 300f;
+        const float maxHeightPixels = 200f;
+
+        // Sample barcode data
         const string codeText = "Test123";
 
-        // Initialize the barcode generator with Code128 symbology and the desired text.
+        // Prepare a temporary folder for output (optional, not required for the test)
+        string tempPath = Path.Combine(Path.GetTempPath(), "BarcodeSizeTest_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempPath);
+        string outputFile = Path.Combine(tempPath, "barcode.png");
+
+        // Generate barcode with size constraints
         using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
         {
-            // Apply the maximum width and height constraints.
-            generator.Parameters.ImageWidth.Pixels = maxWidth;
-            generator.Parameters.ImageHeight.Pixels = maxHeight;
-
-            // Set AutoSizeMode to Nearest so the generator respects the size limits.
+            // Set maximum dimensions and sizing mode
+            generator.Parameters.ImageWidth.Pixels = maxWidthPixels;
+            generator.Parameters.ImageHeight.Pixels = maxHeightPixels;
             generator.Parameters.AutoSizeMode = AutoSizeMode.Nearest;
 
-            // Generate the barcode image as a bitmap.
-            using (Bitmap bitmap = generator.GenerateBarCodeImage())
+            // Optional: set resolution for better quality
+            generator.Parameters.Resolution = 300f;
+
+            // Save to file (also used for verification)
+            generator.Save(outputFile, BarCodeImageFormat.Png);
+        }
+
+        // Verify the generated image size
+        using (var bitmap = new Bitmap(outputFile))
+        {
+            int actualWidth = bitmap.Width;
+            int actualHeight = bitmap.Height;
+
+            bool withinWidth = actualWidth <= maxWidthPixels;
+            bool withinHeight = actualHeight <= maxHeightPixels;
+
+            Console.WriteLine($"Generated barcode size: {actualWidth}x{actualHeight} pixels");
+            Console.WriteLine($"Within max width ({maxWidthPixels}px): {withinWidth}");
+            Console.WriteLine($"Within max height ({maxHeightPixels}px): {withinHeight}");
+
+            if (withinWidth && withinHeight)
             {
-                // Retrieve the actual dimensions of the generated image.
-                int actualWidth = bitmap.Width;
-                int actualHeight = bitmap.Height;
-
-                Console.WriteLine($"Generated barcode size: {actualWidth}x{actualHeight} pixels");
-
-                // Verify that the image dimensions are within the specified limits.
-                bool withinLimits = actualWidth <= maxWidth && actualHeight <= maxHeight;
-                Console.WriteLine(withinLimits
-                    ? "PASS: Image size respects maximum dimensions."
-                    : "FAIL: Image size exceeds maximum dimensions.");
-
-                // Save the barcode image to a temporary file for inspection.
-                string outPath = Path.Combine(Path.GetTempPath(), "barcode_test.png");
-                using (var stream = new MemoryStream())
-                {
-                    bitmap.Save(stream, ImageFormat.Png);
-                    File.WriteAllBytes(outPath, stream.ToArray());
-                    Console.WriteLine($"Barcode image saved to: {outPath}");
-                }
+                Console.WriteLine("Test passed: barcode image respects maximum dimensions.");
             }
+            else
+            {
+                Console.WriteLine("Test failed: barcode image exceeds maximum dimensions.");
+            }
+        }
+
+        // Clean up temporary files
+        try
+        {
+            if (File.Exists(outputFile))
+                File.Delete(outputFile);
+            if (Directory.Exists(tempPath))
+                Directory.Delete(tempPath, true);
+        }
+        catch
+        {
+            // Ignored - cleanup failure should not affect test result
         }
     }
 }

@@ -1,8 +1,8 @@
-// Title: Generate QR Code and handle unsupported characters
-// Description: Demonstrates creating a QR Code barcode with Aspose.BarCode, setting binary encoding mode, and catching exceptions for characters that cannot be encoded.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on QR Code creation. It showcases the use of BarcodeGenerator, EncodeTypes, QREncodeMode, and exception handling for invalid code text. Developers often need to generate QR codes for URLs, contact info, or custom data and must handle unsupported characters gracefully.
+// Title: Generate QR Code with Binary Encode Mode and Exception Handling
+// Description: Demonstrates creating a QR Code barcode using Aspose.BarCode, setting binary encode mode which does not support Unicode characters, and handling the resulting exception.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating how to configure QR Code parameters such as EncodeMode and exception behavior. It shows typical use cases for developers who need to generate QR codes programmatically, customize encoding settings, and gracefully handle unsupported characters during generation. The key API classes used are BarcodeGenerator, EncodeTypes, QREncodeMode, and BarCodeImageFormat.
 // Prompt: Generate a QR Code barcode and handle exceptions for unsupported characters during encoding.
-// Tags: qr code, barcode generation, exception handling, binary encode mode, aspose.barcode, png output
+// Tags: qr code,barcode generation,exception handling,binary encode mode,aspose.barcode,encode types,output png
 
 using System;
 using System.IO;
@@ -10,41 +10,41 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generating a QR Code barcode and handling encoding exceptions.
+/// Provides an entry point that generates a QR Code barcode and demonstrates exception handling for unsupported characters.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates QR code image and writes status to console.
+    /// Generates a QR Code in binary mode, which does not support Unicode characters, and catches any exceptions thrown during generation.
     /// </summary>
     static void Main()
     {
-        // Define the path for the generated PNG file in the temporary directory
-        string outputPath = Path.Combine(Path.GetTempPath(), "qr.png");
+        // Create a unique temporary directory for the output image.
+        string outputDir = Path.Combine(Path.GetTempPath(), "QrDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputDir);
+        string outputPath = Path.Combine(outputDir, "qr_binary.png");
 
-        // Text to encode; includes Unicode characters that may not be supported in binary mode
-        string codeText = "Hello世界";
-
-        // Initialize the barcode generator for QR Code with the specified text
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, codeText))
+        try
         {
-            // Set QR encoding mode to binary to handle raw byte data
-            generator.Parameters.Barcode.QR.EncodeMode = QREncodeMode.Binary;
-
-            // Enable throwing an exception when the code text contains unsupported characters
-            generator.Parameters.Barcode.ThrowExceptionWhenCodeTextIncorrect = true;
-
-            try
+            // Initialize the barcode generator for QR Code with Unicode text that will cause an error in binary mode.
+            using (var generator = new BarcodeGenerator(EncodeTypes.QR, "漢字"))
             {
-                // Attempt to save the QR code as a PNG image
+                // Set encode mode to Binary, which does not support Unicode characters; this will trigger an exception.
+                generator.Parameters.Barcode.QR.EncodeMode = QREncodeMode.Binary;
+
+                // Configure the generator to throw an exception when the code text is invalid.
+                generator.Parameters.Barcode.ThrowExceptionWhenCodeTextIncorrect = true;
+
+                // Save the generated QR Code image to the specified path in PNG format.
                 generator.Save(outputPath, BarCodeImageFormat.Png);
-                Console.WriteLine($"QR code generated successfully: {outputPath}");
+                Console.WriteLine($"QR Code generated successfully: {outputPath}");
             }
-            catch (Exception ex)
-            {
-                // Output any errors encountered during generation (e.g., unsupported characters)
-                Console.WriteLine($"Error generating QR code: {ex.Message}");
-            }
+        }
+        catch (Exception ex)
+        {
+            // Output exception details to the console.
+            Console.WriteLine("Exception during QR Code generation:");
+            Console.WriteLine(ex.Message);
         }
     }
 }

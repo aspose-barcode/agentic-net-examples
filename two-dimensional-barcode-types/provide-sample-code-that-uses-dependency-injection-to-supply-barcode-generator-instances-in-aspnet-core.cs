@@ -1,78 +1,95 @@
 // Title: Dependency Injection Example for Aspose.BarCode Generator in ASP.NET Core
-// Description: Demonstrates how to register and resolve a barcode generator service using ASP.NET Core's built‑in DI container, then generate a Code128 barcode and save it as PNG.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating typical use of BarcodeGenerator, EncodeTypes, and BarCodeImageFormat within a DI pattern. Developers often need to inject barcode services into controllers or background jobs to produce barcodes on demand, and this snippet shows the essential setup and usage.
+// Description: Demonstrates how to register a barcode generator factory with ASP.NET Core's built‑in DI container and create a Code128 barcode image.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of the BarcodeGenerator and related parameter classes together with Microsoft.Extensions.DependencyInjection. Developers often need to inject barcode creation services into ASP.NET Core applications for on‑the‑fly image generation, custom styling, and scalable architecture. The snippet shows typical registration, resolution, and usage patterns for such scenarios.
 // Prompt: Provide sample code that uses dependency injection to supply barcode generator instances in ASP.NET Core.
-// Tags: barcode, code128, dependency injection, aspnet core, aspnetcore, generation, png, aspose.barcode
+// Tags: barcode, dependency injection, aspnet core, code128, image, aspose.barcode, generation
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace BarcodeDiSample
 {
     /// <summary>
-    /// Service interface for barcode generation.
+    /// Factory interface for creating <see cref="BarcodeGenerator"/> instances.
     /// </summary>
-    public interface IBarcodeService
+    public interface IBarcodeGeneratorFactory
     {
-        void GenerateBarcode(string codeText, string filePath);
+        /// <summary>
+        /// Creates a new <see cref="BarcodeGenerator"/> with the specified code text.
+        /// </summary>
+        /// <param name="codeText">The text to encode in the barcode.</param>
+        /// <returns>A configured <see cref="BarcodeGenerator"/> instance.</returns>
+        BarcodeGenerator Create(string codeText);
     }
 
     /// <summary>
-    /// Service for generating barcodes using Aspose.BarCode.
+    /// Concrete implementation of <see cref="IBarcodeGeneratorFactory"/> that injects the encode type.
     /// </summary>
-    public class BarcodeService : IBarcodeService
+    public class BarcodeGeneratorFactory : IBarcodeGeneratorFactory
     {
-        public void GenerateBarcode(string codeText, string filePath)
+        private readonly BaseEncodeType _encodeType;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="BarcodeGeneratorFactory"/> class.
+        /// </summary>
+        /// <param name="encodeType">The barcode symbology to use (e.g., Code128).</param>
+        public BarcodeGeneratorFactory(BaseEncodeType encodeType)
         {
-            // Create a generator for Code128 symbology with the supplied text
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
-            {
-                // Optional: customize appearance
-                generator.Parameters.Barcode.XDimension.Point = 2f;
-                generator.Parameters.Barcode.BarHeight.Point = 30f;
+            _encodeType = encodeType ?? throw new ArgumentNullException(nameof(encodeType));
+        }
 
-                // Ensure the output directory exists
-                string directory = Path.GetDirectoryName(filePath);
-                if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
-                {
-                    Directory.CreateDirectory(directory);
-                }
-
-                // Save the barcode image as PNG
-                generator.Save(filePath, BarCodeImageFormat.Png);
-                Console.WriteLine($"Barcode saved to: {filePath}");
-            }
+        /// <inheritdoc/>
+        public BarcodeGenerator Create(string codeText)
+        {
+            if (codeText == null) throw new ArgumentNullException(nameof(codeText));
+            return new BarcodeGenerator(_encodeType, codeText);
         }
     }
 
     /// <summary>
-    /// Entry point demonstrating DI registration and barcode generation.
+    /// Sample program that shows how to use DI to obtain barcode generator instances.
     /// </summary>
     class Program
     {
         /// <summary>
-        /// Configures the DI container, resolves the barcode service, and creates a sample barcode image.
+        /// Entry point. Configures DI, resolves a factory, creates a barcode and saves it as PNG.
         /// </summary>
+        /// <param name="args">Command‑line arguments (not used).</param>
         static void Main(string[] args)
         {
-            // Set up the DI container
+            // Set up a simple DI container
             var services = new ServiceCollection();
-            services.AddTransient<IBarcodeService, BarcodeService>();
-            IServiceProvider provider = services.BuildServiceProvider();
 
-            // Resolve the barcode service from the container
-            var barcodeService = provider.GetRequiredService<IBarcodeService>();
+            // Register the factory with a specific encode type (Code128)
+            services.AddTransient<IBarcodeGeneratorFactory>(sp => new BarcodeGeneratorFactory(EncodeTypes.Code128));
 
-            // Define sample barcode data and output location
-            string sampleText = "1234567890";
-            string outputPath = Path.Combine(Path.GetTempPath(), "sample_barcode.png");
+            // Build the service provider to resolve services
+            using (var serviceProvider = services.BuildServiceProvider())
+            {
+                // Resolve the factory from the container
+                var factory = serviceProvider.GetRequiredService<IBarcodeGeneratorFactory>();
 
-            // Generate and save the barcode
-            barcodeService.GenerateBarcode(sampleText, outputPath);
+                // Create a barcode generator instance via DI
+                using (var generator = factory.Create("DI-Example-123"))
+                {
+                    // Optional: customize appearance
+                    generator.Parameters.Barcode.XDimension.Point = 2f;
+                    generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
+                    generator.Parameters.BackColor = Aspose.Drawing.Color.White;
+
+                    // Save the barcode image to a temporary file
+                    string outputPath = Path.Combine(Path.GetTempPath(), "di_barcode.png");
+                    generator.Save(outputPath, BarCodeImageFormat.Png);
+
+                    // Inform the user where the file was saved
+                    Console.WriteLine($"Barcode saved to: {outputPath}");
+                }
+            }
         }
     }
 }

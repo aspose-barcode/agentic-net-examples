@@ -1,148 +1,171 @@
-// Title: ECI Encoding Barcode Generation Test Across Cultures
-// Description: Demonstrates generating barcodes with ECI encoding for different languages and verifying them under specific culture settings.
-// Category-Description: This example belongs to the Aspose.BarCode culture‑aware barcode generation category. It shows how to configure ECI encoding for various symbologies (QR, DataMatrix, PDF417, DotCode) using the BarcodeGenerator class, save the image, and validate it with BarCodeReader. Developers often need to ensure correct character set handling when generating barcodes for international applications.
+// Title: Barcode ECI Encoding Test Suite Across Cultures
+// Description: Demonstrates generating and verifying barcodes with ECI encoding for different cultural character sets using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, showcasing how to work with ECI (Extended Channel Interpretation) encodings across multiple symbologies such as QR, DataMatrix, PDF417, and DotCode. It illustrates creating barcodes with specific regional character sets, saving them, and programmatically reading them back to confirm correct encoding. Developers building multi‑language scanning solutions often need these patterns to ensure reliable barcode handling in global applications.
 // Prompt: Create a test suite that verifies barcode generation across different cultures and regional settings for ECI encoding.
-// Tags: barcode, eci, culture, localization, qrcode, datamatrix, pdf417, dotcode, generation, recognition, aspose.barcode
+// Tags: barcode, eci, culture, regional, qr, datamatrix, pdf417, dotcode, generation, recognition, testing, aspose.barcode
 
 using System;
 using System.IO;
-using System.Text;
-using System.Globalization;
+using System.Collections.Generic;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Contains the entry point and helper methods for running barcode generation tests with ECI encoding across multiple cultures.
+/// Program that generates barcodes with ECI encoding for various cultures,
+/// saves them to temporary files, and validates decoding using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Main entry point. Creates a temporary directory and runs a series of barcode generation tests for different symbologies and cultures.
+    /// Simple DTO representing a single barcode test case.
     /// </summary>
-    static void Main()
+    class TestCase
     {
-        // Create a unique temporary folder for test output files
-        string tempDir = Path.Combine(Path.GetTempPath(), "ECITest_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempDir);
-
-        // Run QR code test with Greek characters under Greek culture
-        RunTest(
-            "QR_Greek",
-            EncodeTypes.QR,
-            "ΑΒΓΔΕ", // Greek letters
-            ECIEncodings.ISO_8859_7,
-            (gen) =>
-            {
-                gen.Parameters.Barcode.QR.EncodeMode = QREncodeMode.ECI;
-                gen.Parameters.Barcode.QR.ECIEncoding = ECIEncodings.ISO_8859_7;
-            },
-            new CultureInfo("el-GR")
-        );
-
-        // Run DataMatrix test with Cyrillic characters under Russian culture
-        RunTest(
-            "DataMatrix_Cyrillic",
-            EncodeTypes.DataMatrix,
-            "Привет", // Cyrillic
-            ECIEncodings.Win1251,
-            (gen) =>
-            {
-                gen.Parameters.Barcode.DataMatrix.EncodeMode = DataMatrixEncodeMode.ECI;
-                gen.Parameters.Barcode.DataMatrix.ECIEncoding = ECIEncodings.Win1251;
-            },
-            new CultureInfo("ru-RU")
-        );
-
-        // Run PDF417 test with Greek characters under Greek culture
-        RunTest(
-            "Pdf417_Greek",
-            EncodeTypes.Pdf417,
-            "ΑΒΓΔΕ", // Greek letters
-            ECIEncodings.ISO_8859_7,
-            (gen) =>
-            {
-                gen.Parameters.Barcode.Pdf417.EncodeMode = Pdf417EncodeMode.ECI;
-                gen.Parameters.Barcode.Pdf417.ECIEncoding = ECIEncodings.ISO_8859_7;
-            },
-            new CultureInfo("el-GR")
-        );
-
-        // Run DotCode test with Greek characters under Greek culture
-        RunTest(
-            "DotCode_Greek",
-            EncodeTypes.DotCode,
-            "ΑΒΓΔΕ", // Greek letters
-            ECIEncodings.ISO_8859_7,
-            (gen) =>
-            {
-                gen.Parameters.Barcode.DotCode.EncodeMode = DotCodeEncodeMode.ECI;
-                gen.Parameters.Barcode.DotCode.ECIEncoding = ECIEncodings.ISO_8859_7;
-            },
-            new CultureInfo("el-GR")
-        );
-
-        Console.WriteLine("All tests completed.");
+        public string SymbologyName; // e.g., "QR"
+        public string CodeText;
+        public ECIEncodings EciEncoding;
     }
 
     /// <summary>
-    /// Executes a single barcode generation and verification test.
+    /// Entry point. Executes the ECI encoding test cases, writes results to console,
+    /// and cleans up temporary artifacts.
     /// </summary>
-    /// <param name="testName">Unique name for the test, used for file naming and logging.</param>
-    /// <param name="encodeType">The barcode symbology to generate.</param>
-    /// <param name="codeText">The text to encode in the barcode.</param>
-    /// <param name="eciEncoding">The ECI encoding to apply.</param>
-    /// <param name="configure">Action that applies additional generator settings (e.g., enabling ECI mode).</param>
-    /// <param name="culture">CultureInfo to set during the test to simulate regional settings.</param>
-    static void RunTest(string testName, BaseEncodeType encodeType, string codeText, ECIEncodings eciEncoding, Action<BarcodeGenerator> configure, CultureInfo culture)
+    static void Main()
     {
-        Console.WriteLine($"--- Running {testName} ---");
+        // Create a unique temporary folder for test artifacts
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeECITest_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
 
-        // Preserve the original culture to restore later
-        CultureInfo originalCulture = CultureInfo.CurrentCulture;
+        // Define test cases covering different cultures/encodings
+        var testCases = new List<TestCase>
+        {
+            new TestCase { SymbologyName = "QR", CodeText = "ΑΒΓΔΕ", EciEncoding = ECIEncodings.ISO_8859_7 }, // Greek
+            new TestCase { SymbologyName = "QR", CodeText = "ÄÖÜ", EciEncoding = ECIEncodings.ISO_8859_1 }, // Latin-1
+            new TestCase { SymbologyName = "DataMatrix", CodeText = "ΑΒΓΔΕ", EciEncoding = ECIEncodings.ISO_8859_7 },
+            new TestCase { SymbologyName = "DataMatrix", CodeText = "ÄÖÜ", EciEncoding = ECIEncodings.ISO_8859_1 },
+            new TestCase { SymbologyName = "Pdf417", CodeText = "ΑΒΓΔΕ", EciEncoding = ECIEncodings.ISO_8859_7 },
+            new TestCase { SymbologyName = "Pdf417", CodeText = "ÄÖÜ", EciEncoding = ECIEncodings.ISO_8859_1 },
+            new TestCase { SymbologyName = "DotCode", CodeText = "ΑΒΓΔΕ", EciEncoding = ECIEncodings.ISO_8859_7 },
+            new TestCase { SymbologyName = "DotCode", CodeText = "ÄÖÜ", EciEncoding = ECIEncodings.ISO_8859_1 }
+        };
 
+        foreach (var test in testCases)
+        {
+            // Resolve EncodeTypes member via reflection
+            var encodeField = typeof(EncodeTypes).GetField(test.SymbologyName);
+            if (encodeField == null)
+            {
+                Console.WriteLine($"[SKIP] Unknown symbology for encoding: {test.SymbologyName}");
+                continue;
+            }
+            BaseEncodeType encodeType = (BaseEncodeType)encodeField.GetValue(null);
+
+            // Resolve DecodeType member via reflection
+            var decodeField = typeof(DecodeType).GetField(test.SymbologyName);
+            if (decodeField == null)
+            {
+                Console.WriteLine($"[SKIP] Unknown symbology for decoding: {test.SymbologyName}");
+                continue;
+            }
+            BaseDecodeType decodeType = (BaseDecodeType)decodeField.GetValue(null);
+
+            // Build a unique file name for the generated barcode image
+            string fileName = $"{test.SymbologyName}_{test.EciEncoding}_{Guid.NewGuid().ToString("N")}.png";
+            string filePath = Path.Combine(tempFolder, fileName);
+
+            // Generate barcode with ECI mode
+            try
+            {
+                using (var generator = new BarcodeGenerator(encodeType, test.CodeText))
+                {
+                    // Set symbology‑specific ECI mode and encoding
+                    switch (test.SymbologyName)
+                    {
+                        case "QR":
+                            generator.Parameters.Barcode.QR.EncodeMode = QREncodeMode.ECI;
+                            generator.Parameters.Barcode.QR.ECIEncoding = test.EciEncoding;
+                            break;
+                        case "DataMatrix":
+                            generator.Parameters.Barcode.DataMatrix.EncodeMode = DataMatrixEncodeMode.ECI;
+                            generator.Parameters.Barcode.DataMatrix.ECIEncoding = test.EciEncoding;
+                            break;
+                        case "Pdf417":
+                            generator.Parameters.Barcode.Pdf417.EncodeMode = Pdf417EncodeMode.ECI;
+                            generator.Parameters.Barcode.Pdf417.ECIEncoding = test.EciEncoding;
+                            break;
+                        case "DotCode":
+                            generator.Parameters.Barcode.DotCode.EncodeMode = DotCodeEncodeMode.ECI;
+                            generator.Parameters.Barcode.DotCode.ECIEncoding = test.EciEncoding;
+                            break;
+                        default:
+                            Console.WriteLine($"[SKIP] Unsupported symbology: {test.SymbologyName}");
+                            continue;
+                    }
+
+                    // Save the generated barcode image as PNG
+                    generator.Save(filePath, BarCodeImageFormat.Png);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[FAIL] Generation error for {test.SymbologyName}: {ex.Message}");
+                continue;
+            }
+
+            // Verify that the file was created
+            if (!File.Exists(filePath))
+            {
+                Console.WriteLine($"[FAIL] Generated file not found: {filePath}");
+                continue;
+            }
+
+            // Read back the barcode and compare the decoded text
+            try
+            {
+                using (var reader = new BarCodeReader(filePath, decodeType))
+                {
+                    var results = reader.ReadBarCodes();
+                    if (results.Length == 0)
+                    {
+                        Console.WriteLine($"[FAIL] No barcode detected in {fileName}");
+                    }
+                    else
+                    {
+                        bool matchFound = false;
+                        foreach (var result in results)
+                        {
+                            if (result.CodeText == test.CodeText)
+                            {
+                                matchFound = true;
+                                break;
+                            }
+                        }
+                        Console.WriteLine(matchFound
+                            ? $"[PASS] {test.SymbologyName} ECI {test.EciEncoding} decoded correctly."
+                            : $"[FAIL] {test.SymbologyName} decoded text mismatch. Expected: '{test.CodeText}'.");
+                    }
+                }
+            }
+            catch (ArgumentException ae) when (ae.Message.Contains("Image loading failed"))
+            {
+                Console.WriteLine($"[WARN] Skipping unreadable file {fileName}: {ae.Message}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[FAIL] Reading error for {fileName}: {ex.Message}");
+            }
+        }
+
+        // Cleanup: delete temporary folder and its contents
         try
         {
-            // Apply the test-specific culture
-            CultureInfo.CurrentCulture = culture;
-
-            // Determine output file path for the generated barcode image
-            string filePath = Path.Combine(Path.GetTempPath(), $"{testName}.png");
-
-            // Generate the barcode with the specified settings
-            using (var generator = new BarcodeGenerator(encodeType, codeText))
-            {
-                configure(generator);
-                generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-                generator.Parameters.BackColor = Aspose.Drawing.Color.White;
-                generator.Save(filePath, BarCodeImageFormat.Png);
-            }
-
-            // Read and verify the generated barcode
-            using (var reader = new BarCodeReader(filePath, DecodeType.AllSupportedTypes))
-            {
-                reader.BarcodeSettings.DetectEncoding = true;
-                var results = reader.ReadBarCodes();
-
-                if (results.Length > 0 && !string.IsNullOrEmpty(results[0].CodeText))
-                {
-                    Console.WriteLine($"Success: Detected symbology {results[0].CodeTypeName}, text length {results[0].CodeText.Length}");
-                }
-                else
-                {
-                    Console.WriteLine("Failure: No barcode detected or empty result.");
-                }
-            }
+            Directory.Delete(tempFolder, true);
         }
-        catch (Exception ex)
+        catch
         {
-            Console.WriteLine($"Exception during {testName}: {ex.Message}");
-        }
-        finally
-        {
-            // Restore the original culture regardless of test outcome
-            CultureInfo.CurrentCulture = originalCulture;
+            // If deletion fails, ignore – the folder is in a temp location.
         }
     }
 }

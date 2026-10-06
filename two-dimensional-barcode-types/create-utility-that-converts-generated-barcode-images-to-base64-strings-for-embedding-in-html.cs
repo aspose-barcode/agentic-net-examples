@@ -1,47 +1,58 @@
-// Title: Generate Code128 barcode and embed as Base64 image in HTML
-// Description: Demonstrates creating a Code128 barcode, converting the PNG image to a Base64 string, and outputting an HTML <img> tag for embedding.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to use BarcodeGenerator, EncodeTypes, and BarCodeImageFormat to produce barcode images programmatically. Typical use cases include creating barcodes for web pages, emails, or reports where the image must be embedded directly in HTML without separate file storage. Developers often need to convert generated images to Base64 strings for inline display, and this snippet shows the complete workflow.
+// Title: Barcode to Base64 Converter Example
+// Description: Demonstrates generating a Code128 barcode image with Aspose.BarCode and converting it to a Base64 string for embedding directly into HTML.
+// Category-Description: This example belongs to the Aspose.BarCode image generation and encoding category. It shows how to use BarcodeGenerator, BarCodeImageFormat, and .NET streams to create barcode graphics, then encode the binary image data to Base64. Developers often need this pattern when embedding barcodes in web pages, emails, or JSON payloads without writing files to disk.
 // Prompt: Create a utility that converts generated barcode images to Base64 strings for embedding in HTML.
-// Tags: barcode, code128, base64, html, image, generation, aspose.barcode
+// Tags: barcode, code128, base64, html, image, aspnet, aspose.barcode, generation, encoding
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates barcode generation and conversion to a Base64-encoded HTML image tag.
+/// Provides a simple console utility that generates a barcode image and returns it as a Base64 string for HTML embedding.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a Code128 barcode, encodes it as Base64, and prints an HTML <img> tag.
+    /// Entry point. Generates a Code128 barcode for a sample value and writes an HTML <img> tag with the Base64 data URI.
     /// </summary>
-    static void Main()
+    /// <param name="args">Command‑line arguments (not used).</param>
+    static void Main(string[] args)
     {
-        // Text to encode in the barcode
-        string codeText = "Sample123";
+        // Text to be encoded in the barcode
+        string codeText = "12345678";
 
-        // Initialize the barcode generator with Code128 symbology
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+        // Generate a Base64 representation of the barcode image
+        string base64 = GenerateBarcodeBase64(EncodeTypes.Code128, codeText);
+
+        // Output an HTML <img> element that embeds the barcode via a data URI
+        Console.WriteLine($"<img src=\"data:image/png;base64,{base64}\" alt=\"Barcode\" />");
+    }
+
+    /// <summary>
+    /// Generates a barcode image using the specified encoding type and text, then returns the image as a Base64 string.
+    /// </summary>
+    /// <param name="encodeType">The barcode symbology to use (e.g., Code128).</param>
+    /// <param name="codeText">The data to encode in the barcode.</param>
+    /// <returns>Base64‑encoded PNG image data.</returns>
+    static string GenerateBarcodeBase64(BaseEncodeType encodeType, string codeText)
+    {
+        // Create a BarcodeGenerator with the desired symbology and data
+        using (var generator = new BarcodeGenerator(encodeType, codeText))
         {
-            // Create a memory stream to hold the generated PNG image
-            using (var memoryStream = new MemoryStream())
+            // Use a memory stream to hold the generated image in memory
+            using (var ms = new MemoryStream())
             {
-                // Save the barcode image to the memory stream in PNG format
-                generator.Save(memoryStream, BarCodeImageFormat.Png);
+                // Save the barcode as a PNG image into the memory stream
+                generator.Save(ms, BarCodeImageFormat.Png);
 
                 // Convert the stream contents to a byte array
-                byte[] imageBytes = memoryStream.ToArray();
+                byte[] bytes = ms.ToArray();
 
                 // Encode the byte array to a Base64 string
-                string base64String = Convert.ToBase64String(imageBytes);
-
-                // Build an HTML <img> tag with the Base64-encoded image data
-                string imgTag = $"<img src=\"data:image/png;base64,{base64String}\" alt=\"barcode\"/>";
-
-                // Output the HTML tag to the console
-                Console.WriteLine(imgTag);
+                return Convert.ToBase64String(bytes);
             }
         }
     }

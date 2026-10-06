@@ -1,8 +1,8 @@
 // Title: Generate QR Code with Multilingual Display Text
-// Description: Demonstrates creating a QR Code barcode containing a multilingual phrase and setting the TwoDDisplayText property so the same text is shown when the barcode is rendered as an image.
-// Category-Description: Shows how to use Aspose.BarCode to generate 2‑D barcodes (QR Code) with custom display text. The example covers BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes, typical for developers needing to embed internationalized data in QR codes and control the human‑readable text shown alongside the barcode. Useful for web, mobile, or desktop apps that generate printable QR codes with multilingual labels.
+// Description: Creates a QR Code encoding a phrase containing English, Chinese, and Arabic characters and sets the TwoDDisplayText property so the same multilingual text is shown beneath the barcode.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, demonstrating how to produce 2‑D barcodes (QR Code) with custom display text. It showcases the use of BarcodeGenerator, EncodeTypes, and CodeTextParameters classes to encode Unicode data, adjust font settings, and save the result as an image. Developers working with multilingual data, visual barcode labels, or custom barcode rendering will find this pattern useful.
 // Prompt: Generate QR Code barcode and set TwoDDisplayText to multilingual phrase for display.
-// Tags: qr code, two-dimensional, display text, multilingual, aspose.barcode, generation, png
+// Tags: qr code, multilingual, display text, barcode generation, aspose.barcode, png
 
 using System;
 using System.IO;
@@ -12,37 +12,47 @@ using Aspose.BarCode.Generation;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that creates a QR Code containing multilingual text
-/// and sets the TwoDDisplayText property for human‑readable display.
+/// Demonstrates generating a QR Code that encodes a multilingual phrase
+/// and sets the TwoDDisplayText property so the same text appears beneath the barcode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates the QR Code and saves it as a PNG file.
+    /// Entry point of the example. Creates the output folder, builds the QR Code,
+    /// configures Unicode handling and display text, then saves the image.
     /// </summary>
     static void Main()
     {
-        // Define the full path for the output PNG image.
-        string outputPath = Path.Combine(Environment.CurrentDirectory, "qr_multilingual.png");
-
-        // Multilingual phrase to encode (English, Chinese, Arabic).
-        string multilingualText = "Hello 世界 مرحبا";
-
-        // Initialize the barcode generator for QR Code symbology.
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR))
+        // Define output directory and ensure it exists
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "output");
+        if (!Directory.Exists(outputDir))
         {
-            // Set the code text using UTF‑8 encoding to support all characters.
-            generator.SetCodeText(multilingualText, Encoding.UTF8);
-
-            // Set the text that will be displayed alongside the QR Code image.
-            generator.Parameters.Barcode.CodeTextParameters.TwoDDisplayText = multilingualText;
-
-            // Save the generated QR Code as a PNG image.
-            generator.Save(outputPath, BarCodeImageFormat.Png);
+            Directory.CreateDirectory(outputDir);
         }
 
-        // Output the location of the saved QR Code image.
-        Console.WriteLine($"QR Code saved to: {outputPath}");
+        // Multilingual phrase to encode and display (English, Chinese, Arabic)
+        string phrase = "Hello 世界 مرحبا";
+
+        // Initialize QR Code generator with the phrase as the code text
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, phrase))
+        {
+            // Explicitly set the code text using UTF‑8 to guarantee proper Unicode encoding
+            generator.SetCodeText(phrase, Encoding.UTF8);
+
+            // Assign the same phrase to the display text shown under the QR Code
+            generator.Parameters.Barcode.CodeTextParameters.TwoDDisplayText = phrase;
+
+            // Optional: increase font size of the display text for better readability
+            generator.Parameters.Barcode.CodeTextParameters.Font.Size.Point = 14f;
+
+            // Build the full path for the output PNG file
+            string outputPath = Path.Combine(outputDir, "qr_multilingual.png");
+
+            // Save the generated QR Code image in PNG format
+            generator.Save(outputPath, BarCodeImageFormat.Png);
+
+            // Inform the user where the file was saved
+            Console.WriteLine($"QR Code saved to: {outputPath}");
+        }
     }
 }

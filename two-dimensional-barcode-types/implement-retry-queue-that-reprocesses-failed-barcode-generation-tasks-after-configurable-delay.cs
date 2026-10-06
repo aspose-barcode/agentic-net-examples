@@ -1,140 +1,132 @@
-// Title: Barcode Generation with Retry Queue
-// Description: Demonstrates generating multiple barcodes using Aspose.BarCode with a retry mechanism that reprocesses failed tasks after a configurable delay.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to create barcodes of various symbologies, configure appearance, and handle transient failures using a retry queue. It highlights key API classes such as BarcodeGenerator, BaseEncodeType, and BarCodeImageFormat, which developers commonly use for batch barcode creation, automated reporting, and inventory systems.
+// Title: Barcode generation with retry queue and configurable delay
+// Description: Demonstrates generating multiple barcodes, retrying failed tasks up to a maximum number of attempts with a configurable delay between retries.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use BarcodeGenerator, EncodeTypes, and BarCodeImageFormat to create images. It illustrates typical use cases such as batch processing, error handling, and retry mechanisms for developers needing robust barcode creation in automated workflows.
 // Prompt: Implement a retry queue that reprocesses failed barcode generation tasks after a configurable delay.
-// Tags: barcode, symbology, generation, retry, queue, aspose.barcode, png, csharp
+// Tags: barcode generation, retry queue, delay, code128, qr, datamatrix, aspose.barcode, aspose.barcode.generation, png
 
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Reflection;
 using System.Threading.Tasks;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates batch barcode generation with a configurable retry queue for handling failures.
+/// Demonstrates barcode generation with a retry mechanism for failed tasks.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Simple DTO representing a single barcode generation task.
+    /// Entry point. Processes a list of barcode tasks, retrying failures up to a configurable number of attempts with a delay.
     /// </summary>
-    class BarcodeTask
+    /// <param name="args">Command‑line arguments; optionally the delay in milliseconds for retries.</param>
+    static async Task Main(string[] args)
     {
-        public string CodeText { get; set; }
-        public BaseEncodeType EncodeType { get; set; }
-        public string OutputPath { get; set; }
-    }
-
-    /// <summary>
-    /// Entry point of the example. Configures retry parameters, creates sample tasks,
-    /// and processes them with a retry loop that re-attempts failed generations after a delay.
-    /// </summary>
-    static void Main()
-    {
-        // Configuration: maximum number of attempts and delay between retries (in milliseconds)
+        // Default configuration
         int maxAttempts = 3;
-        int retryDelayMilliseconds = 2000;
+        int delayMilliseconds = 1000;
 
-        // Prepare sample barcode generation tasks
-        var tasks = new List<BarcodeTask>();
-        AddTask(tasks, "Code128", "ABC123", "barcode1.png");
-        AddTask(tasks, "QR", "https://example.com", "barcode2.png");
-        AddTask(tasks, "DataMatrix", "Sample DataMatrix", "barcode3.png");
-
-        // Process tasks with retry logic
-        for (int attempt = 1; attempt <= maxAttempts; attempt++)
+        // Allow overriding the delay via the first command‑line argument
+        if (args.Length >= 1 && int.TryParse(args[0], out int parsedDelay) && parsedDelay > 0)
         {
-            Console.WriteLine($"Attempt {attempt} processing {tasks.Count} task(s).");
-            var failedTasks = new List<BarcodeTask>();
+            delayMilliseconds = parsedDelay;
+        }
 
-            foreach (var task in tasks)
+        // Define barcode generation tasks
+        var tasks = new List<BarcodeTask>
+        {
+            new BarcodeTask(EncodeTypes.Code128, "ABC123", Path.Combine(Path.GetTempPath(), "code128.png")),
+            new BarcodeTask(EncodeTypes.QR, "https://example.com", Path.Combine(Path.GetTempPath(), "qr.png")),
+            // Intentionally invalid data to demonstrate retry handling
+            new BarcodeTask(EncodeTypes.DataMatrix, "Invalid@@@", Path.Combine(Path.GetTempPath(), "datamatrix.png"))
+        };
+
+        // Copy tasks to a mutable list that tracks pending work
+        var pending = new List<BarcodeTask>(tasks);
+
+        // Retry loop: attempt up to maxAttempts while there are pending tasks
+        for (int attempt = 1; attempt <= maxAttempts && pending.Count > 0; attempt++)
+        {
+            Console.WriteLine($"Attempt {attempt} - processing {pending.Count} task(s).");
+            var nextRound = new List<BarcodeTask>();
+
+            // Process each pending task
+            foreach (var task in pending)
             {
                 try
                 {
-                    // Ensure the output directory exists
-                    string directory = Path.GetDirectoryName(task.OutputPath);
-                    if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
-                    {
-                        Directory.CreateDirectory(directory);
-                    }
-
-                    // Generate the barcode using Aspose.BarCode
-                    using (var generator = new BarcodeGenerator(task.EncodeType, task.CodeText))
-                    {
-                        // Basic appearance settings
-                        generator.Parameters.Barcode.XDimension.Pixels = 3f;
-                        generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-                        generator.Parameters.BackColor = Aspose.Drawing.Color.White;
-
-                        // Save the barcode image as PNG
-                        generator.Save(task.OutputPath, BarCodeImageFormat.Png);
-                    }
-
+                    GenerateBarcode(task);
                     Console.WriteLine($"Generated: {task.OutputPath}");
                 }
                 catch (Exception ex)
                 {
-                    // Capture any failure and add the task to the retry list
-                    Console.WriteLine($"Failed to generate {task.OutputPath}: {ex.Message}");
-                    failedTasks.Add(task);
+                    Console.WriteLine($"Failed: {task.OutputPath} - {ex.Message}");
+                    // Queue for retry if we have attempts left
+                    if (attempt < maxAttempts)
+                    {
+                        nextRound.Add(task);
+                    }
                 }
             }
 
-            // If no failures, exit the retry loop
-            if (failedTasks.Count == 0)
-            {
-                Console.WriteLine("All tasks completed successfully.");
-                break;
-            }
+            // Prepare for the next retry round
+            pending = nextRound;
 
-            // If there are remaining attempts, wait before retrying
-            if (attempt < maxAttempts)
+            // Wait before the next attempt if there are still tasks to retry
+            if (pending.Count > 0 && attempt < maxAttempts)
             {
-                Console.WriteLine($"Retrying {failedTasks.Count} failed task(s) after delay.");
-                Task.Delay(retryDelayMilliseconds).Wait();
-                tasks = failedTasks; // Replace the task list with only the failed ones
+                Console.WriteLine($"Waiting {delayMilliseconds} ms before next retry.");
+                await Task.Delay(delayMilliseconds);
             }
-            else
+        }
+
+        // Report final outcome
+        if (pending.Count > 0)
+        {
+            Console.WriteLine("Some tasks could not be processed after maximum retries:");
+            foreach (var task in pending)
             {
-                Console.WriteLine("Maximum attempts reached. Some tasks could not be processed.");
+                Console.WriteLine($" - {task.OutputPath}");
             }
+        }
+        else
+        {
+            Console.WriteLine("All barcode tasks completed successfully.");
         }
     }
 
     /// <summary>
-    /// Helper method that adds a barcode task to the list by resolving the symbology name via reflection.
+    /// Generates a barcode image for the specified task using Aspose.BarCode.
     /// </summary>
-    /// <param name="list">The collection to which the task will be added.</param>
-    /// <param name="symbologyName">The name of the barcode symbology (e.g., "Code128").</param>
-    /// <param name="codeText">The text or data to encode.</param>
-    /// <param name="outputPath">The file path where the generated image will be saved.</param>
-    static void AddTask(List<BarcodeTask> list, string symbologyName, string codeText, string outputPath)
+    /// <param name="task">The barcode task containing type, text, and output path.</param>
+    static void GenerateBarcode(BarcodeTask task)
     {
-        // Resolve the symbology field from EncodeTypes using reflection
-        var field = typeof(EncodeTypes).GetField(symbologyName, BindingFlags.Public | BindingFlags.Static);
-        if (field == null)
+        using (var generator = new BarcodeGenerator(task.EncodeType, task.CodeText))
         {
-            Console.WriteLine($"Unknown symbology: {symbologyName}. Task skipped.");
-            return;
-        }
+            // Example configuration: set X‑dimension and enforce strict text validation
+            generator.Parameters.Barcode.XDimension.Pixels = 4f;
+            generator.Parameters.Barcode.ThrowExceptionWhenCodeTextIncorrect = true;
 
-        // Retrieve the BaseEncodeType instance
-        var encodeType = field.GetValue(null) as BaseEncodeType;
-        if (encodeType == null)
-        {
-            Console.WriteLine($"Failed to obtain encode type for: {symbologyName}. Task skipped.");
-            return;
+            // Save the generated barcode as PNG
+            generator.Save(task.OutputPath, BarCodeImageFormat.Png);
         }
+    }
+}
 
-        // Add the configured task to the list
-        list.Add(new BarcodeTask
-        {
-            CodeText = codeText,
-            EncodeType = encodeType,
-            OutputPath = outputPath
-        });
+/// <summary>
+/// Represents a single barcode generation request.
+/// </summary>
+class BarcodeTask
+{
+    public BaseEncodeType EncodeType { get; }
+    public string CodeText { get; }
+    public string OutputPath { get; }
+
+    public BarcodeTask(BaseEncodeType encodeType, string codeText, string outputPath)
+    {
+        EncodeType = encodeType ?? throw new ArgumentNullException(nameof(encodeType));
+        CodeText = codeText ?? throw new ArgumentNullException(nameof(codeText));
+        OutputPath = outputPath ?? throw new ArgumentNullException(nameof(outputPath));
     }
 }

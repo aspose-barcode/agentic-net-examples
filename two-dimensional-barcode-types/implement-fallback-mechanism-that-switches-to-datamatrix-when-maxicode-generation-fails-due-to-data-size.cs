@@ -1,73 +1,110 @@
-// Title: Barcode generation with MaxiCode fallback to DataMatrix
+// Title: Barcode generation with fallback from MaxiCode to DataMatrix
 // Description: Demonstrates generating a MaxiCode barcode and automatically falling back to a DataMatrix barcode when the data exceeds MaxiCode capacity.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use the BarcodeGenerator class with different EncodeTypes. It illustrates a common scenario where developers need to handle data size limitations by implementing a fallback mechanism, switching to an alternative symbology (DataMatrix) when the primary one (MaxiCode) cannot accommodate the payload. Typical use cases include logistics, inventory, and packaging systems that require robust barcode generation.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating how to use the BarcodeGenerator class with different EncodeTypes, handle exceptions, and implement a fallback strategy. Developers often need to choose appropriate symbologies based on data size and format constraints; this snippet shows typical use cases for MaxiCode and DataMatrix, including setting XDimension and saving PNG images.
 // Prompt: Implement fallback mechanism that switches to DataMatrix when MaxiCode generation fails due to data size.
-// Tags: barcode, maxicode, datamatrix, fallback, generation, aspose.barcode, png, encode types
+// Tags: barcode, fallback, maximcode, datamatrix, generation, png, aspose.barcode, barcodegenerator
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates a MaxiCode barcode and falls back to a DataMatrix barcode
-/// if the data size exceeds MaxiCode limits.
+/// Demonstrates a fallback mechanism that attempts to generate a MaxiCode barcode
+/// and, if that fails (e.g., due to data size limits), switches to generating a DataMatrix barcode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a MaxiCode barcode; on failure, generates a DataMatrix barcode instead.
+    /// Entry point of the example. Creates sample data, attempts MaxiCode generation,
+    /// and falls back to DataMatrix when necessary.
     /// </summary>
     static void Main()
     {
-        // Sample data exceeding MaxiCode capacity (over 60 bytes)
-        string data = new string('A', 100);
+        // Create sample data that exceeds MaxiCode capacity (more than 60 bytes)
+        string data = new string('A', 200);
 
-        // Create a unique temporary output folder
-        string outputFolder = Path.Combine(Path.GetTempPath(), "BarcodeFallback_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(outputFolder);
+        // Prepare an output directory in the temporary folder
+        string outputDir = Path.Combine(Path.GetTempPath(), "BarcodeFallbackDemo");
+        Directory.CreateDirectory(outputDir);
 
-        // Define file paths for the potential barcode images
-        string maxiCodePath = Path.Combine(outputFolder, "maxicode.png");
-        string dataMatrixPath = Path.Combine(outputFolder, "datamatrix.png");
+        // Define file paths for the two possible barcode images
+        string maxiCodePath = Path.Combine(outputDir, "maxicode.png");
+        string dataMatrixPath = Path.Combine(outputDir, "datamatrix.png");
 
-        bool generated = false; // Tracks whether MaxiCode generation succeeded
+        Console.WriteLine("Attempting to generate MaxiCode...");
 
-        // Attempt MaxiCode generation
+        // Try to generate MaxiCode; if it fails, fallback to DataMatrix
+        bool maxiSuccess = TryGenerateMaxiCode(data, maxiCodePath);
+
+        if (maxiSuccess)
+        {
+            Console.WriteLine($"MaxiCode generated successfully: {maxiCodePath}");
+        }
+        else
+        {
+            Console.WriteLine("MaxiCode generation failed. Falling back to DataMatrix...");
+
+            bool dmSuccess = TryGenerateDataMatrix(data, dataMatrixPath);
+            if (dmSuccess)
+            {
+                Console.WriteLine($"DataMatrix generated successfully: {dataMatrixPath}");
+            }
+            else
+            {
+                Console.WriteLine("DataMatrix generation also failed.");
+            }
+        }
+    }
+
+    /// <summary>
+    /// Attempts to generate a MaxiCode barcode and save it as a PNG file.
+    /// </summary>
+    /// <param name="codeText">The text to encode.</param>
+    /// <param name="filePath">The full path where the PNG will be saved.</param>
+    /// <returns>True if generation succeeds; otherwise, false.</returns>
+    static bool TryGenerateMaxiCode(string codeText, string filePath)
+    {
         try
         {
-            using (var generator = new BarcodeGenerator(EncodeTypes.MaxiCode, data))
+            using (var generator = new BarcodeGenerator(EncodeTypes.MaxiCode, codeText))
             {
-                // Optional: set XDimension for better visibility
+                // Optional: increase XDimension for better visibility
                 generator.Parameters.Barcode.XDimension.Pixels = 10f;
-                generator.Save(maxiCodePath, BarCodeImageFormat.Png);
-                Console.WriteLine($"MaxiCode generated: {maxiCodePath}");
-                generated = true;
+                generator.Save(filePath, BarCodeImageFormat.Png);
             }
+            return true;
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"MaxiCode generation failed: {ex.Message}");
+            Console.WriteLine($"MaxiCode generation error: {ex.Message}");
+            return false;
         }
+    }
 
-        // Fallback to DataMatrix if MaxiCode generation failed
-        if (!generated)
+    /// <summary>
+    /// Attempts to generate a DataMatrix barcode and save it as a PNG file.
+    /// </summary>
+    /// <param name="codeText">The text to encode.</param>
+    /// <param name="filePath">The full path where the PNG will be saved.</param>
+    /// <returns>True if generation succeeds; otherwise, false.</returns>
+    static bool TryGenerateDataMatrix(string codeText, string filePath)
+    {
+        try
         {
-            try
+            using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, codeText))
             {
-                using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, data))
-                {
-                    // Choose a large enough version to accommodate the data
-                    generator.Parameters.Barcode.DataMatrix.Version = DataMatrixVersion.ECC200_144x144;
-                    generator.Save(dataMatrixPath, BarCodeImageFormat.Png);
-                    Console.WriteLine($"DataMatrix generated as fallback: {dataMatrixPath}");
-                }
+                // Let the library choose the appropriate version automatically
+                generator.Parameters.Barcode.XDimension.Pixels = 5f;
+                generator.Save(filePath, BarCodeImageFormat.Png);
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"DataMatrix generation also failed: {ex.Message}");
-            }
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"DataMatrix generation error: {ex.Message}");
+            return false;
         }
     }
 }

@@ -1,59 +1,61 @@
 // Title: Generate DataMatrix barcode as byte array
-// Description: Demonstrates how to create a DataMatrix barcode image using Aspose.BarCode and return it as a byte array, which can be embedded into PDF documents.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator with EncodeTypes.DataMatrix. It shows typical steps such as configuring barcode parameters, rendering to a MemoryStream, and obtaining PNG bytes. Developers working on document automation, PDF generation, or label printing often need to produce barcode images programmatically; this snippet provides a concise reference for those scenarios.
+// Description: Demonstrates how to create a DataMatrix barcode image and return it as a byte array, suitable for embedding in PDF documents.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes to produce bitmap images of barcodes. Typical use cases include creating barcodes for invoices, shipping labels, or PDF reports where the image data must be handled in memory. Developers often need to customize dimensions, versions, and output formats while retrieving the image as a byte array for further processing.
 // Prompt: Implement method that returns DataMatrix barcode as byte array for embedding in PDF documents.
-// Tags: datamatrix, barcode, generation, byte-array, pdf, aspose.barcode, png
+// Tags: datamatrix, barcode, generation, bytearray, pdf, aspose.barcode, encoding, image
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates a DataMatrix barcode and saves it as a PNG file.
+/// Demonstrates generating a DataMatrix barcode and retrieving it as a byte array.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a DataMatrix barcode, saves it to disk, and writes the byte count to the console.
+    /// Entry point that generates a sample DataMatrix barcode and writes it to a temporary file.
     /// </summary>
     static void Main()
     {
-        // Text to encode in the DataMatrix barcode
-        string codeText = "Aspose DataMatrix";
+        // Sample DataMatrix code text
+        string codeText = "Aspose.DataMatrix";
 
-        // Generate the barcode image and obtain its PNG bytes
+        // Generate barcode bytes using the helper method
         byte[] barcodeBytes = GenerateDataMatrixBarcode(codeText);
 
-        // Determine the output file path in the current directory
-        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "datamatrix.png");
-
-        // Write the byte array to a PNG file
-        using (var fileStream = new FileStream(outputPath, FileMode.Create, FileAccess.Write))
-        {
-            fileStream.Write(barcodeBytes, 0, barcodeBytes.Length);
-        }
-
-        // Inform the user about the successful generation
-        Console.WriteLine($"DataMatrix barcode generated. Bytes: {barcodeBytes.Length}, saved to: {outputPath}");
+        // Write the byte array to a temporary PNG file to verify the output (optional)
+        string outputPath = Path.Combine(Path.GetTempPath(), "DataMatrix.png");
+        File.WriteAllBytes(outputPath, barcodeBytes);
+        Console.WriteLine($"DataMatrix barcode saved to: {outputPath}");
     }
 
-    static byte[] GenerateDataMatrixBarcode(string text)
+    /// <summary>
+    /// Creates a DataMatrix barcode image in PNG format and returns it as a byte array.
+    /// </summary>
+    /// <param name="codeText">The text to encode in the DataMatrix barcode.</param>
+    /// <returns>Byte array containing the PNG image of the generated barcode.</returns>
+    static byte[] GenerateDataMatrixBarcode(string codeText)
     {
-        // Initialize the barcode generator for DataMatrix with the provided text
-        using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, text))
+        if (string.IsNullOrEmpty(codeText))
+            throw new ArgumentException("Code text must be non-empty.", nameof(codeText));
+
+        // Initialize the barcode generator with DataMatrix symbology and the provided text
+        using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, codeText))
         {
-            // Set the size of each module (pixel) in the barcode
+            // Set the module (pixel) size for better readability
             generator.Parameters.Barcode.XDimension.Pixels = 8f;
 
-            // Use automatic encoding mode for optimal DataMatrix encoding
-            generator.Parameters.Barcode.DataMatrix.EncodeMode = DataMatrixEncodeMode.Auto;
+            // Optional: specify a common DataMatrix version (size) to control dimensions
+            generator.Parameters.Barcode.DataMatrix.Version = DataMatrixVersion.ECC200_32x32;
 
-            // Render the barcode to a memory stream in PNG format
+            // Save the generated barcode to a memory stream in PNG format
             using (var ms = new MemoryStream())
             {
                 generator.Save(ms, BarCodeImageFormat.Png);
-                // Return the image bytes for further use (e.g., embedding in a PDF)
+                // Return the image data as a byte array
                 return ms.ToArray();
             }
         }
