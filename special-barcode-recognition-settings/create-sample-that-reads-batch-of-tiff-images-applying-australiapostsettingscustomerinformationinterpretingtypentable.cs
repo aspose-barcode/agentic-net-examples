@@ -1,8 +1,8 @@
-// Title: Read a batch of TIFF images with Australia Post NTable interpretation
-// Description: Demonstrates generating Australia Post barcodes in TIFF format and then reading them while applying the NTable customer information interpreting type.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the BarcodeGenerator class for creating barcodes, the BarCodeReader class for decoding them, and the AustraliaPostSettings.CustomerInformationInterpretingType enumeration for controlling how customer information is interpreted. Typical use cases include bulk processing of postal barcodes, automated verification of Australia Post items, and integration into logistics workflows where NTable interpretation is required.
+// Title: Read batch of TIFF images with Australia Post NTable interpreting
+// Description: Demonstrates generating TIFF barcode images for Australia Post and reading them back using the NTable customer information interpreting type.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It shows how to use BarcodeGenerator to create Australia Post barcodes, save them as TIFF files, and then use BarCodeReader with AustraliaPostSettings.CustomerInformationInterpretingType set to NTable to decode the barcodes. Developers working with postal barcode standards often need to configure interpreting types for accurate data extraction, and this snippet illustrates the typical workflow.
 // Prompt: Create a sample that reads a batch of TIFF images applying AustraliaPostSettings.CustomerInformationInterpretingType.NTable.
-// Tags: barcode, australia post, tiff, batch, generation, recognition, ntable, aspose.barcode
+// Tags: australia post, barcode generation, barcode recognition, tiff, ntable, customerinformationinterpretingtype, aspose.barcode
 
 using System;
 using System.IO;
@@ -12,51 +12,50 @@ using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Sample program that generates a batch of Australia Post barcodes in TIFF format
-/// and reads them back using the NTable customer information interpreting type.
+/// Sample program that generates a batch of Australia Post barcodes as TIFF images,
+/// then reads them back applying the NTable customer information interpreting type.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the sample. Generates barcode images, reads them with NTable settings,
-    /// and outputs the decoded information to the console.
+    /// Entry point of the sample. Generates barcode images, reads them, and cleans up temporary files.
     /// </summary>
     static void Main()
     {
-        // Create a dedicated temporary folder for the sample files
-        string batchFolder = Path.Combine(Path.GetTempPath(), "Batch_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(batchFolder);
+        // Create a dedicated temporary folder for generated TIFF files
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BatchTiff_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
 
-        // Prepare sample Australia Post barcode texts (FCC=62, NTable customer info = digits)
-        var codeTexts = new List<string>
+        // Sample barcode data to encode
+        var barcodeData = new List<string>
         {
-            "62012345670123", // FCC 62 + DPID 01234567 + customer info 0123
-            "62012345670234",
-            "62012345670345"
+            "620123456701234",
+            "620123456702345",
+            "620123456703456"
         };
 
-        var generatedFiles = new List<string>();
-
-        // -----------------------------------------------------------------
-        // Generate barcode images in TIFF format using NTable encoding
-        // -----------------------------------------------------------------
-        for (int i = 0; i < codeTexts.Count; i++)
+        // Generate TIFF images for each barcode entry
+        var tiffFiles = new List<string>();
+        int index = 1;
+        foreach (string data in barcodeData)
         {
-            string filePath = Path.Combine(batchFolder, $"AustraliaPost_{i}.tif");
-            using (var generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, codeTexts[i]))
+            string filePath = Path.Combine(tempFolder, $"AustraliaPost_{index}.tiff");
+            using (var generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, data))
             {
-                // Set the customer information interpreting type to NTable for generation
+                // Configure barcode appearance
+                generator.Parameters.Barcode.XDimension.Pixels = 4f;
+                generator.Parameters.Barcode.BarHeight.Pixels = 50f;
+                // Set encoding table to NTable for customer information
                 generator.Parameters.Barcode.AustralianPost.EncodingTable = CustomerInformationInterpretingType.NTable;
                 // Save the barcode as a TIFF image
                 generator.Save(filePath, BarCodeImageFormat.Tiff);
             }
-            generatedFiles.Add(filePath);
+            tiffFiles.Add(filePath);
+            index++;
         }
 
-        // -----------------------------------------------------------------
-        // Read each generated TIFF image applying NTable interpreting type
-        // -----------------------------------------------------------------
-        foreach (string file in generatedFiles)
+        // Read each generated TIFF image applying the NTable interpreting type
+        foreach (string file in tiffFiles)
         {
             if (!File.Exists(file))
             {
@@ -70,9 +69,7 @@ class Program
                 {
                     // Configure the reader to interpret customer information using NTable
                     reader.BarcodeSettings.AustraliaPost.CustomerInformationInterpretingType = CustomerInformationInterpretingType.NTable;
-
-                    // Iterate over all detected barcodes in the image
-                    foreach (var result in reader.ReadBarCodes())
+                    foreach (BarCodeResult result in reader.ReadBarCodes())
                     {
                         Console.WriteLine($"File: {Path.GetFileName(file)}");
                         Console.WriteLine($"  CodeType: {result.CodeTypeName}");
@@ -82,17 +79,19 @@ class Program
             }
             catch (ArgumentException ex) when (ex.Message.Contains("Image loading failed"))
             {
-                // Handle cases where the image cannot be loaded (e.g., corrupted file)
+                // Skip files that cannot be loaded as images
                 Console.WriteLine($"Skipping unreadable file: {file}");
-            }
-            catch (Exception ex)
-            {
-                // General error handling for unexpected issues during processing
-                Console.WriteLine($"Error processing file {file}: {ex.Message}");
             }
         }
 
-        // Cleanup (optional). Uncomment the line below to delete the temporary folder after execution.
-        // Directory.Delete(batchFolder, true);
+        // Cleanup temporary folder and generated files
+        try
+        {
+            Directory.Delete(tempFolder, true);
+        }
+        catch
+        {
+            // Ignore any errors during cleanup
+        }
     }
 }

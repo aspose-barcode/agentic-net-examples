@@ -1,102 +1,113 @@
-// Title: Barcode recognition threading performance benchmark
-// Description: Demonstrates how to measure the impact of Aspose.BarCode's threading settings on barcode recognition speed using single‑thread and multi‑thread configurations.
-// Category-Description: This example belongs to the Aspose.BarCode performance tuning category, showcasing the use of BarCodeReader.ProcessorSettings (UseAllCores, UseOnlyThisCoresCount, MaxAdditionalAllowedThreads) to control threading. Typical use cases include optimizing large‑scale barcode processing pipelines where developers need to balance CPU utilization and latency.
+// Title: Benchmark BarCodeReader single‑thread vs multi‑thread performance
+// Description: Demonstrates measuring recognition time of PDF417 barcodes using Aspose.BarCode with different processor thread settings.
+// Category-Description: This example belongs to the Aspose.BarCode performance tuning category, showcasing how to configure BarCodeReader.ProcessorSettings (UseAllCores, UseOnlyThisCoresCount, MaxAdditionalAllowedThreads) for single‑thread and multi‑thread scenarios. Developers often need to benchmark barcode recognition to choose optimal threading settings for high‑throughput applications.
 // Prompt: Write a benchmark comparing performance when ProcessorSettings.MaxAdditionalAllowedThreads is zero (single‑thread) versus greater than zero.
-// Tags: barcode, code128, pdf417, performance, threading, benchmark, aspose.barcode, generation, recognition
+// Tags: pdf417, barcode recognition, performance benchmark, multithreading, aspose.barcode, processor settings
 
 using System;
 using System.IO;
 using System.Diagnostics;
-using System.Collections.Generic;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Provides a simple benchmark that compares single‑thread and multi‑thread barcode recognition using Aspose.BarCode.
+/// Provides a benchmark for Aspose.BarCode barcode recognition using different threading configurations.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates sample Code128 barcodes, then runs recognition benchmarks with different threading settings.
+    /// Entry point. Generates sample barcodes, runs single‑thread and multi‑thread benchmarks, and outputs timing results.
     /// </summary>
     static void Main()
     {
-        // Create a temporary folder for generated barcode images
-        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeBench_" + Guid.NewGuid().ToString("N"));
+        // Create a temporary folder for sample barcodes
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeBenchmark_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
 
-        // Generate a set of sample barcode PNG files
-        List<string> barcodeFiles = new List<string>();
-        for (int i = 0; i < 5; i++)
-        {
-            string codeText = "Sample" + i;
-            string filePath = Path.Combine(tempFolder, $"code{i}.png");
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
-            {
-                generator.Save(filePath, BarCodeImageFormat.Png);
-            }
-            barcodeFiles.Add(filePath);
-        }
+        // Generate a set of sample barcode images
+        int sampleCount = 5;
+        string[] files = GenerateSampleBarcodes(tempFolder, sampleCount);
 
-        // Run benchmark using a single thread (MaxAdditionalAllowedThreads = 0)
-        Benchmark("Single‑Thread", barcodeFiles, maxAdditionalThreads: 0, useAllCores: false, onlyCoresCount: 1);
+        // Benchmark single‑thread recognition (MaxAdditionalAllowedThreads = 0)
+        long singleThreadMs = BenchmarkRead(files, true);
+        Console.WriteLine($"Single‑thread recognition time: {singleThreadMs} ms");
 
-        // Run benchmark using multiple threads (MaxAdditionalAllowedThreads > 0)
-        int additionalThreads = Environment.ProcessorCount * 2;
-        Benchmark("Multi‑Thread", barcodeFiles, maxAdditionalThreads: additionalThreads, useAllCores: true, onlyCoresCount: 0);
+        // Benchmark multi‑thread recognition (MaxAdditionalAllowedThreads > 0)
+        long multiThreadMs = BenchmarkRead(files, false);
+        Console.WriteLine($"Multi‑thread recognition time: {multiThreadMs} ms");
 
         // Clean up temporary files and folder
-        try
+        foreach (string f in files)
         {
-            Directory.Delete(tempFolder, true);
+            try { File.Delete(f); } catch { }
         }
-        catch
-        {
-            // Ignore any errors during cleanup
-        }
+        try { Directory.Delete(tempFolder, true); } catch { }
     }
 
     /// <summary>
-    /// Executes a recognition benchmark for a list of barcode image files using specified processor settings.
+    /// Generates a specified number of PDF417 barcode images and saves them as PNG files.
     /// </summary>
-    /// <param name="description">Label displayed in console output.</param>
-    /// <param name="files">Paths to barcode image files.</param>
-    /// <param name="maxAdditionalThreads">Value for ProcessorSettings.MaxAdditionalAllowedThreads.</param>
-    /// <param name="useAllCores">Value for ProcessorSettings.UseAllCores.</param>
-    /// <param name="onlyCoresCount">Value for ProcessorSettings.UseOnlyThisCoresCount.</param>
-    static void Benchmark(string description, List<string> files, int maxAdditionalThreads, bool useAllCores, int onlyCoresCount)
+    /// <param name="folder">The folder where images will be saved.</param>
+    /// <param name="count">Number of barcode images to generate.</param>
+    /// <returns>Array of file paths to the generated images.</returns>
+    static string[] GenerateSampleBarcodes(string folder, int count)
     {
-        // Apply threading configuration to the BarCodeReader processor
-        BarCodeReader.ProcessorSettings.UseAllCores = useAllCores;
-        BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount = onlyCoresCount;
-        BarCodeReader.ProcessorSettings.MaxAdditionalAllowedThreads = maxAdditionalThreads;
+        string[] paths = new string[count];
+        for (int i = 0; i < count; i++)
+        {
+            string filePath = Path.Combine(folder, $"sample_{i}.png");
+            using (var generator = new BarcodeGenerator(EncodeTypes.Pdf417, $"Sample{i}"))
+            {
+                // Save the barcode as a PNG image
+                generator.Save(filePath, BarCodeImageFormat.Png);
+            }
+            paths[i] = filePath;
+        }
+        return paths;
+    }
 
-        Stopwatch totalWatch = Stopwatch.StartNew();
+    /// <summary>
+    /// Measures the time required to read a collection of barcode images using either single‑thread or multi‑thread settings.
+    /// </summary>
+    /// <param name="files">Array of barcode image file paths.</param>
+    /// <param name="singleThread">If true, configures processor for single‑thread execution; otherwise multi‑thread.</param>
+    /// <returns>Elapsed time in milliseconds.</returns>
+    static long BenchmarkRead(string[] files, bool singleThread)
+    {
+        // Configure processor settings based on the desired threading mode
+        if (singleThread)
+        {
+            BarCodeReader.ProcessorSettings.UseAllCores = false;
+            BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount = 1;
+            BarCodeReader.ProcessorSettings.MaxAdditionalAllowedThreads = 0;
+        }
+        else
+        {
+            BarCodeReader.ProcessorSettings.UseAllCores = true;
+            BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount = Environment.ProcessorCount;
+            BarCodeReader.ProcessorSettings.MaxAdditionalAllowedThreads = Math.Max(2, Environment.ProcessorCount);
+        }
 
-        int totalFound = 0;
+        Stopwatch sw = Stopwatch.StartNew();
+
+        // Process each barcode image
         foreach (string file in files)
         {
-            // Recognize PDF417 barcodes in the current image file
             using (var reader = new BarCodeReader(file, DecodeType.Pdf417))
             {
-                Stopwatch watch = Stopwatch.StartNew();
+                // Perform recognition
                 reader.ReadBarCodes();
-                watch.Stop();
 
-                totalFound += reader.FoundCount;
-                Console.WriteLine($"{description}: File '{Path.GetFileName(file)}' read {reader.FoundCount} barcodes in {watch.ElapsedMilliseconds} ms");
-
-                // Output each detected barcode's type and text
+                // Output results to prevent compiler optimizations from removing the call
                 foreach (BarCodeResult result in reader.FoundBarCodes)
                 {
-                    Console.WriteLine($"  {result.CodeTypeName}: {result.CodeText}");
+                    Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
                 }
             }
         }
 
-        totalWatch.Stop();
-        Console.WriteLine($"{description} total: {totalFound} barcodes read in {totalWatch.ElapsedMilliseconds} ms");
-        Console.WriteLine();
+        sw.Stop();
+        return sw.ElapsedMilliseconds;
     }
 }

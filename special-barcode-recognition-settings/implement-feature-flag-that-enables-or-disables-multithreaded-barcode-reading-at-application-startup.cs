@@ -1,87 +1,68 @@
-// Title: Multithreaded Barcode Reading Demo
-// Description: Demonstrates generating a Code128 barcode image and reading it with optional multithreaded processing based on a startup flag.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category, illustrating how to use BarcodeGenerator to create barcodes and BarCodeReader with ProcessorSettings to control multithreading. Typical use cases include batch processing of images where performance can be tuned by enabling or disabling multi‑core execution. Developers often need to configure thread pools and processor settings to balance speed and resource usage.
+// Title: Feature Flag for Multithreaded Barcode Reading
+// Description: Demonstrates how to enable or disable multithreaded barcode reading using a startup flag.
+// Category-Description: This example belongs to the Aspose.BarCode reading category, showcasing the use of BarCodeReader and its ProcessorSettings to control multithreading. Developers often need to toggle multithreaded decoding for performance tuning or resource constraints. The sample covers barcode generation, reading, and cleanup, illustrating typical workflows for Code128 barcodes.
 // Prompt: Implement a feature flag that enables or disables multithreaded barcode reading at application startup.
-// Tags: barcode generation, barcode recognition, multithreading, code128, aspose.barcode, .net
+// Tags: barcode, symbology, reading, multithreading, feature flag, aspose.barcode, code128, image generation
 
 using System;
 using System.IO;
-using System.Threading;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates barcode generation and conditional multithreaded barcode reading using Aspose.BarCode.
+/// Sample program that generates a Code128 barcode, optionally enables multithreaded
+/// reading via a feature flag, reads the barcode, and cleans up temporary files.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Application entry point. Generates a Code128 barcode, optionally enables multithreaded reading,
-    /// reads the barcode, outputs the result, and cleans up temporary files.
+    /// Application entry point. Parses command‑line arguments to set the multithreading flag,
+    /// creates a temporary barcode image, reads it, and outputs the result.
     /// </summary>
-    /// <param name="args">Command‑line arguments; the first argument can be a boolean to enable/disable multithreading.</param>
+    /// <param name="args">Command‑line arguments; use "disable" to turn off multithreading.</param>
     static void Main(string[] args)
     {
-        // Determine whether multithreading should be enabled based on command‑line input.
-        bool enableMultithreading = true;
-        if (args.Length > 0 && bool.TryParse(args[0], out bool flag))
+        // Determine whether multithreaded reading should be enabled.
+        // The flag defaults to true and can be disabled by passing "disable" as the first argument.
+        bool enableMultithread = true;
+        if (args.Length > 0 && args[0].Equals("disable", StringComparison.OrdinalIgnoreCase))
         {
-            enableMultithreading = flag;
+            enableMultithread = false;
         }
 
-        // Configure the .NET thread pool to match the number of logical processors.
-        ThreadPool.SetMinThreads(Environment.ProcessorCount, Environment.ProcessorCount);
-        ThreadPool.SetMaxThreads(Environment.ProcessorCount * 2, Environment.ProcessorCount * 2);
-
-        // Create a temporary folder to store the generated barcode image.
+        // Create a unique temporary folder for the sample barcode image.
         string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
-        string imagePath = Path.Combine(tempFolder, "sample.png");
+        string barcodePath = Path.Combine(tempFolder, "sample.png");
 
-        // Generate a Code128 barcode and save it as a PNG file.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+        // Generate a simple Code128 barcode image and save it as PNG.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
         {
-            generator.Save(imagePath, BarCodeImageFormat.Png);
+            generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        // Initialize the barcode reader for the generated image.
-        using (var reader = new BarCodeReader(imagePath, DecodeType.Code128))
+        // Apply the multithreading setting based on the feature flag.
+        BarCodeReader.ProcessorSettings.UseAllCores = enableMultithread;
+
+        // Read the barcode using the selected decode type (Code128).
+        using (var reader = new BarCodeReader(barcodePath, DecodeType.Code128))
         {
-            // Apply multithreading settings if the feature flag is enabled.
-            if (enableMultithreading)
-            {
-                BarCodeReader.ProcessorSettings.UseAllCores = true;
-                BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount = Environment.ProcessorCount;
-                BarCodeReader.ProcessorSettings.MaxAdditionalAllowedThreads = Environment.ProcessorCount * 2;
-            }
-
-            // Read barcodes from the image.
             var results = reader.ReadBarCodes();
-
-            // Output each detected barcode's type and text.
             foreach (var result in results)
             {
-                Console.WriteLine($"Detected barcode: Type={result.CodeTypeName}, Text={result.CodeText}");
+                Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
             }
         }
 
-        // Clean up temporary files and directories.
+        // Attempt to clean up the temporary folder and its contents.
         try
         {
-            if (File.Exists(imagePath))
-            {
-                File.Delete(imagePath);
-            }
-            if (Directory.Exists(tempFolder))
-            {
-                Directory.Delete(tempFolder, true);
-            }
+            Directory.Delete(tempFolder, true);
         }
         catch
         {
-            // Cleanup failures are ignored.
+            // Suppress any exceptions that occur during cleanup.
         }
     }
 }

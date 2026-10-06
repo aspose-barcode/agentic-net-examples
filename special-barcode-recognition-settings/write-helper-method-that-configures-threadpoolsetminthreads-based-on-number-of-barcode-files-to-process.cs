@@ -1,49 +1,52 @@
-// Title: Configure ThreadPool Minimum Threads for Barcode Processing
-// Description: Demonstrates generating barcode images, configuring the .NET ThreadPool based on the number of barcode files, and reading them using Aspose.BarCode.
-// Category-Description: This example belongs to the Aspose.BarCode .NET library category of barcode generation and recognition. It showcases the use of BarcodeGenerator for creating Code128 barcodes, BarCodeReader for decoding them, and ThreadPool configuration to optimize parallel processing. Developers working with bulk barcode operations often need to adjust thread pool settings to improve performance when handling many files.
+// Title: Barcode Generation, Recognition, and ThreadPool Configuration Example
+// Description: Demonstrates creating barcode images, reading them back, and adjusting the .NET ThreadPool minimum threads based on the number of files to process.
+// Category-Description: This example belongs to the Aspose.BarCode .NET library category covering barcode generation and recognition workflows. It showcases the use of BarcodeGenerator for encoding, BarCodeReader for decoding, and ThreadPool management to optimize parallel processing of multiple barcode files. Developers often need to generate batches of barcodes and efficiently read them, adjusting thread pool settings to match workload size.
 // Prompt: Write a helper method that configures ThreadPool.SetMinThreads based on the number of barcode files to process.
-// Tags: barcode symbology, generation, recognition, threadpool, code128, aspose.barcode, c#
+// Tags: barcode generation, barcode recognition, threadpool, code128, png, aspose.barcode, multithreading
 
 using System;
-using System.IO;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Sample program that generates barcode images, configures the ThreadPool based on file count,
-/// reads the barcodes, and cleans up temporary files.
+/// Demonstrates barcode generation, recognition, and dynamic ThreadPool configuration.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
+    /// Entry point of the example. Generates sample barcodes, configures the ThreadPool,
+    /// reads each barcode, and cleans up temporary files.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder for sample barcodes
+        // Create a dedicated temporary folder for sample barcodes
         string tempFolder = Path.Combine(Path.GetTempPath(), "Barcodes_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
 
         // Generate sample barcode files
+        int sampleCount = 5;
         List<string> barcodeFiles = new List<string>();
-        for (int i = 1; i <= 5; i++)
+        for (int i = 0; i < sampleCount; i++)
         {
-            string filePath = Path.Combine(tempFolder, $"barcode_{i}.png");
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, $"Sample{i}"))
+            string codeText = $"Sample{i + 1}";
+            string filePath = Path.Combine(tempFolder, $"barcode_{i + 1}.png");
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
             {
-                // Save each barcode as a PNG image
+                // Save the generated barcode as a PNG image
                 generator.Save(filePath, BarCodeImageFormat.Png);
             }
             barcodeFiles.Add(filePath);
         }
 
-        // Configure ThreadPool based on number of files
+        // Configure ThreadPool based on the number of files to be processed
         ConfigureThreadPoolMinThreads(barcodeFiles.Count);
 
-        // Read each barcode file (demonstration)
+        // Read each barcode file and output the result
         foreach (string file in barcodeFiles)
         {
             if (!File.Exists(file))
@@ -52,56 +55,47 @@ class Program
                 continue;
             }
 
-            try
+            using (var reader = new BarCodeReader(file, DecodeType.Code128))
             {
-                using (var reader = new BarCodeReader(file, DecodeType.Code128))
+                // Perform barcode detection
+                reader.ReadBarCodes();
+                Console.WriteLine($"File: {Path.GetFileName(file)} - Barcodes found: {reader.FoundCount}");
+
+                // Iterate over all detected barcodes
+                foreach (BarCodeResult result in reader.FoundBarCodes)
                 {
-                    // Perform barcode recognition
-                    reader.ReadBarCodes();
-                    foreach (BarCodeResult result in reader.FoundBarCodes)
-                    {
-                        Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
-                    }
+                    Console.WriteLine($"  Type: {result.CodeTypeName}, Text: {result.CodeText}");
                 }
-            }
-            catch (ArgumentException ex)
-            {
-                Console.WriteLine($"Failed to read '{file}': {ex.Message}");
             }
         }
 
-        // Clean up temporary files
+        // Clean up temporary files and folder
         try
         {
             Directory.Delete(tempFolder, true);
         }
-        catch
+        catch (Exception ex)
         {
-            // Ignore cleanup errors
+            Console.WriteLine($"Cleanup failed: {ex.Message}");
         }
     }
 
     /// <summary>
-    /// Configures the minimum number of worker threads in the ThreadPool based on the number of barcode files to process.
+    /// Adjusts the minimum number of worker threads in the ThreadPool based on the number of barcode files.
+    /// Ensures the minimum is at least the file count (or processor count) without exceeding the maximum allowed.
     /// </summary>
-    /// <param name="fileCount">The total number of barcode files that will be processed.</param>
+    /// <param name="fileCount">The total number of barcode files to process.</param>
     static void ConfigureThreadPoolMinThreads(int fileCount)
     {
-        if (fileCount <= 0)
-        {
-            Console.WriteLine("No barcode files to process; ThreadPool configuration skipped.");
-            return;
-        }
+        // Retrieve current ThreadPool settings
+        ThreadPool.GetMinThreads(out int currentWorker, out int currentCompletion);
+        ThreadPool.GetMaxThreads(out int maxWorker, out int maxCompletion);
 
-        // Retrieve the maximum number of threads allowed by the ThreadPool
-        int maxWorkerThreads, maxCompletionPortThreads;
-        ThreadPool.GetMaxThreads(out maxWorkerThreads, out maxCompletionPortThreads);
+        // Determine desired minimum worker threads (at least the number of files, but not exceeding max)
+        int desiredMin = Math.Min(Math.Max(fileCount, Environment.ProcessorCount), maxWorker);
 
-        // Determine desired minimum: at least 1, not exceeding the maximum, and proportional to file count
-        int desiredMin = Math.Min(Math.Max(1, fileCount), maxWorkerThreads);
-
-        // Apply the new minimum thread settings
-        bool result = ThreadPool.SetMinThreads(desiredMin, maxCompletionPortThreads);
-        Console.WriteLine($"ThreadPool minimum worker threads set to {desiredMin} (success: {result})");
+        // Apply the new minimum worker thread count while keeping completion port threads unchanged
+        bool result = ThreadPool.SetMinThreads(desiredMin, currentCompletion);
+        Console.WriteLine($"ThreadPool MinThreads set to {desiredMin}: {(result ? "Success" : "Failed")}");
     }
 }
