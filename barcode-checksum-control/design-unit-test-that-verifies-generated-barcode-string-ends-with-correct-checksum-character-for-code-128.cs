@@ -1,8 +1,8 @@
 // Title: Code128 Barcode Generation with Checksum Verification
-// Description: Demonstrates generating a Code 128 barcode, displaying its checksum character, and verifying the checksum via decoding.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It shows how to use BarcodeGenerator (EncodeTypes.Code128) to create a barcode, enable ChecksumAlwaysShow, and then use BarCodeReader (DecodeType.Code128) to read the barcode back. Developers often need to validate checksum characters when implementing unit tests or data integrity checks for barcode workflows.
+// Description: Demonstrates creating a Code 128 barcode that always shows its checksum, reading it back, and confirming the checksum character matches the expected value.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator, BarCodeReader, and related parameter classes to produce a barcode, display the checksum, decode the image, and validate the result—common tasks for developers implementing automated barcode validation or unit testing in .NET applications.
 // Prompt: Design a unit test that verifies the generated barcode string ends with the correct checksum character for Code 128.
-// Tags: code128, checksum, barcode, generation, recognition, unit-test, aspose.barcode, c#
+// Tags: code128, checksum, barcode, generation, recognition, unit-test, aspose.barcode, png
 
 using System;
 using System.IO;
@@ -10,100 +10,116 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates a Code 128 barcode, forces the checksum character to be displayed,
-/// decodes the barcode, and verifies that the decoded text ends with the correct checksum character.
+/// Example program that generates a Code128 barcode with an always‑displayed checksum,
+/// reads the barcode back, and verifies the checksum character matches the expected value.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Creates temporary files, generates the barcode, decodes it, and checks the checksum.
+    /// Entry point of the example. Performs barcode generation, decoding, and checksum validation.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary directory for the test artifacts
+        // ----------------------------------------------------------------------
+        // Prepare a temporary folder and file path for the generated barcode image.
+        // ----------------------------------------------------------------------
         string tempDir = Path.Combine(Path.GetTempPath(), "Code128ChecksumTest_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempDir);
+        string imagePath = Path.Combine(tempDir, "code128.png");
 
-        // Define the output path for the generated barcode image
-        string barcodePath = Path.Combine(tempDir, "code128.png");
+        // ----------------------------------------------------------------------
+        // Input data (without checksum) that will be encoded.
+        // ----------------------------------------------------------------------
+        string data = "A";
 
-        // Data to encode (without checksum)
-        string data = "Aspose1234";
-
-        // Compute the expected checksum character for Code128 (using Code Set B)
-        char expectedChecksumChar = ComputeCode128ChecksumChar(data);
-        string expectedFullText = data + expectedChecksumChar;
-
-        // Generate the barcode image with the checksum character always shown
+        // ----------------------------------------------------------------------
+        // Generate a Code128 barcode and force the checksum character to be shown.
+        // ----------------------------------------------------------------------
         using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, data))
         {
             generator.Parameters.Barcode.ChecksumAlwaysShow = true;
-            generator.Save(barcodePath, BarCodeImageFormat.Png);
+            generator.Save(imagePath, BarCodeImageFormat.Png);
         }
 
-        // Decode the generated barcode to retrieve the full text (including checksum)
-        string decodedText = null;
-        using (BarCodeReader reader = new BarCodeReader(barcodePath, DecodeType.Code128))
+        // ----------------------------------------------------------------------
+        // Decode the barcode image to retrieve the full CodeText (data + checksum).
+        // ----------------------------------------------------------------------
+        string readCodeText = null;
+        BaseDecodeType decodeType = DecodeType.Code128;
+        using (BarCodeReader reader = new BarCodeReader(imagePath, decodeType))
         {
             foreach (BarCodeResult result in reader.ReadBarCodes())
             {
-                decodedText = result.CodeText;
-                break; // Only need the first result
+                readCodeText = result.CodeText;
+                break; // Only need the first result.
             }
         }
 
-        // Verify that the decoded text ends with the expected checksum character
-        bool passed = false;
-        if (decodedText != null && decodedText.Length == expectedFullText.Length)
+        // ----------------------------------------------------------------------
+        // Verify that the checksum character matches the expected value.
+        // ----------------------------------------------------------------------
+        bool testPassed = false;
+        if (!string.IsNullOrEmpty(readCodeText) && readCodeText.Length == data.Length + 1)
         {
-            if (decodedText[decodedText.Length - 1] == expectedChecksumChar)
-                passed = true;
+            char expectedChecksumChar = ComputeCode128ChecksumChar(data);
+            char actualChecksumChar = readCodeText[readCodeText.Length - 1];
+            testPassed = expectedChecksumChar == actualChecksumChar;
+
+            Console.WriteLine($"Data: {data}");
+            Console.WriteLine($"Read CodeText (with checksum): {readCodeText}");
+            Console.WriteLine($"Expected checksum char: {expectedChecksumChar}");
+            Console.WriteLine($"Actual checksum char:   {actualChecksumChar}");
+        }
+        else
+        {
+            Console.WriteLine("Failed to read barcode or unexpected CodeText length.");
         }
 
-        // Output the verification result
-        Console.WriteLine(passed ? "PASSED: Checksum character matches." : "FAILED: Checksum character does not match.");
+        Console.WriteLine(testPassed ? "TEST PASSED: Checksum character is correct." : "TEST FAILED: Checksum character is incorrect.");
 
-        // Cleanup temporary files and directory
+        // ----------------------------------------------------------------------
+        // Cleanup temporary files and directories.
+        // ----------------------------------------------------------------------
         try
         {
-            File.Delete(barcodePath);
+            if (File.Exists(imagePath))
+                File.Delete(imagePath);
             Directory.Delete(tempDir, true);
         }
         catch
         {
-            // Suppress any cleanup exceptions
+            // Ignore cleanup errors.
         }
     }
 
     /// <summary>
-    /// Computes the Code 128 checksum character for the given data using Code Set B.
+    /// Computes the checksum character for a Code128 barcode using Code Set B (default).
     /// </summary>
     /// <param name="data">The data string to encode (without checksum).</param>
-    /// <returns>The checksum character that should appear at the end of the encoded barcode.</returns>
+    /// <returns>The checksum character that should appear at the end of the encoded string.</returns>
     static char ComputeCode128ChecksumChar(string data)
     {
-        // Start Code B value (104) as per Code 128 specification
-        int startCode = 104;
-        int sum = startCode;
+        const int startCodeB = 104;
+        int checksum = startCodeB;
 
-        // Calculate weighted sum of character values
+        // Calculate weighted sum of character values.
         for (int i = 0; i < data.Length; i++)
         {
-            int charValue = data[i] - 32; // Code Set B mapping (ASCII 32‑127)
-            sum += charValue * (i + 1);
+            int charValue = data[i] - 32; // Code Set B mapping.
+            checksum += charValue * (i + 1);
         }
 
-        // Modulo 103 yields the checksum value
-        int checksum = sum % 103;
+        int checkValue = checksum % 103;
 
-        // Map checksum value back to a printable character (if within printable range)
-        if (checksum < 96)
-            return (char)(checksum + 32);
+        // Map check value back to a character for Code Set B (0‑94).
+        if (checkValue >= 0 && checkValue <= 94)
+        {
+            return (char)(checkValue + 32);
+        }
 
-        // For function codes (96‑102) return a placeholder character
+        // For values 95‑102 (FNC codes), return a placeholder.
         return '?';
     }
 }

@@ -1,8 +1,8 @@
-// Title: Toggle checksum for barcode symbology via console arguments
-// Description: Demonstrates how to generate a barcode image with optional checksum using Aspose.BarCode, based on command‑line parameters.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to select a symbology, configure checksum settings, and save the barcode as an image. It uses BarcodeGenerator, EncodeTypes, and related parameter classes, which are common tasks for developers creating barcodes programmatically.
+// Title: Console utility to generate a barcode with optional checksum
+// Description: Demonstrates generating a barcode image for a specified symbology and toggling its checksum based on command‑line arguments.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use the BarcodeGenerator, EncodeTypes, and EnableChecksum classes. Typical use cases include creating barcode images for inventory, shipping, or retail applications where developers need to control checksum inclusion. The snippet illustrates common steps such as resolving a symbology via reflection, configuring generator parameters, and saving the result in PNG format.
 // Prompt: Build a console utility that accepts arguments to toggle checksum for a symbology and outputs the image path.
-// Tags: barcode, symbology, checksum, console, aspose.barcode, generation, png, encode types
+// Tags: barcode, symbology, checksum, console, aspose.barcode, png, encode types
 
 using System;
 using System.IO;
@@ -12,29 +12,40 @@ using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Console utility that generates a barcode image with an optional checksum based on command‑line arguments.
+/// Provides a console application that creates a barcode image using Aspose.BarCode,
+/// allowing the caller to specify the symbology and whether the checksum is enabled.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Accepts two optional arguments: the symbology name and a flag to enable/disable checksum.
-    /// Generates the barcode and writes the image path to the console.
+    /// Entry point of the console utility.
+    /// Accepts optional command‑line arguments: the symbology name and a checksum flag ("on" or "off").
+    /// Generates a PNG barcode image and writes the output path to the console.
     /// </summary>
-    /// <param name="args">Command‑line arguments: [0] = symbology name, [1] = checksum flag (yes/true/on).</param>
+    /// <param name="args">Command‑line arguments: [0] = symbology name, [1] = checksum flag.</param>
     static void Main(string[] args)
     {
-        // Default values for symbology and checksum flag
+        // --------------------------------------------------------------------
+        // Set default values for symbology and checksum mode
+        // --------------------------------------------------------------------
         string symbologyName = "Code39Extended";
-        string checksumArg = "yes";
+        string checksumArg = "off";
 
-        // Override defaults with provided arguments, if any
+        // --------------------------------------------------------------------
+        // Override defaults with supplied arguments, if any
+        // --------------------------------------------------------------------
         if (args.Length >= 1 && !string.IsNullOrWhiteSpace(args[0]))
             symbologyName = args[0];
         if (args.Length >= 2 && !string.IsNullOrWhiteSpace(args[1]))
             checksumArg = args[1];
 
-        // Resolve the symbology name to a BaseEncodeType enum value using reflection
-        FieldInfo field = typeof(EncodeTypes).GetField(symbologyName, BindingFlags.Public | BindingFlags.Static | BindingFlags.IgnoreCase);
+        // --------------------------------------------------------------------
+        // Resolve the symbology name to a BaseEncodeType using reflection
+        // --------------------------------------------------------------------
+        FieldInfo field = typeof(EncodeTypes).GetField(
+            symbologyName,
+            BindingFlags.Public | BindingFlags.Static | BindingFlags.IgnoreCase);
+
         if (field == null)
         {
             Console.WriteLine($"Unknown symbology: {symbologyName}");
@@ -42,39 +53,37 @@ class Program
         }
 
         BaseEncodeType encodeType = (BaseEncodeType)field.GetValue(null);
-        if (encodeType == null)
-        {
-            Console.WriteLine($"Failed to obtain encode type for symbology: {symbologyName}");
-            return;
-        }
 
-        // Determine whether checksum should be enabled based on the second argument
-        EnableChecksum checksumSetting = (checksumArg.Equals("yes", StringComparison.OrdinalIgnoreCase) ||
-                                          checksumArg.Equals("true", StringComparison.OrdinalIgnoreCase) ||
-                                          checksumArg.Equals("on", StringComparison.OrdinalIgnoreCase))
-                                          ? EnableChecksum.Yes
-                                          : EnableChecksum.No;
+        // --------------------------------------------------------------------
+        // Determine checksum mode based on the second argument
+        // --------------------------------------------------------------------
+        EnableChecksum checksumMode = string.Equals(
+            checksumArg,
+            "on",
+            StringComparison.OrdinalIgnoreCase)
+                ? EnableChecksum.Yes
+                : EnableChecksum.No;
 
+        // --------------------------------------------------------------------
         // Prepare the output directory and file name
-        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
+        // --------------------------------------------------------------------
+        string outputDir = Path.Combine(Path.GetTempPath(), "BarcodeOutput");
         Directory.CreateDirectory(outputDir);
-        string fileName = $"{encodeType.TypeName}_{(checksumSetting == EnableChecksum.Yes ? "ChecksumOn" : "ChecksumOff")}.png";
+        string fileName = $"{encodeType.TypeName}_{(checksumMode == EnableChecksum.Yes ? "ChecksumOn" : "ChecksumOff")}.png";
         string outputPath = Path.Combine(outputDir, fileName);
 
+        // --------------------------------------------------------------------
         // Generate the barcode and save it as a PNG image
-        try
+        // --------------------------------------------------------------------
+        using (BarcodeGenerator generator = new BarcodeGenerator(encodeType, "12345"))
         {
-            using (BarcodeGenerator generator = new BarcodeGenerator(encodeType, "123456"))
-            {
-                generator.Parameters.Barcode.IsChecksumEnabled = checksumSetting;
-                generator.Save(outputPath, BarCodeImageFormat.Png);
-            }
+            generator.Parameters.Barcode.IsChecksumEnabled = checksumMode;
+            generator.Save(outputPath, BarCodeImageFormat.Png);
+        }
 
-            Console.WriteLine($"Barcode image saved to: {outputPath}");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error generating barcode: {ex.Message}");
-        }
+        // --------------------------------------------------------------------
+        // Inform the user where the image was saved
+        // --------------------------------------------------------------------
+        Console.WriteLine($"Barcode image saved to: {outputPath}");
     }
 }

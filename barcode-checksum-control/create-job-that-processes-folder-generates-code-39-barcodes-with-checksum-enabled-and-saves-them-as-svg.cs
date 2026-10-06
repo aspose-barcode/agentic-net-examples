@@ -1,65 +1,72 @@
 // Title: Generate Code 39 Barcodes with Checksum and Save as SVG
-// Description: Demonstrates how to generate Code 39 barcodes with checksum enabled for a list of strings and save each as an SVG file in a temporary folder.
-// Category-Description: This example belongs to the Aspose.BarCode batch processing category. It shows how to use the BarcodeGenerator class together with EncodeTypes.Code39FullASCII to create multiple barcodes, enable checksum via the IsChecksumEnabled property, and export the results in SVG format. Typical use cases include automated document preparation, inventory labeling, and bulk barcode creation where developers need a repeatable job that processes collections of data.
+// Description: The example creates temporary input files, generates Code 39 full ASCII barcodes with checksum enabled for each file name, and saves the barcodes as SVG images.
+// Category-Description: This sample belongs to the Aspose.BarCode generation category, illustrating how to use the BarcodeGenerator class to produce barcodes from file names. Typical use cases include batch processing of documents, inventory labeling, and automated report generation where each item needs a unique barcode. Developers often need to enable checksums for data integrity and export barcodes to vector formats like SVG for scalable rendering.
 // Prompt: Create a job that processes a folder, generates Code 39 barcodes with checksum enabled, and saves them as SVG.
-// Tags: code39, checksum, svg, barcode generation, aspose.barcode, batch processing
+// Tags: code39, checksum, svg, barcode generation, aspose.barcode, file processing
 
 using System;
 using System.IO;
-using System.Collections.Generic;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates Code 39 barcodes with checksum enabled
-/// and saves each barcode as an SVG file in a temporary output folder.
+/// Demonstrates processing a folder of files, generating Code 39 barcodes with checksum enabled,
+/// and saving each barcode as an SVG image using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Executes the barcode generation job.
+    /// Entry point that creates sample input files, generates barcodes, and writes SVG output.
     /// </summary>
     static void Main()
     {
-        // Create a dedicated temporary folder for the job
-        string outputFolder = Path.Combine(Path.GetTempPath(), "BarcodeJob_" + Guid.NewGuid().ToString("N"));
+        // --------------------------------------------------------------------
+        // Set up a temporary input folder and create sample text files.
+        // --------------------------------------------------------------------
+        string inputFolder = Path.Combine(Path.GetTempPath(), "BarcodesInput_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(inputFolder);
+        for (int i = 1; i <= 3; i++)
+        {
+            string filePath = Path.Combine(inputFolder, $"File{i}.txt");
+            File.WriteAllText(filePath, $"SampleContent{i}");
+        }
+
+        // --------------------------------------------------------------------
+        // Set up a temporary output folder where SVG barcode images will be saved.
+        // --------------------------------------------------------------------
+        string outputFolder = Path.Combine(Path.GetTempPath(), "BarcodesOutput_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(outputFolder);
-        Console.WriteLine("Output folder: " + outputFolder);
 
-        // Sample data to encode
-        List<string> codeTexts = new List<string>
+        // --------------------------------------------------------------------
+        // Process each file in the input folder: generate a barcode from the file name.
+        // --------------------------------------------------------------------
+        string[] files = Directory.GetFiles(inputFolder);
+        foreach (string file in files)
         {
-            "CODE39A",
-            "12345",
-            "HELLO-WORLD",
-            "ASP.NET",
-            "BARCODE123"
-        };
+            // Use the file name (without extension) as the barcode text.
+            string codeText = Path.GetFileNameWithoutExtension(file);
+            string outputPath = Path.Combine(outputFolder, $"{codeText}.svg");
 
-        // Process each text string, generate a barcode, and save it as SVG
-        foreach (string text in codeTexts)
-        {
-            string filePath = Path.Combine(outputFolder, text + ".svg");
-            try
+            // Initialize the barcode generator with Code39FullASCII symbology.
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code39FullASCII, codeText))
             {
-                // Initialize the barcode generator with Code 39 Full ASCII symbology
-                using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code39FullASCII, text))
+                // Enable checksum calculation for data integrity.
+                generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
+
+                try
                 {
-                    // Enable checksum for Code 39
-                    generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
-
-                    // Save the generated barcode as an SVG file
-                    generator.Save(filePath, BarCodeImageFormat.Svg);
+                    // Save the generated barcode as an SVG file.
+                    generator.Save(outputPath, BarCodeImageFormat.Svg);
+                    Console.WriteLine($"Generated SVG for '{codeText}' at '{outputPath}'.");
                 }
-                Console.WriteLine($"Generated barcode for \"{text}\" at {filePath}");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Failed to generate barcode for \"{text}\": {ex.Message}");
+                catch (Exception ex)
+                {
+                    // Log any errors that occur during barcode generation or saving.
+                    Console.WriteLine($"Failed to generate barcode for '{codeText}': {ex.Message}");
+                }
             }
         }
 
-        Console.WriteLine("Barcode generation job completed.");
+        Console.WriteLine("Processing completed.");
     }
 }

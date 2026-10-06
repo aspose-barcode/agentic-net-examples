@@ -1,123 +1,106 @@
-// Title: Generate PDF with a 2x2 barcode grid
-// Description: Demonstrates creating a PDF document containing a grid of barcodes, each cell using a distinct symbology and checksum configuration.
-// Category-Description: This example belongs to the Aspose.BarCode PDF generation category, showcasing how to use BarcodeGenerator, BarCodeImageFormat, and Aspose.Pdf.Document to embed various barcode types (Code39, Code128, QR, DataMatrix) into a PDF. Typical use cases include batch printing, reports, and inventory labels where multiple barcode formats are required on a single page. Developers often need to configure symbology settings, colors, and error correction levels before rendering barcodes to images and placing them in PDF pages.
+// Title: Generate PDF with a grid of different barcodes
+// Description: Creates a PDF document containing a 2x2 grid where each cell displays a barcode of a distinct symbology and checksum configuration.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, demonstrating how to create barcode images and embed them into PDF files using Aspose.Pdf. It showcases the use of BarcodeGenerator, setting barcode parameters such as symbology and checksum, and placing the generated images onto a PDF page. Developers often need to generate multiple barcodes and combine them into documents for reporting, labeling, or batch printing.
 // Prompt: Generate a PDF document with a grid of barcodes, each cell using a different symbology and checksum setting.
-// Tags: barcode, symbology, pdf, grid, aspose.barcode, aspose.pdf, csharp
+// Tags: barcode symbology, generation, pdf, aspose.barcode, aspose.pdf
 
 using System;
 using System.IO;
+using System.Collections.Generic;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Pdf;
 
 /// <summary>
-/// Program that creates a PDF file containing a grid of different barcodes.
+/// Demonstrates how to generate several barcodes with different symbologies,
+/// place them into a 2x2 grid, and save the result as a PDF document.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates the barcode grid PDF and saves it to the current directory.
+    /// Entry point of the example. Generates barcode images, arranges them in a grid,
+    /// and writes the final PDF to a temporary location.
     /// </summary>
     static void Main()
     {
-        // Define the output PDF file path
-        string outputPdf = Path.Combine(Directory.GetCurrentDirectory(), "BarcodesGrid.pdf");
+        // Define barcode specifications (maximum of 4 for evaluation mode)
+        var specs = new List<(BaseEncodeType type, string text, EnableChecksum? checksum)>
+        {
+            (EncodeTypes.Code39FullASCII, "ABC-123", EnableChecksum.Yes), // optional checksum enabled
+            (EncodeTypes.Code128, "1234567890", null),                  // obligatory checksum
+            (EncodeTypes.QR, "https://example.com", null),             // QR code
+            (EncodeTypes.DataMatrix, "DataMatrixTest", null)           // DataMatrix
+        };
 
-        // Create a new PDF document
+        // Generate barcode images and store them in memory streams
+        var barcodeStreams = new List<MemoryStream>();
+        foreach (var spec in specs)
+        {
+            using (var generator = new BarcodeGenerator(spec.type, spec.text))
+            {
+                // Apply checksum setting if provided
+                if (spec.checksum.HasValue)
+                {
+                    generator.Parameters.Barcode.IsChecksumEnabled = spec.checksum.Value;
+                }
+
+                // Set simple foreground and background colors
+                generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
+                generator.Parameters.BackColor = Aspose.Drawing.Color.White;
+
+                // Save the barcode as PNG into a memory stream
+                var ms = new MemoryStream();
+                generator.Save(ms, BarCodeImageFormat.Png);
+                ms.Position = 0;
+                barcodeStreams.Add(ms);
+            }
+        }
+
+        // Create a new PDF document and add a page for the barcode grid
         using (var pdfDoc = new Document())
         {
-            // Add a single page to the document
             var page = pdfDoc.Pages.Add();
 
-            // Retrieve page dimensions for layout calculations
+            // Determine page dimensions and calculate cell size for a 2x2 grid
             double pageWidth = page.PageInfo.Width;
             double pageHeight = page.PageInfo.Height;
-
-            // Configure a 2x2 grid (rows x columns)
-            int rows = 2;
             int cols = 2;
+            int rows = 2;
             double cellWidth = pageWidth / cols;
             double cellHeight = pageHeight / rows;
 
-            // Define barcode specifications: type, text, and optional configuration
-            var specs = new (BaseEncodeType type, string text, Action<BarcodeGenerator> configure)[]
+            // Place each barcode image into its corresponding cell
+            int index = 0;
+            for (int r = 0; r < rows; r++)
             {
-                // Code39 with checksum disabled
-                (EncodeTypes.Code39FullASCII,
-                 "CODE39",
-                 gen =>
-                 {
-                     gen.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.No;
-                     gen.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-                     gen.Parameters.BackColor = Aspose.Drawing.Color.White;
-                 }),
-
-                // Code128 (checksum obligatory)
-                (EncodeTypes.Code128,
-                 "CODE128",
-                 gen =>
-                 {
-                     gen.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-                     gen.Parameters.BackColor = Aspose.Drawing.Color.White;
-                 }),
-
-                // QR with high error correction level
-                (EncodeTypes.QR,
-                 "https://example.com",
-                 gen =>
-                 {
-                     gen.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
-                     gen.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-                     gen.Parameters.BackColor = Aspose.Drawing.Color.White;
-                 }),
-
-                // DataMatrix with a specific version
-                (EncodeTypes.DataMatrix,
-                 "DataMatrix",
-                 gen =>
-                 {
-                     gen.Parameters.Barcode.DataMatrix.Version = DataMatrixVersion.ECC200_32x32;
-                     gen.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-                     gen.Parameters.BackColor = Aspose.Drawing.Color.White;
-                 })
-            };
-
-            // Iterate over each barcode specification and place it in the grid
-            for (int i = 0; i < specs.Length; i++)
-            {
-                int row = i / cols; // Determine current row
-                int col = i % cols; // Determine current column
-
-                // Create a barcode generator for the current spec
-                using (var generator = new BarcodeGenerator(specs[i].type, specs[i].text))
+                for (int c = 0; c < cols; c++)
                 {
-                    // Apply any custom configuration (e.g., colors, checksum, error level)
-                    specs[i].configure?.Invoke(generator);
+                    if (index >= barcodeStreams.Count)
+                        break;
 
-                    // Render the barcode to a memory stream as PNG
-                    using (var ms = new MemoryStream())
-                    {
-                        generator.Save(ms, BarCodeImageFormat.Png);
-                        ms.Position = 0; // Reset stream position for reading
+                    var stream = barcodeStreams[index];
+                    double llx = c * cellWidth;
+                    double lly = pageHeight - (r + 1) * cellHeight;
+                    double urx = llx + cellWidth;
+                    double ury = lly + cellHeight;
+                    var rect = new Aspose.Pdf.Rectangle(llx, lly, urx, ury);
 
-                        // Calculate the rectangle where the image will be placed
-                        double llx = col * cellWidth;
-                        double lly = pageHeight - (row + 1) * cellHeight;
-                        double urx = (col + 1) * cellWidth;
-                        double ury = pageHeight - row * cellHeight;
-                        var rect = new Aspose.Pdf.Rectangle(llx, lly, urx, ury);
-
-                        // Add the barcode image to the PDF page within the calculated rectangle
-                        page.AddImage(ms, rect, (int)cellWidth, (int)cellHeight, true);
-                    }
+                    // Add the barcode image to the PDF page within the calculated rectangle
+                    page.AddImage(stream, rect, (int)cellWidth, (int)cellHeight, true);
+                    index++;
                 }
             }
 
-            // Save the populated PDF document to disk
-            pdfDoc.Save(outputPdf);
+            // Save the PDF to a temporary file and report the location
+            string outputPath = Path.Combine(Path.GetTempPath(), "BarcodesGrid.pdf");
+            pdfDoc.Save(outputPath);
+            Console.WriteLine($"PDF saved to: {outputPath}");
         }
 
-        // Inform the user where the PDF was saved
-        Console.WriteLine($"PDF with barcode grid saved to: {outputPdf}");
+        // Clean up memory streams after the PDF has been saved
+        foreach (var ms in barcodeStreams)
+        {
+            ms.Dispose();
+        }
     }
 }

@@ -1,85 +1,97 @@
 // Title: Compute Code 39 checksum character without rendering
-// Description: Demonstrates how to calculate the checksum character for a Code 39 barcode string using Aspose.BarCode utilities, without generating an image.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on symbology-specific calculations. It showcases the use of character‑to‑value mappings and checksum logic for Code 39, a common linear barcode. Developers often need to validate or generate checksum characters when creating custom barcode strings or integrating with legacy systems.
+// Description: Demonstrates how to calculate the checksum character for a Code 39 barcode by generating a temporary image and reading it back, without displaying the barcode.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It shows how to use BarcodeGenerator to enable checksum, save to a stream, and BarCodeReader to extract the computed checksum. Developers working with barcode validation, data integrity checks, or custom encoding often need to obtain checksum values programmatically without rendering the final image.
 // Prompt: Implement a function that returns the computed checksum character for a given Code 39 string without rendering.
-// Tags: barcode symbology, checksum, code39, generation, aspnet, csharp
+// Tags: code39, checksum, barcode, generation, recognition, aspose.barcode, csharp
 
 using System;
-using System.Collections.Generic;
-using Aspose.BarCode.Generation;
+using System.IO;
 using Aspose.BarCode;
+using Aspose.BarCode.Generation;
+using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates computing the Code 39 checksum character for a given input string.
+/// Demonstrates computing a Code 39 checksum character without rendering the barcode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Computes and prints the checksum for a sample string.
+    /// Entry point. Computes and prints the checksum for a sample string.
     /// </summary>
     static void Main()
     {
-        // Sample input string for which the checksum will be calculated
+        // Sample text for which we want the checksum
         string sample = "CODE39";
 
-        // Compute the checksum character using the helper method
+        // Compute the checksum using the helper method
         char checksum = ComputeCode39Checksum(sample);
 
-        // Output the original input and the resulting checksum character
-        Console.WriteLine($"Input: {sample}");
-        Console.WriteLine($"Checksum character: {checksum}");
+        // Output the result to the console
+        Console.WriteLine($"Checksum for \"{sample}\" is '{checksum}'");
     }
 
     /// <summary>
-    /// Calculates the Code 39 checksum character for the provided text.
+    /// Generates a temporary Code 39 barcode with checksum enabled, reads it back,
+    /// and returns the checksum character without rendering the image to the user.
     /// </summary>
-    /// <param name="text">The input string to calculate the checksum for. Must contain only valid Code 39 characters.</param>
-    /// <returns>The checksum character as defined by the Code 39 specification.</returns>
-    /// <exception cref="ArgumentException">Thrown when the input is null, empty, or contains invalid characters.</exception>
-    static char ComputeCode39Checksum(string text)
+    /// <param name="codeText">The input string for which to compute the checksum.</param>
+    /// <returns>The checksum character appended by the barcode generator.</returns>
+    static char ComputeCode39Checksum(string codeText)
     {
         // Validate input
-        if (string.IsNullOrEmpty(text))
-            throw new ArgumentException("Input text cannot be null or empty.", nameof(text));
+        if (string.IsNullOrEmpty(codeText))
+            throw new ArgumentException("codeText cannot be null or empty.", nameof(codeText));
 
-        // Mapping of characters to their numeric values for Code 39
-        Dictionary<char, int> charToValue = new Dictionary<char, int>
+        // Use a memory stream to avoid writing the image to disk initially
+        using (MemoryStream ms = new MemoryStream())
         {
-            {'0', 0}, {'1', 1}, {'2', 2}, {'3', 3}, {'4', 4},
-            {'5', 5}, {'6', 6}, {'7', 7}, {'8', 8}, {'9', 9},
-            {'A',10}, {'B',11}, {'C',12}, {'D',13}, {'E',14},
-            {'F',15}, {'G',16}, {'H',17}, {'I',18}, {'J',19},
-            {'K',20}, {'L',21}, {'M',22}, {'N',23}, {'O',24},
-            {'P',25}, {'Q',26}, {'R',27}, {'S',28}, {'T',29},
-            {'U',30}, {'V',31}, {'W',32}, {'X',33}, {'Y',34},
-            {'Z',35}, {'-',36}, {'.',37}, {' ',38}, {'$',39},
-            {'/',40}, {'+',41}, {'%',42}
-        };
+            // Create a barcode generator for Code 39 Full ASCII with the provided text
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code39FullASCII, codeText))
+            {
+                // Enable checksum calculation and make it visible in the human‑readable text
+                generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
+                generator.Parameters.Barcode.ChecksumAlwaysShow = true;
 
-        // Reverse mapping from numeric value back to character
-        char[] valueToChar = new char[43]
-        {
-            '0','1','2','3','4','5','6','7','8','9',
-            'A','B','C','D','E','F','G','H','I','J',
-            'K','L','M','N','O','P','Q','R','S','T',
-            'U','V','W','X','Y','Z','-','.',' ','$',
-            '/','+','%'
-        };
+                // Save the generated barcode to the memory stream in PNG format
+                generator.Save(ms, BarCodeImageFormat.Png);
+            }
 
-        int sum = 0;
+            // Write the stream to a temporary file because BarCodeReader works with file paths
+            string tempPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".png");
+            try
+            {
+                File.WriteAllBytes(tempPath, ms.ToArray());
 
-        // Iterate over each character, convert to uppercase, and accumulate the weighted sum
-        foreach (char c in text.ToUpperInvariant())
-        {
-            // Retrieve the numeric value; throw if character is not part of Code 39
-            if (!charToValue.TryGetValue(c, out int val))
-                throw new ArgumentException($"Character '{c}' is not valid for Code 39.", nameof(text));
+                // Initialize a reader for Code 39 Full ASCII to decode the temporary image
+                using (BarCodeReader reader = new BarCodeReader(tempPath, DecodeType.Code39FullASCII))
+                {
+                    // Iterate over all detected barcodes (expecting one)
+                    foreach (BarCodeResult result in reader.ReadBarCodes())
+                    {
+                        // The decoded text includes the checksum as the last character
+                        string fullText = result.CodeText;
 
-            // Add value to running total and keep it within the modulo 43 range
-            sum = (sum + val) % 43;
+                        // Ensure we have a valid result with at least two characters
+                        if (string.IsNullOrEmpty(fullText) || fullText.Length < 2)
+                            throw new InvalidOperationException("Unable to retrieve checksum from barcode.");
+
+                        // Return the last character, which is the checksum
+                        return fullText[fullText.Length - 1];
+                    }
+                }
+            }
+            finally
+            {
+                // Clean up the temporary file
+                if (File.Exists(tempPath))
+                {
+                    try { File.Delete(tempPath); } catch { /* ignore cleanup errors */ }
+                }
+            }
         }
 
-        // Convert the final sum back to its corresponding checksum character
-        return valueToChar[sum];
+        // If we reach this point, something went wrong
+        throw new InvalidOperationException("Checksum could not be computed.");
     }
 }
