@@ -1,8 +1,8 @@
-// Title: Apply custom colors to QR barcode and compare images
-// Description: Demonstrates generating QR barcodes with different foreground and background colors, saving them as PNG files, and programmatically comparing the visual differences.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and image processing category. It shows how to use BarcodeGenerator, set BarColor and BackColor, render the barcode to a bitmap, and perform pixel‑by‑pixel comparison using Aspose.Drawing. Developers often need to customize barcode appearance for branding and verify visual output in automated tests.
+// Title: Custom Colored Barcode Comparison
+// Description: Demonstrates generating a default barcode and a custom-colored version, then programmatically comparing their visual differences.
+// Category-Description: This example belongs to the Aspose.BarCode generation and rendering category. It showcases how to customize barcode colors using the BarcodeGenerator.Parameters API, render the images to PNG, and compare them pixel‑by‑pixel. Developers working with barcode visual styling, branding, or automated image validation will find these patterns useful.
 // Prompt: Apply different custom colors to the same barcode type and compare visual differences programmatically.
-// Tags: barcode, qr, custom colors, image comparison, aspose.barcode, aspose.drawing, generation, png
+// Tags: barcode, color, comparison, png, aspose.barcode, code128, generation, image-processing
 
 using System;
 using System.IO;
@@ -12,110 +12,81 @@ using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Generates QR barcodes with custom colors, saves them as PNG files,
-/// and compares the resulting images pixel by pixel.
+/// Generates a default barcode and a custom‑colored barcode, then compares the two images pixel by pixel.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates two barcodes with different color schemes,
-    /// saves them, and reports the number of differing pixels.
+    /// Entry point of the example. Creates two barcodes (default and custom colors) and outputs the number of differing pixels.
     /// </summary>
     static void Main()
     {
-        // Define the data to encode in the barcode
-        string codeText = "Sample123";
+        const string codeText = "1234567890";
+        BaseEncodeType encodeType = EncodeTypes.Code128;
 
-        // First barcode color scheme: blue bars on white background
-        Color barColor1 = Color.Blue;
-        Color backColor1 = Color.White;
-
-        // Second barcode color scheme: red bars on yellow background
-        Color barColor2 = Color.Red;
-        Color backColor2 = Color.Yellow;
-
-        // Generate the two barcode images using the specified colors
-        using (Bitmap bmp1 = GenerateBarcode(codeText, barColor1, backColor1))
-        using (Bitmap bmp2 = GenerateBarcode(codeText, barColor2, backColor2))
+        // Generate the default barcode (no custom colors applied)
+        using (var defaultGenerator = new BarcodeGenerator(encodeType, codeText))
         {
-            // Persist the generated images for visual inspection
-            SaveBitmap(bmp1, "barcode1.png");
-            SaveBitmap(bmp2, "barcode2.png");
-
-            // Compare the two images pixel by pixel
-            int diffPixels = CompareBitmaps(bmp1, bmp2);
-            if (diffPixels == -1)
+            using (var defaultStream = new MemoryStream())
             {
-                Console.WriteLine("Images have different dimensions and cannot be compared.");
-            }
-            else
-            {
-                Console.WriteLine($"Number of differing pixels: {diffPixels}");
-            }
-        }
-    }
+                defaultGenerator.Save(defaultStream, BarCodeImageFormat.Png);
+                defaultStream.Position = 0;
 
-    /// <summary>
-    /// Generates a QR barcode bitmap with the specified foreground (bar) and background colors.
-    /// </summary>
-    /// <param name="codeText">The text to encode in the barcode.</param>
-    /// <param name="barColor">The color of the barcode bars.</param>
-    /// <param name="backColor">The background color of the barcode image.</param>
-    /// <returns>A <see cref="Bitmap"/> containing the rendered barcode.</returns>
-    static Bitmap GenerateBarcode(string codeText, Color barColor, Color backColor)
-    {
-        // Initialize the barcode generator for QR code type
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, codeText))
-        {
-            // Apply custom colors
-            generator.Parameters.Barcode.BarColor = barColor;
-            generator.Parameters.BackColor = backColor;
+                using (var defaultBitmap = new Bitmap(defaultStream))
+                {
+                    // Generate a barcode with custom colors and captions
+                    using (var customGenerator = new BarcodeGenerator(encodeType, codeText))
+                    {
+                        // Apply custom colors to various barcode elements
+                        customGenerator.Parameters.Barcode.BarColor = Color.Red;
+                        customGenerator.Parameters.BackColor = Color.Yellow;
+                        customGenerator.Parameters.Barcode.CodeTextParameters.Color = Color.Blue;
+                        customGenerator.Parameters.Border.Color = Color.Green;
 
-            // Render the barcode to a memory stream in PNG format
-            using (var ms = new MemoryStream())
-            {
-                generator.Save(ms, BarCodeImageFormat.Png);
-                ms.Position = 0;
+                        // Add captions above and below the barcode
+                        customGenerator.Parameters.CaptionAbove.Text = "Above";
+                        customGenerator.Parameters.CaptionBelow.Text = "Below";
+                        customGenerator.Parameters.CaptionAbove.TextColor = Color.Purple;
+                        customGenerator.Parameters.CaptionBelow.TextColor = Color.Purple;
 
-                // Load the bitmap from the memory stream
-                return new Bitmap(ms);
+                        using (var customStream = new MemoryStream())
+                        {
+                            customGenerator.Save(customStream, BarCodeImageFormat.Png);
+                            customStream.Position = 0;
+
+                            using (var customBitmap = new Bitmap(customStream))
+                            {
+                                // Compare the two bitmaps and report the number of differing pixels
+                                int diffPixels = CompareBitmaps(defaultBitmap, customBitmap);
+                                Console.WriteLine($"Different pixels between default and custom barcode: {diffPixels}");
+                            }
+                        }
+                    }
+                }
             }
         }
     }
 
     /// <summary>
-    /// Saves a bitmap to a file in PNG format.
-    /// </summary>
-    /// <param name="bitmap">The bitmap to save.</param>
-    /// <param name="filePath">The destination file path.</param>
-    static void SaveBitmap(Bitmap bitmap, string filePath)
-    {
-        using (var fs = new FileStream(filePath, FileMode.Create, FileAccess.Write))
-        {
-            bitmap.Save(fs, ImageFormat.Png);
-        }
-    }
-
-    /// <summary>
-    /// Compares two bitmaps pixel by pixel.
-    /// Returns -1 if the images have different dimensions; otherwise returns the count of differing pixels.
+    /// Compares two bitmaps of identical dimensions and returns the count of pixels that differ.
     /// </summary>
     /// <param name="bmp1">First bitmap to compare.</param>
     /// <param name="bmp2">Second bitmap to compare.</param>
-    /// <returns>Number of differing pixels, or -1 if dimensions differ.</returns>
+    /// <returns>Number of pixels with different ARGB values.</returns>
+    /// <exception cref="ArgumentException">Thrown when the bitmap sizes do not match.</exception>
     static int CompareBitmaps(Bitmap bmp1, Bitmap bmp2)
     {
-        // Ensure both images have the same size before comparison
         if (bmp1.Width != bmp2.Width || bmp1.Height != bmp2.Height)
-            return -1;
+            throw new ArgumentException("Bitmap sizes do not match.");
 
         int diffCount = 0;
         for (int y = 0; y < bmp1.Height; y++)
         {
             for (int x = 0; x < bmp1.Width; x++)
             {
-                // Increment count when pixel colors differ
-                if (bmp1.GetPixel(x, y) != bmp2.GetPixel(x, y))
+                Color c1 = bmp1.GetPixel(x, y);
+                Color c2 = bmp2.GetPixel(x, y);
+                if (c1.ToArgb() != c2.ToArgb())
                     diffCount++;
             }
         }

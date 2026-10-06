@@ -1,8 +1,8 @@
-// Title: Generate Code128 barcode and modify background color
-// Description: Demonstrates creating a Code128 barcode with default colors, then changing the background to white and saving both images.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to use BarcodeGenerator, set visual parameters, and export to PNG. Developers commonly need to customize barcode appearance such as background and foreground colors for branding or readability, and this snippet shows the typical workflow.
+// Title: Generate Code128 barcode with default colors and white background
+// Description: Demonstrates creating a Code128 barcode using Aspose.BarCode with default colors, then explicitly setting a white background to verify default behavior.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use the BarcodeGenerator class with EncodeTypes to produce barcode images. Typical use cases include creating product labels, inventory tags, or QR codes where developers need to control visual properties such as background color. The snippet illustrates default rendering and how to modify the BackColor property before saving the image.
 // Prompt: Generate a barcode with default colors and then change background to white to confirm default behavior.
-// Tags: code128, barcode generation, png, background color, aspose.barcode, aspose.drawing
+// Tags: code128, barcode, generation, background, png, aspose.barcode, colors
 
 using System;
 using System.IO;
@@ -11,34 +11,40 @@ using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a Code128 barcode, saving it with default colors,
-/// then changing the background to white and saving again.
+/// Example program that generates a Code128 barcode with default colors
+/// and then with an explicitly set white background, saving both images to disk.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Creates output directory, generates barcode images, and writes file paths to console.
+    /// Entry point of the example. Creates output directory, generates two barcodes,
+    /// and writes the file paths to the console.
     /// </summary>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Define and create the output folder for generated images
-        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Output");
-        Directory.CreateDirectory(outputDir);
+        // Determine the output folder relative to the current working directory
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
 
-        // File paths for the two barcode images
+        // Ensure the output directory exists
+        if (!Directory.Exists(outputDir))
+        {
+            Directory.CreateDirectory(outputDir);
+        }
+
+        // File paths for the two generated images
         string defaultPath = Path.Combine(outputDir, "barcode_default.png");
         string whiteBgPath = Path.Combine(outputDir, "barcode_whitebg.png");
 
-        // Initialize the barcode generator with Code128 symbology and sample data
+        // Generate barcode with default colors (no background explicitly set)
         using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            // Save the barcode using the generator's default foreground/background colors
             generator.Save(defaultPath, BarCodeImageFormat.Png);
+        }
 
-            // Change the background color to white to verify default behavior
-            generator.Parameters.BackColor = Aspose.Drawing.Color.White;
-
-            // Save the barcode again with the updated background color
+        // Generate barcode with background explicitly set to white
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+        {
+            generator.Parameters.BackColor = Color.White;
             generator.Save(whiteBgPath, BarCodeImageFormat.Png);
         }
 

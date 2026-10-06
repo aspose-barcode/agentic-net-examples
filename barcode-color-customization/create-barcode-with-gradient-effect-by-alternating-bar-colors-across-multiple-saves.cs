@@ -1,61 +1,71 @@
-// Title: Generate a Code128 barcode series with a color gradient
-// Description: Demonstrates creating multiple barcode images where the bar color transitions from red to blue, illustrating how to apply dynamic color settings and save each step as a PNG file.
-// Category-Description: This example belongs to the Aspose.BarCode image generation category, showcasing the use of BarcodeGenerator, EncodeTypes, and color manipulation to produce visual effects. Developers often need to customize barcode appearance for branding or UI integration, and this snippet provides a clear pattern for applying per‑image styling while iterating over a set of generated barcodes.
+// Title: Create barcode with gradient bar colors
+// Description: Demonstrates generating a Code128 barcode and saving multiple PNG images, each with a different bar color to simulate a gradient effect.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showing how to customize barcode appearance using the BarcodeGenerator class. It covers setting bar colors, background color, and saving images in PNG format. Developers often need to personalize barcodes for branding or visual distinction, and this snippet illustrates typical API usage for such customizations.
 // Prompt: Create a barcode with a gradient effect by alternating bar colors across multiple saves.
-// Tags: code128, gradient, png, barcodegenerator, aspose.barcode
+// Tags: code128, barcode, gradient, png, aspose.barcode, aspose.drawing, barcode generation
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Generates a series of Code128 barcode images with a smooth red‑to‑blue gradient applied to the bars.
+/// Generates a series of Code128 barcodes, each with a different bar color,
+/// to create a gradient effect across multiple saved PNG images.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates the gradient barcode images and writes the output folder path to the console.
+    /// Entry point of the example. Creates an output folder, defines colors,
+    /// generates barcodes with alternating colors, and saves them as PNG files.
     /// </summary>
     static void Main()
     {
-        // Define the text to encode and the folder where images will be saved.
-        string codeText = "GRADIENT123";
+        // Create a unique temporary output folder for the generated images
         string outputFolder = Path.Combine(Path.GetTempPath(), "BarcodeGradient_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(outputFolder);
 
-        // Configure gradient: 5 incremental steps from red to blue.
-        int steps = 5;
-        for (int i = 0; i < steps; i++)
+        // The text to encode in the barcode
+        string codeText = "GRADIENT";
+
+        // Define a sequence of colors to use for the gradient effect
+        Color[] barColors = new Color[]
         {
-            // Compute interpolation factor (t) ranging from 0 (red) to 1 (blue).
-            float t = steps == 1 ? 0f : (float)i / (steps - 1);
+            Color.Red,
+            Color.Orange,
+            Color.Yellow,
+            Color.Green,
+            Color.Blue,
+            Color.Indigo,
+            Color.Violet
+        };
 
-            // Linearly interpolate the red and blue channel values.
-            int r = (int)(255 * (1 - t));
-            int g = 0;
-            int b = (int)(255 * t);
+        // Iterate over each color, generate a barcode, and save it
+        for (int i = 0; i < barColors.Length; i++)
+        {
+            // Build a descriptive file name that includes the color name
+            string fileName = $"Barcode_{i + 1}_{barColors[i].Name}.png";
+            string filePath = Path.Combine(outputFolder, fileName);
 
-            // Initialize the barcode generator for Code128 with the specified text.
+            // Initialize the barcode generator with Code128 symbology and the desired text
             using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
             {
-                // Apply the interpolated color to the barcode bars.
-                generator.Parameters.Barcode.BarColor = Color.FromArgb(255, r, g, b);
-
-                // Set a white background for better contrast.
+                // Apply the current bar color
+                generator.Parameters.Barcode.BarColor = barColors[i];
+                // Set a white background for better contrast
                 generator.Parameters.BackColor = Color.White;
 
-                // Build the file name for the current gradient step.
-                string filePath = Path.Combine(outputFolder, $"barcode_step_{i + 1}.png");
-
-                // Save the barcode image as a PNG file.
+                // Save the generated barcode as a PNG image
                 generator.Save(filePath, BarCodeImageFormat.Png);
             }
+
+            // Inform the user about the saved file
+            Console.WriteLine($"Saved barcode with color {barColors[i].Name} to: {filePath}");
         }
 
-        // Output the location of the generated images.
-        Console.WriteLine($"Generated {steps} barcode images with gradient effect in:");
-        Console.WriteLine(outputFolder);
+        // Indicate that the gradient barcode generation process has finished
+        Console.WriteLine("Gradient barcode generation completed.");
     }
 }

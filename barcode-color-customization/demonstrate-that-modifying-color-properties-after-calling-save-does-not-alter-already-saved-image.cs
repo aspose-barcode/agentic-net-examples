@@ -1,8 +1,8 @@
-// Title: Demonstrate barcode color change does not affect previously saved image
-// Description: This example generates a Code128 barcode, saves it, changes its colors, saves again, and verifies the first saved image remains unchanged by comparing file hashes.
-// Category-Description: Shows how to use Aspose.BarCode's BarcodeGenerator to modify visual properties after saving. Covers barcode generation, color customization, image export, and file integrity verification using SHA256. Useful for developers needing to generate multiple barcode images with different styles without reprocessing earlier files.
+// Title: Demonstrate Color Property Independence After Save
+// Description: Shows that changing barcode and background colors after saving does not affect the previously saved image file.
+// Category-Description: This example belongs to the Aspose.BarCode image generation category, illustrating how the BarcodeGenerator and its Parameters (Barcode, BackColor) can be configured. Developers often need to generate multiple barcode images with different visual styles while ensuring earlier outputs remain unchanged. The snippet highlights typical use cases such as dynamic color changes and file integrity verification using hash comparison.
 // Prompt: Demonstrate that modifying color properties after calling Save does not alter the already saved image.
-// Tags: barcode, code128, color, image, save, hash, aspose.barcode, aspose.drawing, sha256
+// Tags: code128, barcode, color, png, save, hash, aspose.barcode, barcodegenerator, parameters
 
 using System;
 using System.IO;
@@ -12,83 +12,93 @@ using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates that changing barcode color properties after saving does not modify the already saved image.
+/// Example program that generates two barcode images, modifies color settings between saves,
+/// and verifies that the first saved image remains unchanged by comparing file hashes.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the demo. Generates a barcode, saves it, changes colors, saves again, and compares file hashes.
+    /// Entry point of the example. Generates barcodes, saves them with different colors,
+    /// and checks that the first saved file is not affected by later color changes.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder for the demo files
-        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeColorDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
+        // Prepare a temporary output directory
+        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
+        Directory.CreateDirectory(outputDir);
 
         // Define file paths for the two barcode images
-        string firstImagePath = Path.Combine(tempFolder, "barcode_first.png");
-        string secondImagePath = Path.Combine(tempFolder, "barcode_second.png");
+        string file1 = Path.Combine(outputDir, "barcode1.png");
+        string file2 = Path.Combine(outputDir, "barcode2.png");
 
-        // Initialize the barcode generator with Code128 symbology and sample text
-        BaseEncodeType encodeType = EncodeTypes.Code128;
-        string firstHashBefore = null;
-
-        using (BarcodeGenerator generator = new BarcodeGenerator(encodeType, "123456"))
+        // --------------------------------------------------------------------
+        // Create the first barcode generator instance with initial colors
+        // --------------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "12345678"))
         {
-            // Set initial colors: black bars on white background
-            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-            generator.Parameters.BackColor = Aspose.Drawing.Color.White;
+            // Set initial barcode (foreground) and background colors
+            generator.Parameters.Barcode.BarColor = Color.Black;
+            generator.Parameters.BackColor = Color.White;
 
-            // Save the first image with the initial colors
-            generator.Save(firstImagePath, BarCodeImageFormat.Png);
-            Console.WriteLine($"First barcode saved to: {firstImagePath}");
-
-            // Compute hash of the first image after saving
-            firstHashBefore = ComputeFileHash(firstImagePath);
-            Console.WriteLine($"Hash of first image after first save: {firstHashBefore}");
-
-            // Change colors after the first save: red bars on yellow background
-            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Red;
-            generator.Parameters.BackColor = Aspose.Drawing.Color.Yellow;
-
-            // Save the second image with the new colors
-            generator.Save(secondImagePath, BarCodeImageFormat.Png);
-            Console.WriteLine($"Second barcode saved to: {secondImagePath}");
+            // Save the first image to disk
+            generator.Save(file1, BarCodeImageFormat.Png);
         }
 
-        // Compute hash of the first image again to verify it hasn't changed
-        string firstHashAfter = ComputeFileHash(firstImagePath);
-        Console.WriteLine($"Hash of first image after second save: {firstHashAfter}");
+        // Compute and display the hash of the first saved file
+        string hashBefore = ComputeFileHash(file1);
+        Console.WriteLine($"Hash of first saved image: {hashBefore}");
 
-        // Compute hash of the second image
-        string secondHash = ComputeFileHash(secondImagePath);
-        Console.WriteLine($"Hash of second image: {secondHash}");
-
-        // Compare hashes to demonstrate that the first image remained unchanged
-        if (firstHashBefore == firstHashAfter)
+        // --------------------------------------------------------------------
+        // Create a second generator (or reuse) and change colors before saving
+        // --------------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "12345678"))
         {
-            Console.WriteLine("Success: The first saved image was not altered after modifying colors.");
+            // Change barcode and background colors after the first save
+            generator.Parameters.Barcode.BarColor = Color.Red;
+            generator.Parameters.BackColor = Color.Yellow;
+
+            // Save the second image to disk
+            generator.Save(file2, BarCodeImageFormat.Png);
+        }
+
+        // Compute the hash of the first file again to verify it hasn't changed
+        string hashAfter = ComputeFileHash(file1);
+        Console.WriteLine($"Hash of first image after modifying colors: {hashAfter}");
+
+        // Compute and display the hash of the second file
+        string hashSecond = ComputeFileHash(file2);
+        Console.WriteLine($"Hash of second saved image: {hashSecond}");
+
+        // Compare hashes to confirm the first image remained unchanged
+        if (hashBefore == hashAfter)
+        {
+            Console.WriteLine("The first saved image remained unchanged after modifying color properties.");
         }
         else
         {
-            Console.WriteLine("Failure: The first saved image was altered.");
+            Console.WriteLine("Unexpected change detected in the first saved image.");
         }
 
-        // Cleanup: (optional) delete temporary files and folder
-        // Uncomment the following lines if you want to remove the demo files after execution
-        // File.Delete(firstImagePath);
-        // File.Delete(secondImagePath);
-        // Directory.Delete(tempFolder);
+        // Optional cleanup (commented out)
+        // File.Delete(file1);
+        // File.Delete(file2);
+        // Directory.Delete(outputDir);
     }
 
-    // Helper method to compute SHA256 hash of a file and return it as a hex string
-    private static string ComputeFileHash(string filePath)
+    /// <summary>
+    /// Computes the MD5 hash of a file and returns it as a lowercase hexadecimal string.
+    /// </summary>
+    /// <param name="filePath">Full path to the file whose hash is to be computed.</param>
+    /// <returns>Lowercase hexadecimal representation of the file's MD5 hash.</returns>
+    static string ComputeFileHash(string filePath)
     {
-        using (FileStream stream = File.OpenRead(filePath))
-        using (SHA256 sha256 = SHA256.Create())
+        using (var md5 = MD5.Create())
         {
-            byte[] hashBytes = sha256.ComputeHash(stream);
-            return BitConverter.ToString(hashBytes).Replace("-", string.Empty);
+            using (var stream = File.OpenRead(filePath))
+            {
+                byte[] hash = md5.ComputeHash(stream);
+                return BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
+            }
         }
     }
 }

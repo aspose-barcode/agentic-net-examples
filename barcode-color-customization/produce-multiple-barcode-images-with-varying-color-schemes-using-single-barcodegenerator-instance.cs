@@ -1,65 +1,58 @@
-// Title: Generate multiple barcode images with different color schemes using a single generator
-// Description: Demonstrates how to produce several barcode PNG files, each with its own foreground and background colors, while reusing one BarcodeGenerator instance.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to configure barcode appearance such as bar color and background using the BarcodeGenerator class. Typical use cases include creating branded or visually distinct barcodes for marketing, labeling, or UI display. Developers often need to adjust colors, fonts, and image formats when generating barcodes programmatically.
+// Title: Generate multiple barcode images with different color schemes using a single BarcodeGenerator
+// Description: Demonstrates how to change bar and background colors of a barcode and save each variation as a PNG file.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing the use of BarcodeGenerator, EncodeTypes, and BarCodeImageFormat to produce styled barcode images. Typical scenarios include creating brand‑consistent barcodes, generating assets for marketing materials, or providing multiple visual options for the same data. Developers often need to adjust colors, formats, and output locations while reusing a single generator instance for efficiency.
 // Prompt: Produce multiple barcode images with varying color schemes using a single BarcodeGenerator instance.
-// Tags: code128, color, png, generation, aspose.barcode, aspose.drawing, barcodegenerator
+// Tags: barcode symbology, color scheme, image generation, png, aspose.barcode, code128
 
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
-namespace BarcodeColorDemo
+/// <summary>
+/// Example program that creates three PNG barcode images, each with a distinct bar and background color,
+/// using a single <see cref="BarcodeGenerator"/> instance.
+/// </summary>
+class Program
 {
     /// <summary>
-    /// Demonstrates generating multiple barcode images with different color schemes using a single <see cref="BarcodeGenerator"/> instance.
+    /// Entry point of the application. Generates barcode images with different color schemes and saves them to disk.
     /// </summary>
-    class Program
+    static void Main()
     {
-        /// <summary>
-        /// Entry point of the demo. Creates an output folder, defines color schemes, and saves PNG barcodes with varying colors.
-        /// </summary>
-        static void Main()
+        // Determine the output directory relative to the current working folder and ensure it exists.
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
+        Directory.CreateDirectory(outputDir);
+
+        // Create a BarcodeGenerator for Code128 symbology with the sample text "Sample123".
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
         {
-            // Create output directory for generated barcode images
-            string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
-            Directory.CreateDirectory(outputDir);
+            // -------------------------------------------------
+            // First variant: black bars on a white background.
+            // -------------------------------------------------
+            generator.Parameters.Barcode.BarColor = Color.Black;   // Set bar color.
+            generator.Parameters.BackColor = Color.White;          // Set background color.
+            string path1 = Path.Combine(outputDir, "barcode_black_on_white.png");
+            generator.Save(path1, BarCodeImageFormat.Png);          // Save as PNG.
 
-            // Define a set of foreground/background color pairs to apply to each barcode
-            var colorSchemes = new (Color fore, Color back)[]
-            {
-                (Color.Blue, Color.White),
-                (Color.Green, Color.LightGray),
-                (Color.Red, Color.Yellow)
-            };
+            // -------------------------------------------------
+            // Second variant: blue bars on a yellow background.
+            // -------------------------------------------------
+            generator.Parameters.Barcode.BarColor = Color.Blue;
+            generator.Parameters.BackColor = Color.Yellow;
+            string path2 = Path.Combine(outputDir, "barcode_blue_on_yellow.png");
+            generator.Save(path2, BarCodeImageFormat.Png);
 
-            // Initialize a single BarcodeGenerator for Code128 symbology
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
-            {
-                // Optional: set a common font size for the code text
-                generator.Parameters.Barcode.CodeTextParameters.Font.Size.Point = 14f;
-
-                int index = 1;
-                foreach (var scheme in colorSchemes)
-                {
-                    // Apply the current color scheme to the barcode
-                    generator.Parameters.Barcode.BarColor = scheme.fore;
-                    generator.Parameters.BackColor = scheme.back;
-
-                    // Optionally change the code text for each image
-                    generator.CodeText = $"Sample{index}";
-
-                    // Build the file path and save the barcode as a PNG image
-                    string filePath = Path.Combine(outputDir, $"barcode_{index}.png");
-                    generator.Save(filePath, BarCodeImageFormat.Png);
-
-                    Console.WriteLine($"Saved barcode {index} to {filePath}");
-                    index++;
-                }
-            }
-
-            Console.WriteLine("Barcode generation completed.");
+            // -------------------------------------------------
+            // Third variant: green bars on a light gray background.
+            // -------------------------------------------------
+            generator.Parameters.Barcode.BarColor = Color.Green;
+            generator.Parameters.BackColor = Color.LightGray;
+            string path3 = Path.Combine(outputDir, "barcode_green_on_lightgray.png");
+            generator.Save(path3, BarCodeImageFormat.Png);
         }
+
+        // Inform the user that the images have been generated.
+        Console.WriteLine("Barcode images generated.");
     }
 }

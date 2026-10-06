@@ -1,8 +1,8 @@
-// Title: Generate Transparent PNG Barcode with Aspose.BarCode
-// Description: Demonstrates creating a Code128 barcode with a transparent background and saving it as a PNG that retains the alpha channel for overlay use.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to configure barcode appearance using the BarcodeGenerator class, set background colors, and export images in formats that support transparency such as PNG. Developers often need to produce barcodes that can be layered on top of other graphics without obscuring underlying content, making transparent PNG output a common requirement.
+// Title: Generate Transparent PNG QR Code for Overlay
+// Description: Demonstrates how to set a barcode's background to transparent and save it as a PNG with an alpha channel, suitable for overlaying on other images.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator, setting visual parameters like BackColor, and exporting to PNG format with transparency. Developers often need to create barcodes that blend seamlessly into UI designs or composite images, requiring transparent backgrounds and alpha channel support.
 // Prompt: Set the background color to transparent and generate a PNG with alpha channel for overlay use.
-// Tags: barcode, code128, transparent background, png, alpha channel, aspose.barcode, generation
+// Tags: qr, barcode, background-color, transparent, png, alpha, generation, aspose.barcode, aspose.drawing
 
 using System;
 using System.IO;
@@ -11,33 +11,39 @@ using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Entry point for the transparent PNG barcode generation example.
+/// Provides an example of generating a QR code with a transparent background
+/// and saving it as a PNG image that includes an alpha channel for overlay use.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Generates a Code128 barcode with a transparent background and saves it as a PNG file.
+    /// Entry point of the application. Creates a QR barcode, sets its background
+    /// to transparent, and saves the result as a PNG file.
     /// </summary>
     static void Main()
     {
-        // Build the full path for the output PNG file in the current directory.
-        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "barcode.png");
+        // Define the output file path in the system's temporary folder.
+        string outputPath = Path.Combine(Path.GetTempPath(), "transparent_barcode.png");
 
-        // Choose the barcode symbology (Code128) and the text to encode.
-        BaseEncodeType encodeType = EncodeTypes.Code128;
-        string codeText = "Sample";
-
-        // Initialize the barcode generator with the selected type and text.
-        using (BarcodeGenerator generator = new BarcodeGenerator(encodeType, codeText))
+        // Ensure the target directory exists; create it if necessary.
+        string directory = Path.GetDirectoryName(outputPath);
+        if (!Directory.Exists(directory))
         {
-            // Configure the generator to use a transparent background.
+            Directory.CreateDirectory(directory);
+        }
+
+        // Specify the barcode type (QR) and the data to encode.
+        BaseEncodeType encodeType = EncodeTypes.QR;
+        using (var generator = new BarcodeGenerator(encodeType, "OverlaySample"))
+        {
+            // Set the background color to transparent to enable alpha channel.
             generator.Parameters.BackColor = Color.Transparent;
 
-            // Save the generated barcode as a PNG image, which preserves the alpha channel.
+            // Save the barcode as a PNG file, preserving transparency.
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user where the barcode image has been saved.
-        Console.WriteLine($"Barcode image saved to: {outputPath}");
+        // Inform the user where the barcode image was saved.
+        Console.WriteLine($"Barcode saved to: {outputPath}");
     }
 }

@@ -1,120 +1,102 @@
-// Title: Barcode PNG Generation with Custom Colors and Verification
-// Description: Generates a Code128 barcode PNG with specified foreground, background, and border colors, then verifies that the image contains the exact RGB values for each color.
-// Category-Description: This example belongs to the Aspose.BarCode image generation and color customization category. It demonstrates using BarcodeGenerator, setting BarColor, BackColor, and Border properties, saving to PNG, and programmatically inspecting pixel colors. Developers working with barcode rendering often need to control visual appearance and validate output for compliance or testing.
+// Title: Generate barcode PNG with custom colors and verify RGB values
+// Description: Creates a Code128 barcode, applies specific background, bar, border, and caption colors, saves as PNG, and checks that the image contains the exact RGB values for each color.
+// Category-Description: This example belongs to the Aspose.BarCode image generation category, demonstrating how to customize barcode appearance using the BarcodeGenerator class and its Parameters properties. Typical use cases include branding, UI integration, and ensuring visual compliance. Developers often need to set colors for background, bars, borders, and text, then validate the output image.
 // Prompt: Verify that the generated PNG file contains the exact RGB values specified for each color property.
-// Tags: barcode symbology, color customization, png output, verification, aspose.barcode, aspose.drawing
+// Tags: barcode symbology, color customization, png output, aspose.barcode, image verification
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a barcode with custom colors, saving it as PNG,
-/// and verifying that the pixel colors match the specified RGB values.
+/// Demonstrates creating a barcode with custom colors, saving it as PNG,
+/// and verifying that the generated image contains the expected RGB values.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates a barcode image, inspects its pixels,
-    /// and reports verification results.
+    /// Entry point of the example. Generates the barcode, saves it, and validates colors.
     /// </summary>
     static void Main()
     {
-        // --------------------------------------------------------------------
-        // Setup output directory and file path
-        // --------------------------------------------------------------------
-        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeColorCheck");
+        // Prepare output directory and file path
+        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeColorTest");
         Directory.CreateDirectory(outputDir);
         string pngPath = Path.Combine(outputDir, "barcode.png");
 
-        // --------------------------------------------------------------------
-        // Define expected colors for barcode elements
-        // --------------------------------------------------------------------
-        Color expectedBarColor = Color.Red;          // Foreground (bars)
-        Color expectedBackColor = Color.Yellow;      // Background
-        Color expectedBorderColor = Color.Blue;      // Border
-
-        // --------------------------------------------------------------------
-        // Generate barcode with the specified colors
-        // --------------------------------------------------------------------
+        // Create barcode generator for Code128 with sample data
         using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "12345"))
         {
-            generator.Parameters.Barcode.BarColor = expectedBarColor;
-            generator.Parameters.BackColor = expectedBackColor;
-            generator.Parameters.Border.Color = expectedBorderColor;
-            generator.Parameters.Border.Width.Pixels = 5f; // Make border visible
+            // Set background and bar colors
+            generator.Parameters.BackColor = Color.Green;
+            generator.Parameters.Barcode.BarColor = Color.Blue;
 
+            // Configure border appearance
+            generator.Parameters.Border.Visible = true;
+            generator.Parameters.Border.Width.Pixels = 5f;
+            generator.Parameters.Border.Color = Color.Red;
+
+            // Set code text color
+            generator.Parameters.Barcode.CodeTextParameters.Color = Color.Yellow;
+
+            // Add captions above and below the barcode with custom colors
+            generator.Parameters.CaptionAbove.Text = "Above";
+            generator.Parameters.CaptionAbove.TextColor = Color.Magenta;
+            generator.Parameters.CaptionBelow.Text = "Below";
+            generator.Parameters.CaptionBelow.TextColor = Color.Cyan;
+
+            // Save the barcode as a PNG image
             generator.Save(pngPath, BarCodeImageFormat.Png);
         }
 
-        // --------------------------------------------------------------------
-        // Ensure the PNG file was created
-        // --------------------------------------------------------------------
-        if (!File.Exists(pngPath))
-        {
-            Console.WriteLine("Failed to generate PNG file.");
-            return;
-        }
-
-        // --------------------------------------------------------------------
-        // Load the image and count pixels of each expected color
-        // --------------------------------------------------------------------
+        // Verify that each specified color appears in the generated PNG
+        bool allOk = true;
         using (var bitmap = new Bitmap(pngPath))
         {
-            int width = bitmap.Width;
-            int height = bitmap.Height;
-            long totalPixels = (long)width * height;
+            allOk &= VerifyColor(bitmap, Color.Green, "Background");
+            allOk &= VerifyColor(bitmap, Color.Blue, "Bar");
+            allOk &= VerifyColor(bitmap, Color.Red, "Border");
+            allOk &= VerifyColor(bitmap, Color.Yellow, "CodeText");
+            allOk &= VerifyColor(bitmap, Color.Magenta, "CaptionAbove");
+            allOk &= VerifyColor(bitmap, Color.Cyan, "CaptionBelow");
+        }
 
-            long barCount = 0;
-            long backCount = 0;
-            long borderCount = 0;
-            long otherCount = 0;
+        // Output verification result and exit with appropriate code
+        if (allOk)
+        {
+            Console.WriteLine("All specified colors were found in the PNG file.");
+            Environment.Exit(0);
+        }
+        else
+        {
+            Console.WriteLine("One or more specified colors were NOT found in the PNG file.");
+            Environment.Exit(1);
+        }
+    }
 
-            for (int y = 0; y < height; y++)
+    /// <summary>
+    /// Scans the bitmap for a pixel matching the expected color.
+    /// </summary>
+    /// <param name="bitmap">The image to scan.</param>
+    /// <param name="expected">The expected color.</param>
+    /// <param name="name">A friendly name for the color being verified.</param>
+    /// <returns>True if the color is found; otherwise, false.</returns>
+    static bool VerifyColor(Bitmap bitmap, Color expected, string name)
+    {
+        for (int y = 0; y < bitmap.Height; y++)
+        {
+            for (int x = 0; x < bitmap.Width; x++)
             {
-                for (int x = 0; x < width; x++)
+                if (bitmap.GetPixel(x, y).ToArgb() == expected.ToArgb())
                 {
-                    Color pixel = bitmap.GetPixel(x, y);
-                    if (pixel.ToArgb() == expectedBarColor.ToArgb())
-                        barCount++;
-                    else if (pixel.ToArgb() == expectedBackColor.ToArgb())
-                        backCount++;
-                    else if (pixel.ToArgb() == expectedBorderColor.ToArgb())
-                        borderCount++;
-                    else
-                        otherCount++;
+                    Console.WriteLine($"{name} color verified at ({x},{y}).");
+                    return true;
                 }
             }
-
-            // ----------------------------------------------------------------
-            // Output verification statistics
-            // ----------------------------------------------------------------
-            Console.WriteLine($"Total Pixels: {totalPixels}");
-            Console.WriteLine($"Bar Color (Red) Pixels: {barCount}");
-            Console.WriteLine($"Background Color (Yellow) Pixels: {backCount}");
-            Console.WriteLine($"Border Color (Blue) Pixels: {borderCount}");
-            Console.WriteLine($"Other Color Pixels: {otherCount}");
-
-            bool success = barCount > 0 && backCount > 0 && borderCount > 0 && otherCount == 0;
-            Console.WriteLine(success
-                ? "Verification succeeded: All colors match the specifications."
-                : "Verification failed: Color mismatch detected.");
         }
-
-        // --------------------------------------------------------------------
-        // Optional cleanup of generated files and directories
-        // --------------------------------------------------------------------
-        try
-        {
-            File.Delete(pngPath);
-            Directory.Delete(outputDir);
-        }
-        catch
-        {
-            // Ignored - cleanup not critical for verification
-        }
+        Console.WriteLine($"{name} color NOT found.");
+        return false;
     }
 }
