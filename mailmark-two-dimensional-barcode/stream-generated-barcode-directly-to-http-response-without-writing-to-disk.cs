@@ -1,48 +1,48 @@
-// Title: Stream Barcode Image Directly to HTTP Response
-// Description: Demonstrates generating a Code128 barcode and streaming it as PNG data to an HTTP response without writing to the file system.
-// Category-Description: Shows how to use Aspose.BarCode's BarcodeGenerator to create barcodes and output them as image streams. This example belongs to the barcode generation and image output category, where developers commonly need to embed generated barcodes in web responses, emails, or APIs. Key classes include BarcodeGenerator, EncodeTypes, BarCodeImageFormat, and standard .NET streams.
+// Title: Generate Code128 barcode and stream as Base64 via HTTP response
+// Description: Creates a Code128 barcode, saves it to a memory stream, and writes HTTP headers and Base64 image data to the console, simulating an HTTP response.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, demonstrating how to use BarcodeGenerator to produce barcodes, save them directly to a MemoryStream, and stream the result without touching the file system. Typical use cases include web applications that need to deliver barcode images on-the-fly via HTTP responses. Developers often work with EncodeTypes, BarCodeImageFormat, and stream APIs to achieve efficient, disk‑less output.
 // Prompt: Stream the generated barcode directly to an HTTP response without writing to disk.
-// Tags: barcode, code128, generation, png, http, streaming, aspose.barcode, aspose.drawing
+// Tags: barcode symbology, generation, streaming, http response, memory stream, aspose.barcode, png
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 
 /// <summary>
-/// Generates a Code128 barcode and streams the PNG image data to an HTTP response.
+/// Demonstrates generating a Code128 barcode and streaming it as a Base64‑encoded PNG image
+/// directly to an HTTP‑like response (simulated via console output).
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates a barcode, writes HTTP headers, and outputs the image as a Base64 string.
+    /// Entry point of the example. Generates the barcode, writes HTTP headers,
+    /// and outputs the Base64 image data.
     /// </summary>
     static void Main()
     {
-        // The text to encode in the barcode.
-        const string codeText = "12345678";
-
-        // Initialize the barcode generator with the desired symbology and data.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+        // Simulate an HTTP response by writing headers and Base64 image data to the console.
+        using (MemoryStream ms = new MemoryStream())
         {
-            // Use a memory stream to hold the generated image in memory.
-            using (var memoryStream = new MemoryStream())
-            {
-                // Save the barcode as a PNG image into the memory stream.
-                generator.Save(memoryStream, BarCodeImageFormat.Png);
+            // Initialize the barcode generator with Code128 symbology and the desired text.
+            BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "12345678");
 
-                // Reset the stream position to the beginning before reading.
-                memoryStream.Position = 0;
+            // Save the generated barcode directly into the memory stream in PNG format.
+            generator.Save(ms, BarCodeImageFormat.Png);
 
-                // Output HTTP response headers (simulated for console demonstration).
-                Console.WriteLine("Content-Type: image/png");
-                Console.WriteLine($"Content-Length: {memoryStream.Length}");
-                Console.WriteLine("Image-Base64:");
+            // Retrieve the raw image bytes from the memory stream.
+            byte[] imageBytes = ms.ToArray();
 
-                // Convert the image bytes to a Base64 string and write it to the response.
-                Console.WriteLine(Convert.ToBase64String(memoryStream.ToArray()));
-            }
+            // Convert the image bytes to a Base64 string for easy transmission in text form.
+            string base64 = Convert.ToBase64String(imageBytes);
+
+            // Output HTTP-like headers indicating content type and length.
+            Console.WriteLine("Content-Type: image/png");
+            Console.WriteLine("Content-Length: " + imageBytes.Length);
+            Console.WriteLine();
+
+            // Output the Base64‑encoded image data.
+            Console.WriteLine(base64);
         }
     }
 }

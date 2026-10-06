@@ -1,8 +1,8 @@
-// Title: Rotating a Mailmark barcode by 90 degrees
-// Description: Demonstrates generating a Mailmark 4‑state barcode and rotating it 90° for layout requirements.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category, focusing on Mailmark symbology. It shows how to configure Mailmark parameters, set barcode dimensions, apply rotation, and save the image using ComplexBarcodeGenerator. Developers working with postal barcodes often need to adjust orientation for printing on pre‑designed forms, making this pattern useful for integrating Mailmark into custom workflows.
+// Title: Rotate Mailmark 4-State Barcode by 90 Degrees
+// Description: Generates a Mailmark 4‑State barcode, rotates it 90° and saves it as a PNG image. Demonstrates how to apply rotation to complex barcodes using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It showcases the use of MailmarkCodetext, ComplexBarcodeGenerator, and barcode parameter settings such as X‑Dimension and RotationAngle. Developers creating postal or logistics solutions often need to generate Mailmark barcodes and adjust their orientation to fit specific label layouts or printing requirements.
 // Prompt: Rotate the generated Mailmark barcode by 90 degrees to satisfy specific layout requirements.
-// Tags: mailmark, barcode, rotation, complexbarcode, generation, png, aspnet.barcode
+// Tags: mailmark, barcode, rotation, png, aspose.barcode, complexbarcode, generation
 
 using System;
 using System.IO;
@@ -11,24 +11,25 @@ using Aspose.BarCode.ComplexBarcode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Generates a Mailmark 4‑state barcode, rotates it 90°, and saves as PNG.
+/// Demonstrates generating a Mailmark 4‑State barcode and rotating it 90°.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates output directory, configures Mailmark data, generates the barcode, and writes the file path to console.
+    /// Entry point that creates the output directory, builds Mailmark codetext,
+    /// generates a rotated barcode, and saves it to a PNG file.
     /// </summary>
     static void Main()
     {
-        // Build a unique temporary folder for the output file
-        string outputDir = Path.Combine(Path.GetTempPath(), "MailmarkExample_" + Guid.NewGuid().ToString("N"));
+        // Define a temporary folder for the output image
+        string outputDir = Path.Combine(Path.GetTempPath(), "MailmarkDemo");
         Directory.CreateDirectory(outputDir);
 
-        // Define the full path for the resulting PNG image
+        // Full path for the rotated barcode image
         string outputPath = Path.Combine(outputDir, "Mailmark4State_Rotated.png");
 
-        // Set up Mailmark specific data fields
-        MailmarkCodetext mailmark = new MailmarkCodetext
+        // Create Mailmark 4‑State codetext with required fields
+        MailmarkCodetext mailmarkCode = new MailmarkCodetext
         {
             Format = 4,
             VersionID = 1,
@@ -38,20 +39,20 @@ class Program
             DestinationPostCodePlusDPS = "EF61AH8T "
         };
 
-        // Generate the barcode using the complex barcode generator
-        using (ComplexBarcodeGenerator generator = new ComplexBarcodeGenerator(mailmark))
+        // Generate the barcode and apply a 90° rotation
+        using (var generator = new ComplexBarcodeGenerator(mailmarkCode))
         {
-            // Define the module size (pixel dimension) of the barcode
-            generator.Parameters.Barcode.XDimension.Pixels = 4;
+            // Set the module size (X‑Dimension) in pixels
+            generator.Parameters.Barcode.XDimension.Pixels = 4f;
 
-            // Rotate the barcode image by 90 degrees
+            // Rotate the entire barcode image by 90 degrees
             generator.Parameters.RotationAngle = 90f;
 
-            // Save the rotated barcode to the specified path
-            generator.Save(outputPath);
+            // Save the rotated barcode as a PNG file
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user where the barcode image was saved
-        Console.WriteLine($"Barcode saved to: {outputPath}");
+        // Inform the user where the image was saved
+        Console.WriteLine($"Rotated Mailmark barcode saved to: {outputPath}");
     }
 }

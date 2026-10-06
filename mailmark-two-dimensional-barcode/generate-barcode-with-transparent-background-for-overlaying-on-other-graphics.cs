@@ -1,46 +1,44 @@
-// Title: Generate Code128 barcode with transparent background
-// Description: Creates a Code128 barcode image with a transparent background and saves it as PNG, suitable for overlaying on other graphics.
-// Category-Description: This example belongs to the Aspose.BarCode image generation category, demonstrating how to configure barcode appearance such as background transparency using the BarcodeGenerator class. Developers often need to produce barcode images that can be composited onto existing designs, requiring formats like PNG with alpha channel support.
+// Title: Generate a Code128 barcode with transparent background
+// Description: Demonstrates how to create a PNG barcode image with a transparent background, suitable for overlaying on other graphics.
+// Category-Description: This example belongs to the Aspose.BarCode image generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes. Developers often need to produce barcodes that blend seamlessly into UI designs or composite images, requiring transparent backgrounds. The snippet shows directory handling, barcode configuration, and saving to PNG format.
 // Prompt: Generate a barcode with a transparent background for overlaying on other graphics.
-// Tags: code128, generate, png, barcodegenerator, aspose.barcode
+// Tags: code128, transparent background, png, barcode generation, aspose.barcode, image export
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a barcode with a transparent background using Aspose.BarCode.
+/// Demonstrates generating a Code128 barcode with a transparent background and saving it as a PNG file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a Code128 barcode, sets a transparent background,
-    /// saves it as a PNG file, and writes the output path to the console.
+    /// Entry point of the example. Creates output folder, configures the barcode generator, and saves the image.
     /// </summary>
-    static void Main()
+    /// <param name="args">Command‑line arguments (not used).</param>
+    static void Main(string[] args)
     {
-        // Define a temporary output directory and ensure it exists.
-        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
-        Directory.CreateDirectory(outputDir);
+        // Determine a temporary directory for output and ensure it exists.
+        string outputDirectory = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
+        Directory.CreateDirectory(outputDirectory);
 
-        // Build the full path for the resulting PNG file.
-        string outputPath = Path.Combine(outputDir, "transparent_barcode.png");
+        // Build the full file path for the resulting PNG image.
+        string outputPath = Path.Combine(outputDirectory, "barcode.png");
 
-        // Initialize the barcode generator with Code128 symbology and sample data.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
+        // Initialize the barcode generator with Code128 symbology and the desired data.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "12345678"))
         {
-            // Set the background to transparent and the barcode bars to black.
+            // Set the background color to transparent so the barcode can be overlaid on other graphics.
             generator.Parameters.BackColor = Color.Transparent;
-            generator.Parameters.Barcode.BarColor = Color.Black;
 
-            // Save the barcode image as a PNG file (supports transparency).
+            // Save the barcode image as PNG, preserving transparency.
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Output the location of the saved barcode image.
+        // Inform the user where the file was saved.
         Console.WriteLine($"Barcode saved to: {outputPath}");
     }
 }
