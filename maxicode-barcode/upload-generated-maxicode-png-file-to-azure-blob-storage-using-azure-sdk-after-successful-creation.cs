@@ -1,76 +1,82 @@
-// Title: Generate MaxiCode barcode and upload to Azure Blob storage
-// Description: This example creates a MaxiCode barcode, saves it as a PNG file, and shows how to upload the generated image to Azure Blob storage using the Azure SDK.
-// Category-Description: Demonstrates Aspose.BarCode barcode generation (EncodeTypes.MaxiCode) and image export (BarCodeImageFormat.Png). Typical scenarios include creating shipping labels or inventory tags where MaxiCode is required, then storing the resulting images in cloud storage for distribution. Developers often use BarcodeGenerator, its Parameters, and Azure.Storage.Blobs to automate barcode creation and cloud upload.
+// Title: Generate MaxiCode barcode and prepare for Azure Blob upload
+// Description: This example creates a MaxiCode barcode image in PNG format using Aspose.BarCode and demonstrates how to upload it to Azure Blob storage.
+// Category-Description: Shows how to work with Aspose.BarCode's BarcodeGenerator to produce MaxiCode symbology, configure its parameters, and save the result as a PNG file. Also includes reference code for uploading the generated image to Azure Blob storage using Azure.Storage.Blobs. Developers dealing with barcode generation and cloud storage integration can use this pattern for automated document processing pipelines.
 // Prompt: Upload a generated MaxiCode PNG file to Azure Blob storage using the Azure SDK after successful creation.
-// Tags: maxicode, barcode generation, png, aspose.barcode, azure.blob.storage
+// Tags: maxicode, barcode generation, png, azure blob storage, aspose.barcode, upload
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a MaxiCode barcode and uploading it to Azure Blob storage.
+/// Demonstrates generating a MaxiCode barcode image and (optionally) uploading it to Azure Blob storage.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates the barcode, saves it locally, and contains sample code for Azure upload.
+    /// Entry point of the example. Generates the barcode, saves it locally, and contains sample code for Azure upload.
     /// </summary>
     static void Main()
     {
         // Define a temporary file path for the generated PNG image
         string outputPath = Path.Combine(Path.GetTempPath(), "maxicode.png");
 
-        // Create a MaxiCode barcode generator with sample text
-        using (var generator = new BarcodeGenerator(EncodeTypes.MaxiCode, "Sample MaxiCode Text"))
+        try
         {
-            // Configure the MaxiCode mode to Mode4 (arbitrary text encoding)
-            generator.Parameters.Barcode.MaxiCode.Mode = MaxiCodeMode.Mode4;
+            // Create a BarcodeGenerator for MaxiCode with sample data
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.MaxiCode, "Sample MaxiCode"))
+            {
+                // Adjust the module size (pixel dimension) of the barcode
+                generator.Parameters.Barcode.XDimension.Pixels = 15f;
 
-            // Set the size of each module (pixel dimension) for better readability
-            generator.Parameters.Barcode.XDimension.Pixels = 15f;
+                // Set the specific MaxiCode mode (e.g., Mode2)
+                generator.Parameters.Barcode.MaxiCode.Mode = MaxiCodeMode.Mode2;
 
-            // Save the generated barcode as a PNG file to the specified path
-            generator.Save(outputPath, BarCodeImageFormat.Png);
+                // Save the generated barcode as a PNG file
+                generator.Save(outputPath, BarCodeImageFormat.Png);
+            }
+
+            Console.WriteLine($"MaxiCode barcode saved to: {outputPath}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error generating barcode: {ex.Message}");
+            return;
         }
 
-        // Inform the user where the barcode image has been saved
-        Console.WriteLine($"MaxiCode barcode saved to: {outputPath}");
-
-        // ----------------------------------------------------------------------
-        // Azure Blob Storage upload (commented out because the Azure SDK is not
-        // available in the snippet runner). In a full development environment,
-        // uncomment and provide the appropriate connection string.
-        // ----------------------------------------------------------------------
+        // -----------------------------------------------------------------
+        // Azure Blob Storage upload (requires Azure.Storage.Blobs package)
+        // The following code is provided as a reference but is commented out
+        // because the Azure SDK is not available in the snippet runner.
+        // -----------------------------------------------------------------
         /*
-        using Azure.Storage.Blobs;
+        // Uncomment and add the Azure.Storage.Blobs NuGet package to use.
+        // using Azure.Storage.Blobs;
 
-        // Azure storage connection details
         string connectionString = "<Your Azure Blob Storage connection string>";
-        string containerName = "barcodes";
+        string containerName = "mycontainer";
         string blobName = "maxicode.png";
 
-        // Initialize the Blob service client
-        BlobServiceClient serviceClient = new BlobServiceClient(connectionString);
-
-        // Get a reference to the container and create it if it doesn't exist
-        BlobContainerClient containerClient = serviceClient.GetBlobContainerClient(containerName);
-        containerClient.CreateIfNotExists();
-
-        // Get a reference to the blob (file) within the container
-        BlobClient blobClient = containerClient.GetBlobClient(blobName);
-
-        // Open the local PNG file and upload it to Azure Blob storage
-        using (FileStream fileStream = File.OpenRead(outputPath))
+        try
         {
-            blobClient.Upload(fileStream, overwrite: true);
-        }
+            // Initialize the container client and ensure the container exists
+            BlobContainerClient containerClient = new BlobContainerClient(connectionString, containerName);
+            containerClient.CreateIfNotExists();
 
-        // Confirm successful upload
-        Console.WriteLine($"Uploaded barcode to Azure Blob storage as {blobName}");
+            // Get a reference to the blob and upload the file
+            BlobClient blobClient = containerClient.GetBlobClient(blobName);
+            using (FileStream fileStream = new FileStream(outputPath, FileMode.Open, FileAccess.Read))
+            {
+                blobClient.Upload(fileStream, overwrite: true);
+            }
+
+            Console.WriteLine($"Uploaded '{blobName}' to Azure Blob container '{containerName}'.");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error uploading to Azure Blob Storage: {ex.Message}");
+        }
         */
     }
 }

@@ -1,48 +1,55 @@
-// Title: Generate MaxiCode Mode 5 Barcode and Save as TIFF
-// Description: Creates a MaxiCode Mode 5 barcode with custom dimensions and saves it as a TIFF image.
-// Category-Description: This example demonstrates how to use Aspose.BarCode for .NET to generate a specific barcode symbology (MaxiCode) with custom image size settings. It covers the BarcodeGenerator class, setting barcode parameters such as MaxiCode mode and image dimensions, and saving the result in TIFF format. Developers working with shipping labels, logistics, or any application requiring MaxiCode can use this pattern to produce high‑quality barcode images.
+// Title: Generate a MaxiCode Mode 5 barcode and save as TIFF
+// Description: Demonstrates creating a MaxiCode Mode 5 barcode with custom image dimensions using Aspose.BarCode and saving it as a TIFF file.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on MaxiCode symbology. It showcases the use of BarcodeGenerator, EncodeTypes, and image format settings to produce high‑resolution barcodes. Developers often need to customize size, mode, and output format when integrating barcodes into packaging, shipping labels, or inventory systems.
 // Prompt: Produce a MaxiCode Mode 5 barcode, set custom image width and height, and save it as TIFF.
-// Tags: maxicode, barcode generation, tiff, aspose.barcode, image size, mode5
+// Tags: maxicode, mode5, barcode generation, image size, tiff, aspose.barcode, csharp
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a MaxiCode Mode 5 barcode with custom dimensions and saving it as a TIFF file.
+/// Example program that generates a MaxiCode Mode 5 barcode,
+/// applies custom image dimensions, and saves the result as a TIFF file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates the barcode, configures its appearance, and writes the image to disk.
+    /// Entry point of the application.
     /// </summary>
     static void Main()
     {
-        // Define the full path for the output TIFF file.
-        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "MaxiCodeMode5.tiff");
+        // Define output directory in the temporary folder and ensure it exists
+        string outputDir = Path.Combine(Path.GetTempPath(), "MaxiCodeDemo");
+        Directory.CreateDirectory(outputDir);
 
-        // Text to encode in the MaxiCode barcode.
+        // Full path for the generated TIFF file
+        string outputPath = Path.Combine(outputDir, "MaxiCodeMode5.tiff");
+
+        // Sample codetext – arbitrary text is allowed for MaxiCode Mode 5
         string codeText = "Sample MaxiCode Mode5";
 
-        // Initialize the barcode generator with MaxiCode symbology and the desired text.
+        // Initialize the barcode generator with MaxiCode symbology and the sample text
         using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.MaxiCode, codeText))
         {
-            // Set the MaxiCode mode to Mode 5.
+            // Configure the generator to use MaxiCode Mode 5
             generator.Parameters.Barcode.MaxiCode.Mode = MaxiCodeMode.Mode5;
 
-            // Specify custom image width and height in pixels.
-            generator.Parameters.ImageWidth.Pixels = 500f;
+            // Set custom image dimensions (pixels) and enforce a fixed size
+            generator.Parameters.AutoSizeMode = AutoSizeMode.Nearest;
+            generator.Parameters.ImageWidth.Pixels = 300f;
             generator.Parameters.ImageHeight.Pixels = 300f;
 
-            // Choose the nearest auto‑size mode to fit the barcode within the specified dimensions.
-            generator.Parameters.AutoSizeMode = AutoSizeMode.Nearest;
+            // Optional: adjust the module (dot) size for better visual clarity
+            generator.Parameters.Barcode.XDimension.Pixels = 10f;
 
-            // Save the generated barcode as a TIFF image to the defined path.
+            // Save the generated barcode as a TIFF image
             generator.Save(outputPath, BarCodeImageFormat.Tiff);
         }
 
-        // Output the location of the saved barcode image.
+        // Inform the user where the barcode image has been saved
         Console.WriteLine($"MaxiCode Mode 5 barcode saved to: {outputPath}");
     }
 }

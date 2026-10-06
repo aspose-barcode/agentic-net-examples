@@ -1,59 +1,47 @@
-// Title: Decode MaxiCode barcode while ignoring checksum errors in noisy conditions
-// Description: Demonstrates configuring Aspose.BarCode's BarCodeReader to bypass checksum validation and use high‑performance settings when decoding MaxiCode barcodes in a high‑noise environment.
-// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, illustrating how to adjust BarCodeReader settings such as ChecksumValidation, QualitySettings, and DeconvolutionMode for robust decoding of MaxiCode symbology. Developers working with barcode scanning in challenging image conditions can learn to disable checksum checks, enable high‑performance mode, and allow incorrect barcodes to improve detection rates.
+// Title: Decode MaxiCode barcodes while ignoring checksum errors in noisy images
+// Description: Demonstrates configuring Aspose.BarCode's BarcodeReader to bypass checksum validation and tolerate incorrect barcodes when decoding MaxiCode symbols in a high‑noise environment.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, focusing on decoding settings for robust reading. It showcases the use of BarCodeReader, BarcodeSettings, and QualitySettings to adjust checksum validation and error tolerance, which developers commonly need when processing low‑quality or damaged barcodes in automated scanning systems.
 // Prompt: Configure BarcodeReader to ignore checksum errors while decoding MaxiCode barcodes in a high‑noise environment.
-// Tags: maxicode, checksumvalidation, high-noise, barcodereader, qualitysettings, aspnet.barcode, barcode recognition
+// Tags: maxicode, checksumvalidation, barcode recognition, error tolerance, aspnet, aspose.barcode, decode, qualitysettings
 
 using System;
 using System.IO;
 using Aspose.BarCode;
-using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates decoding a MaxiCode barcode while ignoring checksum errors and using high‑noise settings.
+/// Sample program that reads MaxiCode barcodes while ignoring checksum errors and allowing incorrect barcodes.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the demo.
+    /// Entry point of the application. Loads a MaxiCode image, configures the reader, and outputs decoded results.
     /// </summary>
     static void Main()
     {
-        // Create a temporary folder for the demo
-        string tempFolder = Path.Combine(Path.GetTempPath(), "MaxiCodeDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
-        string barcodePath = Path.Combine(tempFolder, "maxicode.png");
+        // Build the full path to the sample image located in the current working directory.
+        string imagePath = Path.Combine(Directory.GetCurrentDirectory(), "maxicode.png");
 
-        // Generate a simple MaxiCode barcode and save it as PNG
-        using (var generator = new BarcodeGenerator(EncodeTypes.MaxiCode, "123456"))
+        // Verify that the image file exists before attempting to read it.
+        if (!File.Exists(imagePath))
         {
-            generator.Save(barcodePath, BarCodeImageFormat.Png);
-        }
-
-        // Verify the generated file exists before attempting to read it
-        if (!File.Exists(barcodePath))
-        {
-            Console.WriteLine("Failed to create barcode image.");
+            Console.WriteLine("Sample MaxiCode image not found at: " + imagePath);
             return;
         }
 
-        // Read the MaxiCode barcode while ignoring checksum errors and using high‑noise settings
-        using (var reader = new BarCodeReader(barcodePath, DecodeType.MaxiCode))
+        // Initialize the barcode reader for the MaxiCode symbology.
+        using (var reader = new BarCodeReader(imagePath, DecodeType.MaxiCode))
         {
-            // Disable checksum validation to ignore checksum errors
+            // Disable checksum validation so that checksum errors are ignored.
             reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.Off;
 
-            // Configure quality settings for a noisy environment
-            reader.QualitySettings = QualitySettings.HighPerformance;
-            reader.QualitySettings.Deconvolution = DeconvolutionMode.Fast;
+            // In noisy conditions allow the reader to return barcodes even if they are flagged as incorrect.
             reader.QualitySettings.AllowIncorrectBarcodes = true;
 
-            // Perform the barcode detection
+            // Perform the decoding operation.
             BarCodeResult[] results = reader.ReadBarCodes();
 
-            // Output the results
+            // Output the decoding results.
             if (results.Length == 0)
             {
                 Console.WriteLine("No barcodes were detected.");
@@ -62,21 +50,10 @@ class Program
             {
                 foreach (BarCodeResult result in results)
                 {
-                    Console.WriteLine($"Code Type: {result.CodeTypeName}");
-                    Console.WriteLine($"Code Text: {result.CodeText}");
+                    Console.WriteLine($"CodeType: {result.CodeTypeName}");
+                    Console.WriteLine($"CodeText: {result.CodeText}");
                 }
             }
-        }
-
-        // Clean up temporary files
-        try
-        {
-            File.Delete(barcodePath);
-            Directory.Delete(tempFolder);
-        }
-        catch
-        {
-            // Ignored - cleanup failure should not affect program outcome
         }
     }
 }
