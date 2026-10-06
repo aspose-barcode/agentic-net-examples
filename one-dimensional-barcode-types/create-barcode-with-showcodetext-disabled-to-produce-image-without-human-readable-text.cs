@@ -1,8 +1,8 @@
-// Title: Generate Code128 barcode without human‑readable text
-// Description: Demonstrates how to create a Code128 barcode image with the human‑readable text hidden, using Aspose.BarCode.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category. It showcases the use of BarcodeGenerator, EncodeTypes, BarCodeImageFormat, and CodeTextParameters to produce barcode images. Typical scenarios include creating barcodes for packaging, inventory, or point‑of‑sale systems where the visual text is not required. Developers often need to control the visibility of the code text to meet design or regulatory requirements.
+// Title: Generate Code128 Barcode without Human‑Readable Text
+// Description: Demonstrates how to create a Code128 barcode image with the human‑readable text hidden, saving the result as a PNG file.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and CodeTextParameters to produce barcodes. Typical scenarios include creating labels or tickets where the visual barcode is required without accompanying text. Developers often need to control text visibility, symbology, and output format when integrating barcode creation into automated workflows.
 // Prompt: Create a barcode with ShowCodeText disabled to produce an image without human‑readable text.
-// Tags: code128, barcode, generation, hidecodetext, png, aspose.barcode
+// Tags: code128, barcode generation, hide codetext, png output, aspose.barcode, barcodegenerator
 
 using System;
 using System.IO;
@@ -15,28 +15,32 @@ using Aspose.BarCode.Generation;
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Creates a temporary folder, generates the barcode, saves it as PNG, and writes the output path to the console.
+    /// Entry point of the application. Creates the output directory, generates the barcode, and saves it as a PNG file.
     /// </summary>
     static void Main()
     {
-        // Define a temporary output folder and ensure it exists.
-        string outputFolder = Path.Combine(Path.GetTempPath(), "BarcodeExample");
-        Directory.CreateDirectory(outputFolder);
-
-        // Build the full file path for the resulting barcode image.
-        string outputPath = Path.Combine(outputFolder, "barcode_no_text.png");
-
-        // Initialize the barcode generator for Code128 symbology with the desired data.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+        // Determine a temporary folder to store the generated image
+        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeExample");
+        if (!Directory.Exists(outputDir))
         {
-            // Disable the human‑readable text by setting its location to None.
+            // Create the directory if it does not already exist
+            Directory.CreateDirectory(outputDir);
+        }
+
+        // Full path for the resulting PNG file
+        string outputPath = Path.Combine(outputDir, "barcode_no_text.png");
+
+        // Initialize the barcode generator with Code128 symbology and the desired value
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
+        {
+            // Hide the human‑readable text by setting its location to None
             generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.None;
 
-            // Save the barcode image as a PNG file to the specified path.
+            // Save the barcode image in PNG format
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user where the barcode image has been saved.
+        // Inform the user where the image was saved
         Console.WriteLine($"Barcode image saved to: {outputPath}");
     }
 }

@@ -1,8 +1,8 @@
-// Title: Batch processing of CSV files to generate Code 16K barcode images
-// Description: Demonstrates reading multiple CSV files from a temporary directory and creating PNG images for each non‑empty line using the Code 16K symbology.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use BarcodeGenerator with EncodeTypes.Code16K, configure parameters, and save images. Typical use cases include bulk barcode creation from data files such as CSV, automating inventory labeling, or preparing assets for printing. Developers often need to iterate over input records, set barcode properties, and handle file I/O efficiently.
+// Title: Batch processing CSV files to generate Code 16K barcode images
+// Description: Demonstrates how to read multiple CSV files from a directory, generate Code 16K barcodes for each line, and save them as PNG images.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating the use of BarcodeGenerator with EncodeTypes.Code16K, file I/O, and batch processing. Developers often need to automate barcode creation from data sources such as CSV files, producing image files for inventory, shipping, or labeling workflows. The snippet shows typical API classes (BarcodeGenerator, EncodeTypes, BarCodeImageFormat) and common patterns for handling multiple input files.
 // Prompt: Create batch job processing directory of CSV files, outputting Code 16K images.
-// Tags: barcode, code16k, generation, csv, batch, png, aspose.barcode
+// Tags: code16k, barcode, generation, png, csv, batch, aspose.barcode
 
 using System;
 using System.IO;
@@ -11,39 +11,46 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates batch generation of Code 16K barcodes from CSV files.
+/// Example program that creates a temporary working directory, generates sample CSV files,
+/// reads each line, and produces Code 16K barcode images saved as PNG files.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates temporary input/output folders, writes sample CSV files,
-    /// reads each line, generates a barcode image, and reports the total count.
+    /// Entry point of the application. Executes the batch barcode generation workflow.
     /// </summary>
     static void Main()
     {
-        // Create unique temporary input and output folders
-        string inputFolder = Path.Combine(Path.GetTempPath(), "BatchCsv_" + Guid.NewGuid().ToString("N"));
-        string outputFolder = Path.Combine(Path.GetTempPath(), "BatchOutput_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(inputFolder);
-        Directory.CreateDirectory(outputFolder);
+        // --------------------------------------------------------------------
+        // Setup: create a unique temporary working directory with subfolders
+        // --------------------------------------------------------------------
+        string workDir = Path.Combine(Path.GetTempPath(), "Batch_" + Guid.NewGuid().ToString("N"));
+        string csvDir = Path.Combine(workDir, "Csv");
+        string outDir = Path.Combine(workDir, "Barcodes");
+        Directory.CreateDirectory(csvDir);
+        Directory.CreateDirectory(outDir);
 
-        // Prepare sample CSV files with three rows each
+        // -------------------------------------------------
+        // Create sample CSV files containing barcode data
+        // -------------------------------------------------
         var csvFiles = new List<string>();
-        for (int i = 1; i <= 2; i++)
+        for (int i = 1; i <= 3; i++)
         {
-            string filePath = Path.Combine(inputFolder, $"Sample{i}.csv");
-            File.WriteAllLines(filePath, new[]
+            string csvPath = Path.Combine(csvDir, $"Sample{i}.csv");
+            File.WriteAllLines(csvPath, new[]
             {
-                $"Sample{i}_CodeA",
-                $"Sample{i}_CodeB",
-                $"Sample{i}_CodeC"
+                $"CODE16K_SAMPLE_{i}_A",
+                $"CODE16K_SAMPLE_{i}_B",
+                $"CODE16K_SAMPLE_{i}_C"
             });
-            csvFiles.Add(filePath);
+            csvFiles.Add(csvPath);
         }
 
-        int imageCount = 0;
+        int imageCount = 0; // Counter for successfully generated images
 
-        // Process each CSV file
+        // -------------------------------------------------
+        // Process each CSV file and generate barcodes
+        // -------------------------------------------------
         foreach (string csvFile in csvFiles)
         {
             if (!File.Exists(csvFile))
@@ -55,7 +62,6 @@ class Program
             string[] lines;
             try
             {
-                // Read all lines from the current CSV file
                 lines = File.ReadAllLines(csvFile);
             }
             catch (Exception ex)
@@ -64,41 +70,45 @@ class Program
                 continue;
             }
 
-            // Generate a barcode image for each non‑empty line
-            for (int lineIndex = 0; lineIndex < lines.Length; lineIndex++)
+            // Iterate over each non‑empty line in the CSV file
+            for (int lineIdx = 0; lineIdx < lines.Length; lineIdx++)
             {
-                string codeText = lines[lineIndex].Trim();
+                string codeText = lines[lineIdx].Trim();
                 if (string.IsNullOrEmpty(codeText))
-                    continue;
+                    continue; // Skip empty lines
 
-                // Build output image file name based on source CSV and row number
-                string imageFileName = $"{Path.GetFileNameWithoutExtension(csvFile)}_Row{lineIndex + 1}.png";
-                string imagePath = Path.Combine(outputFolder, imageFileName);
+                // Build output image file name based on source CSV and line number
+                string imageFileName = $"{Path.GetFileNameWithoutExtension(csvFile)}_Line{lineIdx + 1}.png";
+                string imagePath = Path.Combine(outDir, imageFileName);
 
                 try
                 {
-                    // Create barcode generator for Code 16K symbology
+                    // Initialize the barcode generator for Code 16K symbology
                     using (var generator = new BarcodeGenerator(EncodeTypes.Code16K, codeText))
                     {
-                        // Optional: set module size and aspect ratio for better readability
+                        // Set module (X) dimension to control barcode size
                         generator.Parameters.Barcode.XDimension.Pixels = 2f;
-                        generator.Parameters.Barcode.Code16K.AspectRatio = 10f;
+
+                        // Optional quiet zone settings (defaults are usually sufficient)
+                        // generator.Parameters.Barcode.Code16K.QuietZoneLeftCoef = 10;
+                        // generator.Parameters.Barcode.Code16K.QuietZoneRightCoef = 1;
 
                         // Save the generated barcode as a PNG image
                         generator.Save(imagePath, BarCodeImageFormat.Png);
                     }
-
                     imageCount++;
-                    Console.WriteLine($"Generated: {imagePath}");
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Error generating barcode for '{codeText}' in {csvFile}: {ex.Message}");
+                    Console.WriteLine($"Failed to generate barcode for '{codeText}' in {csvFile}: {ex.Message}");
                 }
             }
         }
 
-        // Summarize batch processing results
-        Console.WriteLine($"Batch processing completed. Total images generated: {imageCount}");
+        // -------------------------------------------------
+        // Summary output
+        // -------------------------------------------------
+        Console.WriteLine($"Processed {csvFiles.Count} CSV file(s). Generated {imageCount} barcode image(s) in:");
+        Console.WriteLine(outDir);
     }
 }

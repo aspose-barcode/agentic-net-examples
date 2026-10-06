@@ -1,72 +1,67 @@
-// Title: Generate Codabar barcode and embed in PDF report
-// Description: Demonstrates creating a Codabar barcode with start symbol A and stop symbol D, saving it as a PNG, and inserting the image into a PDF document.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating how to use BarcodeGenerator with Codabar symbology, customize start/stop symbols, and combine the output with Aspose.Pdf to produce a PDF report. Developers often need to generate barcodes for inventory, shipping, or point‑of‑sale systems and embed them directly into documents for printing or electronic distribution.
+// Title: Generate Codabar Barcode and Embed in PDF
+// Description: This example creates a Codabar barcode with start symbol A and stop symbol D, saves it as a PNG in memory, and embeds the image into a PDF report.
+// Category-Description: Demonstrates Aspose.BarCode generation and Aspose.Pdf embedding. The example uses BarcodeGenerator (EncodeTypes.Codabar) to produce a barcode image, then creates a PDF document with Aspose.Pdf.Document, adds the image to a page, and saves the file. Typical for developers who need to include barcodes in generated reports, invoices, or shipping labels.
 // Prompt: Generate a Codabar barcode with start symbol A, stop symbol D, and embed the PNG in a PDF report.
-// Tags: codabar, barcode generation, pdf embedding, aspose.barcode, aspose.pdf, png
+// Tags: codabar, barcode, pdf, image, aspose.barcode, aspose.pdf, generation, embedding
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Pdf;
+using Aspose.Pdf.Text;
 
 /// <summary>
-/// Demonstrates generating a Codabar barcode and embedding it into a PDF report.
+/// Demonstrates generating a Codabar barcode and embedding it into a PDF document using Aspose.BarCode and Aspose.Pdf.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates the barcode, creates a PDF, and saves it to disk.
+    /// Entry point of the example. Generates the barcode, creates a PDF, and saves the result.
     /// </summary>
     static void Main()
     {
-        // Define the output PDF file path in the current working directory.
-        string pdfPath = Path.Combine(Directory.GetCurrentDirectory(), "CodabarReport.pdf");
+        // Prepare output directory and PDF file path
+        string outputDir = Path.Combine(Path.GetTempPath(), "BarcodePdfDemo");
+        Directory.CreateDirectory(outputDir);
+        string pdfPath = Path.Combine(outputDir, "CodabarReport.pdf");
 
-        // Initialize the barcode generator for Codabar with the data string "123456".
-        using (var generator = new BarcodeGenerator(EncodeTypes.Codabar, "123456"))
+        // Generate Codabar barcode with start symbol A and stop symbol D
+        using (var generator = new BarcodeGenerator(EncodeTypes.Codabar, "12345"))
         {
-            // Configure start and stop symbols as required (A and D).
             generator.Parameters.Barcode.Codabar.StartSymbol = CodabarSymbol.A;
             generator.Parameters.Barcode.Codabar.StopSymbol = CodabarSymbol.D;
 
-            // Optional: set the barcode color to black.
-            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-
-            // Create a memory stream to hold the generated PNG image.
-            using (var imageStream = new MemoryStream())
+            // Save barcode to a memory stream as PNG
+            using (var barcodeStream = new MemoryStream())
             {
-                // Save the barcode image as PNG into the memory stream.
-                generator.Save(imageStream, BarCodeImageFormat.Png);
-                // Reset stream position to the beginning for reading.
-                imageStream.Position = 0;
+                generator.Save(barcodeStream, BarCodeImageFormat.Png);
+                barcodeStream.Position = 0; // Reset stream position for reading
 
-                // Create a new PDF document.
+                // Create a new PDF document and embed the barcode image
                 using (var pdfDoc = new Document())
                 {
-                    // Add a page to the PDF.
                     var page = pdfDoc.Pages.Add();
 
-                    // Create an Image object that uses the barcode PNG stream.
-                    var pdfImage = new Image
+                    var pdfImage = new Aspose.Pdf.Image
                     {
-                        ImageStream = imageStream,
-                        FixWidth = 200f,
-                        FixHeight = 100f,
+                        ImageStream = barcodeStream,
+                        FixWidth = 200.0,
+                        FixHeight = 200.0,
                         HorizontalAlignment = HorizontalAlignment.Center,
-                        Margin = new MarginInfo { Top = 20f }
+                        VerticalAlignment = VerticalAlignment.Center,
+                        Margin = new MarginInfo { Top = 20 }
                     };
 
-                    // Add the image to the page's paragraph collection.
+                    // Add the image to the page's paragraphs collection
                     page.Paragraphs.Add(pdfImage);
 
-                    // Save the PDF document to the specified path.
+                    // Save the PDF document to the specified path
                     pdfDoc.Save(pdfPath);
                 }
             }
         }
 
-        // Inform the user that the PDF report has been generated.
-        Console.WriteLine($"PDF report generated: {pdfPath}");
+        Console.WriteLine($"PDF report generated at: {pdfPath}");
     }
 }

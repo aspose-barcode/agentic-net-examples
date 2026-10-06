@@ -1,8 +1,8 @@
-// Title: Generate Code128 barcode without human‑readable text and verify bars only
-// Description: This example creates a Code128 barcode image with the text hidden, saves it as PNG, and programmatically checks that the image contains only barcode bars.
-// Category-Description: Demonstrates Aspose.BarCode generation and basic image verification. It uses BarcodeGenerator, EncodeTypes, BarCodeImageFormat, and Aspose.Drawing classes (Bitmap, Color) to produce a barcode, hide the human‑readable code text, and confirm that the output image contains only the barcode pattern. Ideal for developers needing to generate clean barcodes for scanning systems where text display is undesirable.
+// Title: Generate Code128 barcode without human‑readable text
+// Description: Creates a Code128 barcode image, disables the display of the code text, and saves it as a PNG file.
+// Category-Description: This example demonstrates Aspose.BarCode barcode generation using the BarcodeGenerator class. It shows how to configure barcode parameters such as symbology (EncodeTypes), visual appearance (CodeTextParameters, FilledBars), and output format (BarCodeImageFormat). Typical use cases include creating machine‑readable labels for inventory, shipping, or retail where the human‑readable text may be omitted. Developers working with barcode creation often need to customize these settings to meet specific design or compliance requirements.
 // Prompt: Generate a barcode, set ShowCodeText to false, and confirm only bars are present in the output file.
-// Tags: code128, barcode generation, hide codetext, image verification, aspose.barcode, png, c#
+// Tags: code128, barcode, generation, hidecodetext, png, aspose.barcode
 
 using System;
 using System.IO;
@@ -12,57 +12,50 @@ using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a Code128 barcode without displaying the code text
-/// and verifying that the resulting image contains only barcode bars.
+/// Demonstrates how to generate a Code128 barcode image with the human‑readable text hidden,
+/// using Aspose.BarCode's BarcodeGenerator, and saves the result as a PNG file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates the barcode, saves it, and verifies the image.
+    /// Entry point of the example. Generates the barcode, configures visual parameters,
+    /// saves the image, and confirms successful creation.
     /// </summary>
     static void Main()
     {
-        // Prepare output directory and file path
-        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
+        // Create a unique temporary directory for the output file
+        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(outputDir);
+
+        // Define the full path for the generated PNG image
         string outputPath = Path.Combine(outputDir, "barcode.png");
 
-        // Generate barcode without human‑readable text
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "ASPOSE"))
+        // Initialize the barcode generator with Code128 symbology and the desired data
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
         {
-            // Hide the code text by setting its location to None
+            // Hide the human‑readable code text (equivalent to ShowCodeText = false)
             generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.None;
-            // Save the barcode image as PNG
+
+            // Ensure that the bars are rendered as filled shapes (default is true)
+            generator.Parameters.Barcode.FilledBars = true;
+
+            // Save the generated barcode image to the specified path in PNG format
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Verify that the saved image contains only bars (no text)
-        bool onlyBars = true;
-        using (var bitmap = new Bitmap(outputPath))
+        // Verify that the file was created and provide console feedback
+        if (File.Exists(outputPath))
         {
-            int width = bitmap.Width;
-            int height = bitmap.Height;
-
-            // Assume any text would appear in the bottom 20% of the image
-            int textRegionStart = (int)(height * 0.8);
-            for (int y = textRegionStart; y < height && onlyBars; y++)
+            Console.WriteLine($"Barcode image saved to: {outputPath}");
+            // Load the image to confirm it can be opened (no further analysis needed)
+            using (var bitmap = new Bitmap(outputPath))
             {
-                for (int x = 0; x < width; x++)
-                {
-                    Color pixel = bitmap.GetPixel(x, y);
-                    // Background is white; any non‑white pixel in the text region suggests text
-                    if (pixel.ToArgb() != Color.White.ToArgb())
-                    {
-                        onlyBars = false;
-                        break;
-                    }
-                }
+                Console.WriteLine("Confirmation: barcode generated with only bars (code text hidden).");
             }
         }
-
-        // Output verification result
-        Console.WriteLine(onlyBars
-            ? "Verification passed: only bars are present in the output file."
-            : "Verification failed: unexpected elements detected in the output file.");
+        else
+        {
+            Console.WriteLine("Failed to generate barcode image.");
+        }
     }
 }

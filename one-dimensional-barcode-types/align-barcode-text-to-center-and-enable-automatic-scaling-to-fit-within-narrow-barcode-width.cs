@@ -1,8 +1,8 @@
-// Title: Center Align Barcode Text with Automatic Scaling for Narrow Width
-// Description: Demonstrates how to center the human‑readable text of a Code128 barcode and enable automatic scaling to fit a narrow image width using Aspose.BarCode.
-// Category-Description: This example belongs to the Aspose.BarCode image generation category, showcasing how to configure barcode appearance with the BarcodeGenerator class. It covers setting text alignment, location, auto‑size mode, and image dimensions—common tasks when creating barcodes for labels, receipts, or UI elements where space is limited. Developers often need to adjust these parameters to ensure readability and proper fit across various output formats.
+// Title: Center Aligned Barcode with Automatic Scaling
+// Description: Generates a Code128 barcode with the human‑readable text centered and automatically scales the barcode to fit a narrow image width.
+// Category-Description: This example demonstrates Aspose.BarCode generation features, focusing on text alignment and auto‑size modes. It uses the BarcodeGenerator class with EncodeTypes, TextAlignment, AutoSizeMode, and image dimension settings. Developers creating barcodes for limited‑space layouts often need to center the caption and let the library adjust the barcode size to fit a specific width.
 // Prompt: Align barcode text to center and enable automatic scaling to fit within narrow barcode width.
-// Tags: code128, text alignment, auto scaling, png, aspose.barcode, barcode generation
+// Tags: barcode, code128, text-alignment, autosize, scaling, png, aspose.barcode, generation
 
 using System;
 using System.IO;
@@ -10,40 +10,43 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Generates a Code128 barcode with centered human‑readable text and automatic scaling to fit a narrow canvas.
+/// Demonstrates how to generate a Code128 barcode with centered human‑readable text
+/// and automatic scaling to fit a narrow image width using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates the output folder, configures the barcode, and saves it as a PNG file.
+    /// Entry point of the example. Creates the output directory, configures the barcode,
+    /// and saves it as a PNG file.
     /// </summary>
     static void Main()
     {
-        // Prepare a unique temporary output directory.
-        string outputDir = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(outputDir);
-        string outputPath = Path.Combine(outputDir, "CenteredScaledBarcode.png");
+        // Define the full path for the generated barcode image.
+        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "centered_scaled_barcode.png");
 
-        // Initialize the barcode generator for Code128 with the desired data.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "12345"))
+        // Ensure the target directory exists.
+        string dir = Path.GetDirectoryName(outputPath);
+        if (!Directory.Exists(dir))
         {
-            // Center align the human‑readable text and place it below the barcode.
+            Directory.CreateDirectory(dir);
+        }
+
+        // Initialize the barcode generator with Code128 symbology and sample data.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+        {
+            // Center align the human‑readable text beneath the barcode.
             generator.Parameters.Barcode.CodeTextParameters.Alignment = TextAlignment.Center;
-            generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.Below;
 
-            // Enable automatic scaling (interpolation) to adapt the barcode to a narrow width.
-            generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
-            generator.Parameters.ImageWidth.Pixels = 200f;   // Narrow canvas width.
-            generator.Parameters.ImageHeight.Pixels = 100f; // Canvas height.
+            // Enable automatic scaling to fit the barcode within a narrow canvas.
+            generator.Parameters.AutoSizeMode = AutoSizeMode.Nearest;
+            generator.Parameters.ImageWidth.Pixels = 150f; // narrow canvas width
+            generator.Parameters.Barcode.XDimension.Pixels = 2f; // optional module size
 
-            // Reduce module (X) dimension to improve fitting within the constrained width.
-            generator.Parameters.Barcode.XDimension.Pixels = 1f;
-
-            // Save the generated barcode image as PNG.
+            // Save the generated barcode as a PNG image.
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
         // Inform the user where the barcode image was saved.
-        Console.WriteLine("Barcode generated at: " + outputPath);
+        Console.WriteLine($"Barcode saved to {outputPath}");
     }
 }

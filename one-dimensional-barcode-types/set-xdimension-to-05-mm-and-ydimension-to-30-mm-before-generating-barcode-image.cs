@@ -1,14 +1,13 @@
-// Title: Generate Code128 barcode with custom XDimension
-// Description: Demonstrates how to set the XDimension of a Code128 barcode to 0.5 mm and generate a PNG image. Shows basic setup of Aspose.BarCode generator and saving the result.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes. Developers often need to customize module size (XDimension) to meet printing specifications, and this snippet shows the typical workflow for creating and exporting a barcode image in .NET applications.
+// Title: Generate Code128 barcode with custom XDimension and handle missing YDimension
+// Description: Demonstrates how to set the XDimension of a barcode to 0.5 mm using Aspose.BarCode and notes that YDimension is not supported in the current API.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and BarCodeImageFormat to create and save barcode images. Typical scenarios include generating product labels, inventory tags, or QR codes where precise module sizing is required. Developers often need to adjust dimensions, symbology, and output formats, making this a reference for common barcode creation tasks.
 // Prompt: Set XDimension to 0.5 mm and YDimension to 30 mm before generating the barcode image.
-// Tags: code128, xdimension, barcode generation, png, aspose.barcode, csharp
+// Tags: code128, barcode generation, image output, xdimension, ydimension, aspose.barcode
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
@@ -21,29 +20,25 @@ class Program
     /// </summary>
     static void Main()
     {
-        // Prepare the output directory in the system temporary folder.
-        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeExample");
+        // Define and ensure the output directory exists
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Output");
         Directory.CreateDirectory(outputDir);
         string outputPath = Path.Combine(outputDir, "barcode.png");
 
-        // Define the text to encode and the barcode symbology.
-        string codeText = "ASPOSE123";
-
-        // Initialize the barcode generator with Code128 symbology.
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+        // Initialize the barcode generator with Code128 symbology and sample data
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
         {
-            // Set the module width (XDimension) to 0.5 mm.
+            // Set the XDimension (module width) to 0.5 mm
             generator.Parameters.Barcode.XDimension.Millimeters = 0.5f;
 
-            // YDimension is not a supported property in Aspose.BarCode generation API.
-            // The library only provides XDimension for module size.
-            Console.WriteLine("YDimension property is not available; only XDimension can be set.");
+            // YDimension is not exposed in the current Aspose.BarCode API; inform the user
+            Console.WriteLine("YDimension property is not available in this version of Aspose.BarCode.");
 
-            // Generate the barcode image and save it as PNG.
+            // Render and save the barcode image as PNG
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user where the barcode image was saved.
+        // Output the location of the saved barcode image
         Console.WriteLine($"Barcode image saved to: {outputPath}");
     }
 }
