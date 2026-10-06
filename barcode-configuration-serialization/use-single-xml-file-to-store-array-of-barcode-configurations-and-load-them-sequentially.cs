@@ -1,131 +1,101 @@
-// Title: Barcode generation from XML configuration array
-// Description: Demonstrates loading multiple barcode settings from a single XML file and generating corresponding images. Shows how to map configuration values to Aspose.BarCode API.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to read barcode parameters from external data sources such as XML, JSON, or databases. It uses the BarcodeGenerator class together with EncodeTypes to create barcodes of various symbologies. Developers often need to batch‑process barcode creation based on configuration files, making this pattern useful for automated reporting, inventory labeling, or document stamping.
+// Title: Generate Barcodes from XML Configuration File
+// Description: Demonstrates loading multiple barcode definitions from a single XML file and generating corresponding images using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to read barcode settings (symbology and data) from an XML source, resolve the symbology via EncodeTypes, and create image files with BarcodeGenerator. Typical use cases include batch barcode creation, dynamic report generation, and automated asset labeling. Developers often need to parse configuration files, map symbology names to API enums, and customize output parameters such as image format and dimensions.
 // Prompt: Use a single XML file to store an array of barcode configurations and load them sequentially.
-// Tags: barcode, generation, xml, batch, encode types, aspose.barcode, png, symbology
+// Tags: barcode, symbology, generation, xml, aspose.barcode, png, encode types
 
 using System;
 using System.IO;
+using System.Reflection;
 using System.Xml.Linq;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates reading an array of barcode configurations from an XML file
-/// and generating corresponding barcode images using Aspose.BarCode.
+/// Loads barcode definitions from an XML file and generates PNG images for each entry using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates a temporary XML configuration,
-    /// loads each barcode definition, and saves generated images to disk.
+    /// Entry point of the example. Creates a temporary working folder, ensures a sample XML file exists,
+    /// reads each barcode configuration, and generates the corresponding image files.
     /// </summary>
     static void Main()
     {
-        // --------------------------------------------------------------------
-        // Prepare temporary working directories
-        // --------------------------------------------------------------------
-        string tempRoot = Path.Combine(Path.GetTempPath(), "BarcodeConfigDemo_" + Guid.NewGuid().ToString("N"));
-        string xmlPath = Path.Combine(tempRoot, "configs.xml");
-        string outputDir = Path.Combine(tempRoot, "Output");
-        Directory.CreateDirectory(outputDir);
-        Directory.CreateDirectory(tempRoot);
+        // Create a unique temporary directory for the demo files
+        string tempDir = Path.Combine(Path.GetTempPath(), "BarcodeXmlDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        string xmlPath = Path.Combine(tempDir, "barcodes.xml");
 
-        // --------------------------------------------------------------------
-        // Create a sample XML file containing an array of barcode configurations
-        // --------------------------------------------------------------------
-        XDocument sampleDoc = new XDocument(
-            new XElement("Barcodes",
-                new XElement("BarcodeConfig",
-                    new XElement("Symbology", "Code128"),
-                    new XElement("CodeText", "Sample123"),
-                    new XElement("XDimension", "2.0")
-                ),
-                new XElement("BarcodeConfig",
-                    new XElement("Symbology", "QR"),
-                    new XElement("CodeText", "Hello World"),
-                    new XElement("XDimension", "3.0")
-                )
-            )
-        );
-        sampleDoc.Save(xmlPath);
-        Console.WriteLine($"Configuration XML saved to: {xmlPath}");
-
-        // --------------------------------------------------------------------
-        // Load and validate the configuration XML
-        // --------------------------------------------------------------------
+        // If the XML file does not exist, create a sample file with two barcode definitions
         if (!File.Exists(xmlPath))
         {
-            Console.WriteLine("Configuration file not found.");
-            return;
+            var sampleXml = new XDocument(
+                new XElement("Barcodes",
+                    new XElement("Barcode",
+                        new XElement("Symbology", "Code128"),
+                        new XElement("CodeText", "ABC123")
+                    ),
+                    new XElement("Barcode",
+                        new XElement("Symbology", "QR"),
+                        new XElement("CodeText", "Hello World")
+                    )
+                )
+            );
+            sampleXml.Save(xmlPath);
         }
 
-        XDocument doc;
-        try
-        {
-            doc = XDocument.Load(xmlPath);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Failed to load XML: {ex.Message}");
-            return;
-        }
-
-        var configs = doc.Root?.Elements("BarcodeConfig");
-        if (configs == null)
+        // Load the XML document containing barcode configurations
+        XDocument doc = XDocument.Load(xmlPath);
+        var barcodeElements = doc.Root?.Elements("Barcode");
+        if (barcodeElements == null)
         {
             Console.WriteLine("No barcode configurations found.");
             return;
         }
 
-        // --------------------------------------------------------------------
-        // Iterate through each configuration and generate the barcode image
-        // --------------------------------------------------------------------
-        int index = 0;
-        foreach (var cfg in configs)
+        int index = 1;
+        // Process each <Barcode> element sequentially
+        foreach (var elem in barcodeElements)
         {
-            index++;
-            string symbologyName = cfg.Element("Symbology")?.Value?.Trim();
-            string codeText = cfg.Element("CodeText")?.Value?.Trim();
-            string xDimStr = cfg.Element("XDimension")?.Value?.Trim();
+            // Extract symbology name and code text from the XML
+            string symbologyName = elem.Element("Symbology")?.Value;
+            string codeText = elem.Element("CodeText")?.Value;
 
-            // Validate required fields
-            if (string.IsNullOrEmpty(symbologyName) || string.IsNullOrEmpty(codeText))
+            // Validate that both required values are present
+            if (string.IsNullOrWhiteSpace(symbologyName) || string.IsNullOrWhiteSpace(codeText))
             {
-                Console.WriteLine($"Config #{index} missing required fields. Skipping.");
+                Console.WriteLine($"Skipping invalid configuration at index {index}.");
+                index++;
                 continue;
             }
 
-            // Resolve symbology name to EncodeTypes enum via reflection
-            var field = typeof(EncodeTypes).GetField(symbologyName);
+            // Resolve the symbology string to the corresponding EncodeTypes enum value using reflection
+            FieldInfo field = typeof(EncodeTypes).GetField(symbologyName);
             if (field == null)
             {
-                Console.WriteLine($"Unknown symbology '{symbologyName}' in config #{index}. Skipping.");
+                Console.WriteLine($"Unknown symbology '{symbologyName}' at index {index}.");
+                index++;
                 continue;
             }
 
             BaseEncodeType encodeType = (BaseEncodeType)field.GetValue(null);
 
-            // Create the barcode generator with the resolved symbology and text
+            // Generate the barcode image with the specified symbology and data
             using (var generator = new BarcodeGenerator(encodeType, codeText))
             {
-                // Apply optional XDimension if provided and parsable
-                if (float.TryParse(xDimStr, out float xDimValue))
-                {
-                    generator.Parameters.Barcode.XDimension.Point = xDimValue;
-                }
+                // Example parameter: set module size (X dimension) to 2 points
+                generator.Parameters.Barcode.XDimension.Point = 2f;
 
-                // Explicitly set bar color to black (default, but shown for clarity)
-                generator.Parameters.Barcode.BarColor = Color.Black;
-
-                // Build output file path and save the image as PNG
-                string outPath = Path.Combine(outputDir, $"barcode_{index}_{symbologyName}.png");
-                generator.Save(outPath, BarCodeImageFormat.Png);
-                Console.WriteLine($"Generated barcode #{index}: {outPath}");
+                // Save the generated barcode as a PNG file
+                string outputPath = Path.Combine(tempDir, $"barcode_{index}.png");
+                generator.Save(outputPath, BarCodeImageFormat.Png);
+                Console.WriteLine($"Generated barcode {index}: {outputPath}");
             }
+
+            index++;
         }
 
-        Console.WriteLine("Processing completed.");
+        Console.WriteLine($"All barcodes processed. Files are located in: {tempDir}");
     }
 }

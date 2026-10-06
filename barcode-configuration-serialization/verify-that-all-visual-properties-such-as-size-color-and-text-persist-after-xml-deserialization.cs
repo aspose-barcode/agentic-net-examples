@@ -1,148 +1,148 @@
-// Title: Barcode visual property persistence after XML deserialization
-// Description: Demonstrates creating a barcode, exporting its configuration to XML, re-importing it, and verifying that visual settings such as size, colors, and text remain unchanged.
-// Category-Description: This example belongs to the Aspose.BarCode generation and serialization category. It showcases the use of BarcodeGenerator, its Parameters, and the ImportFromXml/ExportToXml APIs to persist barcode settings. Typical scenarios include saving barcode configurations for later reuse, sharing settings across services, or version‑controlling visual designs. Developers often need to ensure that exported XML retains all visual properties when deserialized.
+// Title: Barcode XML Serialization Persistence Demo
+// Description: Demonstrates exporting a barcode generator's visual settings to XML and verifying they persist after deserialization.
+// Category-Description: This example belongs to the Aspose.BarCode serialization category, showcasing how to use BarcodeGenerator, its Parameters, and ImportFromXml/ExportToXml methods to save and restore barcode configurations. Typical use cases include persisting barcode appearance across sessions or sharing settings between applications. Developers often need to ensure properties like size, colors, and text remain unchanged after round‑trip serialization.
 // Prompt: Verify that all visual properties such as size, color, and text persist after XML deserialization.
-// Tags: barcode, xml, serialization, visual-properties, aspose.barcode, code128, image-generation
+// Tags: barcode, serialization, xml, visual-properties, aspose.barcode, generation, code128
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates that visual properties of a barcode persist after exporting to XML and re‑importing.
+/// Example program that creates a barcode, exports its configuration to XML,
+/// re‑imports it, and validates that visual properties are preserved.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates a barcode, saves its configuration to XML, reloads it,
-    /// generates images, and validates that all visual settings are retained.
+    /// Entry point of the example. Performs the export/import round‑trip and checks property consistency.
     /// </summary>
     static void Main()
     {
-        // Prepare a temporary working directory for all generated files.
+        // Create a temporary directory for the XML file
         string tempDir = Path.Combine(Path.GetTempPath(), "BarcodeXmlTest_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempDir);
+        string xmlPath = Path.Combine(tempDir, "barcode.xml");
 
-        // Define file paths for the XML configuration and the two PNG images.
-        string xmlPath = Path.Combine(tempDir, "generator.xml");
-        string originalImagePath = Path.Combine(tempDir, "original.png");
-        string importedImagePath = Path.Combine(tempDir, "imported.png");
-
-        // --------------------------------------------------------------------
-        // Create and configure the original barcode generator.
-        // --------------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Test123"))
-        {
-            // ----- Visual properties -----
-            generator.Parameters.ImageWidth.Pixels = 300f;
-            generator.Parameters.ImageHeight.Pixels = 150f;
-            generator.Parameters.Barcode.XDimension.Point = 2f;
-            generator.Parameters.Barcode.BarColor = Color.Blue;
-            generator.Parameters.BackColor = Color.Yellow;
-
-            // ----- Text properties -----
-            generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.Below;
-            generator.Parameters.Barcode.CodeTextParameters.Font.FamilyName = "Helvetica";
-            generator.Parameters.Barcode.CodeTextParameters.Font.Size.Point = 12f;
-            generator.Parameters.Barcode.CodeTextParameters.Alignment = TextAlignment.Center;
-
-            // Export the generator's state to an XML file.
-            generator.ExportToXml(xmlPath);
-
-            // Generate the barcode image and save it as the original reference.
-            using (Bitmap bmp = generator.GenerateBarCodeImage())
-            {
-                bmp.Save(originalImagePath, ImageFormat.Png);
-            }
-        }
-
-        // --------------------------------------------------------------------
-        // Load the generator from the previously saved XML and verify properties.
-        // --------------------------------------------------------------------
-        using (var importedGen = BarcodeGenerator.ImportFromXml(xmlPath))
-        {
-            // Generate the barcode image from the imported configuration.
-            using (Bitmap bmp = importedGen.GenerateBarCodeImage())
-            {
-                bmp.Save(importedImagePath, ImageFormat.Png);
-            }
-
-            // Compare each property with the expected values.
-            bool allMatch = true;
-
-            allMatch &= CompareFloat(importedGen.Parameters.ImageWidth.Pixels, 300f, "ImageWidth");
-            allMatch &= CompareFloat(importedGen.Parameters.ImageHeight.Pixels, 150f, "ImageHeight");
-            allMatch &= CompareFloat(importedGen.Parameters.Barcode.XDimension.Point, 2f, "XDimension");
-            allMatch &= CompareColor(importedGen.Parameters.Barcode.BarColor, Color.Blue, "BarColor");
-            allMatch &= CompareColor(importedGen.Parameters.BackColor, Color.Yellow, "BackColor");
-            allMatch &= CompareString(importedGen.CodeText, "Test123", "CodeText");
-            allMatch &= CompareEnum(importedGen.Parameters.Barcode.CodeTextParameters.Location, CodeLocation.Below, "CodeText Location");
-            allMatch &= CompareString(importedGen.Parameters.Barcode.CodeTextParameters.Font.FamilyName, "Helvetica", "Font Family");
-            allMatch &= CompareFloat(importedGen.Parameters.Barcode.CodeTextParameters.Font.Size.Point, 12f, "Font Size");
-            allMatch &= CompareEnum(importedGen.Parameters.Barcode.CodeTextParameters.Alignment, TextAlignment.Center, "Text Alignment");
-
-            Console.WriteLine(allMatch
-                ? "All visual properties persisted after XML deserialization."
-                : "Some properties did not match after XML deserialization.");
-        }
-
-        // --------------------------------------------------------------------
-        // Cleanup temporary files and directory.
-        // --------------------------------------------------------------------
         try
         {
-            File.Delete(xmlPath);
-            File.Delete(originalImagePath);
-            File.Delete(importedImagePath);
-            Directory.Delete(tempDir);
+            // ------------------------------------------------------------
+            // 1. Create and configure a BarcodeGenerator instance
+            // ------------------------------------------------------------
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Test123"))
+            {
+                // Set visual properties
+                generator.Parameters.Barcode.XDimension.Point = 2f;
+                generator.Parameters.ImageWidth.Point = 200f;
+                generator.Parameters.ImageHeight.Point = 100f;
+                generator.Parameters.Barcode.BarColor = Color.Blue;
+                generator.Parameters.BackColor = Color.Yellow;
+                generator.Parameters.Barcode.FilledBars = false;
+                generator.Parameters.Barcode.ThrowExceptionWhenCodeTextIncorrect = false;
+
+                // Export the configuration to an XML file
+                generator.ExportToXml(xmlPath);
+            }
+
+            // Verify that the XML file was created
+            if (!File.Exists(xmlPath))
+            {
+                Console.WriteLine("Failed to create XML file.");
+                return;
+            }
+
+            // ------------------------------------------------------------
+            // 2. Import the configuration from XML and validate properties
+            // ------------------------------------------------------------
+            using (var imported = BarcodeGenerator.ImportFromXml(xmlPath))
+            {
+                bool allMatch = true;
+
+                // Validate code text
+                if (imported.CodeText != "Test123")
+                {
+                    Console.WriteLine($"CodeText mismatch: expected 'Test123', got '{imported.CodeText}'");
+                    allMatch = false;
+                }
+
+                // Validate XDimension
+                if (Math.Abs(imported.Parameters.Barcode.XDimension.Point - 2f) > 0.001f)
+                {
+                    Console.WriteLine($"XDimension mismatch: expected 2, got {imported.Parameters.Barcode.XDimension.Point}");
+                    allMatch = false;
+                }
+
+                // Validate image width
+                if (Math.Abs(imported.Parameters.ImageWidth.Point - 200f) > 0.001f)
+                {
+                    Console.WriteLine($"ImageWidth mismatch: expected 200, got {imported.Parameters.ImageWidth.Point}");
+                    allMatch = false;
+                }
+
+                // Validate image height
+                if (Math.Abs(imported.Parameters.ImageHeight.Point - 100f) > 0.001f)
+                {
+                    Console.WriteLine($"ImageHeight mismatch: expected 100, got {imported.Parameters.ImageHeight.Point}");
+                    allMatch = false;
+                }
+
+                // Validate bar color
+                if (!imported.Parameters.Barcode.BarColor.Equals(Color.Blue))
+                {
+                    Console.WriteLine($"BarColor mismatch: expected Blue, got {imported.Parameters.Barcode.BarColor}");
+                    allMatch = false;
+                }
+
+                // Validate background color
+                if (!imported.Parameters.BackColor.Equals(Color.Yellow))
+                {
+                    Console.WriteLine($"BackColor mismatch: expected Yellow, got {imported.Parameters.BackColor}");
+                    allMatch = false;
+                }
+
+                // Validate FilledBars flag
+                if (imported.Parameters.Barcode.FilledBars != false)
+                {
+                    Console.WriteLine($"FilledBars mismatch: expected false, got {imported.Parameters.Barcode.FilledBars}");
+                    allMatch = false;
+                }
+
+                // Validate ThrowExceptionWhenCodeTextIncorrect flag
+                if (imported.Parameters.Barcode.ThrowExceptionWhenCodeTextIncorrect != false)
+                {
+                    Console.WriteLine($"ThrowExceptionWhenCodeTextIncorrect mismatch: expected false, got {imported.Parameters.Barcode.ThrowExceptionWhenCodeTextIncorrect}");
+                    allMatch = false;
+                }
+
+                // Output overall result
+                Console.WriteLine(allMatch
+                    ? "All visual properties persisted after XML deserialization."
+                    : "Some properties did not persist.");
+            }
         }
-        catch
+        catch (Exception ex)
         {
-            // Ignored – cleanup is not critical for the demonstration.
+            // Report any unexpected errors
+            Console.WriteLine($"Error: {ex.Message}");
         }
-    }
-
-    /// <summary>
-    /// Compares two floating‑point values within a tolerance and writes the result to the console.
-    /// </summary>
-    static bool CompareFloat(float actual, float expected, string name)
-    {
-        const float tolerance = 0.001f;
-        bool result = Math.Abs(actual - expected) <= tolerance;
-        Console.WriteLine($"{name}: {(result ? "OK" : $"FAIL (expected {expected}, got {actual})")}");
-        return result;
-    }
-
-    /// <summary>
-    /// Compares two <see cref="Color"/> values and writes the result to the console.
-    /// </summary>
-    static bool CompareColor(Color actual, Color expected, string name)
-    {
-        bool result = actual.ToArgb() == expected.ToArgb();
-        Console.WriteLine($"{name}: {(result ? "OK" : $"FAIL (expected {expected}, got {actual})")}");
-        return result;
-    }
-
-    /// <summary>
-    /// Compares two strings using ordinal comparison and writes the result to the console.
-    /// </summary>
-    static bool CompareString(string actual, string expected, string name)
-    {
-        bool result = string.Equals(actual, expected, StringComparison.Ordinal);
-        Console.WriteLine($"{name}: {(result ? "OK" : $"FAIL (expected \"{expected}\", got \"{actual}\")")}");
-        return result;
-    }
-
-    /// <summary>
-    /// Compares two enum values and writes the result to the console.
-    /// </summary>
-    static bool CompareEnum<T>(T actual, T expected, string name) where T : Enum
-    {
-        bool result = actual.Equals(expected);
-        Console.WriteLine($"{name}: {(result ? "OK" : $"FAIL (expected {expected}, got {actual})")}");
-        return result;
+        finally
+        {
+            // ------------------------------------------------------------
+            // Clean up temporary files and directory
+            // ------------------------------------------------------------
+            if (Directory.Exists(tempDir))
+            {
+                try
+                {
+                    Directory.Delete(tempDir, true);
+                }
+                catch
+                {
+                    // Ignored – cleanup failure should not affect example outcome
+                }
+            }
+        }
     }
 }
