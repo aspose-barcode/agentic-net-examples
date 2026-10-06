@@ -1,8 +1,8 @@
-// Title: Generate a GS1 DataMatrix barcode without quiet zone and save as PNG
-// Description: Demonstrates how to configure Aspose.BarCode to disable the quiet zone, generate a GS1 DataMatrix barcode, and export it as a PNG image.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on symbology configuration and image output. It showcases the use of BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes to customize barcode parameters such as module size and padding. Developers often need to produce compact barcodes for packaging or labeling where quiet zones are undesirable, and this snippet provides a concise reference.
+// Title: Generate GS1 DataMatrix barcode without quiet zone and save as PNG
+// Description: Demonstrates how to configure Aspose.BarCode to generate a GS1 DataMatrix barcode, minimize the quiet zone, and save the image as a PNG file.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating the use of BarcodeGenerator with EncodeTypes.GS1DataMatrix. It shows how to adjust barcode parameters such as padding (quiet zone) and export the result to common image formats. Developers working with GS1 symbologies, needing custom margins or image output, can refer to this pattern.
 // Prompt: Configure the barcode generator to disable the quiet zone, generate a GS1 DataMatrix, and save as PNG.
-// Tags: datamatrix, gs1, quietzone, png, aspose.barcode, generation, barcode
+// Tags: gs1datamatrix, barcode, generation, quiet zone, png, aspose.barcode, padding
 
 using System;
 using System.IO;
@@ -10,38 +10,36 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generating a GS1 DataMatrix barcode without a quiet zone and saving it as a PNG file.
+/// Demonstrates generating a GS1 DataMatrix barcode with minimized quiet zone and saving it as a PNG image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates a barcode generator, configures parameters, and saves the image.
+    /// Entry point that creates the barcode, configures padding, and writes the PNG file.
     /// </summary>
     static void Main()
     {
-        // Define the GS1 DataMatrix payload (GTIN with Application Identifier 01)
+        // Determine the full path for the output PNG file
+        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "GS1DataMatrix.png");
+
+        // GS1 DataMatrix code text (example with GTIN)
         string codeText = "(01)12345678901231";
 
-        // Determine the output file path in the current working directory
-        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "gs1_datamatrix.png");
-
-        // Initialize the barcode generator for GS1 DataMatrix symbology
+        // Initialize the barcode generator for GS1 DataMatrix using the specified text
         using (var generator = new BarcodeGenerator(EncodeTypes.GS1DataMatrix, codeText))
         {
-            // Optional: set the module (X) dimension to control barcode size
-            generator.Parameters.Barcode.XDimension.Point = 2f;
+            // Reduce the quiet zone by setting all padding sides to zero pixels
+            // (Note: GS1 DataMatrix enforces a minimal quiet zone, so it cannot be completely removed)
+            generator.Parameters.Barcode.Padding.Left.Pixels = 0f;
+            generator.Parameters.Barcode.Padding.Right.Pixels = 0f;
+            generator.Parameters.Barcode.Padding.Top.Pixels = 0f;
+            generator.Parameters.Barcode.Padding.Bottom.Pixels = 0f;
 
-            // Disable the quiet zone by setting all padding values to zero
-            generator.Parameters.Barcode.Padding.Left.Point = 0f;
-            generator.Parameters.Barcode.Padding.Right.Point = 0f;
-            generator.Parameters.Barcode.Padding.Top.Point = 0f;
-            generator.Parameters.Barcode.Padding.Bottom.Point = 0f;
-
-            // Save the generated barcode as a PNG image
+            // Save the generated barcode image as a PNG file
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user where the file was saved
+        // Inform the user where the PNG file was saved
         Console.WriteLine($"GS1 DataMatrix barcode saved to: {outputPath}");
     }
 }
