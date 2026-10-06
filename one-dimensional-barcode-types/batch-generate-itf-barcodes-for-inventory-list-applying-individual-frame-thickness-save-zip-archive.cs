@@ -1,101 +1,70 @@
-// Title: Batch generate ITF-14 barcodes with custom frame thickness and zip them
-// Description: Demonstrates how to generate ITF-14 barcodes for a list of inventory items, each with its own frame thickness, and package the resulting PNG images into a ZIP archive.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and barcode parameter settings such as XDimension and ITF border options. Typical use cases include creating bulk barcode images for inventory, packaging, or shipping labels, where each barcode may require individual visual styling. Developers often need to automate image creation and archive the results for distribution or downstream processing.
+// Title: Batch generation of ITF-14 barcodes with custom frame thickness and ZIP packaging
+// Description: Demonstrates how to generate multiple ITF-14 barcodes, each with its own frame thickness, save them as PNG files, and compress the results into a ZIP archive.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing the use of BarcodeGenerator, EncodeTypes, and barcode parameter classes (e.g., ITF, XDimension). Typical scenarios include inventory labeling, batch printing, and automated barcode creation where each item may require distinct visual styling. Developers often need to customize barcode appearance per item and bundle the output for distribution.
 // Prompt: Batch generate ITF barcodes for inventory list, applying individual frame thickness, save ZIP archive.
-// Tags: itf14, barcode, generation, batch, frame thickness, zip, aspose.barcode, png
+// Tags: itf14, barcode, batch, zip, png, aspose.barcode, generation
 
 using System;
 using System.IO;
 using System.IO.Compression;
-using System.Collections.Generic;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates batch generation of ITF-14 barcodes with custom frame thickness and archiving them into a ZIP file.
+/// Demonstrates batch creation of ITF-14 barcodes with individual frame thickness settings and packaging them into a ZIP archive.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates barcodes for sample inventory items, saves them as PNG files, and creates a ZIP archive.
+    /// Entry point that creates sample inventory data, generates barcodes, archives them, and cleans up temporary files.
     /// </summary>
     static void Main()
     {
-        // Prepare sample inventory items with code and individual frame thickness
-        var items = new List<InventoryItem>
+        // Sample inventory list: each item has a 14‑digit code and a frame thickness in pixels
+        var inventory = new (string Code, float FrameThickness)[]
         {
-            new InventoryItem { Code = "12345678901231", FrameThickness = 5f },
-            new InventoryItem { Code = "12345678901232", FrameThickness = 8f },
-            new InventoryItem { Code = "12345678901233", FrameThickness = 12f },
-            new InventoryItem { Code = "12345678901234", FrameThickness = 15f },
-            new InventoryItem { Code = "12345678901235", FrameThickness = 20f }
+            ("12345678901231", 5f),
+            ("23456789012345", 8f),
+            ("34567890123456", 12f),
+            ("45678901234567", 3f),
+            ("56789012345678", 10f)
         };
 
-        // Create a dedicated temporary folder for generated images
+        // Create a unique temporary folder for barcode images
         string tempFolder = Path.Combine(Path.GetTempPath(), "ITFBatch_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
 
-        var generatedFiles = new List<string>();
-
-        // Generate a PNG barcode for each inventory item
-        foreach (var item in items)
+        // Generate barcodes – one PNG per inventory item
+        for (int i = 0; i < inventory.Length; i++)
         {
-            string filePath = Path.Combine(tempFolder, $"ITF_{item.Code}.png");
-            try
-            {
-                using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.ITF14, item.Code))
-                {
-                    // Set barcode visual parameters
-                    generator.Parameters.Barcode.XDimension.Pixels = 2;
-                    generator.Parameters.Barcode.ITF.BorderType = ITF14BorderType.Frame;
-                    generator.Parameters.Barcode.ITF.BorderThickness.Pixels = item.FrameThickness;
+            var item = inventory[i];
+            string filePath = Path.Combine(tempFolder, $"barcode_{i + 1}.png");
 
-                    // Save the barcode image as PNG
-                    generator.Save(filePath, BarCodeImageFormat.Png);
-                }
-
-                generatedFiles.Add(filePath);
-                Console.WriteLine($"Generated barcode for {item.Code} at {filePath}");
-            }
-            catch (Exception ex)
+            using (var generator = new BarcodeGenerator(EncodeTypes.ITF14, item.Code))
             {
-                Console.WriteLine($"Error generating barcode for {item.Code}: {ex.Message}");
+                // Set module width (optional, improves readability)
+                generator.Parameters.Barcode.XDimension.Pixels = 2f;
+
+                // Apply frame style and the individual thickness for this item
+                generator.Parameters.Barcode.ITF.BorderType = ITF14BorderType.Frame;
+                generator.Parameters.Barcode.ITF.BorderThickness.Pixels = item.FrameThickness;
+
+                // Save the generated barcode as a PNG image
+                generator.Save(filePath, BarCodeImageFormat.Png);
             }
         }
 
-        // Create ZIP archive containing the generated barcode images
-        string zipPath = Path.Combine(tempFolder, "ITF_Barcodes.zip");
-        try
+        // Create ZIP archive containing all generated barcodes
+        string zipPath = Path.Combine(Directory.GetCurrentDirectory(), "ITF_Barcodes.zip");
+        if (File.Exists(zipPath))
         {
-            using (FileStream zipToOpen = new FileStream(zipPath, FileMode.Create))
-            using (ZipArchive archive = new ZipArchive(zipToOpen, ZipArchiveMode.Update))
-            {
-                foreach (var file in generatedFiles)
-                {
-                    try
-                    {
-                        // Add each PNG file to the archive
-                        archive.CreateEntryFromFile(file, Path.GetFileName(file));
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"Failed to add {file} to ZIP: {ex.Message}");
-                    }
-                }
-            }
-
-            Console.WriteLine($"ZIP archive created at: {zipPath}");
+            File.Delete(zipPath);
         }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error creating ZIP archive: {ex.Message}");
-        }
-    }
+        ZipFile.CreateFromDirectory(tempFolder, zipPath);
 
-    // Simple DTO representing an inventory item and its desired barcode frame thickness
-    class InventoryItem
-    {
-        public string Code { get; set; }
-        public float FrameThickness { get; set; }
+        // Clean up temporary folder and its contents
+        Directory.Delete(tempFolder, true);
+
+        Console.WriteLine($"Generated {inventory.Length} ITF barcodes and saved to ZIP: {zipPath}");
     }
 }

@@ -1,47 +1,46 @@
-// Title: Generate ITF-14 barcode with custom frame thickness and save as PNG
-// Description: Demonstrates creating an ITF‑14 barcode that encodes a GTIN, applying a custom frame border, and saving the result as a PNG image.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, showcasing how to use the BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes to produce product barcodes. Typical use cases include packaging, inventory, and retail labeling where ITF‑14 (GTIN‑14) codes are required. Developers often need to customize visual aspects such as X‑dimension and border styling, which this snippet illustrates.
+// Title: Generate ITF‑14 barcode with custom frame thickness and save as PNG
+// Description: This example creates an ITF‑14 barcode encoding a 14‑digit GTIN, applies a custom frame border thickness, and saves the image as a PNG file.
+// Category-Description: Demonstrates Aspose.BarCode barcode generation for the ITF‑14 symbology, covering configuration of barcode parameters such as X‑dimension and border settings. Typical use cases include encoding GTIN‑14 values for product packaging and applying visual styling before exporting to common image formats. Developers working with barcode creation often need to adjust module size, border type, and output format using the BarcodeGenerator class and related parameter objects.
 // Prompt: Generate ITF‑14 barcode encoding GTIN, applying custom frame thickness, save as PNG.
-// Tags: itf14, barcode, generation, png, aspose.barcode, encode-types, border, frame-thickness
+// Tags: itf14, barcode, generation, png, aspose.barcode, gtin, frame border, x-dimension
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating an ITF‑14 barcode with a custom frame border and saving it as a PNG file.
+/// Demonstrates generating an ITF‑14 barcode with a custom frame border and saving it as a PNG image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates the output folder, configures the barcode generator,
-    /// applies custom dimensions and border settings, saves the image, and writes the result path to the console.
+    /// Entry point that creates the barcode, configures its appearance, and writes the PNG file to disk.
     /// </summary>
     static void Main()
     {
-        // Determine and create the output directory.
-        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Output");
-        Directory.CreateDirectory(outputDir);
+        // Define the output file path in the current working directory.
+        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "ITF14Barcode.png");
 
-        // Define the full file path for the generated PNG image.
-        string filePath = Path.Combine(outputDir, "ITF14_CustomFrame.png");
+        // 14‑digit GTIN to be encoded in the ITF‑14 barcode.
+        string gtin = "01234567890128";
 
-        // Initialize the barcode generator with ITF‑14 symbology and a sample GTIN value.
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.ITF14, "12345678901231"))
+        // Initialize the barcode generator with ITF‑14 symbology and the GTIN value.
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.ITF14, gtin))
         {
-            // Set the X dimension (module width) in pixels.
-            generator.Parameters.Barcode.XDimension.Pixels = 2;
+            // Set the module (X‑dimension) size to 2 pixels.
+            generator.Parameters.Barcode.XDimension.Pixels = 2f;
 
-            // Configure the barcode to use a frame border and set its thickness.
+            // Configure a frame border around the barcode with a custom thickness of 5 points.
             generator.Parameters.Barcode.ITF.BorderType = ITF14BorderType.Frame;
-            generator.Parameters.Barcode.ITF.BorderThickness.Pixels = 5;
+            generator.Parameters.Barcode.ITF.BorderThickness.Point = 5f;
 
-            // Save the generated barcode as a PNG image.
-            generator.Save(filePath, BarCodeImageFormat.Png);
+            // Save the generated barcode as a PNG image to the specified path.
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Output the location of the saved barcode image.
-        Console.WriteLine($"ITF-14 barcode saved to: {filePath}");
+        // Inform the user where the barcode image has been saved.
+        Console.WriteLine($"ITF‑14 barcode saved to: {outputPath}");
     }
 }

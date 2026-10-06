@@ -1,8 +1,8 @@
-// Title: Apply MistyRose Background Color to Barcode
-// Description: Demonstrates how to set a custom background color (MistyRose) for a barcode image using Aspose.BarCode, producing a soft pastel appearance.
-// Category-Description: This example belongs to the Aspose.BarCode image generation category, illustrating the use of BarcodeGenerator and its Parameters to customize visual properties such as background and bar colors. Typical use cases include branding, UI design, and creating visually distinct barcodes for printed or digital media. Developers often need to adjust colors, sizes, and formats to match corporate style guides.
+// Title: Apply MistyRose background color to a Code128 barcode
+// Description: Demonstrates how to set a custom pastel background color for a Code128 barcode and save it as a PNG image.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator and its Parameters to customize visual appearance such as background color. Developers often need to adjust barcode styling for branding or UI integration, using classes like BarcodeGenerator, EncodeTypes, and BarCodeImageFormat.
 // Prompt: Apply a custom background color named “MistyRose” to create a soft pastel appearance for the barcode.
-// Tags: barcode, background color, mistyrose, code128, png, aspose.barcode, generation
+// Tags: code128, background-color, png, barcodegenerator, aspose.barcode
 
 using System;
 using System.IO;
@@ -16,36 +16,29 @@ using Aspose.Drawing;
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates the output directory, configures the barcode generator,
-    /// applies the MistyRose background, and writes the image to disk.
+    /// Entry point of the example. Creates output folder, configures the barcode generator,
+    /// applies the custom background color, saves the image, and writes the result path to the console.
     /// </summary>
     static void Main()
     {
-        // Define a temporary folder to store the generated barcode image.
+        // Define a temporary directory for the output file.
         string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
-        if (!Directory.Exists(outputDir))
-        {
-            // Create the directory if it does not already exist.
-            Directory.CreateDirectory(outputDir);
-        }
+        Directory.CreateDirectory(outputDir);
 
-        // Full path for the output PNG file.
+        // Build the full path for the PNG image.
         string outputPath = Path.Combine(outputDir, "barcode_mistyrose.png");
 
         // Initialize the barcode generator with Code128 symbology and sample text.
         using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "MistyRoseDemo"))
         {
-            // Set the background color to MistyRose for a soft pastel look.
-            generator.Parameters.BackColor = Color.MistyRose;
-
-            // Set the barcode (bars) color to black for contrast.
-            generator.Parameters.Barcode.BarColor = Color.Black;
+            // Set the background color to MistyRose (soft pastel).
+            generator.Parameters.BackColor = Color.FromArgb(255, 255, 228, 225);
 
             // Save the generated barcode as a PNG image.
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user where the barcode image has been saved.
+        // Inform the user where the barcode image was saved.
         Console.WriteLine($"Barcode saved to: {outputPath}");
     }
 }

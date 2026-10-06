@@ -1,67 +1,67 @@
-// Title: Set DataBar barcode height and compare JPEG vs PNG output sizes
-// Description: Demonstrates how to set the bar height for continuous DataBar symbologies to 70 pixels and generate both JPEG and PNG images.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing the use of BarcodeGenerator, EncodeTypes, and image format options. It illustrates typical scenarios where developers need to customize barcode dimensions and compare different image outputs for storage or transmission efficiency. Ideal for developers working with barcode rendering, image optimization, and format-specific requirements.
+// Title: Set DataBar barcode height to 70px and compare PNG vs JPEG output sizes
+// Description: Demonstrates how to configure the bar height for continuous DataBar symbologies to 70 pixels, generate PNG and JPEG images, and compare their file sizes.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating barcode parameter customization for DataBar symbologies. It shows usage of BarcodeGenerator, setting XDimension and BarHeight, and saving images in different formats (PNG, JPEG). Developers often need to adjust visual dimensions and evaluate output file size for web or print scenarios.
 // Prompt: Set barcode height for continuous DataBar types to 70 pixels, compare JPEG and PNG outputs.
-// Tags: databar, barcode height, image format, jpeg, png, aspose.barcode, generation
+// Tags: databar, barcode height, image format, png, jpeg, aspose.barcode, generation
 
 using System;
 using System.IO;
-using System.Collections.Generic;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Provides an example that sets DataBar barcode height and saves images in JPEG and PNG formats for size comparison.
+/// Generates DataBar barcodes with a fixed height of 70 pixels,
+/// saves them as PNG and JPEG files, and reports the resulting file sizes.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that generates DataBar barcodes with a 70‑pixel height, saves them as JPEG and PNG, and reports file size differences.
+    /// Entry point of the example. Creates output directory, configures barcode parameters,
+    /// saves images in two formats, and writes size information to the console.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary directory to store the generated images.
-        string outputDir = Path.Combine(Path.GetTempPath(), "DataBarHeightComparison_" + Guid.NewGuid().ToString("N"));
+        // Define and create the output folder for generated barcode images
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "DataBarOutputs");
         Directory.CreateDirectory(outputDir);
 
-        // Define the continuous DataBar symbologies to be processed.
-        List<BaseEncodeType> dataBarTypes = new List<BaseEncodeType>
+        // List of DataBar symbologies to generate with their respective code texts
+        var barcodes = new (string Name, BaseEncodeType Encode, string CodeText)[]
         {
-            EncodeTypes.DatabarOmniDirectional,
-            EncodeTypes.DatabarTruncated,
-            EncodeTypes.DatabarLimited,
-            EncodeTypes.DatabarExpanded
+            ("DatabarOmniDirectional", EncodeTypes.DatabarOmniDirectional, "(01)12345678901231"),
+            ("DatabarTruncated", EncodeTypes.DatabarTruncated, "(01)12345678901231"),
+            ("DatabarLimited", EncodeTypes.DatabarLimited, "(01)08888888888888"),
+            ("DatabarExpanded", EncodeTypes.DatabarExpanded, "(01)12345678901231")
         };
 
-        // Sample GS1-128 code text to encode.
-        string codeText = "(01)12345678901231";
-
-        // Iterate over each DataBar type, generate JPEG and PNG images, and compare their file sizes.
-        foreach (BaseEncodeType type in dataBarTypes)
+        // Iterate over each barcode definition, generate images, and compare sizes
+        foreach (var (name, encode, codeText) in barcodes)
         {
-            // Build file paths for JPEG and PNG outputs.
-            string jpegPath = Path.Combine(outputDir, $"{type.TypeName}_70px.jpeg");
-            string pngPath = Path.Combine(outputDir, $"{type.TypeName}_70px.png");
-
-            // Configure the barcode generator with desired dimensions and save both formats.
-            using (var generator = new BarcodeGenerator(type, codeText))
+            using (var generator = new BarcodeGenerator(encode, codeText))
             {
-                generator.Parameters.Barcode.XDimension.Pixels = 2f;      // Set module width.
-                generator.Parameters.Barcode.BarHeight.Pixels = 70f;    // Set bar height to 70 pixels.
-                generator.Save(jpegPath, BarCodeImageFormat.Jpeg);      // Save as JPEG.
-                generator.Save(pngPath, BarCodeImageFormat.Png);        // Save as PNG.
+                // Optional: increase X-dimension for better visual clarity
+                generator.Parameters.Barcode.XDimension.Pixels = 2f;
+
+                // Set the bar height to 70 pixels as required
+                generator.Parameters.Barcode.BarHeight.Pixels = 70f;
+
+                // Build file paths for PNG and JPEG outputs
+                string pngPath = Path.Combine(outputDir, $"{name}_70px.png");
+                string jpegPath = Path.Combine(outputDir, $"{name}_70px.jpg");
+
+                // Save the barcode in PNG and JPEG formats
+                generator.Save(pngPath, BarCodeImageFormat.Png);
+                generator.Save(jpegPath, BarCodeImageFormat.Jpeg);
+
+                // Retrieve file sizes for comparison
+                long pngSize = new FileInfo(pngPath).Length;
+                long jpegSize = new FileInfo(jpegPath).Length;
+
+                // Output the size information to the console
+                Console.WriteLine($"{name}: PNG size = {pngSize} bytes, JPEG size = {jpegSize} bytes");
             }
-
-            // Retrieve file sizes for comparison.
-            long jpegSize = new FileInfo(jpegPath).Length;
-            long pngSize = new FileInfo(pngPath).Length;
-            long diff = Math.Abs(jpegSize - pngSize);
-
-            // Output the size information to the console.
-            Console.WriteLine($"{type.TypeName}: JPEG = {jpegSize} bytes, PNG = {pngSize} bytes, Difference = {diff} bytes");
         }
 
-        // Inform the user where the images have been saved.
-        Console.WriteLine($"Images saved to: {outputDir}");
+        Console.WriteLine("Barcode generation completed.");
     }
 }

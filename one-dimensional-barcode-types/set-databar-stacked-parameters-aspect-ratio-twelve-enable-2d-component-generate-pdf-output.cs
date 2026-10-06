@@ -1,8 +1,8 @@
-// Title: Generate DataBar Stacked barcode with custom aspect ratio and 2D component, save as PNG
-// Description: Demonstrates how to create a DataBar Stacked barcode, set its aspect ratio to 12, enable the 2‑D composite component, and save the result as a PNG file.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator with EncodeTypes.DatabarStacked. It shows how to configure barcode parameters such as X‑dimension, aspect ratio, and 2D component flag—common tasks when customizing linear barcodes for retail or logistics applications. Developers often need to adjust these settings to meet specification requirements and then export the barcode to image formats like PNG or PDF.
+// Title: Generate DataBar Stacked barcode with aspect ratio 12, enable 2D component, and save as PDF
+// Description: Demonstrates creating a DataBar Stacked barcode, configuring its aspect ratio to 12, turning on the 2D composite component, and exporting the result to a PDF file using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to work with DataBar symbologies. It showcases key API classes such as BarcodeGenerator, EncodeTypes, and BarCodeImageFormat. Typical use cases include retail product labeling and inventory systems where stacked DataBar symbols with 2D components are required. Developers often need to adjust visual parameters like aspect ratio and module size before saving the barcode in various formats.
 // Prompt: Set DataBar stacked parameters aspect ratio twelve, enable 2D component, generate PDF output.
-// Tags: databar, stacked, aspectratio, 2dcomponent, png, aspose.barcode, generation
+// Tags: databar, stacked, aspectratio, 2dcomponent, pdf, aspose.barcode, generation
 
 using System;
 using System.IO;
@@ -10,8 +10,8 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Example program that generates a DataBar Stacked barcode with a custom aspect ratio,
-/// enables the 2‑D composite component, and saves the barcode image to a PNG file.
+/// Example program that generates a DataBar Stacked barcode,
+/// configures specific visual parameters, and saves it as a PDF file.
 /// </summary>
 class Program
 {
@@ -20,38 +20,35 @@ class Program
     /// </summary>
     static void Main()
     {
-        // Determine the output directory relative to the current working directory.
-        string outputDir = Path.Combine(Environment.CurrentDirectory, "Output");
+        // Define the output file path in the current working directory.
+        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "DataBarStacked.pdf");
 
-        // Ensure the output directory exists; create it if it does not.
-        if (!Directory.Exists(outputDir))
-        {
-            Directory.CreateDirectory(outputDir);
-        }
-
-        // Define the full path for the generated barcode image.
-        string imagePath = Path.Combine(outputDir, "DataBarStacked.png");
-
-        // Sample data to encode; includes an Application Identifier (01) for GTIN.
+        // Sample code text to encode (GTIN-14 format in this case).
         string codeText = "(01)12345678901231";
 
-        // Initialize the barcode generator with the DataBar Stacked symbology and the data to encode.
+        // Initialize the barcode generator with the DataBar Stacked symbology.
         using (var generator = new BarcodeGenerator(EncodeTypes.DatabarStacked, codeText))
         {
-            // Set the module (X‑dimension) size in pixels.
+            // Optional: set the module (X) size in pixels for finer control over barcode dimensions.
             generator.Parameters.Barcode.XDimension.Pixels = 2f;
 
-            // Configure the aspect ratio of the DataBar barcode to 12.
+            // Set the aspect ratio of the DataBar symbol to 12 (wide format).
             generator.Parameters.Barcode.DataBar.AspectRatio = 12f;
 
-            // Enable the 2‑D composite component flag for the DataBar barcode.
+            // Enable the 2D composite component flag to embed additional data.
             generator.Parameters.Barcode.DataBar.Is2DCompositeComponent = true;
 
-            // Save the generated barcode as a PNG image to the specified path.
-            generator.Save(imagePath, BarCodeImageFormat.Png);
+            try
+            {
+                // Save the generated barcode as a PDF document.
+                generator.Save(outputPath, BarCodeImageFormat.Pdf);
+                Console.WriteLine($"Barcode saved to {outputPath}");
+            }
+            catch (BarCodeException ex)
+            {
+                // Handle any errors that occur during the save operation.
+                Console.WriteLine("Failed to save as PDF: " + ex.Message);
+            }
         }
-
-        // Inform the user where the barcode image has been saved.
-        Console.WriteLine($"Barcode image generated at: {imagePath}");
     }
 }

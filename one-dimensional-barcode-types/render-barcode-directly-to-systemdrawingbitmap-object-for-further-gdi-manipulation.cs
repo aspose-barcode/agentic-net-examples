@@ -1,8 +1,8 @@
 // Title: Render barcode to Bitmap for GDI+ manipulation
-// Description: Demonstrates generating a Code128 barcode, drawing a red border using GDI+, and saving it as a PNG file.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use BarcodeGenerator to create barcodes, obtain a System.Drawing.Bitmap for further graphics operations, and employ Aspose.Drawing classes such as Graphics, Pen, and ImageFormat. Typical use cases include custom barcode styling, overlaying graphics, or integrating barcodes into existing GDI+ workflows. Developers often need to render barcodes to in‑memory images for additional processing before saving or displaying.
+// Description: Demonstrates generating a Code128 barcode, converting it to a System.Drawing.Bitmap, applying simple GDI+ drawing, and saving as PNG.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use BarcodeGenerator with EncodeTypes to create barcodes, retrieve them as Aspose.Drawing.Bitmap objects, and manipulate them using GDI+ (System.Drawing) APIs. Typical use cases include custom graphics overlays, branding, or further image processing before saving or displaying. Developers often need to combine barcode generation with standard .NET drawing tools for advanced visual customization.
 // Prompt: Render barcode directly to a System.Drawing.Bitmap object for further GDI+ manipulation.
-// Tags: barcode, code128, bitmap, gdi+, drawing, aspose.barcode, aspose.drawing, png, image generation
+// Tags: barcode, code128, bitmap, gdi+, image manipulation, aspose.barcode, generation, png
 
 using System;
 using System.IO;
@@ -12,47 +12,40 @@ using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates rendering a barcode to a Bitmap and applying GDI+ drawing operations.
+/// Example program that generates a barcode, manipulates it with GDI+ and saves to a file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a Code128 barcode, draws a red rectangle around it, and saves the result as PNG.
+    /// Entry point that creates a Code128 barcode, draws a red rectangle, and writes the image to a temporary PNG file.
     /// </summary>
     static void Main()
     {
-        // Determine temporary output file path
+        // Define the output file path in the system's temporary folder
         string outputPath = Path.Combine(Path.GetTempPath(), "barcode.png");
-        // Ensure the directory exists
-        string dir = Path.GetDirectoryName(outputPath);
-        if (!Directory.Exists(dir))
-        {
-            Directory.CreateDirectory(dir);
-        }
 
-        // Create a barcode generator for Code128 with the specified text
+        // Initialize the barcode generator with Code128 symbology and the desired text
         using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "12345678"))
         {
-            // Generate the barcode as a Bitmap
+            // Generate the barcode as an Aspose.Drawing.Bitmap
             using (Bitmap bitmap = generator.GenerateBarCodeImage())
             {
-                // Obtain a Graphics object to draw on the bitmap
+                // Perform GDI+ manipulation: draw a red rectangle around the barcode
                 using (Graphics graphics = Graphics.FromImage(bitmap))
                 {
-                    // Create a red pen with thickness 5
-                    using (Pen pen = new Pen(Aspose.Drawing.Color.Red, 5f))
-                    {
-                        // Draw a rectangle border around the barcode image
-                        graphics.DrawRectangle(pen, 0, 0, bitmap.Width - 1, bitmap.Height - 1);
-                    }
+                    var pen = new Pen(Color.Red, 2f);
+                    graphics.DrawRectangle(pen, 0, 0, bitmap.Width - 1, bitmap.Height - 1);
                 }
 
-                // Save the modified bitmap to PNG file
-                bitmap.Save(outputPath, ImageFormat.Png);
+                // Save the manipulated bitmap to a PNG file
+                using (FileStream fs = new FileStream(outputPath, FileMode.Create, FileAccess.Write))
+                {
+                    bitmap.Save(fs, ImageFormat.Png);
+                }
             }
         }
 
-        // Inform the user where the file was saved
+        // Inform the user where the image was saved
         Console.WriteLine($"Barcode image saved to: {outputPath}");
     }
 }
